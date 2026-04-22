@@ -28,8 +28,8 @@ import bpy
 from bpy.types import Operator, Panel
 from bpy.props import StringProperty
 
-from . import db as _db
-from .utils import _prop_row
+from .. import db as _db
+from ..utils import _prop_row
 
 
 # ═════════════════════════════════════════════════════════════════════════════
