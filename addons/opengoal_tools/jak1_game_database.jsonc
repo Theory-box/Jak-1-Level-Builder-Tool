@@ -215,7 +215,25 @@
         "yakow-idle",
         "yakow-kicked"
       ],
-      "always_loaded_tpage_group": true
+      "always_loaded_tpage_group": true,
+      "load_info": {
+        "index": "2",
+        "nickname": "'vi1",
+        "visname": "'village1-vis",
+        "mood": "'*village1-mood*",
+        "mood-func": "'update-mood-village1",
+        "ocean": "'*ocean-map-village1*",
+        "sky": "#t",
+        "sun-fade": "1.0",
+        "priority": "#xc8",
+        "bsphere": "(new 'static 'sphere :x -444416.0 :y 133120.0 :z 360448.0 :w 843776.0)",
+        "packages": "'(village1)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(10 11 12 13 14 75)",
+        "ambient-sounds": "'()",
+        "continue_count": 5
+      }
     },
     {
       "name": "village2",
@@ -249,7 +267,24 @@
         "village2-amb",
         "wind-chimes"
       ],
-      "always_loaded_tpage_group": true
+      "always_loaded_tpage_group": true,
+      "load_info": {
+        "index": "8",
+        "nickname": "'vi2",
+        "visname": "'village2-vis",
+        "mood": "'*village2-mood*",
+        "mood-func": "'update-mood-village2",
+        "ocean": "'*ocean-map-village2*",
+        "sky": "#t",
+        "priority": "#xc8",
+        "bsphere": "(new 'static 'sphere :x 1392640.0 :y 81920.0 :z -6770688.0 :w 696320.0)",
+        "packages": "'(village2)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(31 32 34 35 76)",
+        "ambient-sounds": "'()",
+        "continue_count": 3
+      }
     },
     {
       "name": "village3",
@@ -276,7 +311,24 @@
         "lava-steam",
         "sulphur"
       ],
-      "always_loaded_tpage_group": true
+      "always_loaded_tpage_group": true,
+      "load_info": {
+        "index": "14",
+        "nickname": "'vi3",
+        "visname": "'village3-vis",
+        "mood": "'*village3-mood*",
+        "mood-func": "'update-mood-village3",
+        "ocean": "#f",
+        "sky": "#t",
+        "priority": "#xc8",
+        "bsphere": "(new 'static 'sphere :x 4571136.0 :y 389120.0 :z -14323712.0 :w 409600.0)",
+        "packages": "'(village3)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'(96 97 98 99 100 101 74 77)",
+        "ambient-sounds": "'()",
+        "continue_count": 3
+      }
     },
     {
       "name": "training",
@@ -291,7 +343,25 @@
         "default"
       ],
       "sbk_sounds": [],
-      "always_loaded_tpage_group": true
+      "always_loaded_tpage_group": true,
+      "load_info": {
+        "index": "1",
+        "nickname": "'tra",
+        "visname": "'training-vis",
+        "mood": "'*training-mood*",
+        "mood-func": "'update-mood-training",
+        "ocean": "'*ocean-map-village1*",
+        "sky": "#t",
+        "sun-fade": "1.0",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x -5079040.0 :z 4055040.0 :w 1024000.0)",
+        "packages": "'(training)",
+        "run-packages": "'(\"common\" \"villagep\")",
+        "wait-for-load": "#f",
+        "tasks": "'(92 93 94 95)",
+        "ambient-sounds": "'()",
+        "continue_count": 3
+      }
     },
     {
       "name": "beach",
@@ -349,7 +419,25 @@
         "worm-rise1",
         "worm-sink",
         "worm-taunt"
-      ]
+      ],
+      "load_info": {
+        "index": "3",
+        "nickname": "'bea",
+        "visname": "'beach-vis",
+        "mood": "'*beach-mood*",
+        "mood-func": "'update-mood-village1",
+        "ocean": "'*ocean-map-village1*",
+        "sky": "#t",
+        "sun-fade": "1.0",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x -819200.0 :z -1556480.0 :w 1474560.0)",
+        "packages": "'(beach)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(15 16 17 18 19 20 21 22)",
+        "ambient-sounds": "'()",
+        "continue_count": 1
+      }
     },
     {
       "name": "jungle",
@@ -422,7 +510,25 @@
         "telescope",
         "trampoline",
         "wind-loop"
-      ]
+      ],
+      "load_info": {
+        "index": "4",
+        "nickname": "'jun",
+        "visname": "'jungle-vis",
+        "mood": "'*jungle-mood*",
+        "mood-func": "'update-mood-jungle",
+        "ocean": "'*ocean-map-village1*",
+        "sky": "#t",
+        "sun-fade": "1.0",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 1474560.0 :y 2519040.0 :z -983040.0 :w 2457600.0)",
+        "packages": "'(jungle)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(2 3 4 5 7 8 9)",
+        "ambient-sounds": "'()",
+        "continue_count": 1
+      }
     },
     {
       "name": "jungleb",
@@ -487,7 +593,24 @@
         "telescope",
         "trampoline",
         "wind-loop"
-      ]
+      ],
+      "load_info": {
+        "index": "5",
+        "nickname": "'jub",
+        "visname": "'jungleb-vis",
+        "mood": "'*jungleb-mood*",
+        "mood-func": "'update-mood-jungleb",
+        "ocean": "'none",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 1486848.0 :y -1269760.0 :z -1064960.0 :w 1228800.0)",
+        "packages": "'(jungleb)",
+        "run-packages": "'(\"common\" \"jungle\")",
+        "wait-for-load": "#f",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "continue_count": 1
+      }
     },
     {
       "name": "swamp",
@@ -544,7 +667,24 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "11",
+        "nickname": "'swa",
+        "visname": "'swamp-vis",
+        "mood": "'*swamp-mood*",
+        "mood-func": "'update-mood-swamp",
+        "ocean": "'*ocean-map-village2*",
+        "sky": "#t",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 1986560.0 :z -8417280.0 :w 1003520.0)",
+        "packages": "'(swamp)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(36 37 38 39 40 41 42 43)",
+        "ambient-sounds": "'()",
+        "continue_count": 7
+      }
     },
     {
       "name": "snow",
@@ -600,7 +740,25 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "15",
+        "nickname": "'sno",
+        "visname": "'snow-vis",
+        "mood": "'*snow-mood*",
+        "mood-func": "'update-mood-snow",
+        "ocean": "#f",
+        "sky": "#t",
+        "sun-fade": "0.5",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 3072000.0 :y 1142784.0 :z -14028800.0 :w 1290240.0)",
+        "packages": "'(snow)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'(60 61 62 63 64 66 67 65)",
+        "ambient-sounds": "'()",
+        "continue_count": 9
+      }
     },
     {
       "name": "sunken",
@@ -644,7 +802,24 @@
         "surface",
         "wall-plat",
         "whirlpool"
-      ]
+      ],
+      "load_info": {
+        "index": "9",
+        "nickname": "'sun",
+        "visname": "'sunken-vis",
+        "mood": "'*sunken-mood*",
+        "mood-func": "'update-mood-sunken",
+        "ocean": "'*ocean-map-sunken*",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 2867200.0 :y -2048000.0 :z -6553600.0 :w 2048000.0)",
+        "packages": "'(sunken)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "continue_count": 4
+      }
     },
     {
       "name": "sub",
@@ -657,7 +832,25 @@
       "music_flavas": [
         "default"
       ],
-      "sbk_sounds": []
+      "sbk_sounds": [],
+      "load_info": {
+        "index": "10",
+        "nickname": "'sub",
+        "visname": "'sunkenb-vis",
+        "mood": "'*sunkenb-mood*",
+        "mood-func": "'update-mood-sunken",
+        "ocean": "'*ocean-map-sunken*",
+        "sky": "#t",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 2867200.0 :y -2048000.0 :z -6553600.0 :w 2048000.0)",
+        "packages": "'()",
+        "run-packages": "'(\"common\" \"sunken\")",
+        "wait-for-load": "#f",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "engine_name": "sunkenb",
+        "continue_count": 2
+      }
     },
     {
       "name": "maincave",
@@ -702,7 +895,24 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "16",
+        "nickname": "'mai",
+        "visname": "'maincave-vis",
+        "mood": "'*maincave-mood*",
+        "mood-func": "'update-mood-maincave",
+        "ocean": "#f",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 4517888.0 :y 114688.0 :z -12484608.0 :w 655360.0)",
+        "packages": "'(maincave)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'(78 79 80 81 82 83 84 85)",
+        "ambient-sounds": "'()",
+        "continue_count": 3
+      }
     },
     {
       "name": "robocave",
@@ -744,7 +954,24 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "18",
+        "nickname": "'rob",
+        "visname": "'robocave-vis",
+        "mood": "'*robocave-mood*",
+        "mood-func": "'update-mood-robocave",
+        "ocean": "#f",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 5529600.0 :y 81920.0 :z -11468800.0 :w 512000.0)",
+        "packages": "'(robocave)",
+        "run-packages": "'(\"common\" \"maincave\")",
+        "wait-for-load": "#t",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "continue_count": 2
+      }
     },
     {
       "name": "darkcave",
@@ -784,7 +1011,24 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "17",
+        "nickname": "'dar",
+        "visname": "'darkcave-vis",
+        "mood": "'*darkcave-mood*",
+        "mood-func": "'update-mood-darkcave",
+        "ocean": "#f",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 3620864.0 :y 266240.0 :z -11935744.0 :w 368640.0)",
+        "packages": "'(darkcave)",
+        "run-packages": "'(\"common\" \"maincave\")",
+        "wait-for-load": "#t",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "continue_count": 1
+      }
     },
     {
       "name": "ogre",
@@ -830,7 +1074,24 @@
         "yellow-fizzle",
         "zoomer-loop",
         "zoomer-start"
-      ]
+      ],
+      "load_info": {
+        "index": "13",
+        "nickname": "'ogr",
+        "visname": "'ogre-vis",
+        "mood": "'*ogre-mood*",
+        "mood-func": "'update-mood-ogre",
+        "ocean": "'none",
+        "sky": "#t",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 2334720.0 :y 180224.0 :z -10653696.0 :w 3653632.0)",
+        "packages": "'(ogre)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(86 87 110 88)",
+        "ambient-sounds": "'()",
+        "continue_count": 3
+      }
     },
     {
       "name": "misty",
@@ -888,7 +1149,25 @@
         "zoomer-loop",
         "zoomer-start",
         "zoomer-stop"
-      ]
+      ],
+      "load_info": {
+        "index": "6",
+        "nickname": "'mis",
+        "visname": "'misty-vis",
+        "mood": "'*misty-mood*",
+        "mood-func": "'update-mood-misty",
+        "ocean": "'*ocean-map-village1*",
+        "sky": "#t",
+        "sun-fade": "0.25",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :z 4096000.0 :w 1269760.0)",
+        "packages": "'(misty)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'(23 24 25 26 27 28 29 30)",
+        "ambient-sounds": "'()",
+        "continue_count": 5
+      }
     },
     {
       "name": "lavatube",
@@ -920,7 +1199,24 @@
         "zoomer-loop",
         "zoomer-start",
         "zoomer-stop"
-      ]
+      ],
+      "load_info": {
+        "index": "19",
+        "nickname": "'lav",
+        "visname": "'lavatube-vis",
+        "mood": "'*lavatube-mood*",
+        "mood-func": "'update-mood-lavatube",
+        "ocean": "#f",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 8806400.0 :y 131072.0 :z -15564800.0 :w 3174400.0)",
+        "packages": "'(lavatube)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(89 90)",
+        "ambient-sounds": "'()",
+        "continue_count": 4
+      }
     },
     {
       "name": "firecanyon",
@@ -947,7 +1243,24 @@
         "zoomer-loop",
         "zoomer-start",
         "zoomer-stop"
-      ]
+      ],
+      "load_info": {
+        "index": "7",
+        "nickname": "'fic",
+        "visname": "'firecanyon-vis",
+        "mood": "'*firecanyon-mood*",
+        "mood-func": "'update-mood-firecanyon",
+        "ocean": "'none",
+        "sky": "#t",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 419840.0 :y 151552.0 :z -3006464.0 :w 2048000.0)",
+        "packages": "'(firecanyon)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(68 69)",
+        "ambient-sounds": "'()",
+        "continue_count": 2
+      }
     },
     {
       "name": "rolling",
@@ -979,7 +1292,24 @@
         "zoomer-loop",
         "zoomer-start",
         "zoomer-stop"
-      ]
+      ],
+      "load_info": {
+        "index": "12",
+        "nickname": "'rol",
+        "visname": "'rolling-vis",
+        "mood": "'*rolling-mood*",
+        "mood-func": "'update-mood-rolling",
+        "ocean": "'none",
+        "sky": "#t",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x -753664.0 :y 131072.0 :z -6569984.0 :w 974848.0)",
+        "packages": "'(rolling)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(52 53 54 55 56 57 58 59)",
+        "ambient-sounds": "'()",
+        "continue_count": 1
+      }
     },
     {
       "name": "finalboss",
@@ -1045,7 +1375,25 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "21",
+        "nickname": "'fin",
+        "visname": "'finalboss-vis",
+        "mood": "'*finalboss-mood*",
+        "mood-func": "'update-mood-finalboss",
+        "ocean": "#f",
+        "sky": "#t",
+        "sun-fade": "1.0",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 11837440.0 :y 2129920.0 :z -19578880.0 :w 778240.0)",
+        "packages": "'(finalboss)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#f",
+        "tasks": "'()",
+        "ambient-sounds": "'()",
+        "continue_count": 2
+      }
     },
     {
       "name": "citadel",
@@ -1085,7 +1433,24 @@
         "yellow-explode",
         "yellow-fire",
         "yellow-fizzle"
-      ]
+      ],
+      "load_info": {
+        "index": "20",
+        "nickname": "'cit",
+        "visname": "'citadel-vis",
+        "mood": "'*citadel-mood*",
+        "mood-func": "'update-mood-citadel",
+        "ocean": "#f",
+        "sky": "#f",
+        "priority": "100",
+        "bsphere": "(new 'static 'sphere :x 11436032.0 :y -462848.0 :z -19750912.0 :w 1228800.0)",
+        "packages": "'(citadel)",
+        "run-packages": "'(\"common\")",
+        "wait-for-load": "#t",
+        "tasks": "'(70 71 72 73 91)",
+        "ambient-sounds": "'()",
+        "continue_count": 10
+      }
     }
   ],
 
@@ -4106,6 +4471,11 @@
           "key": "trans-offset",
           "type": "float",
           "description": "Position offset from base trans: 'dx dy dz' internal units."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Rotation offset applied on spawn."
         }
       ],
       "color": [
@@ -4349,7 +4719,8 @@
         0.9,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "SPHERE",
+      "art_group": "lightning-mole-ag"
     },
     {
       "etype": "ice-cube",
@@ -4384,7 +4755,8 @@
         1.0,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "art_group": "ice-cube-ag"
     },
     {
       "etype": "fireboulder",
@@ -4442,7 +4814,18 @@
       },
       "glb": "levels/village1/evilplant-lod0.glb",
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "height-info",
+          "type": "float",
+          "description": "Height parameters: 2 floats."
+        },
+        {
+          "key": "num-lurkers",
+          "type": "int32",
+          "description": "Child lurker count."
+        }
+      ],
       "color": [
         0.2,
         0.5,
@@ -4471,7 +4854,18 @@
       },
       "glb": "levels/rolling/dark-plant-lod0.glb",
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "max-frame",
+          "type": "float",
+          "description": "Max animation frame."
+        },
+        {
+          "key": "min-frame",
+          "type": "float",
+          "description": "Min animation frame."
+        }
+      ],
       "color": [
         0.3,
         0.1,
@@ -4594,6 +4988,11 @@
           "key": "alt-vector",
           "type": "vector3m",
           "description": "Yakow wander target position: 'x y z'."
+        },
+        {
+          "key": "water-height",
+          "type": "water-height",
+          "description": "Water surface to wade at."
         }
       ],
       "color": [
@@ -4621,7 +5020,18 @@
         "o_only": true
       },
       "glb": "levels/beach/flutflut-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "index",
+          "type": "uint32",
+          "description": "Flutflut instance index (for task tracking)."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Rotation offset applied on spawn."
+        }
+      ],
       "color": [
         0.4,
         0.7,
@@ -5005,7 +5415,10 @@
         1.0
       ],
       "shape": "ARROWS",
-      "vertex_export": false
+      "vertex_export": false,
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "money",
@@ -5014,14 +5427,23 @@
       "parent": "eco-collectable",
       "art_group": "money-ag.go",
       "glb": "levels/common/money-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "movie-mask",
+          "type": "uint32",
+          "description": "Hide-during-cutscene bitmask."
+        }
+      ],
       "color": [
         0.8,
         0.8,
         0.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "PLAIN_AXES",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "buzzer",
@@ -5037,7 +5459,10 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "PLAIN_AXES",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "crate",
@@ -5101,7 +5526,10 @@
         1.0
       ],
       "shape": "CUBE",
-      "vertex_export": false
+      "vertex_export": false,
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "orb-cache-top",
@@ -5115,6 +5543,11 @@
           "key": "orb-cache-count",
           "type": "int32",
           "description": "Number of orbs the cache releases when activated."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
       "fields": [
@@ -5138,7 +5571,10 @@
         1.0
       ],
       "shape": "CUBE",
-      "vertex_export": false
+      "vertex_export": false,
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "powercellalt",
@@ -5252,6 +5688,11 @@
           "key": "sync",
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
       "color": [
@@ -5260,7 +5701,10 @@
         0.8,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "plat-eco",
@@ -5284,6 +5728,11 @@
           "key": "notice-dist",
           "type": "meters",
           "description": "Blue eco activation range. -1 = always active."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
       "color": [
@@ -5292,7 +5741,10 @@
         0.9,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "plat-button",
@@ -5320,7 +5772,10 @@
         0.7,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "plat-flip",
@@ -5516,6 +5971,11 @@
           "key": "sync",
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
       "color": [
@@ -5623,6 +6083,16 @@
           "key": "sync",
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. Period hardcoded ~16s if not set."
+        },
+        {
+          "key": "height-info",
+          "type": "float",
+          "description": "Height parameters."
+        },
+        {
+          "key": "num-lurkers",
+          "type": "int32",
+          "description": "Child count."
         }
       ],
       "color": [
@@ -5660,6 +6130,11 @@
           "key": "trigger-height",
           "type": "meters",
           "description": "Height above launcher base where Jak gets launched."
+        },
+        {
+          "key": "mode",
+          "type": "uint32",
+          "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
         }
       ],
       "fields": [
@@ -5693,6 +6168,34 @@
           "type": "float",
           "default": -1.0,
           "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+        },
+        {
+          "key": "og_launcher_mode",
+          "label": "Camera on launch",
+          "type": "enum",
+          "default": "shortfall",
+          "choices": [
+            {
+              "value": "shortfall",
+              "label": "Short fall (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "longfall",
+              "label": "Long fall",
+              "lump_value": 1
+            },
+            {
+              "value": "none",
+              "label": "No camera",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
         }
       ],
       "color": [
@@ -5918,7 +6421,23 @@
       },
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Rotation radius."
+        },
+        {
+          "key": "num-positions",
+          "type": "int32",
+          "description": "Number of blade positions."
+        },
+        {
+          "key": "speed",
+          "type": "float",
+          "description": "Rotation speed."
+        }
+      ],
       "color": [
         0.7,
         0.7,
@@ -5970,7 +6489,10 @@
         0.3,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "code": {
+        "in_game_cgo": true
+      }
     },
     {
       "etype": "swamp-rock",
@@ -6102,7 +6624,18 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance."
+        },
+        {
+          "key": "scale-factor",
+          "type": "float",
+          "description": "Scale modifier."
+        }
+      ],
       "color": [
         0.7,
         0.3,
@@ -6180,7 +6713,23 @@
         "in_game_cgo": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "timeout",
+          "type": "float",
+          "description": "Activation timeout."
+        },
+        {
+          "key": "next-actor",
+          "type": "structure",
+          "description": "Next warp target."
+        },
+        {
+          "key": "prev-actor",
+          "type": "structure",
+          "description": "Previous warp target."
+        }
+      ],
       "color": [
         0.2,
         0.7,
@@ -6580,7 +7129,8 @@
         0.7,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "SPHERE",
+      "art_group": "sunkenfisha-ag"
     },
     {
       "etype": "sharkey",
@@ -6731,7 +7281,8 @@
         0.5,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "SPHERE",
+      "art_group": "villa-starfish-ag"
     },
     {
       "etype": "eco-pill",
@@ -6889,7 +7440,23 @@
         "o": "beach-obs.o",
         "o_only": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance."
+        },
+        {
+          "key": "num-positions",
+          "type": "int32",
+          "description": "Number of positions in the rotation."
+        },
+        {
+          "key": "speed",
+          "type": "float",
+          "description": "Rotation speed."
+        }
+      ],
       "color": [
         0.3,
         0.7,
@@ -6937,6 +7504,11 @@
           "key": "timeout",
           "type": "float",
           "description": "Seconds to wait before starting orbit. Default 10.0."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
       "fields": [
@@ -7064,6 +7636,16 @@
           "key": "art-name",
           "type": "string",
           "description": "Bridge variant. Values: ropebridge-32, ropebridge-36, ropebridge-52, ropebridge-70, snow-bridge-36, vil3-bridge-36. Default: ropebridge-32."
+        },
+        {
+          "key": "campoints-offset",
+          "type": "float",
+          "description": "Camera-points offset along the bridge."
+        },
+        {
+          "key": "spline-offset",
+          "type": "float",
+          "description": "Spline curve offset."
         }
       ],
       "fields": [
@@ -7138,6 +7720,11 @@
           "key": "speed",
           "type": "meters",
           "description": "Movement speed along path. Default ~3m/s."
+        },
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Cycle delay."
         }
       ],
       "fields": [
@@ -7270,15 +7857,20 @@
           "write_if": "if_nonzero"
         },
         {
-          "key": "og_elevator_rot",
-          "label": "Rotation offset (°)",
-          "type": "float",
-          "default": 0.0,
+          "key": "og_elevator_trans_offset",
+          "label": "Translation offset (m, X Y Z)",
+          "type": "vector3",
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
           "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
+            "key": "trans-offset",
+            "type": "float",
+            "note": "3 floats (X Y Z) in meters"
           },
-          "write_if": "if_nonzero"
+          "write_if": "if_any_nonzero"
         }
       ],
       "color": [
@@ -7398,7 +7990,13 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "How long before the trap door activates (seconds)."
+        }
+      ],
       "color": [
         0.4,
         0.3,
@@ -7667,6 +8265,16 @@
           "key": "height-info",
           "type": "float",
           "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
+        },
+        {
+          "key": "animation-select",
+          "type": "uint32",
+          "description": "Animation variant."
+        },
+        {
+          "key": "particle-select",
+          "type": "uint32",
+          "description": "Particle variant."
         }
       ],
       "fields": [
@@ -7725,6 +8333,16 @@
           "key": "height-info",
           "type": "float",
           "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
+        },
+        {
+          "key": "animation-select",
+          "type": "uint32",
+          "description": "Animation variant."
+        },
+        {
+          "key": "particle-select",
+          "type": "uint32",
+          "description": "Particle variant."
         }
       ],
       "fields": [
@@ -7783,6 +8401,16 @@
           "key": "height-info",
           "type": "float",
           "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
+        },
+        {
+          "key": "animation-select",
+          "type": "uint32",
+          "description": "Animation variant."
+        },
+        {
+          "key": "particle-select",
+          "type": "uint32",
+          "description": "Particle variant."
         }
       ],
       "fields": [
@@ -8284,6 +8912,11 @@
           "key": "flags",
           "type": "uint32",
           "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
+        },
+        {
+          "key": "height-info",
+          "type": "float",
+          "description": "Height parameters: 2 floats."
         }
       ],
       "fields": [
@@ -8342,7 +8975,13 @@
         "o": "misty-warehouse.o",
         "o_only": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance."
+        }
+      ],
       "fields": [
         {
           "key": "og_door_auto_close",
@@ -8452,6 +9091,11 @@
           "key": "scale-factor",
           "type": "float",
           "description": "Uniform scale multiplier. Default 1.0."
+        },
+        {
+          "key": "trans-offset",
+          "type": "float",
+          "description": "Open-position offset (3 floats X Y Z meters)."
         }
       ],
       "fields": [
@@ -8503,6 +9147,21 @@
           "key": "timeout",
           "type": "float",
           "description": "Seconds before button resets after being pressed. 0 = stays pressed. Default 0."
+        },
+        {
+          "key": "extra-id",
+          "type": "uint32",
+          "description": "Optional stable identifier for state tracking."
+        },
+        {
+          "key": "next-actor",
+          "type": "structure",
+          "description": "Next button in a chain (for grouped buttons)."
+        },
+        {
+          "key": "prev-actor",
+          "type": "structure",
+          "description": "Previous button in a chain (for grouped buttons)."
         }
       ],
       "fields": [
@@ -8525,7 +9184,27 @@
         0.3,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "link_slots": [
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next button in chain",
+          "accepts": [
+            "basebutton"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous button in chain",
+          "accepts": [
+            "basebutton"
+          ],
+          "required": false
+        }
+      ]
     },
     {
       "etype": "shover",
@@ -8616,7 +9295,18 @@
         "o": "swamp-obs.o",
         "o_only": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance."
+        },
+        {
+          "key": "scale-factor",
+          "type": "float",
+          "description": "Scale modifier."
+        }
+      ],
       "color": [
         0.4,
         0.5,
@@ -8644,7 +9334,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "alt-task",
+          "type": "enum-uint32",
+          "description": "Linked game task (already in fields on oracle/pontoon pattern)."
+        }
+      ],
       "color": [
         0.8,
         0.6,
@@ -8718,7 +9414,18 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "animation-select",
+          "type": "uint32",
+          "description": "Animation variant."
+        },
+        {
+          "key": "particle-select",
+          "type": "uint32",
+          "description": "Particle variant."
+        }
+      ],
       "color": [
         0.5,
         0.4,
@@ -8755,7 +9462,13 @@
           "required": false
         }
       ],
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "height-info",
+          "type": "float",
+          "description": "Height parameters: 2 floats."
+        }
+      ],
       "color": [
         0.5,
         0.5,
@@ -8783,7 +9496,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Animation delay."
+        }
+      ],
       "color": [
         1.0,
         0.3,
@@ -8811,7 +9530,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Animation delay."
+        }
+      ],
       "color": [
         1.0,
         0.3,
@@ -8839,7 +9564,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Animation delay."
+        }
+      ],
       "color": [
         1.0,
         0.35,
@@ -8867,7 +9598,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Animation delay."
+        }
+      ],
       "color": [
         0.9,
         0.2,
@@ -8895,7 +9632,13 @@
         "o_only": true
       },
       "is_prop": true,
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Animation delay."
+        }
+      ],
       "color": [
         0.9,
         0.8,
@@ -8922,7 +9665,13 @@
         "o": "lavatube-obs.o",
         "o_only": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "delay",
+          "type": "float",
+          "description": "Detonation delay after trigger."
+        }
+      ],
       "color": [
         0.6,
         0.1,
@@ -9065,7 +9814,10 @@
         0.8,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "PLAIN_AXES",
+      "code": {
+        "in_game_cgo": true
+      }
     }
   ],
 
@@ -14981,6 +15733,17 @@
             "type": "vector3m"
           },
           "write_if": "if_object_found"
+        },
+        {
+          "key": "og_cam_intro_time",
+          "label": "Intro time (s)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "intro-time",
+            "type": "float"
+          },
+          "write_if": "if_positive"
         }
       ]
     },
