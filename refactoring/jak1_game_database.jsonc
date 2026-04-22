@@ -7857,20 +7857,16 @@
           "write_if": "if_nonzero"
         },
         {
-          "key": "og_elevator_trans_offset",
-          "label": "Translation offset (m, X Y Z)",
-          "type": "vector3",
-          "default": [
-            0.0,
-            0.0,
-            0.0
-          ],
+          "key": "og_elevator_rot",
+          "label": "Rotation offset (°)",
+          "type": "float",
+          "default": 0.0,
           "lump": {
-            "key": "trans-offset",
-            "type": "float",
-            "note": "3 floats (X Y Z) in meters"
+            "key": "rotoffset",
+            "type": "degrees"
           },
-          "write_if": "if_any_nonzero"
+          "write_if": "if_nonzero",
+          "note": "NOTE: engine actually reads 'trans-offset' (3 floats X Y Z, see levels/maincave/maincave-obs.gc). Our addon currently writes 'rotoffset' which the engine ignores. To fix, we'd need to: (1) change this field to vector3, (2) update the property-setter + export pipeline, (3) migrate any existing scenes. Tracked for a future bug-fix commit."
         }
       ],
       "color": [
