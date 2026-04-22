@@ -1,0 +1,101 @@
+// This list would be loaded by the addon and be the ground sources for all actors
+// I might not have thought about all possible fields yet, especially with the extra res-lump stuff but that could be added here too
+// Maybe having a field in the settings of the addon to be able to overwrite this
+// That way, advanced users could make their own change/add their own custom actors to this list without having to edit the addon itself
+// This should also make it MUCH easier to do manual edit instead of having the AI always do changes because of its weird system
+{
+    // Actors is the list of all actors that you can spawn, that will be all setup by the info that's written down here
+    "Actors" : [
+        {   // This is an example actor with all possible fields, actual actors wouldn't end up needing most of these
+            "etype": "typeName", // The etype used for this actor
+            "label": "Displayed Name", // The name that shows in the list for the user
+            "description": "Description of the Actor",
+            "category": "categoryName", // Category to know in which list to place the actor in.
+            "art_group":"etype-ag.go", // the art-group to include could also be multiple ones for ex: ["art-group1-ag.go", "art-group2-ag.go"]
+            "code":"code-file.o", // Code file to include same as art groups, can include more than one
+            "tpages":"LEVEL_TPAGES", // Texture Pages to include (these might not even be needed for most)
+            "parent":"parentEtype", // The parent etype of this actor to know what to include by default
+            "links":[ 
+                // Some Links can be automatic if they're from the parent etype
+                // If a link is false by default, you could just not have the line here to save some space
+                // Links would add the buttons to link/spawn the requirements for that specific type of link
+                {"need_task": false}, // Display the game-task menu to choose or write down the task connected
+                {"need_path": false}, // Display the waypoint menu to add waypoint/link a curve
+                {"need_nav": false}, // Display the nav-mesh menu to link a nav-mesh
+                {"need_enemy": false}, // Display the enemy menu with idle distance and such
+                {"need_vol": false}, // Display the volume menu to link a volume
+                {"need_alt": false}, // Display a menu to connect one or multiple other actors
+                {"need_prev": false}, // Display a menu to connect another actor
+                {"need_next": false}, // Display a menu to connect another actor
+                {"need_sync": false}, // Display the sync menu, mostly used to sync platforms
+                {"need_eco-info": false}, // Display the collectable menu for pickup type and quantity
+                {"need_pathb": false} // Display the waypoint menu to add waypoint/link a curve as pathb/pathb-k. There can actually be up to pathg/pathg-k
+            ],
+            "link_desc":[
+                // link_desc could be used to overwrite the description used in a link
+                // By default it uses the description of the parent if these are not present
+                // This is useful because the way each res-lump is used can vary a lot depending on the actor
+                // ex: a path in a platform can be for it's movement but a path on a cave-flame-pot is all the position it can throw jak towards  
+                {"desc_path": "Description overwrite for paths on this actor"} // same for each link
+            ],
+            "glb":"file/path/to-glb.glb" // To display glb in blender as a preview
+        },
+        {   // example for an orb:
+            "etype": "money", 
+            "label": "Orb", 
+            "description": "Main collectable of the game. Often used to buy Power Cells",
+            "category": "collectables",
+            // orbs are common actors so they don't need an art-group, code or tpages as those are already included
+            // It might be even better to have all of these still added but then have a list of "default" ag, code, tpages in this file too
+            // That way the addon could also automatically see which ones don't need to be added and people could have the option to change that default list too
+            "parent":"eco-collectable", // which itself is a child of "collectable" which is a child of "process-drawable", etc
+            // orbs don't need any extra link so all of that can just not be here,
+            "glb":"levels/common/money-lod0.glb"
+        },
+        {   // example for a babak lurker
+            "etype": "babak",
+            "label": "Babak Lurker", 
+            "description": "Main enemy of the game, monkey looking creature, will ",
+            "category": "enemy", // Category to know in which list to place the actor in.
+            "art_group":"babak-ag.go", // the art-group to include could also be multiple ones for ex: ["art-group1-ag.go", "art-group2-ag.go"]
+            // babak.o is included in game.gd, same as for the orb
+            "parent":"nav-enemy", // if parent stuff is setup correctly this would automatically give the path/nav/enemy links without having to set them up under
+            "links":[ 
+                // these 3 should come by default from nav-enemy as a parent
+                {"need_path": true},
+                {"need_nav": true},
+                {"need_enemy": true}
+            ],
+            "glb":"levels/beach/babak-lod0.glb"
+        }
+    ],
+    // Parents is the list of all actor that you can't spawn but are here to 
+    // They would have some, but not all of the field of spawnable actors
+    "Parents" :[
+        {
+            "etype": "typeName", // The etype used for this actor
+            "parent":"parentEtype", // The parent etype of this actor to know what to include by default
+            "links":[ 
+                // All the same link as shown on the actor example
+                // This way these can be added by default to any child of this parent
+            ],
+            "link_desc":[
+                // These would be more needed as they'd be the default used by actors
+            ]
+        },
+        {   // example for nav enemies
+            "etype": "nav-enemy",
+            "parent":"process-drawable", 
+            "links":[ 
+                {"need_path": true},
+                {"need_nav": true},
+                {"need_enemy": true}
+            ],
+            "link_desc":[
+                {"desc_path": "REQUIRED. This Path will indicate the patrol line for most enemies"},
+                {"desc_nav": "REQUIRED. The nav-mesh indicate where an enemy is able to walk. Select a nav-mesh and this Enemy as the active object to link"},
+                {"desc_enemy": "Control the AI of the enemy"}
+            ]
+        }
+    ]
+}
