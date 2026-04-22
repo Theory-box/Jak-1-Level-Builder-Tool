@@ -30,8 +30,58 @@ OUT = REPO / "refactoring" / "jak1_game_database.jsonc"
 # STEP 1 — Load raw tables from data.py
 # ═════════════════════════════════════════════════════════════════════════════
 def load_data_py() -> dict:
-    ns: dict[str, Any] = {}
+    """Load the PRE-MIGRATION data.py (from git HEAD at migration time).
+
+    After the rewire, data.py is a thin shim that imports from db.py, which
+    creates a chicken-and-egg if we try to exec it directly. The pristine
+    data.py lives in git history at the commit immediately before migration.
+
+    We try three sources, in order:
+      1. Local git: the commit tagged `pre-migration-data` (if present)
+      2. Local git: latest commit where addons/opengoal_tools/data.py doesn't
+         contain `from . import db` (auto-detected).
+      3. Current filesystem version (works if someone runs this before
+         data.py is shimified).
+    """
+    import subprocess
+    ns: dict[str, Any] = {"__name__": "data", "__builtins__": __builtins__}
+    # Strategy 1 — tag
+    try:
+        src = subprocess.check_output(
+            ["git", "-C", str(REPO), "show",
+             "pre-migration-data:addons/opengoal_tools/data.py"],
+            stderr=subprocess.DEVNULL,
+        ).decode()
+        exec(src, ns)
+        return ns
+    except Exception:
+        pass
+    # Strategy 2 — walk history, pick first commit where data.py is the pure-data version
+    try:
+        log = subprocess.check_output(
+            ["git", "-C", str(REPO), "log", "--format=%H", "--",
+             "addons/opengoal_tools/data.py"],
+            stderr=subprocess.DEVNULL,
+        ).decode().split()
+        for sha in log:
+            src = subprocess.check_output(
+                ["git", "-C", str(REPO), "show",
+                 f"{sha}:addons/opengoal_tools/data.py"],
+                stderr=subprocess.DEVNULL,
+            ).decode()
+            if "from . import db" not in src and "ENTITY_DEFS = {" in src:
+                exec(src, ns)
+                return ns
+    except Exception:
+        pass
+    # Strategy 3 — filesystem (only works pre-shim)
     src = (ADDON / "data.py").read_text()
+    if "from . import db" in src:
+        raise RuntimeError(
+            "data.py is now a shim over db.py — can't be re-exec'd directly. "
+            "Tag the last pre-migration commit as 'pre-migration-data' or "
+            "rebuild using the original data.py source."
+        )
     exec(src, ns)
     return ns
 
@@ -416,17 +466,27 @@ def parent_for(etype: str, info: dict) -> str:
 
 
 def links_for_actor(info: dict) -> dict:
-    """Derive the explicit links block for an actor. Only non-default entries
-    appear — the addon at load time unions this with the parent's link defaults."""
+    """Derive the explicit `links` block for an actor. These are UI-availability
+    booleans (which waypoint/nav/etc. menus to show), NOT runtime-required flags.
+
+    Runtime-required flags (needs_path, needs_pathb, needs_sync, needs_notice_dist)
+    live at the top level of the actor record so they're clearly distinct from
+    UI-availability. The old code conflated these — we keep them separate now."""
     links: dict = {}
-    if info.get("needs_path"):     links["need_path"] = True
-    if info.get("needs_pathb"):    links["need_pathb"] = True
-    if info.get("needs_sync"):     links["need_sync"] = True
-    if info.get("cat") in ("Enemies", "Bosses"):
-        links["need_enemy"] = True
+    # Nav-enemies show the waypoint + nav-mesh pickers in the UI regardless of
+    # whether a path is runtime-required. needs_path at the top level is the
+    # runtime-required signal.
     if info.get("ai_type") == "nav-enemy":
         links["need_path"] = True
         links["need_nav"] = True
+    # Explicit legacy flags propagate into UI visibility too
+    if info.get("needs_pathb"):
+        links["need_pathb"] = True
+    if info.get("needs_sync"):
+        links["need_sync"] = True
+    # Enemy link UI shown for all Enemies/Bosses
+    if info.get("cat") in ("Enemies", "Bosses"):
+        links["need_enemy"] = True
     return links
 
 
@@ -689,9 +749,14 @@ def build_database() -> dict:
         # Behaviour flags (only non-default)
         if info.get("is_prop"):            a["is_prop"] = True
         if info.get("nav_safe") is False:  a["nav_safe"] = False
+
+        # Runtime-required flags — top level, distinct from `links` (UI show/hide)
+        if info.get("needs_path"):         a["needs_path"] = True
+        if info.get("needs_pathb"):        a["needs_pathb"] = True
+        if info.get("needs_sync"):         a["needs_sync"] = True
         if info.get("needs_notice_dist"):  a["needs_notice_dist"] = True
 
-        # Links (derived from flags — addon unions with parent's at load time)
+        # Links (UI-show booleans — derived from cat + ai_type + flags)
         links = links_for_actor(info)
         if links:
             a["links"] = links
@@ -734,6 +799,66 @@ def build_database() -> dict:
         actors.append(a)
 
     db["Actors"] = actors
+
+    # ── Orphan actors (in ACTOR_LINK_DEFS or ENTITY_WIKI, not in ENTITY_DEFS) ─
+    # These etypes are referenced at runtime (they're valid link targets or
+    # have wiki docs) but never spawn via the main picker. Preserve them so
+    # lookups don't fail; tag with "spawnable": false.
+    entity_etypes = set(data["ENTITY_DEFS"].keys())
+    link_orphans = set(actor_link_defs.keys()) - entity_etypes
+    wiki_orphans = set(entity_wiki.keys()) - entity_etypes
+    all_orphans = link_orphans | wiki_orphans
+    orphan_entries: list[dict] = []
+    for etype in sorted(all_orphans):
+        entry: dict = {
+            "etype": etype,
+            "label": etype.replace("-", " ").title(),
+            "category": "Hidden",
+            "parent": "process-drawable",
+            "spawnable": False,
+        }
+        if etype in entity_wiki and entity_wiki[etype].get("desc"):
+            entry["description"] = entity_wiki[etype]["desc"]
+        if etype in actor_link_defs:
+            slots = []
+            for (lump_key, slot_idx, label, accepted, required) in actor_link_defs[etype]:
+                slots.append({
+                    "lump_key": lump_key,
+                    "slot": slot_idx,
+                    "label": label,
+                    "accepts": list(accepted),
+                    "required": required,
+                })
+            if slots:
+                entry["link_slots"] = slots
+        if etype in lump_ref:
+            entry["lumps"] = [
+                {"key": k, "type": t, "description": d}
+                for (k, t, d) in lump_ref[etype]
+            ]
+        orphan_entries.append(entry)
+    db["OrphanEtypes"] = orphan_entries
+    db["OrphanEtypes_notes"] = (
+        "Etypes referenced by ACTOR_LINK_DEFS or ENTITY_WIKI that aren't in the "
+        "main Actors list (non-spawnable link targets, wiki-only entries). "
+        "Keep these so link resolution and docs lookups work. spawnable=False "
+        "by default — they never appear in the spawn picker."
+    )
+
+    # ── AllSFX — full legacy ALL_SFX_ITEMS preserved verbatim ───────────────
+    # Initial plan was to derive from BankSFX, but the old list has 577 sounds
+    # not present in any SBK bank, plus bank-disambiguation suffixes like
+    # `accordian-pump__jungle`. Preserve verbatim.
+    db["AllSFX"] = [
+        {"id": s[0], "label": s[1], "index": s[3]}
+        for s in data["ALL_SFX_ITEMS"]
+    ]
+    db["AllSFX_notes"] = (
+        "Full flat SFX enum. NOT derived from BankSFX — the two lists are "
+        "overlapping but neither is a superset. Some IDs use `__<bank>` "
+        "suffixes to disambiguate same-named sounds across banks. "
+        "Both lists must be preserved."
+    )
 
     # ── VertexExportTypes (mesh-only props, separate from spawnable Actors) ──
     # VERTEX_EXPORT_TYPES holds decorative mesh props that can be vertex-lit
@@ -891,6 +1016,8 @@ HEADER = """\
 //   AggroEvents              — trigger events for enemy aggro scripting
 //   Parents                  — minimal parent hierarchy (nav-enemy, process-drawable, …)
 //   Actors                   — every spawnable entity with fields + lumps + links
+//   OrphanEtypes             — non-spawnable etypes (link targets, wiki-only entries)
+//   AllSFX                   — full flat SFX enum (preserved verbatim, legacy)
 //   VertexExportTypes        — mesh-only props for vertex-lit export
 //   VertexExportTypes_notes  — overlap + exclusion rules
 //   VertexExportExcludedEtypes — etypes that cannot be vertex-exported
