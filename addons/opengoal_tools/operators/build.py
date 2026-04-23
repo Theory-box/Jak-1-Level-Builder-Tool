@@ -348,7 +348,7 @@ class OG_OT_BakeLighting(Operator):
         bpy.ops.object.bake(
             'INVOKE_DEFAULT',
             type="DIFFUSE",
-            pass_filter={"COLOR", "DIRECT", "INDIRECT"},
+            pass_filter={"DIRECT", "INDIRECT"},
             target="VERTEX_COLORS",
             save_mode="INTERNAL",
         )
