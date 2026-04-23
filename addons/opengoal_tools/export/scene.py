@@ -496,7 +496,7 @@ def collect_ambients(scene):
             radius   = float(o.get("og_music_radius", 40.0))
 
             # flava index: look up position in MUSIC_FLAVA_TABLE for this bank
-            from .data import MUSIC_FLAVA_TABLE
+            from ..data import MUSIC_FLAVA_TABLE
             flava_list  = MUSIC_FLAVA_TABLE.get(bank, ["default"])
             flava_index = float(flava_list.index(flava) if flava in flava_list else 0)
 

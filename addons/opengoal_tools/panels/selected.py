@@ -344,7 +344,7 @@ def _draw_selected_emitter(layout, sel):
 
 def _draw_selected_music_zone(layout, sel):
     """Draw editable settings for an AMBIENT_mus* music zone."""
-    from .data import MUSIC_FLAVA_TABLE
+    from ..data import MUSIC_FLAVA_TABLE
     layout.label(text=sel.name, icon="SOUND")
 
     box = layout.box()

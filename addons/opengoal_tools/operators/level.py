@@ -639,7 +639,7 @@ class OG_OT_ScanPaths(bpy.types.Operator):
     def execute(self, ctx):
         import re
         from pathlib import Path
-        from .build import _scan_for_installs
+        from ..build import _scan_for_installs
         prefs = ctx.preferences.addons.get("opengoal_tools")
         if not prefs:
             self.report({"ERROR"}, "Addon preferences not found"); return {"CANCELLED"}
