@@ -421,7 +421,7 @@ class OG_PT_ActorEcoDoor(Panel):
         sel    = ctx.active_object
 
         # ── Open condition hint ───────────────────────────────────────────────
-        from opengoal_tools.data import _actor_get_link
+        # (module-level import of _actor_get_link at the top of this file is used)
         has_state_actor = bool(_actor_get_link(sel, "state-actor", 0))
         hint = layout.box()
         if has_state_actor:

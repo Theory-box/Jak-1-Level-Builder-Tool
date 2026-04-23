@@ -268,7 +268,7 @@ def collect_actors(scene, depsgraph=None):
             # If a state-actor is linked, auto-set ecdf00 so the door locks until
             # the state-actor's perm-complete is set (i.e. the button is pressed).
             # Without ecdf00, locked=False from the start and the button has no effect.
-            from opengoal_tools.data import _actor_get_link
+            # (module-level import of _actor_get_link at the top of this file is used)
             has_state_actor = bool(_actor_get_link(o, "state-actor", 0))
             ecdf00 = 1 if has_state_actor else 0
 
