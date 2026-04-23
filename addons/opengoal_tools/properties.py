@@ -22,6 +22,10 @@ from .data import (
 from .collections import (
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
+    _get_level_name_live, _set_level_name_live,
+    _get_base_id_live, _set_base_id_live,
+    _get_level_index_live, _set_level_index_live,
+    _get_vis_nick_live, _set_vis_nick_live,
 )
 
 # --- OGPreferences ---
@@ -218,7 +222,8 @@ class OGProperties(PropertyGroup):
     active_level:   EnumProperty(name="Active Level", items=_active_level_items,
                                  update=_on_active_level_changed,
                                  description="Select which level collection is active")
-    level_name:  StringProperty(name="Name", description="Lowercase with dashes", default="my-level")
+    level_name:  StringProperty(name="Name", description="Lowercase with dashes (max 10 chars)", default="my-level",
+                                get=_get_level_name_live, set=_set_level_name_live)
     entity_type:    EnumProperty(name="Entity Type",    items=ENTITY_ENUM_ITEMS)
     # Search bar (Spawn Objects panel)
     entity_search:          StringProperty(name="", description="Search all spawnable objects by name", default="")
@@ -277,7 +282,11 @@ class OGProperties(PropertyGroup):
         default="",
     )
     base_id:     IntProperty(name="Base Actor ID", default=10000, min=1000, max=60000,
+                             get=_get_base_id_live, set=_set_base_id_live,
                              description="Starting actor ID for this level. Must be unique across all custom levels to avoid ghost entity spawns.")
+    level_index: IntProperty(name="Level Index", default=100, min=1, max=10000,
+                             get=_get_level_index_live, set=_set_level_index_live,
+                             description="Unique level-load-info :index value. Must not collide with vanilla levels or other custom levels. Safe range: 100+.")
     lightbake_samples: IntProperty(name="Sample Count", default=128, min=1, max=4096,
                                    description="Number of Cycles render samples used when baking lighting to vertex colors")
     # Audio
@@ -315,8 +324,9 @@ class OGProperties(PropertyGroup):
     bottom_height:     FloatProperty(name="Death Plane (m)", default=-20.0, min=-500.0, max=-1.0,
                                      get=_get_death_plane, set=_set_death_plane,
                                      description="Y height below which the player gets an endlessfall death (negative = below level floor)")
-    vis_nick_override: StringProperty(name="Vis Nick Override", default="",
-                                      description="Override the auto-generated 3-letter vis nickname (leave blank to use auto)")
+    vis_nick_override: StringProperty(name="Vis Nickname", default="",
+                                      get=_get_vis_nick_live, set=_set_vis_nick_live,
+                                      description="3-letter DGO/vis nickname. Empty = auto-derive from name. Must be unique across levels.")
     # UI collapse state
     show_camera_list:       BoolProperty(name="Show Camera List",       default=True)
     show_volume_list:       BoolProperty(name="Show Volume List",       default=True)

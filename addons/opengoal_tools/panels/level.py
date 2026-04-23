@@ -30,6 +30,7 @@ from ..collections import (
     _COL_PATH_NAVMESHES, _COL_PATH_WAYPOINTS, _COL_PATH_EXPORT_AS,
     _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SOUND_EMITTERS,
     _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_GEO_SOLID,
+    _level_index_in_use, _vis_nick_in_use, _resolve_vis_nick,
 )
 from ..export import (
     _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
@@ -95,35 +96,65 @@ class OG_PT_Level(Panel):
             row.operator("og.assign_collection_as_level", text="Assign Existing", icon="OUTLINER_COLLECTION")
             return
 
-        # ── Level selector dropdown + edit button ────────────────────────
+        # ── Level selector dropdown ──────────────────────────────────────
         row = layout.row(align=True)
         row.prop(props, "active_level", text="")
-        row.operator("og.edit_level", text="", icon="GREASEPENCIL")
 
         if level_col is None:
             return
 
-        # ── Level info (compact) ──────────────────────────────────────────
-        name = str(level_col.get("og_level_name", ""))
-        base_id = int(level_col.get("og_base_id", 10000))
-        if name:
-            name_clean = name.lower().replace(" ", "-")
-            if len(name_clean) > 10:
-                warn = layout.row()
-                warn.alert = True
-                warn.label(text=f"Name too long ({len(name_clean)} chars, max 10)!", icon="ERROR")
-            else:
-                row = layout.row()
-                row.enabled = False
-                row.label(text=f"ID: {base_id}   ISO: {_iso(name)}   Nick: {_nick(name)}")
 
-        layout.separator(factor=0.4)
+# ---------------------------------------------------------------------------
+# Level > Settings  (sub-panel)
+# ---------------------------------------------------------------------------
 
-        # Vis nick override
-        vnick = str(level_col.get("og_vis_nick_override", ""))
-        row_vn = layout.row(align=True)
-        row_vn.enabled = False
-        row_vn.label(text=f"Vis Nick Override: {vnick if vnick else '(auto)'}")
+class OG_PT_LevelSettings(Panel):
+    bl_label       = "⚙  Settings"
+    bl_idname      = "OG_PT_level_settings"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_level"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return _active_level_col(context.scene) is not None
+
+    def draw(self, ctx):
+        layout = self.layout
+        props  = ctx.scene.og_props
+        scene  = ctx.scene
+        col    = _active_level_col(scene)
+        if col is None:
+            return
+
+        # Editable fields (live-proxied to the active level collection)
+        layout.prop(props, "level_name")
+        layout.prop(props, "base_id")
+        layout.prop(props, "level_index")
+        layout.prop(props, "vis_nick_override")
+        layout.prop(props, "bottom_height")
+
+        # Derived / read-only info
+        name = str(col.get("og_level_name", col.name))
+        nick_eff = _resolve_vis_nick(col)
+        info = layout.row(); info.enabled = False
+        info.label(text=f"ISO: {_iso(name)}   Effective Nick: {nick_eff}")
+
+        # Collision + length warnings
+        if len(name) > 10:
+            w = layout.row(); w.alert = True
+            w.label(text=f"Name too long ({len(name)}/10 chars)", icon="ERROR")
+
+        lidx = int(col.get("og_level_index", 100))
+        if _level_index_in_use(scene, lidx, exclude_col=col):
+            w = layout.row(); w.alert = True
+            w.label(text=f"Level index {lidx} collides with another level", icon="ERROR")
+
+        if nick_eff and _vis_nick_in_use(scene, nick_eff, exclude_col=col):
+            w = layout.row(); w.alert = True
+            w.label(text=f"Nickname '{nick_eff}' collides with another level", icon="ERROR")
 
 
 
@@ -511,6 +542,7 @@ class OG_OT_CleanLevelFiles(Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_PT_Level,
+    OG_PT_LevelSettings,
     OG_PT_LevelManagerSub,
     OG_OT_SortLevelObjects,
     OG_PT_CollectionProperties,

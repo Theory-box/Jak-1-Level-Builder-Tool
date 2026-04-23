@@ -12,6 +12,7 @@ from .data import ENTITY_DEFS
 _LEVEL_PROP_KEY_MAP = {
     "og_level_name":        "level_name",
     "og_base_id":           "base_id",
+    "og_level_index":       "level_index",
     "og_bottom_height":     "bottom_height",
     "og_vis_nick_override": "vis_nick_override",
     "og_sound_bank_1":      "sound_bank_1",
@@ -54,6 +55,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_is_level":          True,
     "og_level_name":        "my-level",
     "og_base_id":           10000,
+    "og_level_index":       100,
     "og_bottom_height":     -20.0,
     "og_vis_nick_override": "",
     "og_sound_bank_1":      "none",
@@ -323,6 +325,166 @@ def _set_death_plane(self, value):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is not None:
         col["og_bottom_height"] = max(-500.0, min(-1.0, value))
+
+
+# ---------------------------------------------------------------------------
+# Level-index and nickname helpers
+# ---------------------------------------------------------------------------
+
+def _next_free_level_index(scene, exclude_col=None):
+    """Smallest unused level index >= 100, scanning every level collection.
+
+    `exclude_col` lets callers ignore a specific collection — needed by the
+    Edit flow so a level's own current index doesn't appear "in use" to itself.
+    """
+    used = set()
+    for c in _all_level_collections(scene):
+        if exclude_col is not None and c.name == exclude_col.name:
+            continue
+        idx = c.get("og_level_index", None)
+        if isinstance(idx, int) and idx > 0:
+            used.add(idx)
+    i = 100
+    while i in used:
+        i += 1
+    return i
+
+
+def _level_index_in_use(scene, idx, exclude_col=None):
+    """True if another level collection already uses `idx`."""
+    for c in _all_level_collections(scene):
+        if exclude_col is not None and c.name == exclude_col.name:
+            continue
+        if int(c.get("og_level_index", -1)) == int(idx):
+            return True
+    return False
+
+
+def _resolve_vis_nick(col):
+    """Effective 3-letter vis nickname for a level collection.
+
+    Uses og_vis_nick_override if set, else derives from og_level_name.
+    """
+    override = str(col.get("og_vis_nick_override", "") or "").strip().lower()
+    if override:
+        return override
+    name = str(col.get("og_level_name", col.name) or "")
+    return name.replace("-", "")[:3].lower()
+
+
+def _vis_nick_in_use(scene, nick, exclude_col=None):
+    """True if another level collection already resolves to the same nickname."""
+    nick_clean = str(nick or "").strip().lower()
+    if not nick_clean:
+        return False
+    for c in _all_level_collections(scene):
+        if exclude_col is not None and c.name == exclude_col.name:
+            continue
+        if _resolve_vis_nick(c) == nick_clean:
+            return True
+    return False
+
+
+def _suggest_unique_vis_nick(scene, base_name, exclude_col=None):
+    """Suggest a unique 3-char nickname seeded from base_name.
+
+    Tries the plain 3-char trim first. If taken, replaces the last char with
+    0..9 to find a free slot. Falls back to the plain trim if nothing is free
+    (caller should still validate).
+    """
+    plain = str(base_name or "").replace("-", "")[:3].lower()
+    if not plain:
+        plain = "lvl"
+    if not _vis_nick_in_use(scene, plain, exclude_col=exclude_col):
+        return plain
+    stem = plain[:2] if len(plain) >= 2 else plain
+    for d in range(0, 10):
+        candidate = (stem + str(d))[:3]
+        if not _vis_nick_in_use(scene, candidate, exclude_col=exclude_col):
+            return candidate
+    return plain
+
+
+def _ensure_level_index(scene, col):
+    """Lazy migration: assign og_level_index to col if missing."""
+    if col is None:
+        return
+    idx = col.get("og_level_index", None)
+    if not isinstance(idx, int) or idx <= 0:
+        col["og_level_index"] = _next_free_level_index(scene, exclude_col=col)
+
+
+def _migrate_all_level_indices(scene):
+    """Walk every level collection and assign og_level_index where missing.
+
+    Ensures multi-level .blend files created before this field existed don't
+    all collide on the same default. Safe to call repeatedly.
+    """
+    for c in _all_level_collections(scene):
+        _ensure_level_index(scene, c)
+
+
+# ---------------------------------------------------------------------------
+# Live get/set proxies for the Settings subpanel
+# ---------------------------------------------------------------------------
+
+def _get_level_name_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        return str(col.get("og_level_name", col.name))
+    return ""
+
+def _set_level_name_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is None:
+        return
+    clean = str(value).strip().lower().replace(" ", "-")
+    if not clean:
+        return  # Refuse to blank the name
+    clean = clean[:10]  # Silent cap; subpanel shows a warning if over
+    col["og_level_name"] = clean
+    col.name = clean
+    try:
+        bpy.context.scene.og_props.active_level = col.name
+    except Exception:
+        pass
+
+
+def _get_base_id_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        return int(col.get("og_base_id", 10000))
+    return 10000
+
+def _set_base_id_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        col["og_base_id"] = max(1000, min(60000, int(value)))
+
+
+def _get_level_index_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        return int(col.get("og_level_index", 100))
+    return 100
+
+def _set_level_index_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        col["og_level_index"] = max(1, min(10000, int(value)))
+
+
+def _get_vis_nick_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        return str(col.get("og_vis_nick_override", "") or "")
+    return ""
+
+def _set_vis_nick_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        clean = str(value).strip().lower()[:3]
+        col["og_vis_nick_override"] = clean
 
 
 def _on_active_level_changed(self, context):
