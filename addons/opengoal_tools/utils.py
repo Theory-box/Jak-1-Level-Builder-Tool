@@ -184,10 +184,15 @@ def _header_sep(layout):
 # ---------------------------------------------------------------------------
 
 
-_ENEMY_CATS  = {"Enemies", "Bosses"}
-_PROP_CATS   = {"Props", "Objects", "Debug"}
-_NPC_CATS    = {"NPCs"}
-_PICKUP_CATS = {"Pickups"}
+_ENEMY_CATS     = {"Enemies", "Bosses"}
+_INTERACTIVE_CATS = {"Interactive Objects", "Debug"}
+_NPC_CATS       = {"NPCs"}
+_PICKUP_CATS    = {"Pickups"}
+_OBSTACLE_CATS  = {"Obstacles"}
+_BUTTONDOOR_CATS = {"Buttons and Doors"}
+_VISUALS_CATS   = {"Visuals"}
+# Alias kept for backward compatibility with any in-flight imports
+_PROP_CATS      = _INTERACTIVE_CATS
 
 
 

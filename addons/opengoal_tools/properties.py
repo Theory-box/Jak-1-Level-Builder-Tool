@@ -15,6 +15,7 @@ from .data import (
     LEVEL_BANKS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
+    _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
     _search_results_cb,
     _parse_lump_row,
 )
@@ -246,12 +247,18 @@ class OGProperties(PropertyGroup):
     # items= uses a dynamic callback so the Limit Search tpage filter is respected.
     enemy_type:     EnumProperty(name="Enemy Type",   items=_enemy_enum_cb,
                                  description="Select an enemy or boss to place")
-    prop_type:      EnumProperty(name="Prop Type",    items=_prop_enum_cb,
-                                 description="Select a prop or object to place")
+    prop_type:      EnumProperty(name="Interactive",  items=_prop_enum_cb,
+                                 description="Select an interactive object to place")
     npc_type:       EnumProperty(name="NPC Type",     items=_npc_enum_cb,
                                  description="Select an NPC to place")
     pickup_type:    EnumProperty(name="Pickup Type",  items=_pickup_enum_cb,
                                  description="Select a pickup to place")
+    obstacle_type:  EnumProperty(name="Obstacle",     items=_obstacle_enum_cb,
+                                 description="Select an obstacle to place")
+    button_door_type: EnumProperty(name="Button/Door", items=_buttondoor_enum_cb,
+                                   description="Select a button or door to place")
+    visuals_type:   EnumProperty(name="Visual",       items=_visuals_enum_cb,
+                                 description="Select a decorative / visual element to place")
     waypoint_spawn_at_actor: BoolProperty(
         name="Spawn at Position",
         default=False,

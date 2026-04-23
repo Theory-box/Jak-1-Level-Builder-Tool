@@ -88,7 +88,11 @@ def _build_entity_enum():
     for etype, info in ENTITY_DEFS.items():
         cat = info["cat"]
         cats.setdefault(cat, []).append((etype, info))
-    order = ["Enemies", "Bosses", "Props", "NPCs", "Pickups", "Platforms", "Objects", "Debug"]
+    order = ["Enemies", "Bosses", "NPCs", "Pickups", "Platforms",
+             "Interactive Objects", "Obstacles", "Buttons and Doors", "Visuals",
+             # Legacy aliases — kept so actors that didn't receive a new
+             # category yet (or future additions using old names) still show.
+             "Props", "Objects", "Debug"]
     items, i = [], 0
     for cat in order:
         if cat not in cats:
@@ -145,10 +149,15 @@ def _build_cat_enum(cats):
     return items
 
 
-ENEMY_ENUM_ITEMS  = _build_cat_enum({"Enemies", "Bosses"})
-PROP_ENUM_ITEMS   = _build_cat_enum({"Props", "Objects", "Debug"})
-NPC_ENUM_ITEMS    = _build_cat_enum({"NPCs"})
-PICKUP_ENUM_ITEMS = _build_cat_enum({"Pickups"})
+ENEMY_ENUM_ITEMS        = _build_cat_enum({"Enemies", "Bosses"})
+INTERACTIVE_ENUM_ITEMS  = _build_cat_enum({"Interactive Objects", "Debug"})
+NPC_ENUM_ITEMS          = _build_cat_enum({"NPCs"})
+PICKUP_ENUM_ITEMS       = _build_cat_enum({"Pickups"})
+OBSTACLE_ENUM_ITEMS     = _build_cat_enum({"Obstacles"})
+BUTTONDOOR_ENUM_ITEMS   = _build_cat_enum({"Buttons and Doors"})
+VISUALS_ENUM_ITEMS      = _build_cat_enum({"Visuals"})
+# Alias kept for backward compatibility
+PROP_ENUM_ITEMS         = INTERACTIVE_ENUM_ITEMS
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -221,10 +230,15 @@ def _make_filtered_enum(base_items, cats):
     return _callback
 
 
-_enemy_enum_cb    = _make_filtered_enum(ENEMY_ENUM_ITEMS,   {"Enemies", "Bosses"})
-_prop_enum_cb     = _make_filtered_enum(PROP_ENUM_ITEMS,    {"Props", "Objects", "Debug"})
-_npc_enum_cb      = _make_filtered_enum(NPC_ENUM_ITEMS,     {"NPCs"})
-_pickup_enum_cb   = _make_filtered_enum(PICKUP_ENUM_ITEMS,  {"Pickups"})
+_enemy_enum_cb        = _make_filtered_enum(ENEMY_ENUM_ITEMS,        {"Enemies", "Bosses"})
+_interactive_enum_cb  = _make_filtered_enum(INTERACTIVE_ENUM_ITEMS,  {"Interactive Objects", "Debug"})
+_npc_enum_cb          = _make_filtered_enum(NPC_ENUM_ITEMS,          {"NPCs"})
+_pickup_enum_cb       = _make_filtered_enum(PICKUP_ENUM_ITEMS,       {"Pickups"})
+_obstacle_enum_cb     = _make_filtered_enum(OBSTACLE_ENUM_ITEMS,     {"Obstacles"})
+_buttondoor_enum_cb   = _make_filtered_enum(BUTTONDOOR_ENUM_ITEMS,   {"Buttons and Doors"})
+_visuals_enum_cb      = _make_filtered_enum(VISUALS_ENUM_ITEMS,      {"Visuals"})
+# Alias
+_prop_enum_cb         = _interactive_enum_cb
 
 
 # ═══════════════════════════════════════════════════════════════════════════

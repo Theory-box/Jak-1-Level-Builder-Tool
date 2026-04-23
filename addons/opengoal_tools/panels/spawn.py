@@ -49,6 +49,7 @@ from ..properties import OGLumpRow, OG_UL_LumpRows
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
     _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
+    _INTERACTIVE_CATS, _OBSTACLE_CATS, _BUTTONDOOR_CATS, _VISUALS_CATS,
     _draw_platform_settings, _header_sep, _draw_entity_sub,
     _draw_wiki_preview, _prop_row,
     _preview_collections, _load_previews, _unload_previews,
@@ -262,7 +263,7 @@ class OG_PT_SpawnPlatforms(Panel):
 
 
 class OG_PT_SpawnProps(Panel):
-    bl_label       = "📦  Props & Objects"
+    bl_label       = "📦  Interactive Objects"
     bl_idname      = "OG_PT_spawn_props"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -271,7 +272,49 @@ class OG_PT_SpawnProps(Panel):
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
-        _draw_entity_sub(self.layout, ctx, _PROP_CATS, prop_name="prop_type")
+        _draw_entity_sub(self.layout, ctx, _INTERACTIVE_CATS, prop_name="prop_type")
+
+
+
+class OG_PT_SpawnObstacles(Panel):
+    bl_label       = "⚠  Obstacles"
+    bl_idname      = "OG_PT_spawn_obstacles"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_spawn"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        _draw_entity_sub(self.layout, ctx, _OBSTACLE_CATS, prop_name="obstacle_type")
+
+
+
+class OG_PT_SpawnButtonsDoors(Panel):
+    bl_label       = "🚪  Buttons and Doors"
+    bl_idname      = "OG_PT_spawn_buttons_doors"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_spawn"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        _draw_entity_sub(self.layout, ctx, _BUTTONDOOR_CATS, prop_name="button_door_type")
+
+
+
+class OG_PT_SpawnVisuals(Panel):
+    bl_label       = "🎨  Visuals"
+    bl_idname      = "OG_PT_spawn_visuals"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_spawn"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        _draw_entity_sub(self.layout, ctx, _VISUALS_CATS, prop_name="visuals_type")
 
 
 
@@ -663,7 +706,10 @@ CLASSES = (
     OG_PT_SpawnLimitSearch,
     OG_PT_SpawnEnemies,
     OG_PT_SpawnPlatforms,
+    OG_PT_SpawnObstacles,
+    OG_PT_SpawnButtonsDoors,
     OG_PT_SpawnProps,
+    OG_PT_SpawnVisuals,
     OG_PT_SpawnNPCs,
     OG_PT_SpawnPickups,
     OG_PT_SpawnSounds,
