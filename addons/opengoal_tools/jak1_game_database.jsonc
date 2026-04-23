@@ -7130,7 +7130,8 @@
         1.0
       ],
       "shape": "SPHERE",
-      "art_group": "sunkenfisha-ag"
+      "art_group": "sunkenfisha-ag",
+      "requires_navmesh": true
     },
     {
       "etype": "sharkey",
@@ -7231,7 +7232,8 @@
         0.1,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "SPHERE",
+      "requires_navmesh": true
     },
     {
       "etype": "villa-starfish",
@@ -7487,10 +7489,8 @@
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Center entity to orbit around",
-          "accepts": [
-            "any"
-          ],
+          "label": "Partner orbit-plat (they rotate around their midpoint)",
+          "accepts": ["orbit-plat"],
           "required": true
         }
       ],
@@ -7541,7 +7541,8 @@
         0.9,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "requires_navmesh": true
     },
     {
       "etype": "square-platform",
@@ -7613,7 +7614,8 @@
         0.8,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "requires_navmesh": true
     },
     {
       "etype": "ropebridge",

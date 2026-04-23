@@ -77,9 +77,14 @@ def _actor_uses_waypoints(etype):
             or info.get("needs_sync", False)) # sync platform — path drives movement
 
 def _actor_uses_navmesh(etype):
-    """True if this entity type is a nav-enemy and needs entity.gc navmesh patch."""
+    """True if this entity type needs a nav-mesh link in entity.gc.
+    Covers two cases:
+    - nav-enemy subclasses (lookup via ai_type)
+    - platforms/actors that call nav-control-method-16 at runtime
+      (orbit-plat, square-platform, sharkey, sunkenfisha — flagged
+      requires_navmesh in the DB)"""
     info = ENTITY_DEFS.get(etype, {})
-    return info.get("ai_type") == "nav-enemy"
+    return info.get("ai_type") == "nav-enemy" or bool(info.get("requires_navmesh"))
 
 def _actor_is_platform(etype):
     """True if this entity is in the Platforms category."""

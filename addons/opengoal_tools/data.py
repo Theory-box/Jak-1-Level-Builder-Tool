@@ -45,6 +45,7 @@ def _entity_info_from_actor(a: dict) -> dict:
     info["needs_pathb"] = bool(a.get("needs_pathb"))
     info["needs_sync"]  = bool(a.get("needs_sync"))
     info["needs_notice_dist"] = bool(a.get("needs_notice_dist"))
+    info["requires_navmesh"]  = bool(a.get("requires_navmesh"))
     return info
 
 
