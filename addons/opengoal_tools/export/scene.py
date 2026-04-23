@@ -237,19 +237,38 @@ def collect_cameras(scene):
 
         # Blender -> game camera quaternion.
         #
-        # 1. Extract camera look direction: -local_Z of matrix_world (BL cam looks along -Z)
-        # 2. Remap to game space: (bl.x, bl.z, -bl.y)  -- same as position remap
-        # 3. Build canonical rotation via forward-down->inv-matrix style (world-down roll ref)
-        # 4. Conjugate the result (negate xyz) -- the game's quaternion->matrix reads
-        #    the inverse convention from what standard math produces.
+        # 1. Determine the look direction in world space:
+        #    - If the camera has a look-at target, aim at the target
+        #      (target_world - camera_world).  Otherwise use the Blender
+        #      camera's own -local_Z axis (its native orientation).
+        # 2. Remap to game space: bl(x,y,z) -> game(x,z,-y)
+        # 3. Build canonical rotation via forward-down->inv-matrix style
+        #    (world-down = (0,-1,0) roll reference).
+        # 4. Conjugate the result (negate xyz) — the game's quaternion->matrix
+        #    reads the inverse convention from what standard math produces.
         #
-        # All four steps confirmed empirically via nREPL inv-camera-rot readback.
-        m3 = cam_obj.matrix_world.to_3x3()
-        bl_look = -m3.col[2]   # BL camera looks along local -Z (world space)
-        # Remap to game space: bl(x,y,z) -> game(x,z,-y)
+        # Steps 2-4 confirmed empirically via nREPL inv-camera-rot readback.
+        # Step 1's look-at branch is the fix for the look-at-target UI:
+        # previously the quat was always built from the Blender camera's own
+        # rotation, with a separate 'interesting' lump for the target.  But
+        # the engine's 'interesting' lump only acts as a POI *bias* on cameras
+        # that have a follow-pt (gameplay follow-cams); for fixed cameras it's
+        # effectively a no-op.  The only way to make a fixed camera actually
+        # face a point is to bake the look direction into the quat itself.
+        look_at_name = cam_obj.get("og_cam_look_at", "").strip()
+        look_obj = scene.objects.get(look_at_name) if look_at_name else None
+        if look_obj:
+            # Aim from camera toward target in Blender world space, then remap.
+            tgt = look_obj.matrix_world.translation
+            bl_look = mathutils.Vector((tgt.x - loc.x, tgt.y - loc.y, tgt.z - loc.z))
+            if bl_look.length < 1e-6:
+                # Degenerate: target at same position as camera, fall back to
+                # the camera's native rotation so we don't emit a bad quat.
+                bl_look = -cam_obj.matrix_world.to_3x3().col[2]
+        else:
+            bl_look = -cam_obj.matrix_world.to_3x3().col[2]
         gl = mathutils.Vector((bl_look.x, bl_look.z, -bl_look.y))
         gl.normalize()
-        # Build canonical game rotation: forward=gl, roll from world down (0,-1,0)
         game_down = mathutils.Vector((0.0, -1.0, 0.0))
         right = gl.cross(game_down)
         if right.length < 1e-6:
@@ -259,9 +278,6 @@ def collect_cameras(scene):
         up.normalize()
         game_mat = mathutils.Matrix([right, up, gl])
         gq = game_mat.to_quaternion()
-        # Game's quaternion->matrix uses the conjugate convention (negate xyz).
-        # Confirmed empirically: sending (0,-0.7071,0,0.7071) for a BL +X camera
-        # produced r2=(-1,0,0) in game. Conjugate fixes it to r2=(+1,0,0).
         qx = round(-gq.x, 6)
         qy = round(-gq.y, 6)
         qz = round(-gq.z, 6)
@@ -276,23 +292,33 @@ def collect_cameras(scene):
         if fov_deg > 0.0:
             lump["fov"] = ["degrees", round(fov_deg, 2)]
 
-        # Look-at target: export "interesting" lump (bypasses quaternion entirely)
-        look_at_name = cam_obj.get("og_cam_look_at", "").strip()
-        if look_at_name:
-            look_obj = scene.objects.get(look_at_name)
-            if look_obj:
-                lt = look_obj.matrix_world.translation
-                lump["interesting"] = ["vector3m", [round(lt.x,4), round(lt.z,4), round(-lt.y,4)]]
-                log(f"  [camera] {cam_name} look-at -> {look_at_name} game({lump['interesting'][1]})")
-            else:
-                log(f"  [camera] WARNING: look-at object '{look_at_name}' not found in scene")
+        # Look-at target: still emit 'interesting' as a secondary hint.  For
+        # fixed-cams the quat now encodes the aim (step 1 above), but if the
+        # engine ever routes this camera through a state that uses POI (e.g.
+        # a follow-cam base mode), the bias still points the right way.
+        if look_obj:
+            lt = look_obj.matrix_world.translation
+            lump["interesting"] = ["vector3m", [round(lt.x,4), round(lt.z,4), round(-lt.y,4)]]
+            log(f"  [camera] {cam_name} look-at -> {look_at_name} game({lump['interesting'][1]})")
+        elif look_at_name:
+            log(f"  [camera] WARNING: look-at object '{look_at_name}' not found in scene")
         if cam_mode == "standoff":
+            # Side-scroller / standoff mode.  The engine's cam-standoff-read-entity
+            # reads BOTH 'trans and 'align from the camera entity, then computes:
+            #     offset   = entity.trans - entity.align
+            #     cam_pos  = player_pos  + offset
+            # So:
+            #     'trans : camera's world position  (where the view sits)
+            #     'align : player-anchor position   (where Jak is expected to be)
+            # The offset is implicit — the vector from ALIGN to the camera.
+            # (Previously this addon had these two swapped, which made the
+            # camera spawn at the ALIGN position = inside the player.)
             align_name = cam_name + "_ALIGN"
             align_obj  = scene.objects.get(align_name)
             if align_obj:
                 al = align_obj.matrix_world.translation
-                lump["trans"] = ["vector3m", [round(al.x,4), round(al.z,4), round(-al.y,4)]]
-                lump["align"] = ["vector3m", [gx, gy, gz]]
+                lump["trans"] = ["vector3m", [gx, gy, gz]]
+                lump["align"] = ["vector3m", [round(al.x,4), round(al.z,4), round(-al.y,4)]]
                 log(f"  [camera] {cam_name} standoff -- align={align_name}")
             else:
                 log(f"  [camera] WARNING: {cam_name} standoff but no {align_name}")
