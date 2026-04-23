@@ -254,3 +254,188 @@ In order of increasing invasiveness:
 - If anything fails, dig into the "Risk areas" section first, then post the
   traceback — the fix will almost certainly be in `data.py`'s reverse-mapping
   or `build_database.py`'s forward extraction.
+
+---
+
+# Addendum — Phase 2/3 refactor complete
+
+After the initial JSONC rewire, we continued the refactor through several
+more phases. The addon is now fully modularized into focused packages.
+
+## Completed phases
+
+**Pass 2a / 2b — OpenGOAL gap analysis + per-level metadata**
+(`9f59fb7`, `0197ffd`)
+- Cloned open-goal/jak-project shallow, cross-checked our database against
+  `all_objs.json` (2074 entries), 533 `.gc` files, and `level-info.gc`
+- Added 4 missing art_groups (lightning-mole, ice-cube, sunkenfisha,
+  villa-starfish) + 56 lump entries across 30+ actors + full per-level
+  metadata (mood, ocean, priority, sky, bsphere, tasks, continues, etc.)
+  for all 21 levels
+- Fixed one pre-existing bug: caveelevator was mapped to `rotoffset` but
+  the engine reads `trans-offset`. Reverted the rename for compat + left
+  a note explaining the discrepancy so the real fix can land later
+  alongside coordinated export + panel changes.
+- Full report: `refactoring/opengoal-gap-analysis.md`
+
+**Phase 3a — Data-driven actor settings panel** (`b3c5b69`)
+- New module `panels/actor_fields.py` (320 lines) with `OG_PT_ActorFields`,
+  a generic panel that reads `fields[]` from the DB and renders UI per
+  field type (enum, float, int, bool, string, vector3, object_ref).
+- Added `og.set_actor_enum_field` and `og.toggle_actor_bool_field` generic
+  setter operators
+- Deleted 18 bespoke `OG_PT_Actor*` panels — 619 lines off panels.py
+- Covered etypes: orbit-plat, plat-flip, whirlpool, square-platform,
+  orb-cache-top, caveflamepots, shover, sharkey, sunkenfisha, basebutton,
+  lavaballoon, darkecobarrel, breakaway-{left,mid,right}, swamp-bat, yeti,
+  villa-starfish, swamp-rat-nest, dark-crystal, fuel-cell, windturbine,
+  ropebridge, mis-bone-bridge (24 etypes)
+- Still-bespoke panels: crate (dynamic enabling), launcher (dest picker),
+  eco-door (bitfield flags), water-vol (mesh extents), nav-mesh, goal-code,
+  waypoints (not really field panels), and 4 with mixed logic
+
+**Phase 3b — Split panels.py into panels/ package** (`560a41c`)
+- Broke the 3836-line panels.py into 7 focused submodules:
+  - `level.py` (550) — level mgmt, audit, music, light bake
+  - `spawn.py` (673) — spawn picker, category tabs, search
+  - `selected.py` (1023) — OG_PT_SelectedObject + sub-panels + draw helpers
+  - `actor.py` (900) — bespoke per-actor panels
+  - `actor_fields.py` (320) — the generic data-driven panel (moved here)
+  - `scene.py` (540) — cameras, emitters, music zones, triggers
+  - `tools.py` (501) — build/dev/geometry tools
+- Each submodule exports its own `CLASSES` tuple; `panels/__init__.py`
+  aggregates them into `ALL_CLASSES`
+- Handled: parent-child registration ordering (OG_PT_SpawnLevelFlow needs
+  Spawn registered first → both live in spawn.py), relative-import path
+  bump (.data → ..data), 4 operators that inherited from
+  `bpy.types.Operator` missed by my regex (fixed by using ast.parse)
+
+**Phase 3c — Split operators.py into operators/ package** (`fe92af9`)
+- Broke 2862 lines into 6 submodules:
+  - `spawn.py` (871) — 21 ops: spawn entities, volumes, cameras, emitters
+  - `level.py` (713) — 19 ops: level mgmt, GOAL code, lump rows, music
+  - `actors.py` (372) — 18 ops: per-actor setters + generic field ops
+  - `links.py` (439) — 12 ops: actor/volume/navmesh links, waypoints
+  - `build.py` (395) — 8 ops: export/compile/play/bake
+  - `misc.py` (301) — camera, nudge, selection, helpers
+- Used `ast.parse()` this time (regex tokenizer tripped on a multi-line
+  docstring starting with class-looking content)
+- Rescued 3 module-level consts (`_MUSIC_BANK_ITEMS`, `_GOAL_BOILERPLATE`,
+  `_VALID_ETYPE_RE`) that the initial split dropped
+- Cross-module import added (`operators/level.py` imports
+  `_flava_items_for_active` from `.misc`)
+
+**Phase 3d — Split export.py into export/ package** (`ea4db56`)
+- Broke 2758 lines into 8 submodules with explicit dependency graph:
+  - Leaves: `paths.py` (101), `predicates.py` (136)
+  - depends on paths: `volumes.py` (176), `levels.py` (214)
+  - depends on paths+predicates: `navmesh.py` (319)
+  - depends on paths+predicates+volumes: `scene.py` (533), `actors.py` (807)
+  - depends on paths+levels: `writers.py` (812)
+- First attempt used `from .X import *` between siblings — caused circular
+  imports. Fixed by walking the AST and intersecting each module's
+  references with sibling exports, generating precise per-module imports
+- `export/__init__.py` re-exports every public name explicitly (Python's
+  `import *` skips underscore names, but many like `_navmesh_compute`,
+  `_vol_links` are part of the consumed API)
+
+## Final architecture
+
+```
+addons/opengoal_tools/
+├── __init__.py           248  (was 428; just bl_info + registration now)
+├── jak1_game_database.jsonc   15,878 lines, 30 top-level sections
+├── db.py                 250  clean database loader + accessors
+├── data.py               633  compat shim (to delete once consumers migrate to db.py)
+├── properties.py         534  PropertyGroup classes + addon prefs
+├── utils.py              367  shared helpers (_prop_row, etc.)
+├── collections.py        333  Blender collection mgmt
+├── audit.py              432  level validator
+├── textures.py           450  texture browser
+├── model_preview.py      444  model preview
+├── build.py              830  goalc compilation pipeline
+│
+├── panels/
+│   ├── __init__.py        48  aggregates ALL_CLASSES
+│   ├── level.py          550
+│   ├── spawn.py          673
+│   ├── selected.py      1023  (largest file in the addon now)
+│   ├── actor.py          900
+│   ├── actor_fields.py   320  data-driven generic panel
+│   ├── scene.py          540
+│   └── tools.py          501
+│
+├── operators/
+│   ├── __init__.py        38
+│   ├── spawn.py          871
+│   ├── level.py          713
+│   ├── actors.py         372
+│   ├── links.py          439
+│   ├── build.py          395
+│   └── misc.py           301
+│
+└── export/
+    ├── __init__.py        57
+    ├── paths.py          101  (leaf)
+    ├── predicates.py     136  (leaf)
+    ├── volumes.py        176
+    ├── levels.py         214
+    ├── navmesh.py        319
+    ├── scene.py          533
+    ├── actors.py         807
+    └── writers.py        812
+```
+
+**Totals:** 15,368 Python lines (vs 14,806 pre-refactor, +3.8% for
+module-boundary duplication, largely acceptable). No single file over
+~1050 lines; most are under 600.
+
+## Commit history on this branch
+
+```
+ea4db56  Phase 3d — split export.py into export/ package
+fe92af9  Phase 3c — split operators.py into operators/ package
+560a41c  Phase 3b — split panels.py into panels/ package
+b3c5b69  Phase 3a — data-driven actor settings panel (-18 bespoke panels)
+0197ffd  Pass 2a/2b — OpenGOAL gap fixes + per-level metadata
+9f59fb7  OpenGOAL gap analysis doc
+71dcb10  session note — Blender 4.4.3 smoke test passed
+17e82a3  session note — ready for Blender testing
+3fc6369  rewire addon to read from JSONC database
+517e2e3  initial jak1_game_database.jsonc + build script
+1474101  audit v2 addendum
+2131c69  initial game-data audit + example actor file
+```
+
+## Verified at every step in Blender 4.4.3 headless
+
+- Addon registers cleanly: 106 operators + 61 panels
+- All 152 spawnable entities spawn successfully
+- Generic panel: 24/24 covered etypes poll correctly, no duplication with
+  bespoke panels
+- No regression in entity defaults or scene behaviour
+
+## Possible next steps (not scheduled)
+
+1. **Data-driven `collect_actors`** (biggest remaining win) — the 29
+   per-actor etype branches in `export/actors.py` all follow the pattern
+   "read og_xxx, emit lump yyy with rule zzz". `fields[].lump` +
+   `write_if` already encodes the rules; a generic field-walker can
+   replace most of the branches. Ballpark savings: 400-600 lines from
+   export/actors.py.
+
+2. **Port more bespoke panels to generic** — `OG_PT_ActorTaskGated` (simple
+   enum), `OG_PT_ActorSunIrisDoor` (bool + float). Straightforward in the
+   current architecture.
+
+3. **caveelevator bug fix** — engine reads `trans-offset` (3 floats X/Y/Z)
+   but we write `rotoffset` (float degrees). Needs coordinated change
+   across the DB field, the bespoke panel, the property setter, and the
+   export writer. Tracked via the note on the field in the DB.
+
+4. **Delete `data.py` compat shim** — migrate consumers to use `db.py`
+   directly; 633 lines of overlap goes away.
+
+5. **Top-level `__init__.py` cleanup** — the registration tuple can be
+   mostly auto-derived from packages instead of explicitly listed. Minor
+   cosmetic gain.
