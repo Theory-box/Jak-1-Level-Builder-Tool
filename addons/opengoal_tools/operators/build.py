@@ -323,66 +323,38 @@ class OG_OT_BakeLighting(Operator):
             self.report({"ERROR"}, "No mesh objects selected")
             return {"CANCELLED"}
 
-        # Store previous render settings
-        prev_engine  = scene.render.engine
-        prev_samples = scene.cycles.samples
-        prev_device  = scene.cycles.device
-
+        # Configure Cycles for the bake. We deliberately don't restore
+        # these afterwards — the bake runs asynchronously as a modal job
+        # (see INVOKE_DEFAULT below), so the execute method returns before
+        # baking finishes. Restoring on exit would yank the render engine
+        # out from under the in-flight job.
         scene.render.engine  = "CYCLES"
         scene.cycles.samples = samples
 
-        baked = []
-        failed = []
-
+        # Prepare each target mesh's vertex-color layer up-front, so the
+        # single bake call below writes to a consistent target attribute
+        # on every mesh in the selection.
+        vc_name = "BakedLight"
         for obj in targets:
-            try:
-                # Ensure vertex color layer exists (named "BakedLight")
-                vc_name = "BakedLight"
-                mesh = obj.data
-                if vc_name not in mesh.color_attributes:
-                    mesh.color_attributes.new(name=vc_name, type="BYTE_COLOR", domain="CORNER")
+            mesh = obj.data
+            if vc_name not in mesh.color_attributes:
+                mesh.color_attributes.new(name=vc_name, type="BYTE_COLOR", domain="CORNER")
+            mesh.color_attributes.active_color = mesh.color_attributes[vc_name]
 
-                # Set as active render and active display layer
-                attr = mesh.color_attributes[vc_name]
-                mesh.color_attributes.active_color = attr
+        # Selection is already what the user passed in. Blender's native bake
+        # operator iterates every selected mesh on its own — we don't need to
+        # loop in Python. One 'INVOKE_DEFAULT' call = one modal job that handles
+        # the whole selection and keeps the UI responsive throughout.
+        bpy.ops.object.bake(
+            'INVOKE_DEFAULT',
+            type="DIFFUSE",
+            pass_filter={"COLOR", "DIRECT", "INDIRECT"},
+            target="VERTEX_COLORS",
+            save_mode="INTERNAL",
+        )
 
-                # Deselect all, select only this object, make it active
-                bpy.ops.object.select_all(action="DESELECT")
-                obj.select_set(True)
-                ctx.view_layer.objects.active = obj
-
-                # Run Cycles bake — diffuse pass (combined colour + indirect)
-                # INVOKE_DEFAULT makes it non-blocking (runs as a modal job,
-                # like the UI button) so Blender's interface stays responsive
-                # during the bake instead of freezing until each mesh finishes.
-                bpy.ops.object.bake(
-                    'INVOKE_DEFAULT',
-                    type="DIFFUSE",
-                    pass_filter={"COLOR", "DIRECT", "INDIRECT"},
-                    target="VERTEX_COLORS",
-                    save_mode="INTERNAL",
-                )
-                baked.append(obj.name)
-
-            except Exception as exc:
-                failed.append(f"{obj.name}: {exc}")
-
-        # Restore render settings
-        scene.render.engine  = prev_engine
-        scene.cycles.samples = prev_samples
-
-        # Restore original selection
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in targets:
-            obj.select_set(True)
-        if targets:
-            ctx.view_layer.objects.active = targets[0]
-
-        if failed:
-            self.report({"WARNING"}, f"Baked {len(baked)}, failed: {'; '.join(failed)}")
-        else:
-            self.report({"INFO"}, f"Baked lighting to vertex colors on: {', '.join(baked)}")
-
+        names = ", ".join(o.name for o in targets)
+        self.report({"INFO"}, f"Baking {len(targets)} mesh(es): {names}")
         return {"FINISHED"}
 
 
