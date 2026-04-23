@@ -57,6 +57,16 @@ from .. import model_preview as _mp
 from ..audit import run_audit
 
 
+from .selected import (
+    _draw_selected_checkpoint,
+    _draw_selected_emitter,
+    _draw_selected_music_zone,
+    _draw_selected_camera,
+    _draw_selected_cam_anchor,
+    _draw_selected_volume,
+    _draw_selected_navmesh,
+)
+
 class OG_PT_WaterMesh(Panel):
     bl_label       = "💧  Water Volume Settings"
     bl_idname      = "OG_PT_water_mesh"

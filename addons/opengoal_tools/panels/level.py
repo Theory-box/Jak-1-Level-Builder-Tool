@@ -57,6 +57,21 @@ from .. import model_preview as _mp
 from ..audit import run_audit
 
 
+
+# ─── Module constants (rescued from the original panels.py) ────────────────
+_AUDIT_ICONS = {
+    "ERROR":   "ERROR",
+    "WARNING": "ERROR",
+    "INFO":    "INFO",
+}
+
+_AUDIT_SEVERITY_LABEL = {
+    "ERROR":   "\U0001F534",  # 🔴
+    "WARNING": "\U0001F7E1",  # 🟡
+    "INFO":    "\u2139",      # ℹ
+}
+
+
 class OG_PT_Level(Panel):
     bl_label       = "⚙  Level"
     bl_idname      = "OG_PT_level"

@@ -58,6 +58,48 @@ from .. import model_preview as _mp
 from ..audit import run_audit
 
 
+from .selected import _draw_actor_links
+
+
+# ─── Task list used by OG_PT_ActorTaskGated (oracle/pontoon) ────────────────
+# Populated from jak1_game_database.jsonc's GameTasks. This was a latent
+# bug in the original panels.py — the name was referenced but never defined,
+# so the panel would crash on draw. Now wired up explicitly.
+_GAME_TASKS_COMMON = [
+    ("none", "None"),
+    ("jungle-eggtop", "Jungle: Egg Top"),
+    ("jungle-lurkercage", "Jungle: Lurker Cage"),
+    ("jungle-plant", "Jungle: Plant Boss"),
+    ("village1-yakow", "Village: Yakow"),
+    ("village1-mayor-money", "Village: Mayor Orbs"),
+    ("village1-uncle-money", "Village: Uncle Orbs"),
+    ("village1-oracle-money1", "Village: Oracle 1"),
+    ("village1-oracle-money2", "Village: Oracle 2"),
+    ("beach-ecorocks", "Beach: Eco Rocks"),
+    ("beach-volcanoes", "Beach: Volcanoes"),
+    ("beach-cannon", "Beach: Cannon"),
+    ("beach-buzzer", "Beach: Scout Flies"),
+    ("misty-muse", "Misty: Muse"),
+    ("misty-cannon", "Misty: Cannon"),
+    ("misty-bike", "Misty: Bike"),
+    ("misty-buzzer", "Misty: Scout Flies"),
+    ("swamp-billy", "Swamp: Billy"),
+    ("swamp-flutflut", "Swamp: Flut Flut"),
+    ("swamp-buzzer", "Swamp: Scout Flies"),
+    ("sunken-platforms", "Sunken: Platforms"),
+    ("sunken-pipe", "Sunken: Pipe"),
+    ("snow-zorbing", "Snow: Zorbing"),
+    ("snow-fort", "Snow: Fort"),
+    ("snow-buzzer", "Snow: Scout Flies"),
+    ("firecanyon-buzzer", "Fire Canyon: Scout Flies"),
+    ("ogre-boss", "Ogre: Boss"),
+    ("ogre-buzzer", "Ogre: Scout Flies"),
+    ("maincave-gnawers", "Maincave: Gnawers"),
+    ("maincave-darkecobarrel", "Maincave: Dark Eco Barrel"),
+    ("robocave-robot", "Robocave: Robot"),
+]
+
+
 class OG_PT_ActorActivation(Panel):
     bl_label       = "Activation"
     bl_idname      = "OG_PT_actor_activation"

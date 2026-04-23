@@ -267,7 +267,7 @@ class OG_OT_ReloadAddon(Operator):
             return {"CANCELLED"}
         try:
             # Unregister current version
-            unregister()
+            mod.unregister()
             # Force reload from disk — bypasses all caches
             mod = sys.modules[mod_name]
             importlib.reload(mod)
