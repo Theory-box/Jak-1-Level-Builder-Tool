@@ -446,7 +446,7 @@ class OG_PT_Camera(Panel):
 
             mrow = box.row(align=True)
             mrow.label(text="Mode:")
-            for m, lbl in (("fixed","Fixed"),("standoff","Side-Scroll"),("orbit","Orbit")):
+            for m, lbl in (("fixed","Fixed"),("standoff","Side-Scroll"),("orbit","Orbit"),("follow","Follow")):
                 op = mrow.operator("og.set_cam_prop", text=lbl, depress=(mode == m))
                 op.cam_name = cam_obj.name; op.prop_name = "og_cam_mode"; op.str_val = m
 
@@ -471,6 +471,15 @@ class OG_PT_Camera(Panel):
                 else:
                     prow.label(text="No pivot", icon="ERROR")
                     prow.operator("og.spawn_cam_pivot", text="Add Pivot")
+            elif mode == "follow":
+                fbox = box.column(align=True)
+                fbox.label(text="String Length:", icon="DRIVER_DISTANCE")
+                _prop_row(fbox, cam_obj, "og_cam_string_min_length", "Min length (m):", 5.0)
+                _prop_row(fbox, cam_obj, "og_cam_string_max_length", "Max length (m):", 12.5)
+                fbox.label(text="String Height:", icon="EMPTY_SINGLE_ARROW")
+                _prop_row(fbox, cam_obj, "og_cam_string_min_height", "Min height (m):", 1.0)
+                _prop_row(fbox, cam_obj, "og_cam_string_max_height", "Max height (m):", 3.0)
+                _prop_row(fbox, cam_obj, "og_cam_string_cliff_height", "Cliff height (m):", 40.0)
 
             linked_vols = vol_map.get(cam_obj.name, [])
             vrow = box.row(align=True)

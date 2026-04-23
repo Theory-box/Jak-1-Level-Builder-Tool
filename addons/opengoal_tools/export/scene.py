@@ -332,6 +332,25 @@ def collect_cameras(scene):
                 log(f"  [camera] {cam_name} orbit -- pivot={pivot_name}")
             else:
                 log(f"  [camera] WARNING: {cam_name} orbit but no {pivot_name}")
+        elif cam_mode == "follow":
+            # Gameplay follow camera (cam-string, a.k.a. *camera-base-mode*).
+            # cam-state-from-entity routes a camera to *camera-base-mode* when
+            # stringMaxLength > 0, and master-base-region then reads these
+            # five lumps.  The camera's own trans/rot are not consumed by
+            # cam-string — position is derived from Jak every frame — but
+            # we still emit trans because the entity record requires it and
+            # it's used by region-activation logic and the debug overlay.
+            min_len    = float(cam_obj.get("og_cam_string_min_length",   5.0))
+            max_len    = float(cam_obj.get("og_cam_string_max_length",  12.5))
+            min_height = float(cam_obj.get("og_cam_string_min_height",   1.0))
+            max_height = float(cam_obj.get("og_cam_string_max_height",   3.0))
+            cliff      = float(cam_obj.get("og_cam_string_cliff_height", 40.0))
+            lump["stringMinLength"] = ["meters", round(min_len, 4)]
+            lump["stringMaxLength"] = ["meters", round(max_len, 4)]
+            lump["stringMinHeight"] = ["meters", round(min_height, 4)]
+            lump["stringMaxHeight"] = ["meters", round(max_height, 4)]
+            lump["stringCliffHeight"] = ["meters", round(cliff, 4)]
+            log(f"  [camera] {cam_name} follow -- len=[{min_len},{max_len}] h=[{min_height},{max_height}] cliff={cliff}")
 
         camera_actors.append({
             "trans":     [gx, gy, gz],

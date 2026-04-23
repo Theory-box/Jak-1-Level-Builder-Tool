@@ -406,6 +406,14 @@ class OG_OT_SpawnCamera(Operator):
         o["og_cam_interp"] = 1.0
         o["og_cam_fov"]    = 0.0
         o["og_cam_look_at"] = ""
+        # Follow-cam (cam-string) defaults — mirror the engine's *CAMERA-bank*
+        # defaults so a fresh Follow-mode camera behaves like the normal
+        # in-game third-person camera.
+        o["og_cam_string_min_length"] = 5.0    # default-string-min-z (5 m)
+        o["og_cam_string_max_length"] = 12.5   # default-string-max-z (12.5 m)
+        o["og_cam_string_min_height"] = 1.0    # default-string-min-y (1 m)
+        o["og_cam_string_max_height"] = 3.0    # default-string-max-y (3 m)
+        o["og_cam_string_cliff_height"] = 40.0 # engine default stringCliffHeight (40 m)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         self.report({"INFO"}, f"Added {o.name}  |  Numpad-0 to look through it")
         return {"FINISHED"}

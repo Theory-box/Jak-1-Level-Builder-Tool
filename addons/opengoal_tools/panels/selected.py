@@ -443,7 +443,7 @@ def _draw_selected_camera(layout, sel, scene):
     box = layout.box()
     box.label(text="Mode", icon="OUTLINER_DATA_CAMERA")
     mrow = box.row(align=True)
-    for m, lbl in (("fixed","Fixed"),("standoff","Side-Scroll"),("orbit","Orbit")):
+    for m, lbl in (("fixed","Fixed"),("standoff","Side-Scroll"),("orbit","Orbit"),("follow","Follow")):
         op = mrow.operator("og.set_cam_prop", text=lbl, depress=(mode == m))
         op.cam_name = sel.name; op.prop_name = "og_cam_mode"; op.str_val = m
 
@@ -477,6 +477,24 @@ def _draw_selected_camera(layout, sel, scene):
         else:
             prow.label(text="No pivot", icon="ERROR")
             prow.operator("og.spawn_cam_pivot", text="Add Pivot")
+
+    elif mode == "follow":
+        # Gameplay follow-cam (cam-string in the engine) — tracks Jak on all
+        # three axes, right-stick orbits, leash auto-adjusts via the 5 params
+        # below.  Camera's Blender position/rotation acts only as a "region
+        # marker" — the runtime camera's position is derived entirely from
+        # Jak, so placing the camera object anywhere sensible is fine.
+        fbox = box.column(align=True)
+        fbox.label(text="String Length (camera ↔ Jak):", icon="DRIVER_DISTANCE")
+        _prop_row(fbox, sel, "og_cam_string_min_length", "Min length (m):", 5.0)
+        _prop_row(fbox, sel, "og_cam_string_max_length", "Max length (m):", 12.5)
+        fbox.separator(factor=0.3)
+        fbox.label(text="String Height (vertical leash range):", icon="EMPTY_SINGLE_ARROW")
+        _prop_row(fbox, sel, "og_cam_string_min_height", "Min height (m):", 1.0)
+        _prop_row(fbox, sel, "og_cam_string_max_height", "Max height (m):", 3.0)
+        fbox.separator(factor=0.3)
+        fbox.label(text="Cliff peek-down distance:", icon="TRIA_DOWN")
+        _prop_row(fbox, sel, "og_cam_string_cliff_height", "Cliff height (m):", 40.0)
 
     # ── Look-at target ───────────────────────────────────────────────────
     look_at_name = sel.get("og_cam_look_at", "").strip()
