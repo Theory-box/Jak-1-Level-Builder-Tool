@@ -7542,7 +7542,8 @@
         1.0
       ],
       "shape": "CUBE",
-      "requires_navmesh": true
+      "requires_navmesh": true,
+      "known_issue": "Orbit-plats are not rotating in-game even when linked bidirectionally to each other and to a nav-mesh. Pair spawns correctly and export runs clean, but stepping on one produces no reaction. Under investigation — possibly a collision-shape issue, a missing process-spawn dependency, or a deeper engine requirement (level actor-group, continue-points, etc.). Workaround: avoid orbit-plats for now; use other platform types."
     },
     {
       "etype": "square-platform",

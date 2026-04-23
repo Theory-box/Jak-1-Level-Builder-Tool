@@ -310,46 +310,6 @@ class OG_PT_CleanSub(Panel):
 
 
 
-class OG_PT_LightBakingSub(Panel):
-    bl_label       = "💡  Light Baking"
-    bl_idname      = "OG_PT_lightbaking"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_level"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    def draw(self, ctx):
-        layout = self.layout
-        props  = ctx.scene.og_props
-
-        col = layout.column(align=True)
-        col.label(text="Cycles Bake Settings:", icon="LIGHT")
-        col.prop(props, "lightbake_samples")
-
-        layout.separator(factor=0.5)
-
-        targets = [o for o in ctx.selected_objects if o.type == "MESH"]
-        if targets:
-            box = layout.box()
-            box.label(text=f"{len(targets)} mesh(es) selected:", icon="OBJECT_DATA")
-            for o in targets[:6]:
-                box.label(text=f"  • {o.name}")
-            if len(targets) > 6:
-                box.label(text=f"  … and {len(targets) - 6} more")
-        else:
-            layout.label(text="Select mesh object(s) to bake", icon="INFO")
-
-        layout.separator(factor=0.5)
-        row = layout.row()
-        row.enabled = len(targets) > 0
-        row.scale_y = 1.6
-        row.operator("og.bake_lighting", text="Bake Lighting → Vertex Color", icon="RENDER_STILL")
-        layout.separator(factor=0.3)
-        layout.label(text="Result stored in 'BakedLight' layer", icon="GROUP_VCOL")
-
-
-
 class OG_PT_Music(Panel):
     bl_label       = "🎵  Music"
     bl_idname      = "OG_PT_music"
@@ -556,7 +516,6 @@ CLASSES = (
     OG_PT_CollectionProperties,
     OG_PT_DisableExport,
     OG_PT_CleanSub,
-    OG_PT_LightBakingSub,
     OG_PT_Music,
     OG_OT_RunAudit,
     OG_OT_AuditSelectObject,

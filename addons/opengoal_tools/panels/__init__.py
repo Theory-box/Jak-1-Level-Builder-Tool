@@ -3,7 +3,8 @@
 #
 # The addon's UI panels, organized into focused submodules:
 #
-#   level.py         — level management (create, assign, audit, music, light-bake)
+#   level.py         — level management (create, assign, audit, music)
+#   lighting.py      — Cycles light-bake to vertex colors (top-level panel)
 #   spawn.py         — spawn picker (search, category tabs)
 #   selected.py      — selected object root panel + shared draw helpers
 #   actor.py         — bespoke per-actor panels (complex UIs that aren't
@@ -24,6 +25,7 @@ from .actor import CLASSES as _ACTOR_CLASSES
 from .actor_fields import CLASSES as _ACTOR_FIELDS_CLASSES
 from .scene import CLASSES as _SCENE_CLASSES
 from .tools import CLASSES as _TOOLS_CLASSES
+from .lighting import CLASSES as _LIGHTING_CLASSES
 
 ALL_CLASSES = (
     *_LEVEL_CLASSES,
@@ -33,6 +35,7 @@ ALL_CLASSES = (
     *_ACTOR_FIELDS_CLASSES,
     *_SCENE_CLASSES,
     *_TOOLS_CLASSES,
+    *_LIGHTING_CLASSES,
 )
 
 # Re-export every class by name so legacy `from .panels import OG_PT_Foo`
@@ -45,3 +48,4 @@ from .actor import *
 from .actor_fields import *
 from .scene import *
 from .tools import *
+from .lighting import *

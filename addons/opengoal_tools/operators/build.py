@@ -352,7 +352,11 @@ class OG_OT_BakeLighting(Operator):
                 ctx.view_layer.objects.active = obj
 
                 # Run Cycles bake — diffuse pass (combined colour + indirect)
+                # INVOKE_DEFAULT makes it non-blocking (runs as a modal job,
+                # like the UI button) so Blender's interface stays responsive
+                # during the bake instead of freezing until each mesh finishes.
                 bpy.ops.object.bake(
+                    'INVOKE_DEFAULT',
                     type="DIFFUSE",
                     pass_filter={"COLOR", "DIRECT", "INDIRECT"},
                     target="VERTEX_COLORS",

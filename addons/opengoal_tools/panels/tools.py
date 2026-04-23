@@ -355,56 +355,6 @@ class OG_PT_DevTools(Panel):
 
 
 
-class OG_PT_Collision(Panel):
-    bl_label       = "Collision"
-    bl_idname      = "OG_PT_collision"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx): return ctx.active_object is not None
-
-    def draw(self, ctx):
-        layout = self.layout
-        ob     = ctx.active_object
-
-        # Actor info summary
-        if ob.name.startswith("ACTOR_") and "_wp_" not in ob.name:
-            parts = ob.name.split("_", 2)
-            if len(parts) >= 3:
-                etype = parts[1]
-                einfo = ENTITY_DEFS.get(etype, {})
-                box = layout.box()
-                box.label(text=f"{etype}", icon="OBJECT_DATA")
-                box.label(text=f"AI: {einfo.get('ai_type', '?')}")
-                nm = ob.get("og_navmesh_link", "")
-                if nm:
-                    box.label(text=f"NavMesh: {nm}", icon="LINKED")
-                elif einfo.get("ai_type") == "nav-enemy":
-                    box.label(text="No navmesh linked!", icon="ERROR")
-                layout.separator(factor=0.3)
-
-        layout.prop(ob, "set_invisible")
-        layout.prop(ob, "enable_custom_weights")
-        layout.prop(ob, "copy_eye_draws")
-        layout.prop(ob, "copy_mod_draws")
-        layout.prop(ob, "set_collision")
-        if ob.set_collision:
-            col = layout.column()
-            col.prop(ob, "ignore")
-            col.prop(ob, "collide_mode")
-            col.prop(ob, "collide_material")
-            col.prop(ob, "collide_event")
-            r = col.row(align=True)
-            r.prop(ob, "noedge");  r.prop(ob, "noentity")
-            r2 = col.row(align=True)
-            r2.prop(ob, "nolineofsight"); r2.prop(ob, "nocamera")
-
-
-
-
 class OG_OT_UseLumpRef(bpy.types.Operator):
     """Add a new lump row pre-filled with this reference entry's key and type."""
     bl_idname  = "og.use_lump_ref"
@@ -497,5 +447,4 @@ CLASSES = (
     OG_PT_BuildPlay,
     OG_OT_ReloadAddon,
     OG_PT_DevTools,
-    OG_PT_Collision,
 )
