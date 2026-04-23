@@ -439,3 +439,71 @@ b3c5b69  Phase 3a — data-driven actor settings panel (-18 bespoke panels)
 5. **Top-level `__init__.py` cleanup** — the registration tuple can be
    mostly auto-derived from packages instead of explicitly listed. Minor
    cosmetic gain.
+
+---
+
+# Third-pass bug sweep — nothing new found
+
+Ran a third round of static and dynamic checks. All 9 static checks clean
+(or reporting only false positives). The headline dynamic test:
+
+**Full export pipeline with every entity spawned in one scene** — spawned
+all 152 spawnable entities, then ran every collector through the entire
+pipeline:
+
+```
+[spawn] 152/152 entities spawned
+[pipeline]
+  ✓ collect_actors          (153 items)
+  ✓ collect_cameras         (2 items)
+  ✓ collect_ambients        (2 items)
+  ✓ collect_spawns          (1 item)
+  ✓ collect_aggro_triggers  (0 items)
+  ✓ collect_custom_triggers (0 items)
+  ✓ collect_nav_mesh_geometry (0 items)
+  ✓ needed_ags(actors)      (140 art-groups needed)
+  ✓ needed_code(actors)     (92 code files needed)
+```
+
+Every single one of the 29 per-actor branches in `collect_actors` ran
+successfully, emitting their per-actor log lines. This is the most
+thorough end-to-end exercise the export pipeline has had since the split.
+
+## Additional static checks added
+
+- Syntax: every .py file compiles cleanly via `py_compile`
+- Property callbacks: every `update= / get= / set=` callback is in scope
+- Blender handlers: every `bpy.app.handlers.X.append()` is paired with a
+  `remove()` on unregister (1 pair found, both sides present)
+- @classmethod on poll: all poll() methods decorated correctly
+- poll() return: every poll body contains a return statement with a value
+- Duplicate class defs: 175 top-level classes, all unique
+- Stale file references: no live references to panels.py / operators.py /
+  export.py in any source file
+- Scene property access: `scene.og_audit_results_index` is declared in
+  __init__.py (not properties.py) — false positive in the checker
+
+## Headless test coverage summary
+
+| test script | what it exercises | caught-bugs |
+|---|---|---|
+| test_addon.py | Registration (classes register) | 0 this session |
+| test_stress.py | All 153 entities spawn | 0 |
+| test_generic_panel.py | 24 covered etypes poll correctly | 0 |
+| test_panel_draws.py | 34 panels `draw()` with mock UILayout | **3** (_draw_selected_* imports, _draw_actor_links import, _AUDIT_* constants) |
+| test_export_pipeline.py | Per-collector with a curated scene | 0 addon bugs |
+| test_export_full.py | Full pipeline on ALL 152 entities | 0 |
+| test_register_cycle.py | enable → disable → enable × 4 | 0 |
+| bug_sweep.py | 9 static checks | **5** (3 from the split, 2 latent from original) |
+| bug_sweep_deep.py | 10 deeper static checks | 0 |
+| bug_sweep_pass3.py | 9 targeted pattern checks | 0 |
+
+## What headless tests still cannot catch
+
+- Blender's native event dispatch (depsgraph handlers, timer callbacks,
+  modal operators at runtime)
+- Byte-level export regression vs a reference snapshot (write_gc /
+  write_jsonc actually producing correct output bytes)
+- subprocess/goalc integration paths (launching goalc, nrepl communication)
+- UI interactivity: drag, hover, property changes triggering draw updates
+- Cross-product issues like "change a property A while panel B is open"
