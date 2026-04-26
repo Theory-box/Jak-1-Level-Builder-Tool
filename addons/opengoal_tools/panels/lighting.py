@@ -35,6 +35,21 @@ class OG_PT_Lighting(Panel):
         box.prop(props, "mood", text="Mood")
         box.prop(props, "sky",  text="Has Sky")
 
+        # ── Fog Override ───────────────────────────────────────────────────
+        # When enabled the exporter injects a fog-control actor that overrides
+        # *math-camera* fog values every frame.  When disabled, no fog-control
+        # is emitted -- mood drives fog with no leftovers.
+        fog_box = layout.box()
+        fog_box.label(text="Fog Override:", icon="MOD_FLUIDSIM")
+        fog_box.prop(props, "fog_override_enabled")
+        if props.fog_override_enabled:
+            sub = fog_box.column(align=True)
+            sub.prop(props, "fog_color")
+            sub.prop(props, "fog_start")
+            sub.prop(props, "fog_end")
+            sub.prop(props, "fog_max")
+            sub.prop(props, "fog_min")
+
         layout.separator(factor=0.5)
 
         col = layout.column(align=True)
