@@ -59,11 +59,41 @@ from .paths import (
 # Cross-module imports (siblings in the export package)
 
 
-def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers=False, has_custom_triggers=False, scene=None):
+def make_fog_actor_dict(spawns):
+    """Build the synthetic fog-control actor dict for injection into the JSONC.
+
+    Placed at the average spawn position so it births alongside the player on
+    level load.  Once alive, the fog-control loop teleports it to the player's
+    position every frame so it never falls out of birth-distance.
+
+    `spawns` is the list returned by collect_spawns(); each entry has 'x'/'y'/'z'
+    fields.  Falls back to world origin if no spawns are present.
+    Returns a dict ready to append to the actors list passed to write_jsonc.
+    """
+    if spawns:
+        cx = sum(s["x"] for s in spawns) / len(spawns)
+        cy = sum(s["y"] for s in spawns) / len(spawns)
+        cz = sum(s["z"] for s in spawns) / len(spawns)
+    else:
+        cx = cy = cz = 0.0
+    return {
+        "trans":     [cx, cy, cz],
+        "etype":     "fog-control",
+        "game_task": 0,
+        "quat":      [0.0, 0.0, 0.0, 1.0],
+        "vis_id":    0,
+        "bsphere":   [cx, cy, cz, 1.0],
+        "lump":      {"name": "fog-control-0"},
+    }
+
+
+def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
     """Write obs.gc: always emits camera-marker type; if has_triggers also
     emits camera-trigger type; if has_checkpoints emits checkpoint-trigger type;
     if has_aggro_triggers emits aggro-trigger type;
     if has_custom_triggers emits vol-trigger type (sends 'trigger/'untrigger to custom actors).
+    If has_fog_override emits fog-control type (overrides *math-camera* fog
+    values every frame from baked-in panel values).
     If scene is provided, any ACTOR_ empties with an og_goal_code_ref text block
     assigned (and enabled) have their code appended after the addon's types.
     All types birth automatically via entity-actor.birth! — no nREPL needed.
@@ -416,6 +446,57 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
             "",
         ]
         log(f"  [write_gc] vol-trigger type embedded")
+
+    if has_fog_override and scene is not None:
+        # Bake panel values into GOAL constants.  fog_color stored 0..1 in
+        # Blender props; *fog-color* expects 0..255 byte channels.  fog_max
+        # also 0..1 in panel; *math-camera*.fog-max is 0..255 internally.
+        _fog_r     = float(_get_level_prop(scene, "og_fog_color", (0.376, 0.502, 0.627))[0]) * 255.0
+        _fog_g     = float(_get_level_prop(scene, "og_fog_color", (0.376, 0.502, 0.627))[1]) * 255.0
+        _fog_b     = float(_get_level_prop(scene, "og_fog_color", (0.376, 0.502, 0.627))[2]) * 255.0
+        _fog_start = float(_get_level_prop(scene, "og_fog_start", 25.0))
+        _fog_end   = float(_get_level_prop(scene, "og_fog_end",   200.0))
+        _fog_max   = float(_get_level_prop(scene, "og_fog_max",   0.95)) * 255.0
+        _fog_min   = float(_get_level_prop(scene, "og_fog_min",   0.10))
+        lines += [
+            ";; fog-control: per-frame override of *math-camera* fog values.",
+            ";; Values are baked at export from the Lighting panel — to change them,",
+            ";; tweak the panel and re-export.  Tracks player position each frame so",
+            ";; it never gets culled out of birth-distance.",
+            "(deftype fog-control (process-drawable)",
+            "  ()",
+            "  (:states fog-control-active))",
+            "",
+            "(defstate fog-control-active (fog-control)",
+            "  :code",
+            "  (behavior ()",
+            "    (loop",
+            "      ;; Track the player so we never leave birth-dist.",
+            "      (when *target*",
+            "        (set! (-> self root trans quad) (-> *target* control trans quad)))",
+            "      ;; Override math-camera fog values.",
+            f"      (set! (-> *math-camera* fog-start) (meters {_fog_start:.3f}))",
+            f"      (set! (-> *math-camera* fog-end)   (meters {_fog_end:.3f}))",
+            f"      (set! (-> *math-camera* fog-max)   {_fog_max:.3f})",
+            f"      (set! (-> *math-camera* fog-min)   {_fog_min:.3f})",
+            f"      (set! (-> *fog-color* r) {_fog_r:.3f})",
+            f"      (set! (-> *fog-color* g) {_fog_g:.3f})",
+            f"      (set! (-> *fog-color* b) {_fog_b:.3f})",
+            "      (suspend))))",
+            "",
+            "(defmethod init-from-entity! ((this fog-control) (arg0 entity-actor))",
+            "  (set! (-> this root) (new (quote process) (quote trsqv)))",
+            "  (process-drawable-from-entity! this arg0)",
+            "  (format 0 \"[fog-control] armed (start ~Mm end ~Mm)~%\""
+            f" (-> *math-camera* fog-start) (-> *math-camera* fog-end))",
+            "  (go fog-control-active)",
+            "  (none))",
+            "",
+        ]
+        log(f"  [write_gc] fog-control type embedded "
+            f"(start={_fog_start:.1f} end={_fog_end:.1f} "
+            f"max={_fog_max:.1f} min={_fog_min:.2f} "
+            f"rgb=({_fog_r:.0f},{_fog_g:.0f},{_fog_b:.0f}))")
 
     # ── Custom GOAL code injection ────────────────────────────────────────
     # Scan all ACTOR_ empties in the scene for text blocks assigned via

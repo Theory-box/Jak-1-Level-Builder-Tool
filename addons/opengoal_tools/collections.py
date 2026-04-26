@@ -19,6 +19,12 @@ _LEVEL_PROP_KEY_MAP = {
     "og_music_bank":        "music_bank",
     "og_mood":              "mood",
     "og_sky":               "sky",
+    "og_fog_override_enabled": "fog_override_enabled",
+    "og_fog_color":         "fog_color",
+    "og_fog_start":         "fog_start",
+    "og_fog_end":           "fog_end",
+    "og_fog_max":           "fog_max",
+    "og_fog_min":           "fog_min",
 }
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
@@ -63,6 +69,12 @@ _LEVEL_COL_DEFAULTS = {
     "og_music_bank":        "none",
     "og_mood":              "village1",
     "og_sky":               True,
+    "og_fog_override_enabled": False,
+    "og_fog_color":         (0.376, 0.502, 0.627),
+    "og_fog_start":         25.0,
+    "og_fog_end":           200.0,
+    "og_fog_max":           0.95,
+    "og_fog_min":           0.10,
 }
 
 
@@ -352,6 +364,29 @@ def _on_active_level_changed(self, context):
                 setattr(props, "sky", sky_val)
             except Exception:
                 pass
+        # Fog override — same pattern, six values to sync
+        for attr, key in (
+            ("fog_override_enabled", "og_fog_override_enabled"),
+            ("fog_color",            "og_fog_color"),
+            ("fog_start",            "og_fog_start"),
+            ("fog_end",              "og_fog_end"),
+            ("fog_max",              "og_fog_max"),
+            ("fog_min",              "og_fog_min"),
+        ):
+            if not hasattr(props, attr):
+                continue
+            val = col.get(key, _LEVEL_COL_DEFAULTS[key])
+            if attr == "fog_override_enabled":
+                val = bool(val)
+            elif attr == "fog_color":
+                # IDProperty arrays come back as IDPropertyArray — coerce to tuple
+                val = tuple(val)
+            else:
+                val = float(val)
+            try:
+                setattr(props, attr, val)
+            except Exception:
+                pass
 
 
 def _on_mood_changed(self, context):
@@ -366,4 +401,19 @@ def _on_sky_changed(self, context):
     col = _active_level_col(context.scene)
     if col is not None:
         col["og_sky"] = bool(self.sky)
+
+
+def _on_fog_override_changed(self, context):
+    """Update callback shared by all six fog-override props.  Persists every
+    fog-related value into the active level collection on every change.
+    Fired by toggle, color picker, start/end/max/min sliders alike."""
+    col = _active_level_col(context.scene)
+    if col is None:
+        return
+    col["og_fog_override_enabled"] = bool(self.fog_override_enabled)
+    col["og_fog_color"]            = tuple(self.fog_color)
+    col["og_fog_start"]            = float(self.fog_start)
+    col["og_fog_end"]              = float(self.fog_end)
+    col["og_fog_max"]              = float(self.fog_max)
+    col["og_fog_min"]              = float(self.fog_min)
 

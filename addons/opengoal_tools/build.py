@@ -13,6 +13,7 @@ from .export import (
     collect_actors, collect_ambients, collect_spawns, collect_cameras,
     collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers,
     needed_ags, needed_code, write_jsonc, write_gd, write_gc,
+    make_fog_actor_dict,
     patch_level_info, patch_game_gp, export_glb,
     _collect_navmesh_actors, _canonical_actor_objects,
     _nick, _iso, _lname, _ldir, _goal_src, _level_info,
@@ -520,12 +521,16 @@ def _bg_build(name, scene, depsgraph=None):
         base_id = int(_get_level_prop(scene, "og_base_id", 10000))
         aggro_actors  = collect_aggro_triggers(scene)
         custom_actors = collect_custom_triggers(scene)
-        write_jsonc(name, actors, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
+        # Fog override: append a synthetic fog-control actor to the JSONC and
+        # tell write_gc to emit the matching deftype.
+        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
+        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
         write_gd(name, ags, code_deps, tpages)
         navmesh_actors = _collect_navmesh_actors(scene)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
-        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), scene=scene)
+        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
         patch_game_gp(name, code_deps)
@@ -676,11 +681,13 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         base_id = int(_get_level_prop(scene, "og_base_id", 10000))
         aggro_actors  = collect_aggro_triggers(scene)
         custom_actors = collect_custom_triggers(scene)
-        write_jsonc(name, actors, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
+        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
+        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
         write_gd(name, ags, code_deps, tpages)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
-        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), scene=scene)
+        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_level_info(name, spawns, scene)  # update spawn continue-points if moved
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
@@ -748,12 +755,14 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         base_id = int(_get_level_prop(scene, "og_base_id", 10000))
         aggro_actors  = collect_aggro_triggers(scene)
         custom_actors = collect_custom_triggers(scene)
-        write_jsonc(name, actors, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
+        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
+        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
         write_gd(name, ags, code_deps, tpages)
         navmesh_actors = _collect_navmesh_actors(scene)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
-        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), scene=scene)
+        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
         patch_game_gp(name, code_deps)
