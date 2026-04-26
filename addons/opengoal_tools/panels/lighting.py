@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import bpy
 from bpy.types import Panel
+from ..operators.build import _bakeable_meshes
 
 
 class OG_PT_Lighting(Panel):
@@ -58,14 +59,21 @@ class OG_PT_Lighting(Panel):
 
         layout.separator(factor=0.5)
 
-        targets = [o for o in ctx.selected_objects if o.type == "MESH"]
+        sel = ctx.selected_objects
+        targets = _bakeable_meshes(sel)
+        skipped = len(sel) - len(targets)
         if targets:
             box = layout.box()
-            box.label(text=f"{len(targets)} mesh(es) selected:", icon="OBJECT_DATA")
+            header = f"{len(targets)} mesh(es) selected"
+            if skipped:
+                header += f"  ({skipped} non-mesh / empty skipped)"
+            box.label(text=header + ":", icon="OBJECT_DATA")
             for o in targets[:6]:
                 box.label(text=f"  • {o.name}")
             if len(targets) > 6:
                 box.label(text=f"  … and {len(targets) - 6} more")
+        elif skipped:
+            layout.label(text=f"Selected items have no bakeable geometry  ({skipped} skipped)", icon="INFO")
         else:
             layout.label(text="Select mesh object(s) to bake", icon="INFO")
 
