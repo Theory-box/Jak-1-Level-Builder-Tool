@@ -17,6 +17,8 @@ _LEVEL_PROP_KEY_MAP = {
     "og_sound_bank_1":      "sound_bank_1",
     "og_sound_bank_2":      "sound_bank_2",
     "og_music_bank":        "music_bank",
+    "og_mood":              "mood",
+    "og_sky":               "sky",
 }
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
@@ -59,6 +61,8 @@ _LEVEL_COL_DEFAULTS = {
     "og_sound_bank_1":      "none",
     "og_sound_bank_2":      "none",
     "og_music_bank":        "none",
+    "og_mood":              "village1",
+    "og_sky":               True,
 }
 
 

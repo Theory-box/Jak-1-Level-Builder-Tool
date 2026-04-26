@@ -12,6 +12,7 @@ from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
     NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    MOOD_FUNC_OVERRIDES,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
@@ -590,11 +591,18 @@ def patch_level_info(name, spawns, scene=None):
         _bot_h     = float(_get_level_prop(scene, "og_bottom_height", -20.0))
         _vis_ov    = str(_get_level_prop(scene, "og_vis_nick_override", "") or "").strip()
         _vnick     = _vis_ov if _vis_ov else _nick(name)
+        # Lighting (mood + sky)
+        _mood      = str(_get_level_prop(scene, "og_mood", "village1") or "village1")
+        _sky_bool  = bool(_get_level_prop(scene, "og_sky", True))
     else:
         _music_val = "#f"
         _sbanks_val = "'()"
         _bot_h   = -20.0
         _vnick   = _nick(name)
+        _mood    = "village1"
+        _sky_bool = True
+    _mood_func = MOOD_FUNC_OVERRIDES.get(_mood, _mood)
+    _sky_val   = "#t" if _sky_bool else "#f"
 
     # ── Auto-compute bsphere from spawn positions ────────────────────────────
     # Centre = mean of all spawn XZ positions, Y = mean spawn Y + 2m.
@@ -630,10 +638,10 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sound-banks {_sbanks_val}\n"
              f"       :music-bank {_music_val}\n"
              f"       :ambient-sounds '()\n"
-             f"       :mood '*village1-mood*\n"
-             f"       :mood-func 'update-mood-village1\n"
+             f"       :mood '*{_mood}-mood*\n"
+             f"       :mood-func 'update-mood-{_mood_func}\n"
              f"       :ocean #f\n"
-             f"       :sky #t\n"
+             f"       :sky {_sky_val}\n"
              f"       :sun-fade 1.0\n"
              f"       :continues\n"
              f"       {_make_continues(name, spawns)}\n"

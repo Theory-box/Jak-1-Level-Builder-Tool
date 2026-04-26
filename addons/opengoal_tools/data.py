@@ -406,6 +406,44 @@ LEVEL_BANKS = [(b["id"], b["label"], "", i) for i, b in enumerate(_db.sound_bank
 SBK_SOUNDS: dict[str, list] = _db.bank_sfx()
 
 
+# ─── Mood / lighting ──────────────────────────────────────────────────────
+# 21 stock mood-context globals available in jak-project. The selected ID
+# is written to level-info.gc as `:mood '*ID-mood*` and `:mood-func
+# 'update-mood-FUNC` (FUNC defaults to ID; see MOOD_FUNC_OVERRIDES below).
+# Source: knowledge-base/opengoal/lighting-system.md "Per-Level Mood
+# Callbacks" table.
+MOOD_LEVELS = [
+    ("training",   "Training",          "Training course mood",                              0),
+    ("village1",   "Village 1 (Sandover)", "Sandover Village — bright, warm, daytime cycle",  1),
+    ("beach",      "Beach (Sentinel)",  "Sentinel Beach — shares update-mood-village1 callback", 2),
+    ("jungle",     "Jungle (Forbidden)", "Forbidden Jungle",                                 3),
+    ("jungleb",    "Jungle B",          "Jungle B (alternate)",                              4),
+    ("misty",      "Misty Island",      "Misty Island — overcast, low sun-fade",             5),
+    ("firecanyon", "Fire Canyon",       "Fire Canyon — perpetual orange daytime",            6),
+    ("village2",   "Village 2 (Rock)",  "Rock Village",                                      7),
+    ("swamp",      "Swamp",             "Boggy Swamp — pitch-dependent fog override",        8),
+    ("sunken",     "Sunken (Lost Precursor City)", "Lost Precursor City — underwater caustics", 9),
+    ("rolling",    "Rolling Hills",     "Precursor Basin",                                  10),
+    ("ogre",       "Ogre (Mountain Pass)", "Mountain Pass",                                 11),
+    ("village3",   "Village 3 (Volcanic Crater)", "Volcanic Crater village",                12),
+    ("snow",       "Snow (Mountain)",   "Snowy Mountain — toggles weather via *weather-off*", 13),
+    ("maincave",   "Main Cave",         "Spider Cave — single-slot cave lighting",          14),
+    ("darkcave",   "Dark Cave",         "Dark Cave — single-slot cave lighting",            15),
+    ("robocave",   "Robo Cave",         "Robot Cave — single-slot cave lighting",           16),
+    ("lavatube",   "Lava Tube",         "Lava Tube — animated lava glow effects",           17),
+    ("citadel",    "Citadel",           "Gol & Maia's Citadel",                             18),
+    ("finalboss",  "Final Boss",        "Final Boss arena",                                 19),
+    ("default",    "Default (fallback)", "Generic fallback — uses village1 fog/light/sun tables", 20),
+]
+
+# Most levels' mood-func name matches their mood ID. Beach is the only stock
+# exception: it uses *beach-mood* tables but update-mood-village1 as the
+# callback. Source: jak-project engine/level/level-info.gc.
+MOOD_FUNC_OVERRIDES: dict[str, str] = {
+    "beach": "village1",
+}
+
+
 # ALL_SFX_ITEMS — preserved verbatim from DB.AllSFX (not derived — see audit v2
 # addendum §C.Q3 + the rebuild notes: BankSFX is NOT a superset of the legacy
 # flat list, so derivation would lose ~577 entries).
