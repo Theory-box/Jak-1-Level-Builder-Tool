@@ -12,7 +12,7 @@ from .data import (
     ENTITY_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS,
     ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
-    LEVEL_BANKS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
+    LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
@@ -22,6 +22,7 @@ from .data import (
 from .collections import (
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
+    _on_mood_changed, _on_sky_changed,
 )
 
 # --- OGPreferences ---
@@ -287,6 +288,13 @@ class OGProperties(PropertyGroup):
                                          description="Second level sound bank (max 2 total)")
     music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS, default="none",
                                          description="Music bank to load for this level")
+    # Lighting (mood + sky)
+    mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
+                                         update=_on_mood_changed,
+                                         description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
+    sky:                    BoolProperty(name="Has Sky", default=True,
+                                         update=_on_sky_changed,
+                                         description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")
     sfx_sound:              EnumProperty(name="Sound", items=ALL_SFX_ITEMS, default="waterfall",
                                          description="Currently selected sound for emitter placement")
     ambient_default_radius: FloatProperty(name="Default Emitter Radius (m)", default=15.0, min=1.0, max=200.0,

@@ -28,6 +28,15 @@ class OG_PT_Lighting(Panel):
         layout = self.layout
         props  = ctx.scene.og_props
 
+        # ── Level Lighting (mood + sky) ────────────────────────────────────
+        # Writes :mood, :mood-func and :sky into level-info.gc on every export.
+        box = layout.box()
+        box.label(text="Level Lighting:", icon="LIGHT_SUN")
+        box.prop(props, "mood", text="Mood")
+        box.prop(props, "sky",  text="Has Sky")
+
+        layout.separator(factor=0.5)
+
         col = layout.column(align=True)
         col.label(text="Cycles Bake Settings:", icon="LIGHT")
         col.prop(props, "lightbake_samples")

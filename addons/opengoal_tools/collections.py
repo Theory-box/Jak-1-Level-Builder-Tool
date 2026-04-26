@@ -17,6 +17,8 @@ _LEVEL_PROP_KEY_MAP = {
     "og_sound_bank_1":      "sound_bank_1",
     "og_sound_bank_2":      "sound_bank_2",
     "og_music_bank":        "music_bank",
+    "og_mood":              "mood",
+    "og_sky":               "sky",
 }
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
@@ -59,6 +61,8 @@ _LEVEL_COL_DEFAULTS = {
     "og_sound_bank_1":      "none",
     "og_sound_bank_2":      "none",
     "og_music_bank":        "none",
+    "og_mood":              "village1",
+    "og_sky":               True,
 }
 
 
@@ -330,4 +334,36 @@ def _on_active_level_changed(self, context):
     col = _active_level_col(context.scene)
     if col is not None:
         _set_blender_active_collection(context, col)
+        # Pull the active collection's lighting values into scene props so the
+        # Lighting panel reflects the level we just switched to.  Reading uses
+        # _LEVEL_COL_DEFAULTS so collections that pre-date the lighting feature
+        # come up with sensible defaults.  setattr will re-fire the per-prop
+        # update callback once with the same value -- harmless one-shot.
+        props = context.scene.og_props
+        if hasattr(props, "mood"):
+            mood_val = col.get("og_mood", _LEVEL_COL_DEFAULTS["og_mood"])
+            try:
+                setattr(props, "mood", mood_val)
+            except Exception:
+                pass
+        if hasattr(props, "sky"):
+            sky_val = bool(col.get("og_sky", _LEVEL_COL_DEFAULTS["og_sky"]))
+            try:
+                setattr(props, "sky", sky_val)
+            except Exception:
+                pass
+
+
+def _on_mood_changed(self, context):
+    """Mood EnumProperty update callback: persist into active level collection."""
+    col = _active_level_col(context.scene)
+    if col is not None:
+        col["og_mood"] = self.mood
+
+
+def _on_sky_changed(self, context):
+    """Sky BoolProperty update callback: persist into active level collection."""
+    col = _active_level_col(context.scene)
+    if col is not None:
+        col["og_sky"] = bool(self.sky)
 
