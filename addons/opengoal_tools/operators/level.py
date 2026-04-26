@@ -149,6 +149,8 @@ class OG_OT_CreateLevel(Operator):
         col["og_sound_bank_1"]      = "none"
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
+        col["og_mood"]              = "village1"
+        col["og_sky"]               = True
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name
@@ -218,6 +220,8 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         col["og_sound_bank_1"]      = "none"
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
+        col["og_mood"]              = "village1"
+        col["og_sky"]               = True
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name

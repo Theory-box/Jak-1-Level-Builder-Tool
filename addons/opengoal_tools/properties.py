@@ -22,6 +22,7 @@ from .data import (
 from .collections import (
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
+    _on_mood_changed, _on_sky_changed,
 )
 
 # --- OGPreferences ---
@@ -289,8 +290,10 @@ class OGProperties(PropertyGroup):
                                          description="Music bank to load for this level")
     # Lighting (mood + sky)
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
+                                         update=_on_mood_changed,
                                          description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
     sky:                    BoolProperty(name="Has Sky", default=True,
+                                         update=_on_sky_changed,
                                          description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")
     sfx_sound:              EnumProperty(name="Sound", items=ALL_SFX_ITEMS, default="waterfall",
                                          description="Currently selected sound for emitter placement")
