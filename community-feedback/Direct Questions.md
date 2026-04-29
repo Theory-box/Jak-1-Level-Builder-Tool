@@ -73,6 +73,7 @@ Claude then doesn't need to answer more.
   **Middle-ground option:** if you want to keep some visual differentiation in the viewport without bloating the database, drive the color from `category` instead of per-actor. ~10 categories vs 194 actors gets ~99% of the size win and still gives Enemies / Platforms / Collectables / etc. distinct empty colors when Object color mode is on. Implementation would be a small dict in `data.py` keyed off `info["cat"]`, and the JSONC entries lose their `color` blocks entirely.
 
   **Recommendation:** clean it out (or move to per-category). The space-and-readability win is real and the visual loss is small, and only visible when a non-default viewport mode is on.
+- Kui: That color field does not exist on empties. Which most actors are, these do stay black even when the wireframe and object colors are set to "object". So it'll only show up on things like volumes since those are meshes. Maybe cleaning it of from everything but the things that actually uses mesh. Another idea is to also put the color on the preview mesh then that'd be useable but if that's not done then there's very little point to those. But at the very least, doing it per category should be done to reduce the clutter in the database.
 
 ---
 
