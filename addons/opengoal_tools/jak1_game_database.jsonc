@@ -5909,7 +5909,7 @@
       "etype": "balance-plat",
       "label": "Balance Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "balance-plat-ag.go",
       "tpages": [
         "tpage-358.go",
@@ -5927,6 +5927,16 @@
           "key": "distance",
           "type": "meters",
           "description": "Vertical travel range. Default ~5m."
+        },
+        {
+          "key": "next-actor",
+          "type": "structure",
+          "description": "Next warp target."
+        },
+        {
+          "key": "prev-actor",
+          "type": "structure",
+          "description": "Previous warp target."
         }
       ],
       "color": [
