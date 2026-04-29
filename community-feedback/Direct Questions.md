@@ -40,9 +40,15 @@ Claude then doesn't need to answer more.
 
 ## Questions
 
+### What is the use of the color field?
+- Kui: In actors definitions, I've noticed that there's a "color" field added to each actor. This does not seem to have any uses that I can see? It's not being added in any way to the lump in the level's json file or as some property of the empty in blender. So what is its uses? And if it doesn't have any. Could this be cleaned from the database as it would save a lot of space and makes it easier to read and edit.
+
 ---
 
 ## Fixes
+
+### Green eco vent not working
+- Kui: the actor with the label "Green Eco Vent" is currently not working because, instead of having a sub type, like other vents, green eco vents instead rely on the eco-info to be set to spawn "eco-green" in the quantity of "1". I've tried to set it up myself in the database but failed. Could this be fixed but also explain how the database has to be changed to make this fix so I know for future reference.
 
 ---
 
