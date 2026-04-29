@@ -163,6 +163,101 @@ r12: 0x0000000000000009 r13: 0x000000000014fd24 r14: 0x00000242e6abc1f0 r15: 0x0
 rip: 0x00007ffa782b4aee
 ```
 
+---
+
+### mis-bone-bridge crashes the game
+- Kui: Very similar to balance-plat, also should have the art-group and code setup correctly, similar error:
+```
+Target raised an exception (STATUS_STACK_BUFFER_OVERRUN [0xC0000409]). Run (:di) to get more information.
+    (:di)
+Read symbol table (1077888 bytes, 6374 reads, 6373 symbols, 32.87 ms)
+Backtrace:
+   rsp: 0x1c25c967b08 (#x1a7b08) rip: 0x69f1fb98 (#xfffffe3e0d75fb98)
+Backtrace was too long. Exception might have happened outside GOAL code, or the stack frame is too long.
+   rsp: 0x1c25c967b00 (#x1a7b00) rip: 0xbf (#xfffffe3da38400bf)
+   rsp: 0x1c25c967af8 (#x1a7af8) rip: 0xb8 (#xfffffe3da38400b8)
+   rsp: 0x1c25c967af0 (#x1a7af0) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967ae8 (#x1a7ae8) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967ae0 (#x1a7ae0) rip: 0x2 (#xfffffe3da3840002)
+   rsp: 0x1c25c967ad8 (#x1a7ad8) rip: 0x1c25c967b80 (#x1a7b80)
+   rsp: 0x1c25c967ad0 (#x1a7ad0) rip: 0xb8 (#xfffffe3da38400b8)
+   rsp: 0x1c25c967ac8 (#x1a7ac8) rip: 0x1c200faa5c0 (#xffffffffa47ea5c0)
+   rsp: 0x1c25c967ac0 (#x1a7ac0) rip: 0x1c25c967ab8 (#x1a7ab8)
+   rsp: 0x1c25c967ab8 (#x1a7ab8) rip: 0xd (#xfffffe3da384000d)
+   rsp: 0x1c25c967ab0 (#x1a7ab0) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967aa8 (#x1a7aa8) rip: 0x5ffde836 (#xfffffe3e0381e836)
+   rsp: 0x1c25c967aa0 (#x1a7aa0) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967a98 (#x1a7a98) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c967a90 (#x1a7a90) rip: 0x1dcd7d4fa71ebd0 (#x1dcd6129df5ebd0)
+   rsp: 0x1c25c967a88 (#x1a7a88) rip: 0x7ff60fb194fb (#x7e33b33594fb)
+   rsp: 0x1c25c967a80 (#x1a7a80) rip: 0x1c25c967b00 (#x1a7b00)
+   rsp: 0x1c25c967a78 (#x1a7a78) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967a70 (#x1a7a70) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967a68 (#x1a7a68) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c967a60 (#x1a7a60) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967a58 (#x1a7a58) rip: 0x1c25c967b80 (#x1a7b80)
+   rsp: 0x1c25c967a50 (#x1a7a50) rip: 0xfffffffffffffffe (#xfffffe3da383fffe)
+   rsp: 0x1c25c967a48 (#x1a7a48) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c967a40 (#x1a7a40) rip: 0x7ff610718401 (#x7e33b3f58401)
+   rsp: 0x1c25c967a38 (#x1a7a38) rip: 0xcf (#xfffffe3da38400cf)
+   rsp: 0x1c25c967a30 (#x1a7a30) rip: 0xc7 (#xfffffe3da38400c7)
+   rsp: 0x1c25c967a28 (#x1a7a28) rip: 0x1c25c9679e0 (#x1a79e0)
+   rsp: 0x1c25c967a20 (#x1a7a20) rip: 0xc (#xfffffe3da384000c)
+   rsp: 0x1c25c967a18 (#x1a7a18) rip: 0x7ffa78246c11 (#x7e381ba86c11)
+   rsp: 0x1c25c967a10 (#x1a7a10) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967a08 (#x1a7a08) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967a00 (#x1a7a00) rip: 0x7ff610000001 (#x7e33b3840001)
+   rsp: 0x1c25c9679f8 (#x1a79f8) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c9679f0 (#x1a79f0) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c9679e8 (#x1a79e8) rip: 0xf (#xfffffe3da384000f)
+   rsp: 0x1c25c9679e0 (#x1a79e0) rip: 0x7 (#xfffffe3da3840007)
+   rsp: 0x1c25c9679d8 (#x1a79d8) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c9679d0 (#x1a79d0) rip: 0x5d34343a37335b (#x5d3271ddbb335b)
+   rsp: 0x1c25c9679c8 (#x1a79c8) rip: 0xb (#xfffffe3da384000b)
+   rsp: 0x1c25c9679c0 (#x1a79c0) rip: 0x7ff6107183fb (#x7e33b3f583fb)
+   rsp: 0x1c25c9679b8 (#x1a79b8) rip: 0x2800000000 (#xfffffe65a3840000)
+   rsp: 0x1c25c9679b0 (#x1a79b0) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c9679a8 (#x1a79a8) rip: 0x2800000000 (#xfffffe65a3840000)
+   rsp: 0x1c25c9679a0 (#x1a79a0) rip: 0x2700000000 (#xfffffe64a3840000)
+   rsp: 0x1c25c967998 (#x1a7998) rip: 0xa5d657079543a3a (#xa5d63ae1cd83a3a)
+   rsp: 0x1c25c967990 (#x1a7990) rip: 0x316b616a203d2054 (#x316b5fa7c3c12054)
+   rsp: 0x1c25c967988 (#x1a7988) rip: 0x5b202964696f7628 (#x5b2027a20cf37628)
+   rsp: 0x1c25c967980 (#x1a7980) rip: 0x3e2d726f74617265 (#x3e2d70ad17e57265)
+   rsp: 0x1c25c967978 (#x1a7978) rip: 0x706f3a3a3e657079 (#x706f3877e1e97079)
+   rsp: 0x1c25c967970 (#x1a7970) rip: 0x543a3a316b616a3c (#x543a386f0ee56a3c)
+   rsp: 0x1c25c967968 (#x1a7968) rip: 0x727450206c636564 (#x72744e5e0fe76564)
+   rsp: 0x1c25c967960 (#x1a7960) rip: 0x635f5f2a2054203a (#x635f5d67c3d8203a)
+   rsp: 0x1c25c967958 (#x1a7958) rip: 0x6e6f6974636e7546 (#x6e6f67b206f27546)
+   rsp: 0x1c25c967950 (#x1a7950) rip: 0x90a30343a682e72 (#x90a2e71ddec2e72)
+   rsp: 0x1c25c967948 (#x1a7948) rip: 0x74502f6e6f6d6d6f (#x74502dac12f16d6f)
+   rsp: 0x1c25c967940 (#x1a7940) rip: 0x632f0034343a3733 (#x632efe71d7be3733)
+   rsp: 0x1c25c967938 (#x1a7938) rip: 0x2f656d61675c2e2f (#x2f656b9f0ae02e2f)
+   rsp: 0x1c25c967930 (#x1a7930) rip: 0x657361422d646f4d (#x65735f7fd0e86f4d)
+   rsp: 0x1c25c967928 (#x1a7928) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c967920 (#x1a7920) rip: 0x1c25c967900 (#x1a7900)
+   rsp: 0x1c25c967918 (#x1a7918) rip: 0x1c200000003 (#xffffffffa3840003)
+   rsp: 0x1c25c967910 (#x1a7910) rip: 0x1c200000003 (#xffffffffa3840003)
+   rsp: 0x1c25c967908 (#x1a7908) rip: 0x7ff60fb23282 (#x7e33b3363282)
+   rsp: 0x1c25c967900 (#x1a7900) rip: 0x1c25c967980 (#x1a7980)
+   rsp: 0x1c25c9678f8 (#x1a78f8) rip: 0x1c25c967900 (#x1a7900)
+   rsp: 0x1c25c9678f0 (#x1a78f0) rip: 0x1c25c967980 (#x1a7980)
+   rsp: 0x1c25c9678e8 (#x1a78e8) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c9678e0 (#x1a78e0) rip: 0x1c25c9679e0 (#x1a79e0)
+   rsp: 0x1c25c9678d8 (#x1a78d8) rip: 0x7ffa782b4ae5 (#x7e381baf4ae5)
+   rsp: 0x1c25c9678d0 (#x1a78d0) rip: 0x7ffa782b4aee (#x7e381baf4aee)
+Unknown Function at rip
+
+Not in GOAL code!
+
+rax: 0x0000000000000001 rcx: 0x0000000000000007 rdx: 0x000001c23f250680 rbx: 0x000001c25c9679e0
+rsp: 0x000001c25c9678d0 rbp: 0x000001c25c967980 rsi: 0x0000000000000005 rdi: 0x000001c200faa010
+ r8: 0x7ffffffffffffffc  r9: 0x0000000000000002 r10: 0x0000000000000000 r11: 0x000001c25c967890
+r12: 0x0000000000000009 r13: 0x000000000014fd24 r14: 0x000001c2009a13e0 r15: 0x0000000000000005
+rip: 0x00007ffa782b4aee
+```
+
+---
+
 ## Features Request
 
 ### Making Preview mesh "useable"
