@@ -355,5 +355,29 @@ The msgbus path handles single-click. For box-select (B) or shift-click that pic
 - **Outliner / search popup.** Clicking a preview mesh in the Outliner triggers the same active-change event, so the redirect works there too. Same for the Search ⌘F popup.
 - **Edit mode.** The `ctx.mode == "OBJECT"` guard prevents the redirect from yanking the user out of edit mode if they Tab into a preview mesh.
 
+### Alternative implementation path — actor-as-mesh (no empty)
+For actor types that have a GLB *and* "Preview Models" is on, spawn the imported mesh directly with all `og_*` custom properties stored on it — no empty parent. The mesh **is** the actor object. The current "empty parent + preview mesh child" structure becomes "mesh, alone" for these cases.
+
+This eliminates the click-through problem entirely. There's no parent to redirect to, the visible thing is the data-bearing thing, and selecting it in any context (3D viewport, Outliner, Search popup) naturally surfaces the actor's panels with no msgbus glue.
+
+It also resolves a separate complaint from Kui's later follow-up on the color question: empties don't render `.color` reliably in the viewport (especially `PLAIN_AXES`), but meshes do. With actors-as-meshes, the per-actor color in the database actually shows up.
+
+**What stays the same.** Naming convention (`ACTOR_etype_uid` on the mesh). Custom properties (`og_*` on the mesh instead of the empty — same dict, same keys, same values). Children (waypoint empties stay parented as before, just to a mesh now).
+
+**What needs to change.**
+- Audit every `obj.type == "EMPTY"` check that gates `ACTOR_*` handling. Likely affected: `_classify_object` and the export-collection path (`collect_actors`, `_level_objects`, `_classify_object` in `collections.py`), panel polls (`panels/actor.py`, `panels/selected.py`), all spawn operators in `operators/spawn.py`, link-system traversal (`_actor_get_link`, `_build_actor_link_lumps`).
+- Hybrid scene reality. Many actor types have no GLB (volumes, spawns, checkpoints, cameras, vis blockers, etc.) — those stay as empties. Code has to handle both. The simplest rule: "an `ACTOR_*` object is an actor regardless of `.type`". Most existing checks can drop the type filter entirely.
+- Toggle migration. Turning "Preview Models" off after spawning has to convert mesh-actors back to empty-actors (or skip migration and just hide the mesh preview). Likewise turning preview on later. Property dict carries cleanly between objects with `for k, v in old.items(): new[k] = v`, but waypoint children, link references-by-name, and selection state need handling.
+- Replace-model behavior. Changing an actor's etype currently means the empty stays and the preview swaps. With actor-as-mesh, the mesh data block changes too — properties have to be copied off the old mesh and onto the new one before deletion.
+- Display panel sections. Empties have `empty_display_size`/`empty_display_type` that some panels expose; meshes don't. Conditional rendering on `obj.type` in those panels.
+- Existing scenes. Users with `.blend` files from before this change have empty-based actors. A one-shot migration operator ("Convert previewed actors to mesh-actors") gives them a clean upgrade path; don't require it on file open, since silently mutating user scenes is hostile.
+
+**Trade-off summary.**
+- **msgbus redirect** (the proposal above): tactical, surgical, ~1 day of work, low refactor risk, leaves the underlying empty/preview-child duality intact.
+- **actor-as-mesh** (this alternative): strategic, broader refactor, ~1 week of work, touches several modules, but produces a conceptually cleaner system that solves Kui's selection complaint *and* his color-on-mesh complaint with the same change.
+
+**Recommendation:** ship the msgbus redirect first as the immediate fix (small, contained, gives Kui the requested behaviour now), and open a separate work item for the actor-as-mesh refactor. The two paths aren't mutually exclusive — the redirect can live during the refactor, and removed once mesh-actors are the default.
+
 ### Confidence
-~80%. The `hide_select` toggle and msgbus redirect are well-trodden Blender patterns and integrate cleanly with the existing preview-mesh tagging system. Box-select multi-redirect is the only piece I'd want to validate live before committing to a particular implementation.
+- msgbus redirect path: ~80%. Well-trodden Blender pattern and integrates cleanly with the existing preview-mesh tagging system. Box-select multi-redirect is the only piece I'd want to validate live before committing.
+- actor-as-mesh path: ~70% as a directional plan, but the audit-and-touch surface is large and several details (toggle migration semantics, waypoint reparenting, link resolution by name) only firm up after a working prototype. Treat the bullet list above as a starting checklist, not a spec.

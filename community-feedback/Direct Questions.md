@@ -80,6 +80,8 @@ Claude then doesn't need to answer more.
 ## Fixes
 
 ### Better auto detect of dev env
+> _Planning: [Pre Fix Answers — Fix 1](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-1--better-auto-detect-of-dev-env)_
+
 - Kui: When using a dev environement folder in the settings, I always need to overide all 3 folders for it to work. The addon should be able to see the dev env from the one folder that's being added and figure out the rest. Here's an example of those folder in a dev env:
   - Main path: \path\to\MainRepoFolder
   - Binary path: \path\to\MainRepoFolder\out\build\Release\bin\
@@ -89,6 +91,8 @@ Claude then doesn't need to answer more.
 ---
 
 ### Object rotation isn't correctly exported
+> _Planning: [Pre Fix Answers — Fix 2](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-2--object-rotation-isnt-correctly-exported)_
+
 - Kui: The way rotations are being exported is off. This is how it should work, using blender's quat for the objects:
   - If an object in blender has these rotations: `W: 0.932 X: 0.067 Y:0.025 Z:-0.355` It should be exported as these: `"quat": [0.067, -0.355, -0.025, 0.932]`
     - As you can see, the W is set as the 4th value for opengoal
@@ -102,11 +106,15 @@ Claude then doesn't need to answer more.
 ---
 
 ### Green eco vent not working
+> _Planning: [Pre Fix Answers — Fix 3](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-3--green-eco-vent-not-working)_
+
 - Kui: the actor with the label "Green Eco Vent" is currently not working because, instead of having a sub type, like other vents, green eco vents instead rely on the "eco-info" to be set to spawn "eco-green" in the quantity of "1". I've tried to set it up myself in the database but failed. Could this be fixed but also explain how the database has to be changed to make this fix so I know for future reference.
 
 ---
 
 ### Next and Prev actor lump issues
+> _Planning: [Pre Fix Answers — Fix 4](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-4--nextprev-actor-lump-issues)_
+
 - Kui: Trying to add a res-lump for prev-actor or next-actor give this blender error. 
 ```
 Python: Traceback (most recent call last):
@@ -127,6 +135,8 @@ TypeError: bpy_struct: item.attr = val: enum "structure" not found in ('float', 
 ---
 
 ### balance-plat crashes the game
+> _Planning: [Pre Fix Answers — Fix 5 & 6](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-5--6--balance-plat--mis-bone-bridge-crashes)_
+
 - Kui: Even after adding the prev-actor and next-actor lumps, and editing the exported json to be correct, the game still crashes when loading a level with balance-plat types added. It does seem to have the art group (balance-plat-ag.go) as well as the code (swamp-obs.o). So not sure where the crash is coming from right now. Attaching the debbugger also doesn't give me any goal code issue:
 ```
 Target raised an exception (STATUS_STACK_BUFFER_OVERRUN [0xC0000409]). Run (:di) to get more information.
@@ -220,6 +230,8 @@ rip: 0x00007ffa782b4aee
 ---
 
 ### mis-bone-bridge crashes the game
+> _Planning: [Pre Fix Answers — Fix 5 & 6](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-5--6--balance-plat--mis-bone-bridge-crashes)_
+
 - Kui: Very similar to balance-plat, also should have the art-group and code setup correctly, similar error:
 ```
 Target raised an exception (STATUS_STACK_BUFFER_OVERRUN [0xC0000409]). Run (:di) to get more information.
@@ -315,6 +327,8 @@ rip: 0x00007ffa782b4aee
 ## Features Request
 
 ### Making Preview mesh "useable"
+> _Planning: [Pre Fix Answers — Feature 1](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#feature-1--make-preview-mesh-useable)_
+
 - Kui: Preview meshes are great to get a good idea of what you're placing and it's position and direction related to the world around it. One thing that's annoying with having all actors as empties, is selecting them in the 3D space can be annoying as you only have the small lines of the empty to click on. Being able to use the preview mesh for this would be very intuitive and fast. However there's a few things that would need to be done to get this working:
   - At the moment the preview meshes are set to not being selectable in the collection, this would need to change.
   - Moving a preview mesh doesn't move the actor's empty since the actor empty is the child. To fix this, maybe selecting a preview mesh in the 3D view could just automatically switch the selection to the parent if some settings is turned on.
