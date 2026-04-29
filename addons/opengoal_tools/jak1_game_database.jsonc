@@ -8626,7 +8626,7 @@
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "art_group": "bouncer-ag.go",
+      "art_group": "bounceytarp-ag.go",
       "tpage_group": "Jungle",
       "tpages": [
         "tpage-385.go",
@@ -8638,6 +8638,7 @@
         "o": "bouncer.o",
         "o_only": true
       },
+      "glb": "levels/jungle/bounceytarp-lod0.glb",
       "lumps": [
         {
           "key": "spring-height",

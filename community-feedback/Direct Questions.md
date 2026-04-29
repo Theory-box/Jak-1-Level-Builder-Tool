@@ -47,6 +47,28 @@ Claude then doesn't need to answer more.
 
 ## Fixes
 
+### Better auto detect of dev env
+- Kui: When using a dev environement folder in the settings, I always need to overide all 3 folders for it to work. The addon should be able to see the dev env from the one folder that's being added and figure out the rest. Here's an example of those folder in a dev env:
+  - Main path: \path\to\MainRepoFolder
+  - Binary path: \path\to\MainRepoFolder\out\build\Release\bin\
+  - Data path: \path\to\MainRepoFolder
+  - Decompiler out path: \path\to\MainRepoFolder\decompiler_out\jak1\
+
+---
+
+### Object rotation isn't correctly exported
+- Kui: The way rotations are being exported is off. This is how it should work, using blender's quat for the objects:
+  - If an object in blender has these rotations: `W: 0.932 X: 0.067 Y:0.025 Z:-0.355` It should be exported as these: `"quat": [0.067, -0.355, -0.025, 0.932]`
+    - As you can see, the W is set as the 4th value for opengoal
+    - X stays the same at the 1st value (X)
+    - Y Become the 3rd value (Z) and is inverted
+    - Z Become the 2nd value (Y)
+  - Currently these same rotations are exported as `"quat": [-0.067, 0.355, 0.025, 0.932]`
+    - The X (-0.067) is inverted when it shouldn't be
+    - The Z (0.025) isn't inverted when it should be
+
+---
+
 ### Green eco vent not working
 - Kui: the actor with the label "Green Eco Vent" is currently not working because, instead of having a sub type, like other vents, green eco vents instead rely on the "eco-info" to be set to spawn "eco-green" in the quantity of "1". I've tried to set it up myself in the database but failed. Could this be fixed but also explain how the database has to be changed to make this fix so I know for future reference.
 
