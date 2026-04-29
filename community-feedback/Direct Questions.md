@@ -1,0 +1,335 @@
+# Direct questions and fixes
+
+---
+
+## Table of Contents
+- [How to use](#how-to-use)
+- [Questions](#questions)
+- [Fixes](#fixes)
+- [Features Request](#features-request)
+
+---
+
+## How to use
+
+### For the human users
+
+Questions or requests will be added in each category by human. They'll also decide when a question or request has been fullfiled by adding [SOLVED] at the start of the title of that question. Else they can have have a back and forth.
+
+---
+
+### For Claude
+
+You will read through this document and find unanswered question request to answer them. If the users has marked it as [SOLVED] then that section can be ignored. If the users ask follow up questions, those also needs to be answered.
+
+---
+
+### Question Example
+
+#### Why does the data base has X?
+- User: I've read through the database and found X. I'm not sure what X refer to or how it is used?
+- Claude: X works this and that way. You can do Y with it, etc.
+- User: I see, Can it be used to do Z too?
+- Claude: It can not.
+
+After that last message, the user then mark the question as solved by editing the title as such:
+#### [SOLVED] Why does the data base has X?
+Claude then doesn't need to answer more.
+
+---
+
+## Questions
+
+### What is the use of the color field?
+- Kui: In actors definitions, I've noticed that there's a "color" field added to each actor. This does not seem to have any uses that I can see? It's not being added in any way to the lump in the level's json file or as some property of the empty in blender. So what is its uses? And if it doesn't have any. Could this be cleaned from the database as it would save a lot of space and makes it easier to read and edit.
+- Claude: The field **is being used**, but only on the Blender side — never in any export. The trace through the code:
+
+  **1. Loaded into memory** — `addons/opengoal_tools/data.py:36`
+  ```python
+  if "color" in a:  info["color"] = tuple(a["color"])
+  ```
+  Pulls the 4-float RGBA from the JSONC actor record into the in-memory `ENTITY_DEFS` dict.
+
+  **2. Applied at spawn time** — `addons/opengoal_tools/operators/spawn.py`
+  - Line 165 / 172 (general actor spawn): `color = info.get("color", (1.0, 0.5, 0.1, 1.0))` → `o.color = color`
+  - Line 733 (spawnable-platforms path): `o.color = einfo.get("color", (0.5, 0.5, 0.8, 1.0))`
+
+  This sets Blender's built-in `bpy.types.Object.color` — the per-object RGBA used as the empty's viewport display tint.
+
+  **3. Not used anywhere else** — verified by grep:
+  - No reference in any `export/` writer (no JSON output, no GOAL output)
+  - Not written to a custom property on the empty (no `og_color`)
+  - The only consumers are the two spawn paths above
+
+  **Why it looks unused in the viewport:** `o.color` only shows up in the 3D viewport when the viewport's color mode is set to **Object** (Viewport Shading dropdown → Color → Object). By default Blender uses theme/random colors for empties, so the per-actor RGBA from the database is effectively invisible until that toggle is flipped. That's almost certainly why it looked unused.
+
+  **Can it be cleaned out?** Yes, safely. Three things to delete in lockstep:
+  1. The `"color": [...]` block from each of the 194 actor entries in `jak1_game_database.jsonc` (~6 lines × 194 ≈ ~1,160 lines saved).
+  2. Line 36 in `data.py` (`if "color" in a: info["color"] = tuple(a["color"])`).
+  3. Lines 165 & 733 in `spawn.py` — remove the `o.color = ...` assignments (or replace with a single hardcoded constant per spawn family if you want to keep some viewport tint).
+
+  The fallbacks `(1.0, 0.5, 0.1, 1.0)` and `(0.5, 0.5, 0.8, 1.0)` already cover the "no color in db" case, so removing the field won't break spawning.
+
+  **Middle-ground option:** if you want to keep some visual differentiation in the viewport without bloating the database, drive the color from `category` instead of per-actor. ~10 categories vs 194 actors gets ~99% of the size win and still gives Enemies / Platforms / Collectables / etc. distinct empty colors when Object color mode is on. Implementation would be a small dict in `data.py` keyed off `info["cat"]`, and the JSONC entries lose their `color` blocks entirely.
+
+  **Recommendation:** clean it out (or move to per-category). The space-and-readability win is real and the visual loss is small, and only visible when a non-default viewport mode is on.
+- Kui: That color field does not exist on empties. Which most actors are, these do stay black even when the wireframe and object colors are set to "object". So it'll only show up on things like volumes since those are meshes. Maybe cleaning it of from everything but the things that actually uses mesh. Another idea is to also put the color on the preview mesh then that'd be useable but if that's not done then there's very little point to those. But at the very least, doing it per category should be done to reduce the clutter in the database.
+
+---
+
+## Fixes
+
+### Better auto detect of dev env
+> _Planning: [Pre Fix Answers — Fix 1](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-1--better-auto-detect-of-dev-env)_
+
+- Kui: When using a dev environement folder in the settings, I always need to overide all 3 folders for it to work. The addon should be able to see the dev env from the one folder that's being added and figure out the rest. Here's an example of those folder in a dev env:
+  - Main path: \path\to\MainRepoFolder
+  - Binary path: \path\to\MainRepoFolder\out\build\Release\bin\
+  - Data path: \path\to\MainRepoFolder
+  - Decompiler out path: \path\to\MainRepoFolder\decompiler_out\jak1\
+
+---
+
+### Object rotation isn't correctly exported
+> _Planning: [Pre Fix Answers — Fix 2](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-2--object-rotation-isnt-correctly-exported)_
+
+- Kui: The way rotations are being exported is off. This is how it should work, using blender's quat for the objects:
+  - If an object in blender has these rotations: `W: 0.932 X: 0.067 Y:0.025 Z:-0.355` It should be exported as these: `"quat": [0.067, -0.355, -0.025, 0.932]`
+    - As you can see, the W is set as the 4th value for opengoal
+    - X stays the same at the 1st value (X)
+    - Y Become the 3rd value (Z) and is inverted
+    - Z Become the 2nd value (Y)
+  - Currently these same rotations are exported as `"quat": [-0.067, 0.355, 0.025, 0.932]`
+    - The X (-0.067) is inverted when it shouldn't be
+    - The Z (0.025) isn't inverted when it should be
+
+---
+
+### Green eco vent not working
+> _Planning: [Pre Fix Answers — Fix 3](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-3--green-eco-vent-not-working)_
+
+- Kui: the actor with the label "Green Eco Vent" is currently not working because, instead of having a sub type, like other vents, green eco vents instead rely on the "eco-info" to be set to spawn "eco-green" in the quantity of "1". I've tried to set it up myself in the database but failed. Could this be fixed but also explain how the database has to be changed to make this fix so I know for future reference.
+
+---
+
+### Next and Prev actor lump issues
+> _Planning: [Pre Fix Answers — Fix 4](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-4--nextprev-actor-lump-issues)_
+
+- Kui: Trying to add a res-lump for prev-actor or next-actor give this blender error. 
+```
+Python: Traceback (most recent call last):
+  File "C:\Users\XXXX\AppData\Roaming\Blender Foundation\Blender\4.5\scripts\addons\opengoal_tools\panels\tools.py", line 373, in execute
+    row.ltype = self.lump_ltype
+    ^^^^^^^^^
+TypeError: bpy_struct: item.attr = val: enum "structure" not found in ('float', 'meters', 'degrees', 'int32', 'uint32', 'enum-int32', 'enum-uint32', 'vector4m', 'vector3m', 'vector-vol', 'vector', 'movie-pos', 'water-height', 'eco-info', 'cell-info', 'buzzer-info', 'symbol', 'string', 'type')
+```
+- Kui: Manually changing it to a string type instead of structure then means I'd need to write down the name instead of dirrectly linking the object in blender. Plus it'll show like this:
+```json
+"prev-actor": [
+    "string",
+    "test1_balance-plat_0001"
+]
+```
+- Kui: When it should just show up as this: "prev-actor": "test1_balance-plat_0001" Maybe there should be a custom type too where it allows you to write whatever you want in the lump instead of always having it setup the other way. Or will the structure type work that way once it's fixed?
+
+---
+
+### balance-plat crashes the game
+> _Planning: [Pre Fix Answers — Fix 5 & 6](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-5--6--balance-plat--mis-bone-bridge-crashes)_
+
+- Kui: Even after adding the prev-actor and next-actor lumps, and editing the exported json to be correct, the game still crashes when loading a level with balance-plat types added. It does seem to have the art group (balance-plat-ag.go) as well as the code (swamp-obs.o). So not sure where the crash is coming from right now. Attaching the debbugger also doesn't give me any goal code issue:
+```
+Target raised an exception (STATUS_STACK_BUFFER_OVERRUN [0xC0000409]). Run (:di) to get more information.
+    (:di)
+Read symbol table (1076480 bytes, 6363 reads, 6362 symbols, 31.96 ms)
+Backtrace:
+   rsp: 0x242c4d67b08 (#x1a7b08) rip: 0x69f1efb6 (#xfffffdbda535efb6)
+Backtrace was too long. Exception might have happened outside GOAL code, or the stack frame is too long.
+   rsp: 0x242c4d67b00 (#x1a7b00) rip: 0xbf (#xfffffdbd3b4400bf)
+   rsp: 0x242c4d67af8 (#x1a7af8) rip: 0xb8 (#xfffffdbd3b4400b8)
+   rsp: 0x242c4d67af0 (#x1a7af0) rip: 0x0 (#xfffffdbd3b440000)
+   rsp: 0x242c4d67ae8 (#x1a7ae8) rip: 0x242e7cae870 (#x230ee870)
+   rsp: 0x242c4d67ae0 (#x1a7ae0) rip: 0x2 (#xfffffdbd3b440002)
+   rsp: 0x242c4d67ad8 (#x1a7ad8) rip: 0x242c4d67b80 (#x1a7b80)
+   rsp: 0x242c4d67ad0 (#x1a7ad0) rip: 0xb8 (#xfffffdbd3b4400b8)
+   rsp: 0x242c4d67ac8 (#x1a7ac8) rip: 0x242e7caca60 (#x230eca60)
+   rsp: 0x242c4d67ac0 (#x1a7ac0) rip: 0x242c4d67ab8 (#x1a7ab8)
+   rsp: 0x242c4d67ab8 (#x1a7ab8) rip: 0xd (#xfffffdbd3b44000d)
+   rsp: 0x242c4d67ab0 (#x1a7ab0) rip: 0x1d (#xfffffdbd3b44001d)
+   rsp: 0x242c4d67aa8 (#x1a7aa8) rip: 0xd8b852b2 (#xfffffdbe13fc52b2)
+   rsp: 0x242c4d67aa0 (#x1a7aa0) rip: 0x0 (#xfffffdbd3b440000)
+   rsp: 0x242c4d67a98 (#x1a7a98) rip: 0x242a7856890 (#xffffffffe2c96890)
+   rsp: 0x242c4d67a90 (#x1a7a90) rip: 0x1dcd7cde50b65a1 (#x1dcd58b204f65a1)
+   rsp: 0x242c4d67a88 (#x1a7a88) rip: 0x7ff60fb194fb (#x7db34af594fb)
+   rsp: 0x242c4d67a80 (#x1a7a80) rip: 0x242c4d67b00 (#x1a7b00)
+   rsp: 0x242c4d67a78 (#x1a7a78) rip: 0x1d (#xfffffdbd3b44001d)
+   rsp: 0x242c4d67a70 (#x1a7a70) rip: 0x1d (#xfffffdbd3b44001d)
+   rsp: 0x242c4d67a68 (#x1a7a68) rip: 0x5 (#xfffffdbd3b440005)
+   rsp: 0x242c4d67a60 (#x1a7a60) rip: 0x242e7cae870 (#x230ee870)
+   rsp: 0x242c4d67a58 (#x1a7a58) rip: 0x242c4d67b80 (#x1a7b80)
+   rsp: 0x242c4d67a50 (#x1a7a50) rip: 0xfffffffffffffffe (#xfffffdbd3b43fffe)
+   rsp: 0x242c4d67a48 (#x1a7a48) rip: 0x5 (#xfffffdbd3b440005)
+   rsp: 0x242c4d67a40 (#x1a7a40) rip: 0x7ff610718401 (#x7db34bb58401)
+   rsp: 0x242c4d67a38 (#x1a7a38) rip: 0xcf (#xfffffdbd3b4400cf)
+   rsp: 0x242c4d67a30 (#x1a7a30) rip: 0xc7 (#xfffffdbd3b4400c7)
+   rsp: 0x242c4d67a28 (#x1a7a28) rip: 0x242c4d679e0 (#x1a79e0)
+   rsp: 0x242c4d67a20 (#x1a7a20) rip: 0xc (#xfffffdbd3b44000c)
+   rsp: 0x242c4d67a18 (#x1a7a18) rip: 0x7ffa78246c11 (#x7db7b3686c11)
+   rsp: 0x242c4d67a10 (#x1a7a10) rip: 0x242e7cae870 (#x230ee870)
+   rsp: 0x242c4d67a08 (#x1a7a08) rip: 0x0 (#xfffffdbd3b440000)
+   rsp: 0x242c4d67a00 (#x1a7a00) rip: 0x7ff610000001 (#x7db34b440001)
+   rsp: 0x242c4d679f8 (#x1a79f8) rip: 0x0 (#xfffffdbd3b440000)
+   rsp: 0x242c4d679f0 (#x1a79f0) rip: 0x242e7cae870 (#x230ee870)
+   rsp: 0x242c4d679e8 (#x1a79e8) rip: 0xf (#xfffffdbd3b44000f)
+   rsp: 0x242c4d679e0 (#x1a79e0) rip: 0x7 (#xfffffdbd3b440007)
+   rsp: 0x242c4d679d8 (#x1a79d8) rip: 0x0 (#xfffffdbd3b440000)
+   rsp: 0x242c4d679d0 (#x1a79d0) rip: 0x5d32303a37345b (#x5d2fed757b345b)
+   rsp: 0x242c4d679c8 (#x1a79c8) rip: 0xb (#xfffffdbd3b44000b)
+   rsp: 0x242c4d679c0 (#x1a79c0) rip: 0x7ff6107183fb (#x7db34bb583fb)
+   rsp: 0x242c4d679b8 (#x1a79b8) rip: 0x2800000000 (#xfffffde53b440000)
+   rsp: 0x242c4d679b0 (#x1a79b0) rip: 0x242a7856890 (#xffffffffe2c96890)
+   rsp: 0x242c4d679a8 (#x1a79a8) rip: 0x2800000000 (#xfffffde53b440000)
+   rsp: 0x242c4d679a0 (#x1a79a0) rip: 0x2700000000 (#xfffffde43b440000)
+   rsp: 0x242c4d67998 (#x1a7998) rip: 0xa5d657079543a3a (#xa5d632db4983a3a)
+   rsp: 0x242c4d67990 (#x1a7990) rip: 0x316b616a203d2054 (#x316b5f275b812054)
+   rsp: 0x242c4d67988 (#x1a7988) rip: 0x5b202964696f7628 (#x5b202721a4b37628)
+   rsp: 0x242c4d67980 (#x1a7980) rip: 0x3e2d726f74617265 (#x3e2d702cafa57265)
+   rsp: 0x242c4d67978 (#x1a7978) rip: 0x706f3a3a3e657079 (#x706f37f779a97079)
+   rsp: 0x242c4d67970 (#x1a7970) rip: 0x543a3a316b616a3c (#x543a37eea6a56a3c)
+   rsp: 0x242c4d67968 (#x1a7968) rip: 0x727450206c636564 (#x72744ddda7a76564)
+   rsp: 0x242c4d67960 (#x1a7960) rip: 0x635f5f2a2054203a (#x635f5ce75b98203a)
+   rsp: 0x242c4d67958 (#x1a7958) rip: 0x6e6f6974636e7546 (#x6e6f67319eb27546)
+   rsp: 0x242c4d67950 (#x1a7950) rip: 0x90a30343a682e72 (#x90a2df175ac2e72)
+   rsp: 0x242c4d67948 (#x1a7948) rip: 0x74502f6e6f6d6d6f (#x74502d2baab16d6f)
+   rsp: 0x242c4d67940 (#x1a7940) rip: 0x632f0032303a3734 (#x632efdef6b7e3734)
+   rsp: 0x242c4d67938 (#x1a7938) rip: 0x2f656d61675c2e2f (#x2f656b1ea2a02e2f)
+   rsp: 0x242c4d67930 (#x1a7930) rip: 0x657361422d646f4d (#x65735eff68a86f4d)
+   rsp: 0x242c4d67928 (#x1a7928) rip: 0x242a7856890 (#xffffffffe2c96890)
+   rsp: 0x242c4d67920 (#x1a7920) rip: 0x242c4d67900 (#x1a7900)
+   rsp: 0x242c4d67918 (#x1a7918) rip: 0x24200000003 (#xffffffff3b440003)
+   rsp: 0x242c4d67910 (#x1a7910) rip: 0x24200000003 (#xffffffff3b440003)
+   rsp: 0x242c4d67908 (#x1a7908) rip: 0x7ff60fb23282 (#x7db34af63282)
+   rsp: 0x242c4d67900 (#x1a7900) rip: 0x242c4d67980 (#x1a7980)
+   rsp: 0x242c4d678f8 (#x1a78f8) rip: 0x242c4d67900 (#x1a7900)
+   rsp: 0x242c4d678f0 (#x1a78f0) rip: 0x242c4d67980 (#x1a7980)
+   rsp: 0x242c4d678e8 (#x1a78e8) rip: 0x5 (#xfffffdbd3b440005)
+   rsp: 0x242c4d678e0 (#x1a78e0) rip: 0x242c4d679e0 (#x1a79e0)
+   rsp: 0x242c4d678d8 (#x1a78d8) rip: 0x7ffa782b4ae5 (#x7db7b36f4ae5)
+   rsp: 0x242c4d678d0 (#x1a78d0) rip: 0x7ffa782b4aee (#x7db7b36f4aee)
+Unknown Function at rip
+
+Not in GOAL code!
+
+rax: 0x0000000000000001 rcx: 0x0000000000000007 rdx: 0x00000242a7650680 rbx: 0x00000242c4d679e0 
+rsp: 0x00000242c4d678d0 rbp: 0x00000242c4d67980 rsi: 0x0000000000000005 rdi: 0x00000242e7cae870 
+ r8: 0x7ffffffffffffffc  r9: 0x0000000000000002 r10: 0x0000000000000000 r11: 0x00000242c4d67890 
+r12: 0x0000000000000009 r13: 0x000000000014fd24 r14: 0x00000242e6abc1f0 r15: 0x0000000000000005 
+rip: 0x00007ffa782b4aee
+```
+
+---
+
+### mis-bone-bridge crashes the game
+> _Planning: [Pre Fix Answers — Fix 5 & 6](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#fix-5--6--balance-plat--mis-bone-bridge-crashes)_
+
+- Kui: Very similar to balance-plat, also should have the art-group and code setup correctly, similar error:
+```
+Target raised an exception (STATUS_STACK_BUFFER_OVERRUN [0xC0000409]). Run (:di) to get more information.
+    (:di)
+Read symbol table (1077888 bytes, 6374 reads, 6373 symbols, 32.87 ms)
+Backtrace:
+   rsp: 0x1c25c967b08 (#x1a7b08) rip: 0x69f1fb98 (#xfffffe3e0d75fb98)
+Backtrace was too long. Exception might have happened outside GOAL code, or the stack frame is too long.
+   rsp: 0x1c25c967b00 (#x1a7b00) rip: 0xbf (#xfffffe3da38400bf)
+   rsp: 0x1c25c967af8 (#x1a7af8) rip: 0xb8 (#xfffffe3da38400b8)
+   rsp: 0x1c25c967af0 (#x1a7af0) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967ae8 (#x1a7ae8) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967ae0 (#x1a7ae0) rip: 0x2 (#xfffffe3da3840002)
+   rsp: 0x1c25c967ad8 (#x1a7ad8) rip: 0x1c25c967b80 (#x1a7b80)
+   rsp: 0x1c25c967ad0 (#x1a7ad0) rip: 0xb8 (#xfffffe3da38400b8)
+   rsp: 0x1c25c967ac8 (#x1a7ac8) rip: 0x1c200faa5c0 (#xffffffffa47ea5c0)
+   rsp: 0x1c25c967ac0 (#x1a7ac0) rip: 0x1c25c967ab8 (#x1a7ab8)
+   rsp: 0x1c25c967ab8 (#x1a7ab8) rip: 0xd (#xfffffe3da384000d)
+   rsp: 0x1c25c967ab0 (#x1a7ab0) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967aa8 (#x1a7aa8) rip: 0x5ffde836 (#xfffffe3e0381e836)
+   rsp: 0x1c25c967aa0 (#x1a7aa0) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967a98 (#x1a7a98) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c967a90 (#x1a7a90) rip: 0x1dcd7d4fa71ebd0 (#x1dcd6129df5ebd0)
+   rsp: 0x1c25c967a88 (#x1a7a88) rip: 0x7ff60fb194fb (#x7e33b33594fb)
+   rsp: 0x1c25c967a80 (#x1a7a80) rip: 0x1c25c967b00 (#x1a7b00)
+   rsp: 0x1c25c967a78 (#x1a7a78) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967a70 (#x1a7a70) rip: 0x1d (#xfffffe3da384001d)
+   rsp: 0x1c25c967a68 (#x1a7a68) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c967a60 (#x1a7a60) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967a58 (#x1a7a58) rip: 0x1c25c967b80 (#x1a7b80)
+   rsp: 0x1c25c967a50 (#x1a7a50) rip: 0xfffffffffffffffe (#xfffffe3da383fffe)
+   rsp: 0x1c25c967a48 (#x1a7a48) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c967a40 (#x1a7a40) rip: 0x7ff610718401 (#x7e33b3f58401)
+   rsp: 0x1c25c967a38 (#x1a7a38) rip: 0xcf (#xfffffe3da38400cf)
+   rsp: 0x1c25c967a30 (#x1a7a30) rip: 0xc7 (#xfffffe3da38400c7)
+   rsp: 0x1c25c967a28 (#x1a7a28) rip: 0x1c25c9679e0 (#x1a79e0)
+   rsp: 0x1c25c967a20 (#x1a7a20) rip: 0xc (#xfffffe3da384000c)
+   rsp: 0x1c25c967a18 (#x1a7a18) rip: 0x7ffa78246c11 (#x7e381ba86c11)
+   rsp: 0x1c25c967a10 (#x1a7a10) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c967a08 (#x1a7a08) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c967a00 (#x1a7a00) rip: 0x7ff610000001 (#x7e33b3840001)
+   rsp: 0x1c25c9679f8 (#x1a79f8) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c9679f0 (#x1a79f0) rip: 0x1c200faa010 (#xffffffffa47ea010)
+   rsp: 0x1c25c9679e8 (#x1a79e8) rip: 0xf (#xfffffe3da384000f)
+   rsp: 0x1c25c9679e0 (#x1a79e0) rip: 0x7 (#xfffffe3da3840007)
+   rsp: 0x1c25c9679d8 (#x1a79d8) rip: 0x0 (#xfffffe3da3840000)
+   rsp: 0x1c25c9679d0 (#x1a79d0) rip: 0x5d34343a37335b (#x5d3271ddbb335b)
+   rsp: 0x1c25c9679c8 (#x1a79c8) rip: 0xb (#xfffffe3da384000b)
+   rsp: 0x1c25c9679c0 (#x1a79c0) rip: 0x7ff6107183fb (#x7e33b3f583fb)
+   rsp: 0x1c25c9679b8 (#x1a79b8) rip: 0x2800000000 (#xfffffe65a3840000)
+   rsp: 0x1c25c9679b0 (#x1a79b0) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c9679a8 (#x1a79a8) rip: 0x2800000000 (#xfffffe65a3840000)
+   rsp: 0x1c25c9679a0 (#x1a79a0) rip: 0x2700000000 (#xfffffe64a3840000)
+   rsp: 0x1c25c967998 (#x1a7998) rip: 0xa5d657079543a3a (#xa5d63ae1cd83a3a)
+   rsp: 0x1c25c967990 (#x1a7990) rip: 0x316b616a203d2054 (#x316b5fa7c3c12054)
+   rsp: 0x1c25c967988 (#x1a7988) rip: 0x5b202964696f7628 (#x5b2027a20cf37628)
+   rsp: 0x1c25c967980 (#x1a7980) rip: 0x3e2d726f74617265 (#x3e2d70ad17e57265)
+   rsp: 0x1c25c967978 (#x1a7978) rip: 0x706f3a3a3e657079 (#x706f3877e1e97079)
+   rsp: 0x1c25c967970 (#x1a7970) rip: 0x543a3a316b616a3c (#x543a386f0ee56a3c)
+   rsp: 0x1c25c967968 (#x1a7968) rip: 0x727450206c636564 (#x72744e5e0fe76564)
+   rsp: 0x1c25c967960 (#x1a7960) rip: 0x635f5f2a2054203a (#x635f5d67c3d8203a)
+   rsp: 0x1c25c967958 (#x1a7958) rip: 0x6e6f6974636e7546 (#x6e6f67b206f27546)
+   rsp: 0x1c25c967950 (#x1a7950) rip: 0x90a30343a682e72 (#x90a2e71ddec2e72)
+   rsp: 0x1c25c967948 (#x1a7948) rip: 0x74502f6e6f6d6d6f (#x74502dac12f16d6f)
+   rsp: 0x1c25c967940 (#x1a7940) rip: 0x632f0034343a3733 (#x632efe71d7be3733)
+   rsp: 0x1c25c967938 (#x1a7938) rip: 0x2f656d61675c2e2f (#x2f656b9f0ae02e2f)
+   rsp: 0x1c25c967930 (#x1a7930) rip: 0x657361422d646f4d (#x65735f7fd0e86f4d)
+   rsp: 0x1c25c967928 (#x1a7928) rip: 0x1c23f36c160 (#xffffffffe2bac160)
+   rsp: 0x1c25c967920 (#x1a7920) rip: 0x1c25c967900 (#x1a7900)
+   rsp: 0x1c25c967918 (#x1a7918) rip: 0x1c200000003 (#xffffffffa3840003)
+   rsp: 0x1c25c967910 (#x1a7910) rip: 0x1c200000003 (#xffffffffa3840003)
+   rsp: 0x1c25c967908 (#x1a7908) rip: 0x7ff60fb23282 (#x7e33b3363282)
+   rsp: 0x1c25c967900 (#x1a7900) rip: 0x1c25c967980 (#x1a7980)
+   rsp: 0x1c25c9678f8 (#x1a78f8) rip: 0x1c25c967900 (#x1a7900)
+   rsp: 0x1c25c9678f0 (#x1a78f0) rip: 0x1c25c967980 (#x1a7980)
+   rsp: 0x1c25c9678e8 (#x1a78e8) rip: 0x5 (#xfffffe3da3840005)
+   rsp: 0x1c25c9678e0 (#x1a78e0) rip: 0x1c25c9679e0 (#x1a79e0)
+   rsp: 0x1c25c9678d8 (#x1a78d8) rip: 0x7ffa782b4ae5 (#x7e381baf4ae5)
+   rsp: 0x1c25c9678d0 (#x1a78d0) rip: 0x7ffa782b4aee (#x7e381baf4aee)
+Unknown Function at rip
+
+Not in GOAL code!
+
+rax: 0x0000000000000001 rcx: 0x0000000000000007 rdx: 0x000001c23f250680 rbx: 0x000001c25c9679e0
+rsp: 0x000001c25c9678d0 rbp: 0x000001c25c967980 rsi: 0x0000000000000005 rdi: 0x000001c200faa010
+ r8: 0x7ffffffffffffffc  r9: 0x0000000000000002 r10: 0x0000000000000000 r11: 0x000001c25c967890
+r12: 0x0000000000000009 r13: 0x000000000014fd24 r14: 0x000001c2009a13e0 r15: 0x0000000000000005
+rip: 0x00007ffa782b4aee
+```
+
+---
+
+## Features Request
+
+### Making Preview mesh "useable"
+> _Planning: [Pre Fix Answers — Feature 1](Direct%20Questions%20-%20Pre%20Fix%20Answers.md#feature-1--make-preview-mesh-useable)_
+
+- Kui: Preview meshes are great to get a good idea of what you're placing and it's position and direction related to the world around it. One thing that's annoying with having all actors as empties, is selecting them in the 3D space can be annoying as you only have the small lines of the empty to click on. Being able to use the preview mesh for this would be very intuitive and fast. However there's a few things that would need to be done to get this working:
+  - At the moment the preview meshes are set to not being selectable in the collection, this would need to change.
+  - Moving a preview mesh doesn't move the actor's empty since the actor empty is the child. To fix this, maybe selecting a preview mesh in the 3D view could just automatically switch the selection to the parent if some settings is turned on.
+  - Selecting the mesh doesn't give you the settings for the actor. But if the idea above is done, it would also automatically select the actor empty and give you the settings for it.
