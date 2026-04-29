@@ -42,6 +42,37 @@ Claude then doesn't need to answer more.
 
 ### What is the use of the color field?
 - Kui: In actors definitions, I've noticed that there's a "color" field added to each actor. This does not seem to have any uses that I can see? It's not being added in any way to the lump in the level's json file or as some property of the empty in blender. So what is its uses? And if it doesn't have any. Could this be cleaned from the database as it would save a lot of space and makes it easier to read and edit.
+- Claude: The field **is being used**, but only on the Blender side — never in any export. The trace through the code:
+
+  **1. Loaded into memory** — `addons/opengoal_tools/data.py:36`
+  ```python
+  if "color" in a:  info["color"] = tuple(a["color"])
+  ```
+  Pulls the 4-float RGBA from the JSONC actor record into the in-memory `ENTITY_DEFS` dict.
+
+  **2. Applied at spawn time** — `addons/opengoal_tools/operators/spawn.py`
+  - Line 165 / 172 (general actor spawn): `color = info.get("color", (1.0, 0.5, 0.1, 1.0))` → `o.color = color`
+  - Line 733 (spawnable-platforms path): `o.color = einfo.get("color", (0.5, 0.5, 0.8, 1.0))`
+
+  This sets Blender's built-in `bpy.types.Object.color` — the per-object RGBA used as the empty's viewport display tint.
+
+  **3. Not used anywhere else** — verified by grep:
+  - No reference in any `export/` writer (no JSON output, no GOAL output)
+  - Not written to a custom property on the empty (no `og_color`)
+  - The only consumers are the two spawn paths above
+
+  **Why it looks unused in the viewport:** `o.color` only shows up in the 3D viewport when the viewport's color mode is set to **Object** (Viewport Shading dropdown → Color → Object). By default Blender uses theme/random colors for empties, so the per-actor RGBA from the database is effectively invisible until that toggle is flipped. That's almost certainly why it looked unused.
+
+  **Can it be cleaned out?** Yes, safely. Three things to delete in lockstep:
+  1. The `"color": [...]` block from each of the 194 actor entries in `jak1_game_database.jsonc` (~6 lines × 194 ≈ ~1,160 lines saved).
+  2. Line 36 in `data.py` (`if "color" in a: info["color"] = tuple(a["color"])`).
+  3. Lines 165 & 733 in `spawn.py` — remove the `o.color = ...` assignments (or replace with a single hardcoded constant per spawn family if you want to keep some viewport tint).
+
+  The fallbacks `(1.0, 0.5, 0.1, 1.0)` and `(0.5, 0.5, 0.8, 1.0)` already cover the "no color in db" case, so removing the field won't break spawning.
+
+  **Middle-ground option:** if you want to keep some visual differentiation in the viewport without bloating the database, drive the color from `category` instead of per-actor. ~10 categories vs 194 actors gets ~99% of the size win and still gives Enemies / Platforms / Collectables / etc. distinct empty colors when Object color mode is on. Implementation would be a small dict in `data.py` keyed off `info["cat"]`, and the JSONC entries lose their `color` blocks entirely.
+
+  **Recommendation:** clean it out (or move to per-category). The space-and-readability win is real and the visual loss is small, and only visible when a non-default viewport mode is on.
 
 ---
 
