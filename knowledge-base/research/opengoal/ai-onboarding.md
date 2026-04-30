@@ -33,7 +33,7 @@ Claude-Relay/
 │       ├── properties.py         # PropertyGroup definitions
 │       ├── collections.py        # Collection path helpers, level accessors
 │       └── utils.py              # Shared predicates (_is_linkable etc.)
-├── knowledge-base/opengoal/      # Deep reference docs — load as needed
+├── knowledge-base/research/opengoal/      # Deep reference docs — load as needed
 │   ├── modding-addon.md          # Addon architecture overview
 │   ├── entity-spawning.md        # Full actor/entity reference
 │   ├── lump-system.md            # Res-lump data format
@@ -286,7 +286,7 @@ In the JSONC, lumps look like:
 }
 ```
 
-Full lump reference: `knowledge-base/opengoal/lump-system.md`
+Full lump reference: `knowledge-base/research/opengoal/lump-system.md`
 
 ---
 

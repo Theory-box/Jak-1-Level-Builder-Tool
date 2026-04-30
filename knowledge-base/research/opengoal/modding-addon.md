@@ -489,7 +489,7 @@ Allows attaching arbitrary GOAL source code to any `ACTOR_` empty. The code is a
 
 **Compile errors** appear in the goalc build log (not in Blender). Common causes: mismatched `:offset-assert` values, missing `(none)` return, `(loop ...)` without `(suspend)`.
 
-**Reference:** `knowledge-base/opengoal/goal-scripting.md` — full language reference, unit system, entity patterns, 5 complete working examples.
+**Reference:** `knowledge-base/research/opengoal/goal-scripting.md` — full language reference, unit system, entity patterns, 5 complete working examples.
 
 ---
 
@@ -549,4 +549,4 @@ Exported as `AMBIENT_mus*` empties with custom props:
 - `og_music_priority` — float, default 10.0
 - `og_music_radius` — float meters, default 40.0
 
-See `knowledge-base/opengoal/audio-system.md` for full format and flava table.
+See `knowledge-base/research/opengoal/audio-system.md` for full format and flava table.

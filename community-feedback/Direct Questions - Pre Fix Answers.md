@@ -164,7 +164,7 @@ There's an established **link system** for actor-to-actor references — see `li
 - Validates against an `accepts: [...]` whitelist
 - Emits the lump at export as `["string", "name1", "name2", ...]` via `_build_actor_link_lumps` (`data.py:548-580`)
 
-`knowledge-base/opengoal/lump-system.md:235-238` confirms this is the canonical mechanism for prev-actor/next-actor:
+`knowledge-base/research/opengoal/lump-system.md:235-238` confirms this is the canonical mechanism for prev-actor/next-actor:
 > JSONC: referenced via `entity-actor-lookup` — set by actor reference system, not direct lump
 
 So `balance-plat` and `warp-gate` are **missing their `link_slots` definitions** — they were declared as manual lump rows when they should be link-system actors.
@@ -239,8 +239,8 @@ That assumption holds only if the .o is self-contained. For an obstacle module t
 ### Specific actors and their docs status
 
 **balance-plat**
-- `knowledge-base/opengoal/platform-system.md:609-616` (test 2026-04-09): "Designed as a linked chain of platforms that communicate — standalone one never receives `'grow`. Physics exist in code but require a chain partner to function. **Not fixable from addon side — game design limitation**." That test reported a non-functional but loaded actor — no crash. Kui's report is a newer, harder failure than what's documented.
-- `knowledge-base/opengoal/entity-spawning.md:692` (source-verified April 2026): reads `distance` (meters, default 5m) and `scale-factor` (float, default 1.0). No mention of prev/next-actor being required at spawn time.
+- `knowledge-base/research/opengoal/platform-system.md:609-616` (test 2026-04-09): "Designed as a linked chain of platforms that communicate — standalone one never receives `'grow`. Physics exist in code but require a chain partner to function. **Not fixable from addon side — game design limitation**." That test reported a non-functional but loaded actor — no crash. Kui's report is a newer, harder failure than what's documented.
+- `knowledge-base/research/opengoal/entity-spawning.md:692` (source-verified April 2026): reads `distance` (meters, default 5m) and `scale-factor` (float, default 1.0). No mention of prev/next-actor being required at spawn time.
 - The `prev-actor`/`next-actor` lumps in the database are part of Fix 4's `structure`-type bug. Kui worked around it by manually editing the export, which likely produced a malformed lump payload — that on its own could trigger a crash if the engine dereferences it during init.
 
 **mis-bone-bridge**

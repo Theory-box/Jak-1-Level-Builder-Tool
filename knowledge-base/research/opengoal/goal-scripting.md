@@ -1150,7 +1150,7 @@ You cannot modify collision shape dynamically at runtime.
 Only nav-enemies (`babak`, `lurker-crab`, `hopper`, `snow-bunny`, `kermit`, etc.)
 respond to `'cue-chase`, `'cue-patrol`, `'go-wait-for-cue`.
 Process-drawable enemies (yeti, bully, mother-spider) do not have these handlers.
-See `knowledge-base/opengoal/enemy-activation.md` for the full list.
+See `knowledge-base/research/opengoal/enemy-activation.md` for the full list.
 
 ---
 
