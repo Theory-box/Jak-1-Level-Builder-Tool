@@ -2,7 +2,7 @@
 
 User-facing documentation for the **OpenGOAL Tools** Blender addon — a toolkit for creating custom Jak and Daxter levels using the [OpenGOAL](https://github.com/open-goal/jak-project) engine.
 
-> **Versions:** Addon v3.2.1 · Blender 4.4+ · OpenGOAL v0.2.29+
+> **Versions:** Addon 2026.4.30 · Blender 4.4+ · OpenGOAL v0.2.29+
 >
 > For deep technical notes (triggers, navmesh, lighting, water, GOAL code injection, etc.), see [`../research/`](../research/).
 

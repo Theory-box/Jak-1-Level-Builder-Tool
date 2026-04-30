@@ -4,7 +4,7 @@ A Blender addon for building custom Jak and Daxter levels for the [OpenGOAL](htt
 
 The addon source lives in [`addons/opengoal_tools/`](addons/opengoal_tools/). All written material lives in [`knowledge-base/`](knowledge-base/), split into `manual/` (user-facing) and `research/` (deep notes).
 
-> **Versions:** Addon v3.2.1 · Blender 4.4+ · OpenGOAL v0.2.29+
+> **Versions:** Addon 2026.4.30 · Blender 4.4+ · OpenGOAL v0.2.29+
 
 ---
 
