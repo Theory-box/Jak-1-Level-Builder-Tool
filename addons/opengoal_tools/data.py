@@ -410,7 +410,7 @@ SBK_SOUNDS: dict[str, list] = _db.bank_sfx()
 # 21 stock mood-context globals available in jak-project. The selected ID
 # is written to level-info.gc as `:mood '*ID-mood*` and `:mood-func
 # 'update-mood-FUNC` (FUNC defaults to ID; see MOOD_FUNC_OVERRIDES below).
-# Source: knowledge-base/opengoal/lighting-system.md "Per-Level Mood
+# Source: knowledge-base/research/opengoal/lighting-system.md "Per-Level Mood
 # Callbacks" table.
 MOOD_LEVELS = [
     ("training",   "Training",          "Training course mood",                              0),

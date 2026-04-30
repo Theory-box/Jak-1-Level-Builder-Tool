@@ -121,5 +121,5 @@ The `battlecontroller` type is entirely absent from the addon. It is the primary
 
 **Lumps:** `camera-name`, `pathspawn`, `delay`, `num-lurkers`, `lurker-type`, `percent`, `final-pickup`, `pickup-type`, `max-pickup-count`, `pickup-percent`, `mode`
 
-See `knowledge-base/opengoal/entity-spawning.md` section 12 for full details.
+See `knowledge-base/research/opengoal/entity-spawning.md` section 12 for full details.
 

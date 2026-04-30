@@ -74,7 +74,7 @@ _GOAL_BOILERPLATE = """\
 ;; Entity type: {etype}
 ;;
 ;; Replace this with your deftype + defstate + init-from-entity!
-;; See knowledge-base/opengoal/goal-scripting.md for reference.
+;; See knowledge-base/research/opengoal/goal-scripting.md for reference.
 ;;
 ;; IMPORTANT:
 ;;   • First field starts at offset-assert 176 (end of process-drawable base)
