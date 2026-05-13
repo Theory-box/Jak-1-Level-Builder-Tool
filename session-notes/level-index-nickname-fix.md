@@ -2,8 +2,8 @@
 
 **Branch:** `fix/level-index-nickname`
 **Repo:** `Jak-1-Level-Builder-Tool` (the addon repo — NOT `Claude-Relay`)
-**Status:** Implemented, awaiting user test
-**Last updated:** 2026-04-23
+**Status:** Shipped — merged to main 2026-05-12, branch deleted
+**Last updated:** 2026-05-12
 
 ---
 
@@ -124,3 +124,67 @@ git push origin --delete fix/level-index-nickname
   retired.
 - The stale `fix/level-index-nickname` branch on `Claude-Relay` should
   be deleted; it patches dead code.
+
+---
+
+## 2026-05-12 — Resumed after long gap, two follow-up fixes
+
+### Merge of main (commit c302735)
+Branch had sat for ~3 weeks and main moved 24 commits — lighting (mood/sky),
+fog override, bake filter, doc reorg, calver, pickup/balance-plat/bone-bridge
+fixes. Two textual conflicts (additive overlap, not logical):
+- `properties.py` imports from `.collections` — kept both the branch's live
+  get/set proxies and main's mood/sky/fog handlers.
+- `export/writers.py` `patch_level_info` — kept both `_lindex` (branch) and
+  `_mood`/`_sky_bool`/`_mood_func`/`_sky_val` (main) in the if/else.
+
+### Real bug found during user testing (commit 7b257b3)
+Original branch only propagated the override into `level-info.gc`. The
+file-naming write paths still used `_nick(name)` directly. For two levels
+whose names share the same first 3 dash-stripped chars (e.g. `my-level`
+and `my-level2` both → `myl`), the override (`my2`) was being ignored
+everywhere except `patch_level_info`. Result on first build:
+- `level-info.gc` referenced `MY2.DGO` (override honoured)
+- `game.gp` wrote `(custom-level-cgo "MYL.DGO" "my-level2/myl.gd")` —
+  collided with `my-level`'s same line
+- `.gd` file went to disk as `my-level2/myl.gd`
+
+First user run → black screen (engine looking for `MY2.DGO` per
+`level-info.gc`, file on disk was `MYL.DGO`). Second run → compile aborted
+with "multiple ways to make output `MYL.DGO`" (two `myl.gd` files).
+
+Fix: new `_effective_nick(scene, name)` helper in `export/writers.py` that
+prefers `_get_level_prop(scene, "og_vis_nick_override", "")` and falls
+back to `_nick(name)`. Threaded an optional `scene` kwarg through
+`write_gd`, `patch_game_gp`, and `write_jsonc`. Updated all 8 call sites
+in `build.py` to pass `scene=scene`.
+
+`write_gd` also sweeps stale `.gd` siblings from the level dir before
+writing — defensive against the failure mode above leaving leftover files
+that break the next build.
+
+Self-heals broken installs: the strip regex in `patch_game_gp` keys on
+the level name, not the nick, so the wrong `custom-level-cgo` line gets
+cleaned up on the next export with no manual intervention.
+
+### Still using `_nick(name)` (left as-is)
+- `export/levels.py:120` — `discover_custom_levels` scans disk to report
+  what levels exist + flag collisions. No Blender access from this path,
+  can't read the override. May misreport collisions for override-using
+  levels. Low-impact — runs from the level audit operator, not the build
+  pipeline. Leaving for a separate follow-up.
+- `export/levels.py:201` — dead local in `remove_level`. The regex
+  beside it only uses `name`, the `nick` line is unused. Could remove,
+  not worth a commit on its own.
+
+### User verification (2026-05-12)
+Tested in Blender with two levels (`my-level` nick `myl`, `my-level2`
+nick `my2`):
+- ✓ Compiler log built both `myl.gd` and `my2.gd` side-by-side, no
+  collision error.
+- ✓ Game log `my-level2`: `Got DGO file header for MY2.DGO with 7 objects`
+  — loaded successfully (no FAKEISO failure).
+- ✓ Game log `my-level`: `Got DGO file header for MYL.DGO with 18 objects`
+  — existing level still loads correctly (no regression).
+
+Merged to main.
