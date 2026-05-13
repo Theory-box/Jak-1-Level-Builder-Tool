@@ -6,13 +6,13 @@
 import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, PointerProperty, FloatProperty,
-                       CollectionProperty)
+                       FloatVectorProperty, CollectionProperty)
 from bpy.types import Panel, Operator, PropertyGroup, AddonPreferences
 from .data import (
     ENTITY_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS,
     ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
-    LEVEL_BANKS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
+    LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
@@ -26,6 +26,8 @@ from .collections import (
     _get_base_id_live, _set_base_id_live,
     _get_level_index_live, _set_level_index_live,
     _get_vis_nick_live, _set_vis_nick_live,
+    _on_mood_changed, _on_sky_changed,
+    _on_fog_override_changed,
 )
 
 # --- OGPreferences ---
@@ -296,6 +298,35 @@ class OGProperties(PropertyGroup):
                                          description="Second level sound bank (max 2 total)")
     music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS, default="none",
                                          description="Music bank to load for this level")
+    # Lighting (mood + sky)
+    mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
+                                         update=_on_mood_changed,
+                                         description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
+    sky:                    BoolProperty(name="Has Sky", default=True,
+                                         update=_on_sky_changed,
+                                         description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")
+    # Fog Override — when enabled, exporter injects a fog-control actor that
+    # overrides *math-camera* fog values every frame.  When disabled, the
+    # active mood drives fog as normal.
+    fog_override_enabled:   BoolProperty(name="Override Mood Fog", default=False,
+                                         update=_on_fog_override_changed,
+                                         description="When on, custom fog values below take precedence over the mood's fog table. Adds a fog-control actor to the level. Turn off to revert to mood-driven fog with no leftovers")
+    fog_color:              FloatVectorProperty(name="Fog Color", subtype="COLOR", size=3,
+                                                 default=(0.376, 0.502, 0.627), min=0.0, max=1.0,
+                                                 update=_on_fog_override_changed,
+                                                 description="RGB tint applied to fog and the *fog-color* global")
+    fog_start:              FloatProperty(name="Fog Start (m)", default=25.0, min=0.0, max=2000.0,
+                                          update=_on_fog_override_changed,
+                                          description="Distance (meters) from camera where fog begins")
+    fog_end:                FloatProperty(name="Fog End (m)", default=200.0, min=0.0, max=4000.0,
+                                          update=_on_fog_override_changed,
+                                          description="Distance (meters) from camera where fog reaches maximum density")
+    fog_max:                FloatProperty(name="Fog Max", default=0.95, min=0.0, max=1.0,
+                                          update=_on_fog_override_changed,
+                                          description="Maximum fog density at fog-end and beyond (0.0 = no fog, 1.0 = fully fogged)")
+    fog_min:                FloatProperty(name="Fog Min", default=0.10, min=0.0, max=1.0,
+                                          update=_on_fog_override_changed,
+                                          description="Minimum fog density at far distances (clamps fog from going to zero)")
     sfx_sound:              EnumProperty(name="Sound", items=ALL_SFX_ITEMS, default="waterfall",
                                          description="Currently selected sound for emitter placement")
     ambient_default_radius: FloatProperty(name="Default Emitter Radius (m)", default=15.0, min=1.0, max=200.0,

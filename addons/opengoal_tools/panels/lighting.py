@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import bpy
 from bpy.types import Panel
+from ..operators.build import _bakeable_meshes
 
 
 class OG_PT_Lighting(Panel):
@@ -28,20 +29,51 @@ class OG_PT_Lighting(Panel):
         layout = self.layout
         props  = ctx.scene.og_props
 
+        # ── Level Lighting (mood + sky) ────────────────────────────────────
+        # Writes :mood, :mood-func and :sky into level-info.gc on every export.
+        box = layout.box()
+        box.label(text="Level Lighting:", icon="LIGHT_SUN")
+        box.prop(props, "mood", text="Mood")
+        box.prop(props, "sky",  text="Has Sky")
+
+        # ── Fog Override ───────────────────────────────────────────────────
+        # When enabled the exporter injects a fog-control actor that overrides
+        # *math-camera* fog values every frame.  When disabled, no fog-control
+        # is emitted -- mood drives fog with no leftovers.
+        fog_box = layout.box()
+        fog_box.label(text="Fog Override:", icon="MOD_FLUIDSIM")
+        fog_box.prop(props, "fog_override_enabled")
+        if props.fog_override_enabled:
+            sub = fog_box.column(align=True)
+            sub.prop(props, "fog_color")
+            sub.prop(props, "fog_start")
+            sub.prop(props, "fog_end")
+            sub.prop(props, "fog_max")
+            sub.prop(props, "fog_min")
+
+        layout.separator(factor=0.5)
+
         col = layout.column(align=True)
         col.label(text="Cycles Bake Settings:", icon="LIGHT")
         col.prop(props, "lightbake_samples")
 
         layout.separator(factor=0.5)
 
-        targets = [o for o in ctx.selected_objects if o.type == "MESH"]
+        sel = ctx.selected_objects
+        targets = _bakeable_meshes(sel)
+        skipped = len(sel) - len(targets)
         if targets:
             box = layout.box()
-            box.label(text=f"{len(targets)} mesh(es) selected:", icon="OBJECT_DATA")
+            header = f"{len(targets)} mesh(es) selected"
+            if skipped:
+                header += f"  ({skipped} non-mesh / empty skipped)"
+            box.label(text=header + ":", icon="OBJECT_DATA")
             for o in targets[:6]:
                 box.label(text=f"  • {o.name}")
             if len(targets) > 6:
                 box.label(text=f"  … and {len(targets) - 6} more")
+        elif skipped:
+            layout.label(text=f"Selected items have no bakeable geometry  ({skipped} skipped)", icon="INFO")
         else:
             layout.label(text="Select mesh object(s) to bake", icon="INFO")
 

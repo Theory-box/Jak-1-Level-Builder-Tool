@@ -306,6 +306,23 @@ class OG_OT_ExportBuildPlay(Operator):
         ctx.window_manager.event_timer_remove(self._timer)
         ctx.workspace.status_text_set(None)
 
+def _bakeable_meshes(objects):
+    """Return the subset of `objects` that can actually receive a vertex-color bake.
+
+    Filters out:
+      • non-MESH types (lights, curves, empties, etc.)
+      • mesh objects whose data block has zero polygons (empty placeholder
+        meshes — common when users add dummy/marker meshes to the scene)
+
+    Used by both OG_OT_BakeLighting and the Lighting panel so the displayed
+    count and the actual bake target list stay in sync.
+    """
+    return [o for o in objects
+            if o.type == "MESH"
+            and o.data is not None
+            and len(o.data.polygons) > 0]
+
+
 class OG_OT_BakeLighting(Operator):
     """Bake Cycles lighting to vertex colors on each selected mesh object."""
     bl_idname      = "og.bake_lighting"
@@ -317,11 +334,16 @@ class OG_OT_BakeLighting(Operator):
         props   = scene.og_props
         samples = props.lightbake_samples
 
-        # Collect only MESH objects from the selection
-        targets = [o for o in ctx.selected_objects if o.type == "MESH"]
+        # Filter selection to mesh objects with actual geometry.
+        # Non-meshes (lights, empties, curves) and zero-polygon "empty" meshes
+        # are silently skipped so users can do a quick Select-All -> Bake
+        # without having to manually deselect non-bakeable items.
+        sel = list(ctx.selected_objects)
+        targets = _bakeable_meshes(sel)
         if not targets:
-            self.report({"ERROR"}, "No mesh objects selected")
+            self.report({"ERROR"}, "No bakeable meshes selected (nothing with polygons)")
             return {"CANCELLED"}
+        skipped = len(sel) - len(targets)
 
         # Configure Cycles for the bake. We deliberately don't restore
         # these afterwards — the bake runs asynchronously as a modal job
@@ -345,6 +367,16 @@ class OG_OT_BakeLighting(Operator):
         # operator iterates every selected mesh on its own — we don't need to
         # loop in Python. One 'INVOKE_DEFAULT' call = one modal job that handles
         # the whole selection and keeps the UI responsive throughout.
+        # Deselect non-bakeable items first so the modal bake job never sees
+        # them (otherwise empty meshes would slow the bake and Blender's status
+        # would report misleading "X meshes baked" counts).
+        for o in sel:
+            if o not in targets:
+                o.select_set(False)
+        # Ensure the active object is a bakeable mesh — Blender requires this.
+        if ctx.view_layer.objects.active not in targets:
+            ctx.view_layer.objects.active = targets[0]
+
         bpy.ops.object.bake(
             'INVOKE_DEFAULT',
             type="DIFFUSE",
@@ -354,7 +386,11 @@ class OG_OT_BakeLighting(Operator):
         )
 
         names = ", ".join(o.name for o in targets)
-        self.report({"INFO"}, f"Baking {len(targets)} mesh(es): {names}")
+        msg = f"Baking {len(targets)} mesh(es)"
+        if skipped:
+            msg += f" (skipped {skipped} non-mesh / empty)"
+        msg += f": {names}"
+        self.report({"INFO"}, msg)
         return {"FINISHED"}
 
 

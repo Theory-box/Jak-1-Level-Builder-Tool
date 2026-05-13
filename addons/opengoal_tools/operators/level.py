@@ -77,7 +77,7 @@ _GOAL_BOILERPLATE = """\
 ;; Entity type: {etype}
 ;;
 ;; Replace this with your deftype + defstate + init-from-entity!
-;; See knowledge-base/opengoal/goal-scripting.md for reference.
+;; See knowledge-base/research/opengoal/goal-scripting.md for reference.
 ;;
 ;; IMPORTANT:
 ;;   • First field starts at offset-assert 176 (end of process-drawable base)
@@ -174,6 +174,14 @@ class OG_OT_CreateLevel(Operator):
         col["og_sound_bank_1"]      = "none"
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
+        col["og_mood"]              = "village1"
+        col["og_sky"]               = True
+        col["og_fog_override_enabled"] = False
+        col["og_fog_color"]         = (0.376, 0.502, 0.627)
+        col["og_fog_start"]         = 25.0
+        col["og_fog_end"]           = 200.0
+        col["og_fog_max"]           = 0.95
+        col["og_fog_min"]           = 0.10
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name
@@ -267,6 +275,14 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         col["og_sound_bank_1"]      = "none"
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
+        col["og_mood"]              = "village1"
+        col["og_sky"]               = True
+        col["og_fog_override_enabled"] = False
+        col["og_fog_color"]         = (0.376, 0.502, 0.627)
+        col["og_fog_start"]         = 25.0
+        col["og_fog_end"]           = 200.0
+        col["og_fog_max"]           = 0.95
+        col["og_fog_min"]           = 0.10
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name

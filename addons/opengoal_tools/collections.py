@@ -18,6 +18,14 @@ _LEVEL_PROP_KEY_MAP = {
     "og_sound_bank_1":      "sound_bank_1",
     "og_sound_bank_2":      "sound_bank_2",
     "og_music_bank":        "music_bank",
+    "og_mood":              "mood",
+    "og_sky":               "sky",
+    "og_fog_override_enabled": "fog_override_enabled",
+    "og_fog_color":         "fog_color",
+    "og_fog_start":         "fog_start",
+    "og_fog_end":           "fog_end",
+    "og_fog_max":           "fog_max",
+    "og_fog_min":           "fog_min",
 }
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
@@ -61,6 +69,14 @@ _LEVEL_COL_DEFAULTS = {
     "og_sound_bank_1":      "none",
     "og_sound_bank_2":      "none",
     "og_music_bank":        "none",
+    "og_mood":              "village1",
+    "og_sky":               True,
+    "og_fog_override_enabled": False,
+    "og_fog_color":         (0.376, 0.502, 0.627),
+    "og_fog_start":         25.0,
+    "og_fog_end":           200.0,
+    "og_fog_max":           0.95,
+    "og_fog_min":           0.10,
 }
 
 
@@ -492,4 +508,74 @@ def _on_active_level_changed(self, context):
     col = _active_level_col(context.scene)
     if col is not None:
         _set_blender_active_collection(context, col)
+        # Pull the active collection's lighting values into scene props so the
+        # Lighting panel reflects the level we just switched to.  Reading uses
+        # _LEVEL_COL_DEFAULTS so collections that pre-date the lighting feature
+        # come up with sensible defaults.  setattr will re-fire the per-prop
+        # update callback once with the same value -- harmless one-shot.
+        props = context.scene.og_props
+        if hasattr(props, "mood"):
+            mood_val = col.get("og_mood", _LEVEL_COL_DEFAULTS["og_mood"])
+            try:
+                setattr(props, "mood", mood_val)
+            except Exception:
+                pass
+        if hasattr(props, "sky"):
+            sky_val = bool(col.get("og_sky", _LEVEL_COL_DEFAULTS["og_sky"]))
+            try:
+                setattr(props, "sky", sky_val)
+            except Exception:
+                pass
+        # Fog override — same pattern, six values to sync
+        for attr, key in (
+            ("fog_override_enabled", "og_fog_override_enabled"),
+            ("fog_color",            "og_fog_color"),
+            ("fog_start",            "og_fog_start"),
+            ("fog_end",              "og_fog_end"),
+            ("fog_max",              "og_fog_max"),
+            ("fog_min",              "og_fog_min"),
+        ):
+            if not hasattr(props, attr):
+                continue
+            val = col.get(key, _LEVEL_COL_DEFAULTS[key])
+            if attr == "fog_override_enabled":
+                val = bool(val)
+            elif attr == "fog_color":
+                # IDProperty arrays come back as IDPropertyArray — coerce to tuple
+                val = tuple(val)
+            else:
+                val = float(val)
+            try:
+                setattr(props, attr, val)
+            except Exception:
+                pass
+
+
+def _on_mood_changed(self, context):
+    """Mood EnumProperty update callback: persist into active level collection."""
+    col = _active_level_col(context.scene)
+    if col is not None:
+        col["og_mood"] = self.mood
+
+
+def _on_sky_changed(self, context):
+    """Sky BoolProperty update callback: persist into active level collection."""
+    col = _active_level_col(context.scene)
+    if col is not None:
+        col["og_sky"] = bool(self.sky)
+
+
+def _on_fog_override_changed(self, context):
+    """Update callback shared by all six fog-override props.  Persists every
+    fog-related value into the active level collection on every change.
+    Fired by toggle, color picker, start/end/max/min sliders alike."""
+    col = _active_level_col(context.scene)
+    if col is None:
+        return
+    col["og_fog_override_enabled"] = bool(self.fog_override_enabled)
+    col["og_fog_color"]            = tuple(self.fog_color)
+    col["og_fog_start"]            = float(self.fog_start)
+    col["og_fog_end"]              = float(self.fog_end)
+    col["og_fog_max"]              = float(self.fog_max)
+    col["og_fog_min"]              = float(self.fog_min)
 

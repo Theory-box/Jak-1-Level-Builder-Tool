@@ -5579,8 +5579,8 @@
     {
       "etype": "powercellalt",
       "label": "Power Cell (alt)",
-      "category": "Pickups",
-      "parent": "eco-collectable",
+      "category": "Visuals",
+      "parent": "process-drawable",
       "art_group": "powercellalt-ag.go",
       "tpages": [
         "tpage-1419.go",
@@ -5656,14 +5656,32 @@
       "shape": "PLAIN_AXES"
     },
     {
-      "etype": "eco-green",
-      "label": "Green Eco",
+      "etype": "health",
+      "label": "Eco (Green)",
       "category": "Pickups",
       "parent": "eco-collectable",
       "code": {
         "in_game_cgo": true
       },
       "lumps": [],
+      "color": [
+        0.1,
+        0.9,
+        0.2,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "ecovent",
+      "label": "Eco Vent (Green)", 
+      "category": "Pickups",
+      "parent": "eco-collectable",
+      "code": {
+        "in_game_cgo": true
+      },
+      // Eco Vent Green needs a special case in lumps because there's no actor for it
+      // It needs an eco-info with the pickup type set to eco-green and amount to 1
       "color": [
         0.1,
         0.9,
@@ -5891,7 +5909,7 @@
       "etype": "balance-plat",
       "label": "Balance Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "balance-plat-ag.go",
       "tpages": [
         "tpage-358.go",
@@ -5909,6 +5927,16 @@
           "key": "distance",
           "type": "meters",
           "description": "Vertical travel range. Default ~5m."
+        },
+        {
+          "key": "next-actor",
+          "type": "structure",
+          "description": "Next warp target."
+        },
+        {
+          "key": "prev-actor",
+          "type": "structure",
+          "description": "Previous warp target."
         }
       ],
       "color": [
@@ -7291,7 +7319,6 @@
       "label": "Eco Pill (Health)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "art_group": "eco-pill-ag.go",
       "code": {
         "o": "collectables.o",
         "o_only": true
@@ -7306,26 +7333,14 @@
       "shape": "PLAIN_AXES"
     },
     {
-      "etype": "ecovent",
-      "label": "Blue Eco",
+      "etype": "eco-blue",
+      "label": "Eco (Blue)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "art_group": "vent-ag.go",
       "code": {
         "o": "collectables.o",
         "o_only": true
       },
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Blocker entity (vent blocked until this task completes)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [],
       "color": [
         0.2,
@@ -7337,10 +7352,9 @@
     },
     {
       "etype": "ventblue",
-      "label": "Blue Eco Vent (alt)",
+      "label": "Eco Vent (Blue)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "art_group": "vent-ag.go",
       "code": {
         "o": "collectables.o",
         "o_only": true
@@ -7367,10 +7381,9 @@
     },
     {
       "etype": "ventred",
-      "label": "Red Eco",
+      "label": "Eco Vent (Red)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "art_group": "vent-ag.go",
       "code": {
         "o": "collectables.o",
         "o_only": true
@@ -7388,6 +7401,55 @@
       ],
       "lumps": [],
       "color": [
+        0.2,
+        0.4,
+        1.0,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "ventyellow",
+      "label": "Eco Vent (Yellow)",
+      "category": "Pickups",
+      "parent": "eco-collectable",
+      "code": {
+        "o": "collectables.o",
+        "o_only": true
+      },
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Blocker entity",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "lumps": [],
+      "color": [
+        0.2,
+        0.4,
+        1.0,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "eco-red",
+      "label": "Eco (Red)",
+      "category": "Pickups",
+      "parent": "eco-collectable",
+      "code": {
+        "o": "collectables.o",
+        "o_only": true
+      },
+      "link_slots": [
+      ],
+      "lumps": [],
+      "color": [
         1.0,
         0.2,
         0.1,
@@ -7396,11 +7458,10 @@
       "shape": "PLAIN_AXES"
     },
     {
-      "etype": "ventyellow",
-      "label": "Yellow Eco",
+      "etype": "eco-yellow",
+      "label": "Eco (Yellow)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "art_group": "vent-ag.go",
       "code": {
         "o": "collectables.o",
         "o_only": true
@@ -8565,7 +8626,7 @@
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "art_group": "bouncer-ag.go",
+      "art_group": "bounceytarp-ag.go",
       "tpage_group": "Jungle",
       "tpages": [
         "tpage-385.go",
@@ -8577,6 +8638,7 @@
         "o": "bouncer.o",
         "o_only": true
       },
+      "glb": "levels/jungle/bounceytarp-lod0.glb",
       "lumps": [
         {
           "key": "spring-height",
@@ -15216,7 +15278,7 @@
       "shape": "PLAIN_AXES"
     },
     {
-      "etype": "eco-yellow",
+      "etype": "ventyellow",
       "label": "Yellow Eco Vent",
       "category": "Pickups",
       "color": [
@@ -15469,7 +15531,6 @@
       "etype": "ecovent",
       "label": "Blue Eco Vent",
       "category": "Pickups",
-      "art_group": "vent-ag.go",
       "color": [
         0.2,
         0.4,
@@ -15482,7 +15543,6 @@
       "etype": "ventblue",
       "label": "Blue Eco Vent (alt)",
       "category": "Pickups",
-      "art_group": "vent-ag.go",
       "color": [
         0.2,
         0.4,
@@ -15495,7 +15555,6 @@
       "etype": "ventred",
       "label": "Red Eco Vent",
       "category": "Pickups",
-      "art_group": "vent-ag.go",
       "color": [
         1.0,
         0.2,
@@ -15508,7 +15567,6 @@
       "etype": "ventyellow",
       "label": "Yellow Eco Vent",
       "category": "Pickups",
-      "art_group": "vent-ag.go",
       "color": [
         1.0,
         0.9,
