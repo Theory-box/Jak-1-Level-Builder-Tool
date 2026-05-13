@@ -170,9 +170,11 @@ cleaned up on the next export with no manual intervention.
 ### Still using `_nick(name)` (left as-is)
 - `export/levels.py:120` — `discover_custom_levels` scans disk to report
   what levels exist + flag collisions. No Blender access from this path,
-  can't read the override. May misreport collisions for override-using
-  levels. Low-impact — runs from the level audit operator, not the build
-  pipeline. Leaving for a separate follow-up.
+  so it can't read the override and may misreport collisions for
+  override-using levels. Currently inert: defined and imported in 7
+  modules but called from zero — no operator wires it up yet. Will need
+  attention only if/when a future "audit on-disk levels" feature gets
+  built that actually invokes it.
 - `export/levels.py:201` — dead local in `remove_level`. The regex
   beside it only uses `name`, the `nick` line is unused. Could remove,
   not worth a commit on its own.
