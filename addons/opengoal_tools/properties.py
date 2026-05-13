@@ -247,6 +247,12 @@ class OGProperties(PropertyGroup):
                                 description="First tpage group to allow")
     tpage_filter_2:         EnumProperty(name="Group 2", items=TPAGE_FILTER_ITEMS, default="NONE",
                                 description="Second tpage group to allow")
+    # Import panel — live filter for the GLB search box
+    glb_search_filter: StringProperty(
+        name="Search GLBs",
+        default="",
+        description="Case-insensitive substring match against GLB filenames in decompiler_out/jak1/glb_out/",
+    )
     platform_type:  EnumProperty(name="Platform Type",  items=_platform_enum_cb)
     crate_type:  EnumProperty(name="Crate Type",  items=CRATE_ITEMS)
     # Per-category entity pickers — each Spawn sub-panel uses its own prop

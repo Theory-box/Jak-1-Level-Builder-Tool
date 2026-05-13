@@ -12,6 +12,7 @@
 #   actor_fields.py  — generic data-driven panel (reads fields[] from DB)
 #   scene.py         — non-actor scene objects (cameras, emitters, triggers)
 #   tools.py         — build/dev/geometry tools
+#   imports.py       — import panel: bring vanilla GLBs in as reference geometry
 #
 # Each submodule exports a CLASSES tuple of its registerable Panel/Operator
 # classes. This file aggregates them into a single ALL_CLASSES tuple that
@@ -26,6 +27,7 @@ from .actor_fields import CLASSES as _ACTOR_FIELDS_CLASSES
 from .scene import CLASSES as _SCENE_CLASSES
 from .tools import CLASSES as _TOOLS_CLASSES
 from .lighting import CLASSES as _LIGHTING_CLASSES
+from .imports import CLASSES as _IMPORTS_CLASSES
 
 ALL_CLASSES = (
     *_LEVEL_CLASSES,
@@ -36,6 +38,7 @@ ALL_CLASSES = (
     *_SCENE_CLASSES,
     *_TOOLS_CLASSES,
     *_LIGHTING_CLASSES,
+    *_IMPORTS_CLASSES,
 )
 
 # Re-export every class by name so legacy `from .panels import OG_PT_Foo`
@@ -49,3 +52,4 @@ from .actor_fields import *
 from .scene import *
 from .tools import *
 from .lighting import *
+from .imports import *

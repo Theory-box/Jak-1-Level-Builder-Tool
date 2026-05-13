@@ -1,0 +1,136 @@
+# ───────────────────────────────────────────────────────────────────────
+# panels/imports.py — OpenGOAL Level Tools
+#
+# Import panel: bring GLBs from decompiler_out/jak1/glb_out/ into the scene
+# as reference geometry. Imports land in a top-level "Imports/<name>/"
+# collection at scene root, outside any level — so the export pipeline
+# never touches them.
+#
+# Structure:
+#   OG_PT_Import           — parent panel (header only)
+#     ├ OG_PT_ImportSearch — generic name search + filtered list
+#     └ OG_PT_ImportLevels — alphabetical list of every GLB in glb_out/
+#
+# Live filter: the search box is a StringProperty on og_props
+# (glb_search_filter). Blender re-runs draw() when it changes, so the
+# filter is essentially free.
+#
+# GLB list caching lives in operators/imports.py — module-level dict
+# populated on first access and on explicit Rescan.
+# ───────────────────────────────────────────────────────────────────────
+
+from __future__ import annotations
+
+import bpy
+from bpy.types import Panel
+
+from ..operators.imports import get_glb_cache, _SCAN_DONE
+
+# How many matching rows to draw at most. The panel is in the sidebar,
+# anything bigger than this makes the UI unusable.
+_MAX_VISIBLE_ROWS = 25
+
+
+class OG_PT_Import(Panel):
+    """Parent panel — just the header. All content lives in subpanels."""
+    bl_label       = "📥  Import"
+    bl_idname      = "OG_PT_import"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        # Header-only: the children carry the actual UI. We do show the
+        # Rescan button here so it's accessible regardless of which
+        # subpanel is open.
+        row = self.layout.row(align=True)
+        row.operator("og.rescan_glbs", icon="FILE_REFRESH", text="Rescan glb_out/")
+
+
+class OG_PT_ImportSearch(Panel):
+    """Generic search: type a substring, see matching GLBs, click to import."""
+    bl_label       = "🔍  Search GLBs"
+    bl_idname      = "OG_PT_import_search"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_import"
+    bl_order       = 0
+
+    def draw(self, ctx):
+        layout = self.layout
+        props  = ctx.scene.og_props
+
+        # Search field — Blender redraws automatically on text change
+        row = layout.row(align=True)
+        row.prop(props, "glb_search_filter", text="", icon="VIEWZOOM")
+
+        cache = get_glb_cache()
+        if not cache:
+            layout.label(text="No GLBs found in glb_out/", icon="INFO")
+            layout.label(text="Set decompiler path in Preferences", icon="DOT")
+            return
+
+        # Filter: case-insensitive substring match.
+        query = props.glb_search_filter.strip().lower()
+        if query:
+            matches = [name for name in cache if query in name.lower()]
+        else:
+            matches = cache  # Empty query → show everything (capped below)
+
+        if not matches:
+            layout.label(text=f"No matches for '{query}'", icon="INFO")
+            return
+
+        # Header line: match count + truncation notice if applicable
+        if len(matches) > _MAX_VISIBLE_ROWS:
+            layout.label(
+                text=f"{_MAX_VISIBLE_ROWS} of {len(matches)} matches (refine search)",
+                icon="OUTLINER",
+            )
+            shown = matches[:_MAX_VISIBLE_ROWS]
+        else:
+            layout.label(text=f"{len(matches)} match{'es' if len(matches) != 1 else ''}", icon="OUTLINER")
+            shown = matches
+
+        col = layout.column(align=True)
+        for name in shown:
+            op = col.operator("og.import_glb", text=name, icon="IMPORT")
+            op.glb_name = name
+
+
+class OG_PT_ImportLevels(Panel):
+    """Alphabetical list of every GLB in glb_out/. For v1 this is the
+    same content as the unfiltered Search panel — once we add other
+    sources (actor models, props), Search broadens but Levels stays
+    scoped to glb_out/."""
+    bl_label       = "🗺  Levels"
+    bl_idname      = "OG_PT_import_levels"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_import"
+    bl_order       = 1
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        layout = self.layout
+        cache  = get_glb_cache()
+
+        if not cache:
+            layout.label(text="No GLBs found in glb_out/", icon="INFO")
+            return
+
+        layout.label(text=f"{len(cache)} GLB{'s' if len(cache) != 1 else ''} available", icon="OUTLINER")
+        col = layout.column(align=True)
+        for name in cache:
+            op = col.operator("og.import_glb", text=name, icon="IMPORT")
+            op.glb_name = name
+
+
+CLASSES = (
+    OG_PT_Import,
+    OG_PT_ImportSearch,
+    OG_PT_ImportLevels,
+)
