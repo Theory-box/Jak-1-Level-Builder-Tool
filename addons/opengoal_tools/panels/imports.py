@@ -24,15 +24,53 @@ from __future__ import annotations
 import bpy
 from bpy.types import Panel
 
-from ..operators.imports import get_glb_cache, _SCAN_DONE
+from ..operators.imports import get_glb_cache, is_find_attempted
 
 # How many matching rows to draw at most. The panel is in the sidebar,
 # anything bigger than this makes the UI unusable.
 _MAX_VISIBLE_ROWS = 25
 
 
+def _draw_setup(layout, ctx):
+    """Render the first-time setup UI when no GLBs have been found yet.
+
+    Two-stage flow:
+      A. Initial — single 'Find Models' button (a DIR picker for the OG root).
+      B. Auto-detect attempted but cache still empty — manual fallback with
+         DIR pickers for og_root_path and decompiler_path, plus Rescan.
+    Once the cache populates, neither stage shows again until the scan
+    is cleared (which doesn't happen during normal use).
+    """
+    box = layout.box()
+    box.label(text="Setup needed", icon="ERROR")
+
+    if not is_find_attempted():
+        # Stage A — first time, single big button
+        box.label(text="Point me at your OpenGOAL install to scan for GLBs:")
+        box.operator("og.find_models", text="📂  Find Models", icon="FILEBROWSER")
+        return
+
+    # Stage B — auto-detect ran but came up empty. Show manual pickers.
+    box.label(text="Auto-detect found no GLBs. Set paths manually:", icon="INFO")
+    prefs = ctx.preferences.addons.get("opengoal_tools")
+    if prefs:
+        p = prefs.preferences
+        col = box.column(align=True)
+        col.prop(p, "og_root_path",      text="OpenGOAL Root")
+        col.prop(p, "decompiler_path",   text="Decompiler override")
+    row = box.row(align=True)
+    row.operator("og.find_models",  text="📂  Re-pick install",   icon="FILEBROWSER")
+    row.operator("og.rescan_glbs",  text="Rescan",                icon="FILE_REFRESH")
+
+
 class OG_PT_Import(Panel):
-    """Parent panel — just the header. All content lives in subpanels."""
+    """Parent panel.
+
+    When GLBs are available: shows the Rescan button and lets the subpanels
+    do the work.
+    When no GLBs are available: shows the first-time setup flow inline; the
+    subpanels are hidden via their own poll() so the UI stays clean.
+    """
     bl_label       = "📥  Import"
     bl_idname      = "OG_PT_import"
     bl_space_type  = "VIEW_3D"
@@ -41,10 +79,13 @@ class OG_PT_Import(Panel):
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
-        # Header-only: the children carry the actual UI. We do show the
-        # Rescan button here so it's accessible regardless of which
-        # subpanel is open.
-        row = self.layout.row(align=True)
+        layout = self.layout
+        cache  = get_glb_cache()
+        if not cache:
+            _draw_setup(layout, ctx)
+            return
+        # Normal mode — children handle the listings, header just has Rescan.
+        row = layout.row(align=True)
         row.operator("og.rescan_glbs", icon="FILE_REFRESH", text="Rescan glb_out/")
 
 
@@ -58,6 +99,13 @@ class OG_PT_ImportSearch(Panel):
     bl_parent_id   = "OG_PT_import"
     bl_order       = 0
 
+    @classmethod
+    def poll(cls, ctx):
+        # Hide while the parent panel is in setup mode; show once GLBs
+        # are available. get_glb_cache() is cheap after the first call —
+        # _SCAN_DONE short-circuits the file walk.
+        return bool(get_glb_cache())
+
     def draw(self, ctx):
         layout = self.layout
         props  = ctx.scene.og_props
@@ -67,10 +115,6 @@ class OG_PT_ImportSearch(Panel):
         row.prop(props, "glb_search_filter", text="", icon="VIEWZOOM")
 
         cache = get_glb_cache()
-        if not cache:
-            layout.label(text="No GLBs found in glb_out/", icon="INFO")
-            layout.label(text="Set decompiler path in Preferences", icon="DOT")
-            return
 
         # Filter: case-insensitive substring match.
         query = props.glb_search_filter.strip().lower()
@@ -114,13 +158,13 @@ class OG_PT_ImportLevels(Panel):
     bl_order       = 1
     bl_options     = {"DEFAULT_CLOSED"}
 
+    @classmethod
+    def poll(cls, ctx):
+        return bool(get_glb_cache())
+
     def draw(self, ctx):
         layout = self.layout
         cache  = get_glb_cache()
-
-        if not cache:
-            layout.label(text="No GLBs found in glb_out/", icon="INFO")
-            return
 
         layout.label(text=f"{len(cache)} GLB{'s' if len(cache) != 1 else ''} available", icon="OUTLINER")
         col = layout.column(align=True)

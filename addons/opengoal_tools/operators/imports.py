@@ -12,6 +12,11 @@
 # Module-level _GLB_CACHE holds the scan result so the live filter in the
 # panel's draw() stays cheap. Populated on first access and on explicit
 # rescan (OG_OT_RescanGlbs).
+#
+# _FIND_ATTEMPTED is set by OG_OT_FindModels so the Import panel knows
+# whether to show the first-time "Find Models" prompt or the manual-path
+# fallback. Resets on Blender restart, which is fine — once the cache
+# populates the panel skips both prompts entirely.
 # ───────────────────────────────────────────────────────────────────────
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ from .. import model_preview as _mp
 _GLB_CACHE: list[str] = []          # sorted basenames
 _GLB_PATHS: dict[str, Path] = {}    # basename → full path
 _SCAN_DONE: bool = False             # True once we've run a scan at least once
+_FIND_ATTEMPTED: bool = False        # True once the user has clicked Find Models
 
 
 def _glb_out_dir() -> Path:
@@ -80,6 +86,22 @@ def get_glb_path(basename: str) -> Path | None:
     return _GLB_PATHS.get(basename)
 
 
+def is_find_attempted() -> bool:
+    """True once the user has clicked Find Models at least once in this
+    Blender session. Used by the Import panel to choose between the
+    first-time prompt and the manual-path fallback when the cache is
+    empty. Resets to False on Blender restart."""
+    return _FIND_ATTEMPTED
+
+
+def _tag_view3d_redraw(ctx):
+    """Force the 3D viewport sidebar to repaint so the Import panel
+    transitions out of setup mode the moment the cache fills."""
+    for area in ctx.screen.areas:
+        if area.type == "VIEW_3D":
+            area.tag_redraw()
+
+
 # ── Operators ────────────────────────────────────────────────────────────
 
 class OG_OT_RescanGlbs(Operator):
@@ -96,10 +118,65 @@ class OG_OT_RescanGlbs(Operator):
             self.report({"WARNING"}, msg)
         else:
             self.report({"INFO"}, f"Found {n} GLB{'s' if n != 1 else ''} in glb_out/")
-        # Force a UI redraw so the panel reflects the new cache contents.
-        for area in ctx.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        _tag_view3d_redraw(ctx)
+        return {"FINISHED"}
+
+
+class OG_OT_FindModels(Operator):
+    """First-time setup helper for the Import panel. Opens a directory
+    picker for the OpenGOAL install root, runs the existing scan-paths
+    auto-detect to populate exe/data folders, then refreshes the GLB
+    cache. If GLBs are found the panel transitions to normal UI; if not,
+    the panel falls back to manual decompiler-path entry."""
+    bl_idname  = "og.find_models"
+    bl_label   = "Find Models"
+    bl_description = (
+        "Pick your OpenGOAL install folder. The addon will auto-detect "
+        "exe/data subfolders and scan decompiler_out for available GLBs."
+    )
+    bl_options = {"INTERNAL"}
+
+    directory: StringProperty(subtype="DIR_PATH")
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        global _FIND_ATTEMPTED
+        _FIND_ATTEMPTED = True
+
+        picked = (self.directory or "").strip().rstrip("\\/")
+        if not picked:
+            self.report({"WARNING"}, "No folder selected — set paths manually below")
+            _tag_view3d_redraw(ctx)
+            return {"CANCELLED"}
+
+        prefs = ctx.preferences.addons.get("opengoal_tools")
+        if not prefs:
+            self.report({"ERROR"}, "Addon preferences not found")
+            _tag_view3d_redraw(ctx)
+            return {"CANCELLED"}
+
+        prefs.preferences.og_root_path = picked
+
+        # Run the existing scan_paths op to auto-derive exe + data folders
+        # from the root. If it fails we still try a GLB scan — the user
+        # may have set a decompiler_path override that's enough on its own.
+        try:
+            bpy.ops.og.scan_paths()
+        except Exception as e:
+            self.report({"WARNING"}, f"Auto-detect failed: {e}. Trying GLB scan anyway.")
+
+        n, msg = _scan_glbs()
+        if n > 0:
+            self.report({"INFO"}, f"Found {n} GLB{'s' if n != 1 else ''} — Import panel ready")
+        else:
+            self.report(
+                {"WARNING"},
+                msg or "No GLBs found under that folder. Set decompiler path manually below."
+            )
+        _tag_view3d_redraw(ctx)
         return {"FINISHED"}
 
 
@@ -181,5 +258,6 @@ class OG_OT_ImportGlb(Operator):
 
 CLASSES = (
     OG_OT_RescanGlbs,
+    OG_OT_FindModels,
     OG_OT_ImportGlb,
 )

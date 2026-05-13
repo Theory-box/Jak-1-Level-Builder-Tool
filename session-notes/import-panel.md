@@ -98,3 +98,39 @@ their stuff relative to it.
 - Add a "delete imports" button that wipes the `Imports/` collection.
 - Hide-on-import toggle (auto-hide newly imported meshes in the
   viewport to keep the scene snappy).
+
+---
+
+## Update — first-time setup flow
+
+After the first preview build the user pointed out: on a fresh install
+the addon's paths aren't configured yet, so the panel just shows "no
+GLBs found" with no way to fix it without leaving for Preferences.
+
+Added a wizard-style setup flow that lives inside the Import panel.
+Two stages, automatic transition:
+
+- **Stage A — first open.** Empty cache + `_FIND_ATTEMPTED == False`.
+  Single big button: **📂 Find Models**. Clicking opens a DIR picker
+  for the OpenGOAL install root. On confirm the operator:
+  1. Writes the path into `og_root_path`
+  2. Runs the existing `og.scan_paths` to derive exe/data folders
+  3. Refreshes the GLB cache
+  4. Sets `_FIND_ATTEMPTED = True`
+  5. Forces a viewport redraw
+
+- **Stage B — auto-detect tried but cache still empty.** Manual fallback:
+  inline DIR pickers for `og_root_path` and `decompiler_path` (override),
+  plus a Re-pick install button and a Rescan button. Shows only after a
+  failed first attempt — keeps the initial UI clean.
+
+- **Success.** Once any path produces a non-empty cache, the setup box
+  vanishes and the normal Rescan-button-only header appears. Subpanels
+  hide via `poll() → bool(get_glb_cache())` during setup so they don't
+  spam "no GLBs found" messages.
+
+State: `_FIND_ATTEMPTED` is a module-level flag, resets on Blender
+restart. Once GLBs are found the flag is irrelevant — `cache` is the
+authoritative gate.
+
+New operator: `OG_OT_FindModels` (`og.find_models`, INTERNAL).
