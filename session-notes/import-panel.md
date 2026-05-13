@@ -134,3 +134,31 @@ restart. Once GLBs are found the flag is irrelevant — `cache` is the
 authoritative gate.
 
 New operator: `OG_OT_FindModels` (`og.find_models`, INTERNAL).
+
+---
+
+## Update 2 — wrong path assumption + simpler setup
+
+User test report:
+> "Find Models" didn't find anything at `C:\...\active\jak1\data\decompiler_out\jak1\levels\`.
+> Manually setting the path also didn't help.
+> "we don't want a input field for open goal root. just need manual path to decompiler out."
+
+Two bugs collided:
+
+1. **Wrong scan target.** The KB doc `jak1-level-design.md` says GLBs live in `decompiler_out/jak1/glb_out/`. The addon's own `build.py` docstring says they live in `decompiler_out/jak1/levels/<level>/`. The user's install matches `build.py` (per-level subfolders), not the KB. I trusted the KB, which was wrong/outdated.
+
+   Fixed by switching `_scan_glbs()` to recurse with `rglob("*.glb")` under `decompiler_out/jak1/` — picks up both layouts. Cache keys are now POSIX-style relpaths without `.glb` (e.g. `levels/village1/village1-background`) so files with the same basename from different folders stay distinct.
+
+2. **Setup UI exposed the wrong field.** Stage B's manual fallback showed both `og_root_path` and `decompiler_path`. The user pointed out `og_root_path` belongs to Preferences and shouldn't be duplicated in the panel; only `decompiler_path` is needed for the Import flow. Removed the og_root_path field.
+
+   Simplified `OG_OT_FindModels`: it now writes the picked path directly to `decompiler_path` (no `og_root_path` write, no `scan_paths` call). One responsibility — find GLBs.
+
+3. **Levels subpanel reshaped.** Before: alphabetical list of every GLB in `glb_out/` (a flat layout that didn't exist for the user). After: one row per vanilla level, importing `levels/<lvl>/<lvl>-background.glb` only. The Search subpanel covers arbitrary GLBs (per-actor models, props, etc.). Filter pattern matches `levels/<X>/<X>-background` exactly — if a level lacks that file the row is omitted, with a clear "Run decompiler with rip_levels: true" hint.
+
+Cache key shape change (`basename` → `relpath`) is internal — the `glb_name` operator property keeps the same name to avoid breaking anything external.
+
+Files touched (still strictly additive at the package level):
+- `operators/imports.py` — recursive scan, simpler FindModels, INFO/WARNING message text
+- `panels/imports.py` — drop og_root_path, level pattern filter, basename in Search display
+- `properties.py` — search filter description text
