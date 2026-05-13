@@ -23,6 +23,7 @@ from ..collections import (
     _get_level_prop, _level_objects,
     _active_level_col, _classify_object, _col_path_for_entity,
     _ensure_sub_collection, _recursive_col_objects,
+    _ensure_level_index, _migrate_all_level_indices,
     _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
 )
 from ..collections import (
@@ -54,6 +55,24 @@ from .paths import (
     _nick,
     log,
 )
+
+
+def _effective_nick(scene, name):
+    """Resolve the active level's vis-nick: explicit override if set, else auto-derived from name.
+
+    Mirrors collections._resolve_vis_nick but operates via _get_level_prop so it sees
+    the override of the level currently being exported (which is always the active level
+    in single-level export flows). Falls back to the safe auto-derived value when
+    scene is None or the override is unset/empty.
+    """
+    if scene is not None:
+        try:
+            ov = str(_get_level_prop(scene, "og_vis_nick_override", "") or "").strip().lower()
+            if ov:
+                return ov
+        except Exception:
+            pass
+    return _nick(name)
 
 
 # Cross-module imports (siblings in the export package)
@@ -545,12 +564,12 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         p.write_text(new_text)
         log(f"Wrote {p}")
 
-def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000):
+def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     data = {
-        "long_name": name, "iso_name": _iso(name), "nickname": _nick(name),
+        "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
         "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
         "double_sided_collide": False, "base_id": base_id,
@@ -567,7 +586,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000):
         p.write_text(new_text)
         log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} cameras)")
 
-def write_gd(name, ags, code_deps, tpages=None):
+def write_gd(name, ags, code_deps, tpages=None, scene=None):
     """Write .gd file.
 
     code_deps is a list of (o_file, gc_path, dep) from needed_code().
@@ -577,9 +596,18 @@ def write_gd(name, ags, code_deps, tpages=None):
     own line so that the first file entry keeps correct indentation.  The old
     code concatenated ' (' + files[0].lstrip() which produced a malformed
     S-expression when enemy .o entries were present and caused GOALC to crash.
+
+    FIX (vis-nick): DGO name (e.g. MYL.DGO) and on-disk .gd filename now honor
+    og_vis_nick_override, so two levels with colliding auto-derived nicks
+    (e.g. my-level and my-level2 both auto-derive to 'myl') can build
+    alongside each other. Also sweeps stale .gd siblings from previous
+    exports with a different nick — leaving them in place causes the build
+    to see two .gd files producing the same DGO and abort with
+    'multiple ways to make output'.
     """
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
-    dgo_name = f"{_nick(name).upper()}.DGO"
+    nick     = _effective_nick(scene, name)
+    dgo_name = f"{nick.upper()}.DGO"
     code_o   = [f'  "{o}"' for o, _, _ in code_deps]
     # Village1 sky tpages always present; add entity-specific tpages before art groups
     base_tpages = ['  "tpage-398.go"', '  "tpage-400.go"', '  "tpage-399.go"',
@@ -599,7 +627,15 @@ def write_gd(name, ags, code_deps, tpages=None):
         + files
         + ['  )', ' )']
     )
-    p = d / f"{_nick(name)}.gd"
+    p = d / f"{nick}.gd"
+    # Sweep stale .gd siblings left by previous exports with a different nick.
+    for stale in d.glob("*.gd"):
+        if stale.name != p.name:
+            try:
+                stale.unlink()
+                log(f"Removed stale {stale}")
+            except OSError as e:
+                log(f"WARNING: could not remove stale {stale}: {e}")
     new_text = "\n".join(lines) + "\n"
     if not p.exists() or p.read_text() != new_text:
         p.write_text(new_text)
@@ -662,6 +698,8 @@ def patch_level_info(name, spawns, scene=None):
     if not p.exists(): log(f"WARNING: {p} not found"); return
     # Audio settings from scene props (if scene provided)
     if scene is not None:
+        # Lazy-migrate: give any old levels missing og_level_index a unique value
+        _migrate_all_level_indices(scene)
         _bank      = str(_get_level_prop(scene, "og_music_bank",    "none") or "none")
         _music_val = f"'{_bank}" if _bank and _bank != "none" else "#f"
         _sb1       = str(_get_level_prop(scene, "og_sound_bank_1",  "none") or "none")
@@ -672,6 +710,7 @@ def patch_level_info(name, spawns, scene=None):
         _bot_h     = float(_get_level_prop(scene, "og_bottom_height", -20.0))
         _vis_ov    = str(_get_level_prop(scene, "og_vis_nick_override", "") or "").strip()
         _vnick     = _vis_ov if _vis_ov else _nick(name)
+        _lindex    = int(_get_level_prop(scene, "og_level_index", 100))
         # Lighting (mood + sky)
         _mood      = str(_get_level_prop(scene, "og_mood", "village1") or "village1")
         _sky_bool  = bool(_get_level_prop(scene, "og_sky", True))
@@ -680,6 +719,7 @@ def patch_level_info(name, spawns, scene=None):
         _sbanks_val = "'()"
         _bot_h   = -20.0
         _vnick   = _nick(name)
+        _lindex  = 100
         _mood    = "village1"
         _sky_bool = True
     _mood_func = MOOD_FUNC_OVERRIDES.get(_mood, _mood)
@@ -711,7 +751,7 @@ def patch_level_info(name, spawns, scene=None):
 
     block = (f"\n(define {name}\n"
              f"  (new 'static 'level-load-info\n"
-             f"       :index 27\n"
+             f"       :index {_lindex}\n"
              f"       :name '{name}\n"
              f"       :visname '{name}-vis\n"
              f"       :nickname '{_vnick}\n"
@@ -749,20 +789,24 @@ def patch_level_info(name, spawns, scene=None):
     else:
         log("Skipped level-info.gc (unchanged)")
 
-def patch_game_gp(name, code_deps=None):
+def patch_game_gp(name, code_deps=None, scene=None):
     """Patch game.gp to build our custom level and compile enemy code files.
 
     code_deps: list of (o_file, gc_path, dep) from needed_code().
     For each enemy type not in GAME.CGO we add a goal-src line so GOALC
     compiles and links its code into our DGO.  Without this the type is
     undefined at runtime and the entity spawns as a do-nothing process.
+
+    FIX (vis-nick): the DGO name and .gd path referenced from game.gp now
+    honor og_vis_nick_override so multi-level blends with colliding
+    auto-derived nicks build cleanly.
     """
     p = _game_gp()
     if not p.exists(): log(f"WARNING: {p} not found"); return
     raw  = p.read_bytes()
     crlf = b"\r\n" in raw
     txt  = raw.decode("utf-8").replace("\r\n", "\n")
-    nick = _nick(name)
+    nick = _effective_nick(scene, name)
     dgo  = f"{nick.upper()}.DGO"
 
     # goal-src lines for enemy code (de-duplicated)
