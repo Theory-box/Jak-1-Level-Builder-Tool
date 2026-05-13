@@ -7,9 +7,12 @@
 # never touches them.
 #
 # Structure:
-#   OG_PT_Import           — parent panel (setup flow or Rescan header)
-#     ├ OG_PT_ImportSearch — generic name search + filtered list
-#     └ OG_PT_ImportLevels — one row per vanilla level (background GLB)
+#   OG_PT_Import         — parent panel (setup flow or Rescan header)
+#     └ OG_PT_ImportSearch — name search + filtered list
+#
+# (An OG_PT_ImportLevels subpanel was prototyped but removed — the Search
+# subpanel covers level-folder browsing well enough via substring match.
+# See git history for the level-folder candidate-picker if reviving.)
 #
 # Live filter: the search box is a StringProperty on og_props
 # (glb_search_filter). Blender re-runs draw() when it changes, so the
@@ -166,103 +169,7 @@ class OG_PT_ImportSearch(Panel):
             op.glb_name = key
 
 
-def _level_entries(cache: list[str]) -> list[tuple[str, str]]:
-    """For each unique folder under `levels/`, pick the best-matching GLB
-    to represent that level. Returns (level_name, full_key) tuples sorted
-    by level name.
-
-    The decompiler doesn't always name the level visual `<lvl>-background`;
-    some configs emit `<lvl>.glb` or `<lvl>-something.glb`. We try a few
-    common patterns in priority order:
-      1. stem == `<folder>-background`
-      2. stem == `<folder>`
-      3. stem starts with `<folder>-`
-      4. any GLB containing the folder name as a substring
-      5. (last resort) the alphabetically first GLB in the folder
-
-    Folders containing zero GLBs are skipped. Folders containing only
-    per-actor models (no level visual) end up importing the first GLB —
-    user may want to rescan with `rip_levels: true` if they want the
-    proper level background, but this at least gives them something.
-    """
-    by_folder: dict[str, list[str]] = {}
-    for key in cache:
-        parts = key.split("/")
-        if len(parts) < 3 or parts[0] != "levels":
-            continue
-        folder = parts[1]
-        by_folder.setdefault(folder, []).append(key)
-
-    out: list[tuple[str, str]] = []
-    for folder, keys in by_folder.items():
-        # Pre-compute stems for fast comparisons
-        stems = [(k, PurePosixPath(k).name) for k in keys]
-
-        candidate: str | None = None
-        # 1. <folder>-background
-        for k, stem in stems:
-            if stem == f"{folder}-background":
-                candidate = k; break
-        # 2. <folder> exactly
-        if candidate is None:
-            for k, stem in stems:
-                if stem == folder:
-                    candidate = k; break
-        # 3. <folder>-anything
-        if candidate is None:
-            for k, stem in stems:
-                if stem.startswith(f"{folder}-"):
-                    candidate = k; break
-        # 4. anything containing the folder name (loose match)
-        if candidate is None:
-            for k, stem in stems:
-                if folder in stem:
-                    candidate = k; break
-        # 5. just take the first one
-        if candidate is None and keys:
-            candidate = sorted(keys)[0]
-
-        if candidate:
-            out.append((folder, candidate))
-
-    return sorted(out, key=lambda t: t[0].lower())
-
-
-class OG_PT_ImportLevels(Panel):
-    """One row per vanilla level — imports the per-level background GLB
-    (levels/<lvl>/<lvl>-background.glb). Use the Search subpanel for any
-    other GLB (per-actor models, props, etc.)."""
-    bl_label       = "🗺  Levels"
-    bl_idname      = "OG_PT_import_levels"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_import"
-    bl_order       = 1
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        return bool(get_glb_cache())
-
-    def draw(self, ctx):
-        layout  = self.layout
-        cache   = get_glb_cache()
-        entries = _level_entries(cache)
-
-        if not entries:
-            layout.label(text="No level folders found under levels/", icon="INFO")
-            return
-
-        layout.label(text=f"{len(entries)} level{'s' if len(entries) != 1 else ''}", icon="OUTLINER")
-        col = layout.column(align=True)
-        for lvl_name, key in entries:
-            op = col.operator("og.import_glb", text=lvl_name, icon="IMPORT")
-            op.glb_name = key
-
-
 CLASSES = (
     OG_PT_Import,
     OG_PT_ImportSearch,
-    OG_PT_ImportLevels,
 )

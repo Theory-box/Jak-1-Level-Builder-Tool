@@ -188,3 +188,25 @@ Three fixes:
    Now matches the basename only. WYSIWYG — what you type matches what shows on the button. To browse a level's contents use the Levels subpanel (future enhancement: per-level browser if needed).
 
 3. **Collapsible results.** Added a `glb_results_show` BoolProperty + eye-icon toggle next to the search field. Collapsing hides the result rows but keeps the match-count label and the search field visible. State persists per blend file (PropertyGroup is on scene).
+
+---
+
+## Update 4 — Levels subpanel removed
+
+User v4 test: Search works well, Levels still doesn't surface anything
+useful on their install. Decision: drop the Levels subpanel. Search
+covers level browsing through substring match.
+
+Removed:
+- `OG_PT_ImportLevels` class
+- `_level_entries()` helper (full candidate-picker tested but unused)
+- Levels entry from the `CLASSES` tuple
+
+Final panel structure:
+```
+OG_PT_Import           — setup flow OR Rescan header
+  └ OG_PT_ImportSearch — search + collapsible results
+```
+
+If a per-level browser is ever wanted again, the candidate-picker
+function is in the git history (panels/imports.py at commit 334d18d).
