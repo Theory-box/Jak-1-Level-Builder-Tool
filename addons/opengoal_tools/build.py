@@ -525,15 +525,15 @@ def _bg_build(name, scene, depsgraph=None):
         # tell write_gc to emit the matching deftype.
         has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
         actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
-        write_gd(name, ags, code_deps, tpages)
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+        write_gd(name, ags, code_deps, tpages, scene=scene)
         navmesh_actors = _collect_navmesh_actors(scene)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
-        patch_game_gp(name, code_deps)
+        patch_game_gp(name, code_deps, scene=scene)
 
         if goalc_ok():
             state["status"] = "Running (mi) via nREPL..."
@@ -683,8 +683,8 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         custom_actors = collect_custom_triggers(scene)
         has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
         actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
-        write_gd(name, ags, code_deps, tpages)
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+        write_gd(name, ags, code_deps, tpages, scene=scene)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
@@ -757,15 +757,15 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         custom_actors = collect_custom_triggers(scene)
         has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
         actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id)
-        write_gd(name, ags, code_deps, tpages)
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+        write_gd(name, ags, code_deps, tpages, scene=scene)
         navmesh_actors = _collect_navmesh_actors(scene)
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
-        patch_game_gp(name, code_deps)
+        patch_game_gp(name, code_deps, scene=scene)
 
         # ── Phase 2: Compile ──────────────────────────────────────────────────
         # Kill GK first — game must not be running during compile.
