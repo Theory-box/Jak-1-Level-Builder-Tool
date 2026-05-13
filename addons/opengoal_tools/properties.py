@@ -251,7 +251,12 @@ class OGProperties(PropertyGroup):
     glb_search_filter: StringProperty(
         name="Search GLBs",
         default="",
-        description="Case-insensitive substring match against GLB paths under decompiler_out/jak1/",
+        description="Case-insensitive substring match against GLB filenames",
+    )
+    glb_results_show: BoolProperty(
+        name="Show Results",
+        default=True,
+        description="Collapse or expand the search result list",
     )
     platform_type:  EnumProperty(name="Platform Type",  items=_platform_enum_cb)
     crate_type:  EnumProperty(name="Crate Type",  items=CRATE_ITEMS)

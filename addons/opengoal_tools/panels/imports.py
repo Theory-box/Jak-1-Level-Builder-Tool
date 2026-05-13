@@ -111,25 +111,38 @@ class OG_PT_ImportSearch(Panel):
         layout = self.layout
         props  = ctx.scene.og_props
 
-        # Search field — Blender redraws automatically on text change
+        # Search field + collapse toggle. Blender redraws automatically
+        # when the StringProperty changes, so the filter is live as you
+        # type. The eye-icon toggle hides the result list without losing
+        # the search query — useful once you have a stack of 25 rows
+        # pushing other panels off-screen.
         row = layout.row(align=True)
         row.prop(props, "glb_search_filter", text="", icon="VIEWZOOM")
+        eye = "HIDE_OFF" if props.glb_results_show else "HIDE_ON"
+        row.prop(props, "glb_results_show", text="", icon=eye, toggle=True)
 
         cache = get_glb_cache()
 
-        # Filter: case-insensitive substring match against the relpath
-        # (e.g. "levels/village1/babak-lod0" matches "babak" or "village").
+        # Filter: case-insensitive substring match against the *basename*
+        # only (the last path component, no extension). Matching the full
+        # relpath confused users — searching "beach" would surface
+        # "babak-lod0" because the babak file lives in levels/beach/.
+        # Basename-only match means what you type is what you see.
         query = props.glb_search_filter.strip().lower()
         if query:
-            matches = [name for name in cache if query in name.lower()]
+            matches = [
+                k for k in cache
+                if query in PurePosixPath(k).name.lower()
+            ]
         else:
             matches = cache  # Empty query → show everything (capped below)
 
+        # Header: match count + truncation notice if applicable. Always
+        # shown so the user knows how many hits there are even when the
+        # result list is collapsed.
         if not matches:
             layout.label(text=f"No matches for '{query}'", icon="INFO")
             return
-
-        # Header line: match count + truncation notice if applicable
         if len(matches) > _MAX_VISIBLE_ROWS:
             layout.label(
                 text=f"{_MAX_VISIBLE_ROWS} of {len(matches)} matches (refine search)",
@@ -139,6 +152,9 @@ class OG_PT_ImportSearch(Panel):
         else:
             layout.label(text=f"{len(matches)} match{'es' if len(matches) != 1 else ''}", icon="OUTLINER")
             shown = matches
+
+        if not props.glb_results_show:
+            return  # collapsed — header above is enough feedback
 
         col = layout.column(align=True)
         for key in shown:
@@ -150,20 +166,65 @@ class OG_PT_ImportSearch(Panel):
             op.glb_name = key
 
 
-def _level_background_entries(cache: list[str]) -> list[tuple[str, str]]:
-    """Pick out one entry per level: the file at levels/<lvl>/<lvl>-background.
-    Returns a list of (level_name, full_key) tuples sorted by level name.
-    Anything not matching that exact shape is ignored — the Search subpanel
-    is the place for arbitrary GLBs."""
-    out = []
+def _level_entries(cache: list[str]) -> list[tuple[str, str]]:
+    """For each unique folder under `levels/`, pick the best-matching GLB
+    to represent that level. Returns (level_name, full_key) tuples sorted
+    by level name.
+
+    The decompiler doesn't always name the level visual `<lvl>-background`;
+    some configs emit `<lvl>.glb` or `<lvl>-something.glb`. We try a few
+    common patterns in priority order:
+      1. stem == `<folder>-background`
+      2. stem == `<folder>`
+      3. stem starts with `<folder>-`
+      4. any GLB containing the folder name as a substring
+      5. (last resort) the alphabetically first GLB in the folder
+
+    Folders containing zero GLBs are skipped. Folders containing only
+    per-actor models (no level visual) end up importing the first GLB —
+    user may want to rescan with `rip_levels: true` if they want the
+    proper level background, but this at least gives them something.
+    """
+    by_folder: dict[str, list[str]] = {}
     for key in cache:
         parts = key.split("/")
-        # Expected shape: ["levels", "<lvl>", "<lvl>-background"]
-        if len(parts) != 3 or parts[0] != "levels":
+        if len(parts) < 3 or parts[0] != "levels":
             continue
-        lvl, leaf = parts[1], parts[2]
-        if leaf == f"{lvl}-background":
-            out.append((lvl, key))
+        folder = parts[1]
+        by_folder.setdefault(folder, []).append(key)
+
+    out: list[tuple[str, str]] = []
+    for folder, keys in by_folder.items():
+        # Pre-compute stems for fast comparisons
+        stems = [(k, PurePosixPath(k).name) for k in keys]
+
+        candidate: str | None = None
+        # 1. <folder>-background
+        for k, stem in stems:
+            if stem == f"{folder}-background":
+                candidate = k; break
+        # 2. <folder> exactly
+        if candidate is None:
+            for k, stem in stems:
+                if stem == folder:
+                    candidate = k; break
+        # 3. <folder>-anything
+        if candidate is None:
+            for k, stem in stems:
+                if stem.startswith(f"{folder}-"):
+                    candidate = k; break
+        # 4. anything containing the folder name (loose match)
+        if candidate is None:
+            for k, stem in stems:
+                if folder in stem:
+                    candidate = k; break
+        # 5. just take the first one
+        if candidate is None and keys:
+            candidate = sorted(keys)[0]
+
+        if candidate:
+            out.append((folder, candidate))
+
     return sorted(out, key=lambda t: t[0].lower())
 
 
@@ -187,14 +248,13 @@ class OG_PT_ImportLevels(Panel):
     def draw(self, ctx):
         layout  = self.layout
         cache   = get_glb_cache()
-        entries = _level_background_entries(cache)
+        entries = _level_entries(cache)
 
         if not entries:
-            layout.label(text="No level backgrounds found.", icon="INFO")
-            layout.label(text="Run the decompiler with rip_levels: true.", icon="DOT")
+            layout.label(text="No level folders found under levels/", icon="INFO")
             return
 
-        layout.label(text=f"{len(entries)} level{'s' if len(entries) != 1 else ''} available", icon="OUTLINER")
+        layout.label(text=f"{len(entries)} level{'s' if len(entries) != 1 else ''}", icon="OUTLINER")
         col = layout.column(align=True)
         for lvl_name, key in entries:
             op = col.operator("og.import_glb", text=lvl_name, icon="IMPORT")

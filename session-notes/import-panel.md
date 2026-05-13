@@ -162,3 +162,29 @@ Files touched (still strictly additive at the package level):
 - `operators/imports.py` — recursive scan, simpler FindModels, INFO/WARNING message text
 - `panels/imports.py` — drop og_root_path, level pattern filter, basename in Search display
 - `properties.py` — search filter description text
+
+---
+
+## Update 3 — Levels filter too strict, search match scope wrong, results not collapsible
+
+User test of v3:
+> "Levels arent showing anything"
+> "searching for say beach, finds objects that dont have beach in the name at all"
+> "search results need to be collapsable"
+
+Three fixes:
+
+1. **Levels filter.** Was `levels/<lvl>/<lvl>-background` (exact). Replaced with a tiered candidate picker in `_level_entries()`:
+   1. `<folder>-background` (vanilla decompiler pattern)
+   2. `<folder>` (some configs)
+   3. `<folder>-<anything>` (e.g. `village1-vis`)
+   4. anything containing `<folder>` in the stem (loose match)
+   5. (fallback) first GLB in the folder alphabetically
+   
+   Unit-tested against four naming patterns — all pass. Folders with zero GLBs are still skipped.
+
+2. **Search match scope.** Was matching against the full relpath (`levels/<lvl>/<file>`). Result: typing `beach` matched every file in `levels/beach/`, including ones whose own name had no `beach` in it (e.g. `babak-lod0`). The display showed only the basename, so users saw `babak-lod0` in beach results and assumed the search was broken.
+   
+   Now matches the basename only. WYSIWYG — what you type matches what shows on the button. To browse a level's contents use the Levels subpanel (future enhancement: per-level browser if needed).
+
+3. **Collapsible results.** Added a `glb_results_show` BoolProperty + eye-icon toggle next to the search field. Collapsing hides the result rows but keeps the match-count label and the search field visible. State persists per blend file (PropertyGroup is on scene).
