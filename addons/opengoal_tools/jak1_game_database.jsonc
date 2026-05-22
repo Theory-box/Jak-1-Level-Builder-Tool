@@ -8612,6 +8612,7 @@
         "o": "generic-obs.o",
         "o_only": true
       },
+      "extra_art_groups": ["eichar-pole+0-ag.go"],
       "lumps": [],
       "color": [
         0.8,

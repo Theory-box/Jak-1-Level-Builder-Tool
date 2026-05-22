@@ -31,6 +31,13 @@ def _entity_info_from_actor(a: dict) -> dict:
     """Reverse-build the legacy ENTITY_DEFS dict from one Actor record."""
     info: dict = {"label": a["label"], "cat": a["category"]}
     if a.get("art_group"):    info["ag"] = a["art_group"]
+    # extra_art_groups: art groups Jak/target needs bundled with the level
+    # when this entity is present (e.g. swingpole requires eichar-pole+0-ag
+    # because target-pole-cycle plays eichar-pole-cycle-ja). Vanilla DGOs
+    # bundle these directly; custom levels need the same treatment or the
+    # target's animation symbols don't link and evaluate-joint-control fires
+    # "dummy-19 bad" / process-drawable-art-error.
+    if a.get("extra_art_groups"): info["extras_ag"] = list(a["extra_art_groups"])
     if a.get("tpage_group"):  info["tpage_group"] = a["tpage_group"]
     if a.get("glb"):          info["glb"] = a["glb"]
     if "color" in a:          info["color"] = tuple(a["color"])
@@ -333,6 +340,7 @@ NEEDS_PATH_TYPES  = {e for e, info in ENTITY_DEFS.items() if info.get("needs_pat
 NEEDS_PATHB_TYPES = {e for e, info in ENTITY_DEFS.items() if info.get("needs_pathb", False)}
 IS_PROP_TYPES     = {e for e, info in ENTITY_DEFS.items() if info.get("is_prop", False)}
 ETYPE_AG          = {e: [info["ag"]] for e, info in ENTITY_DEFS.items() if info.get("ag")}
+ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items() if info.get("extras_ag")}
 
 
 # ═══════════════════════════════════════════════════════════════════════════

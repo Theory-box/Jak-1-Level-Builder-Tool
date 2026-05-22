@@ -72,6 +72,7 @@ from .writers import (
 )
 from .levels import (
     needed_ags,
+    needed_extras_ags,
     needed_code,
     discover_custom_levels,
     remove_level,

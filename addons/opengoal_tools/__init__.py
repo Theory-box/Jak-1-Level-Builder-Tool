@@ -26,6 +26,7 @@ from .data import (
     ENTITY_WIKI,
     ETYPE_AG,
     ETYPE_CODE,
+    ETYPE_EXTRAS_AG,
     IS_PROP_TYPES,
     LEVEL_BANKS,
     LUMP_REFERENCE,

@@ -9,7 +9,7 @@ from __future__ import annotations
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
+    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, VERTEX_EXPORT_TYPES,
     NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
@@ -54,9 +54,35 @@ from .paths import (
 
 
 def needed_ags(actors):
+    """Entity-own art groups (the visible mesh/skel for each actor).
+
+    Used both by write_jsonc (drives merc extraction in goalc's build_level)
+    and write_gd (drives DGO bundling). Animation-only art groups required
+    by target/shared code (e.g. eichar-pole+0-ag for swingpole interactions)
+    go through needed_extras_ags() instead — they must NOT appear in the
+    JSONC art_groups field, because find_art_groups in build_level.cpp will
+    try to extract merc data from them and they have none.
+    """
     seen, r = set(), []
     for a in actors:
         for g in ETYPE_AG.get(a["etype"], []):
+            if g and g not in seen:
+                seen.add(g); r.append(g)
+    return r
+
+def needed_extras_ags(actors):
+    """Extra art groups Jak/target needs bundled when these entities are
+    in the level. Goes only into the .gd (DGO contents), NOT the JSONC.
+
+    Example: swingpole. Vanilla SWA/SNO/ROB DGOs bundle eichar-pole+0-ag.go
+    because target-pole-cycle plays eichar-pole-cycle-ja (lives in that
+    +0-ag, not in eichar-ag). Without it, the anim symbol doesn't link,
+    evaluate-joint-control fires 'dummy-19 bad' / process-drawable-art-error,
+    and Jak goes invisible / the game crashes.
+    """
+    seen, r = set(), []
+    for a in actors:
+        for g in ETYPE_EXTRAS_AG.get(a["etype"], []):
             if g and g not in seen:
                 seen.add(g); r.append(g)
     return r

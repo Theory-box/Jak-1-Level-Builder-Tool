@@ -2,7 +2,7 @@
 
 **Branch:** `feature/misc-fixes`
 **Repo:** `Jak-1-Level-Builder-Tool`
-**Status:** Open — research pass done 2026-05-22; no code changes yet
+**Status:** Open — item 4 (swing pole) fixed 2026-05-22, pending user test; 7 items open
 **Last updated:** 2026-05-22
 
 A grab-bag tracking branch for several user-reported issues and feature ideas.
@@ -173,71 +173,129 @@ with vanilla' and use 99 as an example; 100+ is safe."
 
 ---
 
-## 4. Pole platform broken
+## 4. Swing pole broken — Jak disappears, game crashes
 
-**Type:** Bug / docs
-**Status:** Open — partially design-intent, partially real bug
+**Type:** Bug
+**Status:** Fix landed 2026-05-22 (pending user runtime test)
 
-User reports: `pole-plat` is invisible at runtime, Jak turns invisible when
-interacting, game crashes shortly after.
+User reports: spawn a swing pole, jump on it, Jak disappears and the game
+crashes.
 
-### Research notes (2026-05-22)
+### Root cause (2026-05-22)
 
-Two findings:
+The crash signature in `jak1_2026-05-22T19-28-26.log:1127` is `dummy-19 bad`,
+emitted from exactly one place in the codebase: `evaluate-joint-control` in
+`goal_src/jak1/engine/common-obs/process-drawable.gc:620`. It fires when a
+process-drawable's animation channel has a `frame-group` set but its type is
+NOT `art-joint-anim` — i.e. the anim symbol couldn't resolve because its
+backing art group isn't loaded.
 
-**1. Invisibility is by design in vanilla.** The actual GOAL etype is
-`swingpole` (not `pole-plat` — the addon's label is misleading). Vanilla
-definition in `goal_src/jak1/engine/common-obs/generic-obs-h.gc:142`:
+The crash isn't from the swingpole itself (swingpole extends `process`, has
+no anims). It's target-side. The sequence:
 
-```lisp
-(deftype swingpole (process)              ; ← extends process, NOT process-drawable
-  ((root        trsq)
-   (dir         vector :inline)
-   (range       meters)
-   (edge-length meters))
-  (:states swingpole-active swingpole-stance))
+1. `swingpole-stance` sends `'pole-grab` to `*target*`
+2. `target-handler.gc` routes 'pole-grab → `go target-pole-cycle`
+3. `target-pole-cycle` runs `(ja-no-eval :group! eichar-pole-cycle-ja ...)`
+4. Symbol `eichar-pole-cycle-ja` doesn't link (art group not loaded)
+5. `evaluate-joint-control` art-joint-anim type check fails
+6. `process-drawable-art-error` state replaces target's `:code` with a
+   debug-text loop — no draw, no input → "Jak disappears"
+7. Subsequent crash from physics/camera/sidekick interacting with a frozen
+   target
+
+The pole animations:
+
+```
+eichar-pole-cycle-ja          art-elts.gc:735  index 80
+eichar-pole-flip-up-ja        art-elts.gc:736  index 81
+eichar-pole-flip-forward-ja   art-elts.gc:737  index 82
+eichar-pole-jump-loop-ja      art-elts.gc:738  index 83
 ```
 
-No skeleton, no art group, no `initialize-skeleton` call in
-`init-from-entity!`. Swingpoles are invisible LOGIC entities — vanilla levels
-place a visible pole MESH in level geometry and put the swingpole entity at
-the same spot. The swingpole defines the swing-physics anchor; the pole is
-purely visual.
+live in art group **`eichar-pole+0-ag`** — NOT in Jak's main `eichar-ag`.
+It's a level-loaded extension, bundled in exactly three vanilla DGOs:
 
-So the addon's "Pole Platform" UI label is misleading. The database entry
-correctly has `art_group: null`, but the user-facing experience needs:
+```
+goal_src/jak1/dgos/swa.gd  → SWA.DGO  (Swamp)
+goal_src/jak1/dgos/sno.gd  → SNO.DGO  (Lost Precursor City)
+goal_src/jak1/dgos/rob.gd  → ROB.DGO  (Klaww section)
+```
 
-- Rename label "Pole Platform" → "Swing Pole" in `jak1_game_database.jsonc`
-- Add a description in the spawn picker explaining "invisible logic entity —
-  place a pole mesh in level geometry at the same spot for visuals"
-- Consider adding a visualization helper: when an `ACTOR_swingpole_*` is
-  selected, draw a debug cylinder (range × edge-length) in the viewport.
-  These are hardcoded in vanilla as `range=3m`, `edge-length=2m`.
+The user's MYL.DGO loaded `my-level-obs, lurkercrab, lurkerworm,
+generic-obs, tpages…` — no `eichar-pole+0-ag`. The tool's `needed_ags()` in
+`export/levels.py` only walked each entity's own `art_group` field; there
+was no slot for "art the target needs when this entity is in the level".
 
-**2. The crash and "Jak turns invisible" are separate.** Vanilla's
-`init-from-entity!` (`generic-obs.gc:102-116`) hardcodes range/edge-length
-and doesn't read any lumps. Vanilla's `swingpole-stance` (`generic-obs.gc:82`)
-sends `'pole-grab` to `*target*` when the player is in range; target's
-pole-grab handler is what makes Jak transition to the swing animation.
+The prior hypothesis (degenerate `dir` from identity quat / missing
+collide-shape) doesn't fit: the user's pole quat is
+`[0.20724, 0.180129, 0.038854, 0.960778]` — not identity. "dummy-19 bad" is
+strictly an art-link failure, not a transform/collide issue. The crash
+happens before any physics path would matter.
 
-The "Jak invisible" + "game crash" pattern is almost certainly target-side:
-the pole-grab handler expects something about the swingpole's transform or
-collide-shape that the addon isn't setting. Suspect:
+The "Pole Platform → Swing Pole" rename mentioned in earlier notes was
+already done (DB has `"label": "Swing Pole"`). The invisibility-by-design
+observation is correct: swingpole IS an invisible logic entity (extends
+`process`, no skeleton, no `initialize-skeleton` in `init-from-entity!`).
+Vanilla levels place a visible pole mesh in level geometry. For custom
+levels the user still needs to model their own pole mesh at the same
+position — separate cosmetic concern.
 
-- The hardcoded `range/edge-length` defaults work in vanilla because the pole
-  is part of level geometry with collision; custom-spawned swingpoles may
-  have no parent collide-shape to attach to.
-- The `dir` field is computed from quat in init-from-entity. If the addon
-  exports an identity quat, `dir` ends up degenerate (zero vector).
+### Fix landed
 
-**Action plan:**
-1. Quick win: rename + description + viewport cylinder
-2. Diagnostic: spawn a swingpole, watch game console for what error fires
-   when Jak hits the grab range. Need runtime to debug; likely needs the
-   user to capture a stderr dump.
-3. Hypothesis: facing-direction (quat) gets exported as identity for actors
-   the user hasn't rotated — patch the export to detect this and warn, or
-   default to a sane non-identity rotation on spawn.
+New schema field `extra_art_groups` on actor records. Bundled with the .gd
+(DGO contents) only — NEVER with the JSONC `art_groups` field, because
+goalc's `find_art_groups` in `build_level.cpp` treats JSONC `art_groups`
+entries as merc-extraction sources and animation-only +0-ag files have no
+merc data.
+
+Changes:
+
+- `addons/opengoal_tools/jak1_game_database.jsonc` — swingpole gets
+  `"extra_art_groups": ["eichar-pole+0-ag.go"]`
+- `addons/opengoal_tools/data.py` — `_entity_info_from_actor` reads
+  `extra_art_groups`, exposes `info["extras_ag"]`; new derived lookup
+  `ETYPE_EXTRAS_AG`
+- `addons/opengoal_tools/__init__.py` + `export/__init__.py` — re-export
+  `ETYPE_EXTRAS_AG` and `needed_extras_ags`
+- `addons/opengoal_tools/export/levels.py` — new `needed_extras_ags(actors)`
+  alongside the unchanged `needed_ags(actors)`
+- `addons/opengoal_tools/export/writers.py` — `write_gd()` gains optional
+  `extras_ags` kwarg, inserts extras into the .gd file list (after entity
+  art, before the level .go)
+- `addons/opengoal_tools/build.py` — all three `write_gd` call sites
+  (full build, build-changed, build-incremental) compute extras and pass
+  them; `write_jsonc` is untouched (extras stay out of the JSONC)
+
+Verified by simulation against user's level: `eichar-pole+0-ag.go` lands
+in the .gd's file list right after `lurkerworm-ag.go` and right before
+`my-level.go`; the JSONC `art_groups` field stays `["lurkercrab-ag",
+"lurkerworm-ag"]` (no extras leakage).
+
+### Lurking cases for same bug class
+
+`game.gp` has 5 more `+0-ag` art groups following the same pattern. Any of
+these entity types added to a custom level will hit the same crash unless
+they get their own `extra_art_groups` entry:
+
+```
+eichar-racer+0-ag   (zoomer)
+eichar-flut+0-ag    (flutflut bird mount)
+eichar-fish+0-ag    (fishermans-boat-ride)
+eichar-pole+0-ag    (swing pole)         ← fixed
+eichar-tube+0-ag    (snow tube)
+eichar-ice+0-ag     (ice-skating section)
+```
+
+When/if these entities are wired into the tool, add the corresponding
+`extra_art_groups` entry to the DB. The schema is in place.
+
+### Cosmetic followups (deferred)
+
+- Description in spawn picker explaining "invisible logic entity — place a
+  pole mesh in level geometry at the same spot for visuals"
+- Viewport visualization: draw a debug cylinder showing `range=3m` ×
+  `edge-length=2m` (hardcoded in `init-from-entity!`) so the user can
+  position the pole mesh accurately
 
 ---
 
@@ -416,18 +474,18 @@ only if the user wants live `printf` output from `(start)` flows etc.
 └── 8 (view REPL output)     — easiest as text-datablock scrollback (option B)
 ```
 
-Items 4 and 5 are standalone bugs, no dependencies.
+Items 4 and 5 are standalone bugs, no dependencies. Item 4 fixed 2026-05-22.
 
 ## Suggested execution order
 
 Cheapest → most expensive, and pick off independent ones first:
 
-1. **Item 6** — ~50 LOC, fully self-contained, immediate quality-of-life win
-2. **Item 1 (base_id half only)** — ~30 LOC, mirrors existing level-index pattern
-3. **Item 5 audit** — confirm panel-vs-missing for plat-flip with user; check
+1. ~~**Item 4**~~ — done 2026-05-22; pending user test
+2. **Item 6** — ~50 LOC, fully self-contained, immediate quality-of-life win
+3. **Item 1 (base_id half only)** — ~30 LOC, mirrors existing level-index pattern
+4. **Item 5 audit** — confirm panel-vs-missing for plat-flip with user; check
    pontoon/springbox/oracle for missing panels in same pass
-4. **Item 7 + 8B** — ~180 LOC together, opens the door for runtime debugging
+5. **Item 7 + 8B** — ~180 LOC together, opens the door for runtime debugging
    of every other item
-5. **Item 4** — quick win on the label/description, then runtime crash work
 6. **Item 2** — bigger UI lift, ~250 LOC
 7. **Item 3** — falls out of item 2 once data is surfaced

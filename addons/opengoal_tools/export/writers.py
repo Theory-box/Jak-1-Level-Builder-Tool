@@ -586,11 +586,22 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         p.write_text(new_text)
         log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} cameras)")
 
-def write_gd(name, ags, code_deps, tpages=None, scene=None):
+def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     """Write .gd file.
 
     code_deps is a list of (o_file, gc_path, dep) from needed_code().
     Each enemy .o is inserted before the art groups so it links first.
+
+    ags          — entity-own art groups (from needed_ags). Drives DGO bundling
+                   AND the JSONC art_groups field (which controls merc extraction
+                   in goalc's build_level).
+    extras_ags   — extra art groups Jak/target needs bundled (from
+                   needed_extras_ags). DGO-only — NEVER goes in the JSONC
+                   because build_level.cpp's find_art_groups would then try to
+                   extract merc data from them and animation-only +0-ag files
+                   have none. Bundled at the end of the file list so they link
+                   after entity art (order doesn't matter for the loader, but
+                   keeping vanilla-like ordering helps readability).
 
     FIX v0.5.0 (Bug 1): The opening paren for the inner file list is now its
     own line so that the first file entry keeps correct indentation.  The old
@@ -614,12 +625,14 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None):
                    '  "tpage-401.go"', '  "tpage-1470.go"']
     extra_tpages = [f'  "{tp}"' for tp in (tpages or [])
                     if f'  "{tp}"' not in base_tpages]
+    extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
     files = (
         [f'  "{name}-obs.o"']
         + code_o
         + base_tpages
         + extra_tpages
         + [f'  "{g}"' for g in ags]
+        + extras_lines
         + [f'  "{name}.go"']
     )
     lines = (
