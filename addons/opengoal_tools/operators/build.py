@@ -136,6 +136,13 @@ class OG_OT_Play(Operator):
             return {"FINISHED"}
 
         # Spawn-at-checkpoint path: modal, runs _bg_play in a background thread.
+        # Guard against double-click while a launch is already in flight —
+        # without this, a second click during the cold-start window queues
+        # another (start) that re-loads the level after the first one fires.
+        if _PLAY_STATE.get("done") is False and _PLAY_STATE.get("status"):
+            self.report({"INFO"}, "Launch already in progress — please wait")
+            return {"CANCELLED"}
+
         name = _lname(ctx)
         if not name:
             self.report({"ERROR"}, "Enter a level name first"); return {"CANCELLED"}

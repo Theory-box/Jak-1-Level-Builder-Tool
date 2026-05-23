@@ -564,33 +564,48 @@ _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 
+def _wait_for_gk_listener(timeout_s=15):
+    """Poll GK's listener port (8112, DECI2_PORT) until it accepts a TCP
+    connection. This tells us GK has booted far enough for goalc's (lt) to
+    succeed. Returns True if the port opened in time, False otherwise.
+    """
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", 8112), timeout=0.5):
+                return True
+        except (ConnectionRefusedError, socket.timeout, OSError):
+            time.sleep(0.5)
+    return False
+
+
 def _bg_play(name, cp_name):
-    """Spawn Jak at the given continue-point in the running GK.
+    """Spawn Jak at the given continue-point in GK.
 
-    cp_name — the full continue-point name, e.g. "my-level-start". Format is
-              "<level>-<uid>" where uid is the empty's SPAWN_/CHECKPOINT_ suffix.
-              _make_continues in export/writers.py writes the matching entry
-              into level-info.gc with :lev0 = '<name>, so (start) loads the
-              level itself — handles transitions from whatever level GK is in.
+    cp_name — full continue-point name, e.g. "my-level-start". Format is
+              "<level>-<uid>" where uid is the empty's SPAWN_/CHECKPOINT_
+              suffix. _make_continues writes the matching entry into
+              level-info.gc with :lev0 = '<name>, so (start) loads the
+              level itself.
 
-    ARCHITECTURE NOTES (read before modifying):
+    HOT PATH (game already running): just send (lt) + (start). ~3 seconds.
 
-    nREPL EVAL is fire-and-forget. See common/repl/nrepl/ReplClient::eval —
-    it only writes the form; it never reads a response. Same on the server
-    side: ReplServer processes EVAL messages but only sends back PING/ERROR
-    responses, never eval results. All eval output goes to goalc's own
-    console window. We have no way to poll goalc's state from here.
+    COLD PATH (GK not running): launch GK, TCP-probe port 8112 (DECI2_PORT,
+    GK's listener port) until it accepts connections — that tells us the
+    GOAL kernel is up. Then a short fixed wait for the boot's auto-(play)
+    to finish loading village1, then send (lt) + (start). ~8-10s total.
 
-    Practical consequence: we cannot check "is *game-info* ready", "did (lt)
-    connect", "did (start) succeed". We can only send commands and trust the
-    timing. Previous iterations tried to poll over nREPL and waited for
-    responses that don't exist in the protocol — that's why every call
-    timed out and the launch flow stalled.
+    NOTES:
 
-    GOALC must be alive (with the type table loaded from a prior Export &
-    Compile) for the spawn form to compile. We check goalc_ok up front;
-    beyond that everything is fire-and-forget with brief sleeps between
-    commands.
+    nREPL EVAL is fire-and-forget (ReplClient::eval only writes; nothing
+    comes back). We can't poll goalc's state via nREPL. But we CAN poll
+    GK's process state via TCP-probing port 8112 — that's the signal used
+    here instead of a fixed blind sleep.
+
+    GOALC must be alive with the type table loaded (from a prior Export &
+    Compile). A fresh goalc doesn't know *game-info* / get-continue-by-name
+    until something parses game-info-h.gc, which only happens during (mi).
+    We check goalc_ok up front and bail with a clear hint if it's not.
     """
     state = _PLAY_STATE
     try:
@@ -601,31 +616,34 @@ def _bg_play(name, cp_name):
             )
             return
 
-        # Launch GK only if it isn't running. If it IS running (e.g. left
-        # from Export & Compile auto-launch), we leave it alone — (start)
-        # transitions between levels via the continue-point's :lev0.
-        # When we DO launch GK fresh, we have to wait blindly for it to
-        # boot far enough that (lt) can connect and *game-info* is set.
-        # No way to poll — see the architecture note above.
+        # Cold path: launch GK and wait for it to come up.
         if not _process_running(f"gk{_EXE}"):
-            state["status"] = "Launching GK (allow ~20s to boot)..."
+            state["status"] = "Launching GK..."
             ok, msg = launch_gk()
             if not ok:
                 state["error"] = msg; return
-            time.sleep(20)
 
-        # Send (lt). Harmless if the listener is already connected (goalc
-        # prints "already connected!" to its own console — we don't see it
-        # over nREPL anyway). timeout=1 just gates how long we wait after
-        # the send before moving on — the actual eval is fire-and-forget.
-        state["status"] = "Sending (lt)..."
+            # TCP-probe GK's listener port. Opens within a few seconds of
+            # GK starting; absence past 15s means the launch failed somehow.
+            state["status"] = "Waiting for GK listener (port 8112)..."
+            if not _wait_for_gk_listener(timeout_s=15):
+                state["error"] = "GK never opened its listener port"; return
+
+            # GK's boot auto-calls (play) which loads village1. Empirically
+            # ~5s from listener-up to "GAMEPLAY: enter village1" — the only
+            # blind wait in the whole flow, but short.
+            state["status"] = "Waiting for village1 to load..."
+            time.sleep(5)
+
+        # Send (lt). Harmless if listener was already connected (goalc prints
+        # "already connected!" to its own console — doesn't come back over
+        # nREPL anyway).
+        state["status"] = "Connecting listener..."
         goalc_send("(lt)", timeout=1)
-        time.sleep(2)
+        time.sleep(1)
 
         # Send the spawn. The continue-point's :lev0 triggers the level
-        # load, so this transitions GK from its current level (often
-        # village1 after the build's auto-launch) to ours and spawns Jak
-        # at the chosen checkpoint.
+        # load, so this transitions GK from village1 to my-level.
         state["status"] = f"Spawning at {cp_name}..."
         goalc_send(
             f"(start 'play (get-continue-by-name *game-info* \"{cp_name}\"))",
