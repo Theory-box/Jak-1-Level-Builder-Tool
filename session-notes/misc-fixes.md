@@ -348,7 +348,7 @@ or building bespoke panels.
 ## 6. Launch level at a specific checkpoint
 
 **Type:** Feature
-**Status:** ✅ Shipped to main 2026-05-23
+**Status:** ✅ Shipped to main 2026-05-23 — [release 2026.05.23](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/tag/2026.05.23)
 
 ### What landed
 
@@ -364,6 +364,15 @@ or building bespoke panels.
   rejected with "Launch already in progress — please wait", which prevents
   the "loads then loads again" bug from a second queued (start) firing
   after the first one finally lands.
+- **Always kill + relaunch GK on every click** (not just when GK isn't
+  running). Earlier "skip launch if running" behavior caused stale-data
+  spawns — user clicks Launch after a fresh Export & Compile, in-game
+  (start) transitions levels using whatever GK loaded at boot, ignoring
+  the rebuild. Cost is ~boot_wait extra seconds per click; correctness
+  wins.
+- Two tunables in **Developer Tools → Launch Timing**: `og_launch_boot_wait`
+  (default 4.0s) and `og_launch_listener_wait` (default 1.0s). User
+  confirmed 4s default works on dev machine.
 
 ### Architecture notes for future maintenance
 
@@ -393,8 +402,8 @@ fresh goalc. We rely on goalc being preserved from a prior Export &
 Compile run — `goalc_ok()` check up front bails out with a clear hint
 if it isn't.
 
-**Cold-start time on dev machine: ~6s** (launch + 4s boot wait + (lt) + 1s + (start)).
-**Warm-start time: ~3s** ((lt) + 1s + (start)).
+**Launch time on dev machine: ~6s** every click (launch + 4s boot wait
++ (lt) + 1s + (start)). No fast warm path — every click relaunches.
 
 ---
 
