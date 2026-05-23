@@ -2,8 +2,8 @@
 
 **Branch:** `feature/misc-fixes`
 **Repo:** `Jak-1-Level-Builder-Tool`
-**Status:** Open — item 4 (swing pole) fixed 2026-05-22, pending user test; 7 items open
-**Last updated:** 2026-05-22
+**Status:** Items 4 (swing pole) and 6 (launch dropdown) shipped to main 2026-05-23; 6 items open
+**Last updated:** 2026-05-23
 
 A grab-bag tracking branch for several user-reported issues and feature ideas.
 Each item has the original description plus research notes from poking around
@@ -348,43 +348,53 @@ or building bespoke panels.
 ## 6. Launch level at a specific checkpoint
 
 **Type:** Feature
-**Status:** Open
+**Status:** ✅ Shipped to main 2026-05-23
 
-### Research notes (2026-05-22)
+### What landed
 
-**This is basically already wired** — the launch flow at `build.py:642`
-already sends a parameterised checkpoint spawn:
+- New `og_launch_checkpoint` EnumProperty on `OGProperties`, populated by
+  `_launch_checkpoint_items` which walks the active level's `SPAWN_*` and
+  `CHECKPOINT_*` empties. "(None — bare launch)" is the default; selecting
+  any continue-point switches the launch into the full-spawn flow.
+- `OG_OT_Play` (formerly two operators) merged: `cp == "none"` → bare launch
+  via `launch_gk()`; otherwise spawn-at-continue-point through `_bg_play()`
+  in a background thread. `OG_OT_PlayAutoLoad` removed as redundant.
+- Dropdown rendered right under the Launch Game button in `OG_PT_BuildPlay`.
+- Double-click guard added: clicking again while a launch is in flight gets
+  rejected with "Launch already in progress — please wait", which prevents
+  the "loads then loads again" bug from a second queued (start) firing
+  after the first one finally lands.
 
-```python
-goalc_send(
-  f"(start 'play (or (get-continue-by-name *game-info* \"{name}-start\") "
-  f"(get-or-create-continue! *game-info*)))"
-)
-```
+### Architecture notes for future maintenance
 
-It defaults to `"<name>-start"`. To launch at any checkpoint, change
-`"{name}-start"` to whatever checkpoint name the user picked.
+**nREPL EVAL is fire-and-forget.** `common/repl/nrepl/ReplClient::eval` only
+writes the form; never reads anything back. Same on the server side —
+ReplServer processes EVAL messages but only sends PING/ERROR responses to
+clients, never eval results. All eval output (compile errors, return values,
+`printf` like "already connected!") goes to goalc's own console window. We
+cannot poll goalc state from outside. Several iterations of this fix
+chased "the response that doesn't exist" before we found the ReplClient
+source.
 
-**Checkpoint naming convention** is defined in `export/actors.py:629,652`:
+**GK boot has no observable ready signal from outside.** GK opens its
+DECI2 listener port (8112) early in boot, well before the GOAL kernel
+can handle the listener handshake. We tried TCP-probing the port; it
+returned success and then `(lt)` hung at "Waiting for version...". The
+only reliable approach is a fixed wall-clock sleep between `launch_gk`
+and `(lt)`. We exposed this as `og_launch_boot_wait` (default 4s) in
+the Developer Tools panel so users can tune for slower hardware.
+`og_launch_listener_wait` (default 1s) controls the (lt)→(start) gap.
 
-```python
-level_name_for_cp = _get_level_prop(scene, "og_level_name", "")
-cp_name = f"{level_name_for_cp}-{uid}"
-```
+**Why we don't kill GOALC and relaunch.** A fresh goalc only loads
+`goal-lib.gc` + user's `user.gc`; it doesn't know `*game-info*` /
+`get-continue-by-name` until something parses `game-info-h.gc`, which
+only happens during `(mi)`. So the spawn form fails to compile in a
+fresh goalc. We rely on goalc being preserved from a prior Export &
+Compile run — `goalc_ok()` check up front bails out with a clear hint
+if it isn't.
 
-where `uid` is the CHECKPOINT_<uid> empty's suffix. So a checkpoint named
-`CHECKPOINT_arena` in level `my-level` becomes continue-point
-`"my-level-arena"`.
-
-**What needs building:**
-
-1. Scene-level StringProperty `og_launch_checkpoint` (default = `"<name>-start"`)
-2. Dropdown in the build/launch panel populated from `CHECKPOINT_` empties
-   in the active level + an option for the default start
-3. The launch flow reads this property instead of the hardcoded string
-
-Scope: ~50 LOC. Self-contained — doesn't actually need item 7's REPL UI
-since the launch path already uses `goalc_send` internally.
+**Cold-start time on dev machine: ~6s** (launch + 4s boot wait + (lt) + 1s + (start)).
+**Warm-start time: ~3s** ((lt) + 1s + (start)).
 
 ---
 
