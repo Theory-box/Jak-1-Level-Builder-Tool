@@ -564,21 +564,6 @@ _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 
-def _wait_for_gk_listener(timeout_s=15):
-    """Poll GK's listener port (8112, DECI2_PORT) until it accepts a TCP
-    connection. This tells us GK has booted far enough for goalc's (lt) to
-    succeed. Returns True if the port opened in time, False otherwise.
-    """
-    deadline = time.time() + timeout_s
-    while time.time() < deadline:
-        try:
-            with socket.create_connection(("127.0.0.1", 8112), timeout=0.5):
-                return True
-        except (ConnectionRefusedError, socket.timeout, OSError):
-            time.sleep(0.5)
-    return False
-
-
 def _bg_play(name, cp_name):
     """Spawn Jak at the given continue-point in GK.
 
@@ -588,24 +573,20 @@ def _bg_play(name, cp_name):
               level-info.gc with :lev0 = '<name>, so (start) loads the
               level itself.
 
-    HOT PATH (game already running): just send (lt) + (start). ~3 seconds.
+    HOT PATH (GK already running): (lt) + (start). ~3 seconds.
+    COLD PATH (GK not running): launch GK, sleep 10s, then same. ~12s.
 
-    COLD PATH (GK not running): launch GK, TCP-probe port 8112 (DECI2_PORT,
-    GK's listener port) until it accepts connections — that tells us the
-    GOAL kernel is up. Then a short fixed wait for the boot's auto-(play)
-    to finish loading village1, then send (lt) + (start). ~8-10s total.
+    WHY 10s FIXED: there is no clean "GK fully ready" signal we can probe.
+    GK opens port 8112 early in boot — well before its GOAL kernel can
+    actually handle the listener handshake — so TCP-probing 8112 gives a
+    false positive and (lt) hangs at "Waiting for version...".  Empirically
+    ~10s is enough on the dev machine for the kernel to be handshake-ready.
+    If your machine is slower, bump the sleep.
 
-    NOTES:
-
-    nREPL EVAL is fire-and-forget (ReplClient::eval only writes; nothing
-    comes back). We can't poll goalc's state via nREPL. But we CAN poll
-    GK's process state via TCP-probing port 8112 — that's the signal used
-    here instead of a fixed blind sleep.
-
-    GOALC must be alive with the type table loaded (from a prior Export &
-    Compile). A fresh goalc doesn't know *game-info* / get-continue-by-name
-    until something parses game-info-h.gc, which only happens during (mi).
-    We check goalc_ok up front and bail with a clear hint if it's not.
+    nREPL EVAL is fire-and-forget (ReplClient::eval only writes; never
+    reads). We can't observe goalc's state from here — neither success
+    nor failure of the forms we send. The flow is unconditional: send
+    and trust the timing.
     """
     state = _PLAY_STATE
     try:
@@ -616,34 +597,25 @@ def _bg_play(name, cp_name):
             )
             return
 
-        # Cold path: launch GK and wait for it to come up.
+        # Cold path: launch GK, wait long enough for the GOAL kernel to be
+        # ready to talk listener protocol.
         if not _process_running(f"gk{_EXE}"):
-            state["status"] = "Launching GK..."
+            state["status"] = "Launching GK (waiting ~10s for boot)..."
             ok, msg = launch_gk()
             if not ok:
                 state["error"] = msg; return
+            time.sleep(10)
 
-            # TCP-probe GK's listener port. Opens within a few seconds of
-            # GK starting; absence past 15s means the launch failed somehow.
-            state["status"] = "Waiting for GK listener (port 8112)..."
-            if not _wait_for_gk_listener(timeout_s=15):
-                state["error"] = "GK never opened its listener port"; return
-
-            # GK's boot auto-calls (play) which loads village1. Empirically
-            # ~5s from listener-up to "GAMEPLAY: enter village1" — the only
-            # blind wait in the whole flow, but short.
-            state["status"] = "Waiting for village1 to load..."
-            time.sleep(5)
-
-        # Send (lt). Harmless if listener was already connected (goalc prints
-        # "already connected!" to its own console — doesn't come back over
-        # nREPL anyway).
+        # Send (lt). If listener was already connected, this is a no-op
+        # (goalc prints "already connected!" to its own console — nothing
+        # comes back over nREPL).
         state["status"] = "Connecting listener..."
         goalc_send("(lt)", timeout=1)
         time.sleep(1)
 
         # Send the spawn. The continue-point's :lev0 triggers the level
-        # load, so this transitions GK from village1 to my-level.
+        # load, so this transitions GK from village1 (boot default) to
+        # ours and spawns Jak at the chosen checkpoint.
         state["status"] = f"Spawning at {cp_name}..."
         goalc_send(
             f"(start 'play (get-continue-by-name *game-info* \"{cp_name}\"))",
