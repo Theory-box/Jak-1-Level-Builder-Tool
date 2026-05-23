@@ -581,8 +581,16 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
     listener_wait — seconds between (lt) and (start). Tunable in Dev
                 Tools as "Listener Settle (s)".
 
-    HOT PATH (GK already running): (lt) + (start). ~listener_wait + small.
-    COLD PATH (GK not running): launch + boot_wait + (lt) + listener_wait + (start).
+    BEHAVIOR: always kills any existing GK and launches fresh. This
+    guarantees the latest built files (DGO, .gd, level-info.gc, etc.)
+    actually load — if we reused a running GK and just sent (start),
+    the in-game transition would use the data GK loaded at its boot,
+    making any rebuild since invisible. Cost is ~boot_wait extra
+    seconds on every click vs. the previous "skip launch if running"
+    behavior.
+
+    Total time = launch + boot_wait + (lt) + listener_wait + (start)
+                 ≈ boot_wait + 2s on a normal machine.
 
     There is no clean "GK fully ready" signal we can probe from outside.
     GK opens port 8112 early — well before its GOAL kernel can handle
@@ -602,14 +610,17 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
             )
             return
 
-        # Cold path: launch GK, wait long enough for the GOAL kernel to be
-        # ready to talk listener protocol.
-        if not _process_running(f"gk{_EXE}"):
-            state["status"] = f"Launching GK (waiting {boot_wait:g}s for boot)..."
-            ok, msg = launch_gk()
-            if not ok:
-                state["error"] = msg; return
-            time.sleep(boot_wait)
+        # Always kill-and-relaunch GK so the latest built files (DGO, .gd,
+        # level-info.gc, etc.) actually load. If we kept an existing GK
+        # running and just sent (start), the in-game transition would use
+        # the OLD loaded data — any rebuild since GK started would be
+        # invisible. launch_gk() kills existing GK internally before
+        # spawning the fresh process.
+        state["status"] = f"Launching GK (waiting {boot_wait:g}s for boot)..."
+        ok, msg = launch_gk()
+        if not ok:
+            state["error"] = msg; return
+        time.sleep(boot_wait)
 
         # Send (lt). If listener was already connected, this is a no-op
         # (goalc prints "already connected!" to its own console — nothing
