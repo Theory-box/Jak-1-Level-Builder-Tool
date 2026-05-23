@@ -315,6 +315,17 @@ class OG_PT_DevTools(Panel):
 
         layout.separator()
 
+        # Launch Timing — tune for slower / faster machines. Default 4s
+        # boot wait + 1s listener wait works on the dev machine; user
+        # bumps boot wait if Launch Game hangs at "Waiting for version".
+        layout.label(text="Launch Timing", icon="TIME")
+        props = ctx.scene.og_props
+        box = layout.box()
+        box.prop(props, "og_launch_boot_wait")
+        box.prop(props, "og_launch_listener_wait")
+
+        layout.separator()
+
         # Quick Open — nested here
         layout.label(text="Quick Open", icon="FILE_FOLDER")
         name = _lname(ctx)

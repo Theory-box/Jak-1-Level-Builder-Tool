@@ -564,7 +564,7 @@ _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 
-def _bg_play(name, cp_name):
+def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
     """Spawn Jak at the given continue-point in GK.
 
     cp_name — full continue-point name, e.g. "my-level-start". Format is
@@ -573,20 +573,25 @@ def _bg_play(name, cp_name):
               level-info.gc with :lev0 = '<name>, so (start) loads the
               level itself.
 
-    HOT PATH (GK already running): (lt) + (start). ~3 seconds.
-    COLD PATH (GK not running): launch GK, sleep 10s, then same. ~12s.
+    boot_wait — seconds to sleep after launch_gk before sending (lt).
+                Covers the gap between GK opening port 8112 (early in boot)
+                and the GOAL kernel actually being ready to handle the
+                listener handshake. Tunable in Developer Tools as
+                "GK Boot Wait (s)".
+    listener_wait — seconds between (lt) and (start). Tunable in Dev
+                Tools as "Listener Settle (s)".
 
-    WHY 10s FIXED: there is no clean "GK fully ready" signal we can probe.
-    GK opens port 8112 early in boot — well before its GOAL kernel can
-    actually handle the listener handshake — so TCP-probing 8112 gives a
-    false positive and (lt) hangs at "Waiting for version...".  Empirically
-    ~10s is enough on the dev machine for the kernel to be handshake-ready.
-    If your machine is slower, bump the sleep.
+    HOT PATH (GK already running): (lt) + (start). ~listener_wait + small.
+    COLD PATH (GK not running): launch + boot_wait + (lt) + listener_wait + (start).
+
+    There is no clean "GK fully ready" signal we can probe from outside.
+    GK opens port 8112 early — well before its GOAL kernel can handle
+    listener protocol — so TCP-probing 8112 gives a false positive and
+    (lt) hangs at "Waiting for version...". Fixed sleep is reliable.
 
     nREPL EVAL is fire-and-forget (ReplClient::eval only writes; never
-    reads). We can't observe goalc's state from here — neither success
-    nor failure of the forms we send. The flow is unconditional: send
-    and trust the timing.
+    reads). We can't observe goalc's state from here. The flow is
+    unconditional: send and trust the timing.
     """
     state = _PLAY_STATE
     try:
@@ -600,18 +605,18 @@ def _bg_play(name, cp_name):
         # Cold path: launch GK, wait long enough for the GOAL kernel to be
         # ready to talk listener protocol.
         if not _process_running(f"gk{_EXE}"):
-            state["status"] = "Launching GK (waiting ~10s for boot)..."
+            state["status"] = f"Launching GK (waiting {boot_wait:g}s for boot)..."
             ok, msg = launch_gk()
             if not ok:
                 state["error"] = msg; return
-            time.sleep(10)
+            time.sleep(boot_wait)
 
         # Send (lt). If listener was already connected, this is a no-op
         # (goalc prints "already connected!" to its own console — nothing
         # comes back over nREPL).
         state["status"] = "Connecting listener..."
         goalc_send("(lt)", timeout=1)
-        time.sleep(1)
+        time.sleep(listener_wait)
 
         # Send the spawn. The continue-point's :lev0 triggers the level
         # load, so this transitions GK from village1 (boot default) to

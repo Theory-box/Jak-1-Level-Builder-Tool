@@ -150,7 +150,15 @@ class OG_OT_Play(Operator):
             self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
         _PLAY_STATE.clear()
         _PLAY_STATE.update({"done":False,"error":None,"status":"Starting..."})
-        threading.Thread(target=_bg_play, args=(name, cp), daemon=True).start()
+        # Read tunables from properties (settable in Developer Tools).
+        props = ctx.scene.og_props
+        boot_wait = float(getattr(props, "og_launch_boot_wait", 4.0))
+        listener_wait = float(getattr(props, "og_launch_listener_wait", 1.0))
+        threading.Thread(
+            target=_bg_play,
+            args=(name, cp, boot_wait, listener_wait),
+            daemon=True,
+        ).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)

@@ -287,6 +287,18 @@ class OGProperties(PropertyGroup):
         description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
         items=_launch_checkpoint_items,
     )
+    # Launch timing — exposed in Developer Tools for tuning per-machine.
+    # See _bg_play in build.py for how these are used.
+    og_launch_boot_wait: FloatProperty(
+        name="GK Boot Wait (s)",
+        description="Seconds to wait after launching GK before sending the first listener command. Bump up if Launch Game hangs at 'Waiting for version...' on cold start; the GOAL kernel needs this much time to be ready for listener protocol. Has no effect when GK is already running.",
+        default=4.0, min=0.0, max=60.0, soft_min=1.0, soft_max=20.0,
+    )
+    og_launch_listener_wait: FloatProperty(
+        name="Listener Settle (s)",
+        description="Seconds to wait between sending (lt) and (start). Usually fine at 1s; bump if the spawn occasionally misses on cold start.",
+        default=1.0, min=0.0, max=10.0, soft_min=0.5, soft_max=5.0,
+    )
     entity_type:    EnumProperty(name="Entity Type",    items=ENTITY_ENUM_ITEMS)
     # Search bar (Spawn Objects panel)
     entity_search:          StringProperty(name="", description="Search all spawnable objects by name", default="")
