@@ -108,30 +108,34 @@ class OG_OT_ExportBuild(Operator):
         ctx.workspace.status_text_set(None)
 
 class OG_OT_Play(Operator):
-    """Launch GK in debug mode. No GOALC, no auto-load — just opens the game
-    so you can navigate to your level manually via the debug menu."""
+    """Launch the game.
+
+    Reads scene.og_props.og_launch_checkpoint:
+      "none"            → bare GK launch (debug mode). Navigate via debug menu.
+      "<level>-<uid>"   → full flow: write startup.gc with (lt), relaunch
+                          GOALC + GK, poll for *game-info* ready, send
+                          (start 'play (get-continue-by-name *game-info* "<cp>")).
+                          The continue-point has :lev0 baked in so this
+                          single (start) call loads the level AND spawns Jak.
+    """
     bl_idname      = "og.play"
-    bl_label       = "Launch Game (Debug)"
-    bl_description = "Kill existing GK, launch fresh in debug mode. Navigate to your level manually."
-
-    def execute(self, ctx):
-        kill_gk()
-        ok, msg = launch_gk()
-        if not ok:
-            self.report({"ERROR"}, msg)
-            return {"CANCELLED"}
-        self.report({"INFO"}, "Game launched in debug mode — select your level manually")
-        return {"FINISHED"}
-
-class OG_OT_PlayAutoLoad(Operator):
-    """Kill GK+GOALC, relaunch, and auto-load the level via nREPL.
-    Slower (~30-60s) but fully automated."""
-    bl_idname      = "og.play_autoload"
-    bl_label       = "Launch & Auto-Load Level"
-    bl_description = "Kill GK/GOALC, relaunch, and automatically load your level via nREPL (slower)"
+    bl_label       = "Launch Game"
+    bl_description = "Launch GK. If a continue-point is selected in the dropdown, also load the level and spawn there."
     _timer = None
 
     def execute(self, ctx):
+        cp = getattr(ctx.scene.og_props, "og_launch_checkpoint", "none")
+
+        # Bare-launch path: synchronous, no GOALC.
+        if cp == "none":
+            kill_gk()
+            ok, msg = launch_gk()
+            if not ok:
+                self.report({"ERROR"}, msg); return {"CANCELLED"}
+            self.report({"INFO"}, "Game launched in debug mode — select your level manually")
+            return {"FINISHED"}
+
+        # Spawn-at-checkpoint path: modal, runs _bg_play in a background thread.
         name = _lname(ctx)
         if not name:
             self.report({"ERROR"}, "Enter a level name first"); return {"CANCELLED"}
@@ -139,7 +143,7 @@ class OG_OT_PlayAutoLoad(Operator):
             self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
         _PLAY_STATE.clear()
         _PLAY_STATE.update({"done":False,"error":None,"status":"Starting..."})
-        threading.Thread(target=_bg_play, args=(name,), daemon=True).start()
+        threading.Thread(target=_bg_play, args=(name, cp), daemon=True).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)
@@ -398,7 +402,6 @@ class OG_OT_BakeLighting(Operator):
 CLASSES = (
     OG_OT_ExportBuild,
     OG_OT_Play,
-    OG_OT_PlayAutoLoad,
     OG_OT_OpenFolder,
     OG_OT_OpenFile,
     OG_OT_GeoRebuild,

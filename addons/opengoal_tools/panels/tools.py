@@ -243,7 +243,11 @@ class OG_PT_BuildPlay(Panel):
         col.scale_y = 1.4
         col.operator("og.geo_rebuild",   text="🔄  Quick Geo Rebuild",       icon="FILE_REFRESH")
         col.scale_y = 1.8
-        col.operator("og.play",          text="▶  Launch Game (Debug)",      icon="PLAY")
+        col.operator("og.play",          text="▶  Launch Game",              icon="PLAY")
+        # Spawn dropdown — "none" means bare launch (debug, navigate manually).
+        # Selecting any continue-point loads the level and spawns Jak there.
+        col.scale_y = 1.0
+        col.prop(context.scene.og_props, "og_launch_checkpoint", text="Spawn")
 
 
 

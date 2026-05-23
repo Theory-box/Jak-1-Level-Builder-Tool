@@ -218,6 +218,61 @@ class OGPreferences(AddonPreferences):
 
 
 
+# --- Launch checkpoint dropdown ---
+def _launch_checkpoint_items(self, context):
+    """Items for the og.play launch dropdown.
+
+    Always offers "(none)" — bare GK launch, navigate manually. Then lists
+    every SPAWN_/CHECKPOINT_ empty in the active level as a continue-point
+    the launcher can spawn at directly. The continue-name format matches
+    what _make_continues in export/writers.py writes into level-info.gc:
+    "<level>-<uid>" where uid is the empty's suffix after SPAWN_/CHECKPOINT_.
+
+    SPAWN_ and CHECKPOINT_ are functionally the same thing (both become
+    continue-points); we don't distinguish in the dropdown.
+
+    If the level has no SPAWN_/CHECKPOINT_ empties, _make_continues still
+    emits a default "<level>-start" continue, so we always offer that too.
+    """
+    from .collections import _active_level_col, _recursive_col_objects
+    items = [("none", "(None — bare launch)", "Launch GK only; navigate via debug menu")]
+
+    scene = context.scene if context else bpy.context.scene
+    col = _active_level_col(scene) if scene else None
+    if col is None:
+        return items
+
+    level_name = str(col.get("og_level_name", "")).strip().lower().replace(" ", "-")
+    if not level_name:
+        return items
+
+    seen_uids = set()
+    spawn_uids = []
+    for o in _recursive_col_objects(col, exclude_no_export=True):
+        if o.type != "EMPTY" or o.name.endswith("_CAM"):
+            continue
+        if o.name.startswith("SPAWN_"):
+            uid = o.name[6:] or "start"
+        elif o.name.startswith("CHECKPOINT_"):
+            uid = o.name[11:] or "cp0"
+        else:
+            continue
+        if uid in seen_uids:
+            continue
+        seen_uids.add(uid)
+        spawn_uids.append(uid)
+
+    # Always offer the default "<level>-start" — _make_continues emits it
+    # when no SPAWN_/CHECKPOINT_ empties exist in the scene.
+    if "start" not in seen_uids:
+        spawn_uids.insert(0, "start")
+
+    for uid in sorted(spawn_uids):
+        cp_name = f"{level_name}-{uid}"
+        items.append((cp_name, cp_name, f"Spawn at continue-point {cp_name}"))
+    return items
+
+
 # --- OGProperties ---
 class OGProperties(PropertyGroup):
     # Collection-based level selection
@@ -226,6 +281,12 @@ class OGProperties(PropertyGroup):
                                  description="Select which level collection is active")
     level_name:  StringProperty(name="Name", description="Lowercase with dashes (max 10 chars)", default="my-level",
                                 get=_get_level_name_live, set=_set_level_name_live)
+    # Launch dropdown: pick a continue-point to spawn at, or "none" for bare launch.
+    og_launch_checkpoint: EnumProperty(
+        name="Spawn",
+        description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
+        items=_launch_checkpoint_items,
+    )
     entity_type:    EnumProperty(name="Entity Type",    items=ENTITY_ENUM_ITEMS)
     # Search bar (Spawn Objects panel)
     entity_search:          StringProperty(name="", description="Search all spawnable objects by name", default="")
