@@ -565,84 +565,89 @@ _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 def _bg_play(name, cp_name):
-    """Kill GK+GOALC, relaunch GOALC with nREPL, launch GK, spawn at continue-point.
+    """Relaunch GK and spawn Jak at the given continue-point.
 
-    cp_name — the full continue-point name to spawn at, e.g. "my-level-start".
-              This is "<level>-<uid>" where uid is the empty's SPAWN_/CHECKPOINT_
-              suffix. _make_continues in export/writers.py writes the matching
-              entry into level-info.gc, with :lev0 = '<name>, so the start
-              machinery loads the level itself — no (bg) needed.
+    cp_name — the full continue-point name, e.g. "my-level-start". Format is
+              "<level>-<uid>" where uid is the empty's SPAWN_/CHECKPOINT_ suffix.
+              _make_continues in export/writers.py writes the matching entry
+              into level-info.gc with :lev0 = '<name>, so the start machinery
+              loads the level itself — no (bg) needed.
 
     ARCHITECTURE NOTES (read before modifying):
 
-    nREPL (port 8181) is a TCP socket that GOALC opens on startup. The addon
-    sends all commands through this socket via goalc_send(). If another GOALC
-    instance is already holding port 8181, bind() fails and GOALC prints
-    "nREPL: DISABLED" — every goalc_send() then silently returns None and
-    nothing happens. Fix: always kill GOALC before relaunching it.
+    We DO NOT kill GOALC. A fresh GOALC only loads goal-lib.gc + our minimal
+    user.gc; it doesn't know that *game-info* / continue-point / game-info etc.
+    exist as types. Those declarations live in goal_src/jak1/engine/game/
+    game-info-h.gc, which is only parsed during (mi). So if we relaunch GOALC,
+    the compile of "(if (nonzero? *game-info*) ...)" fails with
+    "the symbol *game-info* does not exist".
 
-    startup.gc SEQUENCING:
-    Lines above ";; og:run-below-on-listen" → run_before_listen (fire at GOALC
-    startup, before GK exists). Lines below → run_after_listen (fire when
-    (lt) successfully connects to GK). (lt) itself is in run_before_listen.
+    Instead we reuse the running GOALC, which already has the full type table
+    from the user's last Export & Compile. We just kill GK, relaunch it,
+    reconnect the listener, and send the spawn.
+
+    If GOALC isn't running, we don't try to relaunch+compile it on the user's
+    behalf (a full (mi) is 10-30s and surprising). We tell them to Export &
+    Compile first.
 
     SPAWN SEQUENCE (verified by manual REPL test 2026-05-22):
     Once *game-info* is non-zero, a single (start 'play (get-continue-by-name
-    ...)) is enough to load the level AND spawn Jak there. The continue-point
-    has :lev0 baked in, so start triggers the level load itself.
-
-    Old code also sent (bg <name>-vis) first AND fell back to
-    (get-or-create-continue! ...) when the name lookup failed — neither is
-    needed and the fallback was the cause of "Jak in the void" deaths:
-    if patch_level_info hadn't run, the fallback created a fresh continue
-    at origin with no level info. Now we just call get-continue-by-name
-    directly; if it returns #f, the user sees a clear "not found" error
-    rather than a void spawn.
+    ...)) is enough to load the level AND spawn Jak. The continue-point has
+    :lev0 baked in, so start triggers the level load itself.
     """
     state = _PLAY_STATE
     try:
-        # Always kill both GK and GOALC before relaunching.
-        # GOALC must be killed so port 8181 is free for the new instance.
-        state["status"] = "Killing GK and GOALC..."
+        # GOALC must be alive with working nREPL — it carries the type info we
+        # need to compile *game-info* references. If it isn't, bail with a
+        # clear hint rather than silently doing the wrong thing.
+        if not goalc_ok():
+            state["error"] = (
+                "GOALC isn't running. Run Export & Compile first — that "
+                "starts GOALC and loads the symbol info we need to spawn "
+                "at a checkpoint."
+            )
+            return
+
+        state["status"] = "Killing GK..."
         kill_gk()
-        kill_goalc()
-
-        # Write startup.gc with only (lt). Once (lt) succeeds, the listener
-        # is connected and we can send commands via goalc_send.
-        state["status"] = "Writing startup.gc..."
-        write_startup_gc(["(lt)"])
-
-        state["status"] = "Launching GOALC (waiting for nREPL)..."
-        ok, msg = launch_goalc(wait_for_nrepl=True)
-        if not ok:
-            state["error"] = f"GOALC failed to start: {msg}"; return
+        time.sleep(0.5)  # let listener socket fully close on GK's side
 
         state["status"] = "Launching game..."
         ok, msg = launch_gk()
-        if not ok: state["error"] = msg; return
+        if not ok:
+            state["error"] = msg; return
 
-        # Poll until *game-info* exists (GAME.CGO finished linking).
-        # Match "'ready" (with leading quote) to catch only the GOAL symbol
-        # return value, not console noise like "Listener: ready" which was
-        # causing false-positive triggers.
+        # Reconnect listener. kill_gk dropped the previous connection on GOALC's
+        # side; we retry (lt) until the new GK process is accepting.
+        state["status"] = "Connecting listener..."
+        connected = False
+        for _ in range(60):
+            time.sleep(0.5)
+            r = goalc_send("(lt)", timeout=5)
+            if r and ("Got version" in r or "Context: valid" in r):
+                connected = True
+                break
+        if not connected:
+            state["error"] = "Listener never connected to GK after 30s"; return
+
+        # Poll until *game-info* is non-zero. This compiles cleanly because
+        # the preserved GOALC has the type table.
         state["status"] = "Waiting for game to finish loading..."
         spawned = False
-        for _ in range(240):
+        for _ in range(120):
             time.sleep(0.5)
             r = goalc_send("(if (nonzero? *game-info*) 'ready 'wait)", timeout=3)
             if r and "'ready" in r:
-                time.sleep(1.0)  # brief buffer for game-info to fully settle
                 state["status"] = f"Spawning at {cp_name}..."
                 # Single (start) — continue-point's :lev0 triggers the level
-                # load itself. No (bg), no fallback. If the name doesn't
-                # resolve, start receives #f and the error is visible.
+                # load itself. No (bg), no fallback.
                 goalc_send(
                     f"(start 'play (get-continue-by-name *game-info* \"{cp_name}\"))"
                 )
                 spawned = True
                 break
         if not spawned:
-            state["status"] = "Done (spawn timed out — load level manually)"
+            state["error"] = "Spawn timed out — game may not have finished loading"
             return
         state["status"] = "Done!"
     except Exception as e:
