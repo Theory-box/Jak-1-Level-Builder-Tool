@@ -565,97 +565,71 @@ _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 def _bg_play(name, cp_name):
-    """Spawn Jak at the given continue-point in the currently running GK.
+    """Spawn Jak at the given continue-point in the running GK.
 
     cp_name — the full continue-point name, e.g. "my-level-start". Format is
               "<level>-<uid>" where uid is the empty's SPAWN_/CHECKPOINT_ suffix.
               _make_continues in export/writers.py writes the matching entry
               into level-info.gc with :lev0 = '<name>, so (start) loads the
-              level itself — handles the transition from whatever level GK
-              is currently in (often village1 from the boot sequence).
+              level itself — handles transitions from whatever level GK is in.
 
     ARCHITECTURE NOTES (read before modifying):
 
-    We DON'T kill GOALC. Fresh GOALC only loads goal-lib.gc + our minimal
-    user.gc — it doesn't know *game-info* / continue-point / game-info as
-    types. Those declarations live in engine/game/game-info-h.gc which is
-    only parsed during (mi). So if we relaunched GOALC, the compile of
-    "(if (nonzero? *game-info*) ...)" fails with "symbol does not exist".
+    nREPL EVAL is fire-and-forget. See common/repl/nrepl/ReplClient::eval —
+    it only writes the form; it never reads a response. Same on the server
+    side: ReplServer processes EVAL messages but only sends back PING/ERROR
+    responses, never eval results. All eval output goes to goalc's own
+    console window. We have no way to poll goalc's state from here.
 
-    We DON'T kill GK either. (start 'play <continue-point>) kills the current
-    player and respawns at the continue-point, AND loads the right level via
-    the continue's :lev0. So it handles village1 → my-level transitions on
-    its own. Plus: Listener.cpp:94 short-circuits (lt) when m_connected is
-    already true — so killing GK leaves a stale listener that's hard to clear
-    without a dedicated (reset-target).
+    Practical consequence: we cannot check "is *game-info* ready", "did (lt)
+    connect", "did (start) succeed". We can only send commands and trust the
+    timing. Previous iterations tried to poll over nREPL and waited for
+    responses that don't exist in the protocol — that's why every call
+    timed out and the launch flow stalled.
 
-    If GK isn't running at all, we launch it. Otherwise we just send (lt)
-    to make sure the listener is up, poll for *game-info* readiness, and
-    send (start).
+    GOALC must be alive (with the type table loaded from a prior Export &
+    Compile) for the spawn form to compile. We check goalc_ok up front;
+    beyond that everything is fire-and-forget with brief sleeps between
+    commands.
     """
     state = _PLAY_STATE
     try:
-        # GOALC must be alive with working nREPL — it carries the type info
-        # we need to compile *game-info* references. Without that, our poll
-        # would compile-error and the spawn would never fire.
         if not goalc_ok():
             state["error"] = (
                 "GOALC isn't running. Run Export & Compile first — that "
-                "starts GOALC and loads the symbol info we need to spawn "
-                "at a checkpoint."
+                "starts GOALC and loads the symbol info we need."
             )
             return
 
-        # Launch GK only if it isn't already running. If it IS running
-        # (e.g. left over from Export & Compile auto-launch, or a previous
-        # play session), we leave it alone — (start) handles level transitions.
+        # Launch GK only if it isn't running. If it IS running (e.g. left
+        # from Export & Compile auto-launch), we leave it alone — (start)
+        # transitions between levels via the continue-point's :lev0.
+        # When we DO launch GK fresh, we have to wait blindly for it to
+        # boot far enough that (lt) can connect and *game-info* is set.
+        # No way to poll — see the architecture note above.
         if not _process_running(f"gk{_EXE}"):
-            state["status"] = "Launching GK..."
+            state["status"] = "Launching GK (allow ~20s to boot)..."
             ok, msg = launch_gk()
             if not ok:
                 state["error"] = msg; return
+            time.sleep(20)
 
-        # Ensure the listener is connected. (lt) returns one of:
-        #   - "Got version 1.0 OK!" / "Context: valid"  → fresh connect
-        #   - "already connected!"                       → was already up
-        #   - "[Listener] Failed to connect"             → GK not reachable
-        # All positive responses count; we just need a connected listener
-        # before sending eval forms.
-        state["status"] = "Connecting listener..."
-        connected = False
-        for _ in range(60):
-            time.sleep(0.5)
-            r = goalc_send("(lt)", timeout=5) or ""
-            if "Got version" in r or "Context: valid" in r or "already connected" in r:
-                connected = True
-                break
-        if not connected:
-            state["error"] = "Listener never connected to GK after 30s"
-            return
+        # Send (lt). Harmless if the listener is already connected (goalc
+        # prints "already connected!" to its own console — we don't see it
+        # over nREPL anyway). timeout=1 just gates how long we wait after
+        # the send before moving on — the actual eval is fire-and-forget.
+        state["status"] = "Sending (lt)..."
+        goalc_send("(lt)", timeout=1)
+        time.sleep(2)
 
-        # Poll until *game-info* is initialized. Compiles cleanly because the
-        # preserved GOALC has the full type table from Export & Compile.
-        state["status"] = "Waiting for game to finish loading..."
-        ready = False
-        for _ in range(120):
-            time.sleep(0.5)
-            r = goalc_send("(if (nonzero? *game-info*) 'ready 'wait)", timeout=3) or ""
-            if "'ready" in r:
-                ready = True
-                break
-        if not ready:
-            state["error"] = "Game never finished loading after 60s"
-            return
-
-        # Spawn at the chosen continue-point. The continue's :lev0 triggers
-        # the level load. No (bg) needed, no (or ... get-or-create-continue!)
-        # fallback (that was the cause of historic "Jak in the void" deaths —
-        # it created a fresh empty continue at origin when the name lookup
-        # missed). If the name doesn't resolve, start receives #f and the
-        # error is visible to the user.
+        # Send the spawn. The continue-point's :lev0 triggers the level
+        # load, so this transitions GK from its current level (often
+        # village1 after the build's auto-launch) to ours and spawns Jak
+        # at the chosen checkpoint.
         state["status"] = f"Spawning at {cp_name}..."
         goalc_send(
-            f"(start 'play (get-continue-by-name *game-info* \"{cp_name}\"))"
+            f"(start 'play (get-continue-by-name *game-info* \"{cp_name}\"))",
+            timeout=1,
         )
         state["status"] = "Done!"
     except Exception as e:
