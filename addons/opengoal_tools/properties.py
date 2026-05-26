@@ -316,8 +316,8 @@ class OGProperties(PropertyGroup):
     )
     og_launch_listener_wait: FloatProperty(
         name="Listener Settle (s)",
-        description="Seconds to wait between sending (lt) and (start). Usually fine at 1s; bump if the spawn occasionally misses on cold start.",
-        default=1.0, min=0.0, max=10.0, soft_min=0.5, soft_max=5.0,
+        description="Seconds to wait between sending (lt) and (start). Usually fine at 2s; bump if the spawn occasionally misses on cold start.",
+        default=2.0, min=0.0, max=10.0, soft_min=0.5, soft_max=5.0,
     )
     entity_type:    EnumProperty(name="Entity Type",    items=ENTITY_ENUM_ITEMS)
     # Search bar (Spawn Objects panel)
