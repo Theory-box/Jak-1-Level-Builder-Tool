@@ -19,7 +19,7 @@ flatter navigation.
 
 Single panel, top to bottom:
 
-1. **Search bar** — real-time filter on the list as the user types.
+1. **Search input** — the native UIList filter (`self.filter_name`, real-time per keystroke). Expanded by default so it reads as a search bar at the top of the list.
 2. **Sort dropdown** — Alphabetical (default) · Category · Art Group · Tpage Group · Favorites first.
 3. **Category grid** — 14 static tiles in a `grid_flow`, multi-select toggles. Empty selection ≡ all selected ≡ "show everything."
 4. **Scrollable object list** — `UIList`. Each row: star (favorite toggle) · category icon · label. Selection highlights one row.
@@ -125,7 +125,7 @@ spawn_sort_mode: EnumProperty(items=[
     ('FAVORITES', 'Favorites first', ''),
 ], default='ALPHA')
 
-# UIList backing collection — rebuilt as filters change
+# UIList backing collection — populated once at register, NOT rebuilt
 spawn_list_items: CollectionProperty(type=OGSpawnListRow)
 spawn_list_index: IntProperty(default=-1)  # which row is highlighted
 
@@ -142,13 +142,32 @@ spawn_favorites: CollectionProperty(type=OGSpawnFavoriteRow)
 def get_active_categories(props) -> set[str]: ...
 def is_favorited(scene, spawn_id) -> bool: ...
 def toggle_favorite(scene, spawn_id) -> None: ...
-def rebuild_spawn_list(scene) -> None:
-    # Applies search + category filter + sort mode
-    # Repopulates props.spawn_list_items
 ```
 
-`rebuild_spawn_list` is called from `update` callbacks on the search prop,
-all `cat_*_active` props, sort mode, and favorites changes.
+No `rebuild_spawn_list` needed. `spawn_list_items` is populated **once** at addon
+register from `build_spawn_index()` and never re-touched. All filtering and
+sorting happens inside `OG_UL_SpawnableItems.filter_items`:
+
+```python
+def filter_items(self, context, data, propname):
+    items = getattr(data, propname)
+    props = context.scene.og_props
+    active_cats = get_active_categories(props)
+    filter_text = self.filter_name.lower()  # ← native, real-time
+
+    flt_flags = []
+    for item in items:
+        ok = True
+        if active_cats and item.category not in active_cats:
+            ok = False
+        if filter_text and filter_text not in item.label.lower():
+            ok = False
+        flt_flags.append(self.bitflag_filter_item if ok else 0)
+
+    # flt_neworder for sort mode
+    flt_neworder = sort_by(items, props.spawn_sort_mode)
+    return flt_flags, flt_neworder
+```
 
 ---
 
@@ -243,13 +262,14 @@ Each phase ends in a testable state. Commit at the end of each.
 - [ ] Verify the index is well-formed (count, no dups, all categories represented) via a one-off print.
 - [ ] Add `OGSpawnListRow` and `OGSpawnFavoriteRow` PropertyGroup classes in `properties.py`.
 - [ ] Register them and add the new scene properties (`cat_*_active`, `spawn_sort_mode`, `spawn_list_items`, `spawn_list_index`, `spawn_favorites`).
-- [ ] Add `rebuild_spawn_list()`, `get_active_categories()`, `is_favorited()`, `toggle_favorite()` helpers.
+- [ ] Populate `spawn_list_items` once at register from `build_spawn_index()`.
+- [ ] Add `get_active_categories()`, `is_favorited()`, `toggle_favorite()` helpers.
 - [ ] Old panel still works. Nothing visible has changed.
 
-### Phase 2 — UIList and rebuild logic
+### Phase 2 — UIList with native filter and sort
 - [ ] Add `OG_UL_SpawnableItems` class in `panels/spawn.py` (or split to `panels/spawn_list.py`).
-- [ ] Wire update callbacks so `entity_search` and `spawn_sort_mode` trigger `rebuild_spawn_list`.
-- [ ] Wire update callbacks for each `cat_*_active` prop.
+- [ ] Set `use_filter_show = True` so the filter input is expanded by default.
+- [ ] Implement `filter_items` to combine `self.filter_name` (real-time search) + category booleans + sort mode.
 - [ ] Add a temporary debug panel that just shows the UIList — verify filter + sort behaviors before wiring it into the real panel.
 
 ### Phase 3 — Unified spawn operator
@@ -304,11 +324,11 @@ from the scene properties.
 
 1. **UIList rebuild performance.** Total spawnable count is probably ~200. UIList filter callbacks run on every redraw; pre-filtering into `spawn_list_items` instead of using Blender's filter callback should keep this fast. If it does drag, we can throttle the rebuild.
 
-2. **Search-prop update during typing.** Blender fires `update` callbacks on `StringProperty` after the user releases focus, not per keystroke. Real-time filtering may need an alternative — possibly an operator-based search that uses `bpy.types.UI_UL_list.filter_items` instead of a backing CollectionProperty. Worth a quick spike in Phase 2.
+2. **Search input mechanism.** Original concern (StringProperty `update` fires on focus-loss, not per keystroke) was misdirected — Blender's `UIList` has a built-in filter input that updates `self.filter_name` per keystroke and re-runs `filter_items` on each character. The fix is to use the native UIList filter instead of a separate StringProperty: set `use_filter_show = True` on the UIList class so the filter section is expanded by default, looking like a search bar attached to the list. This also removes the need for manual `rebuild_spawn_list` — `filter_items` combines `self.filter_name` + our category booleans + sort mode on each redraw.
 
 3. **Camera context-driven spawn.** Currently `og.spawn_cam_anchor` reads from the selected object's name. The new flow needs the selected scene object preserved through the dispatcher. Should be fine since `bpy.ops` invocations preserve the active object, but worth verifying.
 
-4. **`_draw_entity_sub`'s navmesh-link inline UI.** This shows when ANY nav-enemy actor is *currently selected in the viewport*, regardless of the picker state. It's not strictly "pre-spawn config" — it's actor-management UI that hitchhiked into the picker. Probably moves to the selected-object panel rather than the dynamic settings area.
+4. **`_draw_entity_sub`'s navmesh-link inline UI.** Actor-management UI that hitchhiked into the picker. The same controls already exist in `panels/selected.py` (lines 166-191) and `panels/actor.py` (lines 187-207), so nothing needs to move — the plan just deletes the duplicate when `_draw_entity_sub` goes.
 
 5. **`OG_PT_SpawnEnemies` Preview Models toggle UI.** Currently lives only in the Enemies sub-panel. In the unified design either (a) move to addon prefs, or (b) show in dynamic settings when an enemy with previewable model is selected. Lean toward (a) — it's a per-user preference not a per-spawn one.
 
