@@ -214,11 +214,25 @@ def register():
         description="When enabled, this collection and its contents are excluded from level export",
         default=False)
 
-    # Unified spawn picker — populate per-scene UIList collection and register
-    # the load_post handler so freshly-loaded blend files get populated too.
+    # Unified spawn picker — register the load_post handler so freshly-loaded
+    # blend files get their spawn list populated. The initial population for
+    # any already-open scenes has to be deferred because bpy.data is wrapped
+    # in _RestrictData during register() and bpy.data.scenes is inaccessible.
+    # A zero-delay timer fires on the next tick when restrictions are lifted.
     _spawn_register_handlers()
-    for _scene in bpy.data.scenes:
-        populate_spawn_list(_scene)
+
+    def _deferred_populate_spawn_lists():
+        try:
+            for _scene in bpy.data.scenes:
+                populate_spawn_list(_scene)
+        except Exception:
+            # If the addon was already unregistered before this fired, or any
+            # other unexpected state — fail silently. load_post will catch
+            # the next scene load anyway.
+            pass
+        return None  # one-shot; don't re-schedule
+
+    bpy.app.timers.register(_deferred_populate_spawn_lists, first_interval=0.0)
 
 def unregister():
     _spawn_unregister_handlers()
