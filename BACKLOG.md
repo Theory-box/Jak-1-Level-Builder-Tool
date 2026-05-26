@@ -30,6 +30,45 @@ in-Blender. Bumped here so they're not forgotten.
 
 ## Wanted features
 
+### Sliding tube zones (Snowy Mountain butt-slide style)
+The slide mechanic in Jak 1 (snow tubes, Lava Tube, Fire Canyon) is a
+**player state** (`target-tube`), not a placeable actor or surface effect.
+The `tube` PAT material alone won't trigger it — there has to be code that
+pushes Jak into the `target-tube` state when he enters a slide zone.
+
+No new addon feature is strictly required to support this — the three
+existing pieces compose into a solution:
+- **Custom Types** (`og.spawn_custom_type`) for placing a `tube-zone`
+  empty in the level
+- **GOAL Code panel** (`og_goal_code_ref`) for attaching the deftype
+  + defstate that runs the player-state push
+- A collision shape on the actor for the overlap test (or a linked
+  volume — collision-shape pattern used by other custom actors)
+
+The shape of the GOAL code:
+```
+(deftype tube-zone (process-drawable)
+  () (:states tube-zone-idle))
+
+(defstate tube-zone-idle (tube-zone)
+  :code (behavior ()
+    (loop
+      ;; if *target* overlaps our shape:
+      ;;   (send-event *target* 'change-state target-tube ...)
+      ;; — exact incantation TBD, see local source
+      (suspend))))
+```
+
+**Blocker before this is buildable:** the exact GOAL idiom for forcing
+Jak into `target-tube` from an external process. Need to check the
+local OpenGOAL source — `target-tube.gc` for the entry signature, and
+either `snow-bumper.gc`, `lavatube.gc`, or the firecanyon sled setup
+to see what the engine itself does at the entry points.
+
+Optional follow-on: pre-baked "tube-zone" template added to the GOAL
+boilerplate generator so users get the skeleton with commented TODOs
+instead of starting from the generic actor boilerplate.
+
 ### Heap-budget audit
 Audit the level's estimated heap usage and warn when nearing the ~11 MB
 limit. Three sketches discussed (A/B/C in audit conversation); recommended
