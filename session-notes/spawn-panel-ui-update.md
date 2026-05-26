@@ -340,3 +340,74 @@ from the scene properties.
 - **First-item auto-select.** When filters change and selection becomes invalid, auto-select the new top item or clear selection? Lean toward clear — selection should be explicit.
 - **Double-click to spawn from list.** Nice-to-have. Defer.
 - **Keyboard navigation.** Inherits whatever `UIList` supports. Don't customize.
+
+---
+
+## Status: ALL 6 PHASES COMPLETE (2026-05-25)
+
+All phases committed to `feature/spawn-panel-ui-update`. Ready for in-Blender testing.
+
+### Commits
+
+| Commit | Phase | Summary |
+|--------|-------|---------|
+| `c7a63c9` | Phase 1 | `spawn_items.py` + new properties (data layer, no UI changes) |
+| `babb430` | Phase 2 | `OG_UL_SpawnableItems` UIList + native filter + sort + debug panel |
+| `8e071ad` | Phase 3 | `og.spawn_selected` dispatcher operator |
+| `02f84e2` | Phase 4 | Full UI rewrite — `OG_PT_Spawn.draw()` renders the unified picker; FIELD_DRAWERS for 10 pre-spawn field types; debug panel removed |
+| `a38d0d6` | Phase 5 | Cutover — deleted 15 old sub-panels + 1 old operator (`OG_OT_SearchSelectEntity`); collapsed 108 dead imports |
+| `06dc4bf` | Phase 6 | Polish — empty-state messaging + "Showing X of N" status hint |
+
+### Size delta
+
+- `panels/spawn.py`: 1041 → 354 lines (-687, -66%)
+- New file `spawn_items.py`: +500 lines (the abstraction layer the picker reads from)
+- Net codebase size: meaningfully smaller despite more functionality
+
+### What was VERIFIED statically
+
+- All Python files compile clean (`py_compile`)
+- Every import in `panels/spawn.py` resolves and is used in the body
+- Class registration order in `__init__.py` (PropertyGroups before `OGProperties` since the latter references them via `CollectionProperty(type=...)`)
+- No external code references the deleted classes/operator (grep confirmed)
+- `SPAWN_INDEX` would build to exactly 162 items (155 entity + 7 synthetic; `water-vol` correctly skipped as Hidden category)
+- Properties intentionally kept because still used elsewhere: `tpage_*` (selected.py), `entity_search*` (tools.py)
+
+### What I could NOT verify (testing checklist for Blender)
+
+I can't run Blender from this environment. These need eyeballs in the real UI:
+
+- [ ] Spawn Objects panel opens without error on addon load
+- [ ] All 14 category tiles render with their icons in a 4-column grid (looks reasonable at N-panel width)
+- [ ] Native search input appears above the list and filters per keystroke
+- [ ] Sort dropdown changes order live (ALPHA, CATEGORY, ARTGROUP, TPAGEGROUP, FAVORITES)
+- [ ] Category tiles toggle filtering on/off; multi-select works (Enemies + Pickups together shows both)
+- [ ] Star icon at the start of each row toggles between SOLO_ON / SOLO_OFF and persists in scene state
+- [ ] Favorites tile alone (no other categories) shows only favorited items
+- [ ] Favorites tile with no favorites set shows the "tap the star on any row" hint
+- [ ] Selecting a row reveals the dynamic settings box with description text and any pre-spawn fields
+- [ ] Description text wraps reasonably at typical N-panel width
+- [ ] Crate item shows the crate_type dropdown; nav-unsafe enemies show nav_radius + warning
+- [ ] Sound Emitter / Music Zone show their respective fields
+- [ ] Custom Type shows the deftype name input; spawn blocked with error if empty
+- [ ] Camera anchor shows "Will spawn: X_CAM" (green) when SPAWN_/CHECKPOINT_ is selected; red error otherwise
+- [ ] Spawn button greys out when no item is selected
+- [ ] Spawn button creates the object at the 3D cursor for each item type
+- [ ] Path warnings appear for `NEEDS_PATH_TYPES` / `NEEDS_PATHB_TYPES` / `IS_PROP_TYPES` items in the dynamic settings box
+- [ ] Specific Blender icons exist in your version (4.4): `SORTALPHA`, `MOD_FLUIDSIM`, `PLAY_SOUND`, `EVENT_RETURN`, `OUTLINER_OB_SPEAKER` — substitutes available if any are missing
+
+### Known small things deferred
+
+- Selection doesn't auto-clear when filter changes invalidate the current row (UIList just shows nothing as active; user re-clicks to fix). Real-world impact probably low.
+- Dead imports of `_draw_entity_sub`, `_draw_platform_settings`, `_header_sep` in other files are still there — those functions still exist in `utils.py` but are now unused. Future maintenance pass can remove both the function defs and the imports together.
+- The `entity_search`/`entity_search_results` machinery in `data.py` and `properties.py` is retained because `panels/tools.py` still uses it independently.
+
+### If issues come up during testing
+
+Most likely failure modes and where to look:
+
+- **"Spawn list is empty"** → check `__init__.py:register()` is calling `populate_spawn_list(scene)` and the `load_post` handler is registered. Walk `bpy.context.scene.og_props.spawn_list_items` in console.
+- **"Tile icons render as broken/missing"** → one of the Blender icon names in `CATEGORY_ICONS` (spawn_items.py) isn't valid in 4.4. Try `bpy.types.UILayout.bl_rna.functions['prop'].parameters['icon'].enum_items.keys()` to see the canonical list.
+- **"Filter text doesn't work"** → make sure `self.filter_name` is the right attribute name (it's the built-in for UIList filter); compare against `OG_UL_LumpRows` if needed.
+- **"Sort doesn't change anything"** → `flt_neworder` format is `flt_neworder[orig_idx] = new_pos`. If sort appears inverted, the format may have been read the wrong way by my implementation.
+- **"Spawn button does nothing"** → check `og.spawn_selected.poll()`; it needs `get_selected_spawn_item()` to return non-None. If selection isn't taking, scene.og_props.spawn_list_index may be stuck at -1.
