@@ -38,7 +38,7 @@ class OG_PT_Spawn(Panel):
         row.label(text="", icon="SORTALPHA")
         row.prop(props, "spawn_sort_mode", text="")
 
-        # ── 14-tile category grid (multi-select) ────────────────────────
+        # ── 15-tile category grid (multi-select) ────────────────────────
         # Click a tile to solo it (hide other categories), shift+click to
         # toggle it in/out of the multi-selection. Click an already-soloed
         # tile to clear the filter.
