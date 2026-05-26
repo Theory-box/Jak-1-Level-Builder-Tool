@@ -256,21 +256,7 @@ def unregister():
               "nolineofsight","nocamera","collide_material","collide_event","collide_mode",
               "enable_custom_weights","copy_eye_draws","copy_mod_draws","og_vol_links",
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
-              "og_vertex_export_etype","og_vertex_export_search",
-              "og_spring_height","og_launcher_dest","og_launcher_fly_time","og_num_lurkers",
-              "og_door_auto_close","og_door_one_way","og_continue_name",
-              "og_water_surface","og_water_wade","og_water_swim","og_water_bottom",
-              "og_flip_delay_down","og_flip_delay_up","og_orb_count",
-              "og_whirl_speed","og_whirl_var","og_vis_dist",
-              "og_crystal_underwater","og_cell_skip_jump","og_flip_sync_pct",
-              "og_bridge_variant","og_orbit_scale","og_orbit_timeout",
-              "og_sq_down","og_sq_up","og_flame_shove","og_flame_period",
-              "og_flame_phase","og_flame_pause","og_shover_force","og_shover_rot",
-              "og_move_speed","og_turbine_particles",
-              "og_elevator_mode","og_elevator_rot",
-              "og_bone_bridge_anim","og_breakaway_h1","og_breakaway_h2",
-              "og_fish_count","og_shark_scale","og_shark_delay",
-              "og_shark_distance","og_shark_speed","og_alt_task"):
+              "og_vertex_export_etype","og_vertex_export_search"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")
