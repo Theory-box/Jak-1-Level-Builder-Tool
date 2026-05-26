@@ -581,6 +581,31 @@ class OGLumpRow(bpy.types.PropertyGroup):
     )
 
 
+# --- OGWaypointSource ---
+def _waypoint_source_poll(self, obj):
+    """Restrict the og.waypoint_source.obj pointer to EMPTY or CURVE objects.
+    Used by the UI picker dropdown so the user can only link valid sources."""
+    return obj is not None and obj.type in ("EMPTY", "CURVE")
+
+
+class OGWaypointSource(bpy.types.PropertyGroup):
+    """One entry in an actor's reorderable waypoint list.
+
+    Each entry points to either an EMPTY (single waypoint, the legacy
+    _wp_NN style) or a CURVE (each spline point becomes a waypoint at
+    export). The collection's order is the export order — a curve in
+    the middle expands its points in place.
+
+    Stored as og_waypoint_sources CollectionProperty on the actor empty.
+    """
+    obj: PointerProperty(
+        name="Source",
+        description="Empty (single waypoint) or Curve (each control point is a waypoint)",
+        type=bpy.types.Object,
+        poll=_waypoint_source_poll,
+    )
+
+
 
 # --- OG_OT_AddLumpRow + OG_OT_RemoveLumpRow ---
 class OG_OT_AddLumpRow(bpy.types.Operator):
