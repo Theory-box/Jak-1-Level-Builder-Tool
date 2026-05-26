@@ -228,6 +228,23 @@ class OG_OT_AddWaypoint(Operator):
         # so they can quickly add more waypoints without re-selecting.
         loc_desc = "actor position" if use_actor_pos else "cursor"
         self.report({"INFO"}, f"Added {wp_name} at {loc_desc}")
+
+        # New: also append this empty to the actor's reorderable waypoint
+        # source list, so the new UI stays in sync with manual spawns.
+        # Skip for Path B (swamp-bat) — it stays on the legacy name-grep
+        # system for now.
+        if not self.pathb_mode and actor_obj is not None:
+            try:
+                src = actor_obj.og_waypoint_sources.add()
+                src.obj = empty
+                actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
+            except AttributeError:
+                # Actor doesn't have the new properties yet — possible if the
+                # addon was registered without our properties registered, or
+                # during a version mismatch. Fail silently; the legacy export
+                # path will still find this empty by name.
+                pass
+
         return {"FINISHED"}
 
 class OG_OT_DeleteWaypoint(Operator):
@@ -265,8 +282,10 @@ def _get_actor_for_waypoint_ops(ctx):
 
 class OG_OT_WaypointSourceRemove(Operator):
     """Remove the highlighted entry from the actor's waypoint source list.
-    Does NOT delete the underlying empty or curve object — just unlinks it
-    from the path. Use the X icon next to a row."""
+    If the entry points to an addon-created _wp_NN empty, the empty is also
+    deleted from the scene (it has no other use). Curves are never deleted
+    — they may be reused or are user-authored data; only the list entry
+    is removed."""
     bl_idname  = "og.waypoint_source_remove"
     bl_label   = "Remove Waypoint Source"
     bl_options = {"REGISTER", "UNDO"}
@@ -281,9 +300,25 @@ class OG_OT_WaypointSourceRemove(Operator):
     def execute(self, ctx):
         actor = _get_actor_for_waypoint_ops(ctx)
         idx = actor.og_waypoint_sources_index
+        if not (0 <= idx < len(actor.og_waypoint_sources)):
+            return {"CANCELLED"}
+        src_obj = actor.og_waypoint_sources[idx].obj
         actor.og_waypoint_sources.remove(idx)
-        # Keep index valid
         actor.og_waypoint_sources_index = max(0, min(idx, len(actor.og_waypoint_sources) - 1))
+
+        # Delete the underlying object IF it's an addon-created waypoint
+        # empty (matches the ACTOR_*_wp_NN convention). Curves and other
+        # user-linked objects are left alone — the user can delete them
+        # via the normal viewport workflow if they want to.
+        if (src_obj is not None
+                and src_obj.type == "EMPTY"
+                and src_obj.name.startswith("ACTOR_")
+                and "_wp_" in src_obj.name):
+            try:
+                bpy.data.objects.remove(src_obj, do_unlink=True)
+            except ReferenceError:
+                pass  # already gone
+
         return {"FINISHED"}
 
 
