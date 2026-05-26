@@ -72,6 +72,24 @@ more discoverable as a small toggle in the spawn picker.
 
 ## Known minor issues
 
+### Engine-side: `ice` material crashes with `ground` or `obstacle` mode
+Confirmed in-game (2026-05-26): setting a surface to `collide_material=ice`
+combined with `collide_mode=ground` or `collide_mode=obstacle` crashes
+when the player touches it. `collide_mode=wall` works fine.
+
+The addon doesn't pack PAT integers itself — `collide_material/event/mode`
+are stored as Blender custom properties and reach the engine via the GLB
+`extras` field, where the OpenGOAL level compiler reads them. So this
+bug lives either in the level compiler (bad PAT encoding for ice+ground)
+or in the engine runtime (likely a null-deref in the ground-friction
+dispatch for ice surfaces).
+
+Workaround: use `ice` only on walls. For slippery floors, try `tube`
+or one of the other 22 surface materials.
+
+Could add a pre-export audit warning in `audit.py` (slot next to
+`check_tpage_budget` etc.) to flag the combo before it crashes.
+
 ### Stale favorites in spawn picker
 If a future addon update removes an entry from `SPAWN_INDEX` that the user
 had favorited, the stale entry sits in `spawn_favorites` forever. Harmless
