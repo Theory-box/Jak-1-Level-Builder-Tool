@@ -273,6 +273,26 @@ def _launch_checkpoint_items(self, context):
     return items
 
 
+# ---------------------------------------------------------------------------
+# Spawn picker — backing PropertyGroups
+# ---------------------------------------------------------------------------
+
+class OGSpawnListRow(PropertyGroup):
+    """One row in the unified spawn picker UIList.
+
+    Stores just a spawn_id — the full SpawnItem metadata is looked up in
+    spawn_items.SPAWN_INDEX. The collection is populated once at addon
+    register (and per scene-load via a handler) from build_spawn_index().
+    """
+    spawn_id: StringProperty(default="")
+
+
+class OGSpawnFavorite(PropertyGroup):
+    """One favorited spawn item. Stored as a per-file CollectionProperty
+    on the scene so favorites live alongside the level data."""
+    spawn_id: StringProperty(default="")
+
+
 # --- OGProperties ---
 class OGProperties(PropertyGroup):
     # Collection-based level selection
@@ -320,6 +340,59 @@ class OGProperties(PropertyGroup):
                                 description="First tpage group to allow")
     tpage_filter_2:         EnumProperty(name="Group 2", items=TPAGE_FILTER_ITEMS, default="NONE",
                                 description="Second tpage group to allow")
+
+    # -----------------------------------------------------------------------
+    # Unified Spawn picker — tile multi-select toggles (14 categories)
+    # -----------------------------------------------------------------------
+    cat_enemies:         BoolProperty(default=False, name="Enemies",
+                                      description="Show Enemies in the picker list")
+    cat_platforms:       BoolProperty(default=False, name="Platforms",
+                                      description="Show Platforms in the picker list")
+    cat_interactive:     BoolProperty(default=False, name="Interactive Objects",
+                                      description="Show Interactive Objects in the picker list")
+    cat_obstacles:       BoolProperty(default=False, name="Obstacles",
+                                      description="Show Obstacles in the picker list")
+    cat_buttons_doors:   BoolProperty(default=False, name="Buttons and Doors",
+                                      description="Show Buttons and Doors in the picker list")
+    cat_visuals:         BoolProperty(default=False, name="Visuals",
+                                      description="Show Visuals in the picker list")
+    cat_npcs:            BoolProperty(default=False, name="NPCs",
+                                      description="Show NPCs in the picker list")
+    cat_pickups:         BoolProperty(default=False, name="Pickups",
+                                      description="Show Pickups in the picker list")
+    cat_audio:           BoolProperty(default=False, name="Audio",
+                                      description="Show Audio (sound emitters, music zones) in the picker list")
+    cat_volumes:         BoolProperty(default=False, name="Volumes",
+                                      description="Show Volumes (water) in the picker list")
+    cat_flow:            BoolProperty(default=False, name="Level Flow",
+                                      description="Show Player Spawn and Checkpoint in the picker list")
+    cat_cameras:         BoolProperty(default=False, name="Cameras",
+                                      description="Show Camera anchors in the picker list")
+    cat_custom:          BoolProperty(default=False, name="Custom Types",
+                                      description="Show Custom GOAL types in the picker list")
+    cat_favorites:       BoolProperty(default=False, name="Favorites",
+                                      description="Show only favorited items in the picker list")
+
+    spawn_sort_mode: EnumProperty(
+        name="Sort",
+        description="How to order the spawnable objects list",
+        items=[
+            ("ALPHA",      "Alphabetical",    "Sort by label A-Z"),
+            ("CATEGORY",   "Category",        "Group by tile category"),
+            ("ARTGROUP",   "Art Group",       "Group by Jak art-group asset bundle"),
+            ("TPAGEGROUP", "Tpage Group",     "Group by Jak texture-page world (Beach, Jungle, etc.)"),
+            ("FAVORITES",  "Favorites first", "Favorited items at the top, then alphabetical"),
+        ],
+        default="ALPHA",
+    )
+
+    # UIList backing — populated once at addon register from SPAWN_INDEX.
+    spawn_list_items:    CollectionProperty(type=OGSpawnListRow)
+    spawn_list_index:    IntProperty(default=-1, description="Highlighted row in the spawn picker")
+
+    # Per-file favorites — survives scene save/load.
+    spawn_favorites:     CollectionProperty(type=OGSpawnFavorite)
+
     # Import panel — live filter for the GLB search box
     glb_search_filter: StringProperty(
         name="Search GLBs",

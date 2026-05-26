@@ -104,6 +104,11 @@ from .properties import (
     OGPreferences, OGProperties,
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
+    OGSpawnListRow, OGSpawnFavorite,
+)
+from .spawn_items import (
+    populate_spawn_list, register_handlers as _spawn_register_handlers,
+    unregister_handlers as _spawn_unregister_handlers,
 )
 from .operators import ALL_CLASSES as _OPS_CLASSES
 from .operators.misc import _draw_mat
@@ -133,6 +138,8 @@ classes = (
     OGVolLink,
     OGGoalCodeRef,
     OGAuditResult,
+    OGSpawnListRow,
+    OGSpawnFavorite,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
@@ -207,7 +214,14 @@ def register():
         description="When enabled, this collection and its contents are excluded from level export",
         default=False)
 
+    # Unified spawn picker — populate per-scene UIList collection and register
+    # the load_post handler so freshly-loaded blend files get populated too.
+    _spawn_register_handlers()
+    for _scene in bpy.data.scenes:
+        populate_spawn_list(_scene)
+
 def unregister():
+    _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
     unregister_texturing()
