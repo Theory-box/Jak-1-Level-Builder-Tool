@@ -235,6 +235,24 @@ class OG_OT_AddWaypoint(Operator):
         # system for now.
         if not self.pathb_mode and actor_obj is not None:
             try:
+                # If the actor has legacy _wp_NN empties but the collection
+                # is empty, auto-migrate them first. Without this step the
+                # export (which reads from the collection when non-empty)
+                # would silently drop all the legacy waypoints once the
+                # collection gets its first entry. Excludes the empty we
+                # just created so it can be appended last in name order.
+                if len(actor_obj.og_waypoint_sources) == 0:
+                    prefix = actor_obj.name + "_wp_"
+                    legacy = sorted(
+                        [o for o in _level_objects(ctx.scene)
+                         if o.name.startswith(prefix) and o.type == "EMPTY"
+                         and o.name != empty.name],
+                        key=lambda o: o.name
+                    )
+                    for lwp in legacy:
+                        src = actor_obj.og_waypoint_sources.add()
+                        src.obj = lwp
+                # Append the newly-created waypoint
                 src = actor_obj.og_waypoint_sources.add()
                 src.obj = empty
                 actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
