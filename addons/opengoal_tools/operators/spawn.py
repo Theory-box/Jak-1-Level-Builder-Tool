@@ -853,6 +853,172 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_SpawnSelected(Operator):
+    """Unified spawn dispatcher.
+
+    Reads the highlighted item from the unified picker's UIList
+    (scene.og_props.spawn_list_items[spawn_list_index]) and invokes the
+    appropriate underlying operator. For entity items it first sets
+    props.entity_type so og.spawn_entity reads the correct etype.
+
+    Validation of pre-spawn fields runs here so the user gets a clear
+    error message before any object is created."""
+    bl_idname      = "og.spawn_selected"
+    bl_label       = "Spawn"
+    bl_description = "Spawn the selected object from the picker at the 3D cursor"
+    bl_options     = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        from ..spawn_items import get_selected_spawn_item
+        return get_selected_spawn_item(ctx.scene) is not None
+
+    def execute(self, ctx):
+        from ..spawn_items import get_selected_spawn_item
+        props = ctx.scene.og_props
+        item = get_selected_spawn_item(ctx.scene)
+        if item is None:
+            self.report({"ERROR"}, "No item selected in the picker")
+            return {"CANCELLED"}
+
+        err = self._validate(ctx, item)
+        if err:
+            self.report({"ERROR"}, err)
+            return {"CANCELLED"}
+
+        # For entity items, set entity_type so og.spawn_entity reads the
+        # correct etype (it falls back to props.entity_type when no
+        # source_prop kwarg is supplied).
+        if item.etype is not None:
+            try:
+                props.entity_type = item.etype
+            except Exception as e:
+                self.report({"ERROR"}, f"Could not select entity type {item.etype}: {e}")
+                return {"CANCELLED"}
+
+        # Resolve the underlying operator.
+        # item.operator is a string like "og.spawn_entity"; split into
+        # (module, name) and dereference through bpy.ops.
+        try:
+            modname, opname = item.operator.split(".", 1)
+            op_func = getattr(getattr(bpy.ops, modname), opname)
+        except (ValueError, AttributeError) as e:
+            self.report({"ERROR"}, f"Unknown spawn operator '{item.operator}': {e}")
+            return {"CANCELLED"}
+
+        kwargs = dict(item.op_kwargs)
+        try:
+            op_func('INVOKE_DEFAULT', **kwargs)
+        except Exception as e:
+            self.report({"ERROR"}, f"{item.label} spawn failed: {e}")
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+    def _validate(self, ctx, item):
+        """Return an error string if pre-spawn validation fails, else None.
+
+        Validation rules:
+          custom_name    — props.custom_type_name must be non-empty
+          target_context — active object must be a SPAWN_/CHECKPOINT_ empty
+                           (not a _CAM child)
+        Other pre_spawn_fields (nav_radius, crate_type, music_*, sfx_sound,
+        ambient_radius) have sensible defaults and don't require validation.
+        """
+        props = ctx.scene.og_props
+        fields = item.pre_spawn_fields
+
+        if "custom_name" in fields:
+            name = (getattr(props, "custom_type_name", "") or "").strip()
+            if not name:
+                return "Custom type name is required — enter it below the list"
+
+        if "target_context" in fields:
+            sel = ctx.active_object
+            if sel is None or sel.type != "EMPTY":
+                return "Select a SPAWN_ or CHECKPOINT_ empty in the viewport first"
+            if not (sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_")):
+                return "Selected object must be a SPAWN_ or CHECKPOINT_ empty"
+            if sel.name.endswith("_CAM"):
+                return "Selected object is already a camera anchor"
+
+        return None
+
+
+class OG_OT_ToggleSpawnCategory(Operator):
+    """Toggle a spawn picker category tile with isolate-style semantics:
+      Click          → solo this category (set this one, clear all others).
+                       Clicking an already-soloed tile clears everything.
+      Shift+Click    → toggle just this tile, preserving multi-select.
+
+    Used by the 15 category tiles in the unified Spawn picker."""
+    bl_idname      = "og.toggle_spawn_category"
+    bl_label       = "Toggle Spawn Category"
+    bl_description = (
+        "Click: show only this category (hides others).\n"
+        "Shift+Click: add/remove this category to the current selection.\n"
+        "Click an active solo tile to clear the filter entirely."
+    )
+    bl_options     = {"INTERNAL", "UNDO"}
+
+    prop_name: StringProperty()
+
+    def invoke(self, ctx, event):
+        from ..spawn_items import CATEGORY_TO_PROP
+        props = ctx.scene.og_props
+        all_props = list(CATEGORY_TO_PROP.values())
+
+        if not self.prop_name or self.prop_name not in all_props:
+            return {"CANCELLED"}
+
+        if event.shift:
+            # Multi-select: toggle just this one.
+            setattr(props, self.prop_name, not getattr(props, self.prop_name))
+        else:
+            # Solo. If clicking an already-soloed tile, clear everything.
+            currently_active = [p for p in all_props if getattr(props, p, False)]
+            already_solo = (currently_active == [self.prop_name])
+
+            for p in all_props:
+                setattr(props, p, False)
+
+            if not already_solo:
+                setattr(props, self.prop_name, True)
+
+        if ctx.area is not None:
+            ctx.area.tag_redraw()
+        return {"FINISHED"}
+
+    def execute(self, ctx):
+        # Fallback for non-UI invocation (e.g. scripting). Just toggle.
+        if not self.prop_name:
+            return {"CANCELLED"}
+        props = ctx.scene.og_props
+        setattr(props, self.prop_name, not getattr(props, self.prop_name, False))
+        return {"FINISHED"}
+
+
+class OG_OT_ToggleSpawnFavorite(Operator):
+    """Toggle this item's favorite state in the unified spawn picker.
+    Wired to the star icon at the start of each row in OG_UL_SpawnableItems."""
+    bl_idname      = "og.toggle_spawn_favorite"
+    bl_label       = "Toggle Favorite"
+    bl_description = "Add or remove this item from your favorites (per-file)"
+    bl_options     = {"INTERNAL", "UNDO"}
+
+    spawn_id: StringProperty()
+
+    def execute(self, ctx):
+        from ..spawn_items import toggle_favorite
+        if not self.spawn_id:
+            return {"CANCELLED"}
+        toggle_favorite(ctx.scene, self.spawn_id)
+        # Tag the area for redraw so the star icon updates immediately
+        if ctx.area is not None:
+            ctx.area.tag_redraw()
+        return {"FINISHED"}
+
+
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SpawnPlayer,
@@ -876,4 +1042,7 @@ CLASSES = (
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,
     OG_OT_SpawnCustomType,
+    OG_OT_SpawnSelected,
+    OG_OT_ToggleSpawnCategory,
+    OG_OT_ToggleSpawnFavorite,
 )

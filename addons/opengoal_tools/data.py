@@ -193,21 +193,6 @@ def _build_tpage_filter_items():
 TPAGE_FILTER_ITEMS = _build_tpage_filter_items()
 
 
-def _tpage_filter_passes(etype, g1, g2, enabled):
-    if not enabled:
-        return True
-    info  = ENTITY_DEFS.get(etype, {})
-    grp   = info.get("tpage_group")
-    if grp is None:
-        return True
-    if grp in GLOBAL_TPAGE_GROUPS:
-        return True
-    allowed = {g for g in (g1, g2) if g != "NONE"}
-    if not allowed:
-        return True
-    return grp in allowed
-
-
 def _make_filtered_enum(base_items, cats):
     def _callback(self, context):
         if context is None:

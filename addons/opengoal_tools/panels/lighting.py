@@ -7,7 +7,7 @@
 # sets up on a level mesh and it deserves a visible top-level entry.
 #
 # The context-aware per-mesh light-bake section (OG_PT_SelectedLightBaking)
-# still lives in panels/selected.py under the Selected Object panel.
+# still lives in panels/selected.py under the Object Settings panel.
 # ─────────────────────────────────────────────────────────────────────────
 
 from __future__ import annotations
