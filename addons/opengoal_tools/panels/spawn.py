@@ -71,16 +71,201 @@ class OG_PT_Spawn(Panel):
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
-        props = ctx.scene.og_props
-        if props.tpage_limit_enabled:
-            active = [g for g in (props.tpage_filter_1, props.tpage_filter_2) if g != "NONE"]
-            if active:
-                row = self.layout.row()
-                row.label(text="🔍 Filtered: " + " + ".join(active), icon="FILTER")
+        layout = self.layout
+        props  = ctx.scene.og_props
+
+        # ── Sort row ─────────────────────────────────────────────────────
+        row = layout.row(align=True)
+        row.label(text="", icon="SORTALPHA")
+        row.prop(props, "spawn_sort_mode", text="")
+
+        # ── 14-tile category grid (multi-select) ────────────────────────
+        flow = layout.grid_flow(
+            row_major=True, columns=4,
+            even_columns=True, even_rows=True, align=True,
+        )
+        flow.prop(props, "cat_enemies",       toggle=True, icon=CATEGORY_ICONS["Enemies"])
+        flow.prop(props, "cat_platforms",     toggle=True, icon=CATEGORY_ICONS["Platforms"])
+        flow.prop(props, "cat_interactive",   toggle=True, icon=CATEGORY_ICONS["Interactive Objects"])
+        flow.prop(props, "cat_obstacles",     toggle=True, icon=CATEGORY_ICONS["Obstacles"])
+        flow.prop(props, "cat_buttons_doors", toggle=True, icon=CATEGORY_ICONS["Buttons and Doors"])
+        flow.prop(props, "cat_visuals",       toggle=True, icon=CATEGORY_ICONS["Visuals"])
+        flow.prop(props, "cat_npcs",          toggle=True, icon=CATEGORY_ICONS["NPCs"])
+        flow.prop(props, "cat_pickups",       toggle=True, icon=CATEGORY_ICONS["Pickups"])
+        flow.prop(props, "cat_audio",         toggle=True, icon=CATEGORY_ICONS["Audio"])
+        flow.prop(props, "cat_volumes",       toggle=True, icon=CATEGORY_ICONS["Volumes"])
+        flow.prop(props, "cat_flow",          toggle=True, icon=CATEGORY_ICONS["Level Flow"])
+        flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
+        flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
+        flow.prop(props, "cat_favorites",     toggle=True, icon=CATEGORY_ICONS["Favorites"])
+
+        # ── Scrollable picker list ───────────────────────────────────────
+        layout.template_list(
+            "OG_UL_SpawnableItems", "",
+            props, "spawn_list_items",
+            props, "spawn_list_index",
+            rows=10,
+        )
+
+        # ── Dynamic settings (only when an item is selected) ─────────────
+        from ..spawn_items import get_selected_spawn_item
+        selected = get_selected_spawn_item(ctx.scene)
+        if selected is not None:
+            _draw_dynamic_settings(layout, ctx, selected)
+
+        # ── Spawn button (always rendered; poll disables when no selection) ─
+        spawn_row = layout.row()
+        spawn_row.scale_y = 1.6
+        spawn_row.operator("og.spawn_selected", icon="ADD")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Unified Spawn picker — Phase 2 (UIList + debug panel)
+# Field drawers + dynamic settings helper
+# ───────────────────────────────────────────────────────────────────────────
+# Each FIELD_DRAWER is a function (layout, ctx, item) → None that renders
+# one pre-spawn field. SpawnItem.pre_spawn_fields lists which ones to draw
+# for a given item; _draw_dynamic_settings iterates and dispatches.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _wrap_text(text: str, width: int = 40) -> list[str]:
+    """Simple word-wrap for label-based prose rendering. Splits on
+    whitespace; never breaks mid-word."""
+    out: list[str] = []
+    for paragraph in text.split("\n"):
+        line = ""
+        for word in paragraph.split():
+            if not line:
+                line = word
+            elif len(line) + 1 + len(word) <= width:
+                line += " " + word
+            else:
+                out.append(line)
+                line = word
+        if line:
+            out.append(line)
+        if not paragraph:
+            out.append("")
+    return out
+
+
+def _draw_field_crate_type(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "crate_type", text="Crate type")
+
+
+def _draw_field_nav_radius(layout, ctx, item):
+    box = layout.box()
+    box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
+    box.prop(ctx.scene.og_props, "nav_radius", text="Sphere radius (m)")
+
+
+def _draw_field_sfx_sound(layout, ctx, item):
+    props = ctx.scene.og_props
+    snd_display = (
+        props.sfx_sound.split("__")[0] if "__" in props.sfx_sound else props.sfx_sound
+    )
+    layout.operator("og.pick_sound", text=f"🔊  {snd_display}", icon="VIEWZOOM")
+
+
+def _draw_field_ambient_radius(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "ambient_default_radius", text="Default radius (m)")
+
+
+def _draw_field_music_bank(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "og_music_amb_bank", text="Bank")
+
+
+def _draw_field_music_flava(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "og_music_amb_flava", text="Flava")
+
+
+def _draw_field_music_priority(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "og_music_amb_priority", text="Priority")
+
+
+def _draw_field_music_radius(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "og_music_amb_radius", text="Radius (m)")
+
+
+def _draw_field_custom_name(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "custom_type_name", text="Deftype name")
+
+
+def _draw_field_target_context(layout, ctx, item):
+    """Read-only context indicator for the Camera anchor item.
+    Mirrors OG_OT_SpawnSelected._validate so the user sees the same state."""
+    sel = ctx.active_object
+    is_ok = (sel is not None and sel.type == "EMPTY"
+             and (sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_"))
+             and not sel.name.endswith("_CAM"))
+    box = layout.box()
+    if is_ok:
+        box.label(text=f"Will spawn: {sel.name}_CAM", icon="CHECKMARK")
+    else:
+        sub = box.row()
+        sub.alert = True
+        sub.label(text="Select a SPAWN_ or CHECKPOINT_ empty first", icon="ERROR")
+
+
+FIELD_DRAWERS = {
+    "crate_type":     _draw_field_crate_type,
+    "nav_radius":     _draw_field_nav_radius,
+    "sfx_sound":      _draw_field_sfx_sound,
+    "ambient_radius": _draw_field_ambient_radius,
+    "music_bank":     _draw_field_music_bank,
+    "music_flava":    _draw_field_music_flava,
+    "music_priority": _draw_field_music_priority,
+    "music_radius":   _draw_field_music_radius,
+    "custom_name":    _draw_field_custom_name,
+    "target_context": _draw_field_target_context,
+}
+
+
+def _draw_dynamic_settings(layout, ctx, item):
+    """Render the dynamic settings box for a selected SpawnItem.
+
+    Shows:
+      - The wiki/description text (word-wrapped at ~40 chars/line)
+      - Entity-specific info messages (nav-mesh need, path requirements,
+        prop-only notice) — derived from NEEDS_PATH / IS_PROP type sets
+      - Any pre_spawn_fields, dispatched via FIELD_DRAWERS
+    """
+    box = layout.box()
+    header = box.row(align=True)
+    header.label(text=item.label, icon=item.icon)
+
+    if item.description:
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        for line in _wrap_text(item.description, width=40):
+            col.label(text=line if line else " ")
+
+    # Entity-specific info messages.
+    if item.etype is not None:
+        from ..data import NEEDS_PATH_TYPES, IS_PROP_TYPES
+        # NEEDS_PATHB_TYPES is the two-path subset; check it first.
+        try:
+            from ..data import NEEDS_PATHB_TYPES
+            has_pathb = item.etype in NEEDS_PATHB_TYPES
+        except ImportError:
+            has_pathb = False
+
+        if has_pathb:
+            box.label(text="Needs 2 path sets (wp + wpb)", icon="INFO")
+        elif item.etype in NEEDS_PATH_TYPES:
+            box.label(text="Needs waypoints to patrol", icon="INFO")
+        elif item.etype in IS_PROP_TYPES:
+            box.label(text="Prop — idle animation only", icon="INFO")
+
+    # Pre-spawn fields.
+    for field_id in item.pre_spawn_fields:
+        drawer = FIELD_DRAWERS.get(field_id)
+        if drawer is not None:
+            drawer(box, ctx, item)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Unified Spawn picker — UIList class
 # ───────────────────────────────────────────────────────────────────────────
 # OG_UL_SpawnableItems renders the scrollable list of every placeable thing.
 # filter_items combines:
@@ -88,10 +273,6 @@ class OG_PT_Spawn(Panel):
 #   - active category toggles (props.cat_*)
 #   - sort mode               (props.spawn_sort_mode)
 # Star icon at the start of each row toggles per-file favorites.
-#
-# OG_PT_SpawnNewPickerDebug is a temporary sub-panel that just renders the
-# UIList so the new system can be verified alongside the old. Removed in
-# Phase 5 cutover when the full UI replaces the old sub-panels.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -213,76 +394,6 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
         for new_pos, orig_idx in enumerate(ordered):
             flt_neworder[orig_idx] = new_pos
         return flt_neworder
-
-
-class OG_PT_SpawnNewPickerDebug(Panel):
-    """Temporary debug panel — Phase 2 verification harness.
-    Removed in Phase 5 when the new design replaces the old sub-panels."""
-    bl_label       = "🧪  New Picker (debug)"
-    bl_idname      = "OG_PT_spawn_new_picker_debug"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_spawn"
-    bl_options     = {"DEFAULT_CLOSED"}
-    bl_order       = -1  # show above all other sub-panels
-
-    def draw(self, ctx):
-        layout = self.layout
-        props  = ctx.scene.og_props
-
-        # Sort dropdown — temporary placement; real layout comes in Phase 4.
-        row = layout.row(align=True)
-        row.label(text="Sort:")
-        row.prop(props, "spawn_sort_mode", text="")
-
-        # Category toggles — temporary horizontal cram; real grid comes in Phase 4.
-        col = layout.column(align=True)
-        col.label(text="Categories (multi-select):")
-        flow = col.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
-        flow.prop(props, "cat_enemies",       toggle=True, icon=CATEGORY_ICONS["Enemies"])
-        flow.prop(props, "cat_platforms",     toggle=True, icon=CATEGORY_ICONS["Platforms"])
-        flow.prop(props, "cat_interactive",   toggle=True, icon=CATEGORY_ICONS["Interactive Objects"])
-        flow.prop(props, "cat_obstacles",     toggle=True, icon=CATEGORY_ICONS["Obstacles"])
-        flow.prop(props, "cat_buttons_doors", toggle=True, icon=CATEGORY_ICONS["Buttons and Doors"])
-        flow.prop(props, "cat_visuals",       toggle=True, icon=CATEGORY_ICONS["Visuals"])
-        flow.prop(props, "cat_npcs",          toggle=True, icon=CATEGORY_ICONS["NPCs"])
-        flow.prop(props, "cat_pickups",       toggle=True, icon=CATEGORY_ICONS["Pickups"])
-        flow.prop(props, "cat_audio",         toggle=True, icon=CATEGORY_ICONS["Audio"])
-        flow.prop(props, "cat_volumes",       toggle=True, icon=CATEGORY_ICONS["Volumes"])
-        flow.prop(props, "cat_flow",          toggle=True, icon=CATEGORY_ICONS["Level Flow"])
-        flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
-        flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
-        flow.prop(props, "cat_favorites",     toggle=True, icon=CATEGORY_ICONS["Favorites"])
-
-        # The list itself.
-        layout.template_list(
-            "OG_UL_SpawnableItems", "",
-            props, "spawn_list_items",
-            props, "spawn_list_index",
-            rows=10,
-        )
-
-        # Selection echo — confirms the dispatcher will have what it needs.
-        if 0 <= props.spawn_list_index < len(props.spawn_list_items):
-            sp = get_spawn_index().get(props.spawn_list_items[props.spawn_list_index].spawn_id)
-            if sp is not None:
-                box = layout.box()
-                box.label(text=f"Selected: {sp.label}", icon="CHECKMARK")
-                sub = box.column(align=True)
-                sub.scale_y = 0.85
-                sub.label(text=f"  spawn_id: {sp.spawn_id}")
-                sub.label(text=f"  category: {sp.category}")
-                sub.label(text=f"  operator: {sp.operator}")
-                if sp.pre_spawn_fields:
-                    sub.label(text=f"  pre_spawn: {', '.join(sp.pre_spawn_fields)}")
-
-        # Temporary spawn button for Phase 3 dispatcher testing. The real
-        # button + dynamic settings area come in Phase 4.
-        layout.separator(factor=0.3)
-        spawn_row = layout.row()
-        spawn_row.scale_y = 1.4
-        spawn_row.operator("og.spawn_selected", icon="ADD")
 
 
 
@@ -912,7 +1023,6 @@ CLASSES = (
     OG_OT_SearchSelectEntity,
     OG_UL_SpawnableItems,
     OG_PT_Spawn,
-    OG_PT_SpawnNewPickerDebug,
     OG_PT_SpawnLevelFlow,
     OG_PT_SpawnSearch,
     OG_PT_SpawnLimitSearch,
