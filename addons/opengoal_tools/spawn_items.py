@@ -329,6 +329,32 @@ def get_selected_spawn_item(scene) -> Optional[SpawnItem]:
     return get_spawn_index().get(rows[idx].spawn_id)
 
 
+def count_filtered(scene) -> tuple[int, int]:
+    """Return (visible_count, total_count) accounting for category and
+    favorites filters. Does NOT include the UIList's native search-text
+    filter — that's per-UIList-instance state not visible from a panel
+    draw() context. Used by the panel header to show an "X of N" hint."""
+    props = scene.og_props
+    total = len(props.spawn_list_items)
+    active_cats = get_active_categories(props)
+    if not active_cats:
+        return total, total
+    favorites_only = "Favorites" in active_cats
+    regular_cats = active_cats - {"Favorites"}
+    index = get_spawn_index()
+    visible = 0
+    for row in props.spawn_list_items:
+        sp = index.get(row.spawn_id)
+        if sp is None:
+            continue
+        if favorites_only and not is_favorited(scene, row.spawn_id):
+            continue
+        if regular_cats and sp.category not in regular_cats:
+            continue
+        visible += 1
+    return visible, total
+
+
 # ---------------------------------------------------------------------------
 # Scene population — handler + helpers
 # ---------------------------------------------------------------------------

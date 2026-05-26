@@ -16,7 +16,7 @@ from bpy.types import Panel
 from ..data import NEEDS_PATH_TYPES, IS_PROP_TYPES, NEEDS_PATHB_TYPES
 from ..spawn_items import (
     get_spawn_index, get_active_categories, is_favorited,
-    get_selected_spawn_item,
+    get_selected_spawn_item, count_filtered,
     CATEGORY_ICONS,
 )
 
@@ -57,6 +57,22 @@ class OG_PT_Spawn(Panel):
         flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
         flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
         flow.prop(props, "cat_favorites",     toggle=True, icon=CATEGORY_ICONS["Favorites"])
+
+        # ── Status hint when any category filter is active ──────────────
+        active_cats = get_active_categories(props)
+        if active_cats:
+            visible, total = count_filtered(ctx.scene)
+            hint = layout.row()
+            hint.scale_y = 0.85
+            if visible == 0:
+                if active_cats == {"Favorites"}:
+                    hint.label(text="No favorites yet — tap the star on any row",
+                               icon="SOLO_OFF")
+                else:
+                    hint.label(text="No items match selected categories",
+                               icon="INFO")
+            else:
+                hint.label(text=f"Showing {visible} of {total}", icon="FILTER")
 
         # ── Scrollable picker list ───────────────────────────────────────
         layout.template_list(
