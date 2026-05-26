@@ -159,11 +159,11 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         category="Cameras",
         description="A standalone camera placed at the 3D cursor. After "
                     "spawn, configure mode / FOV / look-at and link to a "
-                    "trigger volume via the Selected Object panel.\n"
+                    "trigger volume via the Object Settings panel.\n"
                     "\n"
                     "Tip: to add a camera tied to a SPAWN_/CHECKPOINT_ "
                     "respawn point, select that empty first and use the "
-                    "'Add Camera' button under Selected Object.",
+                    "'Add Camera' button under Object Settings.",
         operator="og.spawn_camera",
         icon="CAMERA_DATA",
     ),
@@ -174,7 +174,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         description="A box mesh that fires when the player enters its "
                     "bounds. After spawn, scale it to cover the area you "
                     "want, then link it to a target (camera, checkpoint, "
-                    "enemy) via the Selected Object panel.",
+                    "enemy) via the Object Settings panel.",
         operator="og.spawn_volume",
         icon="MESH_CUBE",
     ),
@@ -215,7 +215,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         category="Custom Types",
         description="Custom GOAL deftype. Enter the deftype name (must match "
                     "obs.gc exactly). After spawn, write the type + states in "
-                    "a GOAL code block via the Selected Object panel.",
+                    "a GOAL code block via the Object Settings panel.",
         operator="og.spawn_custom_type",
         pre_spawn_fields=("custom_name",),
         icon="SCRIPT",

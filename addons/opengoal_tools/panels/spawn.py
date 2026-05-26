@@ -17,7 +17,7 @@ from ..data import NEEDS_PATH_TYPES, IS_PROP_TYPES, NEEDS_PATHB_TYPES
 from ..spawn_items import (
     get_spawn_index, get_active_categories, is_favorited,
     get_selected_spawn_item, count_filtered,
-    CATEGORY_ICONS,
+    CATEGORY_ICONS, CATEGORY_TO_PROP, TILE_CATEGORIES,
 )
 
 
@@ -39,25 +39,22 @@ class OG_PT_Spawn(Panel):
         row.prop(props, "spawn_sort_mode", text="")
 
         # ── 14-tile category grid (multi-select) ────────────────────────
+        # Click a tile to solo it (hide other categories), shift+click to
+        # toggle it in/out of the multi-selection. Click an already-soloed
+        # tile to clear the filter.
         flow = layout.grid_flow(
             row_major=True, columns=4,
             even_columns=True, even_rows=True, align=True,
         )
-        flow.prop(props, "cat_enemies",       toggle=True, icon=CATEGORY_ICONS["Enemies"])
-        flow.prop(props, "cat_platforms",     toggle=True, icon=CATEGORY_ICONS["Platforms"])
-        flow.prop(props, "cat_interactive",   toggle=True, icon=CATEGORY_ICONS["Interactive Objects"])
-        flow.prop(props, "cat_obstacles",     toggle=True, icon=CATEGORY_ICONS["Obstacles"])
-        flow.prop(props, "cat_buttons_doors", toggle=True, icon=CATEGORY_ICONS["Buttons and Doors"])
-        flow.prop(props, "cat_visuals",       toggle=True, icon=CATEGORY_ICONS["Visuals"])
-        flow.prop(props, "cat_npcs",          toggle=True, icon=CATEGORY_ICONS["NPCs"])
-        flow.prop(props, "cat_pickups",       toggle=True, icon=CATEGORY_ICONS["Pickups"])
-        flow.prop(props, "cat_audio",         toggle=True, icon=CATEGORY_ICONS["Audio"])
-        flow.prop(props, "cat_volumes",       toggle=True, icon=CATEGORY_ICONS["Volumes"])
-        flow.prop(props, "cat_triggers",      toggle=True, icon=CATEGORY_ICONS["Triggers"])
-        flow.prop(props, "cat_flow",          toggle=True, icon=CATEGORY_ICONS["Level Flow"])
-        flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
-        flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
-        flow.prop(props, "cat_favorites",     toggle=True, icon=CATEGORY_ICONS["Favorites"])
+        for cat_name in TILE_CATEGORIES:
+            prop_name = CATEGORY_TO_PROP[cat_name]
+            op = flow.operator(
+                "og.toggle_spawn_category",
+                text=cat_name,
+                icon=CATEGORY_ICONS[cat_name],
+                depress=getattr(props, prop_name, False),
+            )
+            op.prop_name = prop_name
 
         # ── Status hint when any category filter is active ──────────────
         active_cats = get_active_categories(props)
@@ -271,10 +268,11 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
         )
         op.spawn_id = item.spawn_id
 
-        # Category icon + main label.
+        # Category icon + main label with tpage suffix in parens.
         cat_icon = CATEGORY_ICONS.get(sp.category, "EMPTY_DATA")
         row.label(text="", icon=cat_icon)
-        row.label(text=sp.label)
+        display = f"{sp.label} ({sp.tpage_group})" if sp.tpage_group else sp.label
+        row.label(text=display)
 
         # Category text, right-aligned. Dimmed via active=False so the main
         # label still reads as the primary content.
@@ -289,6 +287,8 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
         Returns (flt_flags, flt_neworder):
           flt_flags[i]    — bitflag_filter_item if item i should be shown
           flt_neworder[i] — new display position for original index i
+        Search text matches against label + tpage_group, so typing 'beach'
+        finds all Beach-tpage items even though their labels don't contain it.
         """
         items = getattr(data, propname)
         props = ctx.scene.og_props
@@ -317,9 +317,13 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
                 flt_flags.append(0)
                 continue
 
-            if filter_text and filter_text not in sp.label.lower():
-                flt_flags.append(0)
-                continue
+            if filter_text:
+                searchable = sp.label.lower()
+                if sp.tpage_group:
+                    searchable += " " + sp.tpage_group.lower()
+                if filter_text not in searchable:
+                    flt_flags.append(0)
+                    continue
 
             flt_flags.append(self.bitflag_filter_item)
 

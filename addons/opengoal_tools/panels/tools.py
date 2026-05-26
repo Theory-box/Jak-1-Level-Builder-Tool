@@ -142,81 +142,6 @@ class OG_PT_VertexExport(Panel):
 
 
 
-class OG_PT_Waypoints(Panel):
-    bl_label       = "〰  Waypoints"
-    bl_idname      = "OG_PT_waypoints"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or not sel.name.startswith("ACTOR_") or "_wp_" in sel.name:
-            return False
-        parts = sel.name.split("_", 2)
-        if len(parts) < 3:
-            return False
-        return _actor_uses_waypoints(parts[1])
-
-    def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
-        etype  = sel.name.split("_", 2)[1]
-        einfo  = ENTITY_DEFS.get(etype, {})
-
-        prefix = sel.name + "_wp_"
-        wps = sorted(
-            [o for o in bpy.data.objects if o.name.startswith(prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-
-        layout.label(text=f"Path  ({len(wps)} point{'s' if len(wps) != 1 else ''})", icon="ANIM")
-
-        if wps:
-            col = layout.column(align=True)
-            for wp in wps:
-                row = col.row(align=True)
-                row.label(text=wp.name, icon="EMPTY_AXIS")
-                op = row.operator("og.delete_waypoint", text="", icon="X")
-                op.wp_name = wp.name
-        else:
-            layout.label(text="No waypoints yet", icon="INFO")
-
-        row = layout.row(align=True)
-        row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS").enemy_name = sel.name
-        row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-
-        if einfo.get("needs_path") and len(wps) < 1:
-            layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
-
-        if einfo.get("needs_pathb"):
-            _header_sep(layout)
-            prefixb = sel.name + "_wpb_"
-            wpsb = sorted(
-                [o for o in bpy.data.objects if o.name.startswith(prefixb) and o.type == "EMPTY"],
-                key=lambda o: o.name
-            )
-            layout.label(text=f"Path B — slave bats  ({len(wpsb)} points)", icon="ANIM")
-            if wpsb:
-                col2 = layout.column(align=True)
-                for wp in wpsb:
-                    row = col2.row(align=True)
-                    row.label(text=wp.name, icon="EMPTY_AXIS")
-                    op2 = row.operator("og.delete_waypoint", text="", icon="X")
-                    op2.wp_name = wp.name
-            else:
-                layout.label(text="No Path B waypoints yet", icon="INFO")
-
-            row3 = layout.row(align=True)
-            op3 = row3.operator("og.add_waypoint", text="Spawn Path B Waypoint", icon="PLUS")
-            op3.enemy_name = sel.name; op3.pathb_mode = True
-            row3.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-
-            if len(wpsb) < 1:
-                layout.label(text="⚠ swamp-bat crashes without Path B", icon="ERROR")
-
 
 
 class OG_PT_BuildPlay(Panel):
@@ -431,7 +356,7 @@ class OG_OT_AssignVertexExport(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# Selected Object sub-panels  (mesh context, collapsible)
+# Object Settings sub-panels  (mesh context, collapsible)
 # ---------------------------------------------------------------------------
 
 class OG_OT_ClearVertexExport(bpy.types.Operator):
@@ -449,7 +374,7 @@ class OG_OT_ClearVertexExport(bpy.types.Operator):
 
 
 # ---------------------------------------------------------------------------
-# Selected Object > Export As  (sub-panel — only on plain MESH objects)
+# Object Settings > Export As  (sub-panel — only on plain MESH objects)
 # ---------------------------------------------------------------------------
 
 # ─── Classes to register ───────────────────────────────────────────────────
@@ -458,7 +383,6 @@ CLASSES = (
     OG_OT_AssignVertexExport,
     OG_OT_UseLumpRef,
     OG_PT_VertexExport,
-    OG_PT_Waypoints,
     OG_PT_BuildPlay,
     OG_OT_ReloadAddon,
     OG_PT_DevTools,

@@ -654,7 +654,7 @@ def _draw_selected_mesh_navtag(layout, obj):
 
 
 class OG_PT_SelectedObject(Panel):
-    bl_label       = "🔍  Selected Object"
+    bl_label       = "🔍  Object Settings"
     bl_idname      = "OG_PT_selected_object"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"

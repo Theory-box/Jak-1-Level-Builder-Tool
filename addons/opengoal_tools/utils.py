@@ -156,7 +156,7 @@ def _draw_platform_settings(layout, sel, scene):
 #
 #  📁 Spawn              OG_PT_Spawn          (parent, DEFAULT_CLOSED — unified picker)
 #
-#  🔍 Selected Object   OG_PT_SelectedObject    (always visible)
+#  🔍 Object Settings    OG_PT_SelectedObject    (always visible)
 #    Collision          OG_PT_SelectedCollision  (sub, DEFAULT_CLOSED, mesh poll)
 #    Light Baking       OG_PT_SelectedLightBaking(sub, DEFAULT_CLOSED, mesh poll)
 #    NavMesh            OG_PT_SelectedNavMeshTag (sub, DEFAULT_CLOSED, mesh poll)
