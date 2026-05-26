@@ -244,6 +244,219 @@ class OG_OT_DeleteWaypoint(Operator):
             self.report({"INFO"}, f"Deleted {self.wp_name}")
         return {"FINISHED"}
 
+
+# ───────────────────────────────────────────────────────────────────────
+# Waypoint-source list operators (the new reorderable list)
+# These operate on the active ACTOR_ empty's og_waypoint_sources collection.
+# ───────────────────────────────────────────────────────────────────────
+
+def _get_actor_for_waypoint_ops(ctx):
+    """Return the ACTOR_ empty whose waypoint list we're editing, or None.
+    Used by the source-list operators below — they all need the same
+    actor-object lookup."""
+    sel = ctx.active_object
+    if sel is None:
+        return None
+    # Must be an ACTOR_ empty (not a waypoint itself)
+    if not sel.name.startswith("ACTOR_") or "_wp_" in sel.name or "_wpb_" in sel.name:
+        return None
+    return sel
+
+
+class OG_OT_WaypointSourceRemove(Operator):
+    """Remove the highlighted entry from the actor's waypoint source list.
+    Does NOT delete the underlying empty or curve object — just unlinks it
+    from the path. Use the X icon next to a row."""
+    bl_idname  = "og.waypoint_source_remove"
+    bl_label   = "Remove Waypoint Source"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        if actor is None:
+            return False
+        return 0 <= actor.og_waypoint_sources_index < len(actor.og_waypoint_sources)
+
+    def execute(self, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        idx = actor.og_waypoint_sources_index
+        actor.og_waypoint_sources.remove(idx)
+        # Keep index valid
+        actor.og_waypoint_sources_index = max(0, min(idx, len(actor.og_waypoint_sources) - 1))
+        return {"FINISHED"}
+
+
+class OG_OT_WaypointSourceMove(Operator):
+    """Reorder the active waypoint source up or down in the list. The list
+    order is the export order — moving a curve earlier means its points are
+    emitted earlier in the actor's path."""
+    bl_idname  = "og.waypoint_source_move"
+    bl_label   = "Move Waypoint Source"
+    bl_options = {"REGISTER", "UNDO"}
+
+    direction: bpy.props.EnumProperty(
+        items=[("UP", "Up", ""), ("DOWN", "Down", "")],
+    )
+
+    @classmethod
+    def poll(cls, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        if actor is None:
+            return False
+        return len(actor.og_waypoint_sources) > 1
+
+    def execute(self, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        sources = actor.og_waypoint_sources
+        idx = actor.og_waypoint_sources_index
+        if not (0 <= idx < len(sources)):
+            return {"CANCELLED"}
+        if self.direction == "UP" and idx > 0:
+            sources.move(idx, idx - 1)
+            actor.og_waypoint_sources_index = idx - 1
+        elif self.direction == "DOWN" and idx < len(sources) - 1:
+            sources.move(idx, idx + 1)
+            actor.og_waypoint_sources_index = idx + 1
+        return {"FINISHED"}
+
+
+class OG_OT_WaypointSourceFrame(Operator):
+    """Frame the active waypoint source's object in the viewport without
+    losing the actor selection. Mirror of the 🔍 button on each existing
+    waypoint row in the old layout."""
+    bl_idname  = "og.waypoint_source_frame"
+    bl_label   = "Frame Waypoint Source"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        if actor is None:
+            return False
+        idx = actor.og_waypoint_sources_index
+        sources = actor.og_waypoint_sources
+        return (0 <= idx < len(sources)
+                and sources[idx].obj is not None
+                and sources[idx].obj.name in ctx.scene.objects)
+
+    def execute(self, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        src_obj = actor.og_waypoint_sources[actor.og_waypoint_sources_index].obj
+        # Save the actor as active so it gets re-selected after the frame op
+        actor_name = actor.name
+        # Select only the source object, frame it, then restore actor selection
+        for o in ctx.selected_objects:
+            o.select_set(False)
+        src_obj.select_set(True)
+        ctx.view_layer.objects.active = src_obj
+        # Frame in viewport via the standard op
+        for area in ctx.screen.areas:
+            if area.type == "VIEW_3D":
+                with ctx.temp_override(area=area, region=area.regions[-1]):
+                    bpy.ops.view3d.view_selected(use_all_regions=False)
+                break
+        # Restore selection on the actor
+        src_obj.select_set(False)
+        actor_back = bpy.data.objects.get(actor_name)
+        if actor_back is not None:
+            actor_back.select_set(True)
+            ctx.view_layer.objects.active = actor_back
+        return {"FINISHED"}
+
+
+def _curve_items_in_scene(self, ctx):
+    """EnumProperty items callback: every CURVE object in the file.
+    Used by OG_OT_WaypointSourceLinkCurve's picker popup."""
+    items = [(o.name, o.name, "") for o in bpy.data.objects if o.type == "CURVE"]
+    if not items:
+        items = [("__none__", "(no curves in scene)", "Add a curve via Add > Curve > Bezier first")]
+    return items
+
+
+class OG_OT_WaypointSourceLinkCurve(Operator):
+    """Pick an existing curve in the scene and append it to this actor's
+    waypoint list. At export time, each spline control point becomes one
+    waypoint in the actor's path, in spline order."""
+    bl_idname      = "og.waypoint_source_link_curve"
+    bl_label       = "Link Curve"
+    bl_description = "Pick an existing curve. Each control point becomes a waypoint at export"
+    bl_options     = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    curve_name: bpy.props.EnumProperty(
+        name="Curve",
+        description="Which curve to link",
+        items=_curve_items_in_scene,
+    )
+
+    def invoke(self, ctx, event):
+        if not self.actor_name:
+            self.report({"ERROR"}, "No actor specified")
+            return {"CANCELLED"}
+        return ctx.window_manager.invoke_props_dialog(self, width=320)
+
+    def draw(self, ctx):
+        col = self.layout.column()
+        col.prop(self, "curve_name", text="Curve")
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
+            return {"CANCELLED"}
+        if self.curve_name in ("", "__none__"):
+            self.report({"ERROR"}, "No curve selected — add a curve to the scene first")
+            return {"CANCELLED"}
+        curve = bpy.data.objects.get(self.curve_name)
+        if curve is None or curve.type != "CURVE":
+            self.report({"ERROR"}, f"'{self.curve_name}' is not a curve")
+            return {"CANCELLED"}
+        # Append a row pointing to the curve, make it the active row.
+        src = actor.og_waypoint_sources.add()
+        src.obj = curve
+        actor.og_waypoint_sources_index = len(actor.og_waypoint_sources) - 1
+        self.report({"INFO"}, f"Linked curve '{curve.name}' to {actor.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_WaypointSourceMigrate(Operator):
+    """One-time migration for actors with legacy _wp_NN empties but no
+    og_waypoint_sources collection. Walks the empties in name order and
+    adds each to the collection, so the user can then reorder them or
+    interleave curves."""
+    bl_idname      = "og.waypoint_source_migrate"
+    bl_label       = "Migrate Waypoints to List"
+    bl_description = "Populate the reorderable list from this actor's existing _wp_NN empties"
+    bl_options     = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
+            return {"CANCELLED"}
+        if len(actor.og_waypoint_sources) > 0:
+            self.report({"WARNING"}, "Waypoint list already has entries — not migrating")
+            return {"CANCELLED"}
+        prefix = actor.name + "_wp_"
+        wps = sorted(
+            [o for o in _level_objects(ctx.scene)
+             if o.name.startswith(prefix) and o.type == "EMPTY"],
+            key=lambda o: o.name
+        )
+        if not wps:
+            self.report({"WARNING"}, "No legacy waypoints found to migrate")
+            return {"CANCELLED"}
+        for wp in wps:
+            src = actor.og_waypoint_sources.add()
+            src.obj = wp
+        actor.og_waypoint_sources_index = 0
+        self.report({"INFO"}, f"Migrated {len(wps)} waypoint{'s' if len(wps) != 1 else ''} for {actor.name}")
+        return {"FINISHED"}
+
+
 class OG_OT_LinkVolume(Operator):
     """Append a link from a VOL_ mesh to a camera, checkpoint, or nav-enemy.
     Select the VOL_ mesh first, then shift-click the target, then click Link.
@@ -430,6 +643,11 @@ CLASSES = (
     OG_OT_UnlinkNavMesh,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,
+    OG_OT_WaypointSourceRemove,
+    OG_OT_WaypointSourceMove,
+    OG_OT_WaypointSourceFrame,
+    OG_OT_WaypointSourceLinkCurve,
+    OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,
     OG_OT_CleanOrphanedLinks,
