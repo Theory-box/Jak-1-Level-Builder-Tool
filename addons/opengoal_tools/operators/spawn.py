@@ -853,6 +853,27 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_ToggleSpawnFavorite(Operator):
+    """Toggle this item's favorite state in the unified spawn picker.
+    Wired to the star icon at the start of each row in OG_UL_SpawnableItems."""
+    bl_idname      = "og.toggle_spawn_favorite"
+    bl_label       = "Toggle Favorite"
+    bl_description = "Add or remove this item from your favorites (per-file)"
+    bl_options     = {"INTERNAL", "UNDO"}
+
+    spawn_id: StringProperty()
+
+    def execute(self, ctx):
+        from ..spawn_items import toggle_favorite
+        if not self.spawn_id:
+            return {"CANCELLED"}
+        toggle_favorite(ctx.scene, self.spawn_id)
+        # Tag the area for redraw so the star icon updates immediately
+        if ctx.area is not None:
+            ctx.area.tag_redraw()
+        return {"FINISHED"}
+
+
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SpawnPlayer,
@@ -876,4 +897,5 @@ CLASSES = (
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,
     OG_OT_SpawnCustomType,
+    OG_OT_ToggleSpawnFavorite,
 )

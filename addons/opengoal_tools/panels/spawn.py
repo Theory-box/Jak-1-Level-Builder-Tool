@@ -56,6 +56,10 @@ from ..utils import (
 )
 from .. import model_preview as _mp
 from ..audit import run_audit
+from ..spawn_items import (
+    get_spawn_index, get_active_categories, is_favorited,
+    CATEGORY_ICONS, TILE_CATEGORIES,
+)
 
 
 class OG_PT_Spawn(Panel):
@@ -73,6 +77,205 @@ class OG_PT_Spawn(Panel):
             if active:
                 row = self.layout.row()
                 row.label(text="🔍 Filtered: " + " + ".join(active), icon="FILTER")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Unified Spawn picker — Phase 2 (UIList + debug panel)
+# ───────────────────────────────────────────────────────────────────────────
+# OG_UL_SpawnableItems renders the scrollable list of every placeable thing.
+# filter_items combines:
+#   - self.filter_name        (Blender's built-in real-time text input)
+#   - active category toggles (props.cat_*)
+#   - sort mode               (props.spawn_sort_mode)
+# Star icon at the start of each row toggles per-file favorites.
+#
+# OG_PT_SpawnNewPickerDebug is a temporary sub-panel that just renders the
+# UIList so the new system can be verified alongside the old. Removed in
+# Phase 5 cutover when the full UI replaces the old sub-panels.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class OG_UL_SpawnableItems(bpy.types.UIList):
+    """Unified spawnable picker list. Read-only collection populated once at
+    register from SPAWN_INDEX. Per-row data lookup goes through the dict so
+    we don't duplicate metadata onto every PropertyGroup row."""
+
+    # Show Blender's built-in filter/sort row by default — that's where the
+    # real-time search input lives.
+    use_filter_show: bpy.props.BoolProperty(default=True, options={'HIDDEN'})
+
+    def draw_item(self, ctx, layout, data, item, icon, active_data,
+                  active_propname, index):
+        sp = get_spawn_index().get(item.spawn_id)
+        if sp is None:
+            layout.label(text=f"(missing: {item.spawn_id})", icon="ERROR")
+            return
+
+        row = layout.row(align=True)
+
+        # Star (favorite toggle). emboss=False to render without button chrome.
+        fav = is_favorited(ctx.scene, item.spawn_id)
+        op = row.operator(
+            "og.toggle_spawn_favorite",
+            text="",
+            icon="SOLO_ON" if fav else "SOLO_OFF",
+            emboss=False,
+        )
+        op.spawn_id = item.spawn_id
+
+        # Category icon (small visual hint when categories are mixed).
+        cat_icon = CATEGORY_ICONS.get(sp.category, "EMPTY_DATA")
+        row.label(text="", icon=cat_icon)
+
+        # Label.
+        row.label(text=sp.label)
+
+    def filter_items(self, ctx, data, propname):
+        """Combine search text + category toggles + sort mode.
+
+        Returns (flt_flags, flt_neworder):
+          flt_flags[i]    — bitflag_filter_item if item i should be shown
+          flt_neworder[i] — new display position for original index i
+        """
+        items = getattr(data, propname)
+        props = ctx.scene.og_props
+        scene = ctx.scene
+        index = get_spawn_index()
+
+        active_cats = get_active_categories(props)
+        # Favorites tile is a virtual filter — handled separately from the
+        # rest of the category filter so it can be combined or used solo.
+        favorites_only = "Favorites" in active_cats
+        regular_cats = active_cats - {"Favorites"}
+        filter_text = (self.filter_name or "").lower()
+
+        flt_flags = []
+        for row in items:
+            sp = index.get(row.spawn_id)
+            if sp is None:
+                flt_flags.append(0)
+                continue
+
+            if favorites_only and not is_favorited(scene, row.spawn_id):
+                flt_flags.append(0)
+                continue
+
+            if regular_cats and sp.category not in regular_cats:
+                flt_flags.append(0)
+                continue
+
+            if filter_text and filter_text not in sp.label.lower():
+                flt_flags.append(0)
+                continue
+
+            flt_flags.append(self.bitflag_filter_item)
+
+        flt_neworder = self._compute_sort_order(items, props, scene, index)
+
+        return flt_flags, flt_neworder
+
+    def _compute_sort_order(self, items, props, scene, index):
+        """Build flt_neworder mapping (original_index → new_display_pos)
+        from the current sort mode."""
+        mode = props.spawn_sort_mode
+        n = len(items)
+        if n == 0:
+            return []
+
+        def key_for(idx):
+            row = items[idx]
+            sp = index.get(row.spawn_id)
+            if sp is None:
+                return ("zzzz", "")
+            label_key = sp.label.lower()
+            if mode == "ALPHA":
+                return (label_key,)
+            if mode == "CATEGORY":
+                try:
+                    cat_idx = TILE_CATEGORIES.index(sp.category)
+                except ValueError:
+                    cat_idx = 999
+                return (cat_idx, label_key)
+            if mode == "ARTGROUP":
+                return ((sp.art_group or "zzzz"), label_key)
+            if mode == "TPAGEGROUP":
+                return ((sp.tpage_group or "zzzz"), label_key)
+            if mode == "FAVORITES":
+                fav = 0 if is_favorited(scene, row.spawn_id) else 1
+                return (fav, label_key)
+            return (label_key,)
+
+        ordered = sorted(range(n), key=key_for)
+
+        # flt_neworder format: flt_neworder[i] = new display position for
+        # the item that was originally at index i.
+        flt_neworder = [0] * n
+        for new_pos, orig_idx in enumerate(ordered):
+            flt_neworder[orig_idx] = new_pos
+        return flt_neworder
+
+
+class OG_PT_SpawnNewPickerDebug(Panel):
+    """Temporary debug panel — Phase 2 verification harness.
+    Removed in Phase 5 when the new design replaces the old sub-panels."""
+    bl_label       = "🧪  New Picker (debug)"
+    bl_idname      = "OG_PT_spawn_new_picker_debug"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_spawn"
+    bl_options     = {"DEFAULT_CLOSED"}
+    bl_order       = -1  # show above all other sub-panels
+
+    def draw(self, ctx):
+        layout = self.layout
+        props  = ctx.scene.og_props
+
+        # Sort dropdown — temporary placement; real layout comes in Phase 4.
+        row = layout.row(align=True)
+        row.label(text="Sort:")
+        row.prop(props, "spawn_sort_mode", text="")
+
+        # Category toggles — temporary horizontal cram; real grid comes in Phase 4.
+        col = layout.column(align=True)
+        col.label(text="Categories (multi-select):")
+        flow = col.grid_flow(row_major=True, columns=2, even_columns=True, align=True)
+        flow.prop(props, "cat_enemies",       toggle=True, icon=CATEGORY_ICONS["Enemies"])
+        flow.prop(props, "cat_platforms",     toggle=True, icon=CATEGORY_ICONS["Platforms"])
+        flow.prop(props, "cat_interactive",   toggle=True, icon=CATEGORY_ICONS["Interactive Objects"])
+        flow.prop(props, "cat_obstacles",     toggle=True, icon=CATEGORY_ICONS["Obstacles"])
+        flow.prop(props, "cat_buttons_doors", toggle=True, icon=CATEGORY_ICONS["Buttons and Doors"])
+        flow.prop(props, "cat_visuals",       toggle=True, icon=CATEGORY_ICONS["Visuals"])
+        flow.prop(props, "cat_npcs",          toggle=True, icon=CATEGORY_ICONS["NPCs"])
+        flow.prop(props, "cat_pickups",       toggle=True, icon=CATEGORY_ICONS["Pickups"])
+        flow.prop(props, "cat_audio",         toggle=True, icon=CATEGORY_ICONS["Audio"])
+        flow.prop(props, "cat_volumes",       toggle=True, icon=CATEGORY_ICONS["Volumes"])
+        flow.prop(props, "cat_flow",          toggle=True, icon=CATEGORY_ICONS["Level Flow"])
+        flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
+        flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
+        flow.prop(props, "cat_favorites",     toggle=True, icon=CATEGORY_ICONS["Favorites"])
+
+        # The list itself.
+        layout.template_list(
+            "OG_UL_SpawnableItems", "",
+            props, "spawn_list_items",
+            props, "spawn_list_index",
+            rows=10,
+        )
+
+        # Selection echo — confirms the dispatcher will have what it needs.
+        if 0 <= props.spawn_list_index < len(props.spawn_list_items):
+            sp = get_spawn_index().get(props.spawn_list_items[props.spawn_list_index].spawn_id)
+            if sp is not None:
+                box = layout.box()
+                box.label(text=f"Selected: {sp.label}", icon="CHECKMARK")
+                sub = box.column(align=True)
+                sub.scale_y = 0.85
+                sub.label(text=f"  spawn_id: {sp.spawn_id}")
+                sub.label(text=f"  category: {sp.category}")
+                sub.label(text=f"  operator: {sp.operator}")
+                if sp.pre_spawn_fields:
+                    sub.label(text=f"  pre_spawn: {', '.join(sp.pre_spawn_fields)}")
 
 
 
@@ -700,7 +903,9 @@ class OG_OT_SearchSelectEntity(bpy.types.Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SearchSelectEntity,
+    OG_UL_SpawnableItems,
     OG_PT_Spawn,
+    OG_PT_SpawnNewPickerDebug,
     OG_PT_SpawnLevelFlow,
     OG_PT_SpawnSearch,
     OG_PT_SpawnLimitSearch,
