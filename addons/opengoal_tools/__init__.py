@@ -105,6 +105,7 @@ from .properties import (
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
+    OGWaypointSource,
 )
 from .spawn_items import (
     populate_spawn_list, register_handlers as _spawn_register_handlers,
@@ -140,6 +141,7 @@ classes = (
     OGAuditResult,
     OGSpawnListRow,
     OGSpawnFavorite,
+    OGWaypointSource,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
@@ -201,6 +203,22 @@ def register():
     bpy.types.Object.og_lump_rows          = bpy.props.CollectionProperty(type=OGLumpRow)
     bpy.types.Object.og_lump_rows_index    = bpy.props.IntProperty(name="Active Lump Row", default=0)
 
+    # Reorderable waypoint sources — registered after OGWaypointSource is in
+    # the classes tuple. Each ACTOR_ empty holds an ordered list of links to
+    # empties (single waypoint) or curves (each control point is a waypoint).
+    # When the collection is empty, export falls back to the legacy
+    # `<actor>_wp_NN` name-grep so existing levels keep working unchanged.
+    bpy.types.Object.og_waypoint_sources       = bpy.props.CollectionProperty(type=OGWaypointSource)
+    bpy.types.Object.og_waypoint_sources_index = bpy.props.IntProperty(
+        name="Active Waypoint Source", default=0)
+    bpy.types.Object.og_waypoint_pingpong      = bpy.props.BoolProperty(
+        name="Ping-pong",
+        description="Walk the path forward, then backward — A→B→C→B→A→B→... "
+                    "Implemented by emitting the reversed points after the "
+                    "forward path; the engine's modulo walk handles the rest.",
+        default=False,
+    )
+
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
     # Each ACTOR_ empty can reference a Blender text block to inject into obs.gc.
     bpy.types.Object.og_goal_code_ref      = bpy.props.PointerProperty(type=OGGoalCodeRef)
@@ -256,7 +274,8 @@ def unregister():
               "nolineofsight","nocamera","collide_material","collide_event","collide_mode",
               "enable_custom_weights","copy_eye_draws","copy_mod_draws","og_vol_links",
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
-              "og_vertex_export_etype","og_vertex_export_search"):
+              "og_vertex_export_etype","og_vertex_export_search",
+              "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")

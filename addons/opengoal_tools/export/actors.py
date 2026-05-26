@@ -61,6 +61,87 @@ from .volumes import (
 # Cross-module imports (siblings in the export package)
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# Waypoint collection
+# ───────────────────────────────────────────────────────────────────────────
+# An actor's path comes from its og_waypoint_sources collection — an ordered
+# list of object pointers. Each entry is either:
+#   - An EMPTY (single waypoint at the empty's world position)
+#   - A CURVE (one waypoint per spline control point, in spline order;
+#     bezier handles are ignored, only the main control points are used)
+#
+# If the collection is empty, fall back to the legacy `<actor>_wp_NN` empty
+# name-grep so pre-existing levels still export correctly.
+#
+# Ping-pong toggle: when set, the forward path is followed by the reverse
+# minus endpoints — a 4-point path [A,B,C,D] becomes [A,B,C,D,C,B], which
+# the engine's modulo walk renders as A→B→C→D→C→B→A→B→... with no point
+# duplicated at the turn.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _to_game_coords(world_vec):
+    """Blender world-space → Jak game coords (Y-up, axes swapped).
+    Returns a 4-element list ready for the path lump's vector4m format."""
+    return [round(world_vec.x, 4), round(world_vec.z, 4),
+            round(-world_vec.y, 4), 1.0]
+
+
+def _curve_points_world(curve_obj):
+    """Yield each spline control point of a curve object in world space.
+    Handles bezier, poly, and NURBS splines. Bezier handles are ignored."""
+    M = curve_obj.matrix_world
+    for spline in curve_obj.data.splines:
+        if spline.bezier_points:
+            for bp in spline.bezier_points:
+                yield M @ bp.co
+        else:
+            # Poly / NURBS: points are 4D (xyzw); use xyz only.
+            for pt in spline.points:
+                local = mathutils.Vector(pt.co[:3])
+                yield M @ local
+
+
+def _collect_waypoint_points(actor_obj):
+    """Return the actor's path as a list of game-space [x,y,z,w] vectors.
+
+    Reads og_waypoint_sources if populated; otherwise falls back to the
+    legacy name-grep so older levels with manually-placed _wp_NN empties
+    continue to export without migration. Applies the ping-pong toggle
+    at the end if set.
+    """
+    points = []
+    sources = getattr(actor_obj, "og_waypoint_sources", None)
+    if sources and len(sources) > 0:
+        # New collection-driven path
+        for src in sources:
+            src_obj = src.obj
+            if src_obj is None or src_obj.name not in bpy.data.objects:
+                continue
+            if src_obj.type == "EMPTY":
+                points.append(_to_game_coords(src_obj.matrix_world.translation))
+            elif src_obj.type == "CURVE":
+                for world_co in _curve_points_world(src_obj):
+                    points.append(_to_game_coords(world_co))
+    else:
+        # Legacy fallback — name-based discovery of <actor>_wp_NN empties.
+        wp_prefix = actor_obj.name + "_wp_"
+        wp_objects = sorted(
+            [o for o in bpy.data.objects
+             if o.name.startswith(wp_prefix) and o.type == "EMPTY"],
+            key=lambda o: o.name
+        )
+        for wp in wp_objects:
+            points.append(_to_game_coords(wp.matrix_world.translation))
+
+    # Ping-pong: append the reverse path minus endpoints so the loop is
+    # seamless (no duplicated point at A or at the turn).
+    if getattr(actor_obj, "og_waypoint_pingpong", False) and len(points) > 2:
+        points = points + list(reversed(points))[1:-1]
+
+    return points
+
+
 def collect_actors(scene, depsgraph=None):
     """Build actor list from ACTOR_ empties.
 
@@ -133,17 +214,13 @@ def collect_actors(scene, depsgraph=None):
 
         einfo = ENTITY_DEFS.get(etype, {})
 
-        # Collect waypoints for this actor (named ACTOR_<etype>_<uid>_wp_00 etc.)
-        wp_prefix = o.name + "_wp_"
-        wp_objects = sorted(
-            [sc_obj for sc_obj in bpy.data.objects
-             if sc_obj.name.startswith(wp_prefix) and sc_obj.type == "EMPTY"],
-            key=lambda sc_obj: sc_obj.name
-        )
-        path_pts = []
-        for wp in wp_objects:
-            wl = wp.location
-            path_pts.append([round(wl.x, 4), round(wl.z, 4), round(-wl.y, 4), 1.0])
+        # Collect waypoints. Reads from the actor's og_waypoint_sources
+        # collection (Phase 4 of waypoint-link-source) — each source is an
+        # empty (single point) or a curve (one point per spline control
+        # point). Falls back to legacy <actor>_wp_NN name-grep for older
+        # levels with no collection populated. Applies ping-pong reversal
+        # if og_waypoint_pingpong is set.
+        path_pts = _collect_waypoint_points(o)
 
         # ── Nav-enemy workaround (nav_safe=False) ────────────────────────────
         # These extend nav-enemy. Without a real navmesh they idle forever.
@@ -154,7 +231,7 @@ def collect_actors(scene, depsgraph=None):
             if path_pts:
                 first = path_pts[0]
                 lump["nav-mesh-sphere"] = ["vector4m", [first[0], first[1], first[2], nav_r]]
-                log(f"  [nav+path] {o.name}  {len(wp_objects)} waypoints  sphere r={nav_r}m")
+                log(f"  [nav+path] {o.name}  {len(path_pts)} waypoints  sphere r={nav_r}m")
             else:
                 lump["nav-mesh-sphere"] = ["vector4m", [gx, gy, gz, nav_r]]
                 log(f"  [nav-workaround] {o.name}  sphere r={nav_r}m  (no waypoints - will idle)")

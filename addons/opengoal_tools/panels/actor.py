@@ -750,6 +750,58 @@ class OG_PT_ActorVisibility(Panel):
 
 
 
+class OG_UL_WaypointSources(bpy.types.UIList):
+    """List of waypoint source entries for an actor. Each entry points to
+    either an EMPTY (legacy _wp_NN style, single point) or a CURVE (each
+    control point becomes one waypoint at export). The list's order is the
+    export order. Rendered with a vertical sidebar of frame/delete/move
+    buttons in OG_PT_ActorWaypoints."""
+
+    def draw_item(self, ctx, layout, data, item, icon, active_data,
+                  active_propname, index):
+        obj = item.obj
+        if obj is None:
+            # Source was cleared — show a placeholder so the user can re-pick.
+            row = layout.row(align=True)
+            row.alert = True
+            row.label(text="(empty slot — pick a source)", icon="ERROR")
+            row.prop(item, "obj", text="")
+            return
+
+        if obj.name not in ctx.scene.objects:
+            # Pointer survived but the object was deleted. Surface it as
+            # an error row; X button in the sidebar removes the entry.
+            row = layout.row(align=True)
+            row.alert = True
+            row.label(text=f"{obj.name} — DELETED", icon="ERROR")
+            return
+
+        row = layout.row(align=True)
+        if obj.type == "CURVE":
+            n = _count_curve_points(obj)
+            row.label(text=obj.name, icon="CURVE_DATA")
+            sub = row.row(align=True)
+            sub.alignment = "RIGHT"
+            sub.active = False
+            sub.label(text=f"{n} pt{'s' if n != 1 else ''}")
+        elif obj.type == "EMPTY":
+            row.label(text=obj.name, icon="EMPTY_AXIS")
+        else:
+            row.label(text=obj.name, icon="QUESTION")
+
+
+def _count_curve_points(curve_obj) -> int:
+    """Total spline-point count across every spline in a curve.
+    Bezier splines use bezier_points; poly/NURBS use points."""
+    n = 0
+    for spline in curve_obj.data.splines:
+        if spline.bezier_points:
+            n += len(spline.bezier_points)
+        else:
+            n += len(spline.points)
+    return n
+
+
 class OG_PT_ActorWaypoints(Panel):
     bl_label       = "Waypoints"
     bl_idname      = "OG_PT_actor_waypoints"
@@ -775,25 +827,84 @@ class OG_PT_ActorWaypoints(Panel):
         etype  = parts[1]
         einfo  = ENTITY_DEFS.get(etype, {})
 
-        prefix = sel.name + "_wp_"
-        wps = sorted(
-            [o for o in _level_objects(scene) if o.name.startswith(prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-        layout.label(text=f"Path  ({len(wps)} point{'s' if len(wps) != 1 else ''})", icon="ANIM")
-        if wps:
-            col = layout.column(align=True)
-            for wp in wps:
-                row = col.row(align=True)
-                row.label(text=wp.name, icon="EMPTY_AXIS")
-                op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = wp.name
-                op = row.operator("og.delete_waypoint",  text="", icon="X");        op.wp_name  = wp.name
-        row = layout.row(align=True)
-        row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS").enemy_name = sel.name
-        row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-        if einfo.get("needs_path") and len(wps) < 1:
-            layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
+        sources = sel.og_waypoint_sources
+        legacy_wps = self._discover_legacy_wps(sel, scene)
+        n_sources = len(sources)
 
+        # Total point count for the header — sum across the list, expanding
+        # curves to their spline-point counts.
+        if n_sources > 0:
+            total_pts = sum(
+                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
+                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
+                for s in sources
+            )
+            if sel.og_waypoint_pingpong and total_pts > 2:
+                # forward + reverse minus endpoints
+                total_pts += total_pts - 2
+            header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
+        else:
+            n_legacy = len(legacy_wps)
+            header_text = f"Path  ({n_legacy} legacy waypoint{'s' if n_legacy != 1 else ''})"
+
+        layout.label(text=header_text, icon="ANIM")
+
+        # If the new collection is empty and legacy _wp_NN empties exist,
+        # offer a one-click migration. Skips Path B which stays on the
+        # legacy system for now.
+        if n_sources == 0 and legacy_wps:
+            box = layout.box()
+            box.label(text=f"Found {len(legacy_wps)} legacy waypoint empties",
+                      icon="INFO")
+            op = box.operator("og.waypoint_source_migrate",
+                              text="Migrate to reorderable list",
+                              icon="FILE_REFRESH")
+            op.actor_name = sel.name
+
+        # List + sidebar (the new UI).
+        list_row = layout.row()
+        list_row.template_list(
+            "OG_UL_WaypointSources", "",
+            sel, "og_waypoint_sources",
+            sel, "og_waypoint_sources_index",
+            rows=4,
+        )
+        sidebar = list_row.column(align=True)
+        sidebar.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM")
+        sidebar.operator("og.waypoint_source_remove", text="", icon="X")
+        sidebar.separator()
+        sidebar.operator("og.waypoint_source_move",
+                         text="", icon="TRIA_UP").direction = "UP"
+        sidebar.operator("og.waypoint_source_move",
+                         text="", icon="TRIA_DOWN").direction = "DOWN"
+
+        # Action row — spawn empty (legacy-compatible) + link curve.
+        action_row = layout.row(align=True)
+        op = action_row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+        op.enemy_name = sel.name
+        op = action_row.operator("og.waypoint_source_link_curve",
+                                 text="Link Curve", icon="CURVE_DATA")
+        op.actor_name = sel.name
+
+        # Spawn-at-position toggle + ping-pong toggle on a second row.
+        toggle_row = layout.row(align=True)
+        toggle_row.prop(scene.og_props, "waypoint_spawn_at_actor",
+                        text="Spawn at Actor Position", toggle=True)
+        toggle_row.prop(sel, "og_waypoint_pingpong",
+                        text="Ping-pong", toggle=True, icon="ARROW_LEFTRIGHT")
+
+        # Validation hints.
+        if einfo.get("needs_path"):
+            pt_count = sum(
+                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
+                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
+                for s in sources
+            ) if n_sources else len(legacy_wps)
+            if pt_count < 1:
+                layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
+
+        # Path B — swamp-bat's secondary patrol. Keeps the legacy UI for now;
+        # only swamp-bat uses this so it's low-volume.
         if einfo.get("needs_pathb"):
             layout.separator(factor=0.5)
             prefixb = sel.name + "_wpb_"
@@ -815,6 +926,16 @@ class OG_PT_ActorWaypoints(Panel):
             row2.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
             if len(wpsb) < 1:
                 layout.label(text="⚠ swamp-bat crashes without Path B", icon="ERROR")
+
+    def _discover_legacy_wps(self, actor_obj, scene):
+        """Return the list of legacy <actor>_wp_NN empty objects in name order.
+        Used to show the migration button and as the fallback path count."""
+        prefix = actor_obj.name + "_wp_"
+        return sorted(
+            [o for o in _level_objects(scene)
+             if o.name.startswith(prefix) and o.type == "EMPTY"],
+            key=lambda o: o.name
+        )
 
 
 
@@ -923,6 +1044,7 @@ class OG_PT_ActorGoalCode(Panel):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_UL_WaypointSources,
     OG_PT_ActorActivation,
     OG_PT_ActorTriggerBehaviour,
     OG_PT_ActorNavMesh,
