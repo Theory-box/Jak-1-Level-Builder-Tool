@@ -53,6 +53,7 @@ class OG_PT_Spawn(Panel):
         flow.prop(props, "cat_pickups",       toggle=True, icon=CATEGORY_ICONS["Pickups"])
         flow.prop(props, "cat_audio",         toggle=True, icon=CATEGORY_ICONS["Audio"])
         flow.prop(props, "cat_volumes",       toggle=True, icon=CATEGORY_ICONS["Volumes"])
+        flow.prop(props, "cat_triggers",      toggle=True, icon=CATEGORY_ICONS["Triggers"])
         flow.prop(props, "cat_flow",          toggle=True, icon=CATEGORY_ICONS["Level Flow"])
         flow.prop(props, "cat_cameras",       toggle=True, icon=CATEGORY_ICONS["Cameras"])
         flow.prop(props, "cat_custom",        toggle=True, icon=CATEGORY_ICONS["Custom Types"])
@@ -270,12 +271,17 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
         )
         op.spawn_id = item.spawn_id
 
-        # Category icon (small visual hint when categories are mixed).
+        # Category icon + main label.
         cat_icon = CATEGORY_ICONS.get(sp.category, "EMPTY_DATA")
         row.label(text="", icon=cat_icon)
-
-        # Label.
         row.label(text=sp.label)
+
+        # Category text, right-aligned. Dimmed via active=False so the main
+        # label still reads as the primary content.
+        sub = row.row(align=True)
+        sub.alignment = 'RIGHT'
+        sub.active = False
+        sub.label(text=sp.category)
 
     def filter_items(self, ctx, data, propname):
         """Combine search text + category toggles + sort mode.
@@ -323,7 +329,8 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
 
     def _compute_sort_order(self, items, props, scene, index):
         """Build flt_neworder mapping (original_index → new_display_pos)
-        from the current sort mode."""
+        from the current sort mode. Only ALPHA and TPAGEGROUP are supported;
+        anything else falls back to alphabetical."""
         mode = props.spawn_sort_mode
         n = len(items)
         if n == 0:
@@ -335,21 +342,9 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
             if sp is None:
                 return ("zzzz", "")
             label_key = sp.label.lower()
-            if mode == "ALPHA":
-                return (label_key,)
-            if mode == "CATEGORY":
-                try:
-                    cat_idx = TILE_CATEGORIES.index(sp.category)
-                except ValueError:
-                    cat_idx = 999
-                return (cat_idx, label_key)
-            if mode == "ARTGROUP":
-                return ((sp.art_group or "zzzz"), label_key)
             if mode == "TPAGEGROUP":
                 return ((sp.tpage_group or "zzzz"), label_key)
-            if mode == "FAVORITES":
-                fav = 0 if is_favorited(scene, row.spawn_id) else 1
-                return (fav, label_key)
+            # ALPHA (and any unknown future value) → label A-Z
             return (label_key,)
 
         ordered = sorted(range(n), key=key_for)

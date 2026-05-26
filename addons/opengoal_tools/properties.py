@@ -364,6 +364,8 @@ class OGProperties(PropertyGroup):
                                       description="Show Audio (sound emitters, music zones) in the picker list")
     cat_volumes:         BoolProperty(default=False, name="Volumes",
                                       description="Show Volumes (water) in the picker list")
+    cat_triggers:        BoolProperty(default=False, name="Triggers",
+                                      description="Show Trigger volumes in the picker list")
     cat_flow:            BoolProperty(default=False, name="Level Flow",
                                       description="Show Player Spawn and Checkpoint in the picker list")
     cat_cameras:         BoolProperty(default=False, name="Cameras",
@@ -377,11 +379,8 @@ class OGProperties(PropertyGroup):
         name="Sort",
         description="How to order the spawnable objects list",
         items=[
-            ("ALPHA",      "Alphabetical",    "Sort by label A-Z"),
-            ("CATEGORY",   "Category",        "Group by tile category"),
-            ("ARTGROUP",   "Art Group",       "Group by Jak art-group asset bundle"),
-            ("TPAGEGROUP", "Tpage Group",     "Group by Jak texture-page world (Beach, Jungle, etc.)"),
-            ("FAVORITES",  "Favorites first", "Favorited items at the top, then alphabetical"),
+            ("ALPHA",      "Alphabetical", "Sort by label A-Z"),
+            ("TPAGEGROUP", "Tpage Group",  "Group by Jak texture-page world (Beach, Jungle, etc.)"),
         ],
         default="ALPHA",
     )

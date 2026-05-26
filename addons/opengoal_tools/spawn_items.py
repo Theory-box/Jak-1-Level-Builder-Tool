@@ -27,7 +27,7 @@ from .data import ENTITY_DEFS, ENTITY_WIKI, NAV_UNSAFE_TYPES
 
 
 # ---------------------------------------------------------------------------
-# Tile categories — the 14 tiles shown in the picker grid (order matters)
+# Tile categories — the 15 tiles shown in the picker grid (order matters)
 # ---------------------------------------------------------------------------
 TILE_CATEGORIES = (
     "Enemies",
@@ -40,6 +40,7 @@ TILE_CATEGORIES = (
     "Pickups",
     "Audio",
     "Volumes",
+    "Triggers",
     "Level Flow",
     "Cameras",
     "Custom Types",
@@ -72,6 +73,7 @@ CATEGORY_TO_PROP = {
     "Pickups":             "cat_pickups",
     "Audio":               "cat_audio",
     "Volumes":             "cat_volumes",
+    "Triggers":            "cat_triggers",
     "Level Flow":          "cat_flow",
     "Cameras":             "cat_cameras",
     "Custom Types":        "cat_custom",
@@ -90,6 +92,7 @@ CATEGORY_ICONS = {
     "Pickups":             "OUTLINER_OB_LIGHT",
     "Audio":               "OUTLINER_OB_SPEAKER",
     "Volumes":             "MOD_FLUIDSIM",
+    "Triggers":            "MESH_CUBE",
     "Level Flow":          "PLAY",
     "Cameras":             "CAMERA_DATA",
     "Custom Types":        "SCRIPT",
@@ -151,16 +154,29 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         icon="EMPTY_SINGLE_ARROW",
     ),
     SpawnItem(
-        spawn_id="special:camera_anchor",
-        label="Camera anchor",
+        spawn_id="special:camera",
+        label="Camera",
         category="Cameras",
-        description="Per-spawn camera position. Select a SPAWN_ or CHECKPOINT_ "
-                    "empty in the viewport first; the camera inherits its "
-                    "name with a _CAM suffix.",
-        operator="og.spawn_cam_anchor",
-        pre_spawn_fields=("target_context",),
-        needs_target_sel=True,
+        description="A standalone camera placed at the 3D cursor. After "
+                    "spawn, configure mode / FOV / look-at and link to a "
+                    "trigger volume via the Selected Object panel.\n"
+                    "\n"
+                    "Tip: to add a camera tied to a SPAWN_/CHECKPOINT_ "
+                    "respawn point, select that empty first and use the "
+                    "'Add Camera' button under Selected Object.",
+        operator="og.spawn_camera",
         icon="CAMERA_DATA",
+    ),
+    SpawnItem(
+        spawn_id="special:trigger_volume",
+        label="Trigger volume",
+        category="Triggers",
+        description="A box mesh that fires when the player enters its "
+                    "bounds. After spawn, scale it to cover the area you "
+                    "want, then link it to a target (camera, checkpoint, "
+                    "enemy) via the Selected Object panel.",
+        operator="og.spawn_volume",
+        icon="MESH_CUBE",
     ),
     SpawnItem(
         spawn_id="special:water_volume",
