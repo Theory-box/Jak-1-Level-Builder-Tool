@@ -853,6 +853,98 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_SpawnSelected(Operator):
+    """Unified spawn dispatcher.
+
+    Reads the highlighted item from the unified picker's UIList
+    (scene.og_props.spawn_list_items[spawn_list_index]) and invokes the
+    appropriate underlying operator. For entity items it first sets
+    props.entity_type so og.spawn_entity reads the correct etype.
+
+    Validation of pre-spawn fields runs here so the user gets a clear
+    error message before any object is created."""
+    bl_idname      = "og.spawn_selected"
+    bl_label       = "Spawn"
+    bl_description = "Spawn the selected object from the picker at the 3D cursor"
+    bl_options     = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        from ..spawn_items import get_selected_spawn_item
+        return get_selected_spawn_item(ctx.scene) is not None
+
+    def execute(self, ctx):
+        from ..spawn_items import get_selected_spawn_item
+        props = ctx.scene.og_props
+        item = get_selected_spawn_item(ctx.scene)
+        if item is None:
+            self.report({"ERROR"}, "No item selected in the picker")
+            return {"CANCELLED"}
+
+        err = self._validate(ctx, item)
+        if err:
+            self.report({"ERROR"}, err)
+            return {"CANCELLED"}
+
+        # For entity items, set entity_type so og.spawn_entity reads the
+        # correct etype (it falls back to props.entity_type when no
+        # source_prop kwarg is supplied).
+        if item.etype is not None:
+            try:
+                props.entity_type = item.etype
+            except Exception as e:
+                self.report({"ERROR"}, f"Could not select entity type {item.etype}: {e}")
+                return {"CANCELLED"}
+
+        # Resolve the underlying operator.
+        # item.operator is a string like "og.spawn_entity"; split into
+        # (module, name) and dereference through bpy.ops.
+        try:
+            modname, opname = item.operator.split(".", 1)
+            op_func = getattr(getattr(bpy.ops, modname), opname)
+        except (ValueError, AttributeError) as e:
+            self.report({"ERROR"}, f"Unknown spawn operator '{item.operator}': {e}")
+            return {"CANCELLED"}
+
+        kwargs = dict(item.op_kwargs)
+        try:
+            op_func('INVOKE_DEFAULT', **kwargs)
+        except Exception as e:
+            self.report({"ERROR"}, f"{item.label} spawn failed: {e}")
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+    def _validate(self, ctx, item):
+        """Return an error string if pre-spawn validation fails, else None.
+
+        Validation rules:
+          custom_name    — props.custom_type_name must be non-empty
+          target_context — active object must be a SPAWN_/CHECKPOINT_ empty
+                           (not a _CAM child)
+        Other pre_spawn_fields (nav_radius, crate_type, music_*, sfx_sound,
+        ambient_radius) have sensible defaults and don't require validation.
+        """
+        props = ctx.scene.og_props
+        fields = item.pre_spawn_fields
+
+        if "custom_name" in fields:
+            name = (getattr(props, "custom_type_name", "") or "").strip()
+            if not name:
+                return "Custom type name is required — enter it below the list"
+
+        if "target_context" in fields:
+            sel = ctx.active_object
+            if sel is None or sel.type != "EMPTY":
+                return "Select a SPAWN_ or CHECKPOINT_ empty in the viewport first"
+            if not (sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_")):
+                return "Selected object must be a SPAWN_ or CHECKPOINT_ empty"
+            if sel.name.endswith("_CAM"):
+                return "Selected object is already a camera anchor"
+
+        return None
+
+
 class OG_OT_ToggleSpawnFavorite(Operator):
     """Toggle this item's favorite state in the unified spawn picker.
     Wired to the star icon at the start of each row in OG_UL_SpawnableItems."""
@@ -897,5 +989,6 @@ CLASSES = (
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,
     OG_OT_SpawnCustomType,
+    OG_OT_SpawnSelected,
     OG_OT_ToggleSpawnFavorite,
 )

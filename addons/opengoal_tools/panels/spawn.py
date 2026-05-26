@@ -277,6 +277,13 @@ class OG_PT_SpawnNewPickerDebug(Panel):
                 if sp.pre_spawn_fields:
                     sub.label(text=f"  pre_spawn: {', '.join(sp.pre_spawn_fields)}")
 
+        # Temporary spawn button for Phase 3 dispatcher testing. The real
+        # button + dynamic settings area come in Phase 4.
+        layout.separator(factor=0.3)
+        spawn_row = layout.row()
+        spawn_row.scale_y = 1.4
+        spawn_row.operator("og.spawn_selected", icon="ADD")
+
 
 
 class OG_PT_SpawnSearch(Panel):
