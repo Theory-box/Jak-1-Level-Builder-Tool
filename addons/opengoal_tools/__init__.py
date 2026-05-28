@@ -1,7 +1,7 @@
 bl_info = {
     "name": "OpenGOAL Level Tools",
     "author": "John Cheathem",
-    "version": (2026, 5, 23),
+    "version": (2026, 5, 28),
     "blender": (4, 4, 0),
     "location": "View3D > N-Panel > OpenGOAL",
     "description": "Jak 1 level export, actor placement, build and launch tools",
