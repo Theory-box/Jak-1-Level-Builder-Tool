@@ -61,12 +61,14 @@ def _cp_level_items_base(context):
 def _cp_lev0_items(self, context):
     # Slot 0 always names a level; defaults to the checkpoint's own level.
     return [("self", "(This level)", "The level this checkpoint belongs to")] \
-        + _cp_level_items_base(context)
+        + _cp_level_items_base(context) \
+        + [("custom", "Custom\u2026", "Type a level name below")]
 
 def _cp_lev1_items(self, context):
     # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
     return [("none", "(None)", "No second resident level")] \
-        + _cp_level_items_base(context)
+        + _cp_level_items_base(context) \
+        + [("custom", "Custom\u2026", "Type a level name below")]
 
 
 # ---------------------------------------------------------------------------

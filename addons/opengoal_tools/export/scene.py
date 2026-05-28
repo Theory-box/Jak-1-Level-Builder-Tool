@@ -390,6 +390,20 @@ def collect_cameras(scene):
 
     return camera_actors, trigger_actors
 
+def _cp_level_value(o, enum_attr, custom_attr):
+    """Resolve a checkpoint level slot to its stored value.
+
+    Returns "self" / "none" / a project level name, OR — when the dropdown is
+    set to "custom" — the user-typed level symbol (lowercased, dashed). An empty
+    custom string falls back to "none".
+    """
+    val = str(getattr(o, enum_attr, "") or "")
+    if val == "custom":
+        s = str(getattr(o, custom_attr, "") or "").strip().lower().replace(" ", "-")
+        return s or "none"
+    return val
+
+
 def collect_spawns(scene):
     """Collect SPAWN_ empties into continue-point data dicts.
 
@@ -498,9 +512,9 @@ def collect_spawns(scene):
             # Continue-point level/display settings (feature/load-boundaries-checkpoints).
             # Enum values are identifier strings ("self"/"none"/<level name>);
             # resolved to GOAL symbols in _make_continues, which knows the level name.
-            "cp_lev0":          str(getattr(o, "og_cp_lev0", "self") or "self"),
+            "cp_lev0":          _cp_level_value(o, "og_cp_lev0", "og_cp_lev0_custom"),
             "cp_disp0":         str(getattr(o, "og_cp_disp0", "display") or "display"),
-            "cp_lev1":          str(getattr(o, "og_cp_lev1", "none") or "none"),
+            "cp_lev1":          _cp_level_value(o, "og_cp_lev1", "og_cp_lev1_custom"),
             "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
             "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
             "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),

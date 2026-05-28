@@ -347,3 +347,13 @@ Workflow caveat (not a bug):
   owns boundary authoring; don't mix with the in-game editor on the same level.
 
 All touched modules byte-compile.
+
+### UI revision (2026-05-28)
+- Checkpoint Load Level 0/1 pickers gained a **Custom\u2026** option; selecting it
+  reveals a string field (`og_cp_lev0_custom` / `og_cp_lev1_custom`) for an
+  arbitrary level symbol. `collect_spawns` resolves it via `_cp_level_value`
+  (lowercased/dashed; blank custom \u2192 none). Picker still offers self / none /
+  project levels for convenience.
+- Checkpoint **Advanced** (flags + load-commands) is now a collapsible subpanel
+  via `layout.panel()` (Blender 4.1+), with an inline fallback on older Blender.
+- Boundary settings unchanged (confirmed good).

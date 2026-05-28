@@ -243,6 +243,12 @@ def register():
     bpy.types.Object.og_cp_lev1  = bpy.props.EnumProperty(
         name="Load Level 1", items=_cp_lev1_items,
         description="Optional second resident level (e.g. an adjacent level)")
+    bpy.types.Object.og_cp_lev0_custom = bpy.props.StringProperty(
+        name="Level 0 Name", default="",
+        description="Custom level symbol for slot 0 (used when Load Level 0 = Custom)")
+    bpy.types.Object.og_cp_lev1_custom = bpy.props.StringProperty(
+        name="Level 1 Name", default="",
+        description="Custom level symbol for slot 1 (used when Load Level 1 = Custom)")
     bpy.types.Object.og_cp_disp1 = bpy.props.EnumProperty(
         name="Display 1", items=CP_DISP_ITEMS, default="off",
         description="Display mode for slot 1")
@@ -346,6 +352,7 @@ def unregister():
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
               "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
+              "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",

@@ -297,14 +297,27 @@ def _draw_continue_settings(layout, sel, scene):
     row = box.row(align=True)
     row.prop(sel, "og_cp_lev0", text="")
     row.prop(sel, "og_cp_disp0", text="")
+    if sel.og_cp_lev0 == "custom":
+        box.prop(sel, "og_cp_lev0_custom", text="Name 0")
     row = box.row(align=True)
     row.prop(sel, "og_cp_lev1", text="")
     row.prop(sel, "og_cp_disp1", text="")
+    if sel.og_cp_lev1 == "custom":
+        box.prop(sel, "og_cp_lev1_custom", text="Name 1")
     box.prop(sel, "og_cp_vis_nick")
-    col = box.column(align=True)
-    col.label(text="Advanced:", icon="TOOL_SETTINGS")
-    col.prop(sel, "og_cp_flags")
-    col.prop(sel, "og_cp_load_commands")
+
+    # Advanced — collapsible subpanel (layout.panel is Blender 4.1+).
+    if hasattr(layout, "panel"):
+        header, body = layout.panel("og_continue_advanced", default_closed=True)
+        header.label(text="Advanced")
+        if body is not None:
+            body.prop(sel, "og_cp_flags")
+            body.prop(sel, "og_cp_load_commands")
+    else:
+        col = box.column(align=True)
+        col.label(text="Advanced:", icon="TOOL_SETTINGS")
+        col.prop(sel, "og_cp_flags")
+        col.prop(sel, "og_cp_load_commands")
 
 
 def _draw_selected_spawn(layout, sel, scene):
