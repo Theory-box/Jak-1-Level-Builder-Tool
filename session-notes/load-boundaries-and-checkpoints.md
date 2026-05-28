@@ -417,3 +417,26 @@ under Death Plane. Operators import the shared items list.
 User-facing: Level panel > ⚙ Settings > Texture/Sky Source. Set streamed levels
 to "None (vertex colors)". Verify success: the build log for that level no longer
 prints "login tpages automatically set to [398, 400, 399, 401, 1470]".
+
+### MERGED TO MAIN (2026-05-28) — confirmed working in-game
+Feature complete and verified: per-checkpoint continue settings + placeable Load
+Boundaries. Merged feature/load-boundaries-checkpoints -> main.
+
+Working config for two co-resident (streamed) custom levels:
+- Both levels: Texture/Sky Source = None (⚙ Settings subpanel). Two levels that
+  borrow ANY source both load tpages and crash; None loads none. Distinct
+  sources (village1 + village2) also crashed — None is the rule for co-resident.
+- Every checkpoint in the shared zone: Level 0 = my-level, Level 1 = new-level
+  (the full resident pair), NOT "current level". Keeps both resident so neither
+  ever unloads.
+- Boundary display-on-cross: put Display(<level>, Display) on the side that
+  fires when entering that level. +normal/Forward vs -normal/Backward depends on
+  edge winding — verify in log (the firing command prints), swap or flip the
+  edge if reversed. Keep the home level OUT of boundary commands.
+
+KNOWN LIMITATION (not fixed): unloading then reloading a custom level
+mid-session crashes (native, during the reload), and Display(level, Off) can
+unload a level. Sidestep by keeping both levels resident everywhere in the zone
+(all checkpoints list both; don't Display-Off a level you want to keep). True
+streaming (distant levels unloading to save memory) would need the reload path
+fixed first.
