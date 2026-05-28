@@ -229,6 +229,8 @@ def _classify_object(obj):
             return None  # unclassifiable — leave in place
         if name.startswith("VOL_"):
             return _COL_PATH_TRIGGERS
+        if name.startswith("LOADBND_"):
+            return _COL_PATH_TRIGGERS
         if name.startswith("NAVMESH_") or obj.get("og_navmesh", False):
             return _COL_PATH_NAVMESHES
         return _COL_PATH_GEO_SOLID

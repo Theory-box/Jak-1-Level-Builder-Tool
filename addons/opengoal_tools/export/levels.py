@@ -45,6 +45,7 @@ from .paths import (
     _game_gp,
     _goal_src,
     _level_info,
+    _load_boundary_data,
     _levels_dir,
     _nick,
 )
@@ -238,5 +239,18 @@ def remove_level(name):
             msgs.append(f"game.gp had no entries for '{name}'")
     else:
         msgs.append("game.gp not found")
+
+    # Strip this level's custom load-boundary block (matches patch_load_boundaries markers)
+    lb_path = _load_boundary_data()
+    if lb_path.exists():
+        txt = lb_path.read_text(encoding="utf-8")
+        begin = f";; ===== OG CUSTOM BOUNDARIES: {name} ====="
+        end   = f";; ===== END OG CUSTOM BOUNDARIES: {name} ====="
+        new_txt = re.sub(rf"\n{re.escape(begin)}.*?{re.escape(end)}\n", "\n", txt, flags=re.DOTALL)
+        if new_txt != txt:
+            lb_path.write_text(new_txt, encoding="utf-8")
+            msgs.append(f"Cleaned load-boundary-data.gc block for '{name}'")
+        else:
+            msgs.append(f"load-boundary-data.gc had no boundaries for '{name}'")
 
     return msgs

@@ -949,9 +949,14 @@ def patch_load_boundaries(name, boundaries, scene=None):
 
     if boundaries:
         entries = "\n        ".join(_make_static_boundary(b, name) for b in boundaries)
+        sym = "*og-custom-lb-" + re.sub(r"[^a-z0-9-]", "-", name.lower()) + "*"
+        # Match the stock pattern: define a named static list, then doarray over
+        # the symbol. doarray substitutes its array arg multiple times, so it
+        # must be a variable, not an inline (static-lb-list ...) expression.
         block = (f"\n{begin}\n"
-                 f"(doarray (i (static-lb-list\n        {entries}))\n"
-                 f"  (load-boundary-from-template (the-as (array object) i)))\n"
+                 f"(define {sym}\n"
+                 f"  (static-lb-list\n        {entries}))\n"
+                 f"(doarray (i {sym}) (load-boundary-from-template (the-as (array object) i)))\n"
                  f"{end}\n")
         txt = txt.rstrip() + "\n" + block
 
@@ -1053,7 +1058,7 @@ def export_glb(ctx, name):
         else:
             # No Geometry sub-collection yet — fall back to all meshes in the level.
             # Exclude WATER_ volumes (invisible helpers, not renderable geometry).
-            _HELPER_PREFIXES = ("WATER_", "VOL_", "CPVOL_", "NAVMESH_")
+            _HELPER_PREFIXES = ("WATER_", "VOL_", "CPVOL_", "NAVMESH_", "LOADBND_")
             export_objs = [o for o in _recursive_col_objects(level_col, exclude_no_export=True)
                            if o.type == "MESH"
                            and not any(o.name.startswith(p) for p in _HELPER_PREFIXES)
@@ -1096,7 +1101,8 @@ def export_glb(ctx, name):
         for o in ctx.scene.objects:
             o.select_set(False)
         export_objs = [o for o in ctx.scene.objects
-                       if o.type == "MESH" and not o.get("og_preview_mesh")]
+                       if o.type == "MESH" and not o.get("og_preview_mesh")
+                       and not o.name.startswith("LOADBND_")]
         for o in export_objs:
             o.select_set(True)
         if export_objs:

@@ -278,3 +278,44 @@ command forms, and idempotent block insert/replace/remove. All files compile.
   pickers too; export-time validation/warn still a TODO.
 - Closed-polygon height uses :top (zmax); :bot set below. Confirm against
   `check-closed-boundary` if closed areas misbehave.
+
+### Pre-test audit (2026-05-28)
+Full review of both tasks. Issues found and fixed:
+
+1. **doarray inline expression (compile bug).** `patch_load_boundaries`
+   emitted `(doarray (i (static-lb-list …)) …)`. The doarray macro substitutes
+   its array arg multiple times (`(-> arr length)`, `(-> arr i)`), so an inline
+   `(static-lb-list …)` would allocate the static array several times. Fixed:
+   emit a named `(define *og-custom-lb-<level>* (static-lb-list …))` then
+   `(doarray (i *og-custom-lb-<level>*) …)` — matches the stock pattern.
+
+2. **LOADBND_ meshes leaking into level geometry (invisible walls).**
+   `export_glb` fallback used a prefix allow-list missing LOADBND_, and the
+   v1.1.0 whole-scene fallback excluded only preview meshes. In normal
+   collection mode LOADBND_ is safe (it lives in Triggers, outside the Geometry
+   collection), but the fallbacks would have exported it as geometry. Added
+   LOADBND_ to both exclusions.
+
+3. **Sort Collection misrouting.** `_classify_object` would route a LOADBND_
+   mesh to Geometry/Solid. Added a LOADBND_ → Triggers case.
+
+4. **Orphaned boundaries on level delete.** `remove_level` cleaned level-info.gc
+   and game.gp but not the boundary block. Added a marker-based strip of the
+   level's load-boundary-data.gc block.
+
+Verified safe / no regressions:
+- `_level_objects` is scoped to the active level → no multi-level
+  cross-contamination in collect_load_boundaries.
+- Only one continue-point emitter (`_make_continues`); cp_* keys read with
+  defaults, so old/foreign spawn dicts are unaffected.
+- Picker dispatch (`OG_OT_SpawnSelected`) invokes item.operator generically.
+- No dynamic-items EnumProperty given `default=` (would error at register).
+- No circular import (properties → collections only).
+- audit.py is class-prefix-specific → does not flag or crash on LOADBND_.
+- All 13 touched modules byte-compile.
+
+Still-open (non-blocking) TODOs:
+- Export-time warning for unknown lev0/lev1 / boundary level refs (dynamic-enum
+  int-storage can shift on level rename/delete).
+- force-vis emits onoff #t only; display with lev0=none emits (display #f …).
+- No audit check yet for a boundary that has a command but no level/name set.
