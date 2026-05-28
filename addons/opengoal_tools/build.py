@@ -11,10 +11,11 @@ from .data import needed_tpages
 from .collections import _get_level_prop, _level_objects, _active_level_col
 from .export import (
     collect_actors, collect_ambients, collect_spawns, collect_cameras,
+    collect_load_boundaries,
     collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers,
     needed_ags, needed_extras_ags, needed_code, write_jsonc, write_gd, write_gc,
     make_fog_actor_dict,
-    patch_level_info, patch_game_gp, export_glb,
+    patch_level_info, patch_load_boundaries, patch_game_gp, export_glb,
     _collect_navmesh_actors, _canonical_actor_objects,
     _nick, _iso, _lname, _ldir, _goal_src, _level_info,
     _game_gp, _levels_dir, _entity_gc,
@@ -534,6 +535,7 @@ def _bg_build(name, scene, depsgraph=None):
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
+        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
         patch_game_gp(name, code_deps, scene=scene)
 
         if goalc_ok():
@@ -682,6 +684,7 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_level_info(name, spawns, scene)  # update spawn continue-points if moved
+        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
         if goalc_ok():
@@ -759,6 +762,7 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
         patch_entity_gc(navmesh_actors)
         patch_level_info(name, spawns, scene)
+        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
         patch_game_gp(name, code_deps, scene=scene)
 
         # ── Phase 2: Compile ──────────────────────────────────────────────────

@@ -11,6 +11,7 @@ from .paths import (
     _levels_dir,
     _goal_src,
     _level_info,
+    _load_boundary_data,
     _game_gp,
     _ldir,
     _entity_gc,
@@ -55,6 +56,7 @@ from .scene import (
     collect_custom_triggers,
     collect_cameras,
     collect_spawns,
+    collect_load_boundaries,
     collect_ambients,
 )
 from .actors import (
@@ -67,6 +69,7 @@ from .writers import (
     _make_continues,
     make_fog_actor_dict,
     patch_level_info,
+    patch_load_boundaries,
     patch_game_gp,
     export_glb,
 )

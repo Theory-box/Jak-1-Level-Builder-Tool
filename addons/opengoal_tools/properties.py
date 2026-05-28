@@ -13,6 +13,7 @@ from .data import (
     ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
     LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
+    TEXTURE_SOURCE_ITEMS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
@@ -20,6 +21,7 @@ from .data import (
     _parse_lump_row,
 )
 from .collections import (
+    _all_level_collections,
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
     _get_level_name_live, _set_level_name_live,
@@ -27,8 +29,73 @@ from .collections import (
     _get_level_index_live, _set_level_index_live,
     _get_vis_nick_live, _set_vis_nick_live,
     _on_mood_changed, _on_sky_changed,
+    _get_texture_source_live, _set_texture_source_live,
     _on_fog_override_changed,
 )
+
+# ---------------------------------------------------------------------------
+# Checkpoint (continue-point) level/display settings
+#   feature/load-boundaries-checkpoints
+# ---------------------------------------------------------------------------
+# Every SPAWN_/CHECKPOINT_ empty exports as a continue-point. lev0/lev1 are the
+# (up to two) levels the engine keeps resident when the player respawns here;
+# disp0/disp1 control whether each is displayed. On death the respawn is a
+# teleport that bypasses load boundaries entirely, so it relies solely on these
+# values to reconstruct the resident-level set.
+
+CP_DISP_ITEMS = [
+    ("display", "Display",         "Loaded and rendered"),
+    ("special", "Special",         "Special display mode"),
+    ("off",     "Off (load only)", "Resident in memory but not displayed"),
+]
+
+def _cp_level_items_base(context):
+    """All project levels as (lname, lname, desc) tuples for the pickers."""
+    items = []
+    scene = context.scene if context else None
+    if scene is not None:
+        for col in _all_level_collections(scene):
+            lname = str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
+            if lname:
+                items.append((lname, lname, f"Keep level '{lname}' resident"))
+    return items
+
+def _cp_lev0_items(self, context):
+    # Slot 0 always names a level; defaults to the checkpoint's own level.
+    return [("self", "(This level)", "The level this checkpoint belongs to")] \
+        + _cp_level_items_base(context) \
+        + [("custom", "Custom\u2026", "Type a level name below")]
+
+def _cp_lev1_items(self, context):
+    # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
+    return [("none", "(None)", "No second resident level")] \
+        + _cp_level_items_base(context) \
+        + [("custom", "Custom\u2026", "Type a level name below")]
+
+
+# ---------------------------------------------------------------------------
+# Load boundary commands (Task 2)
+# ---------------------------------------------------------------------------
+LB_CMD_ITEMS = [
+    ("none",      "(None)",      "No command in this direction"),
+    ("load",      "Load",        "Load level(s) — lev0 (+ optional lev1)"),
+    ("display",   "Display",     "Display lev0 in the chosen mode"),
+    ("vis",       "Vis",         "Set vis nickname (Name field = nick)"),
+    ("force-vis", "Force Vis",   "Force-load vis data for lev0"),
+    ("checkpt",   "Checkpoint",  "Set the continue point (Name field = continue-name)"),
+]
+
+LB_DISP_ITEMS = [
+    ("display",         "Display",          "Display immediately"),
+    ("display-no-wait", "Display (no wait)", "Display without waiting for load"),
+    ("off",             "Off",              "Stop displaying (#f)"),
+]
+
+def _lb_level_items(self, context):
+    # Boundary command level args: none / this level / any project level.
+    return [("none", "(None)", "No level (#f)"),
+            ("self", "(This level)", "The level this boundary belongs to")] \
+        + _cp_level_items_base(context)
 
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):
@@ -458,6 +525,9 @@ class OGProperties(PropertyGroup):
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
                                          update=_on_mood_changed,
                                          description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
+    texture_source:         EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS,
+                                         get=_get_texture_source_live, set=_set_texture_source_live,
+                                         description="Vanilla level to borrow textures + sky from. Use 'None' for any level streamed alongside another custom level — two co-resident levels sharing a source crash on load")
     sky:                    BoolProperty(name="Has Sky", default=True,
                                          update=_on_sky_changed,
                                          description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")

@@ -105,6 +105,43 @@ class OG_OT_SpawnCheckpoint(Operator):
         self.report({"INFO"}, f"Added {o.name}")
         return {"FINISHED"}
 
+class OG_OT_SpawnLoadBoundary(Operator):
+    bl_idname = "og.spawn_load_boundary"
+    bl_label  = "Add Load Boundary"
+    bl_description = (
+        "Add a load-boundary plane at the 3D cursor. Crossing it fires the "
+        "forward/backward commands (load / display / vis / checkpt). Edit the "
+        "mesh to shape the crossing surface — an edge/polyline makes a vertical "
+        "wall; a flat face with the Closed flag makes an area. Set commands in "
+        "the Object Settings panel."
+    )
+    def execute(self, ctx):
+        n = len([o for o in _level_objects(ctx.scene)
+                 if o.type == "MESH" and o.name.startswith("LOADBND_")])
+        nm = f"LOADBND_{n}"
+        # Default geometry: a 2-vertex edge = an open wall (default, Closed off).
+        # Add more verts for a longer polyline, or make a face + enable Closed
+        # for an area boundary.
+        mesh = bpy.data.meshes.new(nm)
+        mesh.from_pydata([(-2.0, 0.0, 0.0), (2.0, 0.0, 0.0)], [(0, 1)], [])
+        mesh.update()
+        o = bpy.data.objects.new(nm, mesh)
+        ctx.scene.collection.objects.link(o)
+        o.location = ctx.scene.cursor.location
+        o.show_name = True
+        o.display_type = "WIRE"
+        o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
+        o.set_invisible = True
+        o.ignore        = True
+        for ob in list(ctx.selected_objects):
+            ob.select_set(False)
+        o.select_set(True)
+        ctx.view_layer.objects.active = o
+        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
+        self.report({"INFO"}, f"Added {nm} — set commands in Object Settings")
+        return {"FINISHED"}
+
+
 class OG_OT_SpawnCamAnchor(Operator):
     bl_idname = "og.spawn_cam_anchor"
     bl_label  = "Add Spawn Camera"
@@ -1023,6 +1060,7 @@ class OG_OT_ToggleSpawnFavorite(Operator):
 CLASSES = (
     OG_OT_SpawnPlayer,
     OG_OT_SpawnCheckpoint,
+    OG_OT_SpawnLoadBoundary,
     OG_OT_SpawnCamAnchor,
     OG_OT_SpawnEntity,
     OG_OT_DuplicateEntity,

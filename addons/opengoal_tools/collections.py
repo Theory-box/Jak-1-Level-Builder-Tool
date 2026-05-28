@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-from .data import ENTITY_DEFS
+from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES
 
 # Mapping from collection custom-property keys to OGProperties attribute names.
 # Shared by _get_level_prop and _set_level_prop — defined once here.
@@ -70,6 +70,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_sound_bank_2":      "none",
     "og_music_bank":        "none",
     "og_mood":              "village1",
+    "og_texture_source":    "village1",
     "og_sky":               True,
     "og_fog_override_enabled": False,
     "og_fog_color":         (0.376, 0.502, 0.627),
@@ -228,6 +229,8 @@ def _classify_object(obj):
         if obj.get("og_preview_mesh") or obj.get("og_waypoint_preview_mesh"):
             return None  # unclassifiable — leave in place
         if name.startswith("VOL_"):
+            return _COL_PATH_TRIGGERS
+        if name.startswith("LOADBND_"):
             return _COL_PATH_TRIGGERS
         if name.startswith("NAVMESH_") or obj.get("og_navmesh", False):
             return _COL_PATH_NAVMESHES
@@ -563,6 +566,22 @@ def _on_sky_changed(self, context):
     col = _active_level_col(context.scene)
     if col is not None:
         col["og_sky"] = bool(self.sky)
+
+
+def _get_texture_source_live(self):
+    """EnumProperty get: index of the active level's og_texture_source."""
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    val = str(col.get("og_texture_source", "village1")) if col is not None else "village1"
+    try:
+        return TEXTURE_SOURCE_VALUES.index(val)
+    except ValueError:
+        return TEXTURE_SOURCE_VALUES.index("village1")
+
+def _set_texture_source_live(self, value):
+    """EnumProperty set: persist the chosen source into the active level."""
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None and 0 <= value < len(TEXTURE_SOURCE_VALUES):
+        col["og_texture_source"] = TEXTURE_SOURCE_VALUES[value]
 
 
 def _on_fog_override_changed(self, context):

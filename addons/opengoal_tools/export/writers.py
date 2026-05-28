@@ -17,7 +17,7 @@ from ..data import (
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
     _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type,
+    _LUMP_HARDCODED_KEYS, _is_custom_type, GLOBAL_TPAGE_GOS,
 )
 from ..collections import (
     _get_level_prop, _level_objects,
@@ -52,6 +52,7 @@ from .paths import (
     _iso,
     _ldir,
     _level_info,
+    _load_boundary_data,
     _nick,
     log,
 )
@@ -568,14 +569,25 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
+    # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
+    # that level's tpages. Two co-resident (streamed) custom levels that borrow
+    # the SAME source both try to link those tpage objects -> crash. So levels
+    # streamed together must use distinct sources, or "none" (vertex colors only).
+    _src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
+    if _src in ("none", ""):
+        _tex_remap = _sky_src = "none"
+        _textures  = []
+    else:
+        _tex_remap = _sky_src = _src
+        _textures  = [[f"{_src}-vis-alpha"]]
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
         "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
         "double_sided_collide": False, "base_id": base_id,
         "art_groups": [g.replace(".go","") for g in ags],
-        "custom_models": [], "textures": [["village1-vis-alpha"]],
-        "tex_remap": "village1", "sky": "village1", "tpages": [],
+        "custom_models": [], "textures": _textures,
+        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
         "ambients": ambients, "actors": all_actors,
     }
     p = d / f"{name}.jsonc"
@@ -620,17 +632,21 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     nick     = _effective_nick(scene, name)
     dgo_name = f"{nick.upper()}.DGO"
     code_o   = [f'  "{o}"' for o, _, _ in code_deps]
-    # Village1 sky tpages always present; add entity-specific tpages before art groups
-    base_tpages = ['  "tpage-398.go"', '  "tpage-400.go"', '  "tpage-399.go"',
-                   '  "tpage-401.go"', '  "tpage-1470.go"']
-    extra_tpages = [f'  "{tp}"' for tp in (tpages or [])
-                    if f'  "{tp}"' not in base_tpages]
+    # Global (always-loaded) tpages — e.g. the Village1 sky tpages
+    # [398,400,399,401,1470] — must NOT be baked into a level DGO. The engine
+    # keeps them resident at all times and build-level auto-logins them from the
+    # level's textures, so the level still gets them. Baking them duplicates the
+    # tpage object: a single level tolerates the duplicate, but two co-resident
+    # custom levels crash when the second re-links an already-loaded tpage
+    # (segfault right after <name>-obs, on tpage-398). So exclude every global
+    # tpage from the DGO file list.
+    level_tpages = [f'  "{tp}"' for tp in (tpages or [])
+                    if tp not in GLOBAL_TPAGE_GOS]
     extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
     files = (
         [f'  "{name}-obs.o"']
         + code_o
-        + base_tpages
-        + extra_tpages
+        + level_tpages
         + [f'  "{g}"' for g in ags]
         + extras_lines
         + [f'  "{name}.go"']
@@ -659,19 +675,60 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
 def _make_continues(name, spawns):
     """Build the GOAL :continues list for level-load-info.
 
-    Each spawn dict carries full quat + camera data from collect_spawns.
-    Spawns include both SPAWN_ (primary) and CHECKPOINT_ (auto-assigned) empties.
+    Each spawn dict carries full quat + camera data from collect_spawns, plus
+    per-checkpoint continue-point settings (cp_lev0/disp0/lev1/disp1/vis_nick/
+    flags/load_commands). Spawns include both SPAWN_ (primary) and CHECKPOINT_
+    empties.
 
-    :vis-nick is intentionally 'none for all custom-level continues.
-    Custom levels have no vis data, so vis?=#f at runtime and this field is never
-    acted upon. Matches the test-zone reference implementation in level-info.gc.
+    Defaults preserve a working single-level checkpoint: lev0 = this level
+    (displayed), lev1 = none, vis-nick = this level's nickname.
+
+    vis-nick: defaults to the level nickname (NOT 'none). Per Kuitar, vis is
+    also how the engine tracks which level you're "in" (music / which menu
+    opens), so a real nick is wanted even though custom levels lack vis BSP
+    data. Override per-checkpoint via the Vis Nickname field.
     """
+    def _lev(val):
+        v = (val or "").strip()
+        if v in ("", "none", "#f"):
+            return "#f"
+        if v == "self":
+            return f"'{name}"
+        return f"'{v}"
+
+    def _disp(val, lev_sym):
+        if lev_sym == "#f":
+            return "#f"
+        v = (val or "").strip()
+        if v in ("", "off", "#f"):
+            return "#f"
+        return f"'{v}"            # 'display or 'special
+
     def cp(sp):
         cr = sp.get("cam_rot", [1,0,0, 0,1,0, 0,0,1])
         cr_str = " ".join(str(v) for v in cr)
+        # Resident-level slots. lev0 should always name a level (respawn needs
+        # the home level at minimum); "self"/blank → this level.
+        lev0 = _lev(sp.get("cp_lev0", "self"))
+        if lev0 == "#f":
+            lev0 = f"'{name}"
+        lev1  = _lev(sp.get("cp_lev1", "none"))
+        disp0 = _disp(sp.get("cp_disp0", "display"), lev0)
+        disp1 = _disp(sp.get("cp_disp1", "off"),     lev1)
+        # vis-nick: blank → this level's nickname. Per Kuitar, vis is also how
+        # the game knows which level you're in (music/menu), so don't use 'none.
+        vn = (sp.get("cp_vis_nick") or "").strip()
+        vis_nick = f"'{vn}" if vn else f"'{_nick(name)}"
+        # load-commands: blank → empty list; else raw GOAL passthrough.
+        lc = (sp.get("cp_load_commands") or "").strip()
+        load_cmds = lc if lc else "'()"
+        # flags: optional continue-flags passthrough (advanced).
+        fl = (sp.get("cp_flags") or "").strip()
+        flags_line = f"             :flags (continue-flags {fl})\n" if fl else ""
         return (f"(new 'static 'continue-point\n"
                 f"             :name \"{name}-{sp['name']}\"\n"
                 f"             :level '{name}\n"
+                f"{flags_line}"
                 f"             :trans (new 'static 'vector"
                 f" :x (meters {sp['x']:.4f}) :y (meters {sp['y']:.4f}) :z (meters {sp['z']:.4f}) :w 1.0)\n"
                 f"             :quat (new 'static 'quaternion"
@@ -681,12 +738,12 @@ def _make_continues(name, spawns):
                 f" :y (meters {sp.get('cam_y', sp['y']+4.0):.4f})"
                 f" :z (meters {sp.get('cam_z', sp['z']):.4f}) :w 1.0)\n"
                 f"             :camera-rot (new 'static 'array float 9 {cr_str})\n"
-                f"             :load-commands '()\n"
-                f"             :vis-nick 'none\n"
-                f"             :lev0 '{name}\n"
-                f"             :disp0 'display\n"
-                f"             :lev1 #f\n"
-                f"             :disp1 #f)")
+                f"             :load-commands {load_cmds}\n"
+                f"             :vis-nick {vis_nick}\n"
+                f"             :lev0 {lev0}\n"
+                f"             :disp0 {disp0}\n"
+                f"             :lev1 {lev1}\n"
+                f"             :disp1 {disp1})")
 
     if spawns:
         return "'(" + "\n             ".join(cp(s) for s in spawns) + ")"
@@ -700,7 +757,7 @@ def _make_continues(name, spawns):
             f"             :camera-trans (new 'static 'vector :x 0.0 :y (meters 14.) :z 0.0 :w 1.0)\n"
             f"             :camera-rot (new 'static 'array float 9 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0)\n"
             f"             :load-commands '()\n"
-            f"             :vis-nick 'none\n"
+            f"             :vis-nick '{_nick(name)}\n"
             f"             :lev0 '{name}\n"
             f"             :disp0 'display\n"
             f"             :lev1 #f\n"
@@ -802,6 +859,130 @@ def patch_level_info(name, spawns, scene=None):
     else:
         log("Skipped level-info.gc (unchanged)")
 
+
+# ---------------------------------------------------------------------------
+# Load boundaries  (feature/load-boundaries-checkpoints — Task 2)
+# ---------------------------------------------------------------------------
+# Boundaries are static data, not runtime entities. The engine's
+# load-boundary-data.gc defines *static-load-boundary-list* via the
+# static-lb-list / static-load-boundary macros, then runs
+#   (doarray (i ...) (load-boundary-from-template (the-as (array object) i)))
+# to build runtime boundaries into *load-boundary-list*. This is exactly what
+# the in-game editor (---lb-save) regenerates and what shipped mods edit.
+#
+# Rather than splice into the stock static-lb-list, we append our own managed
+# per-level block (its own static-lb-list + doarray). Stock entries untouched;
+# idempotent re-export via per-level markers.
+
+def _lb_cmd_form(cmd, lev0, lev1, disp, name, level):
+    """Return the GOAL (cmd a1 a2) form for a boundary direction, or None.
+
+    Level args are emitted as BARE symbols (the macro quotes the whole list).
+    "self" -> this level, ""/"none" -> #f.
+    """
+    def _sym(v):
+        v = (v or "").strip()
+        if v in ("", "none", "#f"):
+            return "#f"
+        if v == "self":
+            return level
+        return v
+    cmd = (cmd or "none").strip()
+    if cmd in ("", "none", "invalid"):
+        return None
+    if cmd == "load":
+        return f"(load {_sym(lev0)} {_sym(lev1)})"
+    if cmd == "display":
+        d = (disp or "").strip()
+        d = "#f" if d in ("", "off", "#f") else d           # display / display-no-wait
+        return f"(display {_sym(lev0)} {d})"
+    if cmd == "vis":
+        nick = (name or "").strip() or _nick(level)
+        return f"(vis {nick} #f)"
+    if cmd == "force-vis":
+        return f"(force-vis {_sym(lev0)} #t)"
+    if cmd == "checkpt":
+        cn = (name or "").strip()
+        return f'(checkpt "{cn}" #f)'
+    return None
+
+
+def _make_static_boundary(b, level):
+    """One (static-load-boundary ...) form from a collected boundary dict.
+
+    b keys: closed(bool), player(bool), custom_flags(str), top, bot (game units),
+            points (flat list of game-unit floats x0 z0 x1 z1 ...),
+            fwd_*/bwd_* command fields.
+    """
+    flags = []
+    if b.get("player", True):
+        flags.append("player")
+    if b.get("closed", False):
+        flags.append("closed")
+    cf = (b.get("custom_flags") or "").strip()
+    if cf:
+        flags.extend(cf.split())
+    flags_str = " ".join(flags)
+
+    pts = " ".join(f"{v:.4f}" for v in b.get("points", []))
+
+    fwd = _lb_cmd_form(b.get("fwd_cmd"), b.get("fwd_lev0"), b.get("fwd_lev1"),
+                       b.get("fwd_disp"), b.get("fwd_name"), level)
+    bwd = _lb_cmd_form(b.get("bwd_cmd"), b.get("bwd_lev0"), b.get("bwd_lev1"),
+                       b.get("bwd_disp"), b.get("bwd_name"), level)
+
+    lines = [f"(static-load-boundary :flags ({flags_str})",
+             f"                      :top {b.get('top', 524288.0):.4f}"
+             f" :bot {b.get('bot', -524288.0):.4f}",
+             f"                      :points ({pts})"]
+    if fwd:
+        lines.append(f"                      :fwd {fwd}")
+    if bwd:
+        lines.append(f"                      :bwd {bwd}")
+    return "\n          ".join(lines) + ")"
+
+
+_LB_BEGIN = ";; ===== OG CUSTOM BOUNDARIES: {n} ====="
+_LB_END   = ";; ===== END OG CUSTOM BOUNDARIES: {n} ====="
+
+def patch_load_boundaries(name, boundaries, scene=None):
+    """Insert/replace this level's load boundaries in load-boundary-data.gc.
+
+    Appends a managed block (own static-lb-list + doarray) keyed by level name.
+    Empty `boundaries` removes the block. Stock entries are never touched.
+    """
+    p = _load_boundary_data()
+    if not p.exists():
+        log(f"WARNING: {p} not found — skipping load boundaries")
+        return
+    txt = p.read_text(encoding="utf-8")
+
+    begin = _LB_BEGIN.format(n=name)
+    end   = _LB_END.format(n=name)
+    # Strip any existing block for this level.
+    txt = re.sub(rf"\n{re.escape(begin)}.*?{re.escape(end)}\n", "\n", txt, flags=re.DOTALL)
+
+    if boundaries:
+        entries = "\n        ".join(_make_static_boundary(b, name) for b in boundaries)
+        sym = "*og-custom-lb-" + re.sub(r"[^a-z0-9-]", "-", name.lower()) + "*"
+        # Match the stock pattern: define a named static list, then doarray over
+        # the symbol. doarray substitutes its array arg multiple times, so it
+        # must be a variable, not an inline (static-lb-list ...) expression.
+        block = (f"\n{begin}\n"
+                 f"(define {sym}\n"
+                 f"  (static-lb-list\n        {entries}))\n"
+                 f"(doarray (i {sym}) (load-boundary-from-template (the-as (array object) i)))\n"
+                 f"{end}\n")
+        txt = txt.rstrip() + "\n" + block
+
+    original = p.read_text(encoding="utf-8")
+    if txt != original:
+        p.write_text(txt, encoding="utf-8")
+        log(f"Patched load-boundary-data.gc ({len(boundaries)} boundaries for {name})")
+    else:
+        log("Skipped load-boundary-data.gc (unchanged)")
+
+
 def patch_game_gp(name, code_deps=None, scene=None):
     """Patch game.gp to build our custom level and compile enemy code files.
 
@@ -892,7 +1073,7 @@ def export_glb(ctx, name):
         else:
             # No Geometry sub-collection yet — fall back to all meshes in the level.
             # Exclude WATER_ volumes (invisible helpers, not renderable geometry).
-            _HELPER_PREFIXES = ("WATER_", "VOL_", "CPVOL_", "NAVMESH_")
+            _HELPER_PREFIXES = ("WATER_", "VOL_", "CPVOL_", "NAVMESH_", "LOADBND_")
             export_objs = [o for o in _recursive_col_objects(level_col, exclude_no_export=True)
                            if o.type == "MESH"
                            and not any(o.name.startswith(p) for p in _HELPER_PREFIXES)
@@ -935,7 +1116,8 @@ def export_glb(ctx, name):
         for o in ctx.scene.objects:
             o.select_set(False)
         export_objs = [o for o in ctx.scene.objects
-                       if o.type == "MESH" and not o.get("og_preview_mesh")]
+                       if o.type == "MESH" and not o.get("og_preview_mesh")
+                       and not o.name.startswith("LOADBND_")]
         for o in export_objs:
             o.select_set(True)
         if export_objs:
