@@ -104,6 +104,23 @@ _GOAL_BOILERPLATE = """\
 
 
 
+TEXTURE_SOURCE_ITEMS = [
+    ("none",     "None (vertex colors)",
+     "Borrow no textures or sky. REQUIRED for any level streamed alongside "
+     "another custom level (loaded at the same time): two co-resident levels "
+     "borrowing the same base both link its texture pages and crash on load. "
+     "Geometry shows its vertex colors."),
+    ("village1", "Village1",      "Borrow Village1 textures + sky"),
+    ("village2", "Village2",      "Borrow Village2 textures + sky"),
+    ("village3", "Village3",      "Borrow Village3 textures + sky"),
+    ("beach",    "Sentinel Beach", "Borrow Beach textures + sky"),
+    ("jungle",   "Forbidden Jungle", "Borrow Jungle textures + sky"),
+    ("misty",    "Misty Island",  "Borrow Misty textures + sky"),
+    ("rolling",  "Rolling Hills", "Borrow Rolling Hills textures + sky"),
+    ("snow",     "Snowy Mountain", "Borrow Snowy textures + sky"),
+]
+
+
 class OG_OT_CreateLevel(Operator):
     """Create a new level collection with default settings."""
     bl_idname   = "og.create_level"
@@ -118,6 +135,8 @@ class OG_OT_CreateLevel(Operator):
                              description="Unique level-load-info :index. Must not collide with vanilla or other custom levels. Safe range: 100+")
     vis_nick:   StringProperty(name="Vis Nickname", default="",
                                description="3-letter nickname used for DGO/vis files. Auto-suggested from name; must be unique across levels")
+    texture_source: EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS, default="none",
+                                 description="Vanilla level to borrow textures + sky from. Use 'None' for levels streamed alongside another custom level")
 
     def invoke(self, ctx, event):
         levels = _all_level_collections(ctx.scene)
@@ -175,6 +194,7 @@ class OG_OT_CreateLevel(Operator):
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
         col["og_mood"]              = "village1"
+        col["og_texture_source"]    = self.texture_source
         col["og_sky"]               = True
         col["og_fog_override_enabled"] = False
         col["og_fog_color"]         = (0.376, 0.502, 0.627)
@@ -206,6 +226,8 @@ class OG_OT_AssignCollectionAsLevel(Operator):
                              description="Unique level-load-info :index. Must not collide with vanilla or other custom levels. Safe range: 100+")
     vis_nick:   StringProperty(name="Vis Nickname", default="",
                                description="3-letter nickname used for DGO/vis files. Auto-suggested from name; must be unique across levels")
+    texture_source: EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS, default="none",
+                                 description="Vanilla level to borrow textures + sky from. Use 'None' for levels streamed alongside another custom level")
 
     def invoke(self, ctx, event):
         levels = _all_level_collections(ctx.scene)
@@ -223,6 +245,7 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         layout.prop(self, "base_id")
         layout.prop(self, "level_index")
         layout.prop(self, "vis_nick")
+        layout.prop(self, "texture_source")
 
     def execute(self, ctx):
         if not self.col_name:
@@ -276,6 +299,7 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         col["og_sound_bank_2"]      = "none"
         col["og_music_bank"]        = "none"
         col["og_mood"]              = "village1"
+        col["og_texture_source"]    = self.texture_source
         col["og_sky"]               = True
         col["og_fog_override_enabled"] = False
         col["og_fog_color"]         = (0.376, 0.502, 0.627)
@@ -507,6 +531,8 @@ class OG_OT_EditLevel(Operator):
                                  description="3-letter nickname used for DGO/vis files. Must be unique across levels")
     bottom_height: FloatProperty(name="Death Plane (m)", default=-20.0, min=-500.0, max=-1.0,
                                  description="Y height below which the player gets an endlessfall death")
+    texture_source: EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS, default="village1",
+                                 description="Vanilla level to borrow textures + sky from. Use 'None' for levels streamed alongside another custom level (two co-resident levels sharing a source crash on load)")
 
     def invoke(self, ctx, event):
         col = _active_level_col(ctx.scene)
@@ -519,6 +545,7 @@ class OG_OT_EditLevel(Operator):
         self.level_index   = int(col.get("og_level_index", 100))
         self.vis_nick      = str(col.get("og_vis_nick_override", "") or "")
         self.bottom_height = float(col.get("og_bottom_height", -20.0))
+        self.texture_source = str(col.get("og_texture_source", "village1") or "village1")
         return ctx.window_manager.invoke_props_dialog(self)
 
     def execute(self, ctx):
@@ -556,6 +583,7 @@ class OG_OT_EditLevel(Operator):
         col["og_level_index"]       = self.level_index
         col["og_vis_nick_override"] = nick_clean
         col["og_bottom_height"]     = max(-500.0, min(-1.0, self.bottom_height))
+        col["og_texture_source"]    = self.texture_source
         col.name = name  # Keep collection name in sync
         # Update active_level reference since collection name changed
         ctx.scene.og_props.active_level = col.name

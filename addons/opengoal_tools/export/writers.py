@@ -569,14 +569,25 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
+    # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
+    # that level's tpages. Two co-resident (streamed) custom levels that borrow
+    # the SAME source both try to link those tpage objects -> crash. So levels
+    # streamed together must use distinct sources, or "none" (vertex colors only).
+    _src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
+    if _src in ("none", ""):
+        _tex_remap = _sky_src = "none"
+        _textures  = []
+    else:
+        _tex_remap = _sky_src = _src
+        _textures  = [[f"{_src}-vis-alpha"]]
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
         "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
         "double_sided_collide": False, "base_id": base_id,
         "art_groups": [g.replace(".go","") for g in ags],
-        "custom_models": [], "textures": [["village1-vis-alpha"]],
-        "tex_remap": "village1", "sky": "village1", "tpages": [],
+        "custom_models": [], "textures": _textures,
+        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
         "ambients": ambients, "actors": all_actors,
     }
     p = d / f"{name}.jsonc"

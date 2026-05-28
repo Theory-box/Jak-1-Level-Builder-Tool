@@ -382,3 +382,24 @@ REGRESSION CHECK before merge: re-export each level and confirm it still loads
 AND renders textures correctly *alone* (the bake was redundant only if the
 globals are truly always-resident during custom-level gameplay). Then test the
 two-level co-load.
+
+### Real fix: per-level texture/sky source (2026-05-28)
+Verified against Kuitar's the-forgotten-lands: his co-resident areas never share
+a borrowed texture/sky source. valley + crystal-cave + energy-bay use
+tex_remap/sky = "none" (vertex colors); open-mines borrows "misty"; only
+village1-based areas use village1, and they are not co-resident with each other.
+
+Root cause in this addon: write_jsonc HARDCODED tex_remap/sky/textures = village1
+for every level. build-level then auto-logins village1's tpages for each level,
+and two co-resident custom levels both try to LINK the same tpage objects
+(tpage-398.go ...) -> native segfault during the second level's tpage login
+(removing them from the DGO only moved the duplicate to the auto-login path).
+
+Fix: per-level `og_texture_source` (default "village1" for back-compat; "none"
+borrows nothing). write_jsonc emits tex_remap/sky/textures from it ("none" ->
+all none/empty -> no auto-login -> no shared tpages). Exposed in Create / Assign
+/ Edit Level dialogs (TEXTURE_SOURCE_ITEMS: none + common vanilla bases). New
+levels default to "none" (custom geometry is vertex-colored anyway). Existing
+levels read the "village1" default until edited.
+
+To co-load two levels: give them DIFFERENT sources, or set one/both to "none".

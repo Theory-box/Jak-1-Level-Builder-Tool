@@ -70,6 +70,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_sound_bank_2":      "none",
     "og_music_bank":        "none",
     "og_mood":              "village1",
+    "og_texture_source":    "village1",
     "og_sky":               True,
     "og_fog_override_enabled": False,
     "og_fog_color":         (0.376, 0.502, 0.627),
