@@ -553,15 +553,15 @@ def collect_load_boundaries(scene):
         if not (o.name.startswith("LOADBND_") and o.type == "MESH"):
             continue
         me, mw = o.data, o.matrix_world
-        if len(me.polygons) > 0:
-            idxs = list(me.polygons[0].vertices)   # closed: polygon loop order
+        closed = bool(getattr(o, "og_lb_closed", False))
+        if closed and len(me.polygons) > 0:
+            idxs = list(me.polygons[0].vertices)   # closed area drawn as a face → loop
         else:
-            idxs = _lb_edge_chain(me)              # open: edge-walk order
+            idxs = _lb_edge_chain(me)              # open polyline / edge-ring / fallback
         verts = [mw @ me.vertices[i].co for i in idxs]
         if len(verts) < 2:
             continue
 
-        closed = bool(getattr(o, "og_lb_closed", False))
         zs = [v.z for v in verts]
         zmin, zmax = min(zs), max(zs)
         if closed:

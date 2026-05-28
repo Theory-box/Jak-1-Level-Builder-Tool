@@ -118,16 +118,27 @@ class OG_OT_SpawnLoadBoundary(Operator):
     def execute(self, ctx):
         n = len([o for o in _level_objects(ctx.scene)
                  if o.type == "MESH" and o.name.startswith("LOADBND_")])
-        bpy.ops.mesh.primitive_plane_add(size=4.0, location=ctx.scene.cursor.location)
-        o = ctx.active_object
-        o.name = f"LOADBND_{n}"
+        nm = f"LOADBND_{n}"
+        # Default geometry: a 2-vertex edge = an open wall (default, Closed off).
+        # Add more verts for a longer polyline, or make a face + enable Closed
+        # for an area boundary.
+        mesh = bpy.data.meshes.new(nm)
+        mesh.from_pydata([(-2.0, 0.0, 0.0), (2.0, 0.0, 0.0)], [(0, 1)], [])
+        mesh.update()
+        o = bpy.data.objects.new(nm, mesh)
+        ctx.scene.collection.objects.link(o)
+        o.location = ctx.scene.cursor.location
         o.show_name = True
         o.display_type = "WIRE"
         o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
         o.set_invisible = True
         o.ignore        = True
+        for ob in list(ctx.selected_objects):
+            ob.select_set(False)
+        o.select_set(True)
+        ctx.view_layer.objects.active = o
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
-        self.report({"INFO"}, f"Added {o.name} — set commands in Object Settings")
+        self.report({"INFO"}, f"Added {nm} — set commands in Object Settings")
         return {"FINISHED"}
 
 

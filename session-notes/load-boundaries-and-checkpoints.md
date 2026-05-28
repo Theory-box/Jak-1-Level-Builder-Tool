@@ -319,3 +319,31 @@ Still-open (non-blocking) TODOs:
   int-storage can shift on level rename/delete).
 - force-vis emits onoff #t only; display with lev0=none emits (display #f …).
 - No audit check yet for a boundary that has a command but no level/name set.
+
+### Second audit (2026-05-28)
+Verified the emission format against the runtime consumer and fixed a default-
+geometry mismatch.
+
+Confirmed correct (read `load-boundary-from-template` in jak-project):
+- Template = 4-element array [flags-binteger, float-array, fwd-list, bwd-list].
+- float-array = [top, bot, x0, z0, x1, z1, …]; num-points = len/2 − 1; points
+  read as (x, z) pairs. Our emission (top, bot, then game-X/game-Z pairs)
+  matches exactly. flags = elem0/8, cmd = car/8 — matches the macro. So the
+  data we write is what the engine expects.
+
+Fixed:
+- **Default geometry mismatch.** The operator made a plane (a face), and
+  collect branched on "has faces", so the Closed toggle was effectively ignored
+  (always polygon path). Now: operator creates a 2-vertex EDGE (open wall, the
+  default), and collect branches on the Closed flag — Closed+face → polygon
+  loop; otherwise edge-walk (open polyline or closed edge-ring).
+
+Workflow caveat (not a bug):
+- The in-game boundary editor's `---lb-save` regenerates the WHOLE
+  load-boundary-data.gc from the live `*load-boundary-list*`, which by then
+  includes our loaded custom boundaries. If a user edits boundaries in-game and
+  saves, then re-exports from Blender, the addon's managed block would be added
+  again on top of the editor's regenerated list → duplicates. For now the addon
+  owns boundary authoring; don't mix with the in-game editor on the same level.
+
+All touched modules byte-compile.
