@@ -284,6 +284,29 @@ def _draw_selected_actor(layout, sel, scene):
 
 
 
+def _draw_continue_settings(layout, sel, scene):
+    """Continue-point level/display settings, shared by SPAWN_ and CHECKPOINT_.
+
+    On respawn (a teleport) the engine uses only these values to rebuild the
+    resident-level set; load boundaries handle streaming while walking, not on
+    death. lev0/lev1 = up to two resident levels; disp0/disp1 = displayed or
+    load-only.
+    """
+    box = layout.box()
+    box.label(text="Respawn Loads", icon="FILE_REFRESH")
+    row = box.row(align=True)
+    row.prop(sel, "og_cp_lev0", text="")
+    row.prop(sel, "og_cp_disp0", text="")
+    row = box.row(align=True)
+    row.prop(sel, "og_cp_lev1", text="")
+    row.prop(sel, "og_cp_disp1", text="")
+    box.prop(sel, "og_cp_vis_nick")
+    col = box.column(align=True)
+    col.label(text="Advanced:", icon="TOOL_SETTINGS")
+    col.prop(sel, "og_cp_flags")
+    col.prop(sel, "og_cp_load_commands")
+
+
 def _draw_selected_spawn(layout, sel, scene):
     """Draw settings for a SPAWN_ object."""
     layout.label(text=sel.name, icon="EMPTY_ARROWS")
@@ -296,6 +319,8 @@ def _draw_selected_spawn(layout, sel, scene):
     else:
         layout.label(text="⚠ No camera anchor", icon="ERROR")
         layout.operator("og.spawn_cam_anchor", text="Add Camera", icon="CAMERA_DATA")
+
+    _draw_continue_settings(layout, sel, scene)
 
 
 
@@ -329,6 +354,8 @@ def _draw_selected_checkpoint(layout, sel, scene):
         layout.label(text=f"⚠ No trigger volume (fallback r={r:.1f}m)", icon="ERROR")
         op = layout.operator("og.spawn_volume_autolink", text="Add Trigger Volume", icon="MESH_CUBE")
         op.target_name = sel.name
+
+    _draw_continue_settings(layout, sel, scene)
 
 
 

@@ -3,7 +3,8 @@
 **Branch:** `feature/load-boundaries-checkpoints`
 **Repo:** `Jak-1-Level-Builder-Tool` (the addon repo — NOT `Claude-Relay`;
 the addon copy in Claude-Relay is a stale snapshot, do not patch it)
-**Status:** Planning / research complete — no code written yet
+**Status:** Task 1 (checkpoint settings) **implemented** — see §9 log.
+Task 2 (load boundaries) pending.
 **Last updated:** 2026-05-28
 
 Goal: expose per-checkpoint level/display settings, and add a placeable
@@ -135,9 +136,14 @@ hardcoding. Defaults preserve a working single-level checkpoint.
 | `lev1`          | level enum+none | none (`#f`)        | second resident slot |
 | `disp1`         | enum            | off                | display / special / off |
 | `vis-nick`      | string          | **home level nick**| editable; not `none` |
-| `save-point`    | bool            | off                | sets continue-flags |
-| `flags`         | multi-toggle    | none               | sage-intro / title / … |
+| `flags`         | text (symbols)  | none               | continue-flags passthrough (advanced) |
 | `load-commands` | text (GOAL)     | `()`               | spliced verbatim |
+
+**No save-point toggle.** Verified the jak1 `continue-flags` enum
+(`contf00 contf01 warp demo intro sage-intro sage-demo-convo title contf08
+contf09 game-start sage-ecorocks`) — there is no save-point flag; Jak 1
+checkpoints are just continue-points. Dropped the planned toggle; advanced
+flag needs go through the free-text `flags` field instead.
 
 Export: `collect_spawns` gathers the props; `_make_continues` emits them;
 validate `lev0`/`lev1` against known levels with a clear export warning on a
@@ -196,3 +202,33 @@ Geometry extraction:
    and closed), export into `load-boundary-data.gc` managed block, command
    UI (fwd/bwd) + flags incl. custom-flags passthrough. Prototype one open
    `load`/`display` boundary between two test levels before full UI.
+
+---
+
+## 9. Implementation log
+
+### Task 1 — checkpoint settings (done 2026-05-28)
+Per-checkpoint continue-point settings now editable on SPAWN_/CHECKPOINT_
+empties; `_make_continues` reads them instead of hardcoding.
+
+Files changed:
+- `properties.py` — `CP_DISP_ITEMS`, `_cp_lev0_items`, `_cp_lev1_items`
+  (level pickers from `_all_level_collections`).
+- `__init__.py` — registered Object props `og_cp_lev0/disp0/lev1/disp1/
+  vis_nick/flags/load_commands` (+ unregister cleanup). Dynamic-items enums
+  take no `default=`; first item ("self"/"none") is the default.
+- `export/scene.py::collect_spawns` — emits the `cp_*` keys into spawn dicts.
+- `export/writers.py::_make_continues` — resolves self/none→symbols,
+  off→`#f`; vis-nick blank → level nick; flags/load-commands passthrough.
+  No-spawns default branch vis-nick also changed `none` → level nick.
+- `panels/selected.py` — shared `_draw_continue_settings` block on both the
+  spawn and checkpoint panels.
+
+Verified by executing the real `_make_continues` source against sample
+settings (default / two-level / load-only / flags+load-cmds / lev0-elsewhere
+/ no-spawns). All emit correct GOAL.
+
+Not yet done: in-Blender register test (needs Blender), and an end-to-end
+export+compile of a level. Dynamic-enum int-storage caveat applies — if a
+referenced level is renamed/deleted the stored slot may shift; export should
+later warn on an unknown lev0/lev1 (TODO).

@@ -495,6 +495,16 @@ def collect_spawns(scene):
             "cam_x": cam_x, "cam_y": cam_y, "cam_z": cam_z,
             "cam_rot":       cam_rot,
             "is_checkpoint": is_checkpoint,
+            # Continue-point level/display settings (feature/load-boundaries-checkpoints).
+            # Enum values are identifier strings ("self"/"none"/<level name>);
+            # resolved to GOAL symbols in _make_continues, which knows the level name.
+            "cp_lev0":          str(getattr(o, "og_cp_lev0", "self") or "self"),
+            "cp_disp0":         str(getattr(o, "og_cp_disp0", "display") or "display"),
+            "cp_lev1":          str(getattr(o, "og_cp_lev1", "none") or "none"),
+            "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
+            "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
+            "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),
+            "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
         })
     return out
 

@@ -659,19 +659,60 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
 def _make_continues(name, spawns):
     """Build the GOAL :continues list for level-load-info.
 
-    Each spawn dict carries full quat + camera data from collect_spawns.
-    Spawns include both SPAWN_ (primary) and CHECKPOINT_ (auto-assigned) empties.
+    Each spawn dict carries full quat + camera data from collect_spawns, plus
+    per-checkpoint continue-point settings (cp_lev0/disp0/lev1/disp1/vis_nick/
+    flags/load_commands). Spawns include both SPAWN_ (primary) and CHECKPOINT_
+    empties.
 
-    :vis-nick is intentionally 'none for all custom-level continues.
-    Custom levels have no vis data, so vis?=#f at runtime and this field is never
-    acted upon. Matches the test-zone reference implementation in level-info.gc.
+    Defaults preserve a working single-level checkpoint: lev0 = this level
+    (displayed), lev1 = none, vis-nick = this level's nickname.
+
+    vis-nick: defaults to the level nickname (NOT 'none). Per Kuitar, vis is
+    also how the engine tracks which level you're "in" (music / which menu
+    opens), so a real nick is wanted even though custom levels lack vis BSP
+    data. Override per-checkpoint via the Vis Nickname field.
     """
+    def _lev(val):
+        v = (val or "").strip()
+        if v in ("", "none", "#f"):
+            return "#f"
+        if v == "self":
+            return f"'{name}"
+        return f"'{v}"
+
+    def _disp(val, lev_sym):
+        if lev_sym == "#f":
+            return "#f"
+        v = (val or "").strip()
+        if v in ("", "off", "#f"):
+            return "#f"
+        return f"'{v}"            # 'display or 'special
+
     def cp(sp):
         cr = sp.get("cam_rot", [1,0,0, 0,1,0, 0,0,1])
         cr_str = " ".join(str(v) for v in cr)
+        # Resident-level slots. lev0 should always name a level (respawn needs
+        # the home level at minimum); "self"/blank → this level.
+        lev0 = _lev(sp.get("cp_lev0", "self"))
+        if lev0 == "#f":
+            lev0 = f"'{name}"
+        lev1  = _lev(sp.get("cp_lev1", "none"))
+        disp0 = _disp(sp.get("cp_disp0", "display"), lev0)
+        disp1 = _disp(sp.get("cp_disp1", "off"),     lev1)
+        # vis-nick: blank → this level's nickname. Per Kuitar, vis is also how
+        # the game knows which level you're in (music/menu), so don't use 'none.
+        vn = (sp.get("cp_vis_nick") or "").strip()
+        vis_nick = f"'{vn}" if vn else f"'{_nick(name)}"
+        # load-commands: blank → empty list; else raw GOAL passthrough.
+        lc = (sp.get("cp_load_commands") or "").strip()
+        load_cmds = lc if lc else "'()"
+        # flags: optional continue-flags passthrough (advanced).
+        fl = (sp.get("cp_flags") or "").strip()
+        flags_line = f"             :flags (continue-flags {fl})\n" if fl else ""
         return (f"(new 'static 'continue-point\n"
                 f"             :name \"{name}-{sp['name']}\"\n"
                 f"             :level '{name}\n"
+                f"{flags_line}"
                 f"             :trans (new 'static 'vector"
                 f" :x (meters {sp['x']:.4f}) :y (meters {sp['y']:.4f}) :z (meters {sp['z']:.4f}) :w 1.0)\n"
                 f"             :quat (new 'static 'quaternion"
@@ -681,12 +722,12 @@ def _make_continues(name, spawns):
                 f" :y (meters {sp.get('cam_y', sp['y']+4.0):.4f})"
                 f" :z (meters {sp.get('cam_z', sp['z']):.4f}) :w 1.0)\n"
                 f"             :camera-rot (new 'static 'array float 9 {cr_str})\n"
-                f"             :load-commands '()\n"
-                f"             :vis-nick 'none\n"
-                f"             :lev0 '{name}\n"
-                f"             :disp0 'display\n"
-                f"             :lev1 #f\n"
-                f"             :disp1 #f)")
+                f"             :load-commands {load_cmds}\n"
+                f"             :vis-nick {vis_nick}\n"
+                f"             :lev0 {lev0}\n"
+                f"             :disp0 {disp0}\n"
+                f"             :lev1 {lev1}\n"
+                f"             :disp1 {disp1})")
 
     if spawns:
         return "'(" + "\n             ".join(cp(s) for s in spawns) + ")"
@@ -700,7 +741,7 @@ def _make_continues(name, spawns):
             f"             :camera-trans (new 'static 'vector :x 0.0 :y (meters 14.) :z 0.0 :w 1.0)\n"
             f"             :camera-rot (new 'static 'array float 9 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0)\n"
             f"             :load-commands '()\n"
-            f"             :vis-nick 'none\n"
+            f"             :vis-nick '{_nick(name)}\n"
             f"             :lev0 '{name}\n"
             f"             :disp0 'display\n"
             f"             :lev1 #f\n"

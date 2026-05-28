@@ -20,6 +20,7 @@ from .data import (
     _parse_lump_row,
 )
 from .collections import (
+    _all_level_collections,
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
     _get_level_name_live, _set_level_name_live,
@@ -29,6 +30,43 @@ from .collections import (
     _on_mood_changed, _on_sky_changed,
     _on_fog_override_changed,
 )
+
+# ---------------------------------------------------------------------------
+# Checkpoint (continue-point) level/display settings
+#   feature/load-boundaries-checkpoints
+# ---------------------------------------------------------------------------
+# Every SPAWN_/CHECKPOINT_ empty exports as a continue-point. lev0/lev1 are the
+# (up to two) levels the engine keeps resident when the player respawns here;
+# disp0/disp1 control whether each is displayed. On death the respawn is a
+# teleport that bypasses load boundaries entirely, so it relies solely on these
+# values to reconstruct the resident-level set.
+
+CP_DISP_ITEMS = [
+    ("display", "Display",         "Loaded and rendered"),
+    ("special", "Special",         "Special display mode"),
+    ("off",     "Off (load only)", "Resident in memory but not displayed"),
+]
+
+def _cp_level_items_base(context):
+    """All project levels as (lname, lname, desc) tuples for the pickers."""
+    items = []
+    scene = context.scene if context else None
+    if scene is not None:
+        for col in _all_level_collections(scene):
+            lname = str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
+            if lname:
+                items.append((lname, lname, f"Keep level '{lname}' resident"))
+    return items
+
+def _cp_lev0_items(self, context):
+    # Slot 0 always names a level; defaults to the checkpoint's own level.
+    return [("self", "(This level)", "The level this checkpoint belongs to")] \
+        + _cp_level_items_base(context)
+
+def _cp_lev1_items(self, context):
+    # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
+    return [("none", "(None)", "No second resident level")] \
+        + _cp_level_items_base(context)
 
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):
