@@ -3,8 +3,7 @@
 **Branch:** `feature/load-boundaries-checkpoints`
 **Repo:** `Jak-1-Level-Builder-Tool` (the addon repo — NOT `Claude-Relay`;
 the addon copy in Claude-Relay is a stale snapshot, do not patch it)
-**Status:** Task 1 (checkpoint settings) **implemented** — see §9 log.
-Task 2 (load boundaries) pending.
+**Status:** Task 1 + Task 2 **implemented** — see §9 log. Untested in Blender.
 **Last updated:** 2026-05-28
 
 Goal: expose per-checkpoint level/display settings, and add a placeable
@@ -232,3 +231,50 @@ Not yet done: in-Blender register test (needs Blender), and an end-to-end
 export+compile of a level. Dynamic-enum int-storage caveat applies — if a
 referenced level is renamed/deleted the stored slot may shift; export should
 later warn on an unknown lev0/lev1 (TODO).
+
+### Task 2 — load boundaries (done 2026-05-28)
+Placeable LOADBND_ mesh exporting to `static-load-boundary` entries in
+`load-boundary-data.gc`. Approach: append a managed per-level block (own
+`static-lb-list` + `doarray (load-boundary-from-template …)`) keyed by markers;
+stock entries untouched; idempotent. Confirmed vanilla jak-project uses the
+same macro/format and ends with the `doarray … load-boundary-from-template`
+that builds runtime boundaries — so the addon's base matches.
+
+Files changed:
+- `export/paths.py` — `_load_boundary_data()` path helper.
+- `export/scene.py` — `collect_load_boundaries` + `_lb_edge_chain`. Footprint
+  from mesh verts (polygon loop if faces = closed; edge-walk if edges = open);
+  game X = bx, game Z = -by, height = bz; ×4096 to game units. Flat-drawn open
+  boundary gets a default wall extent (+30m/-128m) so it still works.
+- `export/writers.py` — `_make_static_boundary` + `_lb_cmd_form` (emits
+  load/display/vis/force-vis/checkpt; level args BARE symbols since the macro
+  quotes the list; self→level, none→#f; display off→#f), and
+  `patch_load_boundaries` (marker block, idempotent, removes block when empty).
+- `export/__init__.py` — export the three new symbols.
+- `spawn_items.py` — "Load Boundary" item in Level Flow (og.spawn_load_boundary).
+- `operators/spawn.py` — `OG_OT_SpawnLoadBoundary` (plane mesh, wire, orange)
+  + registered in CLASSES.
+- `properties.py` — `LB_CMD_ITEMS`, `LB_DISP_ITEMS`, `_lb_level_items`.
+- `__init__.py` — registered Object props og_lb_closed/player/custom_flags +
+  fwd/bwd cmd/lev0/lev1/disp/name (+ unregister cleanup).
+- `panels/selected.py` — `_draw_selected_load_boundary` +
+  `OG_PT_LoadBoundarySettings` panel (+ CLASSES, managed-object, routing).
+- `build.py` — `patch_load_boundaries(name, collect_load_boundaries(scene),
+  scene)` after each of the 3 `patch_level_info` sites.
+
+Verified by executing real `_make_static_boundary` / `_lb_cmd_form` /
+`patch_load_boundaries` against sample open+closed boundaries: correct flags,
+command forms, and idempotent block insert/replace/remove. All files compile.
+
+### Known items to confirm when testing
+- **Fwd vs bwd side** is decided by the engine from point winding / the
+  computed rejector — not emitted by us. If a boundary fires the wrong
+  direction, reverse the mesh's vertex/edge order.
+- `(meters …)` not used for boundary floats — raw game units (×4096) to match
+  the vanilla/editor format exactly.
+- Open boundary needs vertical extent: draw a wall mesh, or rely on the
+  flat-fallback extent.
+- Dynamic-enum int-storage caveat (level refs) applies to boundary level
+  pickers too; export-time validation/warn still a TODO.
+- Closed-polygon height uses :top (zmax); :bot set below. Confirm against
+  `check-closed-boundary` if closed areas misbehave.

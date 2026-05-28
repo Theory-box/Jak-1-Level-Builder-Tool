@@ -508,6 +508,96 @@ def collect_spawns(scene):
         })
     return out
 
+
+def _lb_edge_chain(me):
+    """Order an edge-only mesh's vertices into a path (open boundary).
+
+    Falls back to vertex-index order if the edges don't form a simple chain.
+    """
+    if len(me.edges) == 0:
+        return list(range(len(me.vertices)))
+    from collections import defaultdict
+    adj = defaultdict(list)
+    for e in me.edges:
+        a, b = e.vertices
+        adj[a].append(b); adj[b].append(a)
+    start = next((v for v in adj if len(adj[v]) == 1), None)  # an endpoint
+    if start is None:
+        start = next(iter(adj))
+    chain, seen, cur = [start], {start}, start
+    while True:
+        nxt = next((n for n in adj[cur] if n not in seen), None)
+        if nxt is None:
+            break
+        chain.append(nxt); seen.add(nxt); cur = nxt
+    if len(chain) != len(me.vertices):
+        return list(range(len(me.vertices)))
+    return chain
+
+
+def collect_load_boundaries(scene):
+    """Collect LOADBND_ mesh objects into static-load-boundary data dicts.
+
+    Footprint: the mesh vertices give the horizontal game X/Z polyline/polygon;
+    the Blender-Z extent gives :top/:bot. For an open boundary drawn flat a
+    sensible wall extent is substituted so it still works as a vertical wall.
+    Emitted in game units (metres * 4096): game_x = bx, game_z = -by, height = bz.
+    """
+    M        = 4096.0
+    FLAT_EPS = 0.5      # m — below this an open boundary is treated as flat
+    WALL_UP  = 30.0     # default wall extent up   (m) when flat & open
+    WALL_DN  = 128.0    # default wall extent down (m)
+
+    out = []
+    for o in _level_objects(scene):
+        if not (o.name.startswith("LOADBND_") and o.type == "MESH"):
+            continue
+        me, mw = o.data, o.matrix_world
+        if len(me.polygons) > 0:
+            idxs = list(me.polygons[0].vertices)   # closed: polygon loop order
+        else:
+            idxs = _lb_edge_chain(me)              # open: edge-walk order
+        verts = [mw @ me.vertices[i].co for i in idxs]
+        if len(verts) < 2:
+            continue
+
+        closed = bool(getattr(o, "og_lb_closed", False))
+        zs = [v.z for v in verts]
+        zmin, zmax = min(zs), max(zs)
+        if closed:
+            top, bot = zmax * M, (zmin - WALL_DN) * M
+        elif (zmax - zmin) < FLAT_EPS:
+            top, bot = (zmax + WALL_UP) * M, (zmin - WALL_DN) * M
+        else:
+            top, bot = zmax * M, zmin * M
+
+        points = []
+        for v in verts:
+            points.append(round(v.x * M, 4))    # game X
+            points.append(round(-v.y * M, 4))   # game Z
+
+        out.append({
+            "name":         o.name[8:] or "bnd",
+            "closed":       closed,
+            "player":       bool(getattr(o, "og_lb_player", True)),
+            "custom_flags": str(getattr(o, "og_lb_custom_flags", "") or "").strip(),
+            "top":          round(top, 4),
+            "bot":          round(bot, 4),
+            "points":       points,
+            "fwd_cmd":      str(getattr(o, "og_lb_fwd_cmd", "none") or "none"),
+            "fwd_lev0":     str(getattr(o, "og_lb_fwd_lev0", "none") or "none"),
+            "fwd_lev1":     str(getattr(o, "og_lb_fwd_lev1", "none") or "none"),
+            "fwd_disp":     str(getattr(o, "og_lb_fwd_disp", "display") or "display"),
+            "fwd_name":     str(getattr(o, "og_lb_fwd_name", "") or "").strip(),
+            "bwd_cmd":      str(getattr(o, "og_lb_bwd_cmd", "none") or "none"),
+            "bwd_lev0":     str(getattr(o, "og_lb_bwd_lev0", "none") or "none"),
+            "bwd_lev1":     str(getattr(o, "og_lb_bwd_lev1", "none") or "none"),
+            "bwd_disp":     str(getattr(o, "og_lb_bwd_disp", "display") or "display"),
+            "bwd_name":     str(getattr(o, "og_lb_bwd_name", "") or "").strip(),
+        })
+    return out
+
+
 def collect_ambients(scene):
     out = []
     for o in _level_objects(scene):

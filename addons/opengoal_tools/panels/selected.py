@@ -90,7 +90,7 @@ def _og_managed_object(obj):
     n = obj.name
     if any(n.startswith(p) for p in ("ACTOR_", "SPAWN_", "CHECKPOINT_",
                                       "AMBIENT_", "VOL_", "CAMERA_",
-                                      "NAVMESH_")):
+                                      "NAVMESH_", "LOADBND_")):
         return True
     if n.endswith("_CAM"):
         return True
@@ -356,6 +356,39 @@ def _draw_selected_checkpoint(layout, sel, scene):
         op.target_name = sel.name
 
     _draw_continue_settings(layout, sel, scene)
+
+
+
+def _draw_selected_load_boundary(layout, sel, scene):
+    """Settings for a LOADBND_ load-boundary plane (Task 2)."""
+    layout.label(text=sel.name, icon="MOD_EDGESPLIT")
+    box = layout.box()
+    row = box.row(align=True)
+    row.prop(sel, "og_lb_closed", toggle=True)
+    row.prop(sel, "og_lb_player", toggle=True)
+    hint = box.row(); hint.enabled = False
+    hint.label(text="Edge/polyline = wall · flat face + Closed = area", icon="INFO")
+
+    def _dir(title, prefix):
+        b = layout.box()
+        b.label(text=title)
+        b.prop(sel, prefix + "_cmd", text="")
+        cmd = getattr(sel, prefix + "_cmd", "none")
+        if cmd in ("load", "display", "force-vis"):
+            b.prop(sel, prefix + "_lev0", text="Level 0")
+        if cmd == "load":
+            b.prop(sel, prefix + "_lev1", text="Level 1")
+        if cmd == "display":
+            b.prop(sel, prefix + "_disp", text="Mode")
+        if cmd in ("vis", "checkpt"):
+            b.prop(sel, prefix + "_name",
+                   text="Nick" if cmd == "vis" else "Continue")
+    _dir("Forward (cross +normal)",  "og_lb_fwd")
+    _dir("Backward (cross -normal)", "og_lb_bwd")
+
+    col = layout.column(align=True)
+    col.label(text="Advanced:", icon="TOOL_SETTINGS")
+    col.prop(sel, "og_lb_custom_flags")
 
 
 
@@ -726,6 +759,8 @@ class OG_PT_SelectedObject(Panel):
             layout.label(text=name, icon="CAMERA_DATA")
         elif name.startswith("VOL_"):
             layout.label(text=name, icon="MESH_CUBE")
+        elif name.startswith("LOADBND_"):
+            layout.label(text=name, icon="MOD_EDGESPLIT")
         elif name.endswith("_CAM"):
             layout.label(text=name, icon="CAMERA_DATA")
         elif sel.type == "MESH":
@@ -925,6 +960,25 @@ class OG_PT_SpawnSettings(Panel):
 
 
 
+class OG_PT_LoadBoundarySettings(Panel):
+    bl_label       = "Load Boundary"
+    bl_idname      = "OG_PT_load_boundary_settings"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_selected_object"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        return sel is not None and sel.name.startswith("LOADBND_")
+
+    def draw(self, ctx):
+        _draw_selected_load_boundary(self.layout, ctx.active_object, ctx.scene)
+
+
+
 def _draw_lump_panel(layout, obj):
     """Draw the Custom Lumps assisted-entry list for an ACTOR_ empty."""
     rows   = obj.og_lump_rows
@@ -1063,6 +1117,7 @@ CLASSES = (
     OG_PT_SelectedLightBaking,
     OG_PT_SelectedNavMeshTag,
     OG_PT_SpawnSettings,
+    OG_PT_LoadBoundarySettings,
     OG_PT_SelectedLumps,
     OG_PT_SelectedLumpReference,
 )

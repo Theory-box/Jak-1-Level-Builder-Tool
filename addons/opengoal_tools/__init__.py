@@ -107,6 +107,7 @@ from .properties import (
     OGSpawnListRow, OGSpawnFavorite,
     OGWaypointSource,
     _cp_lev0_items, _cp_lev1_items, CP_DISP_ITEMS,
+    _lb_level_items, LB_CMD_ITEMS, LB_DISP_ITEMS,
 )
 from .spawn_items import (
     populate_spawn_list, register_handlers as _spawn_register_handlers,
@@ -258,6 +259,43 @@ def register():
         description="Advanced: raw GOAL load-commands list, e.g. "
                     "'((display foo display)). Blank = '()")
 
+    # Load boundary (LOADBND_ mesh) settings → static-load-boundary entries.
+    bpy.types.Object.og_lb_closed = bpy.props.BoolProperty(
+        name="Closed Area", default=False,
+        description="Closed: points are a flat horizontal polygon (area test). "
+                    "Open (default): points are a polyline extruded into a wall")
+    bpy.types.Object.og_lb_player = bpy.props.BoolProperty(
+        name="Player Cross", default=True,
+        description="Activate when the player crosses (off = camera crosses)")
+    bpy.types.Object.og_lb_custom_flags = bpy.props.StringProperty(
+        name="Custom Flags", default="",
+        description="Advanced: extra space-separated load-boundary-flags symbols. "
+                    "Must exist in the build's enum (e.g. TFL custom flags)")
+    # Forward command (crossing along the plane normal).
+    bpy.types.Object.og_lb_fwd_cmd  = bpy.props.EnumProperty(
+        name="Forward", items=LB_CMD_ITEMS, default="none")
+    bpy.types.Object.og_lb_fwd_lev0 = bpy.props.EnumProperty(
+        name="Fwd Level 0", items=_lb_level_items)
+    bpy.types.Object.og_lb_fwd_lev1 = bpy.props.EnumProperty(
+        name="Fwd Level 1", items=_lb_level_items)
+    bpy.types.Object.og_lb_fwd_disp = bpy.props.EnumProperty(
+        name="Fwd Display", items=LB_DISP_ITEMS, default="display")
+    bpy.types.Object.og_lb_fwd_name = bpy.props.StringProperty(
+        name="Fwd Name", default="",
+        description="continue-name (checkpt) or vis nick (vis)")
+    # Backward command (crossing against the plane normal).
+    bpy.types.Object.og_lb_bwd_cmd  = bpy.props.EnumProperty(
+        name="Backward", items=LB_CMD_ITEMS, default="none")
+    bpy.types.Object.og_lb_bwd_lev0 = bpy.props.EnumProperty(
+        name="Bwd Level 0", items=_lb_level_items)
+    bpy.types.Object.og_lb_bwd_lev1 = bpy.props.EnumProperty(
+        name="Bwd Level 1", items=_lb_level_items)
+    bpy.types.Object.og_lb_bwd_disp = bpy.props.EnumProperty(
+        name="Bwd Display", items=LB_DISP_ITEMS, default="display")
+    bpy.types.Object.og_lb_bwd_name = bpy.props.StringProperty(
+        name="Bwd Name", default="",
+        description="continue-name (checkpt) or vis nick (vis)")
+
     bpy.types.Collection.og_no_export      = bpy.props.BoolProperty(
         name="Exclude from Export",
         description="When enabled, this collection and its contents are excluded from level export",
@@ -308,6 +346,9 @@ def unregister():
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
               "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
+              "og_lb_closed","og_lb_player","og_lb_custom_flags",
+              "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
+              "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass

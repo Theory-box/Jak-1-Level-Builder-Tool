@@ -154,6 +154,17 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         icon="EMPTY_SINGLE_ARROW",
     ),
     SpawnItem(
+        spawn_id="special:load_boundary",
+        label="Load Boundary",
+        category="Level Flow",
+        description="A plane the player/camera crosses to load, display, or vis "
+                    "levels (or set a checkpoint). Draw an edge/polyline for a "
+                    "vertical wall, or a flat face with the Closed flag for an "
+                    "area. Configure forward/backward commands in Object Settings.",
+        operator="og.spawn_load_boundary",
+        icon="MOD_EDGESPLIT",
+    ),
+    SpawnItem(
         spawn_id="special:camera",
         label="Camera",
         category="Cameras",

@@ -68,6 +68,31 @@ def _cp_lev1_items(self, context):
     return [("none", "(None)", "No second resident level")] \
         + _cp_level_items_base(context)
 
+
+# ---------------------------------------------------------------------------
+# Load boundary commands (Task 2)
+# ---------------------------------------------------------------------------
+LB_CMD_ITEMS = [
+    ("none",      "(None)",      "No command in this direction"),
+    ("load",      "Load",        "Load level(s) — lev0 (+ optional lev1)"),
+    ("display",   "Display",     "Display lev0 in the chosen mode"),
+    ("vis",       "Vis",         "Set vis nickname (Name field = nick)"),
+    ("force-vis", "Force Vis",   "Force-load vis data for lev0"),
+    ("checkpt",   "Checkpoint",  "Set the continue point (Name field = continue-name)"),
+]
+
+LB_DISP_ITEMS = [
+    ("display",         "Display",          "Display immediately"),
+    ("display-no-wait", "Display (no wait)", "Display without waiting for load"),
+    ("off",             "Off",              "Stop displaying (#f)"),
+]
+
+def _lb_level_items(self, context):
+    # Boundary command level args: none / this level / any project level.
+    return [("none", "(None)", "No level (#f)"),
+            ("self", "(This level)", "The level this boundary belongs to")] \
+        + _cp_level_items_base(context)
+
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"

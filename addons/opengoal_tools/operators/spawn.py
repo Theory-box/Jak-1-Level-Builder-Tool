@@ -105,6 +105,32 @@ class OG_OT_SpawnCheckpoint(Operator):
         self.report({"INFO"}, f"Added {o.name}")
         return {"FINISHED"}
 
+class OG_OT_SpawnLoadBoundary(Operator):
+    bl_idname = "og.spawn_load_boundary"
+    bl_label  = "Add Load Boundary"
+    bl_description = (
+        "Add a load-boundary plane at the 3D cursor. Crossing it fires the "
+        "forward/backward commands (load / display / vis / checkpt). Edit the "
+        "mesh to shape the crossing surface — an edge/polyline makes a vertical "
+        "wall; a flat face with the Closed flag makes an area. Set commands in "
+        "the Object Settings panel."
+    )
+    def execute(self, ctx):
+        n = len([o for o in _level_objects(ctx.scene)
+                 if o.type == "MESH" and o.name.startswith("LOADBND_")])
+        bpy.ops.mesh.primitive_plane_add(size=4.0, location=ctx.scene.cursor.location)
+        o = ctx.active_object
+        o.name = f"LOADBND_{n}"
+        o.show_name = True
+        o.display_type = "WIRE"
+        o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
+        o.set_invisible = True
+        o.ignore        = True
+        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
+        self.report({"INFO"}, f"Added {o.name} — set commands in Object Settings")
+        return {"FINISHED"}
+
+
 class OG_OT_SpawnCamAnchor(Operator):
     bl_idname = "og.spawn_cam_anchor"
     bl_label  = "Add Spawn Camera"
@@ -1023,6 +1049,7 @@ class OG_OT_ToggleSpawnFavorite(Operator):
 CLASSES = (
     OG_OT_SpawnPlayer,
     OG_OT_SpawnCheckpoint,
+    OG_OT_SpawnLoadBoundary,
     OG_OT_SpawnCamAnchor,
     OG_OT_SpawnEntity,
     OG_OT_DuplicateEntity,

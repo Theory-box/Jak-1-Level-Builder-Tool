@@ -52,6 +52,7 @@ from .paths import (
     _iso,
     _ldir,
     _level_info,
+    _load_boundary_data,
     _nick,
     log,
 )
@@ -842,6 +843,125 @@ def patch_level_info(name, spawns, scene=None):
         log("Patched level-info.gc")
     else:
         log("Skipped level-info.gc (unchanged)")
+
+
+# ---------------------------------------------------------------------------
+# Load boundaries  (feature/load-boundaries-checkpoints — Task 2)
+# ---------------------------------------------------------------------------
+# Boundaries are static data, not runtime entities. The engine's
+# load-boundary-data.gc defines *static-load-boundary-list* via the
+# static-lb-list / static-load-boundary macros, then runs
+#   (doarray (i ...) (load-boundary-from-template (the-as (array object) i)))
+# to build runtime boundaries into *load-boundary-list*. This is exactly what
+# the in-game editor (---lb-save) regenerates and what shipped mods edit.
+#
+# Rather than splice into the stock static-lb-list, we append our own managed
+# per-level block (its own static-lb-list + doarray). Stock entries untouched;
+# idempotent re-export via per-level markers.
+
+def _lb_cmd_form(cmd, lev0, lev1, disp, name, level):
+    """Return the GOAL (cmd a1 a2) form for a boundary direction, or None.
+
+    Level args are emitted as BARE symbols (the macro quotes the whole list).
+    "self" -> this level, ""/"none" -> #f.
+    """
+    def _sym(v):
+        v = (v or "").strip()
+        if v in ("", "none", "#f"):
+            return "#f"
+        if v == "self":
+            return level
+        return v
+    cmd = (cmd or "none").strip()
+    if cmd in ("", "none", "invalid"):
+        return None
+    if cmd == "load":
+        return f"(load {_sym(lev0)} {_sym(lev1)})"
+    if cmd == "display":
+        d = (disp or "").strip()
+        d = "#f" if d in ("", "off", "#f") else d           # display / display-no-wait
+        return f"(display {_sym(lev0)} {d})"
+    if cmd == "vis":
+        nick = (name or "").strip() or _nick(level)
+        return f"(vis {nick} #f)"
+    if cmd == "force-vis":
+        return f"(force-vis {_sym(lev0)} #t)"
+    if cmd == "checkpt":
+        cn = (name or "").strip()
+        return f'(checkpt "{cn}" #f)'
+    return None
+
+
+def _make_static_boundary(b, level):
+    """One (static-load-boundary ...) form from a collected boundary dict.
+
+    b keys: closed(bool), player(bool), custom_flags(str), top, bot (game units),
+            points (flat list of game-unit floats x0 z0 x1 z1 ...),
+            fwd_*/bwd_* command fields.
+    """
+    flags = []
+    if b.get("player", True):
+        flags.append("player")
+    if b.get("closed", False):
+        flags.append("closed")
+    cf = (b.get("custom_flags") or "").strip()
+    if cf:
+        flags.extend(cf.split())
+    flags_str = " ".join(flags)
+
+    pts = " ".join(f"{v:.4f}" for v in b.get("points", []))
+
+    fwd = _lb_cmd_form(b.get("fwd_cmd"), b.get("fwd_lev0"), b.get("fwd_lev1"),
+                       b.get("fwd_disp"), b.get("fwd_name"), level)
+    bwd = _lb_cmd_form(b.get("bwd_cmd"), b.get("bwd_lev0"), b.get("bwd_lev1"),
+                       b.get("bwd_disp"), b.get("bwd_name"), level)
+
+    lines = [f"(static-load-boundary :flags ({flags_str})",
+             f"                      :top {b.get('top', 524288.0):.4f}"
+             f" :bot {b.get('bot', -524288.0):.4f}",
+             f"                      :points ({pts})"]
+    if fwd:
+        lines.append(f"                      :fwd {fwd}")
+    if bwd:
+        lines.append(f"                      :bwd {bwd}")
+    return "\n          ".join(lines) + ")"
+
+
+_LB_BEGIN = ";; ===== OG CUSTOM BOUNDARIES: {n} ====="
+_LB_END   = ";; ===== END OG CUSTOM BOUNDARIES: {n} ====="
+
+def patch_load_boundaries(name, boundaries, scene=None):
+    """Insert/replace this level's load boundaries in load-boundary-data.gc.
+
+    Appends a managed block (own static-lb-list + doarray) keyed by level name.
+    Empty `boundaries` removes the block. Stock entries are never touched.
+    """
+    p = _load_boundary_data()
+    if not p.exists():
+        log(f"WARNING: {p} not found — skipping load boundaries")
+        return
+    txt = p.read_text(encoding="utf-8")
+
+    begin = _LB_BEGIN.format(n=name)
+    end   = _LB_END.format(n=name)
+    # Strip any existing block for this level.
+    txt = re.sub(rf"\n{re.escape(begin)}.*?{re.escape(end)}\n", "\n", txt, flags=re.DOTALL)
+
+    if boundaries:
+        entries = "\n        ".join(_make_static_boundary(b, name) for b in boundaries)
+        block = (f"\n{begin}\n"
+                 f"(doarray (i (static-lb-list\n        {entries}))\n"
+                 f"  (load-boundary-from-template (the-as (array object) i)))\n"
+                 f"{end}\n")
+        txt = txt.rstrip() + "\n" + block
+
+    original = p.read_text(encoding="utf-8")
+    if txt != original:
+        p.write_text(txt, encoding="utf-8")
+        log(f"Patched load-boundary-data.gc ({len(boundaries)} boundaries for {name})")
+    else:
+        log("Skipped load-boundary-data.gc (unchanged)")
+
 
 def patch_game_gp(name, code_deps=None, scene=None):
     """Patch game.gp to build our custom level and compile enemy code files.

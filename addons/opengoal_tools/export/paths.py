@@ -75,6 +75,8 @@ def _goal_src():   return _data() / "goal_src" / "jak1"
 
 def _level_info(): return _goal_src() / "engine" / "level" / "level-info.gc"
 
+def _load_boundary_data(): return _goal_src() / "engine" / "level" / "load-boundary-data.gc"
+
 def _game_gp():    return _goal_src() / "game.gp"
 
 def _ldir(name):   return _levels_dir() / name
