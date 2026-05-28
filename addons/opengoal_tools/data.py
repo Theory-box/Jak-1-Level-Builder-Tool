@@ -194,6 +194,26 @@ def _collect_global_tpage_gos():
 GLOBAL_TPAGE_GOS = _collect_global_tpage_gos()
 
 
+# Texture/sky source options for a custom level. "none" borrows nothing (vertex
+# colors only) and is REQUIRED for levels streamed alongside another custom
+# level — two co-resident levels sharing a source link the same tpage objects
+# and crash on load. Other entries borrow that vanilla level's textures + sky.
+TEXTURE_SOURCE_ITEMS = [
+    ("none",     "None (vertex colors)",
+     "Borrow no textures/sky. Required for any level streamed alongside another "
+     "custom level (loaded at the same time). Geometry shows its vertex colors."),
+    ("village1", "Village1",         "Borrow Village1 textures + sky"),
+    ("village2", "Village2",         "Borrow Village2 textures + sky"),
+    ("village3", "Village3",         "Borrow Village3 textures + sky"),
+    ("beach",    "Sentinel Beach",   "Borrow Beach textures + sky"),
+    ("jungle",   "Forbidden Jungle", "Borrow Jungle textures + sky"),
+    ("misty",    "Misty Island",     "Borrow Misty textures + sky"),
+    ("rolling",  "Rolling Hills",    "Borrow Rolling Hills textures + sky"),
+    ("snow",     "Snowy Mountain",   "Borrow Snowy Mountain textures + sky"),
+]
+TEXTURE_SOURCE_VALUES = [it[0] for it in TEXTURE_SOURCE_ITEMS]
+
+
 def _build_tpage_filter_items():
     seen = set()
     for info in ENTITY_DEFS.values():

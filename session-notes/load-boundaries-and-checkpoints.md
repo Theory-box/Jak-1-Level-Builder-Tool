@@ -403,3 +403,17 @@ levels default to "none" (custom geometry is vertex-colored anyway). Existing
 levels read the "village1" default until edited.
 
 To co-load two levels: give them DIFFERENT sources, or set one/both to "none".
+
+### Texture source now editable in the Settings subpanel (2026-05-28)
+The per-level texture source was only on the level operator dialogs (Add/Edit
+Level), but the UI edits level settings live in the "⚙ Settings" subpanel
+(OG_PT_LevelSettings) via og_props proxy props — so the option was invisible
+there. Added og_props.texture_source as a live get/set-proxied EnumProperty
+(_get/_set_texture_source_live in collections.py, reading/writing the active
+level's og_texture_source like level_name/base_id do), canonical
+TEXTURE_SOURCE_ITEMS/VALUES moved to data.py, and shown in the Settings subpanel
+under Death Plane. Operators import the shared items list.
+
+User-facing: Level panel > ⚙ Settings > Texture/Sky Source. Set streamed levels
+to "None (vertex colors)". Verify success: the build log for that level no longer
+prints "login tpages automatically set to [398, 400, 399, 401, 1470]".

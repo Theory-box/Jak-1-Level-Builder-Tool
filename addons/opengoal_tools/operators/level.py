@@ -22,7 +22,7 @@ from ..data import (
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
     _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
     _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    UNIVERSAL_LUMPS, _is_custom_type,
+    UNIVERSAL_LUMPS, _is_custom_type, TEXTURE_SOURCE_ITEMS,
 )
 from ..collections import (
     _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
@@ -102,23 +102,6 @@ _GOAL_BOILERPLATE = """\
   (none))
 """
 
-
-
-TEXTURE_SOURCE_ITEMS = [
-    ("none",     "None (vertex colors)",
-     "Borrow no textures or sky. REQUIRED for any level streamed alongside "
-     "another custom level (loaded at the same time): two co-resident levels "
-     "borrowing the same base both link its texture pages and crash on load. "
-     "Geometry shows its vertex colors."),
-    ("village1", "Village1",      "Borrow Village1 textures + sky"),
-    ("village2", "Village2",      "Borrow Village2 textures + sky"),
-    ("village3", "Village3",      "Borrow Village3 textures + sky"),
-    ("beach",    "Sentinel Beach", "Borrow Beach textures + sky"),
-    ("jungle",   "Forbidden Jungle", "Borrow Jungle textures + sky"),
-    ("misty",    "Misty Island",  "Borrow Misty textures + sky"),
-    ("rolling",  "Rolling Hills", "Borrow Rolling Hills textures + sky"),
-    ("snow",     "Snowy Mountain", "Borrow Snowy textures + sky"),
-]
 
 
 class OG_OT_CreateLevel(Operator):
