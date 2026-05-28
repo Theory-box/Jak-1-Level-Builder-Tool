@@ -357,3 +357,28 @@ All touched modules byte-compile.
 - Checkpoint **Advanced** (flags + load-commands) is now a collapsible subpanel
   via `layout.panel()` (Blender 4.1+), with an inline fallback on older Blender.
 - Boundary settings unchanged (confirmed good).
+
+### Root cause of two-custom-level co-load crash (2026-05-28)
+Symptom: a checkpoint (or boundary) co-loading two *different* custom levels
+crashed during the second level's DGO link, right after `<name>-obs`, with no
+GOAL error (native segfault). Each level loaded fine alone; index/base-id were
+unique; load-vs-display made no difference.
+
+Cause: `write_gd` hardcoded the Village1 sky tpages [398,400,399,401,1470] into
+EVERY level's DGO (`base_tpages`, "always present"), ordered immediately after
+`<name>-obs`. Those tpages are an always-loaded global group (db
+`global_tpage_groups` / `always_loaded_tpage_group`). One level tolerates the
+duplicate; two co-resident levels crash when the second re-links the
+already-resident `tpage-398`. The DGO order (obs -> tpage-398 -> ...) matches the
+crash point precisely. Not the checkpoint/boundary feature — those work.
+
+Fix: `data._collect_global_tpage_gos()` builds `GLOBAL_TPAGE_GOS` (all tpages of
+always-loaded groups; 19 .go files). `write_gd` no longer bakes the hardcoded
+village1 set and filters every global tpage out of the DGO file list. The engine
+keeps them resident and build-level auto-logins them from the level's textures,
+so levels still get them without baking.
+
+REGRESSION CHECK before merge: re-export each level and confirm it still loads
+AND renders textures correctly *alone* (the bake was redundant only if the
+globals are truly always-resident during custom-level gameplay). Then test the
+two-level co-load.

@@ -17,7 +17,7 @@ from ..data import (
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
     _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type,
+    _LUMP_HARDCODED_KEYS, _is_custom_type, GLOBAL_TPAGE_GOS,
 )
 from ..collections import (
     _get_level_prop, _level_objects,
@@ -621,17 +621,21 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     nick     = _effective_nick(scene, name)
     dgo_name = f"{nick.upper()}.DGO"
     code_o   = [f'  "{o}"' for o, _, _ in code_deps]
-    # Village1 sky tpages always present; add entity-specific tpages before art groups
-    base_tpages = ['  "tpage-398.go"', '  "tpage-400.go"', '  "tpage-399.go"',
-                   '  "tpage-401.go"', '  "tpage-1470.go"']
-    extra_tpages = [f'  "{tp}"' for tp in (tpages or [])
-                    if f'  "{tp}"' not in base_tpages]
+    # Global (always-loaded) tpages — e.g. the Village1 sky tpages
+    # [398,400,399,401,1470] — must NOT be baked into a level DGO. The engine
+    # keeps them resident at all times and build-level auto-logins them from the
+    # level's textures, so the level still gets them. Baking them duplicates the
+    # tpage object: a single level tolerates the duplicate, but two co-resident
+    # custom levels crash when the second re-links an already-loaded tpage
+    # (segfault right after <name>-obs, on tpage-398). So exclude every global
+    # tpage from the DGO file list.
+    level_tpages = [f'  "{tp}"' for tp in (tpages or [])
+                    if tp not in GLOBAL_TPAGE_GOS]
     extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
     files = (
         [f'  "{name}-obs.o"']
         + code_o
-        + base_tpages
-        + extra_tpages
+        + level_tpages
         + [f'  "{g}"' for g in ags]
         + extras_lines
         + [f'  "{name}.go"']

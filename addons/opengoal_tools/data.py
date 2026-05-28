@@ -173,6 +173,27 @@ PROP_ENUM_ITEMS         = INTERACTIVE_ENUM_ITEMS
 GLOBAL_TPAGE_GROUPS = set(_db.defaults().get("global_tpage_groups", []))
 
 
+def _collect_global_tpage_gos():
+    """Every tpage .go file that belongs to an always-loaded global tpage group.
+
+    These are kept resident by the engine at all times (e.g. the Village1 sky
+    tpages [398,400,399,401,1470]). They must NEVER be baked into a level DGO —
+    doing so duplicates the tpage object, which a single level tolerates but
+    which crashes the moment two custom levels are co-resident (the second
+    level re-links an already-loaded tpage). build-level auto-logins them from
+    the level's textures, so the level still gets them without baking.
+    """
+    gos = set()
+    for lv in _db.levels():
+        if lv.get("always_loaded_tpage_group"):
+            for tp in (lv.get("tpages", []) or []):
+                gos.add(tp)
+    return gos
+
+
+GLOBAL_TPAGE_GOS = _collect_global_tpage_gos()
+
+
 def _build_tpage_filter_items():
     seen = set()
     for info in ENTITY_DEFS.values():
