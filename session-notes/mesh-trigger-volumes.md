@@ -77,3 +77,33 @@ a `trsqv`). The compiler computes the layout — removes hand-offset risk.
 ## Old behaviour removed
 `bound-*` lumps no longer emitted for these four trigger types; their GOAL no longer
 reads them. Water and load boundaries unaffected.
+
+---
+
+## UPDATE (2026-05-30) — VERIFIED IN-ENGINE, MERGED TO MAIN
+
+Status above ("NOT yet verified") is superseded. Built ("Successfully built all
+555 targets"), level loads, and convex trigger collisions work in-engine
+(confirmed on a rotated/non-box hull). Now on `main`.
+
+Three fixes landed after the notes above were written:
+
+- **Level-scoped type names.** The four trigger deftypes are embedded in every
+  level's `-obs.gc`. Because `(mi)` keeps one persistent goalc type system, a
+  re-exported level with the new layout collided with other levels still on the
+  old layout ("Inconsistent type definition"). Fix: `write_gc` prefixes the base
+  names (`camera-trigger` / `checkpoint-trigger` / `aggro-trigger` /
+  `vol-trigger` / `point-in-planes?`) with `<level>-`, and `write_jsonc` rewrites
+  the matching actor etype to match. Levels are now fully independent; old + new
+  coexist; only re-export the level you edit. `camera-marker` / `fog-control`
+  left unscoped (stable, shared).
+
+- **Self-healing build.** Deleting a level folder by hand left orphaned
+  `custom-level-cgo` / `goal-src` lines in `game.gp` → `(mi)` failed on a missing
+  `.gd`. `build.py` now calls `prune_orphaned_levels()` right after
+  `patch_game_gp(...)`: it scans `game.gp` and strips registrations for any level
+  whose `.gd` or `-obs.gc` is missing on disk. No more manual `remove_level`.
+
+- **Once a co-resident level is edited it must be rebuilt too** — an unbuilt
+  co-level produced a black screen + freeze that looked like a trigger crash but
+  was unrelated.

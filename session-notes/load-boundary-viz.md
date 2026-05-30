@@ -71,3 +71,10 @@ Reproduces the user's provided graph, with these changes:
   not built yet (scope was auto-add-on-spawn). Add if wanted.
 - Non-flat polylines: `base_z` uses the mean vert Z — fine for typical flat
   boundaries; revisit if anyone authors sloped boundaries.
+
+## UPDATE (2026-05-30) — Top/Bottom unit display fix
+`og_lb_top` / `og_lb_bot` dropped `subtype='DISTANCE', unit='LENGTH'`. Those
+made Blender display the metres value through the scene's unit system, so an
+Imperial scene showed the 400 m default as `15748"`. Stored value, export
+(`scene.py` reads the raw value as metres `* M`), and the viz are unchanged —
+the field now just reads the raw `400` / `-400`. On `main`.
