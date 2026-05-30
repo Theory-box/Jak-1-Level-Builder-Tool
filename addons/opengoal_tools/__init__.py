@@ -119,6 +119,7 @@ from .panels import ALL_CLASSES as _PANELS_CLASSES
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
+from . import boundary_viz as _bviz
 from .textures import (
     TEXTURING_CLASSES,
     register_texturing, unregister_texturing,
@@ -153,6 +154,7 @@ classes = (
 def register():
     _load_previews()
     _mp.register_handler()
+    _bviz.register_handler()
     register_texturing()
     for cls in classes:
         try:
@@ -292,7 +294,28 @@ def register():
     bpy.types.Object.og_lb_closed = bpy.props.BoolProperty(
         name="Closed Area", default=False,
         description="Closed: points are a flat horizontal polygon (area test). "
-                    "Open (default): points are a polyline extruded into a wall")
+                    "Open (default): points are a polyline extruded into a wall",
+        update=_bviz.lb_setting_update)
+    # Wall extents (Blender metres) — exported to :top/:bot (metres * 4096) and
+    # read by the OG Boundary Viz modifier. top above the floor, bot below.
+    bpy.types.Object.og_lb_top = bpy.props.FloatProperty(
+        name="Top", default=_bviz.DEFAULT_TOP, subtype='DISTANCE', unit='LENGTH',
+        description="Top of the boundary wall, in metres (exported to :top)",
+        update=_bviz.lb_setting_update)
+    bpy.types.Object.og_lb_bot = bpy.props.FloatProperty(
+        name="Bottom", default=_bviz.DEFAULT_BOT, subtype='DISTANCE', unit='LENGTH',
+        description="Bottom of the boundary wall, in metres (exported to :bot). "
+                    "Usually negative (below the floor)",
+        update=_bviz.lb_setting_update)
+    # Cosmetic, viewport only — never exported.
+    bpy.types.Object.og_lb_flip = bpy.props.BoolProperty(
+        name="Flip", default=False,
+        description="Viewport only: flip the visualized wall's facing / arrows",
+        update=_bviz.lb_setting_update)
+    bpy.types.Object.og_lb_wireframe = bpy.props.BoolProperty(
+        name="Wireframe", default=False,
+        description="Viewport only: show the boundary as a wireframe (no faces)",
+        update=_bviz.lb_setting_update)
     bpy.types.Object.og_lb_player = bpy.props.BoolProperty(
         name="Player Cross", default=True,
         description="Activate when the player crosses (off = camera crosses)")
@@ -354,6 +377,7 @@ def unregister():
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
+    _bviz.unregister_handler()
     unregister_texturing()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     for cls in reversed(classes):
@@ -377,6 +401,7 @@ def unregister():
               "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
               "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
+              "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",

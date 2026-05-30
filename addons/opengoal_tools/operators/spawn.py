@@ -61,6 +61,7 @@ from ..utils import (
     _draw_wiki_preview,
 )
 from .. import model_preview as _mp
+from .. import boundary_viz as _bviz
 import re as _re
 
 # ─── Rescued module-level symbols (from original operators.py) ────────────
@@ -138,6 +139,12 @@ class OG_OT_SpawnLoadBoundary(Operator):
         o.select_set(True)
         ctx.view_layer.objects.active = o
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
+        # Attach the viewport-only visualization modifier (turns the flat
+        # polyline/face into a 3D wall / filled area).
+        try:
+            _bviz.add_modifier(o)
+        except Exception:
+            pass
         self.report({"INFO"}, f"Added {nm} — set commands in Object Settings")
         return {"FINISHED"}
 

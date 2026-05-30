@@ -379,6 +379,12 @@ def _draw_selected_load_boundary(layout, sel, scene):
     row = box.row(align=True)
     row.prop(sel, "og_lb_closed", toggle=True)
     row.prop(sel, "og_lb_player", toggle=True)
+    hrow = box.row(align=True)
+    hrow.prop(sel, "og_lb_top")
+    hrow.prop(sel, "og_lb_bot")
+    vrow = box.row(align=True)
+    vrow.prop(sel, "og_lb_flip", toggle=True)
+    vrow.prop(sel, "og_lb_wireframe", toggle=True)
     hint = box.row(); hint.enabled = False
     hint.label(text="Edge/polyline = wall · flat face + Closed = area", icon="INFO")
 
