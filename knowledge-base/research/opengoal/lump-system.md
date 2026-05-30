@@ -590,22 +590,36 @@ Camera actors (entity-actor with type `camera-marker`) use these lumps. These ar
 
 For actors that use `curve-control` instead of `path-control`:
 
-### `path-k` — ResFloat (N+8 values)
-**Used by:** any actor using `curve-control` (e.g. `keg-conveyor`, possibly others)  
-**JSONC:** `["float", 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, ..., N-1, N-1, N-1, N-1]`  
-**Format:** Cubic B-spline knot vector. For N path points:
+### `path-k` — ResFloat (N+4 values)
+**Used by:** any actor that constructs a `curve-control` (jak1: `plat`,
+`plat-eco`, `plat-button`, plus curve-control enemies). A `curve-control`
+reads both `path` (control vertices) and `path-k` (knots); if `path-k` is
+missing it downgrades itself to a plain linear `path-control`
+(`path-h.gc`: *"downgrade us to a path-control, we got cverts but no knots"*).
+**JSONC:** `["float", 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, ..., N-4, N-3, N-3, N-3, N-3]`
+**Format:** Clamped uniform cubic (degree-3) B-spline knot vector. For N control points:
 - 4 lead values = 0.0
-- N middle values = 0.0, 1.0, 2.0, ..., N-1
-- 4 trailing values = N-1 (repeat last)
-- Total entries: N + 8
+- interior = 1.0, 2.0, ..., N-4  (empty when N == 4)
+- 4 trailing values = N-3 (repeat last)
+- Total entries: **N + 4**  (num-knots = num-cverts + degree + 1)
+
+The curve interpolates the first and last control point exactly; interior
+points are approached but NOT touched (it cuts corners). Requires N >= 4.
+
+**CORRECTION (verified):** an earlier draft of this note listed **N+8** (4
+zeros + `0..N-1` + 4 copies of `N-1`). That is **wrong** for jak1 — it drives
+the control-vertex index past the end of the array in `curve-evaluate!`.
+Confirmed by porting `curve-evaluate!` / `calculate-basis-functions-vector!`
+and checking in-bounds access, partition-of-unity (Σ basis = 1), and endpoint
+interpolation across N = 4..9. N+4 is the only candidate that passes.
 
 **Auto-generation formula:**
 ```python
 def make_path_k(n_points):
     lead = [0.0] * 4
-    middle = [float(i) for i in range(n_points)]
-    trail = [float(n_points - 1)] * 4
-    return ["float"] + lead + middle + trail
+    interior = [float(i) for i in range(1, n_points - 3)]  # empty when n == 4
+    trail = [float(n_points - 3)] * 4
+    return ["float"] + lead + interior + trail
 ```
 
 ---
@@ -714,7 +728,7 @@ These lumps are read by base engine code and work on any actor:
 | `scale` | ❌ | scale inputs |
 | `rot-offset` / `rotoffset` | ❌ | rotation offset |
 | `continue-name` | ❌ | checkpoint picker |
-| `path-k` | ❌ | auto-generate from waypoint count |
+| `path-k` | ✅ | Path Mode dropdown (Linear/Smooth); auto N+4 knots |
 | `battlecontroller.*` | ❌ | complex — needs dedicated panel |
 | *any custom lump* | ❌ | needs `og_lump_*` passthrough |
 
