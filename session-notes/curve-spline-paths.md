@@ -2,7 +2,7 @@
 
 **Branch:** `feature/curve-spline-paths`
 **Repo:** `Jak-1-Level-Builder-Tool`
-**Status:** Implemented, not yet merged to main
+**Status:** Merged to main 2026-05-30 (audit clean)
 **Last updated:** 2026-05-30
 
 Add a "smooth" path option so curve-control platforms glide along a cubic
