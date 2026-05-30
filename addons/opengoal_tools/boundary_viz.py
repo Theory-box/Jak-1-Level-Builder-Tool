@@ -88,6 +88,9 @@ def write_boundary_attrs(obj):
     _set_uniform_attr(me, ATTR_CLOSED,    'BOOLEAN', clsd)
     _set_uniform_attr(me, ATTR_FLIP,      'BOOLEAN', flip)
     _set_uniform_attr(me, ATTR_WIREFRAME, 'BOOLEAN', wire)
+    # Flag the mesh dirty so the Geometry Nodes modifier re-evaluates and the
+    # viewport updates live when a setting changes.
+    me.update_tag()
 
 
 def _attrs_stale(obj):
