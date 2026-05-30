@@ -343,7 +343,14 @@ def collect_actors(scene, depsgraph=None):
         # A cubic needs >= 4 control points; fewer falls back to linear.
         if getattr(o, "og_path_mode", "LINEAR") == "SMOOTH" and "path" in lump:
             n_cv = len(path_pts)
-            if n_cv >= 4:
+            if n_cv > 256:
+                # Engine clamps cverts to MAX_CURVE_CONTROL_POINTS (256) in
+                # res.gc but would NOT clamp the knots — emitting path-k here
+                # would desync num-cverts vs num-knots. Skip path-k so the
+                # actor stays a safe linear path-control instead.
+                log(f"  [WARNING] {o.name} Path Mode=Smooth has {n_cv} points "
+                    f"(>256 engine limit) — exporting linear (no path-k)")
+            elif n_cv >= 4:
                 lump["path-k"] = ["float"] + _make_path_knots(n_cv)
                 log(f"  [path-k] {o.name}  smooth B-spline  {n_cv} cverts  {n_cv + 4} knots")
             else:
