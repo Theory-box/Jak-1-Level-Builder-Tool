@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
+from .. import boundary_viz as _bviz
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
@@ -1064,6 +1065,17 @@ def patch_game_gp(name, code_deps=None, scene=None):
     log(f"Patched game.gp  (extra goal-src: {[gc for _,gc,_ in (code_deps or []) if gc is not None]})")
 
 def export_glb(ctx, name):
+    # The OG Boundary Viz modifier is viewport-only. Strip it from all
+    # boundaries during geometry export and restore it afterwards (runs on the
+    # main thread; restore is guaranteed via finally even on failure).
+    _stripped = _bviz.strip_viz_modifiers(ctx.scene)
+    try:
+        _export_glb_impl(ctx, name)
+    finally:
+        _bviz.restore_viz_modifiers(_stripped)
+
+
+def _export_glb_impl(ctx, name):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
 
     level_col = _active_level_col(ctx.scene)
