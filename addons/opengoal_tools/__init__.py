@@ -299,11 +299,11 @@ def register():
     # Wall extents (Blender metres) — exported to :top/:bot (metres * 4096) and
     # read by the OG Boundary Viz modifier. top above the floor, bot below.
     bpy.types.Object.og_lb_top = bpy.props.FloatProperty(
-        name="Top", default=_bviz.DEFAULT_TOP, subtype='DISTANCE', unit='LENGTH',
+        name="Top", default=_bviz.DEFAULT_TOP,
         description="Top of the boundary wall, in metres (exported to :top)",
         update=_bviz.lb_setting_update)
     bpy.types.Object.og_lb_bot = bpy.props.FloatProperty(
-        name="Bottom", default=_bviz.DEFAULT_BOT, subtype='DISTANCE', unit='LENGTH',
+        name="Bottom", default=_bviz.DEFAULT_BOT,
         description="Bottom of the boundary wall, in metres (exported to :bot). "
                     "Usually negative (below the floor)",
         update=_bviz.lb_setting_update)
