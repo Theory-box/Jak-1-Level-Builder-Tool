@@ -126,15 +126,38 @@ def lb_setting_update(self, context):
 # Edit-mode-exit refresh handler
 # ---------------------------------------------------------------------------
 
+_pending_refresh = set()
+
+
 @persistent
 def _refresh_on_edit(scene, depsgraph=None):
-    """When a boundary's vertex count changes (Edit Mode edits), refill its
-    uniform attributes so newly added verts carry the value."""
-    obj = bpy.context.active_object
-    if obj is None or obj.mode != 'OBJECT':
+    """Detect a boundary whose uniform attrs went stale (verts added/removed, or
+    dropped) and schedule a deferred rewrite. The write is deferred to a one-shot
+    timer so mesh data is never modified from inside the depsgraph update."""
+    try:
+        obj = bpy.context.active_object
+    except Exception:
+        return
+    if obj is None or obj.type != 'MESH' or obj.mode != 'OBJECT':
+        return
+    if not obj.name.startswith(_BND_PREFIX) or obj.name in _pending_refresh:
         return
     if _attrs_stale(obj):
-        write_boundary_attrs(obj)
+        _pending_refresh.add(obj.name)
+        bpy.app.timers.register(_run_pending_refresh, first_interval=0.0)
+
+
+def _run_pending_refresh():
+    names = list(_pending_refresh)
+    _pending_refresh.clear()
+    for nm in names:
+        o = bpy.data.objects.get(nm)
+        if o is not None:
+            try:
+                write_boundary_attrs(o)
+            except Exception:
+                pass
+    return None  # one-shot
 
 
 def register_handler():
@@ -143,6 +166,7 @@ def register_handler():
 
 
 def unregister_handler():
+    _pending_refresh.clear()
     if _refresh_on_edit in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(_refresh_on_edit)
 
