@@ -193,14 +193,17 @@ def collect_actors(scene, depsgraph=None):
         # ── Facing quaternion ────────────────────────────────────────────────
         # Remap Blender rotation into game space: game_rot = R @ bl_rot @ R^T
         # where R maps Blender(x,y,z) → game(x,z,-y).
-        # The engine reads quaternions as the conjugate (negate xyz).
+        # No conjugate — the similarity transform R @ bl_rot @ R^T already
+        # produces the correct game-space orientation. The previous negate-xyz
+        # was erroneously borrowed from the camera system and inverted facing for
+        # all non-0/180 angles (same fix already applied to the spawn path).
         _R  = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
         _m3 = o.matrix_world.to_3x3()
         _gq = (_R @ _m3 @ _R.transposed()).to_quaternion()
-        aqx = round(-_gq.x, 6)
-        aqy = round(-_gq.y, 6)
-        aqz = round(-_gq.z, 6)
-        aqw = round( _gq.w, 6)
+        aqx = round(_gq.x, 6)
+        aqy = round(_gq.y, 6)
+        aqz = round(_gq.z, 6)
+        aqw = round(_gq.w, 6)
 
         lump = {"name": f"{etype}-{uid}"}
 
