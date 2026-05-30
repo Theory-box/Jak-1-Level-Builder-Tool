@@ -87,6 +87,28 @@ def _to_game_coords(world_vec):
             round(-world_vec.y, 4), 1.0]
 
 
+def _make_path_knots(n):
+    """Clamped uniform cubic B-spline knot vector for `n` control points.
+
+    Layout (verified by porting OpenGOAL's curve-evaluate! /
+    calculate-basis-functions-vector! and checking in-bounds access,
+    partition-of-unity, and endpoint interpolation):
+        four leading 0.0, the interior sequence 1..n-4, then four copies
+        of (n-3). Total = n + 4 values, i.e. num-knots = num-cverts + 4
+        for a degree-3 (cubic) curve.
+
+    The engine interpolates the first and last control point exactly;
+    interior points are approached but not touched (the curve cuts corners).
+    NOTE: this is N+4, NOT the N+8 figure in older research notes — N+8
+    drives the control-vertex index out of bounds in curve-evaluate!.
+    Requires n >= 4 (a cubic needs degree+1 control points).
+    """
+    lead = [0.0, 0.0, 0.0, 0.0]
+    interior = [float(i) for i in range(1, n - 3)]  # empty when n == 4
+    trail = [float(n - 3)] * 4
+    return lead + interior + trail
+
+
 def _curve_points_world(curve_obj):
     """Yield each spline control point of a curve object in world space.
     Handles bezier, poly, and NURBS splines. Bezier handles are ignored."""
@@ -309,6 +331,24 @@ def collect_actors(scene, depsgraph=None):
         if einfo.get("needs_sync") and path_pts and "path" not in lump:
             lump["path"] = ["vector4m"] + path_pts
             log(f"  [sync-path] {o.name}  {len(path_pts)} points")
+
+        # ── Smooth-curve knots (path-k) ──────────────────────────────────────
+        # When Path Mode = SMOOTH and a 'path' lump was emitted, also emit the
+        # matching 'path-k' knot vector. curve-control actors (plat, plat-eco,
+        # plat-button, and curve-control enemies) then load as a cubic B-spline
+        # and glide along the path. Without path-k they silently downgrade to a
+        # linear path-control (path-h.gc: "downgrade us to a path-control, we
+        # got cverts but no knots"). Emitting it for a plain path-control actor
+        # is harmless — only curve-control reads path-k.
+        # A cubic needs >= 4 control points; fewer falls back to linear.
+        if getattr(o, "og_path_mode", "LINEAR") == "SMOOTH" and "path" in lump:
+            n_cv = len(path_pts)
+            if n_cv >= 4:
+                lump["path-k"] = ["float"] + _make_path_knots(n_cv)
+                log(f"  [path-k] {o.name}  smooth B-spline  {n_cv} cverts  {n_cv + 4} knots")
+            else:
+                log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
+                    f"(has {n_cv}) — exporting linear (no path-k)")
 
         # ── Platform: notice-dist (plat-eco) ─────────────────────────────────
         # Controls how close Jak must be before the platform notices blue eco.

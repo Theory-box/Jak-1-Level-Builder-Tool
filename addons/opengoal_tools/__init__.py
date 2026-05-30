@@ -220,6 +220,29 @@ def register():
                     "forward path; the engine's modulo walk handles the rest.",
         default=False,
     )
+    # Path interpolation mode. LINEAR (default) emits only the `path` lump, so
+    # the engine walks the control points in straight segments — current/legacy
+    # behavior, hits every waypoint exactly. SMOOTH additionally emits a
+    # `path-k` knot lump, which makes curve-control actors (plat, plat-eco,
+    # plat-button) load as a true cubic B-spline curve for gliding motion.
+    # Note: a B-spline does NOT pass through interior waypoints — it cuts the
+    # corners, touching only the first and last point. Needs >= 4 waypoints;
+    # with fewer it falls back to linear at export.
+    bpy.types.Object.og_path_mode = bpy.props.EnumProperty(
+        name="Path Mode",
+        description="How the actor moves along its waypoints. Linear hits every "
+                    "waypoint with straight segments. Smooth emits a path-k knot "
+                    "vector so curve-control platforms glide as a cubic B-spline "
+                    "(cuts corners; needs at least 4 waypoints)",
+        items=[
+            ("LINEAR", "Linear", "Straight segments through every waypoint "
+                                 "(only the 'path' lump is exported)"),
+            ("SMOOTH", "Smooth", "Cubic B-spline gliding motion via a 'path-k' "
+                                 "knot lump. Cuts corners and skips interior "
+                                 "waypoints. Requires >= 4 waypoints"),
+        ],
+        default="LINEAR",
+    )
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
     # Each ACTOR_ empty can reference a Blender text block to inject into obs.gc.
@@ -356,7 +379,8 @@ def unregister():
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
-              "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong"):
+              "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
+              "og_path_mode"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")
