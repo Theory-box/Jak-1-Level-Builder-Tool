@@ -107,6 +107,30 @@ def make_fog_actor_dict(spawns):
     }
 
 
+# Addon-defined trigger types that are embedded per-level. Their names are
+# scoped to the level (e.g. checkpoint-trigger -> my-level-checkpoint-trigger)
+# so two levels built with different addon versions / volume layouts can never
+# collide on a shared global type name in the same goalc image. camera-marker
+# and fog-control are intentionally left unscoped (stable, never layout-changed).
+_TRIGGER_ETYPES = ("camera-trigger", "checkpoint-trigger", "aggro-trigger", "vol-trigger")
+
+
+def _level_type_prefix(name):
+    """Sanitize a level name into a valid GOAL symbol prefix.
+
+    Used to scope per-level trigger type names so they never collide across
+    levels. Mirrors nothing else — must be identical on the write_gc (deftype)
+    and write_jsonc (etype) sides, which is why both call this one helper.
+    """
+    s = "".join(c if (c.isalnum() or c == "-") else "-" for c in str(name).lower())
+    while "--" in s:
+        s = s.replace("--", "-")
+    s = s.strip("-") or "lvl"
+    if s[0].isdigit():
+        s = "l-" + s
+    return s
+
+
 def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
     """Write obs.gc: always emits camera-marker type; if has_triggers also
     emits camera-trigger type; if has_checkpoints emits checkpoint-trigger type;
@@ -532,6 +556,14 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
                 f"{', '.join(n for n, _ in custom_blocks)}")
 
     new_text = "\n".join(lines)
+    # Level-scope the addon's trigger type names (and the shared plane-test
+    # helper) so this level's types can never clash with another level's copy
+    # in the same compile. Replacing the bare base name also catches its states
+    # (e.g. "checkpoint-trigger-active" -> "<pfx>-checkpoint-trigger-active") and
+    # init/go references, since those contain the base name as a prefix.
+    _pfx = _level_type_prefix(name)
+    for _base in (*_TRIGGER_ETYPES, "point-in-planes?"):
+        new_text = new_text.replace(_base, f"{_pfx}-{_base}")
     if p.exists() and p.read_text() == new_text:
         log(f"Skipped {p} (unchanged)")
     else:
@@ -541,6 +573,12 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
+    # Match the per-level type scoping done in write_gc: a trigger actor's etype
+    # must point at the level-scoped type name so the engine births the right type.
+    _pfx = _level_type_prefix(name)
+    for _a in all_actors:
+        if _a.get("etype") in _TRIGGER_ETYPES:
+            _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
     # that level's tpages. Two co-resident (streamed) custom levels that borrow
