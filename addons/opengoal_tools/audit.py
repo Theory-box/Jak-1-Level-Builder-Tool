@@ -402,6 +402,20 @@ def check_scene_summary(scene):
 # Registry — all active checks. Append here to add new ones.
 # ---------------------------------------------------------------------------
 
+def check_load_boundaries(scene):
+    issues = []
+    for o in scene.objects:
+        if o.type != "MESH" or not o.name.startswith("LOADBND_"):
+            continue
+        top = float(getattr(o, "og_lb_top",  400.0))
+        bot = float(getattr(o, "og_lb_bot", -400.0))
+        if top <= bot:
+            issues.append(_issue("ERROR",
+                f"'{o.name}': Top ({top:g} m) must be above Bottom ({bot:g} m). "
+                "The boundary wall has zero or inverted height.", o.name))
+    return issues
+
+
 _REGISTERED_CHECKS = [
     check_tpage_budget,
     check_navmesh_links,
@@ -412,6 +426,7 @@ _REGISTERED_CHECKS = [
     check_duplicate_names,
     check_camera_targets,
     check_doors,
+    check_load_boundaries,
     check_entity_defs_audit_blocks,
     check_scene_summary,   # always last
 ]

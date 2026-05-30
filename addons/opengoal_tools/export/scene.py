@@ -552,15 +552,13 @@ def _lb_edge_chain(me):
 def collect_load_boundaries(scene):
     """Collect LOADBND_ mesh objects into static-load-boundary data dicts.
 
-    Footprint: the mesh vertices give the horizontal game X/Z polyline/polygon;
-    the Blender-Z extent gives :top/:bot. For an open boundary drawn flat a
-    sensible wall extent is substituted so it still works as a vertical wall.
-    Emitted in game units (metres * 4096): game_x = bx, game_z = -by, height = bz.
+    Footprint: the mesh vertices give the horizontal game X/Z polyline/polygon.
+    :top/:bot come from the per-object og_lb_top/og_lb_bot settings (Blender
+    metres), measured relative to the footprint's height so they match the
+    OG Boundary Viz modifier (which offsets the wall in the object's local
+    frame). Emitted in game units (metres * 4096): game_x = bx, game_z = -by.
     """
-    M        = 4096.0
-    FLAT_EPS = 0.5      # m — below this an open boundary is treated as flat
-    WALL_UP  = 30.0     # default wall extent up   (m) when flat & open
-    WALL_DN  = 128.0    # default wall extent down (m)
+    M = 4096.0
 
     out = []
     for o in _level_objects(scene):
@@ -576,14 +574,9 @@ def collect_load_boundaries(scene):
         if len(verts) < 2:
             continue
 
-        zs = [v.z for v in verts]
-        zmin, zmax = min(zs), max(zs)
-        if closed:
-            top, bot = zmax * M, (zmin - WALL_DN) * M
-        elif (zmax - zmin) < FLAT_EPS:
-            top, bot = (zmax + WALL_UP) * M, (zmin - WALL_DN) * M
-        else:
-            top, bot = zmax * M, zmin * M
+        base_z = sum(v.z for v in verts) / len(verts)
+        top = (base_z + float(getattr(o, "og_lb_top",  400.0))) * M
+        bot = (base_z + float(getattr(o, "og_lb_bot", -400.0))) * M
 
         points = []
         for v in verts:
