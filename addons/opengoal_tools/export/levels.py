@@ -43,6 +43,7 @@ from ..collections import (
 # Cross-module imports (siblings in the export package)
 from .paths import (
     _game_gp,
+    log,
     _goal_src,
     _level_info,
     _load_boundary_data,
@@ -202,6 +203,20 @@ def remove_level(name):
     else:
         msgs.append(f"(not found) {goal_dir}")
 
+    msgs += _strip_level_registrations(name)
+    return msgs
+
+
+def _strip_level_registrations(name):
+    """Strip a level's build registrations (level-info.gc, game.gp,
+    load-boundary-data.gc) WITHOUT touching any files on disk.
+
+    Shared by remove_level (which also deletes the folders) and by
+    prune_orphaned_levels (which only un-registers levels whose files are
+    already gone). Returns list of log messages.
+    """
+    msgs = []
+
     # Patch level-info.gc — strip the define block and cons! entry
     li_path = _level_info()
     if li_path.exists():
@@ -254,3 +269,37 @@ def remove_level(name):
             msgs.append(f"load-boundary-data.gc had no boundaries for '{name}'")
 
     return msgs
+
+
+def prune_orphaned_levels():
+    """Self-heal the build: drop registrations for any custom level whose
+    generated files no longer exist on disk.
+
+    Scans game.gp for (custom-level-cgo ...) entries and, for each, checks that
+    both the referenced .gd (custom_assets) and the level's -obs.gc (goal_src)
+    still exist. If either is missing, the level's registrations are stripped
+    from game.gp / level-info.gc / load-boundary-data.gc so (mi) won't choke on
+    a file the user deleted by hand. Does NOT delete any files. Idempotent.
+
+    Returns list of pruned level names.
+    """
+    gp_path = _game_gp()
+    if not gp_path.exists():
+        return []
+    try:
+        txt = gp_path.read_bytes().decode("utf-8", errors="ignore").replace("\r\n", "\n")
+    except Exception:
+        return []
+
+    pruned = []
+    for m in re.finditer(r'\(custom-level-cgo "[^"]*" "([^"/]+)/([^"]+)"\)', txt):
+        name, gd_rel = m.group(1), m.group(2)
+        if name in pruned:
+            continue
+        gd_path  = _levels_dir() / name / gd_rel
+        obs_path = _goal_src() / "levels" / name / f"{name}-obs.gc"
+        if (not gd_path.exists()) or (not obs_path.exists()):
+            _strip_level_registrations(name)
+            pruned.append(name)
+            log(f"[prune] '{name}' files missing — removed stale build registration")
+    return pruned

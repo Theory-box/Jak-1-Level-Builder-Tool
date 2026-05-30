@@ -16,6 +16,7 @@ from .export import (
     needed_ags, needed_extras_ags, needed_code, write_jsonc, write_gd, write_gc,
     make_fog_actor_dict,
     patch_level_info, patch_load_boundaries, patch_game_gp, export_glb,
+    prune_orphaned_levels,
     _collect_navmesh_actors, _canonical_actor_objects,
     _nick, _iso, _lname, _ldir, _goal_src, _level_info,
     _game_gp, _levels_dir, _entity_gc,
@@ -537,6 +538,7 @@ def _bg_build(name, scene, depsgraph=None):
         patch_level_info(name, spawns, scene)
         patch_load_boundaries(name, collect_load_boundaries(scene), scene)
         patch_game_gp(name, code_deps, scene=scene)
+        prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
 
         if goalc_ok():
             state["status"] = "Running (mi) via nREPL..."
@@ -764,6 +766,7 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         patch_level_info(name, spawns, scene)
         patch_load_boundaries(name, collect_load_boundaries(scene), scene)
         patch_game_gp(name, code_deps, scene=scene)
+        prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
 
         # ── Phase 2: Compile ──────────────────────────────────────────────────
         # Kill GK first — game must not be running during compile.
