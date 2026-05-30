@@ -54,6 +54,7 @@ from .predicates import (
 )
 from .volumes import (
     _vol_aabb,
+    _vol_planes,
     _vol_links,
 )
 
@@ -781,17 +782,13 @@ def collect_actors(scene, depsgraph=None):
 
         vol_obj = vol_by_cp.get(o.name)
         if vol_obj:
-            # AABB mode — derive bounds from volume mesh world-space verts
+            # Volume mode — convex half-space planes from the linked mesh.
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol_obj)
-            # Slightly tighter padding for checkpoints (matches old behaviour)
-            rad = round(max(xmax - xmin, ymax - ymin, zmax - zmin) / 2 + 2.0, 2)
+            planes, cull_r = _vol_planes(vol_obj)
+        if vol_obj and planes:
             lump["has-volume"]  = ["uint32", 1]
-            lump["bound-xmin"]  = ["meters", xmin]
-            lump["bound-xmax"]  = ["meters", xmax]
-            lump["bound-ymin"]  = ["meters", ymin]
-            lump["bound-ymax"]  = ["meters", ymax]
-            lump["bound-zmin"]  = ["meters", zmin]
-            lump["bound-zmax"]  = ["meters", zmax]
+            lump["cull-radius"] = ["meters", cull_r]
+            lump["vol"]         = ["vector-vol"] + planes
             out.append({
                 "trans":     [cx, cy, cz],
                 "etype":     "checkpoint-trigger",
@@ -801,7 +798,7 @@ def collect_actors(scene, depsgraph=None):
                 "bsphere":   [cx, cy, cz, rad],
                 "lump":      lump,
             })
-            log(f"  [checkpoint] {o.name} → '{cp_name}'  AABB vol={vol_obj.name}")
+            log(f"  [checkpoint] {o.name} → '{cp_name}'  vol={vol_obj.name} ({len(planes)} planes)")
         else:
             # Sphere mode — use og_checkpoint_radius
             lump["radius"] = ["meters", r]

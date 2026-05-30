@@ -35,6 +35,7 @@ from .predicates import (
 )
 from .volumes import (
     _vol_aabb,
+    _vol_planes,
     _vol_links,
     _vol_link_targets,
     _vol_has_link_to,

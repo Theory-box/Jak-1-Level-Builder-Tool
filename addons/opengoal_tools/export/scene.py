@@ -49,6 +49,7 @@ from .predicates import (
 )
 from .volumes import (
     _vol_aabb,
+    _vol_planes,
     _vol_links,
 )
 
@@ -119,6 +120,11 @@ def collect_aggro_triggers(scene):
                 continue
             target_lump_name = f"{parts[1]}-{parts[2]}"
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
+            planes, cull_r = _vol_planes(vol)
+            if not planes:
+                log(f"  [WARNING] aggro-trigger {vol.name}: no usable faces "
+                    f"(needs a closed convex mesh) — skipped")
+                continue
             event_id = _aggro_event_id(entry.behaviour)
             uid = counter
             counter += 1
@@ -133,12 +139,8 @@ def collect_aggro_triggers(scene):
                     "name":        f"aggrotrig-{uid}",
                     "target-name": target_lump_name,
                     "event-id":    ["uint32", event_id],
-                    "bound-xmin":  ["meters", xmin],
-                    "bound-xmax":  ["meters", xmax],
-                    "bound-ymin":  ["meters", ymin],
-                    "bound-ymax":  ["meters", ymax],
-                    "bound-zmin":  ["meters", zmin],
-                    "bound-zmax":  ["meters", zmax],
+                    "cull-radius": ["meters", cull_r],
+                    "vol":         ["vector-vol"] + planes,
                 },
             })
             log(f"  [aggro-trigger] {vol.name} → {entry.target_name} (lump: {target_lump_name}, {entry.behaviour})")
@@ -174,6 +176,11 @@ def collect_custom_triggers(scene):
                 continue
             target_lump_name = f"{parts[1]}-{parts[2]}"
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
+            planes, cull_r = _vol_planes(vol)
+            if not planes:
+                log(f"  [WARNING] vol-trigger {vol.name}: no usable faces "
+                    f"(needs a closed convex mesh) — skipped")
+                continue
             uid = counter
             counter += 1
             out.append({
@@ -186,12 +193,8 @@ def collect_custom_triggers(scene):
                 "lump": {
                     "name":        f"voltrig-{uid}",
                     "target-name": target_lump_name,
-                    "bound-xmin":  ["meters", xmin],
-                    "bound-xmax":  ["meters", xmax],
-                    "bound-ymin":  ["meters", ymin],
-                    "bound-ymax":  ["meters", ymax],
-                    "bound-zmin":  ["meters", zmin],
-                    "bound-zmax":  ["meters", zmax],
+                    "cull-radius": ["meters", cull_r],
+                    "vol":         ["vector-vol"] + planes,
                 },
             })
             log(f"  [vol-trigger] {vol.name} → {entry.target_name} (lump: {target_lump_name})")
@@ -366,6 +369,11 @@ def collect_cameras(scene):
         if vol_list:
             for vol_obj in vol_list:
                 xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol_obj)
+                planes, cull_r = _vol_planes(vol_obj)
+                if not planes:
+                    log(f"  [WARNING] camera-trigger {cam_name}: volume {vol_obj.name} "
+                        f"has no usable faces (needs a closed convex mesh) — skipped")
+                    continue
                 trigger_actors.append({
                     "trans":     [cx, cy, cz],
                     "etype":     "camera-trigger",
@@ -376,12 +384,8 @@ def collect_cameras(scene):
                     "lump": {
                         "name":       f"camtrig-{cam_name.lower()}-{vol_obj.get('og_vol_id', 0)}",
                         "cam-name":   cam_name,
-                        "bound-xmin": ["meters", xmin],
-                        "bound-xmax": ["meters", xmax],
-                        "bound-ymin": ["meters", ymin],
-                        "bound-ymax": ["meters", ymax],
-                        "bound-zmin": ["meters", zmin],
-                        "bound-zmax": ["meters", zmax],
+                        "cull-radius": ["meters", cull_r],
+                        "vol":        ["vector-vol"] + planes,
                     },
                 })
                 log(f"  [camera] {cam_name} + trigger {vol_obj.name}")

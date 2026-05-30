@@ -70,6 +70,65 @@ def _vol_aabb(vol_obj):
             round(zmin, 4), round(zmax, 4),
             cx, cy, cz, rad)
 
+
+def _vol_planes(vol_obj):
+    """Convex half-space planes from a mesh's faces, in game space.
+
+    Returns (planes, cull_radius):
+      planes      - list of [nx, ny, nz, d]. Outward unit normal in game axes
+                    (X = Blender X, Y = Blender Z, Z = -Blender Y) and
+                    d = normal . face_center in METERS (rotation-invariant).
+                    A point P is inside the volume iff dot(N, P) - d <= 0 for
+                    EVERY plane — matching the engine's point-in-vol? / water
+                    'vol convention (the build multiplies d by METER_LENGTH;
+                    the normal is stored raw).
+      cull_radius - bounding-sphere radius (m) measured from the AABB centre,
+                    used for the cheap distance pre-check before the plane test.
+
+    Requirements / limits:
+      * Mesh must be CONVEX with consistent OUTWARD-facing normals
+        (Mesh > Normals > Recalculate Outside). A concave mesh cannot be a
+        single half-space set and will test wrong.
+      * Coincident planes (e.g. from a triangulated quad) are merged, so a
+        triangulated box still yields 6 planes.
+      * Non-uniform object scale skews normals (same limit as the original
+        mesh-to-vol approach) — apply scale first for odd shapes.
+    """
+    M  = vol_obj.matrix_world
+    M3 = M.to_3x3()
+
+    gverts = [(c.x, c.z, -c.y) for c in (M @ v.co for v in vol_obj.data.vertices)]
+    if not gverts:
+        return [], 0.0
+    xs = [p[0] for p in gverts]; ys = [p[1] for p in gverts]; zs = [p[2] for p in gverts]
+    cx = (min(xs) + max(xs)) / 2.0
+    cy = (min(ys) + max(ys)) / 2.0
+    cz = (min(zs) + max(zs)) / 2.0
+    cull_r2 = 0.0
+    for p in gverts:
+        d2 = (p[0] - cx) ** 2 + (p[1] - cy) ** 2 + (p[2] - cz) ** 2
+        if d2 > cull_r2:
+            cull_r2 = d2
+    cull_radius = round(cull_r2 ** 0.5 + 1.0, 3)  # +1m slack
+
+    planes = []
+    seen = set()
+    for poly in vol_obj.data.polygons:
+        n = M3 @ poly.normal
+        if n.length < 1e-6:
+            continue                       # degenerate face — skip
+        n.normalize()
+        c = M @ poly.center
+        d = c.dot(n)                       # plane offset (meters), axis-invariant
+        gx, gy, gz = n.x, n.z, -n.y        # Blender → game axes
+        key = (round(gx, 3), round(gy, 3), round(gz, 3), round(d, 2))
+        if key in seen:
+            continue                       # merge coincident planes
+        seen.add(key)
+        planes.append([round(gx, 4), round(gy, 4), round(gz, 4), round(d, 4)])
+    return planes, cull_radius
+
+
 def _vol_links(vol):
     """Return the og_vol_links CollectionProperty on a volume mesh.
     Migrates legacy single-string og_vol_link if present.
