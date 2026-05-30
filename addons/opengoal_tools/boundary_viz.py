@@ -44,10 +44,9 @@ ATTR_WIREFRAME = "wireframe"
 
 _BND_PREFIX = "LOADBND_"
 
-# Defaults mirror the old geometry-derived flat-wall behaviour (WALL_UP /
-# WALL_DN in collect_load_boundaries): up 30 m, down 128 m.
-DEFAULT_TOP =  30.0
-DEFAULT_BOT = -128.0
+# Defaults: a tall wall, 400 m up / 400 m down from the footprint.
+DEFAULT_TOP =  400.0
+DEFAULT_BOT = -400.0
 
 
 # ---------------------------------------------------------------------------

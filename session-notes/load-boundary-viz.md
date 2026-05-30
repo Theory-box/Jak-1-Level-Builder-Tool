@@ -2,7 +2,7 @@
 
 **Branch:** `feature/load-boundary-viz` (off `main`)
 **Repo:** `Jak-1-Level-Builder-Tool` (the addon repo)
-**Status:** Implemented — **untested in Blender**. Compiles (py_compile clean).
+**Status:** Visual confirmed working in Blender (forward direction matched engine in user test). Defaults 400/−400; boundaries spawn in SOLID display. In-game untested.
 **Last updated:** 2026-05-30
 
 > Note: `Claude-Relay` is a stale snapshot of the addon (no load-boundary code,
@@ -25,7 +25,7 @@ that both drive the visualization and export to `:top`/`:bot`.
 - **Units:** Blender metres, ×4096 → game units (addon convention). top/bot are
   measured **relative to the footprint height** (`base_z` = mean world Z of the
   boundary verts), so export matches the viz, which offsets in the object's
-  local frame. Defaults 30 / −128 reproduce the old flat-wall behaviour.
+  local frame. Defaults 400 / −400 (tall wall).
 - **Storage:** object-level, implemented as **uniform** POINT attributes (Blender
   has no scalar/object attribute domain a Named Attribute can read). Written on
   spawn, on any setting change (update callback), and refreshed on Edit-Mode

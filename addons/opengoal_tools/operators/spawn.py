@@ -130,7 +130,7 @@ class OG_OT_SpawnLoadBoundary(Operator):
         ctx.scene.collection.objects.link(o)
         o.location = ctx.scene.cursor.location
         o.show_name = True
-        o.display_type = "WIRE"
+        o.display_type = "SOLID"
         o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
         o.set_invisible = True
         o.ignore        = True

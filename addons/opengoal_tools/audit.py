@@ -407,8 +407,8 @@ def check_load_boundaries(scene):
     for o in scene.objects:
         if o.type != "MESH" or not o.name.startswith("LOADBND_"):
             continue
-        top = float(getattr(o, "og_lb_top",  30.0))
-        bot = float(getattr(o, "og_lb_bot", -128.0))
+        top = float(getattr(o, "og_lb_top",  400.0))
+        bot = float(getattr(o, "og_lb_bot", -400.0))
         if top <= bot:
             issues.append(_issue("ERROR",
                 f"'{o.name}': Top ({top:g} m) must be above Bottom ({bot:g} m). "

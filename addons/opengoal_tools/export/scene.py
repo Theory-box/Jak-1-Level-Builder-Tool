@@ -575,8 +575,8 @@ def collect_load_boundaries(scene):
             continue
 
         base_z = sum(v.z for v in verts) / len(verts)
-        top = (base_z + float(getattr(o, "og_lb_top",  30.0))) * M
-        bot = (base_z + float(getattr(o, "og_lb_bot", -128.0))) * M
+        top = (base_z + float(getattr(o, "og_lb_top",  400.0))) * M
+        bot = (base_z + float(getattr(o, "og_lb_bot", -400.0))) * M
 
         points = []
         for v in verts:
