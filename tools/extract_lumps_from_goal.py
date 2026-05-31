@@ -93,16 +93,16 @@ out.append(f"Auto-generated {date.today().isoformat()} from OpenGOAL `jak-projec
  "`res-lump-*`/`get-property-*`/`entity-actor-*`/`lookup-tag` reads across methods, states, behaviours, "
  "called helpers in the same file, the full `:parent` chain, and inherited param-loader fields (e.g. `sync-info`).")
 out+=["","**Legend** — `key` = read & in DB · **`key`** = read but MISSING from DB · "
- "_(common: …)_ = entity/draw lumps most actors share · `_DB-only_` = in DB but not seen in source "
- "(stale, or read by a generic subsystem like the fact system).",""]
+ "`_DB-only_` = in DB but not seen in source (stale, or read by a generic subsystem like the fact system).",""]
+out.append(f"> **Common lumps** (read by virtually every actor; omitted from the rows below): {', '.join(sorted(UNIVERSAL))}")
+out.append("")
 for cat in sorted(by_cat):
-    out+=[f"## {cat}","","| Actor (etype) | Label | Lumps read (engine) |","|---|---|---|"]
+    out+=[f"## {cat}","","| Actor (etype) | Label | Specific lumps |","|---|---|---|"]
     for a in sorted(by_cat[cat], key=lambda x:x.get("etype","")):
         et=a.get("etype"); src=eff(et); dbk=db_keys(a)
         spec=sorted(x for x in (src-UNIVERSAL) if x!=et); comm=sorted(src&UNIVERSAL)
-        cells=[(f"**{k}**" if k not in dbk else k) for k in spec] or ["—"]
+        cells=[(f"**{k}**" if k not in dbk else k) for k in spec] or ["*(common only)*"]
         cell=", ".join(cells)
-        if comm: cell+=f" _(common: {', '.join(comm)})_"
         only=sorted(set(dbk)-src-UNIVERSAL)
         if only: cell+=f" · _DB-only: {', '.join(only)}_"
         out.append(f"| `{et}` | {a.get('label',et)} | {cell} |")
