@@ -6089,65 +6089,16 @@
       "shape": "CUBE"
     },
     {
-      "etype": "revcycle",
-      "label": "Rotating Platform",
-      "category": "Platforms",
-      "parent": "prop",
-      "art_group": "revcycle-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
-      "code": {
-        "o": "village-obs.o",
-        "o_only": true
-      },
-      "glb": "levels/village1/revcycle-geo.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. Period hardcoded ~16s if not set."
-        },
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Height parameters."
-        },
-        {
-          "key": "num-lurkers",
-          "type": "int32",
-          "description": "Child count."
-        }
-      ],
-      "color": [
-        0.6,
-        0.4,
-        0.6,
-        1.0
-      ],
-      "shape": "CUBE"
-    },
-    {
       "etype": "launcher",
       "label": "Launcher",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "floating-launcher-ag.go",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "floating-launcher.o",
-        "o_only": true
-      },
-      "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "lumps": [
         {
           "key": "spring-height",
@@ -6415,6 +6366,7 @@
         "o": "steam-cap.o",
         "o_only": true
       },
+      "glb": "levels/sunken/steam-cap-lod0.glb",
       "is_prop": true,
       "lumps": [
         {
@@ -8050,6 +8002,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/robocave/cavetrapdoor-lod0.glb",
       "lumps": [
         {
           "key": "delay",
@@ -8070,7 +8023,7 @@
       "label": "Cave Spatula Plat",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "cavespatula-ag.go",
+      "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
         "tpage-1313.go",
@@ -8082,6 +8035,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8108,6 +8062,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/robocave/cavespatulatwo-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8172,6 +8127,7 @@
         "o": "ogre-obs.o",
         "o_only": true
       },
+      "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8182,11 +8138,11 @@
       "shape": "CUBE"
     },
     {
-      "etype": "pontoon",
-      "label": "Pontoon (Village2)",
+      "etype": "pontoonten",
+      "label": "Pontoon (Ten)",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "pontoon-ag.go",
+      "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
       "tpages": [
         "tpage-919.go",
@@ -8199,6 +8155,7 @@
         "o": "village2-obs.o",
         "o_only": true
       },
+      "glb": "levels/village2/pontoonten-lod0.glb",
       "lumps": [
         {
           "key": "alt-task",
@@ -8230,23 +8187,24 @@
       "shape": "CUBE"
     },
     {
-      "etype": "tra-pontoon",
-      "label": "Pontoon (Training)",
+      "etype": "pontoonfive",
+      "label": "Pontoon (Five)",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "tra-pontoon-ag.go",
-      "tpage_group": "Training",
+      "art_group": "pontoonfive-ag.go",
+      "tpage_group": "Village2",
       "tpages": [
-        "tpage-1309.go",
-        "tpage-1311.go",
-        "tpage-1310.go",
-        "tpage-1308.go",
-        "tpage-775.go"
+        "tpage-919.go",
+        "tpage-922.go",
+        "tpage-920.go",
+        "tpage-921.go",
+        "tpage-1476.go"
       ],
       "code": {
-        "o": "training-obs.o",
+        "o": "village2-obs.o",
         "o_only": true
       },
+      "glb": "levels/village2/pontoonfive-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8320,6 +8278,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -8388,6 +8347,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -8456,6 +8416,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -15366,19 +15327,6 @@
         1.0
       ],
       "shape": "CONE"
-    },
-    {
-      "etype": "steam-cap",
-      "label": "Steam Cap",
-      "category": "Objects",
-      "art_group": "steam-cap-ag.go",
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
-      "shape": "CUBE"
     },
     {
       "etype": "windmill-one",
