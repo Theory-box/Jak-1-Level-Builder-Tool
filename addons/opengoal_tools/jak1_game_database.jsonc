@@ -6368,7 +6368,16 @@
       },
       "glb": "levels/sunken/steam-cap-lod0.glb",
       "is_prop": true,
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
       "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
         {
           "key": "percent",
           "type": "float",
