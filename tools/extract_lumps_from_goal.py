@@ -4,7 +4,10 @@ from collections import defaultdict
 from datetime import date
 GOAL=Path("goal_src/jak1")
 DB=Path("addons/opengoal_tools/jak1_game_database.jsonc")
-ACCESSOR=re.compile(r"^(res-lump-(?:float|struct|data|value)(?:-exact)?|get-property-(?:value-float|struct|value|data)|lookup-tag-idx)$")
+ACCESSOR=re.compile(r"^(res-lump-(?:float|struct|data|value)(?:-exact)?|"
+                    r"get-property-(?:value-float|struct|value|data)|"
+                    r"lookup-tag-idx|entity-actor-lookup|entity-actor-count|"
+                    r"get-tag-data|get-tag-index-data)$")
 SYM=re.compile(r"^'([a-z][a-z0-9!*+/<>=._-]*)$")
 DEFTYPE=re.compile(r"\(deftype\s+([a-z0-9!*+/<>=-]+)\s+\(([a-z0-9!*+/<>=-]+)")
 DEFM_A=re.compile(r"\(defmethod\s+[a-z0-9!*+/<>=?-]+\s+\(\(\s*[a-z0-9-]+\s+([a-z0-9!*+/<>=-]+)")
@@ -14,6 +17,7 @@ DEFBEH=re.compile(r"\(defbehavior\s+[a-z0-9!*+/<>=?-]+\s+([a-z0-9!*+/<>=-]+)")
 DEFUN=re.compile(r"\(defun\s+([a-z0-9!*+/<>=?-]+)")
 FIELD=re.compile(r"^\s*\(([a-z0-9-]+)\s+([a-z0-9!*+/<>=-]+)")
 direct=defaultdict(set); parent={}; fields=defaultdict(list)
+param_loaders=set()
 fn_lumps=defaultdict(set)            # defun name -> lumps it reads
 ctx_calls=defaultdict(set)           # context (type or fn) -> callee names
 def toks(line): return line.replace("("," ( ").replace(")"," ) ").split()
@@ -29,6 +33,7 @@ def scan(p):
             if ls.startswith(("(defmethod","(defun","(defstate","(defbehavior")): dt=None
         if ls.startswith("(defmethod"):
             mm=DEFM_A.search(line) or DEFM_B.search(line); cur=("T:"+mm.group(1)) if mm else None; dt=None
+            if mm and ls.startswith("(defmethod load-params!"): param_loaders.add(mm.group(1))
         elif ls.startswith("(defstate"):
             mm=DEFSTATE.search(line); cur=("T:"+mm.group(1)) if mm else None; dt=None
         elif ls.startswith("(defbehavior"):
@@ -63,7 +68,7 @@ for ctx,calls in ctx_calls.items():
         for callee in calls:
             if callee in fn_lumps: type_callers[callee].add(ctx[2:])
 for callee,typs in type_callers.items():
-    if len(typs)<=3:
+    if len(typs)==1:
         for tp in typs: direct[tp]|=fn_lumps[callee]
 readers=set(direct)
 def anc(t):
@@ -74,7 +79,7 @@ def eff(t,d=0):
     for a in anc(t): o|=direct.get(a,set())
     if d<3:
         for _f,ft in fields.get(t,[]):
-            if ft in readers and ft!=t: o|=eff(ft,d+1)
+            if ft in param_loaders and ft!=t: o|=eff(ft,d+1)
     return o
 txt=re.sub(r"/\*.*?\*/","",DB.read_text(),flags=re.S); db=json.loads(re.sub(r"(?m)//.*$","",txt)); actors=db.get("Actors",[])
 def db_keys(a):
@@ -98,7 +103,7 @@ out.append(f"> **Common lumps** (read by \u226550% of actors, omitted per-row): 
 for cat in sorted(by_cat):
     out+=[f"## {cat}","","| Actor (etype) | Label | Specific lumps |","|---|---|---|"]
     for a in sorted(by_cat[cat], key=lambda x:x.get("etype","")):
-        et=a.get("etype"); src=eff(et); dbk=db_keys(a); spec=sorted(src-COMMON)
+        et=a.get("etype"); src=eff(et); dbk=db_keys(a); spec=sorted(x for x in (src-COMMON) if x!=et)
         cells=[(f"**{k}**" if k not in dbk else k) for k in spec]; only=sorted(set(dbk)-src-COMMON)
         cell=", ".join(cells) if cells else "*(common only)*"
         if only: cell+=f" \u00b7 _DB-only: {', '.join(only)}_"
