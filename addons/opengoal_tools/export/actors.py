@@ -19,6 +19,8 @@ from ..data import (
     _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
     _LUMP_HARDCODED_KEYS, _is_custom_type,
 )
+from .. import db as _schema_db
+from .schema_emit import emit_schema_lumps
 from ..collections import (
     _get_level_prop, _level_objects,
     _active_level_col, _classify_object, _col_path_for_entity,
@@ -730,6 +732,21 @@ def collect_actors(scene, depsgraph=None):
                 log(f"  [WARNING] {o.name} lump row '{key}' overrides addon default")
             lump[key] = value
             log(f"  [lump-row] {o.name}  '{key}' = {value}")
+
+        # ── Schema-driven lumps (migrated actors) ────────────────────────────
+        # If this actor is flagged `schema_export` in the DB, emit its declared
+        # fields[] lumps directly from the schema — no per-actor code path and
+        # no gates (e.g. set `sync` exports regardless of waypoints). This is
+        # additive and fully gated: actors WITHOUT the flag are untouched, so
+        # this cannot change existing export behaviour. setdefault() means any
+        # explicit hardcoded/custom-row lump already present still wins.
+        _arec = _schema_db.find_actor(etype)
+        if _arec and _arec.get("schema_export"):
+            for _lk, _lv in emit_schema_lumps(
+                    lambda k, d=None: o.get(k, d), _arec.get("fields", [])).items():
+                if _lk not in lump:
+                    lump[_lk] = _lv
+                    log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
 
         out.append({
             "trans":     [gx, gy, gz],
