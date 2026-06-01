@@ -4156,6 +4156,7 @@
     },
     {
       "etype": "swamp-bat",
+      "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -4210,6 +4211,7 @@
     },
     {
       "etype": "yeti",
+      "schema_export": true,
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -4520,6 +4522,7 @@
     },
     {
       "etype": "dark-crystal",
+      "schema_export": true,
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5382,6 +5385,7 @@
     },
     {
       "etype": "fuel-cell",
+      "schema_export": true,
       "label": "Power Cell",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5466,6 +5470,7 @@
     },
     {
       "etype": "crate",
+      "schema_export": true,
       "label": "Crate",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5533,6 +5538,7 @@
     },
     {
       "etype": "orb-cache-top",
+      "schema_export": true,
       "label": "Orb Cache",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5746,6 +5752,7 @@
     },
     {
       "etype": "plat-flip",
+      "schema_export": true,
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -6039,6 +6046,7 @@
     },
     {
       "etype": "launcher",
+      "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
       "parent": "prop",
@@ -6584,6 +6592,7 @@
     },
     {
       "etype": "whirlpool",
+      "schema_export": true,
       "label": "Whirlpool",
       "category": "Obstacles",
       "parent": "prop",
@@ -6957,6 +6966,7 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7007,6 +7017,7 @@
     },
     {
       "etype": "sunkenfisha",
+      "schema_export": true,
       "label": "Sunken Fish School",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -7073,6 +7084,7 @@
     },
     {
       "etype": "sharkey",
+      "schema_export": true,
       "label": "Lurker Shark",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7175,6 +7187,7 @@
     },
     {
       "etype": "villa-starfish",
+      "schema_export": true,
       "label": "Villa Starfish",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -7440,6 +7453,7 @@
     },
     {
       "etype": "orbit-plat",
+      "schema_export": true,
       "label": "Orbit Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -7518,6 +7532,7 @@
     },
     {
       "etype": "square-platform",
+      "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -7591,6 +7606,7 @@
     },
     {
       "etype": "ropebridge",
+      "schema_export": true,
       "label": "Rope Bridge",
       "category": "Platforms",
       "parent": "prop",
@@ -7671,6 +7687,7 @@
     },
     {
       "etype": "lavaballoon",
+      "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
       "parent": "prop",
@@ -7727,6 +7744,7 @@
     },
     {
       "etype": "darkecobarrel",
+      "schema_export": true,
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
       "parent": "prop",
@@ -7783,6 +7801,7 @@
     },
     {
       "etype": "caveelevator",
+      "schema_export": true,
       "label": "Cave Elevator",
       "category": "Platforms",
       "parent": "prop",
@@ -7853,6 +7872,7 @@
     },
     {
       "etype": "caveflamepots",
+      "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
@@ -8097,6 +8117,7 @@
     },
     {
       "etype": "pontoonten",
+      "schema_export": true,
       "label": "Pontoon (Ten)",
       "category": "Platforms",
       "parent": "prop",
@@ -8174,6 +8195,7 @@
     },
     {
       "etype": "mis-bone-bridge",
+      "schema_export": true,
       "label": "Bone Bridge",
       "category": "Platforms",
       "parent": "prop",
@@ -8221,6 +8243,7 @@
     },
     {
       "etype": "breakaway-left",
+      "schema_export": true,
       "label": "Breakaway Plat (L)",
       "category": "Platforms",
       "parent": "prop",
@@ -8290,6 +8313,7 @@
     },
     {
       "etype": "breakaway-mid",
+      "schema_export": true,
       "label": "Breakaway Plat (M)",
       "category": "Platforms",
       "parent": "prop",
@@ -8359,6 +8383,7 @@
     },
     {
       "etype": "breakaway-right",
+      "schema_export": true,
       "label": "Breakaway Plat (R)",
       "category": "Platforms",
       "parent": "prop",
@@ -8543,6 +8568,7 @@
     },
     {
       "etype": "springbox",
+      "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8589,6 +8615,7 @@
     },
     {
       "etype": "oracle",
+      "schema_export": true,
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -9011,6 +9038,7 @@
     },
     {
       "etype": "launcherdoor",
+      "schema_export": true,
       "label": "Launcher Door",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9049,6 +9077,7 @@
     },
     {
       "etype": "sun-iris-door",
+      "schema_export": true,
       "label": "Iris Door (Sunken)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9115,6 +9144,7 @@
     },
     {
       "etype": "basebutton",
+      "schema_export": true,
       "label": "Wall Button",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9189,6 +9219,7 @@
     },
     {
       "etype": "shover",
+      "schema_export": true,
       "label": "Shover Platform",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -9332,6 +9363,7 @@
     },
     {
       "etype": "windturbine",
+      "schema_export": true,
       "label": "Wind Turbine",
       "category": "Visuals",
       "parent": "prop",

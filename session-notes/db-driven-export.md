@@ -329,3 +329,22 @@ resolver or stay as code. Do not author parallel fields[] again.
   Then author NEW fields[] (IN THIS CONVENTION) for the sync cluster (plat/plat-eco/
   side-to-side-plat/steam-cap: sync slots + options wrap lump_bit + plat-eco notice-dist)
   and pickups (money/buzzer eco-info) which have NO existing fields.
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — flip phase: 32 existing-fields actors now schema_export
+═══════════════════════════════════════════════════════════════════════════
+- Added `schema_export:true` (single key, no new fields) to 32 of the 37
+  existing-fields actors. DB verified: 0 duplicate keys, each has schema_export +
+  its original fields[]. Engine smoke-tested on all (default + maximal inputs):
+  no crashes, well-formed lumps.
+- KEPT AS CODE (not flipped): eco-door, jng-iris-door, sidedoor, rounddoor
+  (flags has the ecdf00 LINK bit — schema would drop it), and water-vol
+  (default_from mesh geometry + vol planes).
+- HYBRID flips (schema emits its keys; computed keys stay from code, not in
+  _protected so preserved): crate (schema crate-type / code eco-info), launcher
+  (schema mode+spring-height / code alt-vector).
+- ADDITIVE flips to VERIFY at test time (schema emits a lump the OLD hardcoded
+  export did NOT): launcher `mode`, pontoonten `alt-task`. These are intended
+  (fields[] was authored more complete than export) but are new emissions.
+- money/buzzer/fuel-cell eco-info are CONSTANTS emitted by code (no fields) and
+  stay code-driven; fuel-cell's `options` is schema (flipped).
