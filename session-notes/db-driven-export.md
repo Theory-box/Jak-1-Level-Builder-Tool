@@ -348,3 +348,29 @@ resolver or stay as code. Do not author parallel fields[] again.
   (fields[] was authored more complete than export) but are new emissions.
 - money/buzzer/fuel-cell eco-info are CONSTANTS emitted by code (no fields) and
   stay code-driven; fuel-cell's `options` is schema (flipped).
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — sync cluster authored + flipped (flip phase complete: 36 actors)
+═══════════════════════════════════════════════════════════════════════════
+- Authored NEW fields[] (in the existing convention) + schema_export for the 4
+  needs_sync actors that had none: plat, plat-eco, side-to-side-plat, steam-cap.
+  Fields: og_sync_period/phase/ease_out/ease_in -> sync slots 0-3 (float, always),
+  og_sync_wrap -> options lump_bit bit_value 8 (if_true); plat-eco also
+  og_notice_dist -> notice-dist (meters, always, default -1.0). Validated vs
+  hardcoded (0 failures). DB: 0 duplicate keys, 36 schema_export actors total.
+- This makes sync emit UNCONDITIONALLY (the original pathless-platform bug) for
+  the whole cluster, not just steam-cap — the schema overrides the path-gated
+  hardcoded sync; the computed `path` lump is untouched.
+- money/buzzer eco-info stay CODE (constants, no fields). 
+
+## FLIP PHASE DONE. Remaining to finish the restructure:
+  E (UI unify): panels/actor_fields.py likely has a GENERIC_PANEL_ETYPES allow-list
+    — drop it so ALL actors render their fields[] (via db.inherited_fields), and
+    register og_* props from the schema union, so custom DB actors get UI for free.
+    (Sync cluster currently shows via the needs_sync UI box, separate from fields.)
+  CLEANUP: delete the now-dead hardcoded VALUE branches for the 36 (schema already
+    overrides them). Keep computed emitters: crate eco-info, launcher alt-vector,
+    doors flags, water-vol, path/pathb/path-k, nav-mesh, checkpoint, enemy idle/vis,
+    money/buzzer/fuel-cell eco-info constants. LOW VALUE / cosmetic — fine to defer
+    until after a Blender smoke test.
+  F: extract_lumps_from_goal.py diff step in build_database.py.

@@ -5648,6 +5648,8 @@
     {
       "etype": "plat",
       "label": "Floating Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-ag.go",
@@ -5682,6 +5684,8 @@
     {
       "etype": "plat-eco",
       "label": "Eco Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "label": "Notice distance (m)", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
@@ -5932,6 +5936,8 @@
     {
       "etype": "side-to-side-plat",
       "label": "Side-to-Side Plat",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "side-to-side-plat-ag.go",
@@ -6310,6 +6316,8 @@
     {
       "etype": "steam-cap",
       "label": "Steam Cap",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "steam-cap-ag.go",
