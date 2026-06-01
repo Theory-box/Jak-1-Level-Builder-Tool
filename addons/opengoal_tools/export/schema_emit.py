@@ -71,6 +71,8 @@ def emit_schema_lumps(get, fields):
                 value = raw if wrote else default
             if f.get("scale") is not None and isinstance(value, (int, float)):
                 value = value * f["scale"]
+            if f.get("format") and wrote:
+                value = f["format"].format(value)
 
         g = groups.setdefault(key, {"type": ltype, "slots": {}, "any": False})
         slot = lp.get("slot")

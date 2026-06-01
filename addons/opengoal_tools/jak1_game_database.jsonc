@@ -4157,6 +4157,8 @@
     {
       "etype": "swamp-bat",
       "label": "Swamp Bat",
+      "schema_export": true,
+      "fields": [{"key": "og_num_lurkers", "type": "int32", "default": -1, "lump": {"key": "num-lurkers", "type": "int32"}, "write_if": "if_not_default"}],
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The swamp bat is an enemy in The Precursor Legacy, commonly found flying in swarms near Boggy Swamp. They follow set patrol paths through the air.",
@@ -4211,6 +4213,8 @@
     {
       "etype": "yeti",
       "label": "Yeti",
+      "schema_export": true,
+      "fields": [{"key": "og_num_lurkers", "type": "int32", "default": -1, "lump": {"key": "num-lurkers", "type": "int32"}, "write_if": "if_not_default"}],
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The yeti is the glacier variant of the babak lurker, encountered in The Precursor Legacy's colder regions. Larger and tougher than the standard babak.",
@@ -4520,6 +4524,7 @@
     },
     {
       "etype": "dark-crystal",
+      "schema_export": true,
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5383,6 +5388,8 @@
     {
       "etype": "fuel-cell",
       "label": "Power Cell",
+      "schema_export": true,
+      "fields": [{"key": "og_cell_skip_jump", "type": "bool", "default": false, "lump": {"key": "options", "type": "uint32", "bit": 4}, "write_if": "if_true"}, {"const": "(game-task none)", "lump": {"key": "eco-info", "type": "cell-info"}}],
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "fuel-cell-ag.go",
@@ -5423,6 +5430,8 @@
     {
       "etype": "money",
       "label": "Orb (Precursor)",
+      "schema_export": true,
+      "fields": [{"const": "(pickup-type money)", "lump": {"key": "eco-info", "type": "eco-info", "slot": 0}}, {"const": 1, "lump": {"key": "eco-info", "type": "eco-info", "slot": 1}}],
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "money-ag.go",
@@ -5448,6 +5457,8 @@
     {
       "etype": "buzzer",
       "label": "Scout Fly",
+      "schema_export": true,
+      "fields": [{"const": "(game-task none)", "lump": {"key": "eco-info", "type": "buzzer-info", "slot": 0}}, {"const": 1, "lump": {"key": "eco-info", "type": "buzzer-info", "slot": 1}}],
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "buzzer-ag.go",
@@ -5534,6 +5545,8 @@
     {
       "etype": "orb-cache-top",
       "label": "Orb Cache",
+      "schema_export": true,
+      "fields": [{"key": "og_orb_count", "type": "int32", "default": 20, "lump": {"key": "orb-cache-count", "type": "int32"}, "write_if": "always"}],
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "orb-cache-top-ag.go",
@@ -5642,6 +5655,8 @@
     {
       "etype": "plat",
       "label": "Floating Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "type": "float", "default": 4.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "type": "bool", "default": false, "lump": {"key": "options", "type": "uint32", "bit": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-ag.go",
@@ -5676,6 +5691,8 @@
     {
       "etype": "plat-eco",
       "label": "Eco Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "type": "float", "default": 4.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "type": "bool", "default": false, "lump": {"key": "options", "type": "uint32", "bit": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
@@ -5746,6 +5763,7 @@
     },
     {
       "etype": "plat-flip",
+      "schema_export": true,
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -5925,6 +5943,8 @@
     {
       "etype": "side-to-side-plat",
       "label": "Side-to-Side Plat",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "type": "float", "default": 4.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "type": "bool", "default": false, "lump": {"key": "options", "type": "uint32", "bit": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "side-to-side-plat-ag.go",
@@ -6590,6 +6610,8 @@
     {
       "etype": "whirlpool",
       "label": "Whirlpool",
+      "schema_export": true,
+      "fields": [{"key": "og_whirl_speed", "type": "float", "default": 0.3, "lump": {"key": "speed", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_whirl_var", "type": "float", "default": 0.1, "lump": {"key": "speed", "type": "float", "slot": 1}, "write_if": "always"}],
       "category": "Obstacles",
       "parent": "prop",
       "art_group": "whirlpool-ag.go",
@@ -6963,6 +6985,8 @@
     {
       "etype": "swamp-rat-nest",
       "label": "Swamp Rat Nest",
+      "schema_export": true,
+      "fields": [{"key": "og_num_lurkers", "type": "int32", "default": -1, "lump": {"key": "num-lurkers", "type": "int32"}, "write_if": "if_not_default"}],
       "category": "Enemies",
       "parent": "process-drawable",
       "art_group": "swamp-rat-nest-ag.go",
@@ -7013,6 +7037,8 @@
     {
       "etype": "sunkenfisha",
       "label": "Sunken Fish School",
+      "schema_export": true,
+      "fields": [{"key": "og_fish_count", "type": "int32", "default": 1, "lump": {"key": "count", "type": "uint32"}, "write_if": "if_nonzero"}],
       "category": "Visuals",
       "parent": "process-drawable",
       "tpage_group": "Sunken",
@@ -7079,6 +7105,8 @@
     {
       "etype": "sharkey",
       "label": "Lurker Shark",
+      "schema_export": true,
+      "fields": [{"key": "og_shark_scale", "type": "float", "default": 1.0, "lump": {"key": "scale", "type": "float"}, "write_if": "if_nonzero"}, {"key": "og_shark_delay", "type": "float", "default": 1.0, "lump": {"key": "delay", "type": "float"}, "write_if": "always"}, {"key": "og_shark_distance", "type": "float", "default": 30.0, "lump": {"key": "distance", "type": "meters"}, "write_if": "always"}, {"key": "og_shark_speed", "type": "float", "default": 12.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "always"}],
       "category": "Enemies",
       "parent": "process-drawable",
       "art_group": "sharkey-ag.go",
@@ -7181,6 +7209,8 @@
     {
       "etype": "villa-starfish",
       "label": "Villa Starfish",
+      "schema_export": true,
+      "fields": [{"key": "og_num_lurkers", "type": "int32", "default": -1, "lump": {"key": "num-lurkers", "type": "int32"}, "write_if": "if_not_default"}],
       "category": "Visuals",
       "parent": "process-drawable",
       "tpage_group": "Village1",
@@ -7445,6 +7475,7 @@
     },
     {
       "etype": "orbit-plat",
+      "schema_export": true,
       "label": "Orbit Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -7524,6 +7555,8 @@
     {
       "etype": "square-platform",
       "label": "Square Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sq_down", "type": "float", "default": -2.0, "lump": {"key": "distance", "type": "float", "slot": 0}, "write_if": "always", "scale": 4096}, {"key": "og_sq_up", "type": "float", "default": 4.0, "lump": {"key": "distance", "type": "float", "slot": 1}, "write_if": "always", "scale": 4096}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "square-platform-ag.go",
@@ -7597,6 +7630,8 @@
     {
       "etype": "ropebridge",
       "label": "Rope Bridge",
+      "schema_export": true,
+      "fields": [{"key": "og_bridge_variant", "type": "symbol", "default": "ropebridge-32", "lump": {"key": "art-name", "type": "symbol"}, "write_if": "always"}],
       "category": "Platforms",
       "parent": "prop",
       "tpage_group": "Jungle",
@@ -7677,6 +7712,8 @@
     {
       "etype": "lavaballoon",
       "label": "Lava Balloon",
+      "schema_export": true,
+      "fields": [{"key": "og_move_speed", "type": "float", "default": 3.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "always"}],
       "category": "Interactive Objects",
       "parent": "prop",
       "art_group": "lavaballoon-ag.go",
@@ -7733,6 +7770,8 @@
     {
       "etype": "darkecobarrel",
       "label": "Dark Eco Barrel",
+      "schema_export": true,
+      "fields": [{"key": "og_move_speed", "type": "float", "default": 15.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "always"}],
       "category": "Obstacles",
       "parent": "prop",
       "art_group": "darkecobarrel-ag.go",
@@ -7789,6 +7828,8 @@
     {
       "etype": "caveelevator",
       "label": "Cave Elevator",
+      "schema_export": true,
+      "fields": [{"key": "og_elevator_mode", "type": "int32", "default": 0, "lump": {"key": "mode", "type": "uint32"}, "write_if": "if_nonzero"}, {"key": "og_elevator_rot", "type": "float", "default": 0.0, "lump": {"key": "rotoffset", "type": "degrees"}, "write_if": "if_nonzero"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "caveelevator-ag.go",
@@ -7859,6 +7900,8 @@
     {
       "etype": "caveflamepots",
       "label": "Cave Flame Pots",
+      "schema_export": true,
+      "fields": [{"key": "og_flame_shove", "type": "float", "default": 2.0, "lump": {"key": "shove", "type": "meters"}, "write_if": "always"}, {"key": "og_flame_period", "type": "float", "default": 4.0, "lump": {"key": "cycle-speed", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_flame_phase", "type": "float", "default": 0.0, "lump": {"key": "cycle-speed", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_flame_pause", "type": "float", "default": 2.0, "lump": {"key": "cycle-speed", "type": "float", "slot": 2}, "write_if": "always"}],
       "category": "Obstacles",
       "parent": "prop",
       "art_group": "caveflamepots-ag.go",
@@ -8180,6 +8223,8 @@
     {
       "etype": "mis-bone-bridge",
       "label": "Bone Bridge",
+      "schema_export": true,
+      "fields": [{"key": "og_bone_bridge_anim", "type": "int32", "default": 0, "lump": {"key": "animation-select", "type": "uint32"}, "write_if": "if_nonzero"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "mis-bone-bridge-ag.go",
@@ -8227,6 +8272,8 @@
     {
       "etype": "breakaway-left",
       "label": "Breakaway Plat (L)",
+      "schema_export": true,
+      "fields": [{"key": "og_breakaway_h1", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 0}, "write_if": "if_nonzero"}, {"key": "og_breakaway_h2", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 1}, "write_if": "if_nonzero"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "breakaway-left-ag.go",
@@ -8296,6 +8343,8 @@
     {
       "etype": "breakaway-mid",
       "label": "Breakaway Plat (M)",
+      "schema_export": true,
+      "fields": [{"key": "og_breakaway_h1", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 0}, "write_if": "if_nonzero"}, {"key": "og_breakaway_h2", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 1}, "write_if": "if_nonzero"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "breakaway-mid-ag.go",
@@ -8365,6 +8414,8 @@
     {
       "etype": "breakaway-right",
       "label": "Breakaway Plat (R)",
+      "schema_export": true,
+      "fields": [{"key": "og_breakaway_h1", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 0}, "write_if": "if_nonzero"}, {"key": "og_breakaway_h2", "type": "float", "default": 0.0, "lump": {"key": "height-info", "type": "float", "slot": 1}, "write_if": "if_nonzero"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "breakaway-right-ag.go",
@@ -8549,6 +8600,8 @@
     {
       "etype": "springbox",
       "label": "Bounce Pad (Bouncer)",
+      "schema_export": true,
+      "fields": [{"key": "og_spring_height", "type": "float", "default": -1.0, "lump": {"key": "spring-height", "type": "meters"}, "write_if": "if_not_default"}],
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "bounceytarp-ag.go",
@@ -8595,6 +8648,8 @@
     {
       "etype": "oracle",
       "label": "Oracle",
+      "schema_export": true,
+      "fields": [{"key": "og_alt_task", "type": "symbol", "default": "none", "lump": {"key": "alt-task", "type": "enum-uint32"}, "write_if": "if_not_default", "format": "(game-task {})"}],
       "category": "NPCs",
       "parent": "process-drawable",
       "art_group": "oracle-ag.go",
@@ -9055,6 +9110,8 @@
     {
       "etype": "sun-iris-door",
       "label": "Iris Door (Sunken)",
+      "schema_export": true,
+      "fields": [{"key": "og_door_proximity", "type": "bool", "default": false, "lump": {"key": "proximity", "type": "uint32"}, "write_if": "if_true", "value_if_true": 1}, {"key": "og_door_timeout", "type": "float", "default": 0.0, "lump": {"key": "timeout", "type": "float"}, "write_if": "if_nonzero"}],
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "sun-iris-door-ag.go",
@@ -9121,6 +9178,8 @@
     {
       "etype": "basebutton",
       "label": "Wall Button",
+      "schema_export": true,
+      "fields": [{"key": "og_button_timeout", "type": "float", "default": 0.0, "lump": {"key": "timeout", "type": "float"}, "write_if": "if_nonzero"}],
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "generic-button-ag.go",
@@ -9195,6 +9254,8 @@
     {
       "etype": "shover",
       "label": "Shover Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_shover_force", "type": "float", "default": 3.0, "lump": {"key": "shove", "type": "meters"}, "write_if": "always"}, {"key": "og_shover_rot", "type": "float", "default": 0.0, "lump": {"key": "rotoffset", "type": "degrees"}, "write_if": "if_nonzero"}],
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "shover-ag.go",
@@ -9338,6 +9399,8 @@
     {
       "etype": "windturbine",
       "label": "Wind Turbine",
+      "schema_export": true,
+      "fields": [{"key": "og_turbine_particles", "type": "bool", "default": false, "lump": {"key": "particle-select", "type": "uint32"}, "write_if": "if_true", "value_if_true": 1}],
       "category": "Visuals",
       "parent": "prop",
       "art_group": "windturbine-ag.go",
