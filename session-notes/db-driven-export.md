@@ -399,3 +399,35 @@ resolver or stay as code. Do not author parallel fields[] again.
   Hook point: the actor-create/spawn operator (operators/actors.py, operators/spawn.py)
   — loop fields[], set o[f["key"]] = resolved default (use db.inherited_fields + the
   same default_per_etype/default_from logic).
+
+═══════════════════════════════════════════════════════════════════════════
+# AUDIT PASS (pre-test) — all clean; 1 bug found+fixed; validated in Blender 4.4.3
+═══════════════════════════════════════════════════════════════════════════
+Static/integration audits (sandbox, no Blender):
+  1. Compile all 41 addon .py files .............. 0 errors
+  2. DB schema lint (write_if/lump types/enum choices/defaults on all 36) . 0 issues
+  3. Engine robustness (default+maximal+adversarial inputs) .... clean AFTER fix
+  4. Lost/added lumps (hardcoded branch keys vs schema, per actor) ... 0 LOST
+     (no regressions); ADDED only launcher `mode`, pontoonten `alt-task` (known).
+  5. Intrinsic/link key collision (schema must not emit trans/quat/bsphere/links) . NONE
+  6. Integration: REAL db.inherited_fields + schema_export_enabled + engine, 36 actors . 0 crashes
+  7. DB validity (object_pairs_hook duplicate-key scan) ... valid JSON, 0 dup keys
+
+BUG FOUND + FIXED (commit f8e36b8): an enum value not in its choices made the
+engine call int('badvalue') and crash, which would abort the WHOLE export. Fixed:
+_enum_value falls back to the default choice's lump_value; _coerce catches
+non-numeric int/float (->0). Valid-input output unchanged (15 tests + audit 4 stable).
+
+Blender 4.4.3 (downloaded to sandbox, headless):
+  - Addon enable: OK. 49 OG_PT_ panels registered, no import/registration errors.
+  - In-Blender runtime emit (real bpy ID-props + real db + engine): steam-cap pathless
+    phase=0.25 -> sync [4.0,0.25,0.15,0.15]; plat-eco -> sync+notice-dist; launcher ->
+    spring-height+mode; crate -> 'wood (symbol_literal); sharkey defaults omit scale. ALL correct.
+  - FULL collect_actors() path on a PATHLESS steam-cap: hardcoded logs "no waypoints
+    — will spawn idle" (gated sync NOT emitted) then schema hook emits sync — i.e. the
+    ORIGINAL BUG IS FIXED end-to-end in real Blender. trans/quat/bsphere intact;
+    coords convert (1,2,3)->(1,3,-2); launcher additive `mode` emits. 
+
+CONFIDENCE: high that the restructure is correct and load-safe. Remaining for the
+USER's test pass: confirm in-GAME that launcher reads `mode` and pontoonten reads
+`alt-task` (the 2 additive emissions), then optionally the dead-code cleanup.
