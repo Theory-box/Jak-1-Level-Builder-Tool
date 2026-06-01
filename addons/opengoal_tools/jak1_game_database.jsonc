@@ -5605,57 +5605,6 @@
       "vertex_export": false
     },
     {
-      "etype": "eco-yellow",
-      "label": "Yellow Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
-      "etype": "eco-red",
-      "label": "Red Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
-      "etype": "eco-blue",
-      "label": "Blue Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
       "etype": "health",
       "label": "Eco (Green)",
       "category": "Pickups",
