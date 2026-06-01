@@ -172,6 +172,38 @@ def inherited_link_descriptions(etype: str) -> dict:
     return result
 
 
+def inherited_fields(etype: str) -> list[dict]:
+    """Combined export-schema fields[] for an etype: parent fields (root-first)
+    then the actor's own, with the actor (or a nearer ancestor) overriding any
+    inherited field that targets the same `key`. Const fields (no `key`) are
+    always kept. Used by the schema-driven exporter (export/schema_emit.py)."""
+    by_key: dict = {}
+    order: list = []
+    def _add(flds):
+        for f in flds:
+            k = f.get("key")
+            if not k:                      # const field: keep, never dedupe
+                k = ("__const__", id(f))
+            if k not in by_key:
+                order.append(k)
+            by_key[k] = f
+    for p in reversed(parent_chain(etype)):   # root-first
+        _add(p.get("fields", []))
+    actor = find_actor(etype)
+    if actor:
+        _add(actor.get("fields", []))
+    return [by_key[k] for k in order]
+
+
+def schema_export_enabled(etype: str) -> bool:
+    """True if the actor or any ancestor is flagged `schema_export` — so a parent
+    can switch on schema export for a whole family (e.g. enemy defaults)."""
+    actor = find_actor(etype)
+    if actor and actor.get("schema_export"):
+        return True
+    return any(p.get("schema_export") for p in parent_chain(etype))
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Section accessors (stable names — prefer these over raw DB['...'])
 # ═══════════════════════════════════════════════════════════════════════════

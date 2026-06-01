@@ -215,3 +215,38 @@ STEP F — Wire tools/extract_lumps_from_goal.py as a validation/diff step in
 - Remaining: B launcher/launcherdoor/crate (hybrid/bare/computed) · C doors flags
   ecdf00 link-bit · D enemy idle-distance/vis-dist via parent-field inheritance ·
   E schema-driven UI panel + property registration · F extractor diff in build.
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — parent-field inheritance foundation + Step D decision
+═══════════════════════════════════════════════════════════════════════════
+- db.py: added `inherited_fields(etype)` (parent fields root-first, actor overrides
+  by `key`; const fields always kept) and `schema_export_enabled(etype)` (actor OR
+  any ancestor flagged). Mirrors the existing inherited_links/inherited_lumps.
+- export/actors.py hook now uses `schema_export_enabled` + `inherited_fields`
+  instead of the raw actor record. Validated ZERO behaviour change today: no Parent
+  carries fields[] or schema_export, so inherited == own for all 34 (0 mismatches).
+  This unlocks per-family schema (flag a parent → whole family inherits).
+- Step D DECISION: enemy idle-distance / vis-dist STAY as the small code rule
+  (the `if _actor_is_enemy(etype)` / `if is_enemy` blocks at ~L549 / ~L574). Reason:
+  they are CATEGORY-WIDE engine defaults (every enemy/boss), not per-actor value
+  config, AND the two lumps use DIFFERENT enemy tests — idle-distance uses the
+  `_actor_is_enemy(etype)` helper, vis-dist uses `cat in (Enemies,Bosses)`. A single
+  parent flag can't faithfully reproduce both sets, so forcing them into schema
+  risks regressing some enemies. Keep as code; revisit only if the two tests are
+  unified. (Foundation above is still the right call for genuine per-family fields.)
+
+# REMAINING TO BE "DONE" (current best list)
+  B  launcher (spring-height -> schema meters/if_not_default; alt-vector stays code),
+     launcherdoor (continue-name BARE string -> add field flag "bare":true to engine,
+     or keep code), crate (crate-type bare + eco-info pickup map -> stays code).
+  C  doors flags hybrid: add a tiny code emitter that ORs bit 1 (ecdf00) when a
+     state-actor link exists, and migrate auto-close(4)/one-way(8)/perm-status(64)
+     to schema bits on eco-door/jng-iris-door/sidedoor/rounddoor.
+  E  UI: panels/actor_fields.py drop GENERIC_PANEL_ETYPES, drive panel from
+     inherited_fields(etype) for ALL actors; properties.py register og_* from the
+     union of all fields[] (so custom DB actors get a UI + auto-registered props).
+  CLEANUP  once B/C land, delete the now-dead hardcoded VALUE branches (190..705)
+     for migrated etypes, keeping ONLY computed emitters (path/pathb/path-k,
+     nav-mesh-sphere, water-vol, launcher alt-vector, crate, checkpoint, vertex-export,
+     enemy idle/vis). Safe because schema already overrides those keys.
+  F  wire tools/extract_lumps_from_goal.py as a diff/validation step in build_database.py.

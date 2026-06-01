@@ -748,9 +748,10 @@ def collect_actors(scene, depsgraph=None):
         # output for every migrated actor, so this only changes behaviour where
         # the legacy path was buggy (e.g. sync dropped for pathless platforms).
         _arec = _schema_db.find_actor(etype)
-        if _arec and _arec.get("schema_export"):
+        if _schema_db.schema_export_enabled(etype):
             for _lk, _lv in emit_schema_lumps(
-                    lambda k, d=None: o.get(k, d), _arec.get("fields", [])).items():
+                    lambda k, d=None: o.get(k, d),
+                    _schema_db.inherited_fields(etype)).items():
                 if _lk not in _protected_keys:
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
