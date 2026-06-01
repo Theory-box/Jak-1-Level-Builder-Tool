@@ -709,6 +709,9 @@ def collect_actors(scene, depsgraph=None):
         # Build string-array lumps from og_actor_links CollectionProperty.
         # These are merged before custom lump rows so rows can override them.
         link_lumps = _build_actor_link_lumps(o, etype)
+        # Keys that must outrank the schema: computed entity links and (below)
+        # user custom lump rows. The schema overrides only legacy hardcoded values.
+        _protected_keys = set(link_lumps.keys())
         for lkey, lval in link_lumps.items():
             lump[lkey] = lval
             names = lval[1:]  # strip "string" prefix
@@ -731,20 +734,24 @@ def collect_actors(scene, depsgraph=None):
             if key in _LUMP_HARDCODED_KEYS and key in lump:
                 log(f"  [WARNING] {o.name} lump row '{key}' overrides addon default")
             lump[key] = value
+            _protected_keys.add(key)
             log(f"  [lump-row] {o.name}  '{key}' = {value}")
 
         # ── Schema-driven lumps (migrated actors) ────────────────────────────
-        # If this actor is flagged `schema_export` in the DB, emit its declared
-        # fields[] lumps directly from the schema — no per-actor code path and
-        # no gates (e.g. set `sync` exports regardless of waypoints). This is
-        # additive and fully gated: actors WITHOUT the flag are untouched, so
-        # this cannot change existing export behaviour. setdefault() means any
-        # explicit hardcoded/custom-row lump already present still wins.
+        # If this actor is flagged `schema_export` in the DB, its declared
+        # fields[] drive its value lumps directly from the schema — no per-actor
+        # code path and no gates (e.g. `sync` exports regardless of waypoints).
+        # The schema is AUTHORITATIVE over the legacy hardcoded branches (it
+        # overrides them), but yields to computed entity links and to explicit
+        # user custom lump rows (both in _protected_keys). Actors WITHOUT the
+        # flag are untouched. Schema output was validated equal to the hardcoded
+        # output for every migrated actor, so this only changes behaviour where
+        # the legacy path was buggy (e.g. sync dropped for pathless platforms).
         _arec = _schema_db.find_actor(etype)
         if _arec and _arec.get("schema_export"):
             for _lk, _lv in emit_schema_lumps(
                     lambda k, d=None: o.get(k, d), _arec.get("fields", [])).items():
-                if _lk not in lump:
+                if _lk not in _protected_keys:
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
 

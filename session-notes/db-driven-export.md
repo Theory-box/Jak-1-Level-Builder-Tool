@@ -192,3 +192,26 @@ STEP F — Wire tools/extract_lumps_from_goal.py as a validation/diff step in
 ## CONSTRAINT FROM USER
   Do the WHOLE restructure before any in-Blender testing. No test cycles requested
   until complete. (I cannot run Blender here; all checks are Python/engine-level.)
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — Step A (partial): schema hook is now AUTHORITATIVE
+═══════════════════════════════════════════════════════════════════════════
+- export/actors.py hook (~L751) changed from additive (`if _lk not in lump`) to
+  authoritative: schema OVERRIDES the legacy hardcoded value lumps, but YIELDS to
+  `_protected_keys` = computed entity-link lumps + user custom lump rows.
+  Wiring: `_protected_keys = set(link_lumps.keys())` after links; `.add(key)` in
+  the custom-row loop; hook guard is `if _lk not in _protected_keys`.
+- Effect: for the 34 schema_export actors the DB is now the real driver. Output is
+  validated-identical to the old hardcoded path EXCEPT the intended bug fix —
+  legacy `sync` was gated behind `if path_pts:` (L311), so pathless platforms
+  (plat/plat-eco/side-to-side-plat/steam-cap) silently lost `sync`; schema now
+  emits it unconditionally. Computed `path` lump (L337) is NOT in schema and is
+  preserved untouched.
+- The hardcoded value branches still RUN then get overwritten — dead-but-harmless
+  compute. Wholesale deletion of those branches is deferred until ALL value actors
+  are migrated (avoids partial-migration interleaving hazard; some branches like
+  spring-height serve both a migrated etype `springbox` and a not-yet-migrated
+  `launcher`). Delete only after B/C/D below land.
+- Remaining: B launcher/launcherdoor/crate (hybrid/bare/computed) · C doors flags
+  ecdf00 link-bit · D enemy idle-distance/vis-dist via parent-field inheritance ·
+  E schema-driven UI panel + property registration · F extractor diff in build.
