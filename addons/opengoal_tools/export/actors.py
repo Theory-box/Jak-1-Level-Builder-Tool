@@ -751,7 +751,8 @@ def collect_actors(scene, depsgraph=None):
         if _schema_db.schema_export_enabled(etype):
             for _lk, _lv in emit_schema_lumps(
                     lambda k, d=None: o.get(k, d),
-                    _schema_db.inherited_fields(etype)).items():
+                    _schema_db.inherited_fields(etype),
+                    etype=etype).items():
                 if _lk not in _protected_keys:
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")

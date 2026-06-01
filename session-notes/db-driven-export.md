@@ -296,3 +296,36 @@ CORRECTED PLAN (unify export onto the EXISTING schema — do NOT reinvent it):
 OPEN QUESTION FOR USER: confirm we unify on the existing fields[] convention
 (recommended), and whether object_ref/pairs_with lumps should get a schema
 resolver or stay as code. Do not author parallel fields[] again.
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — engine rebuilt to the EXISTING convention (unify, validated)
+═══════════════════════════════════════════════════════════════════════════
+- export/schema_emit.py REWRITTEN to consume the DB's real fields[] convention
+  (the one the UI panel already uses). Now supports: enum choices (inline with
+  lump_value -> emit the int; named-table/no-lump_value -> emit the value string),
+  lump.format "(game-task {value})", symbol_literal (bare 'value), lump_bit
+  bitfields (key/type/bit_value, OR-accumulated), value_if_true, lump.slot arrays,
+  lump.scale, default_per_etype (needs etype), and the full write_if vocabulary
+  (always|None, if_true, if_nonzero, if_nonneg, if_positive, if_non_empty,
+  if_not_none, if_not_default, if_any_nonzero[group]). SKIPS computed lumps:
+  field type object_ref, and lump type eco-info-picker (and default_from inputs).
+- export/actors.py hook now passes etype=etype to the engine (for default_per_etype).
+- export/test_schema_emit.py rewritten: loads the REAL DB fields[] and asserts the
+  engine output == current hardcoded export output for 15 cases covering EVERY
+  convention feature (launcher enum+lump_value, oracle named-choice+format, crate
+  symbol_literal + eco-info-picker skip, eco-door lump_bit, fuel-cell value_if_true,
+  breakaway if_any_nonzero, lavaballoon/darkecobarrel default_per_etype,
+  square-platform lump.scale, sharkey if_not_default). ALL 15 PASS.
+- Engine/hook are still DORMANT (0 schema_export in DB) -> export unchanged/safe.
+
+## NEXT (flip phase — do per-actor, validated)
+  For each of the 37 existing-fields actors, confirm engine output == hardcoded
+  for representative inputs (sample of 15 features already covered; spot-check the
+  rest), THEN add `schema_export:true` (single key — NO new fields). Computed/hybrid
+  stays code: crate eco-info (eco-info-picker), launcher alt-vector (object_ref),
+  doors flags ecdf00 LINK bit (so doors: migrate the bits the schema covers but the
+  ecdf00 link-OR must be added back as a post-schema code step, OR keep doors fully
+  code), water-vol (default_from + vol geometry), enemy idle/vis, path/nav/checkpoint.
+  Then author NEW fields[] (IN THIS CONVENTION) for the sync cluster (plat/plat-eco/
+  side-to-side-plat/steam-cap: sync slots + options wrap lump_bit + plat-eco notice-dist)
+  and pickups (money/buzzer eco-info) which have NO existing fields.
