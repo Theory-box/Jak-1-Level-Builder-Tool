@@ -264,6 +264,22 @@ GENERIC_PANEL_ETYPES = frozenset({
     "mis-bone-bridge",  # replaces OG_PT_ActorMisBoneBridge
 })
 
+# Actors whose field UI is provided ELSEWHERE (a dedicated OG_PT_Actor* panel or
+# the utils.py "Sync (Path Timing)" box). The generic panel must NOT also show
+# for these or the UI would double up. Everything else with a fields[] schema —
+# including custom DB-only actors — falls through to the generic panel below.
+# NOTE: if a new dedicated field panel is ever added, add its etype(s) here.
+DEDICATED_FIELD_UI_ETYPES = frozenset({
+    "crate", "launcher", "springbox",                       # OG_PT_ActorCrate / OG_PT_ActorLauncher
+    "eco-door", "jng-iris-door", "sidedoor", "rounddoor",   # OG_PT_ActorEcoDoor
+    "water-vol",                                            # OG_PT_ActorWaterVol
+    "launcherdoor",                                         # OG_PT_ActorLauncherDoor
+    "sun-iris-door",                                        # OG_PT_ActorSunIrisDoor
+    "caveelevator",                                         # OG_PT_ActorCaveElevator
+    "oracle", "pontoon",                                    # OG_PT_ActorTaskGated
+    "plat", "plat-eco", "side-to-side-plat", "steam-cap",   # utils.py sync box
+})
+
 
 class OG_PT_ActorFields(Panel):
     """Data-driven per-actor settings panel.
@@ -289,7 +305,13 @@ class OG_PT_ActorFields(Panel):
         if len(parts) < 3 or parts[0] != "ACTOR":
             return False
         etype = parts[1]
-        return etype in GENERIC_PANEL_ETYPES
+        if etype in GENERIC_PANEL_ETYPES:
+            return True
+        if etype in DEDICATED_FIELD_UI_ETYPES:
+            return False
+        # Any other actor with a fields[] schema (incl. custom DB-only actors)
+        # gets its UI here automatically.
+        return bool(_db.inherited_fields(etype))
 
     def draw(self, ctx):
         sel = ctx.active_object
@@ -299,7 +321,7 @@ class OG_PT_ActorFields(Panel):
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
-        fields = actor.get("fields", [])
+        fields = _db.inherited_fields(etype)
         if not fields:
             row = self.layout.row()
             row.enabled = False

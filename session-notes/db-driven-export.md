@@ -374,3 +374,28 @@ resolver or stay as code. Do not author parallel fields[] again.
     money/buzzer/fuel-cell eco-info constants. LOW VALUE / cosmetic — fine to defer
     until after a Blender smoke test.
   F: extract_lumps_from_goal.py diff step in build_database.py.
+
+═══════════════════════════════════════════════════════════════════════════
+# UPDATE — Step E (UI unify): generic panel now covers all fields-actors
+═══════════════════════════════════════════════════════════════════════════
+- panels/actor_fields.py: poll() no longer limited to GENERIC_PANEL_ETYPES. It now
+  shows for: (allow-list) OR (has inherited_fields AND etype NOT in
+  DEDICATED_FIELD_UI_ETYPES). draw() uses db.inherited_fields(etype).
+- DEDICATED_FIELD_UI_ETYPES (new frozenset) = actors whose field UI comes from a
+  dedicated OG_PT_Actor* panel or the utils.py sync box: crate, launcher, springbox,
+  eco-door, jng-iris-door, sidedoor, rounddoor, water-vol, launcherdoor,
+  sun-iris-door, caveelevator, oracle, pontoon, plat, plat-eco, side-to-side-plat,
+  steam-cap. (If a new dedicated field panel is added later, add it here.)
+- VERIFIED safe: among existing actors only `pontoonten` newly shows the generic
+  panel (it had fields but no UI); no allow-list∩dedicated overlap, so no double UI.
+  Custom DB-only actors with fields[] now get a UI automatically. NEEDS a Blender
+  glance to confirm no panel doubles (logic verified; can't run Blender here).
+- Property registration NOT needed: fields render as dynamic ID-properties
+  (row.prop(obj,'["key"]') / enum+bool via operators reading obj.get(key,default)).
+- REMAINING Step E sub-task (Blender-side): at actor spawn, initialise og_* ID-props
+  from fields[] resolved defaults so float/int/string fields on CUSTOM actors render
+  before first edit (enum/bool already tolerate unset; all existing actors already
+  init their props at spawn, so this only affects brand-new custom float/int actors).
+  Hook point: the actor-create/spawn operator (operators/actors.py, operators/spawn.py)
+  — loop fields[], set o[f["key"]] = resolved default (use db.inherited_fields + the
+  same default_per_etype/default_from logic).
