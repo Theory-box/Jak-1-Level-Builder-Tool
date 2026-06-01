@@ -40,3 +40,19 @@ a migrated flag; wire extractor diff into build_database.py.
   (branch off platform-fixes, or merge it) before adding steam-cap fields[].
 - DB hygiene: eco-blue/eco-red/eco-yellow each have 2 near-identical Actor records
   (dedupe). steam-cap/windmill-one also appear in a second catalog array.
+
+## Pilot landed — steam-cap is the first schema-driven actor
+- Merged `platform-fixes` (brings steam-cap sync + og_sync_* props).
+- Deduped eco-blue/red/yellow (kept canonical collectables.o records).
+- steam-cap: added `fields[]` (4 sync slots → og_sync_*, + og_steam_percent) and
+  `schema_export: true`; removed the dead `links:{need_sync}` key.
+- Verified end-to-end (DB schema → emit engine): a pathless steam-cap with sync
+  set now emits `sync` AND `percent` — the original bug, fixed by architecture
+  rather than by un-gating one hardcoded branch.
+- NEEDS IN-BLENDER VERIFICATION before relying on it (no Blender in this env).
+
+## Next
+- In-Blender test of the steam-cap export.
+- Add a UI field for og_steam_percent (add steam-cap to the generic field panel),
+  or confirm the existing sync box + a percent field render without duplication.
+- Then migrate the rest of the sync cluster, retiring hardcoded branches as we go.
