@@ -43,9 +43,15 @@ def _coerce(t, v):
     if v is None:
         v = 0
     if t in _FLOAT:
-        return float(v)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
     if t in _INT:
-        return int(v)
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
     if t == "bool":
         return int(bool(v))
     return v  # symbol/string/enum-uint32/water-height/... passthrough
@@ -83,14 +89,19 @@ def _passes(raw, rule, default):
     return True
 
 
-def _enum_value(f, raw):
+def _enum_value(f, raw, default=None):
     """Map an enum selection to its emitted value. Inline choices with lump_value
-    emit the int lump_value; otherwise the selected value string is used."""
+    emit the int lump_value; otherwise the selected value string is used. If the
+    value is not a known choice, fall back to the default choice's lump_value
+    (defensive against stale/invalid prop values)."""
     ch = f.get("choices")
     if isinstance(ch, list):
         for c in ch:
             if c.get("value") == raw and "lump_value" in c:
                 return c["lump_value"], True   # (value, is_lump_value_int)
+        for c in ch:                            # raw unknown -> default choice
+            if c.get("value") == default and "lump_value" in c:
+                return c["lump_value"], True
     return raw, False
 
 
@@ -115,7 +126,7 @@ def emit_schema_lumps(get, fields, etype=None):
         if "value_if_true" in f:
             value = f["value_if_true"] if raw else (default if default is not None else 0)
         elif f.get("type") == "enum":
-            value, is_lv = _enum_value(f, raw)
+            value, is_lv = _enum_value(f, raw, default)
         else:
             value = raw
 
