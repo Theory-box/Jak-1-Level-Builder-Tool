@@ -1,36 +1,37 @@
 """Standalone unit tests for schema_emit (run: python3 export/test_schema_emit.py).
-No Blender required — validates emit output matches the hardcoded lump shapes."""
+No Blender required. Validates the engine reproduces the hardcoded lump shapes
+for every branch category in export/actors.py."""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from schema_emit import emit_schema_lumps
+from schema_emit import emit_schema_lumps as E
 
-def g(d): return lambda k, dflt=None: d.get(k, dflt)
+g = lambda d: (lambda k, dflt=None: d.get(k, dflt))
 
-PLAT_FLIP=[
- {"key":"og_flip_sync_pct","type":"float","default":0.0,"lump":{"key":"sync-percent","type":"float"},"write_if":"if_nonzero"},
- {"key":"og_flip_delay_down","type":"float","default":2.0,"lump":{"key":"delay","type":"float","slot":0},"write_if":"always"},
- {"key":"og_flip_delay_up","type":"float","default":2.0,"lump":{"key":"delay","type":"float","slot":1},"write_if":"always"},
-]
-STEAM_CAP=[
- {"key":"og_sync_period","type":"float","default":4.0,"lump":{"key":"sync","type":"float","slot":0},"write_if":"always"},
- {"key":"og_sync_phase","type":"float","default":0.0,"lump":{"key":"sync","type":"float","slot":1},"write_if":"always"},
- {"key":"og_sync_ease_out","type":"float","default":0.15,"lump":{"key":"sync","type":"float","slot":2},"write_if":"always"},
- {"key":"og_sync_ease_in","type":"float","default":0.15,"lump":{"key":"sync","type":"float","slot":3},"write_if":"always"},
- {"key":"og_steam_percent","type":"float","default":0.0,"lump":{"key":"percent","type":"float"},"write_if":"if_nonzero"},
-]
-DARK_CRYSTAL=[
- {"key":"og_crystal_underwater","type":"bool","default":False,"lump":{"key":"mode","type":"int32"},"value_if_true":1,"write_if":"if_true"},
-]
+SYNC=[{"key":"og_sync_period","default":4.0,"lump":{"key":"sync","type":"float","slot":0},"write_if":"always"},
+      {"key":"og_sync_phase","default":0.0,"lump":{"key":"sync","type":"float","slot":1},"write_if":"always"},
+      {"key":"og_sync_ease_out","default":0.15,"lump":{"key":"sync","type":"float","slot":2},"write_if":"always"},
+      {"key":"og_sync_ease_in","default":0.15,"lump":{"key":"sync","type":"float","slot":3},"write_if":"always"},
+      {"key":"og_sync_wrap","type":"bool","default":False,"lump":{"key":"options","type":"uint32","bit":8},"write_if":"if_true"}]
+DOOR=[{"key":"og_door_auto_close","type":"bool","default":False,"lump":{"key":"flags","type":"uint32","bit":4},"write_if":"if_true"},
+      {"key":"og_door_one_way","type":"bool","default":False,"lump":{"key":"flags","type":"uint32","bit":8},"write_if":"if_true"},
+      {"key":"og_door_starts_open","type":"bool","default":False,"lump":{"key":"perm-status","type":"uint32"},"value_if_true":64,"write_if":"if_true"}]
+SQ=[{"key":"og_sq_down","default":-2.0,"scale":4096,"lump":{"key":"distance","type":"float","slot":0},"write_if":"always"},
+    {"key":"og_sq_up","default":4.0,"scale":4096,"lump":{"key":"distance","type":"float","slot":1},"write_if":"always"}]
+FLAME=[{"key":"og_flame_shove","default":2.0,"lump":{"key":"shove","type":"meters"},"write_if":"always"},
+       {"key":"og_flame_period","default":4.0,"lump":{"key":"cycle-speed","type":"float","slot":0},"write_if":"always"},
+       {"key":"og_flame_phase","default":0.0,"lump":{"key":"cycle-speed","type":"float","slot":1},"write_if":"always"},
+       {"key":"og_flame_pause","default":2.0,"lump":{"key":"cycle-speed","type":"float","slot":2},"write_if":"always"}]
+BUZZER=[{"const":"(game-task none)","lump":{"key":"eco-info","type":"buzzer-info","slot":0}},
+        {"const":1,"lump":{"key":"eco-info","type":"buzzer-info","slot":1}}]
 
 def test():
-    a=emit_schema_lumps(g({"og_flip_sync_pct":0.5,"og_flip_delay_down":2.0,"og_flip_delay_up":3.0}), PLAT_FLIP)
-    assert a=={"sync-percent":["float",0.5],"delay":["float",2.0,3.0]}, a
-    assert emit_schema_lumps(g({}), PLAT_FLIP)=={"delay":["float",2.0,2.0]}
-    b=emit_schema_lumps(g({"og_steam_percent":0.5,"og_sync_phase":0.25}), STEAM_CAP)
-    assert b=={"sync":["float",4.0,0.25,0.15,0.15],"percent":["float",0.5]}, b
-    assert emit_schema_lumps(g({}), STEAM_CAP)=={"sync":["float",4.0,0.0,0.15,0.15]}
-    assert emit_schema_lumps(g({"og_crystal_underwater":True}), DARK_CRYSTAL)=={"mode":["int32",1]}
-    assert emit_schema_lumps(g({}), DARK_CRYSTAL)=={}
+    assert E(g({"og_sync_phase":0.25,"og_sync_wrap":True}),SYNC)=={"sync":["float",4.0,0.25,0.15,0.15],"options":["uint32",8]}
+    assert E(g({}),SYNC)=={"sync":["float",4.0,0.0,0.15,0.15]}
+    assert E(g({"og_door_auto_close":True,"og_door_one_way":True,"og_door_starts_open":True}),DOOR)=={"flags":["uint32",12],"perm-status":["uint32",64]}
+    assert E(g({}),DOOR)=={}
+    assert E(g({"og_sq_down":-2.0,"og_sq_up":4.0}),SQ)=={"distance":["float",-8192.0,16384.0]}
+    assert E(g({}),FLAME)=={"shove":["meters",2.0],"cycle-speed":["float",4.0,0.0,2.0]}
+    assert E(g({}),BUZZER)=={"eco-info":["buzzer-info","(game-task none)",1]}
     print("all schema_emit tests passed")
 
 if __name__=="__main__":
