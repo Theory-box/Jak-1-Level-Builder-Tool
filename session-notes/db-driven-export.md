@@ -250,3 +250,49 @@ STEP F — Wire tools/extract_lumps_from_goal.py as a validation/diff step in
      nav-mesh-sphere, water-vol, launcher alt-vector, crate, checkpoint, vertex-export,
      enemy idle/vis). Safe because schema already overrides those keys.
   F  wire tools/extract_lumps_from_goal.py as a diff/validation step in build_database.py.
+
+═══════════════════════════════════════════════════════════════════════════
+# ⚠ COURSE CORRECTION — an existing fields[] schema already exists
+═══════════════════════════════════════════════════════════════════════════
+DISCOVERY: the DB ALREADY had a rich `fields[]` schema for 37 actors (authored
+in prior commits, e.g. "Update jak1_game_database.jsonc"). It is consumed by the
+UI panel (panels/actor_fields.py L302), NOT by export — export was hardcoded.
+Its convention is RICHER than the one I invented this session:
+  - enum fields: "type":"enum" with "choices":[{value,label,lump_value}] — the
+    emitted lump value is the selected choice's `lump_value` (int), not the string.
+  - object_ref + "pairs_with": e.g. launcher og_launcher_dest (object_ref) pairs
+    with og_launcher_fly_time -> alt-vector (resolved from the object's location).
+  - write_if vocabulary: always, if_true, if_nonzero, if_not_default, if_nonneg
+    (>=0), if_positive (>0), if_non_empty (str), if_not_none (!= "none"),
+    if_any_nonzero (any slot != 0), if_object_found (referenced object exists).
+
+MY ERROR: I authored a PARALLEL convention (different write_if words, no enum
+lump_value, no object_ref) and bulk-INJECTED `fields[]`+`schema_export` onto ~34
+actors — creating DUPLICATE `fields` keys on 25 of them (the originals won the
+parse) and, with the now-authoritative hook, running MY engine against the
+ORIGINAL rich fields it cannot interpret -> would mis-export or crash flagged actors.
+
+FIX APPLIED: reverted the DB to commit 5754318 (post-merge, post-dedupe). The DB
+is now CLEAN — 0 duplicate keys, 0 schema_export, existing 37-actor schema intact,
+export back to the safe hardcoded path. The engine/hook/inherited_fields code
+remains in place but DORMANT (nothing is flagged, so the hook never fires).
+
+CORRECTED PLAN (unify export onto the EXISTING schema — do NOT reinvent it):
+  1. Upgrade export/schema_emit.py to the existing convention:
+       - enum: map selected choice -> its lump_value.
+       - full write_if vocabulary above.
+       - object_ref/pairs_with: treat as computed (resolver needs the Blender
+         scene) — either add a resolver hook or leave those specific lumps to the
+         existing computed code. (alt-vector stays computed regardless.)
+  2. For EACH of the 37 existing-fields actors, validate engine output == the
+     current hardcoded export output (same /tmp harness), reading the actor's
+     OWN existing fields[] (no new fields authored).
+  3. Only after an actor validates, add `schema_export:true` to it (single key,
+     no new fields[]). Hook is already authoritative + inheritance-aware.
+  4. Keep computed emitters as code (path/water/launcher-alt-vector/crate/checkpoint/
+     nav/enemy idle+vis).
+  5. Then UI/property-reg already consume the same fields[] -> custom actors get
+     UI + export from one schema.
+OPEN QUESTION FOR USER: confirm we unify on the existing fields[] convention
+(recommended), and whether object_ref/pairs_with lumps should get a schema
+resolver or stay as code. Do not author parallel fields[] again.
