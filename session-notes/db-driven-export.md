@@ -431,3 +431,47 @@ Blender 4.4.3 (downloaded to sandbox, headless):
 CONFIDENCE: high that the restructure is correct and load-safe. Remaining for the
 USER's test pass: confirm in-GAME that launcher reads `mode` and pontoonten reads
 `alt-task` (the 2 additive emissions), then optionally the dead-code cleanup.
+
+═══════════════════════════════════════════════════════════════════════════
+# USER TEST PASS — existing functionality confirmed; branch HELD (no merge yet)
+═══════════════════════════════════════════════════════════════════════════
+Diff test on user map (Abandoned_water_vilallage.blend, 102 actors / 14 etypes
+incl. crate x20, launcher, plat, plat-eco x6, plat-flip x7): schema-ON vs hardcoded
+baseline (same blend/DB/code, only toggling the hook) = BYTE-IDENTICAL, 0 diffs.
+User then compiled + playtested that map in-game -> works correctly. (Map does not
+exercise the additive paths: its launcher mode is default, its platforms have
+waypoints, so identical output is expected.)
+
+User-reported results:
+  - SYNC (pathless platform) -> CONFIRMED in-game; their my-level.jsonc has 4 sync
+    lumps. The original bug is fixed and verified by the user. DONE.
+  - pontoonten -> generic "Actor Settings" panel shows its alt-task field. Working.
+    (Note: `pontoon` is NOT a DB actor — only pontoonten/pontoonfive exist; an earlier
+    walkthrough mis-named it.)
+  - launcher camera-mode (`og_launcher_mode`) -> NO dedicated UI picker. The dedicated
+    "Launcher Settings" panel draws Height/Dest/Fly-Time only; the generic panel is
+    suppressed for launcher (it's in DEDICATED_FIELD_UI_ETYPES). BUT it is settable via
+    the existing "Lump Reference" -> "+" -> Custom Lumps path: a custom `mode` row
+    (uint32; 0=shortfall/default, 1=longfall, 2=no-camera) writes the lump and is
+    PROTECTED (export/actors.py L728-738 adds row key to _protected_keys; schema hook
+    L756 skips protected keys). No conflict (schema mode at default emits nothing).
+    User accepts this path as fine. A labeled picker in the Launcher panel is OPTIONAL
+    polish, DEFERRED — not needed for correctness.
+  - "Actor Settings" panel question RESOLVED: "🔍 Object Settings" (OG_PT_SelectedObject,
+    selected.py L736) is the top-level container; "Actor Settings" (OG_PT_ActorFields)
+    is the ACTIVE generic field sub-panel under it (load-bearing for ~24 actors +
+    pontoonten + custom). NOT stale. User confirmed: KEEP it, do not delete.
+
+STATE: branch feature/schema-driven-export clean + fully pushed (HEAD b77123f).
+DECISION: HOLD — do NOT merge to main. Awaiting further testing from the user's friend.
+Deliverable zip (opengoal_tools.zip) reflects current branch (no code changes since the
+hardening fix); installs+enables in Blender 4.4.3, validated.
+
+OPEN / OPTIONAL (post further-testing, none blocking):
+  1. Optional: labeled camera-mode picker in OG_PT_ActorLauncher (Custom-Lumps path works today).
+  2. Step E: spawn-time init of og_* defaults from fields[] so float/int/string fields on
+     brand-new CUSTOM actors render before first edit (enum/bool already tolerate unset).
+  3. Post-test cleanup: delete now-dead hardcoded VALUE branches in export/actors.py for the
+     36 migrated actors (schema overrides them); KEEP computed emitters + all UI panels.
+  4. In-game verify (nice-to-have): launcher reads custom `mode`; pontoonten reads `alt-task`.
+  5. MERGE TO MAIN only on explicit user say-so after the friend's test pass.
