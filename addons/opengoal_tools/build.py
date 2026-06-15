@@ -33,6 +33,118 @@ _EXE = ".exe" if _sys.platform == "win32" else ""   # platform-aware exe extensi
 GOALC_PORT    = 8181   # runtime default; updated by launch_goalc() and _load_port_file()
 GOALC_TIMEOUT = 120
 
+# ---------------------------------------------------------------------------
+# REPL MIRROR — capture goalc stdout into the OpenGOAL Console panel.
+# Display-only; the nREPL command path (goalc_send) is unaffected.
+# ---------------------------------------------------------------------------
+import queue as _queue
+
+_ANSI_RE      = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")   # strip color/escape codes
+_REPL_QUEUE   = _queue.Queue()
+_REPL_PROC    = None          # the goalc Popen we launched + mirror (keeps stdin open)
+_REPL_READER  = None          # daemon thread tailing _REPL_PROC.stdout
+_REPL_MAX_LINES = 10000       # memory safety cap (NOT a display limit)
+_LAST_COUNT_T = 0.0           # throttle for goalc-instance counting
+_GOALC_COUNT  = 0             # cached instance count, read by the panel (no subprocess in draw)
+
+
+def _mirror_enabled():
+    try:
+        return bool(getattr(bpy.data.window_managers[0], "og_mirror_enabled", True))
+    except Exception:
+        return True
+
+
+def count_goalc():
+    """Number of running goalc processes (used for the dual-instance warning)."""
+    try:
+        name = f"goalc{_EXE}"
+        if os.name == "nt":
+            r = subprocess.run(["tasklist", "/fi", f"imagename eq {name}"],
+                               capture_output=True, text=True)
+            return r.stdout.lower().count(name.lower())
+        r = subprocess.run(["pgrep", "-c", "-f", name], capture_output=True, text=True)
+        return int(r.stdout.strip() or "0")
+    except Exception:
+        return 0
+
+
+def mirror_status():
+    """Cheap status for the panel: (state, detail). No subprocess calls here."""
+    if not _mirror_enabled():
+        return ("off", "")
+    if _REPL_PROC is None:
+        if _GOALC_COUNT > 0:
+            return ("external", "goalc running but not launched by the addon")
+        return ("idle", "")
+    return ("running", "") if _REPL_PROC.poll() is None else ("closed", "")
+
+
+def _repl_reader(proc):
+    """Daemon thread. ONLY touches the queue — never bpy (not thread-safe)."""
+    try:
+        for raw in proc.stdout:                       # blocks until a line or EOF
+            _REPL_QUEUE.put(_ANSI_RE.sub("", raw.rstrip("\n")))
+    except Exception as e:
+        _REPL_QUEUE.put(f"[mirror reader stopped: {e}]")
+    finally:
+        _REPL_QUEUE.put("\u2500\u2500\u2500\u2500\u2500\u2500 goalc stdout closed \u2500\u2500\u2500\u2500\u2500\u2500")
+
+
+def _repl_pump():
+    """Main-thread app-timer. Drains the queue into wm.og_console and keeps
+    a throttled cache of the goalc instance count for the warning."""
+    global _LAST_COUNT_T, _GOALC_COUNT
+    now = time.time()
+    if _REPL_PROC is not None and now - _LAST_COUNT_T > 3.0:
+        _LAST_COUNT_T = now
+        _GOALC_COUNT = count_goalc()
+
+    new = []
+    try:
+        while True:
+            new.append(_REPL_QUEUE.get_nowait())
+    except _queue.Empty:
+        pass
+    if not new:
+        return 0.15
+
+    try:
+        wm = bpy.data.window_managers[0]
+        coll = getattr(wm, "og_console", None)
+        if coll is not None:
+            for line in new:
+                coll.add().text = line
+            over = len(coll) - _REPL_MAX_LINES
+            for _ in range(max(0, over)):
+                coll.remove(0)
+            if getattr(wm, "og_console_follow", True):
+                wm.og_console_index = len(coll) - 1
+            for win in wm.windows:
+                for area in win.screen.areas:
+                    if area.type == 'VIEW_3D':
+                        area.tag_redraw()
+    except Exception:
+        pass
+    return 0.1
+
+
+def start_repl_mirror():
+    try:
+        if not bpy.app.timers.is_registered(_repl_pump):
+            bpy.app.timers.register(_repl_pump, persistent=True)
+    except Exception:
+        pass
+
+
+def stop_repl_mirror():
+    try:
+        if bpy.app.timers.is_registered(_repl_pump):
+            bpy.app.timers.unregister(_repl_pump)
+    except Exception:
+        pass
+
+
 import tempfile as _tempfile
 _PORT_FILE = Path(_tempfile.gettempdir()) / "opengoal_blender_goalc.port"
 
@@ -355,11 +467,35 @@ def launch_goalc(wait_for_nrepl=False):
         data_dir = str(_data())
         cmd = [str(exe), "--user-auto", "--game", "jak1", "--proj-path", data_dir,
                "--port", str(GOALC_PORT)]
-        if os.name == "nt":
-            proc = subprocess.Popen(cmd, cwd=str(_exe_root()),
-                                    creationflags=subprocess.CREATE_NEW_CONSOLE)
+        global _REPL_PROC, _REPL_READER
+        if _mirror_enabled():
+            # MIRROR PATH: capture stdout for the OpenGOAL Console panel.
+            # stdin=PIPE is held OPEN (never closed) so goalc's getline()
+            # blocks instead of busy-looping on EOF. CREATE_NO_WINDOW hides
+            # the separate console; output is mirrored into Blender instead.
+            kw = dict(cwd=str(_exe_root()),
+                      stdin=subprocess.PIPE,
+                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                      bufsize=1, text=True, encoding="utf-8", errors="replace")
+            if os.name == "nt":
+                kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+            proc = subprocess.Popen(cmd, **kw)
+            _REPL_PROC = proc
+            _REPL_READER = threading.Thread(target=_repl_reader, args=(proc,), daemon=True)
+            _REPL_READER.start()
+            start_repl_mirror()
+            _REPL_QUEUE.put(f"\u2500\u2500\u2500\u2500\u2500\u2500 goalc started (port {GOALC_PORT}) \u2500\u2500\u2500\u2500\u2500\u2500")
+            if count_goalc() > 1:
+                _REPL_QUEUE.put("[warning] more than one goalc process detected — "
+                                "only the addon-launched instance is mirrored; close strays")
         else:
-            proc = subprocess.Popen(cmd, cwd=str(_exe_root()))
+            # ORIGINAL BEHAVIOUR — unchanged (separate console window).
+            if os.name == "nt":
+                proc = subprocess.Popen(cmd, cwd=str(_exe_root()),
+                                        creationflags=subprocess.CREATE_NEW_CONSOLE)
+            else:
+                proc = subprocess.Popen(cmd, cwd=str(_exe_root()))
+            _REPL_PROC = None
         log(f"launch_goalc: pid={proc.pid}")
         if wait_for_nrepl:
             for _ in range(60):

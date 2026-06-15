@@ -116,6 +116,8 @@ from .spawn_items import (
 from .operators import ALL_CLASSES as _OPS_CLASSES
 from .operators.misc import _draw_mat
 from .panels import ALL_CLASSES as _PANELS_CLASSES
+from .panels.console import OGConsoleLine
+from . import build as _build
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -167,6 +169,17 @@ def register():
     # Audit results — registered after OGAuditResult is in classes tuple.
     bpy.types.Scene.og_audit_results       = bpy.props.CollectionProperty(type=OGAuditResult)
     bpy.types.Scene.og_audit_results_index = bpy.props.IntProperty(name="Active Audit Result", default=0)
+
+    # OpenGOAL Console mirror — runtime-only (WindowManager isn't saved to .blend).
+    bpy.types.WindowManager.og_console        = bpy.props.CollectionProperty(type=OGConsoleLine)
+    bpy.types.WindowManager.og_console_index  = bpy.props.IntProperty(default=0)
+    bpy.types.WindowManager.og_console_follow = bpy.props.BoolProperty(
+        name="Follow", default=True,
+        description="Auto-scroll the OpenGOAL console to the newest line")
+    bpy.types.WindowManager.og_mirror_enabled = bpy.props.BoolProperty(
+        name="Mirror", default=True,
+        description="Capture goalc output into the OpenGOAL Console panel. "
+                    "Disable to use the original separate console window")
 
     bpy.types.Material.set_invisible    = bpy.props.BoolProperty(name="Invisible")
     bpy.types.Material.set_collision    = bpy.props.BoolProperty(name="Apply Collision Properties")
@@ -374,6 +387,7 @@ def register():
     bpy.app.timers.register(_deferred_populate_spawn_lists, first_interval=0.0)
 
 def unregister():
+    _build.stop_repl_mirror()
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
@@ -388,6 +402,9 @@ def unregister():
         del bpy.types.Scene.og_audit_results
     if hasattr(bpy.types.Scene, "og_audit_results_index"):
         del bpy.types.Scene.og_audit_results_index
+    for a in ("og_console", "og_console_index", "og_console_follow", "og_mirror_enabled"):
+        try: delattr(bpy.types.WindowManager, a)
+        except Exception: pass
     for a in ("set_invisible","set_collision","ignore","noedge","noentity",
               "nolineofsight","nocamera","collide_material","collide_event","collide_mode"):
         try: delattr(bpy.types.Material, a)

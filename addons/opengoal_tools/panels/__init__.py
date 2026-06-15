@@ -28,6 +28,7 @@ from .scene import CLASSES as _SCENE_CLASSES
 from .tools import CLASSES as _TOOLS_CLASSES
 from .lighting import CLASSES as _LIGHTING_CLASSES
 from .imports import CLASSES as _IMPORTS_CLASSES
+from .console import CLASSES as _CONSOLE_CLASSES
 
 ALL_CLASSES = (
     *_LEVEL_CLASSES,
@@ -39,6 +40,7 @@ ALL_CLASSES = (
     *_TOOLS_CLASSES,
     *_LIGHTING_CLASSES,
     *_IMPORTS_CLASSES,
+    *_CONSOLE_CLASSES,
 )
 
 # Re-export every class by name so legacy `from .panels import OG_PT_Foo`
@@ -53,3 +55,4 @@ from .scene import *
 from .tools import *
 from .lighting import *
 from .imports import *
+from .console import *
