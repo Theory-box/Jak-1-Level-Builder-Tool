@@ -217,26 +217,6 @@ def collect_actors(scene, depsgraph=None):
                 log(f"  [fuel-cell] {o.name}  skip-jump-anim=true")
         elif etype == "buzzer":
             lump["eco-info"] = ["buzzer-info", "(game-task none)", 1]
-        elif etype == "crate":
-            ct     = o.get("og_crate_type",          "steel")
-            pickup = o.get("og_crate_pickup",         "money")
-            amount = int(o.get("og_crate_pickup_amount", 1))
-            lump["crate-type"] = f"'{ct}"
-            _CRATE_PICKUP_ENGINE = {
-                "none":       "(pickup-type none)",
-                "money":      "(pickup-type money)",
-                "eco-yellow": "(pickup-type eco-yellow)",
-                "eco-red":    "(pickup-type eco-red)",
-                "eco-blue":   "(pickup-type eco-blue)",
-                "eco-green":  "(pickup-type eco-green)",
-                "buzzer":     "(pickup-type buzzer)",
-            }
-            eng_str = _CRATE_PICKUP_ENGINE.get(pickup, "(pickup-type money)")
-            if pickup == "buzzer":
-                amount = 1  # engine always spawns exactly 1 scout fly
-            if pickup != "none":
-                lump["eco-info"] = ["eco-info", eng_str, amount]
-            log(f"  [crate] {o.name}  type={ct}  pickup={pickup}  amount={amount}")
         elif etype == "money":
             lump["eco-info"] = ["eco-info", "(pickup-type money)", 1]
 
@@ -752,7 +732,8 @@ def collect_actors(scene, depsgraph=None):
             for _lk, _lv in emit_schema_lumps(
                     lambda k, d=None: o.get(k, d),
                     _schema_db.inherited_fields(etype),
-                    etype=etype).items():
+                    etype=etype,
+                    choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
                 if _lk not in _protected_keys:
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")

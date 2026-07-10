@@ -5635,8 +5635,40 @@
       "code": {
         "in_game_cgo": true
       },
-      // Eco Vent Green needs a special case in lumps because there's no actor for it
-      // It needs an eco-info with the pickup type set to eco-green and amount to 1
+      // Green eco vents have no dedicated actor: spawn a bare `ecovent` and give
+      // it an eco-info lump. That lump is now schema-driven (eco-info-picker),
+      // defaulting to eco-green but configurable per instance.
+      "schema_export": true,
+      "lumps": [
+        {
+          "key": "eco-info",
+          "type": "eco-info",
+          "description": "Pickup contents: '(pickup-type X) amount'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-green",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
+        }
+      ],
       "color": [
         0.1,
         0.9,

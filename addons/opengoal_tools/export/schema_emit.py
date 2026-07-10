@@ -8,7 +8,9 @@
 # This implements the DB's existing fields[] convention:
 #   field: key, type, default | default_per_etype{etype:v} | default_from(skip),
 #          label/min/max (UI only), write_if, value_if_true, choices, note
-#   lump:      { key, type, slot?, scale?, format? , pairs_with?(ignored here) }
+#   lump:      { key, type, slot?, scale?, format?, pairs_with? }
+#   computed encoder — lump.type "eco-info-picker": pickup enum (choices carry
+#          engine_string) + pairs_with amount field -> ["eco-info", sym, amount].
 #   lump_bit:  { key, type, bit_value }   (OR-accumulated uint32 bitfield)
 #   types: float|meters|degrees (->float), int|int32|uint32|mode (->int),
 #          bool, symbol|string|enum-uint32|water-height|... (passthrough),
@@ -105,15 +107,56 @@ def _enum_value(f, raw, default=None):
     return raw, False
 
 
-def emit_schema_lumps(get, fields, etype=None):
+def _resolve_choice_table(f, choice_tables):
+    """Return the choices as a list of dicts, resolving a named-table string
+    (e.g. "CratePickups") through choice_tables. Inline lists pass through."""
+    ch = f.get("choices")
+    if isinstance(ch, str):
+        return choice_tables.get(ch)
+    return ch
+
+
+def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
+    choice_tables = choice_tables or {}
     groups = {}   # lump_key -> dict
+    direct = {}   # lump_key -> fully-formed value (computed encoders below)
     for f in fields:
         if f.get("type") == "object_ref":
             continue
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None
+
+        # ── Computed encoder: eco-info-picker ────────────────────────────────
+        # A pickup enum (choices carry an `engine_string` per id) plus a paired
+        # amount field become the 3-element eco-info lump:
+        #     ["eco-info", "(pickup-type X)", amount]
+        # The pickup→symbol map lives entirely in the choices table (DB), so any
+        # actor that declares this field exports eco-info with no code changes.
+        # Amount is emitted as-is (no clamping) — the engine ignores it where a
+        # pickup type doesn't support a count.
         if lp and lp.get("type") == "eco-info-picker":
-            continue  # computed pickup->eco-info mapping handled by code
+            default = _resolve_default(f, etype)
+            raw = get(f.get("key"), default)
+            if not _passes(raw, f.get("write_if", "if_not_none"), default):
+                continue
+            table = _resolve_choice_table(f, choice_tables)
+            engine_str = None
+            if isinstance(table, list):
+                for c in table:
+                    if raw in (c.get("id"), c.get("value")):
+                        engine_str = c.get("engine_string")
+                        break
+            if not engine_str:
+                continue  # unknown pickup id / table missing — emit nothing
+            amt_key = lp.get("pairs_with")
+            amount = 1
+            if amt_key:
+                amt_f = next((x for x in fields if x.get("key") == amt_key), None)
+                amt_default = _resolve_default(amt_f, etype) if amt_f else 1
+                amount = int(_num(get(amt_key, amt_default)))
+            direct[lp["key"]] = ["eco-info", engine_str, amount]
+            continue
+
         if not lp and not lb:
             continue
 
@@ -195,4 +238,5 @@ def emit_schema_lumps(get, fields, etype=None):
         else:
             v = g.get("scalar", 0)
             result[key] = v if g.get("bare") else [t, _coerce(t, v)]
+    result.update(direct)   # computed encoders (eco-info-picker, ...)
     return result

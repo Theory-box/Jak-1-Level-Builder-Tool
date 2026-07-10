@@ -15,10 +15,11 @@ def _load_fields():
             raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.S)
             raw = re.sub(r'(?m)//.*$', '', raw)
             db = json.loads(raw)
-            return {a["etype"]: a.get("fields", []) for a in db["Actors"]}
+            return ({a["etype"]: a.get("fields", []) for a in db["Actors"]},
+                    {"CratePickups": db.get("CratePickups", [])})
     raise SystemExit("DB not found")
 
-F = _load_fields()
+F, CT = _load_fields()
 g = lambda d: (lambda k, dflt=None: d.get(k, dflt))
 
 CASES = [
@@ -28,8 +29,19 @@ CASES = [
     ("if_nonneg + default","launcher",        {}, {}),
     ("named choice+format","oracle",          {"og_alt_task": "ogre-boss"}, {"alt-task": ["enum-uint32", "(game-task ogre-boss)"]}),
     ("if_not_none none",  "oracle",           {}, {}),
-    ("symbol_literal",    "crate",            {"og_crate_type": "wood"}, {"crate-type": "'wood"}),
-    ("eco-info-picker skip","crate",          {}, {"crate-type": "'steel"}),
+    ("symbol_literal",    "crate",            {"og_crate_type": "wood"},
+                                              {"crate-type": "'wood", "eco-info": ["eco-info", "(pickup-type money)", 1]}),
+    ("picker default",    "crate",            {},
+                                              {"crate-type": "'steel", "eco-info": ["eco-info", "(pickup-type money)", 1]}),
+    ("picker eco-green",  "crate",            {"og_crate_pickup": "eco-green"},
+                                              {"crate-type": "'steel", "eco-info": ["eco-info", "(pickup-type eco-green)", 1]}),
+    ("picker amount kept","crate",            {"og_crate_pickup": "money", "og_crate_pickup_amount": 5},
+                                              {"crate-type": "'steel", "eco-info": ["eco-info", "(pickup-type money)", 5]}),
+    ("picker buzzer noclamp","crate",         {"og_crate_pickup": "buzzer", "og_crate_pickup_amount": 3},
+                                              {"crate-type": "'steel", "eco-info": ["eco-info", "(pickup-type buzzer)", 3]}),
+    ("picker none skip",  "crate",            {"og_crate_pickup": "none"}, {"crate-type": "'steel"}),
+    ("picker ecovent",    "ecovent",          {}, {"eco-info": ["eco-info", "(pickup-type eco-green)", 1]}),
+    ("picker ecovent none","ecovent",         {"og_crate_pickup": "none"}, {}),
     ("lump_bit OR",       "eco-door",         {"og_door_auto_close": True, "og_door_one_way": True, "og_door_starts_open": True},
                                               {"flags": ["uint32", 12], "perm-status": ["uint32", 64]}),
     ("value_if_true",     "fuel-cell",        {"og_cell_skip_jump": True}, {"options": ["uint32", 4]}),
@@ -45,7 +57,7 @@ CASES = [
 def test():
     bad = 0
     for name, et, props, exp in CASES:
-        got = E(g(props), F[et], etype=et)
+        got = E(g(props), F[et], etype=et, choice_tables=CT)
         if got != exp:
             print("FAIL", name, "->", got, "EXPECTED", exp); bad += 1
     if bad:
