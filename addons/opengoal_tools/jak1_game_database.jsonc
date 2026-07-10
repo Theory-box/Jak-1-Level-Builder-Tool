@@ -3118,7 +3118,8 @@
       "label": "Scout Fly",
       "engine_string": "(pickup-type buzzer)",
       "icon": "GP_SELECT",
-      "supports_multi_amount": false
+      "supports_multi_amount": false,
+      "force_amount": 1
     }
   ],
 

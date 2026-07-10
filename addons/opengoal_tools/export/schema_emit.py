@@ -132,28 +132,33 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
         #     ["eco-info", "(pickup-type X)", amount]
         # The pickup→symbol map lives entirely in the choices table (DB), so any
         # actor that declares this field exports eco-info with no code changes.
-        # Amount is emitted as-is (no clamping) — the engine ignores it where a
-        # pickup type doesn't support a count.
+        # Amount comes from the paired field and passes through as set, unless
+        # the chosen pickup pins it via `force_amount` in the choices table.
         if lp and lp.get("type") == "eco-info-picker":
             default = _resolve_default(f, etype)
             raw = get(f.get("key"), default)
             if not _passes(raw, f.get("write_if", "if_not_none"), default):
                 continue
             table = _resolve_choice_table(f, choice_tables)
-            engine_str = None
+            choice = None
             if isinstance(table, list):
                 for c in table:
                     if raw in (c.get("id"), c.get("value")):
-                        engine_str = c.get("engine_string")
+                        choice = c
                         break
-            if not engine_str:
+            if not choice or not choice.get("engine_string"):
                 continue  # unknown pickup id / table missing — emit nothing
+            engine_str = choice["engine_string"]
             amt_key = lp.get("pairs_with")
             amount = 1
             if amt_key:
                 amt_f = next((x for x in fields if x.get("key") == amt_key), None)
                 amt_default = _resolve_default(amt_f, etype) if amt_f else 1
                 amount = int(_num(get(amt_key, amt_default)))
+            # A choice may pin its amount (buzzer → the engine always spawns
+            # exactly one scout fly). Everything else passes through as set.
+            if choice.get("force_amount") is not None:
+                amount = int(choice["force_amount"])
             direct[lp["key"]] = ["eco-info", engine_str, amount]
             continue
 
