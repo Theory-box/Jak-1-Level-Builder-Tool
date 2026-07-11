@@ -280,3 +280,109 @@ def texture_groups() -> list[dict]:
 
 def vertex_export_excluded_etypes() -> list[str]:
     return DB["VertexExportExcludedEtypes"]
+
+
+# ── Actor trait layer ───────────────────────────────────────────────────────
+# Single source of truth for per-actor behavioural traits, read straight from
+# the DB records. Previously these were derived in data.py (compat layer) and,
+# for launcher/spawner, hardcoded as literal sets in export/predicates.py.
+# Setting the flag on a DB entry is now all that's needed to give an actor the
+# trait — no code edit. Predicates read via ai_type (derived from `parent`) or a
+# top-level boolean flag on the actor record.
+
+def ai_type(etype: str) -> str:
+    """The actor's AI type. Derived from `parent`, except eco-collectable
+    pickups which are treated as 'prop' (matches the legacy ENTITY_DEFS rule)."""
+    a = find_actor(etype) or {}
+    parent = a.get("parent", "prop")
+    return "prop" if parent == "eco-collectable" else parent
+
+
+def is_nav_safe(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("nav_safe", True))
+
+
+def needs_path(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("needs_path"))
+
+
+def needs_pathb(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("needs_pathb"))
+
+
+def needs_sync(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("needs_sync"))
+
+
+def is_prop(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("is_prop"))
+
+
+def requires_navmesh_flag(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return bool(a.get("requires_navmesh"))
+
+
+def is_enemy(etype: str) -> bool:
+    """Enemies and bosses inherit fact-info-enemy (idle-distance, vis-dist)."""
+    a = find_actor(etype) or {}
+    return a.get("category") in ("Enemies", "Bosses")
+
+
+def is_platform(etype: str) -> bool:
+    a = find_actor(etype) or {}
+    return a.get("category") == "Platforms"
+
+
+def is_launcher(etype: str) -> bool:
+    """launcher / springbox — read spring-height (and launcher reads alt-vector).
+    DB flag `is_launcher: true`."""
+    a = find_actor(etype) or {}
+    return bool(a.get("is_launcher"))
+
+
+def spawns_lurkers(etype: str) -> bool:
+    """Spawns child enemies (num-lurkers lump). DB flag `spawns_lurkers: true`."""
+    a = find_actor(etype) or {}
+    return bool(a.get("spawns_lurkers"))
+
+
+def uses_navmesh(etype: str) -> bool:
+    """nav-enemy subclasses, plus actors flagged requires_navmesh."""
+    return ai_type(etype) == "nav-enemy" or requires_navmesh_flag(etype)
+
+
+def uses_waypoints(etype: str) -> bool:
+    """True if this actor can use waypoints (patrol path or sync-driven path)."""
+    return (not is_nav_safe(etype)
+            or needs_path(etype) or needs_pathb(etype) or needs_sync(etype))
+
+
+# Membership sets (built once from the DB; mirror the legacy data.py constants).
+def nav_unsafe_types() -> set[str]:
+    return {a["etype"] for a in actors() if not a.get("nav_safe", True)}
+
+
+def needs_path_types() -> set[str]:
+    return {a["etype"] for a in actors() if a.get("needs_path")}
+
+
+def needs_pathb_types() -> set[str]:
+    return {a["etype"] for a in actors() if a.get("needs_pathb")}
+
+
+def is_prop_types() -> set[str]:
+    return {a["etype"] for a in actors() if a.get("is_prop")}
+
+
+def launcher_types() -> set[str]:
+    return {a["etype"] for a in actors() if a.get("is_launcher")}
+
+
+def spawner_types() -> set[str]:
+    return {a["etype"] for a in actors() if a.get("spawns_lurkers")}

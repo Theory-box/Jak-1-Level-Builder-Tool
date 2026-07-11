@@ -4157,6 +4157,7 @@
     },
     {
       "etype": "swamp-bat",
+      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
@@ -4212,6 +4213,7 @@
     },
     {
       "etype": "yeti",
+      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Yeti",
       "category": "Enemies",
@@ -6085,6 +6087,7 @@
     },
     {
       "etype": "launcher",
+      "is_launcher": true,
       "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
@@ -7007,6 +7010,7 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
@@ -7228,6 +7232,7 @@
     },
     {
       "etype": "villa-starfish",
+      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Villa Starfish",
       "category": "Visuals",
@@ -8609,6 +8614,7 @@
     },
     {
       "etype": "springbox",
+      "is_launcher": true,
       "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",

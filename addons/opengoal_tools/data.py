@@ -361,10 +361,12 @@ _platform_enum_cb = _make_filtered_enum(PLATFORM_ENUM_ITEMS, {"Platforms"})
 # ═══════════════════════════════════════════════════════════════════════════
 # Derived lookup sets
 # ═══════════════════════════════════════════════════════════════════════════
-NAV_UNSAFE_TYPES  = {e for e, info in ENTITY_DEFS.items() if not info.get("nav_safe", True)}
-NEEDS_PATH_TYPES  = {e for e, info in ENTITY_DEFS.items() if info.get("needs_path", False)}
-NEEDS_PATHB_TYPES = {e for e, info in ENTITY_DEFS.items() if info.get("needs_pathb", False)}
-IS_PROP_TYPES     = {e for e, info in ENTITY_DEFS.items() if info.get("is_prop", False)}
+# Trait sets now derive from the DB via db.py (single source of truth). Kept as
+# module-level names for the many `from .data import NAV_UNSAFE_TYPES` callers.
+NAV_UNSAFE_TYPES  = _db.nav_unsafe_types()
+NEEDS_PATH_TYPES  = _db.needs_path_types()
+NEEDS_PATHB_TYPES = _db.needs_pathb_types()
+IS_PROP_TYPES     = _db.is_prop_types()
 ETYPE_AG          = {e: [info["ag"]] for e, info in ENTITY_DEFS.items() if info.get("ag")}
 ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items() if info.get("extras_ag")}
 
