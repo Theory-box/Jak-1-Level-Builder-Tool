@@ -11,7 +11,6 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -234,7 +233,7 @@ def collect_actors(scene, depsgraph=None):
         # These extend nav-enemy. Without a real navmesh they idle forever.
         # Inject nav-mesh-sphere so the engine doesn't dereference null.
         # entity.gc is also patched separately with a real navmesh if linked.
-        if etype in NAV_UNSAFE_TYPES:
+        if _schema_db.nav_unsafe(etype):
             nav_r = float(o.get("og_nav_radius", 6.0))
             if path_pts:
                 first = path_pts[0]
@@ -251,7 +250,7 @@ def collect_actors(scene, depsgraph=None):
         # For needs_path enemies with no waypoints we log a warning — the level
         # will likely crash or error at runtime without at least 1 waypoint.
         # Platforms handle their own path lump below — skip them here to avoid double-emit
-        if (einfo.get("needs_path") or (etype in NAV_UNSAFE_TYPES and path_pts)) and einfo.get("cat") != "Platforms":
+        if (einfo.get("needs_path") or (_schema_db.nav_unsafe(etype) and path_pts)) and einfo.get("cat") != "Platforms":
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")

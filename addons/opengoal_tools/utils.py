@@ -6,10 +6,11 @@
 
 import bpy
 from bpy.types import Operator
+from . import db as _db
 from .data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
-    LUMP_REFERENCE, LUMP_TYPE_ITEMS, NAV_UNSAFE_TYPES, IS_PROP_TYPES,
+    LUMP_REFERENCE, LUMP_TYPE_ITEMS,
     _actor_has_links, _actor_link_slots, _lump_ref_for_etype, _is_custom_type,
 )
 from .collections import (
@@ -210,7 +211,7 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
         box = layout.box()
         box.label(text="Prop — idle animation only", icon="INFO")
         box.label(text="No AI or combat")
-    elif nav_inline and etype in NAV_UNSAFE_TYPES:
+    elif nav_inline and _db.nav_unsafe(etype):
         box = layout.box()
         box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
         box.prop(props, "nav_radius", text="Sphere Radius (m)")

@@ -18,7 +18,7 @@ from ..data import (
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
     LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, IS_PROP_TYPES, ETYPE_AG,
+    ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
     _parse_lump_row, _LUMP_HARDCODED_KEYS,

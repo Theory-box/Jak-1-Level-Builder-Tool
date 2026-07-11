@@ -23,7 +23,8 @@ from typing import Optional
 import bpy
 from bpy.app.handlers import persistent
 
-from .data import ENTITY_DEFS, ENTITY_WIKI, NAV_UNSAFE_TYPES
+from . import db as _db
+from .data import ENTITY_DEFS, ENTITY_WIKI
 
 
 # ---------------------------------------------------------------------------
@@ -266,7 +267,7 @@ def build_spawn_index() -> dict[str, SpawnItem]:
         pre_fields: list[str] = []
         if etype == "crate":
             pre_fields.append("crate_type")
-        if etype in NAV_UNSAFE_TYPES:
+        if _db.nav_unsafe(etype):
             pre_fields.append("nav_radius")
 
         idx[f"entity:{etype}"] = SpawnItem(

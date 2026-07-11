@@ -303,6 +303,11 @@ def is_nav_safe(etype: str) -> bool:
     return bool(a.get("nav_safe", True))
 
 
+def nav_unsafe(etype: str) -> bool:
+    """Convenience inverse of is_nav_safe (mirrors the old NAV_UNSAFE_TYPES set)."""
+    return not is_nav_safe(etype)
+
+
 def needs_path(etype: str) -> bool:
     a = find_actor(etype) or {}
     return bool(a.get("needs_path"))

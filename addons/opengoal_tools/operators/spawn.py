@@ -11,12 +11,12 @@ from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
+from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
     ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
@@ -219,20 +219,20 @@ class OG_OT_SpawnEntity(Operator):
             o["og_crate_type"]          = ctx.scene.og_props.crate_type
             o["og_crate_pickup"]        = "money"
             o["og_crate_pickup_amount"] = 1
-        if etype in NAV_UNSAFE_TYPES:
+        if _db.nav_unsafe(etype):
             o["og_nav_radius"] = ctx.scene.og_props.nav_radius
             self.report({"WARNING"},
                 f"Added {o.name}  —  nav-mesh workaround will be applied on export. "
                 f"Enemy will idle/notice but won't pathfind without a real navmesh.")
-        elif etype in NEEDS_PATHB_TYPES:
+        elif _db.needs_pathb(etype):
             self.report({"WARNING"},
                 f"Added {o.name}  —  swamp-bat needs TWO path sets: "
                 f"waypoints named _wp_00/_wp_01... AND _wpb_00/_wpb_01... (second patrol route).")
-        elif etype in NEEDS_PATH_TYPES:
+        elif _db.needs_path(etype):
             self.report({"WARNING"},
                 f"Added {o.name}  —  this entity requires at least 1 waypoint (_wp_00). "
                 f"It will crash or error at runtime without a path.")
-        elif etype in IS_PROP_TYPES:
+        elif _db.is_prop(etype):
             self.report({"INFO"}, f"Added {o.name}  (prop — idle animation only, no AI/combat)")
         else:
             self.report({"INFO"}, f"Added {o.name}")
