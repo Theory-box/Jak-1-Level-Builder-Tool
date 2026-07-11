@@ -350,19 +350,6 @@ def collect_actors(scene, depsgraph=None):
             lump["notice-dist"] = ["meters", notice]
             log(f"  [notice-dist] {o.name}  {notice}m  ({'always active' if notice < 0 else 'eco required'})")
 
-        # ── Dark-crystal: mode lump (underwater variant) ─────────────────────
-        if etype == "dark-crystal":
-            if bool(o.get("og_crystal_underwater", False)):
-                lump["mode"] = ["int32", 1]
-                log(f"  [dark-crystal] {o.name}  mode=1 (underwater)")
-
-        # ── Plat-flip: sync-percent (phase offset) ────────────────────────────
-        if etype == "plat-flip":
-            sync_pct = float(o.get("og_flip_sync_pct", 0.0))
-            if sync_pct != 0.0:
-                lump["sync-percent"] = ["float", sync_pct]
-                log(f"  [plat-flip sync-percent] {o.name}  {sync_pct:.2f}")
-
         # ── Eco-door: flags lump ─────────────────────────────────────────────
         # eco-door reads a 'flags lump (eco-door-flags bitfield).
         # auto-close = bit 0, one-way = bit 1.
@@ -388,25 +375,6 @@ def collect_actors(scene, depsgraph=None):
             if starts_open:
                 lump["perm-status"] = ["uint32", 64]  # entity-perm-status complete = bit 6
             log(f"  [eco-door flags] {o.name}  auto-close={auto_close}  one-way={one_way}  starts-open={starts_open}  state-actor-lock={bool(ecdf00)}  flags=0x{flags:02x}")
-
-        # ── Sun-iris-door: proximity + timeout lumps ─────────────────────────
-        # Without 'proximity' the door only opens via 'trigger event (trigger vol or button).
-        if etype == "sun-iris-door":
-            proximity = bool(o.get("og_door_proximity", False))
-            timeout   = float(o.get("og_door_timeout",  0.0))
-            if proximity:
-                lump["proximity"] = ["uint32", 1]
-            if timeout > 0.0:
-                lump["timeout"] = ["float", timeout]
-            log(f"  [sun-iris-door] {o.name}  proximity={proximity}  timeout={timeout}s")
-
-        # ── Basebutton: timeout lump ──────────────────────────────────────────
-        # On press sends 'trigger to notify-actor (the alt-actor link target).
-        if etype == "basebutton":
-            timeout = float(o.get("og_button_timeout", 0.0))
-            if timeout > 0.0:
-                lump["timeout"] = ["float", timeout]
-            log(f"  [basebutton] {o.name}  timeout={timeout}s")
 
         # ── Water-vol: water-height + vol lumps ───────────────────────────────
         # water-vol needs two lumps to function:
@@ -554,131 +522,8 @@ def collect_actors(scene, depsgraph=None):
             vis = float(o.get("og_vis_dist", 200.0))
             lump["vis-dist"] = ["meters", vis]
 
-        # ── Plat-flip: delay lump ─────────────────────────────────────────────
-        # plat-flip reads 'delay as two floats: [before_down, before_up] in seconds.
-        if etype == "plat-flip":
-            d_down = float(o.get("og_flip_delay_down", 2.0))
-            d_up   = float(o.get("og_flip_delay_up",   2.0))
-            lump["delay"] = ["float", d_down, d_up]
-            log(f"  [plat-flip delay] {o.name}  down={d_down}s  up={d_up}s")
-
-        # ── Orb-cache: orb-cache-count lump ──────────────────────────────────
-        if etype == "orb-cache-top":
-            count = int(o.get("og_orb_count", 20))
-            lump["orb-cache-count"] = ["int32", count]
-            log(f"  [orb-cache] {o.name}  count={count}")
-
-        # ── Whirlpool: speed lump ────────────────────────────────────────────
-        # whirlpool reads 'speed as two floats: [base, variation] in internal units.
-        if etype == "whirlpool":
-            speed = float(o.get("og_whirl_speed", 0.3))
-            var   = float(o.get("og_whirl_var",   0.1))
-            lump["speed"] = ["float", speed, var]
-            log(f"  [whirlpool speed] {o.name}  base={speed}  var={var}")
-
-        # ── Ropebridge: art-name lump ─────────────────────────────────────────
-        if etype == "ropebridge":
-            variant = str(o.get("og_bridge_variant", "ropebridge-32"))
-            lump["art-name"] = ["symbol", variant]
-            log(f"  [ropebridge] {o.name}  art-name={variant}")
-
-        # ── Orbit-plat: scale + timeout lumps ────────────────────────────────
-        if etype == "orbit-plat":
-            scale   = float(o.get("og_orbit_scale",   1.0))
-            timeout = float(o.get("og_orbit_timeout", 10.0))
-            if scale != 1.0:
-                lump["scale"] = ["float", scale]
-            if timeout != 10.0:
-                lump["timeout"] = ["float", timeout]
-            log(f"  [orbit-plat] {o.name}  scale={scale}  timeout={timeout}s")
-
-        # ── Square-platform: distance lump (down, up in raw units) ───────────
-        if etype == "square-platform":
-            down_m = float(o.get("og_sq_down", -2.0))
-            up_m   = float(o.get("og_sq_up",    4.0))
-            # convert meters to internal units (×4096)
-            lump["distance"] = ["float", down_m * 4096, up_m * 4096]
-            log(f"  [square-platform] {o.name}  down={down_m}m  up={up_m}m")
-
-        # ── Caveflamepots: shove + cycle-speed lumps ─────────────────────────
-        if etype == "caveflamepots":
-            shove  = float(o.get("og_flame_shove",  2.0))
-            period = float(o.get("og_flame_period", 4.0))
-            phase  = float(o.get("og_flame_phase",  0.0))
-            pause  = float(o.get("og_flame_pause",  2.0))
-            lump["shove"]       = ["meters", shove]
-            lump["cycle-speed"] = ["float", period, phase, pause]
-            log(f"  [caveflamepots] {o.name}  shove={shove}m  period={period}s  phase={phase}  pause={pause}s")
-
-        # ── Shover: shove force + rotoffset ──────────────────────────────────
-        if etype == "shover":
-            shove = float(o.get("og_shover_force", 3.0))
-            rot   = float(o.get("og_shover_rot",   0.0))
-            lump["shove"] = ["meters", shove]
-            if rot != 0.0:
-                lump["rotoffset"] = ["degrees", rot]
-            log(f"  [shover] {o.name}  shove={shove}m  rot={rot}°")
-
-        # ── Lavaballoon / darkecobarrel: speed lump ──────────────────────────
-        if etype in ("lavaballoon", "darkecobarrel"):
-            default_speed = 3.0 if etype == "lavaballoon" else 15.0
-            speed = float(o.get("og_move_speed", default_speed))
-            lump["speed"] = ["meters", speed]
-            log(f"  [{etype}] {o.name}  speed={speed}m/s")
-
-        # ── Windturbine: particle-select lump ────────────────────────────────
-        if etype == "windturbine":
-            if bool(o.get("og_turbine_particles", False)):
-                lump["particle-select"] = ["uint32", 1]
-                log(f"  [windturbine] {o.name}  particles=on")
-
-        # ── Cave elevator: mode + rotoffset ──────────────────────────────────
-        if etype == "caveelevator":
-            mode = int(o.get("og_elevator_mode", 0))
-            rot  = float(o.get("og_elevator_rot", 0.0))
-            if mode != 0:
-                lump["mode"] = ["uint32", mode]
-            if rot != 0.0:
-                lump["rotoffset"] = ["degrees", rot]
-            log(f"  [caveelevator] {o.name}  mode={mode}  rot={rot}°")
-
-        # ── Mis-bone-bridge: animation-select ────────────────────────────────
-        if etype == "mis-bone-bridge":
-            anim = int(o.get("og_bone_bridge_anim", 0))
-            if anim != 0:
-                lump["animation-select"] = ["uint32", anim]
-            log(f"  [mis-bone-bridge] {o.name}  animation-select={anim}")
-
-        # ── Breakaway platforms: height-info ─────────────────────────────────
-        if etype in ("breakaway-left", "breakaway-mid", "breakaway-right"):
-            h1 = float(o.get("og_breakaway_h1", 0.0))
-            h2 = float(o.get("og_breakaway_h2", 0.0))
-            if h1 != 0.0 or h2 != 0.0:
-                lump["height-info"] = ["float", h1, h2]
-            log(f"  [breakaway] {o.name}  h1={h1}  h2={h2}")
-
-        # ── Sunkenfisha: count lump ───────────────────────────────────────────
-        if etype == "sunkenfisha":
-            count = int(o.get("og_fish_count", 1))
-            if count != 1:
-                lump["count"] = ["uint32", count]
-            log(f"  [sunkenfisha] {o.name}  count={count}")
-
-        # ── Sharkey: scale, delay, distance, speed ────────────────────────────
-        if etype == "sharkey":
-            scale    = float(o.get("og_shark_scale",    1.0))
-            delay    = float(o.get("og_shark_delay",    1.0))
-            distance = float(o.get("og_shark_distance", 30.0))
-            speed    = float(o.get("og_shark_speed",    12.0))
-            if scale != 1.0:
-                lump["scale"] = ["float", scale]
-            lump["delay"]    = ["float", delay]
-            lump["distance"] = ["meters", distance]
-            lump["speed"]    = ["meters", speed]
-            log(f"  [sharkey] {o.name}  scale={scale}  delay={delay}s  dist={distance}m  speed={speed}m/s")
-
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
-        if etype in ("oracle", "pontoon"):
+        if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
             task = str(o.get("og_alt_task", "none"))
             if task and task != "none":
                 lump["alt-task"] = ["enum-uint32", f"(game-task {task})"]
