@@ -310,8 +310,9 @@ class OG_PT_ActorFields(Panel):
         if etype in DEDICATED_FIELD_UI_ETYPES:
             return False
         # Any other actor with a fields[] schema (incl. custom DB-only actors)
+        # and any actor matching a trait predicate (enemies, spawners, ...)
         # gets its UI here automatically.
-        return bool(_db.inherited_fields(etype))
+        return bool(_db.ui_fields(etype))
 
     def draw(self, ctx):
         sel = ctx.active_object
@@ -321,7 +322,7 @@ class OG_PT_ActorFields(Panel):
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
-        fields = _db.inherited_fields(etype)
+        fields = _db.ui_fields(etype)
         if not fields:
             row = self.layout.row()
             row.enabled = False

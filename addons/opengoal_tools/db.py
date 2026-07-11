@@ -397,3 +397,41 @@ def launcher_types() -> set[str]:
 
 def spawner_types() -> set[str]:
     return {a["etype"] for a in actors() if a.get("spawns_lurkers")}
+
+
+# ── Trait fields (predicate-tagged field groups) ────────────────────────────
+# Some fields belong to a *behaviour shared across many actors* rather than to
+# one actor: every enemy reads idle-distance/vis-dist, every spawner reads
+# num-lurkers, etc. There is no shared parent to hang these on, so the DB's
+# "TraitFields" section maps a predicate name -> a fields[] list, and any actor
+# for which that predicate is true inherits those fields. Set the flag/category
+# on a new actor and it gets the behaviour (and its UI) with no duplication.
+_TRAIT_PREDICATES = {
+    "is_enemy":          is_enemy,
+    "is_platform":       is_platform,
+    "is_launcher":       is_launcher,
+    "spawns_lurkers":    spawns_lurkers,
+    "needs_notice_dist": needs_notice_dist,
+    "needs_path":        needs_path,
+    "needs_pathb":       needs_pathb,
+    "is_prop":           is_prop,
+}
+
+
+def trait_fields(etype: str) -> list[dict]:
+    """Fields contributed by every behavioural predicate this actor matches
+    (DB `TraitFields` section). Returns [] for actors matching nothing."""
+    out = []
+    for trait, flds in DB.get("TraitFields", {}).items():
+        pred = _TRAIT_PREDICATES.get(trait)
+        if pred and pred(etype):
+            out.extend(flds)
+    return out
+
+
+def ui_fields(etype: str) -> list[dict]:
+    """Fields to render in the generic actor panel: own/inherited fields plus
+    trait fields, deduped by key (an actor's own field wins over a trait one)."""
+    own = inherited_fields(etype)
+    seen = {f.get("key") for f in own}
+    return own + [f for f in trait_fields(etype) if f.get("key") not in seen]

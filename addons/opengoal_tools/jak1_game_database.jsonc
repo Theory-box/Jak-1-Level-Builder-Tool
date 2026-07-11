@@ -15710,6 +15710,52 @@
   // ── VertexExportTypes_notes ─────────────────────────────────────
   "VertexExportTypes_notes": "Mesh-only props usable by the vertex-lit export workflow. Some overlap with entries in Actors (same etype, repeated here); entries unique to this list (e.g. 'dark-plant', 'evilplant' — wait, those ARE in Actors…) are purely decorative and not spawnable via the normal picker. Note: etypes in VertexExportExcludedEtypes (top-level) cannot be vertex-exported regardless of whether they appear here.",
 
+  // ── TraitFields ─────────────────────────────────────────────────
+  // Predicate-tagged field groups: any actor for which the named predicate is
+  // true (see db.py _TRAIT_PREDICATES) inherits these fields for both export
+  // and UI. Replaces the old hardcoded enemy/spawner/notice branches.
+  "TraitFields": {
+    "is_enemy": [
+      {
+        "key": "og_idle_distance",
+        "label": "Idle distance (m)",
+        "type": "float",
+        "default": 80.0,
+        "note": "Player must be within this range for the enemy to leave idle. Engine default 80.",
+        "lump": { "key": "idle-distance", "type": "meters" }
+      },
+      {
+        "key": "og_vis_dist",
+        "label": "Vis distance (m)",
+        "type": "float",
+        "default": 200.0,
+        "note": "Keeps the enemy's process active/visible at range. Default 200.",
+        "lump": { "key": "vis-dist", "type": "meters" }
+      }
+    ],
+    "spawns_lurkers": [
+      {
+        "key": "og_num_lurkers",
+        "label": "Lurkers to spawn",
+        "type": "int",
+        "default": -1,
+        "note": "-1 leaves the engine default; 0+ overrides the spawn count.",
+        "lump": { "key": "num-lurkers", "type": "int32" },
+        "write_if": "if_nonneg"
+      }
+    ],
+    "needs_notice_dist": [
+      {
+        "key": "og_notice_dist",
+        "label": "Notice distance (m)",
+        "type": "float",
+        "default": -1.0,
+        "note": "-1 = always active; >=0 = eco required within range.",
+        "lump": { "key": "notice-dist", "type": "meters" }
+      }
+    ]
+  },
+
   // ── VertexExportExcludedEtypes ──────────────────────────────────
   "VertexExportExcludedEtypes": [
     "crate",

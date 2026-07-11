@@ -16,11 +16,31 @@ def _load_fields():
             raw = re.sub(r'(?m)//.*$', '', raw)
             db = json.loads(raw)
             return ({a["etype"]: a.get("fields", []) for a in db["Actors"]},
-                    {"CratePickups": db.get("CratePickups", [])})
+                    {"CratePickups": db.get("CratePickups", [])},
+                    db.get("TraitFields", {}),
+                    {a["etype"]: a for a in db["Actors"]})
     raise SystemExit("DB not found")
 
-F, CT = _load_fields()
+F, CT, TF, ACTS = _load_fields()
 g = lambda d: (lambda k, dflt=None: d.get(k, dflt))
+
+# Replicates db._TRAIT_PREDICATES for the pure test (no bpy/db import).
+_TRAIT_PRED = {
+    "is_enemy":          lambda a: a.get("category") in ("Enemies", "Bosses"),
+    "is_platform":       lambda a: a.get("category") == "Platforms",
+    "is_launcher":       lambda a: bool(a.get("is_launcher")),
+    "spawns_lurkers":    lambda a: bool(a.get("spawns_lurkers")),
+    "needs_notice_dist": lambda a: bool(a.get("needs_notice_dist")),
+    "needs_path":        lambda a: bool(a.get("needs_path")),
+    "needs_pathb":       lambda a: bool(a.get("needs_pathb")),
+    "is_prop":           lambda a: bool(a.get("is_prop")),
+}
+def traitf(et):
+    a = ACTS.get(et, {}); out = []
+    for trait, flds in TF.items():
+        p = _TRAIT_PRED.get(trait)
+        if p and p(a): out.extend(flds)
+    return out
 
 CASES = [
     # name, etype, props, expected   (expected == current hardcoded export output)
@@ -93,15 +113,32 @@ CASES = [
     ("A launcherdoor bare str", "launcherdoor",    {"og_continue_name": "test-checkpoint"}, {"continue-name": "test-checkpoint"}),
 ]
 
+# Trait fields (predicate-tagged groups): emitted from db.trait_fields(etype).
+TRAIT_CASES = [
+    ("trait enemy default",   "babak",     {}, {"idle-distance": ["meters", 80.0], "vis-dist": ["meters", 200.0]}),
+    ("trait enemy custom",    "babak",     {"og_idle_distance": 50.0, "og_vis_dist": 300.0}, {"idle-distance": ["meters", 50.0], "vis-dist": ["meters", 300.0]}),
+    ("trait spawner default", "yeti",      {}, {"idle-distance": ["meters", 80.0], "vis-dist": ["meters", 200.0]}),
+    ("trait spawner+enemy",   "swamp-bat", {"og_num_lurkers": 3}, {"idle-distance": ["meters", 80.0], "vis-dist": ["meters", 200.0], "num-lurkers": ["int32", 3]}),
+    ("trait num-lurkers skip","swamp-bat", {}, {"idle-distance": ["meters", 80.0], "vis-dist": ["meters", 200.0]}),
+    ("trait notice-dist",     "plat-eco",  {}, {"notice-dist": ["meters", -1.0]}),
+    ("trait notice-dist set", "plat-eco",  {"og_notice_dist": 40.0}, {"notice-dist": ["meters", 40.0]}),
+    ("trait none",            "crate",     {}, {}),
+]
+
 def test():
     bad = 0
     for name, et, props, exp in CASES:
         got = E(g(props), F[et], etype=et, choice_tables=CT)
         if got != exp:
             print("FAIL", name, "->", got, "EXPECTED", exp); bad += 1
+    for name, et, props, exp in TRAIT_CASES:
+        got = E(g(props), traitf(et), etype=et)
+        if got != exp:
+            print("FAIL", name, "->", got, "EXPECTED", exp); bad += 1
     if bad:
         raise SystemExit(f"{bad} failures")
-    print(f"all {len(CASES)} schema_emit convention tests passed")
+    n = len(CASES) + len(TRAIT_CASES)
+    print(f"all {n} schema_emit convention tests passed")
 
 if __name__ == "__main__":
     test()

@@ -47,9 +47,7 @@ from .paths import (
     log,
 )
 from .predicates import (
-    _actor_is_enemy,
     _actor_is_launcher,
-    _actor_is_spawner,
     _canonical_actor_objects,
     _classify_target,
 )
@@ -342,14 +340,6 @@ def collect_actors(scene, depsgraph=None):
                 log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
                     f"(has {n_cv}) — exporting linear (no path-k)")
 
-        # ── Platform: notice-dist (plat-eco) ─────────────────────────────────
-        # Controls how close Jak must be before the platform notices blue eco.
-        # Default -1.0 = always active (never needs eco to activate).
-        if einfo.get("needs_notice_dist"):
-            notice = float(o.get("og_notice_dist", -1.0))
-            lump["notice-dist"] = ["meters", notice]
-            log(f"  [notice-dist] {o.name}  {notice}m  ({'always active' if notice < 0 else 'eco required'})")
-
         # ── Eco-door: flags lump ─────────────────────────────────────────────
         # eco-door reads a 'flags lump (eco-door-flags bitfield).
         # auto-close = bit 0, one-way = bit 1.
@@ -466,36 +456,22 @@ def collect_actors(scene, depsgraph=None):
                     lump["alt-vector"] = ["vector", [dx, dy, dz, fw]]
                     log(f"  [alt-vector] {o.name}  dest={dest_name}  fly={fw:.0f}frames")
 
-        # ── Spawner: num-lurkers ──────────────────────────────────────────────
-        # swamp-bat, yeti, villa-starfish, swamp-rat-nest read num-lurkers to
-        # control how many child entities they spawn.
-        if _actor_is_spawner(etype):
-            count = int(o.get("og_num_lurkers", -1))
-            if count >= 0:
-                lump["num-lurkers"] = ["int32", count]
-                log(f"  [num-lurkers] {o.name}  {count}")
+        # ── Trait fields ──────────────────────────────────────────────────────
+        # Behaviours shared across many actors by predicate: idle-distance +
+        # vis-dist (enemies), num-lurkers (spawners), notice-dist
+        # (needs_notice_dist). Driven by the DB's TraitFields section and applied
+        # to every matching actor, regardless of schema_export.
+        for _tk, _tv in emit_schema_lumps(
+                lambda k, d=None: o.get(k, d),
+                _schema_db.trait_fields(etype),
+                etype=etype).items():
+            lump[_tk] = _tv
 
-        # ── Enemy: idle-distance ──────────────────────────────────────────────
-        # Per-instance activation range. The engine reads this in
-        # fact-info-enemy:new (engine fact-h.gc line 191) — when the player is
-        # farther than idle-distance from the enemy, the enemy stays in its
-        # idle state and won't notice the player. Engine default is 80m.
-        # Lower = enemy stays "asleep" longer; higher = enemy wakes up sooner.
-        # Applies to all enemies and bosses (they all inherit fact-info-enemy).
-        if _actor_is_enemy(etype):
-            idle_d = float(o.get("og_idle_distance", 80.0))
-            lump["idle-distance"] = ["meters", idle_d]
-            log(f"  [idle-distance] {o.name}  {idle_d}m")
-
-                # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
+        # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
         # which requires the bsphere to pass the renderer's cull test.
-        # Custom levels lack a proper BSP vis system, so enemies need a large
-        # bsphere (120m) to guarantee was-drawn is always true in a play area.
-        # Pickups / static props can stay small.
-        info     = ENTITY_DEFS.get(etype, {})
-        is_enemy = info.get("cat") in ("Enemies", "Bosses")
-        bsph_r   = 10.0  # Rockpool uses 10m for all entities; 120m caused merc renderer crashes
+        # Custom levels lack a proper BSP vis system.
+        bsph_r = 10.0  # Rockpool uses 10m for all entities; 120m caused merc renderer crashes
 
         # water-vol: bsphere must enclose the full activation box so the process
         # isn't culled before it can run point-in-vol checks each frame.
@@ -504,12 +480,6 @@ def collect_actors(scene, depsgraph=None):
             hx     = abs(o.scale.x)
             hz     = abs(o.scale.y)
             bsph_r = max((hx ** 2 + hz ** 2) ** 0.5, 10.0)  # minimum 10m
-
-        # Add vis-dist for enemies so they stay active at reasonable range.
-        # og_vis_dist custom prop overrides; default 200m.
-        if is_enemy and "vis-dist" not in lump:
-            vis = float(o.get("og_vis_dist", 200.0))
-            lump["vis-dist"] = ["meters", vis]
 
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
