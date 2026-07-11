@@ -318,6 +318,12 @@ def needs_sync(etype: str) -> bool:
     return bool(a.get("needs_sync"))
 
 
+def needs_notice_dist(etype: str) -> bool:
+    """Enemy variants that read a notice-distance lump on construction."""
+    a = find_actor(etype) or {}
+    return bool(a.get("needs_notice_dist"))
+
+
 def is_prop(etype: str) -> bool:
     a = find_actor(etype) or {}
     return bool(a.get("is_prop"))

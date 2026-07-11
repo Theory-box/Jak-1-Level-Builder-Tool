@@ -514,8 +514,7 @@ UNIVERSAL_LUMPS: list = (
 def _lump_ref_for_etype(etype):
     """Return (universal_lumps, actor_lumps) for a given etype."""
     actor_entries = list(LUMP_REFERENCE.get(etype, []))
-    einfo = ENTITY_DEFS.get(etype, {})
-    if einfo.get("cat") in ("Enemies", "Bosses"):
+    if _db.is_enemy(etype):
         actor_entries = list(LUMP_REFERENCE.get("_enemy", [])) + actor_entries
     return UNIVERSAL_LUMPS, actor_entries
 

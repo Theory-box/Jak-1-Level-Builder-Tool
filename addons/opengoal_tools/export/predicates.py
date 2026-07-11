@@ -11,8 +11,7 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from .. import db as _db
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
+    ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
