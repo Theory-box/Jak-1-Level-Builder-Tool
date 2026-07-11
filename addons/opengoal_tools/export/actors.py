@@ -442,17 +442,6 @@ def collect_actors(scene, depsgraph=None):
             log(f"  [water-vol] {o.name}  surface={surface}m  wade={wade}m  swim={swim}m  "
                 f"bottom={bottom}m  box={hx*2:.1f}x{hz*2:.1f}m")
 
-        # ── Launcherdoor: continue-name lump ─────────────────────────────────
-        # launcherdoor writes a continue-name string lump to set the active
-        # checkpoint when Jak passes through the door.
-        if etype == "launcherdoor":
-            cp_name = str(o.get("og_continue_name", "")).strip()
-            if cp_name:
-                lump["continue-name"] = cp_name
-                log(f"  [launcherdoor] {o.name}  continue-name='{cp_name}'")
-            else:
-                log(f"  [launcherdoor] {o.name}  no continue-name set")
-
         # ── Launcher: spring-height and alt-vector (destination) ─────────────
         # launcher and springbox both read spring-height for launch force.
         # launcher also reads alt-vector: xyz = destination, w = fly_time_frames.

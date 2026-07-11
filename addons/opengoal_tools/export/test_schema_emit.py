@@ -89,6 +89,8 @@ CASES = [
     ("A sharkey custom",        "sharkey",         {"og_shark_scale": 2.0, "og_shark_delay": 0.5, "og_shark_distance": 50.0, "og_shark_speed": 20.0}, {"scale": ["float", 2.0], "delay": ["float", 0.5], "distance": ["meters", 50.0], "speed": ["meters", 20.0]}),
     ("A oracle none",           "oracle",          {}, {}),
     ("A oracle task",           "oracle",          {"og_alt_task": "jungle-eggtop"}, {"alt-task": ["enum-uint32", "(game-task jungle-eggtop)"]}),
+    ("A launcherdoor empty",    "launcherdoor",    {}, {}),
+    ("A launcherdoor bare str", "launcherdoor",    {"og_continue_name": "test-checkpoint"}, {"continue-name": "test-checkpoint"}),
 ]
 
 def test():

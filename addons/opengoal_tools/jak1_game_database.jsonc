@@ -9109,7 +9109,8 @@
           "default": "",
           "lump": {
             "key": "continue-name",
-            "type": "string"
+            "type": "string",
+            "bare": true
           },
           "write_if": "if_non_empty"
         }

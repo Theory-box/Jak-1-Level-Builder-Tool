@@ -8,7 +8,9 @@
 # This implements the DB's existing fields[] convention:
 #   field: key, type, default | default_per_etype{etype:v} | default_from(skip),
 #          label/min/max (UI only), write_if, value_if_true, choices, note
-#   lump:      { key, type, slot?, scale?, format?, pairs_with? }
+#   lump:      { key, type, slot?, scale?, format?, pairs_with?, bare? }
+#              bare: emit the raw value with no [type, value] wrapper (plain
+#              string lumps like continue-name).
 #   computed encoder — lump.type "eco-info-picker": pickup enum (choices carry
 #          engine_string) + pairs_with amount field -> ["eco-info", sym, amount].
 #   lump_bit:  { key, type, bit_value }   (OR-accumulated uint32 bitfield)
@@ -206,6 +208,8 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             g["bare"] = True
         elif lp.get("format") and f.get("type") != "enum":
             value = lp["format"].format(value=value)
+        if lp.get("bare"):
+            g["bare"] = True   # emit the raw value with no [type, value] wrapper
 
         if rule == "if_any_nonzero":
             g["anynz"] = True
