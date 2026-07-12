@@ -171,8 +171,8 @@ def _computed_object_lumps(o, etype):
     Currently supported:
       object_ref field + vector lump -> "target-vector": xyz = the linked
       object's game-space location (Blender x,z,-y, x4096), w = the paired time
-      field in frames (seconds x 300; default 0.5s). Used by launcher's
-      alt-vector (destination + fly time).
+      field in seconds (default 0.5s). Used by launcher's alt-vector
+      (destination + fly time).
     """
     out = {}
     for f in _schema_db.inherited_fields(etype):
@@ -190,7 +190,7 @@ def _computed_object_lumps(o, etype):
             dz = round(-dl.y * 4096, 2)
             tkey = lp.get("pairs_with")
             t    = float(o.get(tkey, -1.0)) if tkey else -1.0
-            fw   = round((t if t >= 0 else 0.5) * 300, 2)
+            fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
             out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
     return out
 
