@@ -66,7 +66,7 @@ CASES = [
     ("picker ecovent none","ecovent",         {"og_crate_pickup": "none"}, {}),
     ("lump_bit OR",       "eco-door",         {"og_door_auto_close": True, "og_door_one_way": True, "og_door_starts_open": True},
                                               {"flags": ["uint32", 12], "perm-status": ["uint32", 64]}),
-    ("value_if_true",     "fuel-cell",        {"og_cell_skip_jump": True}, {"options": ["uint32", 4]}),
+    ("value_if_true",     "fuel-cell",        {"og_cell_skip_jump": True}, {"options": ["uint32", 4], "eco-info": ["cell-info", "(game-task none)"]}),
     ("if_any_nonzero",    "breakaway-left",   {"og_breakaway_h1": 1.0}, {"height-info": ["float", 1.0, 0.0]}),
     ("if_any_nonzero off","breakaway-left",   {}, {}),
     ("default_per_etype a","lavaballoon",     {}, {"speed": ["meters", 3.0]}),
@@ -111,6 +111,10 @@ CASES = [
     ("A oracle task",           "oracle",          {"og_alt_task": "jungle-eggtop"}, {"alt-task": ["enum-uint32", "(game-task jungle-eggtop)"]}),
     ("A launcherdoor empty",    "launcherdoor",    {}, {}),
     ("A launcherdoor bare str", "launcherdoor",    {"og_continue_name": "test-checkpoint"}, {"continue-name": "test-checkpoint"}),
+    ("const fuel-cell",         "fuel-cell",       {}, {"eco-info": ["cell-info", "(game-task none)"]}),
+    ("const fuel-cell opts",    "fuel-cell",       {"og_cell_skip_jump": True}, {"eco-info": ["cell-info", "(game-task none)"], "options": ["uint32", 4]}),
+    ("const money",             "money",           {}, {"eco-info": ["eco-info", "(pickup-type money)", 1]}),
+    ("const buzzer",            "buzzer",          {}, {"eco-info": ["buzzer-info", "(game-task none)", 1]}),
 ]
 
 # Trait fields (predicate-tagged groups): emitted from db.trait_fields(etype).

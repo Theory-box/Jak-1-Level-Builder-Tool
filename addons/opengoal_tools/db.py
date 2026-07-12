@@ -429,9 +429,16 @@ def trait_fields(etype: str) -> list[dict]:
     return out
 
 
+def _field_is_output_only(f: dict) -> bool:
+    """Const lumps have no editable prop — emit-only, never shown in the UI."""
+    return f.get("type") == "const" or (f.get("lump") or {}).get("type") == "const"
+
+
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
-    trait fields, deduped by key (an actor's own field wins over a trait one)."""
-    own = inherited_fields(etype)
+    trait fields, deduped by key (an actor's own field wins over a trait one),
+    excluding output-only const lumps."""
+    own = [f for f in inherited_fields(etype) if not _field_is_output_only(f)]
     seen = {f.get("key") for f in own}
-    return own + [f for f in trait_fields(etype) if f.get("key") not in seen]
+    return own + [f for f in trait_fields(etype)
+                  if not _field_is_output_only(f) and f.get("key") not in seen]

@@ -11,6 +11,8 @@
 #   lump:      { key, type, slot?, scale?, format?, pairs_with?, bare? }
 #              bare: emit the raw value with no [type, value] wrapper (plain
 #              string lumps like continue-name).
+#   computed encoder — lump.type "const": emit lump.const verbatim, always
+#          (fixed eco-info for pickups; no backing prop).
 #   computed encoder — lump.type "eco-info-picker": pickup enum (choices carry
 #          engine_string) + pairs_with amount field -> ["eco-info", sym, amount].
 #   lump_bit:  { key, type, bit_value }   (OR-accumulated uint32 bitfield)
@@ -127,6 +129,14 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             continue
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None
+
+        # ── Computed encoder: const ──────────────────────────────────────────
+        # A fixed lump value with no backing prop, always emitted. Used for
+        # pickups whose eco-info never varies (fuel-cell cell-info, buzzer
+        # buzzer-info, money eco-info).
+        if lp and lp.get("type") == "const":
+            direct[lp["key"]] = lp.get("const")
+            continue
 
         # ── Computed encoder: eco-info-picker ────────────────────────────────
         # A pickup enum (choices carry an `engine_string` per id) plus a paired

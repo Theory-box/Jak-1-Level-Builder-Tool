@@ -181,11 +181,11 @@ def collect_actors(scene, depsgraph=None):
         p = o.name.split("_", 2)
         etype, uid = p[1], p[2]
 
-        # eco-door is abstract (no skeleton, no art group). Remap to its
-        # concrete default subclass so the engine gets a working type with a
-        # real initialize-skeleton call.
-        if etype == "eco-door":
-            etype = "jng-iris-door"
+        # Abstract actors export as a concrete subclass (DB `export_as`), e.g.
+        # eco-door → jng-iris-door (a real skeleton + art group).
+        _rec0 = _schema_db.find_actor(etype)
+        if _rec0 and _rec0.get("export_as"):
+            etype = _rec0["export_as"]
         l = o.location
         gx, gy, gz = round(l.x, 4), round(l.z, 4), round(-l.y, 4)
 
@@ -205,17 +205,6 @@ def collect_actors(scene, depsgraph=None):
         aqw = round(_gq.w, 6)
 
         lump = {"name": f"{etype}-{uid}"}
-
-        if etype == "fuel-cell":
-            lump["eco-info"] = ["cell-info", "(game-task none)"]
-            # skip-jump-anim: fact-options bit 2 (value 4)
-            if bool(o.get("og_cell_skip_jump", False)):
-                lump["options"] = ["uint32", 4]
-                log(f"  [fuel-cell] {o.name}  skip-jump-anim=true")
-        elif etype == "buzzer":
-            lump["eco-info"] = ["buzzer-info", "(game-task none)", 1]
-        elif etype == "money":
-            lump["eco-info"] = ["eco-info", "(pickup-type money)", 1]
 
         einfo = ENTITY_DEFS.get(etype, {})
 
@@ -659,10 +648,12 @@ def collect_actors(scene, depsgraph=None):
             uid  = f"ve{ve_counter}"
             ve_counter += 1
             lump_v = {"name": f"{etype}-{uid}"}
-            if etype == "money":
-                lump_v["eco-info"] = ["eco-info", "(pickup-type money)", 1]
-            elif etype == "buzzer":
-                lump_v["eco-info"] = ["buzzer-info", "(game-task none)", 1]
+            for _lk, _lv in emit_schema_lumps(
+                    lambda k, d=None: o.get(k, d),
+                    _schema_db.inherited_fields(etype),
+                    etype=etype,
+                    choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
+                lump_v[_lk] = _lv
             out.append({
                 "trans":     [gx_v, gy_v, gz_v],
                 "etype":     etype,

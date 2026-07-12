@@ -5403,6 +5403,15 @@
       ],
       "fields": [
         {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["cell-info", "(game-task none)"]
+          }
+        },
+        {
           "key": "og_cell_skip_jump",
           "label": "Skip jump animation",
           "type": "bool",
@@ -5429,6 +5438,7 @@
     },
     {
       "etype": "money",
+      "schema_export": true,
       "label": "Orb (Precursor)",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5439,6 +5449,17 @@
           "key": "movie-mask",
           "type": "uint32",
           "description": "Hide-during-cutscene bitmask."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["eco-info", "(pickup-type money)", 1]
+          }
         }
       ],
       "color": [
@@ -5454,12 +5475,24 @@
     },
     {
       "etype": "buzzer",
+      "schema_export": true,
       "label": "Scout Fly",
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
       "lumps": [],
+      "fields": [
+        {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["buzzer-info", "(game-task none)", 1]
+          }
+        }
+      ],
       "color": [
         0.9,
         0.9,
@@ -8777,6 +8810,7 @@
     },
     {
       "etype": "eco-door",
+      "export_as": "jng-iris-door",
       "label": "Eco Door (iris)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
