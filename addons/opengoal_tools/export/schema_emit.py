@@ -130,6 +130,11 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None
 
+        # Link-derived bits are computed from scene link state in collect_actors
+        # (_computed_lumps), not from a prop — skip here.
+        if lb and lb.get("set_if_link"):
+            continue
+
         # ── Computed encoder: const ──────────────────────────────────────────
         # A fixed lump value with no backing prop, always emitted. Used for
         # pickups whose eco-info never varies (fuel-cell cell-info, buzzer

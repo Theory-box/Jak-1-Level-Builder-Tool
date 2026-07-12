@@ -8879,6 +8879,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -8959,6 +8970,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -9044,6 +9066,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -9107,6 +9140,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [

@@ -163,35 +163,57 @@ def _collect_waypoint_points(actor_obj):
     return points
 
 
-def _computed_object_lumps(o, etype):
-    """Lumps computed from Blender object/scene state that the pure schema
-    emitter can't produce (it skips object_ref fields). Declared in the DB, so
-    any actor can opt in by adding the field — no per-actor code.
+def _computed_lumps(o, etype):
+    """Lumps computed from Blender object/scene/link state that the pure schema
+    emitter can't produce. Declared in the DB, so any actor can opt in by adding
+    the field — no per-actor code.
 
-    Currently supported:
-      object_ref field + vector lump -> "target-vector": xyz = the linked
-      object's game-space location (Blender x,z,-y, x4096), w = the paired time
-      field in seconds (default 0.5s). Used by launcher's alt-vector
-      (destination + fly time).
+    Supported:
+      - object_ref field + vector lump -> "target-vector": xyz = the linked
+        object's game-space location (Blender x,z,-y, x4096), w = the paired time
+        field in seconds (default 0.5s). Used by launcher's alt-vector.
+      - lump_bit fields with key "flags" -> a uint32 bitfield OR-accumulated from
+        bool props and link presence (lump_bit.set_if_link). Emitted only when
+        nonzero. Used by the eco-door family (auto-close/one-way + a state-actor
+        lock bit). perm-status value_if_true bools handled alongside.
     """
     out = {}
-    for f in _schema_db.inherited_fields(etype):
+    fields = _schema_db.inherited_fields(etype)
+    flags = 0
+    have_flags = False
+    for f in fields:
         lp = f.get("lump")
-        if not isinstance(lp, dict):
-            continue
-        if f.get("type") == "object_ref" and lp.get("type") == "vector":
+        lb = f.get("lump_bit")
+        # target-vector from a linked object
+        if f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "vector":
             dest_name = o.get(f["key"], "")
             dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
-            if not dest_obj:
-                continue
-            dl = dest_obj.location
-            dx = round(dl.x * 4096, 2)
-            dy = round(dl.z * 4096, 2)
-            dz = round(-dl.y * 4096, 2)
-            tkey = lp.get("pairs_with")
-            t    = float(o.get(tkey, -1.0)) if tkey else -1.0
-            fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
-            out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+            if dest_obj:
+                dl = dest_obj.location
+                dx = round(dl.x * 4096, 2)
+                dy = round(dl.z * 4096, 2)
+                dz = round(-dl.y * 4096, 2)
+                tkey = lp.get("pairs_with")
+                t    = float(o.get(tkey, -1.0)) if tkey else -1.0
+                fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
+                out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+        # flags bitfield: prop bits + link-derived bits
+        elif isinstance(lb, dict) and lb.get("key") == "flags":
+            have_flags = True
+            bit = int(lb.get("bit_value", 0))
+            link = lb.get("set_if_link")
+            if link:
+                if _actor_get_link(o, link, 0):
+                    flags |= bit
+            elif bool(o.get(f.get("key"), False)):
+                flags |= bit
+        # perm-status: value_if_true bool -> fixed uint (starts-open door)
+        elif (isinstance(lp, dict) and lp.get("key") == "perm-status"
+              and f.get("value_if_true") is not None):
+            if bool(o.get(f.get("key"), False)):
+                out["perm-status"] = [lp.get("type", "uint32"), int(f["value_if_true"])]
+    if have_flags and flags:
+        out["flags"] = ["uint32", flags]
     return out
 
 
@@ -360,32 +382,6 @@ def collect_actors(scene, depsgraph=None):
                 log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
                     f"(has {n_cv}) — exporting linear (no path-k)")
 
-        # ── Eco-door: flags lump ─────────────────────────────────────────────
-        # eco-door reads a 'flags lump (eco-door-flags bitfield).
-        # auto-close = bit 0, one-way = bit 1.
-        if etype in ("eco-door", "jng-iris-door", "sidedoor", "rounddoor"):
-            # eco-door-flags bitfield: ecdf00=1, ecdf01=2, auto-close=4, one-way=8
-            # ecdf00: door is LOCKED when state-actor task is NOT complete (button not pressed)
-            # ecdf01: door is LOCKED when state-actor task IS complete (unusual, ignore)
-            auto_close  = bool(o.get("og_door_auto_close",  False))
-            one_way     = bool(o.get("og_door_one_way",     False))
-            starts_open = bool(o.get("og_door_starts_open", False))
-
-            # If a state-actor is linked, auto-set ecdf00 so the door locks until
-            # the state-actor's perm-complete is set (i.e. the button is pressed).
-            # Without ecdf00, locked=False from the start and the button has no effect.
-            # (module-level import of _actor_get_link at the top of this file is used)
-            has_state_actor = bool(_actor_get_link(o, "state-actor", 0))
-            ecdf00 = 1 if has_state_actor else 0
-
-            flags = ecdf00 | (4 if auto_close else 0) | (8 if one_way else 0)
-            if flags:
-                lump["flags"] = ["uint32", flags]
-            # starts_open: pre-set perm-complete so door spawns already open
-            if starts_open:
-                lump["perm-status"] = ["uint32", 64]  # entity-perm-status complete = bit 6
-            log(f"  [eco-door flags] {o.name}  auto-close={auto_close}  one-way={one_way}  starts-open={starts_open}  state-actor-lock={bool(ecdf00)}  flags=0x{flags:02x}")
-
         # ── Water-vol: water-height + vol lumps ───────────────────────────────
         # water-vol needs two lumps to function:
         #
@@ -537,8 +533,8 @@ def collect_actors(scene, depsgraph=None):
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
 
-        # Computed lumps needing object/scene context (skipped by the emitter).
-        for _lk, _lv in _computed_object_lumps(o, etype).items():
+        # Computed lumps needing object/scene/link context (skipped by emitter).
+        for _lk, _lv in _computed_lumps(o, etype).items():
             if _lk not in _protected_keys:
                 lump[_lk] = _lv
                 log(f"  [computed] {o.name}  '{_lk}' = {_lv}")
