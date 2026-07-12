@@ -57,6 +57,16 @@ reproduce the current exported bytes from the DB, prove equality in
 
 Suggested order: D/C groundwork → batch A → B1/G → B4/B3/B2 → E/F cleanup.
 
+### Fuel-cell / scout-fly game-task binding (future)
+fuel-cell and buzzer (scout fly) currently export a fixed `(game-task none)`
+in their eco-info const lump. To wire them into the task system — so
+collecting them actually increments the cell/fly count and drives task-based
+logic — the game-task must become settable per instance. Plan: replace the
+`const` eco-info lump with a picker-style computed encoder (like
+eco-info-picker) that formats a chosen game-task into the cell-info/buzzer-info
+lump. Not urgent; noted so the current const implementation isn't mistaken for
+final.
+
 ### Default camera entities (revisit AFTER the export migration)
 Jak 1 now ships built-in camera entities, placed via a top-level `cameras[]`
 array (separate from `actors[]`) and triggered by a volume. Mode is chosen by

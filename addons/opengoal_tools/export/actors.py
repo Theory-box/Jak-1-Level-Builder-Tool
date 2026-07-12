@@ -47,7 +47,6 @@ from .paths import (
     log,
 )
 from .predicates import (
-    _actor_is_launcher,
     _canonical_actor_objects,
     _classify_target,
 )
@@ -162,6 +161,38 @@ def _collect_waypoint_points(actor_obj):
         points = points + list(reversed(points))[1:-1]
 
     return points
+
+
+def _computed_object_lumps(o, etype):
+    """Lumps computed from Blender object/scene state that the pure schema
+    emitter can't produce (it skips object_ref fields). Declared in the DB, so
+    any actor can opt in by adding the field — no per-actor code.
+
+    Currently supported:
+      object_ref field + vector lump -> "target-vector": xyz = the linked
+      object's game-space location (Blender x,z,-y, x4096), w = the paired time
+      field in frames (seconds x 300; default 0.5s). Used by launcher's
+      alt-vector (destination + fly time).
+    """
+    out = {}
+    for f in _schema_db.inherited_fields(etype):
+        lp = f.get("lump")
+        if not isinstance(lp, dict):
+            continue
+        if f.get("type") == "object_ref" and lp.get("type") == "vector":
+            dest_name = o.get(f["key"], "")
+            dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
+            if not dest_obj:
+                continue
+            dl = dest_obj.location
+            dx = round(dl.x * 4096, 2)
+            dy = round(dl.z * 4096, 2)
+            dz = round(-dl.y * 4096, 2)
+            tkey = lp.get("pairs_with")
+            t    = float(o.get(tkey, -1.0)) if tkey else -1.0
+            fw   = round((t if t >= 0 else 0.5) * 300, 2)
+            out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+    return out
 
 
 def collect_actors(scene, depsgraph=None):
@@ -421,30 +452,6 @@ def collect_actors(scene, depsgraph=None):
             log(f"  [water-vol] {o.name}  surface={surface}m  wade={wade}m  swim={swim}m  "
                 f"bottom={bottom}m  box={hx*2:.1f}x{hz*2:.1f}m")
 
-        # ── Launcher: spring-height and alt-vector (destination) ─────────────
-        # launcher and springbox both read spring-height for launch force.
-        # launcher also reads alt-vector: xyz = destination, w = fly_time_frames.
-        if _actor_is_launcher(etype):
-            height = float(o.get("og_spring_height", -1.0))
-            if height >= 0:
-                lump["spring-height"] = ["meters", height]
-                log(f"  [spring-height] {o.name}  {height}m")
-
-            if etype == "launcher":
-                dest_name = o.get("og_launcher_dest", "")
-                dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
-                fly_time  = float(o.get("og_launcher_fly_time", -1.0))
-                if dest_obj:
-                    dl = dest_obj.location
-                    # Convert Blender coords → game coords (X, Z, -Y)
-                    dx = round(dl.x * 4096, 2)
-                    dy = round(dl.z * 4096, 2)
-                    dz = round(-dl.y * 4096, 2)
-                    # w = fly time in frames (seconds × 300); default 150 if not set
-                    fw = round((fly_time if fly_time >= 0 else 0.5) * 300, 2)
-                    lump["alt-vector"] = ["vector", [dx, dy, dz, fw]]
-                    log(f"  [alt-vector] {o.name}  dest={dest_name}  fly={fw:.0f}frames")
-
         # ── Trait fields ──────────────────────────────────────────────────────
         # Behaviours shared across many actors by predicate: idle-distance +
         # vis-dist (enemies), num-lurkers (spawners), notice-dist
@@ -529,6 +536,12 @@ def collect_actors(scene, depsgraph=None):
                 if _lk not in _protected_keys:
                     lump[_lk] = _lv
                     log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
+
+        # Computed lumps needing object/scene context (skipped by the emitter).
+        for _lk, _lv in _computed_object_lumps(o, etype).items():
+            if _lk not in _protected_keys:
+                lump[_lk] = _lv
+                log(f"  [computed] {o.name}  '{_lk}' = {_lv}")
 
         out.append({
             "trans":     [gx, gy, gz],
