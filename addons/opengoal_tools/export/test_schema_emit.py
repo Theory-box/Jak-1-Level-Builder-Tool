@@ -31,6 +31,7 @@ _TRAIT_PRED = {
     "is_launcher":       lambda a: bool(a.get("is_launcher")),
     "spawns_lurkers":    lambda a: bool(a.get("spawns_lurkers")),
     "needs_notice_dist": lambda a: bool(a.get("needs_notice_dist")),
+    "is_water":          lambda a: bool(a.get("is_water")),
     "needs_path":        lambda a: bool(a.get("needs_path")),
     "needs_pathb":       lambda a: bool(a.get("needs_pathb")),
     "is_prop":           lambda a: bool(a.get("is_prop")),
@@ -127,6 +128,8 @@ TRAIT_CASES = [
     ("trait notice-dist",     "plat-eco",  {}, {"notice-dist": ["meters", -1.0]}),
     ("trait notice-dist set", "plat-eco",  {"og_notice_dist": 40.0}, {"notice-dist": ["meters", 40.0]}),
     ("trait none",            "crate",     {}, {}),
+    ("trait water default",   "water-vol", {}, {"attack-event": "'drown", "water-height": ["water-height", 0.0, 0.5, 1.0, "(water-flags wt02 wt03 wt05 wt22)"]}),
+    ("trait water custom",    "water-vol", {"og_water_surface": 12.5, "og_water_wade": 0.3, "og_water_swim": 0.8, "og_water_attack": "endlessfall"}, {"attack-event": "'endlessfall", "water-height": ["water-height", 12.5, 0.3, 0.8, "(water-flags wt02 wt03 wt05 wt22)"]}),
 ]
 
 def test():

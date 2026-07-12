@@ -143,6 +143,18 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             direct[lp["key"]] = lp.get("const")
             continue
 
+        # ── Computed encoder: water-height ───────────────────────────────────
+        # Assembles ["water-height", <component floats...>, "(water-flags ...)"]
+        # from the named component fields + a const flags string. Prop-based.
+        if lp and lp.get("type") == "water-height":
+            vals = []
+            for ck in lp.get("components", []):
+                cf = next((x for x in fields if x.get("key") == ck), None)
+                cd = _resolve_default(cf, etype) if cf else 0.0
+                vals.append(float(_num(get(ck, cd))))
+            direct[lp["key"]] = ["water-height"] + vals + [lp.get("flags")]
+            continue
+
         # ── Computed encoder: eco-info-picker ────────────────────────────────
         # A pickup enum (choices carry an `engine_string` per id) plus a paired
         # amount field become the 3-element eco-info lump:

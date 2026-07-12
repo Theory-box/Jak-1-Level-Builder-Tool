@@ -363,6 +363,13 @@ def spawns_lurkers(etype: str) -> bool:
     return bool(a.get("spawns_lurkers"))
 
 
+def is_water(etype: str) -> bool:
+    """Actor carries water attributes (water-height + attack-event). DB flag
+    `is_water: true`."""
+    a = find_actor(etype) or {}
+    return bool(a.get("is_water"))
+
+
 def uses_navmesh(etype: str) -> bool:
     """nav-enemy subclasses, plus actors flagged requires_navmesh."""
     return ai_type(etype) == "nav-enemy" or requires_navmesh_flag(etype)
@@ -412,6 +419,7 @@ _TRAIT_PREDICATES = {
     "is_launcher":       is_launcher,
     "spawns_lurkers":    spawns_lurkers,
     "needs_notice_dist": needs_notice_dist,
+    "is_water":          is_water,
     "needs_path":        needs_path,
     "needs_pathb":       needs_pathb,
     "is_prop":           is_prop,

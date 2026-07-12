@@ -174,8 +174,10 @@ def _computed_lumps(o, etype):
         field in seconds (default 0.5s). Used by launcher's alt-vector.
       - lump_bit fields with key "flags" -> a uint32 bitfield OR-accumulated from
         bool props and link presence (lump_bit.set_if_link). Emitted only when
-        nonzero. Used by the eco-door family (auto-close/one-way + a state-actor
-        lock bit). perm-status value_if_true bools handled alongside.
+        nonzero. Used by the eco-door family. perm-status value_if_true handled.
+      - object_ref field + vol-mesh lump -> "vol": convex half-space planes from
+        the linked mesh (via _vol_planes), plus an optional cull-radius. Add the
+        field to any actor to give it a volume trigger.
     """
     out = {}
     fields = _schema_db.inherited_fields(etype)
@@ -197,6 +199,17 @@ def _computed_lumps(o, etype):
                 t    = float(o.get(tkey, -1.0)) if tkey else -1.0
                 fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
                 out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+        # need_vol: convex half-space planes from a linked mesh
+        elif f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "vol-mesh":
+            vol_name = o.get(f["key"], "")
+            vol_obj  = bpy.data.objects.get(vol_name) if vol_name else None
+            if vol_obj and getattr(vol_obj, "type", None) == "MESH":
+                planes, cull_r = _vol_planes(vol_obj)
+                if planes:
+                    out[lp["key"]] = ["vector-vol"] + planes
+                    ckey = lp.get("cull_radius_key")
+                    if ckey:
+                        out[ckey] = ["meters", cull_r]
         # flags bitfield: prop bits + link-derived bits
         elif isinstance(lb, dict) and lb.get("key") == "flags":
             have_flags = True
@@ -381,72 +394,6 @@ def collect_actors(scene, depsgraph=None):
             else:
                 log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
                     f"(has {n_cv}) — exporting linear (no path-k)")
-
-        # ── Water-vol: water-height + vol lumps ───────────────────────────────
-        # water-vol needs two lumps to function:
-        #
-        # 1. 'water-height  — 5 floats: [surface, wade, swim, flags, bottom]
-        #    All in meters; C++ compiler multiplies by METER_LENGTH (4096).
-        #    The engine reads these to set Jak's wade/swim thresholds and the
-        #    kill-plane depth.
-        #
-        # 2. 'vol  — 6 "vector-vol" planes defining the activation AABB.
-        #    WITHOUT this lump vol-control.pos-vol-count = 0, point-in-vol?
-        #    always returns #f, and the zone NEVER activates (root cause of
-        #    water-vol appearing broken in custom levels before this fix).
-        #
-        #    Each plane = [nx, ny, nz, d_meters].  The engine stores planes as
-        #    (nx, ny, nz, d_raw) where d_raw = d_meters * 4096.  The C++ lump
-        #    compiler handles the × 4096 automatically for "vector-vol" type.
-        #    Plane equation: dot(normal, point) >= d  →  point is inside.
-        #
-        #    Box layout (game coords: X = Blender X, Y = Blender Z up,
-        #                             Z = Blender -Y):
-        #    All normals point INWARD.  Inside condition: dot(P,N) >= d.
-        #      top cap — normal ( 0, -1,  0), d = -surface_y
-        #      floor   — normal ( 0, +1,  0), d =  bot_y  (surface + bottom offset)
-        #      +X cap  — normal (-1,  0,  0), d = -(cx + hx)
-        #      -X cap  — normal (+1,  0,  0), d =  cx - hx
-        #      +Z cap  — normal ( 0,  0, -1), d = -(cz + hz)
-        #      -Z cap  — normal ( 0,  0, +1), d =  cz - hz
-        #
-        #    Scale: the empty's world scale sets the XZ half-extents.
-        #    The user sizes the empty to cover the water area.  Scale 1 = 1 m
-        #    half-extent (2 m total width) — scale up to cover the water mesh.
-        if etype == "water-vol":
-            # Legacy ACTOR_ water-vol path (hidden from picker — use WATER_ mesh instead).
-            # wade/swim are depths below surface (positive meters); bottom is absolute Y.
-            surface = float(o.get("og_water_surface", 0.0))
-            wade    = float(o.get("og_water_wade",    0.5))
-            swim    = float(o.get("og_water_swim",    1.0))
-            bottom  = float(o.get("og_water_bottom",  surface - 5.0))
-            lump["water-height"] = ["water-height", surface, wade, swim, "(water-flags wt02 wt03 wt05 wt22)", bottom]
-
-            # Build the 6-plane vol box from the empty's world scale.
-            # NOTE: o.dimensions returns (0,0,0) for empties (no mesh geometry).
-            # Use o.scale directly — actor empties are never parented or rotated
-            # in this addon, so local scale == world scale.
-            # Scale X → game X half-extent, Scale Y → game Z half-extent.
-            # Default scale is (1,1,1) = a 2m×2m box. User should scale the
-            # empty to match the water area before exporting.
-            hx    = abs(o.scale.x)         # game X half-extent (meters)
-            hz    = abs(o.scale.y)         # game Z half-extent (meters)
-            top_y = surface                # absolute Y of water surface
-            bot_y = bottom                 # absolute Y of kill floor (absolute, not relative)
-
-            lump["vol"] = [
-                "vector-vol",
-                # Normals point OUTWARD. Inside = negative side of each plane.
-                # point-in-vol? returns #f when dot(P,N) - w > 0
-                [ 0,  1,  0,   top_y      ],   # top:   P.y <= surface
-                [ 0, -1,  0,  -bot_y      ],   # floor: P.y >= bottom
-                [ 1,  0,  0,   gx + hx    ],   # +X:    P.x <= cx+hx
-                [-1,  0,  0, -(gx - hx)   ],   # -X:    P.x >= cx-hx
-                [ 0,  0,  1,   gz + hz    ],   # +Z:    P.z <= cz+hz
-                [ 0,  0, -1, -(gz - hz)   ],   # -Z:    P.z >= cz-hz
-            ]
-            log(f"  [water-vol] {o.name}  surface={surface}m  wade={wade}m  swim={swim}m  "
-                f"bottom={bottom}m  box={hx*2:.1f}x{hz*2:.1f}m")
 
         # ── Trait fields ──────────────────────────────────────────────────────
         # Behaviours shared across many actors by predicate: idle-distance +

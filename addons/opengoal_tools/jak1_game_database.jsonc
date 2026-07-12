@@ -8532,90 +8532,24 @@
     },
     {
       "etype": "water-vol",
+      "is_water": true,
       "label": "Water Volume (legacy)",
       "category": "Hidden",
       "parent": "process-drawable",
       "code": {
         "in_game_cgo": true
       },
-      "lumps": [
-        {
-          "key": "water-height",
-          "type": "water-height",
-          "description": "Water surface definition: 'water_m wade_m swim_m [flags] [bottom_m]'. Required."
-        },
-        {
-          "key": "attack-event",
-          "type": "symbol",
-          "description": "Event fired when player drowns. Default 'drown. Bare string: \"'drown\"."
-        }
-      ],
+      "lumps": [],
       "fields": [
         {
-          "key": "og_water_surface",
-          "label": "Surface Y (world)",
-          "type": "float",
-          "default_from": "mesh_ymax",
+          "key": "og_water_vol_mesh",
+          "label": "Volume mesh",
+          "type": "object_ref",
+          "note": "Convex mesh whose faces define the water volume (Normals > Recalculate Outside). Any convex shape works.",
           "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_wade",
-          "label": "Wade depth (m)",
-          "type": "float",
-          "default": 0.5,
-          "min": 0.0,
-          "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_swim",
-          "label": "Swim depth (m)",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.0,
-          "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 2
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_bottom",
-          "label": "Bottom Y (world)",
-          "type": "float",
-          "default_from": "mesh_ymin",
-          "note": "Defines the kill-floor for the volume; not a direct lump field — consumed by the vol plane geometry."
-        },
-        {
-          "key": "og_water_attack",
-          "label": "Attack event",
-          "type": "enum",
-          "default": "drown",
-          "choices": [
-            {
-              "value": "drown",
-              "label": "Drown"
-            },
-            {
-              "value": "endlessfall",
-              "label": "Endless fall"
-            }
-          ],
-          "lump": {
-            "key": "attack-event",
-            "type": "symbol"
-          },
-          "write_if": "always"
+            "key": "vol",
+            "type": "vol-mesh"
+          }
         }
       ],
       "color": [
@@ -15830,6 +15764,47 @@
         "default": -1.0,
         "note": "-1 = always active; >=0 = eco required within range.",
         "lump": { "key": "notice-dist", "type": "meters" }
+      }
+    ],
+    "is_water": [
+      {
+        "key": "og_water_surface",
+        "label": "Water surface Y (m)",
+        "type": "float",
+        "default": 0.0,
+        "note": "World Y of the water surface. Wade/swim are depths below this.",
+        "lump": {
+          "key": "water-height",
+          "type": "water-height",
+          "components": ["og_water_surface", "og_water_wade", "og_water_swim"],
+          "flags": "(water-flags wt02 wt03 wt05 wt22)"
+        }
+      },
+      {
+        "key": "og_water_wade",
+        "label": "Wade depth (m)",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0
+      },
+      {
+        "key": "og_water_swim",
+        "label": "Swim depth (m)",
+        "type": "float",
+        "default": 1.0,
+        "min": 0.0
+      },
+      {
+        "key": "og_water_attack",
+        "label": "Attack event",
+        "type": "enum",
+        "default": "drown",
+        "choices": [
+          { "value": "drown", "label": "Drown" },
+          { "value": "endlessfall", "label": "Endless fall" }
+        ],
+        "lump": { "key": "attack-event", "type": "symbol_literal" },
+        "write_if": "always"
       }
     ]
   },
