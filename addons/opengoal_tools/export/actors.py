@@ -54,6 +54,7 @@ from .volumes import (
     _vol_aabb,
     _vol_planes,
     _vol_links,
+    _vol_link_targets,
 )
 
 
@@ -175,9 +176,8 @@ def _computed_lumps(o, etype):
       - lump_bit fields with key "flags" -> a uint32 bitfield OR-accumulated from
         bool props and link presence (lump_bit.set_if_link). Emitted only when
         nonzero. Used by the eco-door family. perm-status value_if_true handled.
-      - object_ref field + vol-mesh lump -> "vol": convex half-space planes from
-        the linked mesh (via _vol_planes), plus an optional cull-radius. Add the
-        field to any actor to give it a volume trigger.
+    (Volume lumps for need_vol actors are handled in collect_actors from linked
+    VOL_ meshes — the shared volume system — not here.)
     """
     out = {}
     fields = _schema_db.inherited_fields(etype)
@@ -199,17 +199,6 @@ def _computed_lumps(o, etype):
                 t    = float(o.get(tkey, -1.0)) if tkey else -1.0
                 fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
                 out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
-        # need_vol: convex half-space planes from a linked mesh
-        elif f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "vol-mesh":
-            vol_name = o.get(f["key"], "")
-            vol_obj  = bpy.data.objects.get(vol_name) if vol_name else None
-            if vol_obj and getattr(vol_obj, "type", None) == "MESH":
-                planes, cull_r = _vol_planes(vol_obj)
-                if planes:
-                    out[lp["key"]] = ["vector-vol"] + planes
-                    ckey = lp.get("cull_radius_key")
-                    if ckey:
-                        out[ckey] = ["meters", cull_r]
         # flags bitfield: prop bits + link-derived bits
         elif isinstance(lb, dict) and lb.get("key") == "flags":
             have_flags = True
@@ -243,6 +232,14 @@ def collect_actors(scene, depsgraph=None):
     """
     out = []
     level_objs = _level_objects(scene)
+    # Shared volume system: VOL_ meshes link to target actors; any need_vol actor
+    # gets its convex `vol` (via _vol_planes) from the VOL_ linked to it — same
+    # mechanism cameras/checkpoints use.
+    vol_by_target = {}
+    for _v in level_objs:
+        if _v.type == "MESH" and _v.name.startswith("VOL_"):
+            for _tn in _vol_link_targets(_v):
+                vol_by_target.setdefault(_tn, _v)
     for o in _canonical_actor_objects(scene, objects=level_objs):
         p = o.name.split("_", 2)
         etype, uid = p[1], p[2]
@@ -412,13 +409,14 @@ def collect_actors(scene, depsgraph=None):
         # Custom levels lack a proper BSP vis system.
         bsph_r = 10.0  # Rockpool uses 10m for all entities; 120m caused merc renderer crashes
 
-        # water-vol: bsphere must enclose the full activation box so the process
-        # isn't culled before it can run point-in-vol checks each frame.
-        # Use o.scale — empties have no dimensions, scale is the half-extent.
-        if etype == "water-vol":
-            hx     = abs(o.scale.x)
-            hz     = abs(o.scale.y)
-            bsph_r = max((hx ** 2 + hz ** 2) ** 0.5, 10.0)  # minimum 10m
+        # need_vol actors: bsphere must enclose the linked volume so the process
+        # isn't culled before it can run point-in-vol checks each frame. Size it
+        # from the linked VOL_ mesh's AABB (same as the checkpoint/WATER path).
+        if _schema_db.needs_vol(etype):
+            _volm = vol_by_target.get(o.name)
+            if _volm:
+                _xn, _xx, _yn, _yx, _zn, _zx, _cx, _cy, _cz, _rad = _vol_aabb(_volm)
+                bsph_r = round((((_xx-_xn)/2)**2 + ((_yx-_yn)/2)**2 + ((_zx-_zn)/2)**2) ** 0.5 + 5.0, 2)
 
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
@@ -485,6 +483,15 @@ def collect_actors(scene, depsgraph=None):
             if _lk not in _protected_keys:
                 lump[_lk] = _lv
                 log(f"  [computed] {o.name}  '{_lk}' = {_lv}")
+
+        # need_vol: convex `vol` from the VOL_ mesh linked to this actor.
+        if _schema_db.needs_vol(etype) and "vol" not in _protected_keys:
+            _volm = vol_by_target.get(o.name)
+            if _volm:
+                _planes, _cr = _vol_planes(_volm)
+                if _planes:
+                    lump["vol"] = ["vector-vol"] + _planes
+                    log(f"  [need_vol] {o.name} <- {_volm.name} ({len(_planes)} planes)")
 
         out.append({
             "trans":     [gx, gy, gz],

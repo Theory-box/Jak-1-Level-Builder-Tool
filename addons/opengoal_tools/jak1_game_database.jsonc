@@ -8533,6 +8533,7 @@
     {
       "etype": "water-vol",
       "is_water": true,
+      "need_vol": true,
       "label": "Water Volume (legacy)",
       "category": "Hidden",
       "parent": "process-drawable",
@@ -8540,18 +8541,7 @@
         "in_game_cgo": true
       },
       "lumps": [],
-      "fields": [
-        {
-          "key": "og_water_vol_mesh",
-          "label": "Volume mesh",
-          "type": "object_ref",
-          "note": "Convex mesh whose faces define the water volume (Normals > Recalculate Outside). Any convex shape works.",
-          "lump": {
-            "key": "vol",
-            "type": "vol-mesh"
-          }
-        }
-      ],
+      "fields": [],
       "color": [
         0.2,
         0.4,

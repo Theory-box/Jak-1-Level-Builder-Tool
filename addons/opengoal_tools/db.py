@@ -370,6 +370,14 @@ def is_water(etype: str) -> bool:
     return bool(a.get("is_water"))
 
 
+def needs_vol(etype: str) -> bool:
+    """Actor gets its `vol` lump from a linked VOL_ mesh (convex, via
+    _vol_planes) — the shared volume mechanism used by cameras/checkpoints.
+    DB flag `need_vol: true`."""
+    a = find_actor(etype) or {}
+    return bool(a.get("need_vol"))
+
+
 def uses_navmesh(etype: str) -> bool:
     """nav-enemy subclasses, plus actors flagged requires_navmesh."""
     return ai_type(etype) == "nav-enemy" or requires_navmesh_flag(etype)

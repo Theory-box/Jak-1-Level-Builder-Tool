@@ -706,52 +706,55 @@ class OG_OT_AddLauncherDest(Operator):
         return {"FINISHED"}
 
 class OG_OT_AddWaterVolume(Operator):
-    """Add a water volume mesh at the 3D cursor.
-Place and scale it to cover your water area — rotation is supported."""
+    """Add a water volume: a water-vol actor empty plus a linked convex VOL_
+mesh you can reshape. Uses the shared volume system, so any convex mesh works
+(rotation and non-uniform shapes supported)."""
     bl_idname  = "og.add_water_volume"
     bl_label   = "Add Water Volume"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, ctx):
         scene = ctx.scene
+        cur   = scene.cursor.location
+        etype = "water-vol"
 
-        # Name: WATER_0, WATER_1, etc. Count only in current level objects.
-        existing = [o for o in _level_objects(scene) if o.name.startswith("WATER_")]
-        idx  = len(existing)
-        name = f"WATER_{idx}"
+        # 1) The water-vol actor empty (like any other actor).
+        n = len([o for o in _level_objects(scene) if o.name.startswith(f"ACTOR_{etype}_")])
+        actor_name = f"ACTOR_{etype}_{n}"
+        bpy.ops.object.empty_add(type="PLAIN_AXES", location=cur)
+        actor = ctx.active_object
+        actor.name = actor_name
+        actor.name = actor_name
+        actor.show_name          = True
+        actor.empty_display_size = 0.8
+        actor.color              = (0.1, 0.4, 1.0, 1.0)
+        actor["og_water_surface"] = round(cur.z, 4)
+        actor["og_water_wade"]    = 0.5
+        actor["og_water_swim"]    = 1.0
+        actor["og_water_attack"]  = "drown"
+        _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
-        # Create a cube mesh — primitive_cube_add sets it as the active object
-        bpy.ops.mesh.primitive_cube_add(size=2.0, location=ctx.scene.cursor.location)
-        o      = ctx.active_object
-        # Set name twice: Blender resolves data-block name conflicts after first set
-        o.name = name
-        o.name = name
+        # 2) A starter VOL_ cube linked to the actor (convex — reshape freely).
+        vn = len([o for o in _level_objects(scene)
+                  if o.type == "MESH" and o.name.startswith("VOL_")])
+        bpy.ops.mesh.primitive_cube_add(size=4.0, location=cur)
+        vol = ctx.active_object
+        vol.name = f"VOL_{vn}"
+        vol.name = f"VOL_{vn}"
+        vol["og_vol_id"]  = vn
+        vol.show_name     = True
+        vol.display_type  = "WIRE"
+        vol.color         = (0.1, 0.4, 1.0, 0.4)
+        vol.set_invisible = True
+        vol.set_collision = True
+        vol.ignore        = True
+        entry = _vol_links(vol).add()
+        entry.target_name = actor_name
+        _rename_vol_for_links(vol)
+        _link_object_to_sub_collection(scene, vol, *_COL_PATH_TRIGGERS)
 
-        # Style: wireframe blue so it doesn't obscure the level
-        o.display_type   = "WIRE"
-        o.color          = (0.1, 0.4, 1.0, 0.5)
-        o.show_name      = True
-        # set_invisible tells the level builder to skip this mesh entirely —
-        # it exports via extras in the GLB but generates no geometry or collision
-        o.set_invisible  = True
-
-        # Lock rotation — water-vol uses an AABB, rotation has no effect in-game
-        o.lock_rotation[0] = True
-        o.lock_rotation[1] = True
-        o.lock_rotation[2] = True
-
-        # Set default water properties from cursor Z (game Y)
-        surface_y = round(ctx.scene.cursor.location.z, 4)
-        o["og_water_surface"] = surface_y
-        o["og_water_wade"]    = 0.5   # depth below surface in meters
-        o["og_water_swim"]    = 1.0   # depth below surface in meters
-        o["og_water_bottom"]  = round(surface_y - 5.0, 4)  # absolute Y of kill floor
-        o["og_water_attack"]  = "drown"
-
-        # Link into the level collection
-        _link_object_to_sub_collection(scene, o, *_COL_PATH_WATER)
-
-        self.report({"INFO"}, f"Added {name} — scale to cover your water area, then export")
+        self.report({"INFO"},
+            f"Added {actor_name} + linked {vol.name} — reshape the VOL_ mesh to cover your water")
         return {"FINISHED"}
 
 class OG_OT_SpawnPlatform(Operator):
