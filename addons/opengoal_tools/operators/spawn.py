@@ -728,7 +728,7 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         actor.show_name          = True
         actor.empty_display_size = 0.8
         actor.color              = (0.1, 0.4, 1.0, 1.0)
-        actor["og_water_surface"] = round(cur.z, 4)
+        actor["og_water_surface"] = round(cur.z + 2.0, 4)   # top of the size-4 starter cube
         actor["og_water_wade"]    = 0.5
         actor["og_water_swim"]    = 1.0
         actor["og_water_attack"]  = "drown"

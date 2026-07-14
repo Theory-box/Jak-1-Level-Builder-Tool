@@ -272,7 +272,6 @@ GENERIC_PANEL_ETYPES = frozenset({
 DEDICATED_FIELD_UI_ETYPES = frozenset({
     "crate", "launcher", "springbox",                       # OG_PT_ActorCrate / OG_PT_ActorLauncher
     "eco-door", "jng-iris-door", "sidedoor", "rounddoor",   # OG_PT_ActorEcoDoor
-    "water-vol",                                            # OG_PT_ActorWaterVol
     "launcherdoor",                                         # OG_PT_ActorLauncherDoor
     "sun-iris-door",                                        # OG_PT_ActorSunIrisDoor
     "caveelevator",                                         # OG_PT_ActorCaveElevator

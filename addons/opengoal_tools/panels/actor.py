@@ -493,39 +493,12 @@ class OG_PT_ActorWaterVol(Panel):
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-
-        # Scale warning — empties default to scale 1 = 2m box, must be scaled up
-        sx, sy = abs(sel.scale.x), abs(sel.scale.y)
-        if sx < 2.0 or sy < 2.0:
-            warn = layout.box()
-            warn.label(text="⚠  Scale empty to cover water area!", icon="ERROR")
-            warn.label(text=f"Current: {sx*2:.1f}m × {sy*2:.1f}m  (Scale X/Y in 3D view)")
-
-        # Surface height
         box = layout.box()
-        box.label(text="Water Heights (world Y)", icon="MOD_OCEAN")
-
-        water_y  = float(sel.get("og_water_surface", 0.0))
-        wade_y   = float(sel.get("og_water_wade",    water_y - 0.5))
-        swim_y   = float(sel.get("og_water_swim",    water_y - 1.0))
-        bottom_y = float(sel.get("og_water_bottom",  water_y - 5.0))
-
-        col = box.column(align=True)
-        _prop_row(col, sel, "og_water_surface", "Surface Y:",  water_y)
-        _prop_row(col, sel, "og_water_wade",    "Wade Y:",     wade_y)
-        _prop_row(col, sel, "og_water_swim",    "Swim Y:",     swim_y)
-        _prop_row(col, sel, "og_water_bottom",  "Bottom Y:",   bottom_y)
-
-        # Show computed depths relative to surface so user can sanity-check
-        sub = box.column(align=True)
-        sub.enabled = False
-        sub.label(text=f"  Wade at: {water_y - wade_y:.2f}m below surface", icon="INFO")
-        sub.label(text=f"  Swim at: {water_y - swim_y:.2f}m below surface")
-        sub.label(text=f"  Kill floor: {water_y - bottom_y:.2f}m below surface")
-
-        op = box.operator("og.sync_water_from_object", text="Sync Surface from Object Y", icon="OBJECT_ORIGIN")
+        box.label(text="Water Volume", icon="MOD_OCEAN")
+        box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        op = box.operator("og.sync_water_from_object",
+                          text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
         op.actor_name = sel.name
-
 
 
 class OG_PT_ActorLauncherDoor(Panel):

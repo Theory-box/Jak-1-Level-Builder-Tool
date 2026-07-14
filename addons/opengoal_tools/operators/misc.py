@@ -217,47 +217,28 @@ class OG_OT_ClearLauncherDest(Operator):
         return {"FINISHED"}
 
 class OG_OT_SyncWaterFromObject(Operator):
-    """Set the water-vol surface height from the object's world Y position."""
+    """Set the water-vol surface height from the top of its linked VOL_ mesh."""
     bl_idname  = "og.sync_water_from_object"
-    bl_label   = "Sync Water Surface from Object"
+    bl_label   = "Sync Water Surface from Volume"
     bl_options = {"REGISTER", "UNDO"}
 
     actor_name: bpy.props.StringProperty()
 
     def execute(self, ctx):
         o = bpy.data.objects.get(self.actor_name)
-        if not o: return {"CANCELLED"}
-        # Blender Z = game Y (up). Use location.z for the surface height.
-        surface_y = round(o.location.z, 4)
-        o["og_water_surface"] = surface_y
-        o["og_water_wade"]    = 0.5
-        o["og_water_swim"]    = 1.0
-        o["og_water_bottom"]  = round(surface_y - 5.0, 4)
-        self.report({"INFO"}, f"Water surface={surface_y:.2f}m  wade={surface_y-0.5:.2f}  swim={surface_y-1.0:.2f}  bottom={surface_y-5.0:.2f}")
-        return {"FINISHED"}
-
-class OG_OT_SyncWaterFromMesh(Operator):
-    """Sync water surface height from the top of the WATER_ mesh bounding box."""
-    bl_idname  = "og.sync_water_from_mesh"
-    bl_label   = "Sync Surface from Mesh Top"
-    bl_options = {"REGISTER", "UNDO"}
-
-    mesh_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        import bpy
-        o = bpy.data.objects.get(self.mesh_name)
-        if not o or o.type != "MESH": return {"CANCELLED"}
-        # World-space bounding box corners
-        corners = [o.matrix_world @ v.co for v in o.data.vertices]
-        ys      = [c.z for c in corners]   # Blender Z = game Y
-        top_y   = round(max(ys), 4)
-        bot_y   = round(min(ys), 4)
+        if not o:
+            return {"CANCELLED"}
+        # Find the VOL_ mesh linked to this water actor.
+        vol = next((v for v in bpy.data.objects
+                    if v.type == "MESH" and v.name.startswith("VOL_")
+                    and self.actor_name in _vol_link_targets(v)), None)
+        if vol is None:
+            self.report({"WARNING"}, "No VOL_ mesh linked to this water actor")
+            return {"CANCELLED"}
+        # Blender Z = game Y (up). Surface = top of the linked volume.
+        top_y = round(max((vol.matrix_world @ vtx.co).z for vtx in vol.data.vertices), 4)
         o["og_water_surface"] = top_y
-        o["og_water_wade"]    = 0.5   # depth below surface in meters
-        o["og_water_swim"]    = 1.0   # depth below surface in meters
-        o["og_water_bottom"]  = bot_y
-        self.report({"INFO"}, f"Surface={top_y:.2f}m  wade=0.5m  swim=1.0m  bottom={bot_y:.2f}m")
+        self.report({"INFO"}, f"Water surface set to {top_y:.2f}m (top of {vol.name})")
         return {"FINISHED"}
 
 def _entity_enum_for_cats(cats):
@@ -296,5 +277,4 @@ CLASSES = (
     OG_OT_SetLauncherDest,
     OG_OT_ClearLauncherDest,
     OG_OT_SyncWaterFromObject,
-    OG_OT_SyncWaterFromMesh,
 )

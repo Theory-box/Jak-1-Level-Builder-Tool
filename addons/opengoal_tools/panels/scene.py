@@ -67,65 +67,6 @@ from .selected import (
     _draw_selected_navmesh,
 )
 
-class OG_PT_WaterMesh(Panel):
-    bl_label       = "💧  Water Volume Settings"
-    bl_idname      = "OG_PT_water_mesh"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        return sel and sel.type == "MESH" and sel.name.startswith("WATER_")
-
-    def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
-
-        # Sync button first — most common first action
-        layout.operator("og.sync_water_from_mesh", text="Sync Heights from Mesh Top/Bottom",
-                        icon="OBJECT_ORIGIN").mesh_name = sel.name
-
-        box = layout.box()
-        box.label(text="Water Heights (world Y)", icon="MOD_OCEAN")
-
-        # surface and bottom are absolute world Y
-        # wade and swim are DEPTHS below surface (small positive values like 0.5, 1.0)
-        surface = float(sel.get("og_water_surface", sel.location.z))
-        wade    = float(sel.get("og_water_wade",    0.5))
-        swim    = float(sel.get("og_water_swim",    1.0))
-        bottom  = float(sel.get("og_water_bottom",  surface - 5.0))
-
-        col = box.column(align=True)
-        _prop_row(col, sel, "og_water_surface", "Surface Y:",          surface)
-        _prop_row(col, sel, "og_water_wade",    "Wade depth (m below):", wade)
-        _prop_row(col, sel, "og_water_swim",    "Swim depth (m below):", swim)
-        _prop_row(col, sel, "og_water_bottom",  "Bottom Y:",             bottom)
-
-        # Sanity readout
-        sub = box.column(align=True)
-        sub.enabled = False
-        sub.label(text=f"  Wades at {wade:.2f}m below surface  (Y={surface-wade:.2f})", icon="INFO")
-        sub.label(text=f"  Swims at {swim:.2f}m below surface  (Y={surface-swim:.2f})")
-        sub.label(text=f"  Kill floor: Y={bottom:.2f}m")
-
-        # Damage type
-        box2 = layout.box()
-        box2.label(text="Damage Type", icon="GHOST_ENABLED")
-        attack = str(sel.get("og_water_attack", "drown"))
-        row = box2.row(align=True)
-        for opt in ["drown", "lava", "dark-eco-pool", "heat", "drown-death"]:
-            r = row.row()
-            r.enabled = (attack != opt)
-            op = r.operator("og.set_water_attack", text=opt)
-            op.mesh_name  = sel.name
-            op.attack_val = opt
-
-
-
 class OG_PT_CheckpointSettings(Panel):
     bl_label       = "Checkpoint Settings"
     bl_idname      = "OG_PT_checkpoint_settings"
@@ -269,7 +210,6 @@ class OG_PT_NavmeshInfo(Panel):
 
 
 CLASSES = (
-    OG_PT_WaterMesh,
     OG_PT_CheckpointSettings,
     OG_PT_AmbientEmitter,
     OG_PT_MusicZone,
