@@ -1014,7 +1014,8 @@ def _draw_lump_panel(layout, obj):
         "OG_UL_LumpRows", "",
         obj, "og_lump_rows",
         obj, "og_lump_rows_index",
-        rows=5,
+        rows=2,
+        maxrows=6,
     )
 
     # Add / Remove buttons
@@ -1047,6 +1048,7 @@ class OG_PT_SelectedLumps(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 20
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -1091,7 +1093,7 @@ class OG_PT_SelectedLumpReference(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_selected_lumps"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -1137,6 +1139,7 @@ class OG_PT_MeshPreviewSettings(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 40
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod

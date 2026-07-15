@@ -300,40 +300,33 @@ class OG_PT_ActorFields(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 10
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, ctx):
+        # Container for all per-actor settings (its sub-panels + generic fields).
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name:
             return False
         parts = sel.name.split("_", 2)
-        if len(parts) < 3 or parts[0] != "ACTOR":
-            return False
-        etype = parts[1]
-        if etype in GENERIC_PANEL_ETYPES:
-            return True
-        if etype in DEDICATED_FIELD_UI_ETYPES:
-            return False
-        # Any other actor with a fields[] schema (incl. custom DB-only actors)
-        # and any actor matching a trait predicate (enemies, spawners, ...)
-        # gets its UI here automatically.
-        return bool(_db.ui_fields(etype))
+        return len(parts) >= 3 and parts[0] == "ACTOR"
 
     def draw(self, ctx):
         sel = ctx.active_object
         parts = sel.name.split("_", 2)
         etype = parts[1]
+        # Dedicated actors show their fields via a bespoke child panel; here the
+        # container just parents the sub-panels.
+        if etype in DEDICATED_FIELD_UI_ETYPES:
+            return
         actor = _db.find_actor(etype)
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
         fields = _db.ui_fields(etype)
         if not fields:
-            row = self.layout.row()
-            row.enabled = False
-            row.label(text="(no configurable fields)", icon="INFO")
-            return
+            return  # container only — child sub-panels provide the settings
         # Include etype on actor_info dict so per-etype defaults work for
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}

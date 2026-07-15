@@ -106,7 +106,7 @@ class OG_PT_ActorActivation(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -131,7 +131,7 @@ class OG_PT_ActorTriggerBehaviour(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -171,7 +171,7 @@ class OG_PT_ActorNavMesh(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -216,7 +216,7 @@ class OG_PT_ActorLinks(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -242,7 +242,7 @@ class OG_PT_ActorPlatform(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -263,7 +263,7 @@ class OG_PT_ActorCrate(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -322,7 +322,7 @@ class OG_PT_ActorLauncher(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -405,7 +405,7 @@ class OG_PT_ActorEcoDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -480,7 +480,7 @@ class OG_PT_ActorWaterVol(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -507,7 +507,7 @@ class OG_PT_ActorLauncherDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -571,7 +571,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -621,7 +621,7 @@ class OG_PT_ActorCaveElevator(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -657,7 +657,7 @@ class OG_PT_ActorTaskGated(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     _TYPES = {"oracle", "pontoon"}
@@ -700,7 +700,7 @@ class OG_PT_ActorVisibility(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -781,7 +781,7 @@ class OG_PT_ActorWaypoints(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -941,6 +941,7 @@ class OG_PT_ActorGoalCode(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 30
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
