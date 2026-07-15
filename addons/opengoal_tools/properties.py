@@ -14,6 +14,7 @@ from .data import (
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
     LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
     TEXTURE_SOURCE_ITEMS,
+    BASE_LEVEL_NAMES, BASE_LEVEL_NICKS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _spawn_variant_cb,
@@ -23,6 +24,7 @@ from .data import (
 )
 from .collections import (
     _all_level_collections,
+    _resolve_vis_nick,
     _active_level_items, _on_active_level_changed,
     _get_death_plane, _set_death_plane,
     _get_level_name_live, _set_level_name_live,
@@ -50,28 +52,105 @@ CP_DISP_ITEMS = [
     ("off",     "Off (load only)", "Resident in memory but not displayed"),
 ]
 
-def _cp_level_items_base(context):
-    """All project levels as (lname, lname, desc) tuples for the pickers."""
-    items = []
+# ---------------------------------------------------------------------------
+# Shared picker sources — one list every level/nick dropdown points to.
+#
+# A single, consistent set of options is used everywhere a level or a vis nick
+# is chosen (checkpoints AND load boundaries):
+#   Levels:  [leading self/none] · project (blend-file) levels · base-game
+#            levels (from the DB) · Custom…
+#   Nicks:   (This level's nick) · project-level nicks · base-game nicks · Custom…
+# "Custom…" reveals a companion text field so the user can type anything not in
+# the list. Base-game entries are appended last (before Custom) so pre-existing
+# selections of leading/project items keep their stored positions.
+#
+# Dynamic-enum caveat (pre-existing, unchanged in spirit): Blender stores the
+# resolved position for callback enums, so if the *project* level set changes,
+# a stored slot can shift. Base-game and leading items are order-stable.
+# ---------------------------------------------------------------------------
+
+def _project_level_names(context):
+    """Level names taken from the current blend file's level collections."""
+    names = []
     scene = context.scene if context else None
     if scene is not None:
         for col in _all_level_collections(scene):
             lname = str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
             if lname:
-                items.append((lname, lname, f"Keep level '{lname}' resident"))
+                names.append(lname)
+    return names
+
+def _project_level_nicks(context):
+    """Resolved vis nicknames for every level collection in the blend file."""
+    nicks = []
+    scene = context.scene if context else None
+    if scene is not None:
+        for col in _all_level_collections(scene):
+            nick = str(_resolve_vis_nick(col) or "").strip()
+            if nick:
+                nicks.append(nick)
+    return nicks
+
+def _level_source_items(context, leading):
+    """Shared level picker: leading items + project levels + base levels + Custom.
+
+    `leading` is the ordered list of (id, label, desc) anchors for this slot
+    (e.g. self and/or none) — kept first so their stored positions never move.
+    Duplicate identifiers are dropped (a project level shadowing a base name
+    appears once, in the project section).
+    """
+    items = list(leading)
+    seen = {t[0] for t in items}
+    for lname in _project_level_names(context):
+        if lname in seen:
+            continue
+        seen.add(lname)
+        items.append((lname, lname, f"Project level '{lname}' (this blend file)"))
+    for lname in BASE_LEVEL_NAMES:
+        if lname in seen:
+            continue
+        seen.add(lname)
+        items.append((lname, lname, f"Base-game level '{lname}'"))
+    items.append(("custom", "Custom\u2026", "Type a level name below"))
     return items
+
+def _nick_source_items(context):
+    """Shared vis-nick picker: (this level) + project nicks + base nicks + Custom."""
+    items = [("auto", "(This level's nick)",
+              "Use this object's home-level vis nickname")]
+    seen = {"auto"}
+    for nick in _project_level_nicks(context):
+        if nick in seen:
+            continue
+        seen.add(nick)
+        items.append((nick, nick, f"Project level nick '{nick}'"))
+    for nick in BASE_LEVEL_NICKS:
+        if nick in seen:
+            continue
+        seen.add(nick)
+        items.append((nick, nick, f"Base-game vis nick '{nick}'"))
+    items.append(("custom", "Custom\u2026", "Type a nick below"))
+    return items
+
+# Leading anchors reused across the level pickers.
+_LEAD_SELF = ("self", "(This level)", "The level this object belongs to")
+_LEAD_NONE = ("none", "(None)", "No level (#f)")
 
 def _cp_lev0_items(self, context):
     # Slot 0 always names a level; defaults to the checkpoint's own level.
-    return [("self", "(This level)", "The level this checkpoint belongs to")] \
-        + _cp_level_items_base(context) \
-        + [("custom", "Custom\u2026", "Type a level name below")]
+    return _level_source_items(context, [_LEAD_SELF])
 
 def _cp_lev1_items(self, context):
     # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
-    return [("none", "(None)", "No second resident level")] \
-        + _cp_level_items_base(context) \
-        + [("custom", "Custom\u2026", "Type a level name below")]
+    return _level_source_items(context, [_LEAD_NONE])
+
+def _cp_vis_items(self, context):
+    # Checkpoint respawn vis nick.
+    return _nick_source_items(context)
+
+def _lb_vis_items(self, context):
+    # Load-boundary (vis …) command nick.
+    return _nick_source_items(context)
 
 
 # ---------------------------------------------------------------------------
@@ -93,10 +172,8 @@ LB_DISP_ITEMS = [
 ]
 
 def _lb_level_items(self, context):
-    # Boundary command level args: none / this level / any project level.
-    return [("none", "(None)", "No level (#f)"),
-            ("self", "(This level)", "The level this boundary belongs to")] \
-        + _cp_level_items_base(context)
+    # Boundary command level args: none / this level / project + base levels / Custom.
+    return _level_source_items(context, [_LEAD_NONE, _LEAD_SELF])
 
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):

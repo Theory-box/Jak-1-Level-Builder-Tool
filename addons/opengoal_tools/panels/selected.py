@@ -304,7 +304,9 @@ def _draw_continue_settings(layout, sel, scene):
     row.prop(sel, "og_cp_disp1", text="")
     if sel.og_cp_lev1 == "custom":
         box.prop(sel, "og_cp_lev1_custom", text="Name 1")
-    box.prop(sel, "og_cp_vis_nick")
+    box.prop(sel, "og_cp_vis", text="Vis Nick")
+    if sel.og_cp_vis == "custom":
+        box.prop(sel, "og_cp_vis_custom", text="Nick")
 
     # Advanced — collapsible subpanel (layout.panel is Blender 4.1+).
     if hasattr(layout, "panel"):
@@ -395,13 +397,20 @@ def _draw_selected_load_boundary(layout, sel, scene):
         cmd = getattr(sel, prefix + "_cmd", "none")
         if cmd in ("load", "display", "force-vis"):
             b.prop(sel, prefix + "_lev0", text="Level 0")
+            if getattr(sel, prefix + "_lev0", "none") == "custom":
+                b.prop(sel, prefix + "_lev0_custom", text="Name 0")
         if cmd == "load":
             b.prop(sel, prefix + "_lev1", text="Level 1")
+            if getattr(sel, prefix + "_lev1", "none") == "custom":
+                b.prop(sel, prefix + "_lev1_custom", text="Name 1")
         if cmd == "display":
             b.prop(sel, prefix + "_disp", text="Mode")
-        if cmd in ("vis", "checkpt"):
-            b.prop(sel, prefix + "_name",
-                   text="Nick" if cmd == "vis" else "Continue")
+        if cmd == "vis":
+            b.prop(sel, prefix + "_vis", text="Nick")
+            if getattr(sel, prefix + "_vis", "auto") == "custom":
+                b.prop(sel, prefix + "_vis_custom", text="Nick")
+        if cmd == "checkpt":
+            b.prop(sel, prefix + "_name", text="Continue")
     _dir("Forward (cross +normal)",  "og_lb_fwd")
     _dir("Backward (cross -normal)", "og_lb_bwd")
 

@@ -103,6 +103,7 @@ from .properties import (
     OGSpawnListRow, OGSpawnFavorite,
     OGWaypointSource,
     _cp_lev0_items, _cp_lev1_items, CP_DISP_ITEMS,
+    _cp_vis_items, _lb_vis_items,
     _lb_level_items, LB_CMD_ITEMS, LB_DISP_ITEMS,
 )
 from .spawn_items import (
@@ -305,10 +306,15 @@ def register():
     bpy.types.Object.og_cp_disp1 = bpy.props.EnumProperty(
         name="Display 1", items=CP_DISP_ITEMS, default="off",
         description="Display mode for slot 1")
-    bpy.types.Object.og_cp_vis_nick = bpy.props.StringProperty(
-        name="Vis Nickname", default="",
-        description="Vis nick set on respawn (blank = this level's nickname). "
-                    "Used for music/menu context, not only visibility data")
+    # Vis nick set on respawn. Picker: this level's nick / project + base-game
+    # nicks / Custom…; "custom" reveals og_cp_vis_custom. Vis is also how the
+    # game knows which level you're in (music/menu), not only visibility data.
+    bpy.types.Object.og_cp_vis = bpy.props.EnumProperty(
+        name="Vis Nickname", items=_cp_vis_items,
+        description="Vis nick set on respawn (this level's nick by default)")
+    bpy.types.Object.og_cp_vis_custom = bpy.props.StringProperty(
+        name="Vis Nick", default="",
+        description="Custom vis nick (used when Vis Nickname = Custom)")
     bpy.types.Object.og_cp_flags = bpy.props.StringProperty(
         name="Continue Flags", default="",
         description="Advanced: space-separated continue-flags symbols "
@@ -356,25 +362,49 @@ def register():
         name="Forward", items=LB_CMD_ITEMS, default="none")
     bpy.types.Object.og_lb_fwd_lev0 = bpy.props.EnumProperty(
         name="Fwd Level 0", items=_lb_level_items)
+    bpy.types.Object.og_lb_fwd_lev0_custom = bpy.props.StringProperty(
+        name="Fwd Level 0 Name", default="",
+        description="Custom level symbol for fwd slot 0 (used when Level 0 = Custom)")
     bpy.types.Object.og_lb_fwd_lev1 = bpy.props.EnumProperty(
         name="Fwd Level 1", items=_lb_level_items)
+    bpy.types.Object.og_lb_fwd_lev1_custom = bpy.props.StringProperty(
+        name="Fwd Level 1 Name", default="",
+        description="Custom level symbol for fwd slot 1 (used when Level 1 = Custom)")
     bpy.types.Object.og_lb_fwd_disp = bpy.props.EnumProperty(
         name="Fwd Display", items=LB_DISP_ITEMS, default="display")
+    bpy.types.Object.og_lb_fwd_vis = bpy.props.EnumProperty(
+        name="Fwd Vis Nick", items=_lb_vis_items,
+        description="Vis nick for the fwd (vis …) command")
+    bpy.types.Object.og_lb_fwd_vis_custom = bpy.props.StringProperty(
+        name="Fwd Vis Nick", default="",
+        description="Custom vis nick (used when Fwd Vis Nick = Custom)")
     bpy.types.Object.og_lb_fwd_name = bpy.props.StringProperty(
-        name="Fwd Name", default="",
-        description="continue-name (checkpt) or vis nick (vis)")
+        name="Fwd Continue", default="",
+        description="continue-name for the fwd (checkpt) command")
     # Backward command (crossing against the plane normal).
     bpy.types.Object.og_lb_bwd_cmd  = bpy.props.EnumProperty(
         name="Backward", items=LB_CMD_ITEMS, default="none")
     bpy.types.Object.og_lb_bwd_lev0 = bpy.props.EnumProperty(
         name="Bwd Level 0", items=_lb_level_items)
+    bpy.types.Object.og_lb_bwd_lev0_custom = bpy.props.StringProperty(
+        name="Bwd Level 0 Name", default="",
+        description="Custom level symbol for bwd slot 0 (used when Level 0 = Custom)")
     bpy.types.Object.og_lb_bwd_lev1 = bpy.props.EnumProperty(
         name="Bwd Level 1", items=_lb_level_items)
+    bpy.types.Object.og_lb_bwd_lev1_custom = bpy.props.StringProperty(
+        name="Bwd Level 1 Name", default="",
+        description="Custom level symbol for bwd slot 1 (used when Level 1 = Custom)")
     bpy.types.Object.og_lb_bwd_disp = bpy.props.EnumProperty(
         name="Bwd Display", items=LB_DISP_ITEMS, default="display")
+    bpy.types.Object.og_lb_bwd_vis = bpy.props.EnumProperty(
+        name="Bwd Vis Nick", items=_lb_vis_items,
+        description="Vis nick for the bwd (vis …) command")
+    bpy.types.Object.og_lb_bwd_vis_custom = bpy.props.StringProperty(
+        name="Bwd Vis Nick", default="",
+        description="Custom vis nick (used when Bwd Vis Nick = Custom)")
     bpy.types.Object.og_lb_bwd_name = bpy.props.StringProperty(
-        name="Bwd Name", default="",
-        description="continue-name (checkpt) or vis nick (vis)")
+        name="Bwd Continue", default="",
+        description="continue-name for the bwd (checkpt) command")
 
     bpy.types.Collection.og_no_export      = bpy.props.BoolProperty(
         name="Exclude from Export",
@@ -426,12 +456,16 @@ def unregister():
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
-              "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
+              "og_cp_vis","og_cp_vis_custom","og_cp_flags","og_cp_load_commands",
               "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",
-              "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
-              "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
+              "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev0_custom",
+              "og_lb_fwd_lev1","og_lb_fwd_lev1_custom","og_lb_fwd_disp",
+              "og_lb_fwd_vis","og_lb_fwd_vis_custom","og_lb_fwd_name",
+              "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev0_custom",
+              "og_lb_bwd_lev1","og_lb_bwd_lev1_custom","og_lb_bwd_disp",
+              "og_lb_bwd_vis","og_lb_bwd_vis_custom","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
               "og_path_mode"):
         try: delattr(bpy.types.Object, a)

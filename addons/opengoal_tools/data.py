@@ -194,6 +194,33 @@ def _collect_global_tpage_gos():
 GLOBAL_TPAGE_GOS = _collect_global_tpage_gos()
 
 
+# ── Base-game level names + vis nicknames (from the database) ────────────────
+# The canonical list of stock levels, used to seed every level/nick picker in
+# the UI so authors can point a checkpoint or a load boundary at an existing
+# base level (or its vis nick) that is NOT present in the current blend file.
+#   BASE_LEVEL_NAMES : ["village1", "beach", "firecanyon", ...]        (symbols)
+#   BASE_LEVEL_NICKS : ["vi1", "bea", "fic", ...]  (3-char vis nicks, no quote)
+# Nicks come from load_info.nickname (stored in the DB as e.g. "'vi1"); the
+# leading quote is stripped so the value is a bare symbol ready for emission.
+def _collect_base_levels():
+    names, nicks = [], []
+    for lv in _db.levels():
+        nm = str(lv.get("name", "") or "").strip()
+        if nm:
+            names.append(nm)
+        li = lv.get("load_info") or {}
+        nick = str(li.get("nickname", "") or "").strip().lstrip("'").strip()
+        if nick:
+            nicks.append(nick)
+    # De-dupe while preserving DB order.
+    names = list(dict.fromkeys(names))
+    nicks = list(dict.fromkeys(nicks))
+    return names, nicks
+
+
+BASE_LEVEL_NAMES, BASE_LEVEL_NICKS = _collect_base_levels()
+
+
 # Texture/sky source options for a custom level. "none" borrows nothing (vertex
 # colors only) and is REQUIRED for levels streamed alongside another custom
 # level — two co-resident levels sharing a source link the same tpage objects

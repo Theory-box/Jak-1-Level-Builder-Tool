@@ -440,3 +440,33 @@ unload a level. Sidestep by keeping both levels resident everywhere in the zone
 (all checkpoints list both; don't Display-Off a level you want to keep). True
 streaming (distant levels unloading to save memory) would need the reload path
 fixed first.
+
+### Shared picker sources — base-game levels + nicks (feature/level-picker-sources)
+Every level/nick dropdown (checkpoints AND load boundaries) now points at one
+shared source list:
+- Levels: leading self/none · project (blend) levels · **base-game levels from
+  the DB** · Custom→text. Built by `properties._level_source_items(context,
+  leading)`; base names come from `data.BASE_LEVEL_NAMES` (`db.levels()[].name`).
+- Nicks: (this level's nick) · project nicks · **base-game nicks from the DB** ·
+  Custom→text. Built by `properties._nick_source_items`; nicks come from
+  `data.BASE_LEVEL_NICKS` (`load_info.nickname`, leading quote stripped).
+
+Custom field on EVERY slot for full control:
+- checkpoint lev0/lev1 already had it; boundaries gained `og_lb_{fwd,bwd}_lev0/1_custom`.
+- Vis is now a dropdown everywhere: checkpoint `og_cp_vis_nick` (string) → `og_cp_vis`
+  (enum) + `og_cp_vis_custom`; boundaries gained `og_lb_{fwd,bwd}_vis` + `_vis_custom`.
+  The boundary **checkpt** command keeps its free-text continue-name
+  (`og_lb_{fwd,bwd}_name`) — it's a continue-point name, not a nick.
+
+Export: base-game picks need no new resolution (checkpoint `'sym`, boundary bare
+`sym`). Custom + vis resolved in `export/scene.py` via `_lb_level_value` /
+`_nick_value`; `writers._lb_cmd_form` gained a dedicated `vis` arg (vis uses it;
+checkpt still uses name). Files: data.py, properties.py, __init__.py,
+export/scene.py, export/writers.py, panels/selected.py. All byte-compile;
+pure-Python logic unit-tested (DB list build, resolvers, cmd emission).
+
+Caveat (unchanged in spirit): dynamic-enum callbacks store the resolved slot, so
+changing the *project* level set can shift a stored pick; leading + base-game
+items are order-stable. Converting `og_cp_vis` string→enum drops any old typed
+value → falls back to the "(this level's nick)" default (the previous blank
+behaviour), which is safe. UNTESTED IN BLENDER — needs a register + UI pass.

@@ -885,11 +885,13 @@ def patch_level_info(name, spawns, scene=None):
 # per-level block (its own static-lb-list + doarray). Stock entries untouched;
 # idempotent re-export via per-level markers.
 
-def _lb_cmd_form(cmd, lev0, lev1, disp, name, level):
+def _lb_cmd_form(cmd, lev0, lev1, disp, name, vis, level):
     """Return the GOAL (cmd a1 a2) form for a boundary direction, or None.
 
     Level args are emitted as BARE symbols (the macro quotes the whole list).
     "self" -> this level, ""/"none" -> #f.
+    `vis` is the resolved vis nick for the (vis …) command (blank → this level's
+    nick); `name` is the continue-name for the (checkpt …) command.
     """
     def _sym(v):
         v = (v or "").strip()
@@ -908,7 +910,7 @@ def _lb_cmd_form(cmd, lev0, lev1, disp, name, level):
         d = "#f" if d in ("", "off", "#f") else d           # display / display-no-wait
         return f"(display {_sym(lev0)} {d})"
     if cmd == "vis":
-        nick = (name or "").strip() or _nick(level)
+        nick = (vis or "").strip() or _nick(level)
         return f"(vis {nick} #f)"
     if cmd == "force-vis":
         return f"(force-vis {_sym(lev0)} #t)"
@@ -938,9 +940,9 @@ def _make_static_boundary(b, level):
     pts = " ".join(f"{v:.4f}" for v in b.get("points", []))
 
     fwd = _lb_cmd_form(b.get("fwd_cmd"), b.get("fwd_lev0"), b.get("fwd_lev1"),
-                       b.get("fwd_disp"), b.get("fwd_name"), level)
+                       b.get("fwd_disp"), b.get("fwd_name"), b.get("fwd_vis"), level)
     bwd = _lb_cmd_form(b.get("bwd_cmd"), b.get("bwd_lev0"), b.get("bwd_lev1"),
-                       b.get("bwd_disp"), b.get("bwd_name"), level)
+                       b.get("bwd_disp"), b.get("bwd_name"), b.get("bwd_vis"), level)
 
     lines = [f"(static-load-boundary :flags ({flags_str})",
              f"                      :top {b.get('top', 524288.0):.4f}"

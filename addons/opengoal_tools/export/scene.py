@@ -407,6 +407,35 @@ def _cp_level_value(o, enum_attr, custom_attr):
     return val
 
 
+def _lb_level_value(o, enum_attr, custom_attr):
+    """Resolve a load-boundary level slot.
+
+    Returns "self" / "none" / a level name, OR — when the dropdown is "custom" —
+    the user-typed level symbol (lowercased, dashed). Empty custom → "none".
+    Mirrors _cp_level_value; kept separate for clarity at the call sites.
+    """
+    val = str(getattr(o, enum_attr, "") or "")
+    if val == "custom":
+        s = str(getattr(o, custom_attr, "") or "").strip().lower().replace(" ", "-")
+        return s or "none"
+    return val or "none"
+
+
+def _nick_value(o, enum_attr, custom_attr):
+    """Resolve a vis-nick picker to a bare nick string.
+
+    Returns "" for the "auto" default (caller substitutes this object's home
+    level nick), the typed nick when the dropdown is "custom", else the picked
+    nick. Nicks are lowercased and quote-stripped so they emit as bare symbols.
+    """
+    val = str(getattr(o, enum_attr, "auto") or "auto")
+    if val in ("", "auto"):
+        return ""
+    if val == "custom":
+        return str(getattr(o, custom_attr, "") or "").strip().lstrip("'").lower()
+    return val.strip().lstrip("'").lower()
+
+
 def collect_spawns(scene):
     """Collect SPAWN_ empties into continue-point data dicts.
 
@@ -519,7 +548,7 @@ def collect_spawns(scene):
             "cp_disp0":         str(getattr(o, "og_cp_disp0", "display") or "display"),
             "cp_lev1":          _cp_level_value(o, "og_cp_lev1", "og_cp_lev1_custom"),
             "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
-            "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
+            "cp_vis_nick":      _nick_value(o, "og_cp_vis", "og_cp_vis_custom"),
             "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),
             "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
         })
@@ -595,14 +624,16 @@ def collect_load_boundaries(scene):
             "bot":          round(bot, 4),
             "points":       points,
             "fwd_cmd":      str(getattr(o, "og_lb_fwd_cmd", "none") or "none"),
-            "fwd_lev0":     str(getattr(o, "og_lb_fwd_lev0", "none") or "none"),
-            "fwd_lev1":     str(getattr(o, "og_lb_fwd_lev1", "none") or "none"),
+            "fwd_lev0":     _lb_level_value(o, "og_lb_fwd_lev0", "og_lb_fwd_lev0_custom"),
+            "fwd_lev1":     _lb_level_value(o, "og_lb_fwd_lev1", "og_lb_fwd_lev1_custom"),
             "fwd_disp":     str(getattr(o, "og_lb_fwd_disp", "display") or "display"),
+            "fwd_vis":      _nick_value(o, "og_lb_fwd_vis", "og_lb_fwd_vis_custom"),
             "fwd_name":     str(getattr(o, "og_lb_fwd_name", "") or "").strip(),
             "bwd_cmd":      str(getattr(o, "og_lb_bwd_cmd", "none") or "none"),
-            "bwd_lev0":     str(getattr(o, "og_lb_bwd_lev0", "none") or "none"),
-            "bwd_lev1":     str(getattr(o, "og_lb_bwd_lev1", "none") or "none"),
+            "bwd_lev0":     _lb_level_value(o, "og_lb_bwd_lev0", "og_lb_bwd_lev0_custom"),
+            "bwd_lev1":     _lb_level_value(o, "og_lb_bwd_lev1", "og_lb_bwd_lev1_custom"),
             "bwd_disp":     str(getattr(o, "og_lb_bwd_disp", "display") or "display"),
+            "bwd_vis":      _nick_value(o, "og_lb_bwd_vis", "og_lb_bwd_vis_custom"),
             "bwd_name":     str(getattr(o, "og_lb_bwd_name", "") or "").strip(),
         })
     return out
