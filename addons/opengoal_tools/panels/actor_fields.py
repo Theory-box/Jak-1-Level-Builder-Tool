@@ -18,10 +18,10 @@
 #     "note":      "Extra info text shown below the input.",  (optional)
 #   }
 #
-# Adding an actor to the generic panel requires:
-#   1. Ensure its `fields[]` in the DB matches its existing og_* Blender props
-#   2. Add its etype to GENERIC_PANEL_ETYPES below
-#   3. Remove its bespoke OG_PT_Actor<X> class from panels.py + __init__.py
+# Adding an actor to the generic panel requires only that its `fields[]` in the
+# DB match its og_* Blender props. To give an actor a BESPOKE panel instead, set
+# `"panel": "<id>"` on it in the DB and have that panel's poll check
+# db.actor_panel(etype) == "<id>" — no hardcoded etype lists.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 import bpy
@@ -242,49 +242,8 @@ def _draw_field(layout, obj, field, actor_info=None):
 # The generic panel
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Actors whose UI is entirely data-driven (pure field-display with no custom
-# logic beyond what the schema expresses). If you add a new entry here, make
-# sure the corresponding bespoke OG_PT_Actor* panel has been removed from
-# panels.py + __init__.py — otherwise both will draw and duplicate the UI.
-GENERIC_PANEL_ETYPES = frozenset({
-    # Pure float/int field panels
-    "orbit-plat",       # replaces OG_PT_ActorOrbitPlat
-    "plat-flip",        # replaces OG_PT_ActorPlatFlip
-    "whirlpool",        # replaces OG_PT_ActorWhirlpool
-    "square-platform",  # replaces OG_PT_ActorSquarePlatform
-    "orb-cache-top",    # replaces OG_PT_ActorOrbCache
-    "caveflamepots",    # replaces OG_PT_ActorCaveFlamePots
-    "shover",           # replaces OG_PT_ActorShover
-    "sharkey",          # replaces OG_PT_ActorSharkey
-    "sunkenfisha",      # replaces OG_PT_ActorSunkenFish
-    "basebutton",       # replaces OG_PT_ActorBaseButton
-    # Shared-field groups
-    "lavaballoon", "darkecobarrel",                          # OG_PT_ActorLavaMoving
-    "breakaway-left", "breakaway-mid", "breakaway-right",    # OG_PT_ActorBreakaway
-    "swamp-bat", "yeti", "villa-starfish", "swamp-rat-nest", # OG_PT_ActorSpawner
-    # Bool-toggle panels (checkbox via og.toggle_actor_bool_field)
-    "dark-crystal",     # replaces OG_PT_ActorDarkCrystal
-    "fuel-cell",        # replaces OG_PT_ActorFuelCell
-    "windturbine",      # replaces OG_PT_ActorWindTurbine
-    # Enum (radio buttons)
-    "ropebridge",       # replaces OG_PT_ActorRopeBridge
-    "mis-bone-bridge",  # replaces OG_PT_ActorMisBoneBridge
-})
-
-# Actors whose field UI is provided ELSEWHERE (a dedicated OG_PT_Actor* panel or
-# the utils.py "Sync (Path Timing)" box). The generic panel must NOT also show
-# for these or the UI would double up. Everything else with a fields[] schema —
-# including custom DB-only actors — falls through to the generic panel below.
-# NOTE: if a new dedicated field panel is ever added, add its etype(s) here.
-DEDICATED_FIELD_UI_ETYPES = frozenset({
-    "crate", "launcher", "springbox",                       # OG_PT_ActorCrate / OG_PT_ActorLauncher
-    "eco-door", "jng-iris-door", "sidedoor", "rounddoor",   # OG_PT_ActorEcoDoor
-    "launcherdoor",                                         # OG_PT_ActorLauncherDoor
-    "sun-iris-door",                                        # OG_PT_ActorSunIrisDoor
-    "caveelevator",                                         # OG_PT_ActorCaveElevator
-    "oracle", "pontoon",                                    # OG_PT_ActorTaskGated
-    "plat", "plat-eco", "side-to-side-plat", "steam-cap",   # utils.py sync box
-})
+# Which actors use a bespoke panel vs the generic field panel is now a DB flag
+# (`"panel": "<id>"`), read via db.actor_panel(). No hardcoded etype lists.
 
 
 class OG_PT_ActorFields(Panel):
@@ -316,9 +275,9 @@ class OG_PT_ActorFields(Panel):
         sel = ctx.active_object
         parts = sel.name.split("_", 2)
         etype = parts[1]
-        # Dedicated actors show their fields via a bespoke child panel; here the
-        # container just parents the sub-panels.
-        if etype in DEDICATED_FIELD_UI_ETYPES:
+        # Actors with a bespoke panel (DB "panel" flag) show their fields there;
+        # this container just parents the sub-panels for them.
+        if _db.actor_panel(etype):
             return
         actor = _db.find_actor(etype)
         if not actor:

@@ -55,6 +55,7 @@ from ..utils import (
     _preview_collections, _load_previews, _unload_previews,
 )
 from .. import model_preview as _mp
+from .. import db as _db
 from ..audit import run_audit
 
 
@@ -271,7 +272,7 @@ class OG_PT_ActorCrate(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "crate"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "crate"
 
     def draw(self, ctx):
         layout = self.layout
@@ -413,8 +414,7 @@ class OG_PT_ActorEcoDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        ECO_DOOR_TYPES = {"eco-door", "jng-iris-door", "sidedoor", "rounddoor"}
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] in ECO_DOOR_TYPES
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "eco-door"
 
     def draw(self, ctx):
         layout = self.layout
@@ -515,7 +515,7 @@ class OG_PT_ActorLauncherDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "launcherdoor"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "launcherdoor"
 
     def draw(self, ctx):
         layout = self.layout
@@ -579,7 +579,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "sun-iris-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "sun-iris-door"
 
     def draw(self, ctx):
         layout = self.layout
@@ -629,7 +629,7 @@ class OG_PT_ActorCaveElevator(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "caveelevator"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "caveelevator"
 
     def draw(self, ctx):
         layout = self.layout
@@ -667,7 +667,7 @@ class OG_PT_ActorTaskGated(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] in cls._TYPES
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "task-gated"
 
     def draw(self, ctx):
         layout = self.layout

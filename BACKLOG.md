@@ -51,11 +51,11 @@ reproduce the current exported bytes from the DB, prove equality in
 - [x] **B4** · launcher target-vector encoder (`object_ref` → vector)
 - [x] **C** · trait flags moved into the DB (`db.py` trait layer + predicates)
 - [x] **D** · launcher / spawner → DB flags (`is_launcher` / `spawns_lurkers`)
-- [~] **E** · REVISED per user: bespoke `OG_PT_Actor*` panels are KEPT in code;
-      their choice-lists are now DB tables (CrateTypes / BridgeVariants / …).
-      STILL OPEN: gate the bespoke panels by a DB flag (e.g. `"panel": "crate"`)
-      so attaching one to a new actor is a one-line DB edit rather than code +
-      a `DEDICATED_FIELD_UI_ETYPES` / `GENERIC_PANEL_ETYPES` entry.
+- [x] **E** · bespoke `OG_PT_Actor*` panels are KEPT in code, but which actor
+      uses one is now a DB flag (`"panel": "<id>"`, read via `db.actor_panel`).
+      Bespoke panel polls check the flag; the generic panel defers on it. The
+      hardcoded `DEDICATED_FIELD_UI_ETYPES` / `GENERIC_PANEL_ETYPES` sets are
+      gone. Attaching a bespoke panel to a new actor is now one DB line.
 - [x] **F** · spawn-time defaults seeded from DB `fields[]` (one loop)
 - [x] **G** · `export_as` field for abstract remap (eco-door → jng-iris-door)
 

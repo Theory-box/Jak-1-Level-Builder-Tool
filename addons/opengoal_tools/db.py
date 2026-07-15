@@ -517,6 +517,14 @@ def variant_choices(etype: str) -> list[dict]:
     return _resolve_choices(f) if f else []
 
 
+def actor_panel(etype: str) -> str | None:
+    """The bespoke UI panel id an actor uses (DB `"panel"` flag), or None if it
+    uses the generic Actor Settings field panel. Lets a bespoke panel be
+    attached to an actor with one DB line instead of a hardcoded etype list."""
+    a = find_actor(etype) or {}
+    return a.get("panel")
+
+
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
     trait fields, deduped by key (own wins), excluding output-only const lumps."""
