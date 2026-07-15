@@ -498,6 +498,10 @@ def collect_actors(scene, depsgraph=None):
                     lump["vol"] = ["vector-vol"] + _planes
                     log(f"  [need_vol] {o.name} <- {_volm.name} ({len(_planes)} planes)")
 
+        # Variant art-group/code override (e.g. per-bridge art group). Falls back
+        # to the actor's own art group/code when the variant doesn't specify one.
+        _variant = _schema_db.actor_variant(etype, lambda k, d=None: o.get(k, d))
+
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     etype,
@@ -506,6 +510,8 @@ def collect_actors(scene, depsgraph=None):
             "vis_id":    0,
             "bsphere":   [gx, gy, gz, bsph_r],
             "lump":      lump,
+            "art_group": _variant.get("art_group"),   # None -> fall back to ETYPE_AG
+            "code":      _variant.get("code"),
         })
 
     # ── Checkpoint trigger actors ─────────────────────────────────────────────

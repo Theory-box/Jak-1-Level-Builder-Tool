@@ -3046,32 +3046,38 @@
     {
       "id": "steel",
       "label": "Steel",
-      "glb": "levels/common/crate-steel-lod0.glb"
+      "glb": "levels/common/crate-steel-lod0.glb",
+      "defaults": { "og_crate_pickup": "money" }
     },
     {
       "id": "wood",
       "label": "Wood",
-      "glb": "levels/common/crate-wood-lod0.glb"
+      "glb": "levels/common/crate-wood-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "iron",
       "label": "Iron",
-      "glb": "levels/common/crate-iron-lod0.glb"
+      "glb": "levels/common/crate-iron-lod0.glb",
+      "defaults": { "og_crate_pickup": "buzzer" }
     },
     {
       "id": "darkeco",
       "label": "Dark Eco",
-      "glb": "levels/common/crate-darkeco-lod0.glb"
+      "glb": "levels/common/crate-darkeco-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "barrel",
       "label": "Barrel",
-      "glb": "levels/common/crate-barrel-lod0.glb"
+      "glb": "levels/common/crate-barrel-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "bucket",
       "label": "Bucket",
-      "glb": "levels/common/crate-bucket-lod0.glb"
+      "glb": "levels/common/crate-bucket-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     }
   ],
 

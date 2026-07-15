@@ -216,9 +216,12 @@ class OG_OT_SpawnEntity(Operator):
         o.color = color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         if etype == "crate":
-            o["og_crate_type"]          = ctx.scene.og_props.crate_type
-            o["og_crate_pickup"]        = "money"
-            o["og_crate_pickup_amount"] = 1
+            o["og_crate_type"] = ctx.scene.og_props.crate_type
+        # Apply the selected variant's default field values (e.g. crate contents
+        # per type). Runs before the generic default seeding below, which then
+        # fills any field the variant didn't set.
+        for _vk, _vv in _db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("defaults", {}).items():
+            o[_vk] = _vv
         if _db.nav_unsafe(etype):
             o["og_nav_radius"] = ctx.scene.og_props.nav_radius
             self.report({"WARNING"},
