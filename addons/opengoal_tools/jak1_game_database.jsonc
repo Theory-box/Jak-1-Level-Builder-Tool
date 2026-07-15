@@ -3045,27 +3045,33 @@
   "CrateTypes": [
     {
       "id": "steel",
-      "label": "Steel"
+      "label": "Steel",
+      "glb": "levels/common/crate-steel-lod0.glb"
     },
     {
       "id": "wood",
-      "label": "Wood"
+      "label": "Wood",
+      "glb": "levels/common/crate-wood-lod0.glb"
     },
     {
       "id": "iron",
-      "label": "Iron"
+      "label": "Iron",
+      "glb": "levels/common/crate-iron-lod0.glb"
     },
     {
       "id": "darkeco",
-      "label": "Dark Eco"
+      "label": "Dark Eco",
+      "glb": "levels/common/crate-darkeco-lod0.glb"
     },
     {
       "id": "barrel",
-      "label": "Barrel"
+      "label": "Barrel",
+      "glb": "levels/common/crate-barrel-lod0.glb"
     },
     {
       "id": "bucket",
-      "label": "Bucket"
+      "label": "Bucket",
+      "glb": "levels/common/crate-bucket-lod0.glb"
     }
   ],
 
@@ -5531,6 +5537,7 @@
           "type": "enum",
           "default": "steel",
           "choices": "CrateTypes",
+          "variant": true,
           "lump": {
             "key": "crate-type",
             "type": "symbol_literal"

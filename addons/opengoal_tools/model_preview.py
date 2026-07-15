@@ -210,9 +210,16 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     Handles both single-GLB enemies and double-lurker (list of GLBs).
     """
     from .data import ENTITY_DEFS
+    from . import db as _db
 
     info = ENTITY_DEFS.get(etype, {})
     glb_rel = info.get("glb")
+
+    # Variant override: a field marked "variant" (e.g. crate type) can select a
+    # different model per instance, so the preview matches the chosen variant.
+    _var = _db.actor_variant(etype, lambda k, d=None: actor_empty.get(k, d))
+    if _var.get("glb"):
+        glb_rel = _var["glb"]
 
     if not glb_rel:
         return False  # etype has no GLB (lightning-mole, ice-cube, etc.)

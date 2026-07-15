@@ -457,6 +457,30 @@ def field_default(f: dict, etype: str = None):
     return f.get("default")
 
 
+def _resolve_choices(f: dict) -> list[dict]:
+    """A field's choices as a list of dicts — resolving a named table string
+    (e.g. "CrateTypes") through the DB, or returning an inline list."""
+    ch = f.get("choices")
+    if isinstance(ch, str):
+        return DB.get(ch) or []
+    return ch or []
+
+
+def actor_variant(etype: str, prop_get) -> dict:
+    """The selected variant for an actor — the chosen entry of a field marked
+    `"variant": true`, whose choices may carry `glb` / `art_group` / `code`
+    overrides. Returns {} if the actor has no variant field. `prop_get(key,
+    default)` reads the selected value off the object."""
+    for f in inherited_fields(etype):
+        if not f.get("variant"):
+            continue
+        sel = prop_get(f.get("key"), field_default(f, etype))
+        for c in _resolve_choices(f):
+            if sel in (c.get("id"), c.get("value")):
+                return c
+    return {}
+
+
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
     trait fields, deduped by key (own wins), excluding output-only const lumps."""
