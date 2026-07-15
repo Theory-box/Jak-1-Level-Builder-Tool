@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import bpy
 from bpy.types import Panel
-from ..data import NEEDS_PATH_TYPES, IS_PROP_TYPES, NEEDS_PATHB_TYPES
+from .. import db as _db
 from ..spawn_items import (
     get_spawn_index, get_active_categories, is_favorited,
     get_selected_spawn_item, count_filtered,
@@ -125,6 +125,10 @@ def _draw_field_crate_type(layout, ctx, item):
     layout.prop(ctx.scene.og_props, "crate_type", text="Crate type")
 
 
+def _draw_field_variant(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "spawn_variant", text="Variant")
+
+
 def _draw_field_nav_radius(layout, ctx, item):
     box = layout.box()
     box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
@@ -181,6 +185,7 @@ def _draw_field_target_context(layout, ctx, item):
 
 FIELD_DRAWERS = {
     "crate_type":     _draw_field_crate_type,
+    "variant":        _draw_field_variant,
     "nav_radius":     _draw_field_nav_radius,
     "sfx_sound":      _draw_field_sfx_sound,
     "ambient_radius": _draw_field_ambient_radius,
@@ -214,11 +219,11 @@ def _draw_dynamic_settings(layout, ctx, item):
 
     # Entity-specific info messages.
     if item.etype is not None:
-        if item.etype in NEEDS_PATHB_TYPES:
+        if _db.needs_pathb(item.etype):
             box.label(text="Needs 2 path sets (wp + wpb)", icon="INFO")
-        elif item.etype in NEEDS_PATH_TYPES:
+        elif _db.needs_path(item.etype):
             box.label(text="Needs waypoints to patrol", icon="INFO")
-        elif item.etype in IS_PROP_TYPES:
+        elif _db.is_prop(item.etype):
             box.label(text="Prop — idle animation only", icon="INFO")
 
     # Pre-spawn fields.

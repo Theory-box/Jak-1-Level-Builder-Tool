@@ -16,7 +16,6 @@ from ..data import (
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
     ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
@@ -123,6 +122,42 @@ class OG_OT_DeleteObject(Operator):
         self.report({"INFO"}, f"Deleted '{self.obj_name}'")
         return {"FINISHED"}
 
+def _delete_og_managed(ctx, obj):
+    """Delete one OpenGOAL-managed object with full cleanup: unlink volumes
+    pointing to it, remove its preview meshes, and remove associated camera
+    helper empties."""
+    scene = ctx.scene
+    name = obj.name
+    for o in _level_objects(scene):
+        if o.type == "MESH" and o.name.startswith("VOL_"):
+            _vol_remove_link_to(o, name)
+    _mp.remove_preview(obj)
+    for suf in ("_CAM", "_ALIGN", "_PIVOT", "_LOOK_AT"):
+        assoc = scene.objects.get(name + suf)
+        if assoc:
+            bpy.data.objects.remove(assoc, do_unlink=True)
+    bpy.data.objects.remove(obj, do_unlink=True)
+
+
+class OG_OT_DeleteSelected(Operator):
+    """Delete all selected OpenGOAL actors, including their preview meshes and
+linked helper objects (which Blender's own Delete leaves behind)."""
+    bl_idname  = "og.delete_selected"
+    bl_label   = "Delete Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        targets = [o for o in ctx.selected_objects
+                   if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        if not targets:
+            self.report({"WARNING"}, "No OpenGOAL actors selected")
+            return {"CANCELLED"}
+        for o in list(targets):
+            _delete_og_managed(ctx, o)
+        self.report({"INFO"}, f"Deleted {len(targets)} actor(s)")
+        return {"FINISHED"}
+
+
 class OG_OT_SetCamProp(Operator):
     """Set a string custom property on a CAMERA_ object."""
     bl_idname   = "og.set_cam_prop"
@@ -218,47 +253,28 @@ class OG_OT_ClearLauncherDest(Operator):
         return {"FINISHED"}
 
 class OG_OT_SyncWaterFromObject(Operator):
-    """Set the water-vol surface height from the object's world Y position."""
+    """Set the water-vol surface height from the top of its linked VOL_ mesh."""
     bl_idname  = "og.sync_water_from_object"
-    bl_label   = "Sync Water Surface from Object"
+    bl_label   = "Sync Water Surface from Volume"
     bl_options = {"REGISTER", "UNDO"}
 
     actor_name: bpy.props.StringProperty()
 
     def execute(self, ctx):
         o = bpy.data.objects.get(self.actor_name)
-        if not o: return {"CANCELLED"}
-        # Blender Z = game Y (up). Use location.z for the surface height.
-        surface_y = round(o.location.z, 4)
-        o["og_water_surface"] = surface_y
-        o["og_water_wade"]    = 0.5
-        o["og_water_swim"]    = 1.0
-        o["og_water_bottom"]  = round(surface_y - 5.0, 4)
-        self.report({"INFO"}, f"Water surface={surface_y:.2f}m  wade={surface_y-0.5:.2f}  swim={surface_y-1.0:.2f}  bottom={surface_y-5.0:.2f}")
-        return {"FINISHED"}
-
-class OG_OT_SyncWaterFromMesh(Operator):
-    """Sync water surface height from the top of the WATER_ mesh bounding box."""
-    bl_idname  = "og.sync_water_from_mesh"
-    bl_label   = "Sync Surface from Mesh Top"
-    bl_options = {"REGISTER", "UNDO"}
-
-    mesh_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        import bpy
-        o = bpy.data.objects.get(self.mesh_name)
-        if not o or o.type != "MESH": return {"CANCELLED"}
-        # World-space bounding box corners
-        corners = [o.matrix_world @ v.co for v in o.data.vertices]
-        ys      = [c.z for c in corners]   # Blender Z = game Y
-        top_y   = round(max(ys), 4)
-        bot_y   = round(min(ys), 4)
+        if not o:
+            return {"CANCELLED"}
+        # Find the VOL_ mesh linked to this water actor.
+        vol = next((v for v in bpy.data.objects
+                    if v.type == "MESH" and v.name.startswith("VOL_")
+                    and self.actor_name in _vol_link_targets(v)), None)
+        if vol is None:
+            self.report({"WARNING"}, "No VOL_ mesh linked to this water actor")
+            return {"CANCELLED"}
+        # Blender Z = game Y (up). Surface = top of the linked volume.
+        top_y = round(max((vol.matrix_world @ vtx.co).z for vtx in vol.data.vertices), 4)
         o["og_water_surface"] = top_y
-        o["og_water_wade"]    = 0.5   # depth below surface in meters
-        o["og_water_swim"]    = 1.0   # depth below surface in meters
-        o["og_water_bottom"]  = bot_y
-        self.report({"INFO"}, f"Surface={top_y:.2f}m  wade=0.5m  swim=1.0m  bottom={bot_y:.2f}m")
+        self.report({"INFO"}, f"Water surface set to {top_y:.2f}m (top of {vol.name})")
         return {"FINISHED"}
 
 def _entity_enum_for_cats(cats):
@@ -290,6 +306,7 @@ def _draw_mat(self, ctx):
 CLASSES = (
     OG_OT_SelectAndFrame,
     OG_OT_DeleteObject,
+    OG_OT_DeleteSelected,
     OG_OT_SetCamProp,
     OG_OT_NudgeCamFloat,
     OG_OT_NudgeFloatProp,
@@ -297,5 +314,4 @@ CLASSES = (
     OG_OT_SetLauncherDest,
     OG_OT_ClearLauncherDest,
     OG_OT_SyncWaterFromObject,
-    OG_OT_SyncWaterFromMesh,
 )

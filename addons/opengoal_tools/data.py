@@ -358,13 +358,32 @@ PLATFORM_ENUM_ITEMS = [
 _platform_enum_cb = _make_filtered_enum(PLATFORM_ENUM_ITEMS, {"Platforms"})
 
 
+_SPAWN_VARIANT_CACHE: list = []
+
+
+def _spawn_variant_cb(self, context):
+    """Dynamic pre-spawn variant dropdown: the variant choices of whichever
+    spawn item is currently highlighted (crate types, bridge variants, ...)."""
+    global _SPAWN_VARIANT_CACHE
+    from . import db as _db
+    from .spawn_items import get_selected_spawn_item
+    items = []
+    item = get_selected_spawn_item(context.scene)
+    if item is not None and getattr(item, "etype", None):
+        for c in _db.variant_choices(item.etype):
+            vid = c.get("id", c.get("value"))
+            items.append((vid, c.get("label", vid), ""))
+    if not items:
+        items = [("NONE", "\u2014", "")]
+    _SPAWN_VARIANT_CACHE = items   # hold a reference (Blender enum-GC workaround)
+    return items
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Derived lookup sets
 # ═══════════════════════════════════════════════════════════════════════════
-NAV_UNSAFE_TYPES  = {e for e, info in ENTITY_DEFS.items() if not info.get("nav_safe", True)}
-NEEDS_PATH_TYPES  = {e for e, info in ENTITY_DEFS.items() if info.get("needs_path", False)}
-NEEDS_PATHB_TYPES = {e for e, info in ENTITY_DEFS.items() if info.get("needs_pathb", False)}
-IS_PROP_TYPES     = {e for e, info in ENTITY_DEFS.items() if info.get("is_prop", False)}
+# Trait sets moved to db.py: use db.nav_unsafe / db.needs_path / db.needs_pathb /
+# db.is_prop (per-etype), or db.*_types() for the whole set. No shim constants.
 ETYPE_AG          = {e: [info["ag"]] for e, info in ENTITY_DEFS.items() if info.get("ag")}
 ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items() if info.get("extras_ag")}
 
@@ -512,8 +531,7 @@ UNIVERSAL_LUMPS: list = (
 def _lump_ref_for_etype(etype):
     """Return (universal_lumps, actor_lumps) for a given etype."""
     actor_entries = list(LUMP_REFERENCE.get(etype, []))
-    einfo = ENTITY_DEFS.get(etype, {})
-    if einfo.get("cat") in ("Enemies", "Bosses"):
+    if _db.is_enemy(etype):
         actor_entries = list(LUMP_REFERENCE.get("_enemy", [])) + actor_entries
     return UNIVERSAL_LUMPS, actor_entries
 

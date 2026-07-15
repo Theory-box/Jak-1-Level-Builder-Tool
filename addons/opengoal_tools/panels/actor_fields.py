@@ -18,10 +18,10 @@
 #     "note":      "Extra info text shown below the input.",  (optional)
 #   }
 #
-# Adding an actor to the generic panel requires:
-#   1. Ensure its `fields[]` in the DB matches its existing og_* Blender props
-#   2. Add its etype to GENERIC_PANEL_ETYPES below
-#   3. Remove its bespoke OG_PT_Actor<X> class from panels.py + __init__.py
+# Adding an actor to the generic panel requires only that its `fields[]` in the
+# DB match its og_* Blender props. To give an actor a BESPOKE panel instead, set
+# `"panel": "<id>"` on it in the DB and have that panel's poll check
+# db.actor_panel(etype) == "<id>" — no hardcoded etype lists.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 import bpy
@@ -111,6 +111,13 @@ def _resolve_choices(choices_spec):
                 for s in sounds:
                     out.append({"value": s, "label": f"[{bank}] {s}"})
             return out
+        # Generic: any top-level named table of {id/value, label} entries
+        # (e.g. BridgeVariants) works without a bespoke case.
+        table = _db.choices_table(choices_spec)
+        if table:
+            return [{"value": e.get("id", e.get("value")),
+                     "label": e.get("label", e.get("id", e.get("value")))}
+                    for e in table]
     return []
 
 
@@ -235,34 +242,8 @@ def _draw_field(layout, obj, field, actor_info=None):
 # The generic panel
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Actors whose UI is entirely data-driven (pure field-display with no custom
-# logic beyond what the schema expresses). If you add a new entry here, make
-# sure the corresponding bespoke OG_PT_Actor* panel has been removed from
-# panels.py + __init__.py — otherwise both will draw and duplicate the UI.
-GENERIC_PANEL_ETYPES = frozenset({
-    # Pure float/int field panels
-    "orbit-plat",       # replaces OG_PT_ActorOrbitPlat
-    "plat-flip",        # replaces OG_PT_ActorPlatFlip
-    "whirlpool",        # replaces OG_PT_ActorWhirlpool
-    "square-platform",  # replaces OG_PT_ActorSquarePlatform
-    "orb-cache-top",    # replaces OG_PT_ActorOrbCache
-    "caveflamepots",    # replaces OG_PT_ActorCaveFlamePots
-    "shover",           # replaces OG_PT_ActorShover
-    "sharkey",          # replaces OG_PT_ActorSharkey
-    "sunkenfisha",      # replaces OG_PT_ActorSunkenFish
-    "basebutton",       # replaces OG_PT_ActorBaseButton
-    # Shared-field groups
-    "lavaballoon", "darkecobarrel",                          # OG_PT_ActorLavaMoving
-    "breakaway-left", "breakaway-mid", "breakaway-right",    # OG_PT_ActorBreakaway
-    "swamp-bat", "yeti", "villa-starfish", "swamp-rat-nest", # OG_PT_ActorSpawner
-    # Bool-toggle panels (checkbox via og.toggle_actor_bool_field)
-    "dark-crystal",     # replaces OG_PT_ActorDarkCrystal
-    "fuel-cell",        # replaces OG_PT_ActorFuelCell
-    "windturbine",      # replaces OG_PT_ActorWindTurbine
-    # Enum (radio buttons)
-    "ropebridge",       # replaces OG_PT_ActorRopeBridge
-    "mis-bone-bridge",  # replaces OG_PT_ActorMisBoneBridge
-})
+# Which actors use a bespoke panel vs the generic field panel is now a DB flag
+# (`"panel": "<id>"`), read via db.actor_panel(). No hardcoded etype lists.
 
 
 class OG_PT_ActorFields(Panel):
@@ -278,33 +259,33 @@ class OG_PT_ActorFields(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 10
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, ctx):
+        # Container for all per-actor settings (its sub-panels + generic fields).
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name:
             return False
         parts = sel.name.split("_", 2)
-        if len(parts) < 3 or parts[0] != "ACTOR":
-            return False
-        etype = parts[1]
-        return etype in GENERIC_PANEL_ETYPES
+        return len(parts) >= 3 and parts[0] == "ACTOR"
 
     def draw(self, ctx):
         sel = ctx.active_object
         parts = sel.name.split("_", 2)
         etype = parts[1]
+        # Actors with a bespoke panel (DB "panel" flag) show their fields there;
+        # this container just parents the sub-panels for them.
+        if _db.actor_panel(etype):
+            return
         actor = _db.find_actor(etype)
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
-        fields = actor.get("fields", [])
+        fields = _db.ui_fields(etype)
         if not fields:
-            row = self.layout.row()
-            row.enabled = False
-            row.label(text="(no configurable fields)", icon="INFO")
-            return
+            return  # container only — child sub-panels provide the settings
         # Include etype on actor_info dict so per-etype defaults work for
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}

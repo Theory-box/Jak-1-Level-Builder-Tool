@@ -3045,27 +3045,90 @@
   "CrateTypes": [
     {
       "id": "steel",
-      "label": "Steel"
+      "label": "Steel",
+      "glb": "levels/common/crate-steel-lod0.glb",
+      "defaults": { "og_crate_pickup": "money" }
     },
     {
       "id": "wood",
-      "label": "Wood"
+      "label": "Wood",
+      "glb": "levels/common/crate-wood-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "iron",
-      "label": "Iron"
+      "label": "Iron",
+      "glb": "levels/common/crate-iron-lod0.glb",
+      "defaults": { "og_crate_pickup": "buzzer" }
     },
     {
       "id": "darkeco",
-      "label": "Dark Eco"
+      "label": "Dark Eco",
+      "glb": "levels/common/crate-darkeco-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "barrel",
-      "label": "Barrel"
+      "label": "Barrel",
+      "glb": "levels/common/crate-barrel-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
     },
     {
       "id": "bucket",
-      "label": "Bucket"
+      "label": "Bucket",
+      "glb": "levels/common/crate-bucket-lod0.glb",
+      "defaults": { "og_crate_pickup": "none" }
+    }
+  ],
+
+  // ── BridgeVariants ──────────────────────────────────────────────
+  // Each ropebridge variant: its own model + art group. All use ropebridge.o
+  // (already loaded in game.gd). The snow bridge also needs Jak's ice-sliding
+  // code + animation bundled (extra_code / extra_art_groups).
+  "BridgeVariants": [
+    {
+      "id": "ropebridge-32",
+      "label": "Rope Bridge 32m (Village1)",
+      "glb": "levels/village1/ropebridge-32-lod0.glb",
+      "art_group": "ropebridge-32-ag.go",
+      "offset": [0, 16, 0]
+    },
+    {
+      "id": "ropebridge-36",
+      "label": "Rope Bridge 36m (Misty)",
+      "glb": "levels/misty/ropebridge-36-lod0.glb",
+      "art_group": "ropebridge-36-ag.go",
+      "offset": [0, 18, 0]
+    },
+    {
+      "id": "ropebridge-52",
+      "label": "Rope Bridge 52m (Jungle)",
+      "glb": "levels/jungle/ropebridge-52-lod0.glb",
+      "art_group": "ropebridge-52-ag.go",
+      "offset": [0, 26, 0]
+    },
+    {
+      "id": "ropebridge-70",
+      "label": "Rope Bridge 70m (Jungle)",
+      "glb": "levels/jungle/ropebridge-70-lod0.glb",
+      "art_group": "ropebridge-70-ag.go",
+      "offset": [0, 35, 0]
+    },
+    {
+      "id": "snow-bridge-36",
+      "label": "Snow Bridge 36m (Snowy)",
+      "glb": "levels/snow/snow-bridge-36-lod0.glb",
+      "art_group": "snow-bridge-36-ag.go",
+      "offset": [0, 18, 0],
+      "extra_art_groups": ["eichar-ice+0-ag.go"],
+      "extra_code": ["target-ice.o"]
+    },
+    {
+      "id": "vil3-bridge-36",
+      "label": "Village3 Bridge 36m",
+      "glb": "levels/village3/vil3-bridge-36-lod0.glb",
+      "art_group": "vil3-bridge-36-ag.go",
+      "offset": [0, 18, 0]
     }
   ],
 
@@ -3118,7 +3181,8 @@
       "label": "Scout Fly",
       "engine_string": "(pickup-type buzzer)",
       "icon": "GP_SELECT",
-      "supports_multi_amount": false
+      "supports_multi_amount": false,
+      "force_amount": 1
     }
   ],
 
@@ -4156,6 +4220,8 @@
     },
     {
       "etype": "swamp-bat",
+      "spawns_lurkers": true,
+      "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -4210,6 +4276,8 @@
     },
     {
       "etype": "yeti",
+      "spawns_lurkers": true,
+      "schema_export": true,
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -4520,6 +4588,7 @@
     },
     {
       "etype": "dark-crystal",
+      "schema_export": true,
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5382,6 +5451,7 @@
     },
     {
       "etype": "fuel-cell",
+      "schema_export": true,
       "label": "Power Cell",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5395,6 +5465,15 @@
         }
       ],
       "fields": [
+        {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["cell-info", "(game-task none)"]
+          }
+        },
         {
           "key": "og_cell_skip_jump",
           "label": "Skip jump animation",
@@ -5422,6 +5501,7 @@
     },
     {
       "etype": "money",
+      "schema_export": true,
       "label": "Orb (Precursor)",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5432,6 +5512,17 @@
           "key": "movie-mask",
           "type": "uint32",
           "description": "Hide-during-cutscene bitmask."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["eco-info", "(pickup-type money)", 1]
+          }
         }
       ],
       "color": [
@@ -5447,12 +5538,24 @@
     },
     {
       "etype": "buzzer",
+      "schema_export": true,
       "label": "Scout Fly",
       "category": "Pickups",
       "parent": "eco-collectable",
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
       "lumps": [],
+      "fields": [
+        {
+          "key": "_eco_info_const",
+          "type": "const",
+          "lump": {
+            "key": "eco-info",
+            "type": "const",
+            "const": ["buzzer-info", "(game-task none)", 1]
+          }
+        }
+      ],
       "color": [
         0.9,
         0.9,
@@ -5466,6 +5569,8 @@
     },
     {
       "etype": "crate",
+      "panel": "crate",
+      "schema_export": true,
       "label": "Crate",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5490,6 +5595,7 @@
           "type": "enum",
           "default": "steel",
           "choices": "CrateTypes",
+          "variant": true,
           "lump": {
             "key": "crate-type",
             "type": "symbol_literal"
@@ -5533,6 +5639,7 @@
     },
     {
       "etype": "orb-cache-top",
+      "schema_export": true,
       "label": "Orb Cache",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -5605,57 +5712,6 @@
       "vertex_export": false
     },
     {
-      "etype": "eco-yellow",
-      "label": "Yellow Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
-      "etype": "eco-red",
-      "label": "Red Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
-      "etype": "eco-blue",
-      "label": "Blue Eco Vent",
-      "category": "Pickups",
-      "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
-      "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
-      "shape": "PLAIN_AXES"
-    },
-    {
       "etype": "health",
       "label": "Eco (Green)",
       "category": "Pickups",
@@ -5680,8 +5736,40 @@
       "code": {
         "in_game_cgo": true
       },
-      // Eco Vent Green needs a special case in lumps because there's no actor for it
-      // It needs an eco-info with the pickup type set to eco-green and amount to 1
+      // Green eco vents have no dedicated actor: spawn a bare `ecovent` and give
+      // it an eco-info lump. That lump is now schema-driven (eco-info-picker),
+      // defaulting to eco-green but configurable per instance.
+      "schema_export": true,
+      "lumps": [
+        {
+          "key": "eco-info",
+          "type": "eco-info",
+          "description": "Pickup contents: '(pickup-type X) amount'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-green",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
+        }
+      ],
       "color": [
         0.1,
         0.9,
@@ -5692,7 +5780,10 @@
     },
     {
       "etype": "plat",
+      "panel": "platform",
       "label": "Floating Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-ag.go",
@@ -5726,7 +5817,10 @@
     },
     {
       "etype": "plat-eco",
+      "panel": "platform",
       "label": "Eco Platform",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "label": "Notice distance (m)", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
@@ -5797,6 +5891,7 @@
     },
     {
       "etype": "plat-flip",
+      "schema_export": true,
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -5975,7 +6070,10 @@
     },
     {
       "etype": "side-to-side-plat",
+      "panel": "platform",
       "label": "Side-to-Side Plat",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "side-to-side-plat-ag.go",
@@ -6089,65 +6187,19 @@
       "shape": "CUBE"
     },
     {
-      "etype": "revcycle",
-      "label": "Rotating Platform",
-      "category": "Platforms",
-      "parent": "prop",
-      "art_group": "revcycle-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
-      "code": {
-        "o": "village-obs.o",
-        "o_only": true
-      },
-      "glb": "levels/village1/revcycle-geo.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. Period hardcoded ~16s if not set."
-        },
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Height parameters."
-        },
-        {
-          "key": "num-lurkers",
-          "type": "int32",
-          "description": "Child count."
-        }
-      ],
-      "color": [
-        0.6,
-        0.4,
-        0.6,
-        1.0
-      ],
-      "shape": "CUBE"
-    },
-    {
       "etype": "launcher",
+      "panel": "launcher",
+      "is_launcher": true,
+      "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "floating-launcher-ag.go",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "floating-launcher.o",
-        "o_only": true
-      },
-      "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "lumps": [
         {
           "key": "spring-height",
@@ -6401,7 +6453,10 @@
     },
     {
       "etype": "steam-cap",
+      "panel": "platform",
       "label": "Steam Cap",
+      "schema_export": true,
+      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "steam-cap-ag.go",
@@ -6415,8 +6470,18 @@
         "o": "steam-cap.o",
         "o_only": true
       },
+      "glb": "levels/sunken/steam-cap-lod0.glb",
       "is_prop": true,
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
       "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
         {
           "key": "percent",
           "type": "float",
@@ -6674,6 +6739,7 @@
     },
     {
       "etype": "whirlpool",
+      "schema_export": true,
       "label": "Whirlpool",
       "category": "Obstacles",
       "parent": "prop",
@@ -7047,6 +7113,8 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "spawns_lurkers": true,
+      "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7097,6 +7165,7 @@
     },
     {
       "etype": "sunkenfisha",
+      "schema_export": true,
       "label": "Sunken Fish School",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -7163,6 +7232,7 @@
     },
     {
       "etype": "sharkey",
+      "schema_export": true,
       "label": "Lurker Shark",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7265,6 +7335,8 @@
     },
     {
       "etype": "villa-starfish",
+      "spawns_lurkers": true,
+      "schema_export": true,
       "label": "Villa Starfish",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -7530,6 +7602,7 @@
     },
     {
       "etype": "orbit-plat",
+      "schema_export": true,
       "label": "Orbit Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -7608,6 +7681,7 @@
     },
     {
       "etype": "square-platform",
+      "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -7681,6 +7755,7 @@
     },
     {
       "etype": "ropebridge",
+      "schema_export": true,
       "label": "Rope Bridge",
       "category": "Platforms",
       "parent": "prop",
@@ -7718,32 +7793,8 @@
           "label": "Bridge Variant",
           "type": "enum",
           "default": "ropebridge-32",
-          "choices": [
-            {
-              "value": "ropebridge-32",
-              "label": "Rope Bridge 32m"
-            },
-            {
-              "value": "ropebridge-36",
-              "label": "Rope Bridge 36m"
-            },
-            {
-              "value": "ropebridge-52",
-              "label": "Rope Bridge 52m"
-            },
-            {
-              "value": "ropebridge-70",
-              "label": "Rope Bridge 70m"
-            },
-            {
-              "value": "snow-bridge-36",
-              "label": "Snow Bridge 36m"
-            },
-            {
-              "value": "vil3-bridge-36",
-              "label": "Village3 Bridge 36m"
-            }
-          ],
+          "choices": "BridgeVariants",
+          "variant": true,
           "lump": {
             "key": "art-name",
             "type": "symbol"
@@ -7761,6 +7812,7 @@
     },
     {
       "etype": "lavaballoon",
+      "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
       "parent": "prop",
@@ -7817,6 +7869,7 @@
     },
     {
       "etype": "darkecobarrel",
+      "schema_export": true,
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
       "parent": "prop",
@@ -7873,6 +7926,8 @@
     },
     {
       "etype": "caveelevator",
+      "panel": "caveelevator",
+      "schema_export": true,
       "label": "Cave Elevator",
       "category": "Platforms",
       "parent": "prop",
@@ -7943,6 +7998,7 @@
     },
     {
       "etype": "caveflamepots",
+      "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
@@ -8050,6 +8106,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/robocave/cavetrapdoor-lod0.glb",
       "lumps": [
         {
           "key": "delay",
@@ -8070,7 +8127,7 @@
       "label": "Cave Spatula Plat",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "cavespatula-ag.go",
+      "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
         "tpage-1313.go",
@@ -8082,6 +8139,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8108,6 +8166,7 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "glb": "levels/robocave/cavespatulatwo-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8172,6 +8231,7 @@
         "o": "ogre-obs.o",
         "o_only": true
       },
+      "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8182,11 +8242,12 @@
       "shape": "CUBE"
     },
     {
-      "etype": "pontoon",
-      "label": "Pontoon (Village2)",
+      "etype": "pontoonten",
+      "schema_export": true,
+      "label": "Pontoon (Ten)",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "pontoon-ag.go",
+      "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
       "tpages": [
         "tpage-919.go",
@@ -8199,6 +8260,7 @@
         "o": "village2-obs.o",
         "o_only": true
       },
+      "glb": "levels/village2/pontoonten-lod0.glb",
       "lumps": [
         {
           "key": "alt-task",
@@ -8230,23 +8292,24 @@
       "shape": "CUBE"
     },
     {
-      "etype": "tra-pontoon",
-      "label": "Pontoon (Training)",
+      "etype": "pontoonfive",
+      "label": "Pontoon (Five)",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "tra-pontoon-ag.go",
-      "tpage_group": "Training",
+      "art_group": "pontoonfive-ag.go",
+      "tpage_group": "Village2",
       "tpages": [
-        "tpage-1309.go",
-        "tpage-1311.go",
-        "tpage-1310.go",
-        "tpage-1308.go",
-        "tpage-775.go"
+        "tpage-919.go",
+        "tpage-922.go",
+        "tpage-920.go",
+        "tpage-921.go",
+        "tpage-1476.go"
       ],
       "code": {
-        "o": "training-obs.o",
+        "o": "village2-obs.o",
         "o_only": true
       },
+      "glb": "levels/village2/pontoonfive-lod0.glb",
       "lumps": [],
       "color": [
         0.5,
@@ -8258,6 +8321,7 @@
     },
     {
       "etype": "mis-bone-bridge",
+      "schema_export": true,
       "label": "Bone Bridge",
       "category": "Platforms",
       "parent": "prop",
@@ -8305,6 +8369,7 @@
     },
     {
       "etype": "breakaway-left",
+      "schema_export": true,
       "label": "Breakaway Plat (L)",
       "category": "Platforms",
       "parent": "prop",
@@ -8320,6 +8385,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -8373,6 +8439,7 @@
     },
     {
       "etype": "breakaway-mid",
+      "schema_export": true,
       "label": "Breakaway Plat (M)",
       "category": "Platforms",
       "parent": "prop",
@@ -8388,6 +8455,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -8441,6 +8509,7 @@
     },
     {
       "etype": "breakaway-right",
+      "schema_export": true,
       "label": "Breakaway Plat (R)",
       "category": "Platforms",
       "parent": "prop",
@@ -8456,6 +8525,7 @@
         "o": "misty-obs.o",
         "o_only": true
       },
+      "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
         {
           "key": "height-info",
@@ -8509,92 +8579,16 @@
     },
     {
       "etype": "water-vol",
+      "is_water": true,
+      "need_vol": true,
       "label": "Water Volume (legacy)",
       "category": "Hidden",
       "parent": "process-drawable",
       "code": {
         "in_game_cgo": true
       },
-      "lumps": [
-        {
-          "key": "water-height",
-          "type": "water-height",
-          "description": "Water surface definition: 'water_m wade_m swim_m [flags] [bottom_m]'. Required."
-        },
-        {
-          "key": "attack-event",
-          "type": "symbol",
-          "description": "Event fired when player drowns. Default 'drown. Bare string: \"'drown\"."
-        }
-      ],
-      "fields": [
-        {
-          "key": "og_water_surface",
-          "label": "Surface Y (world)",
-          "type": "float",
-          "default_from": "mesh_ymax",
-          "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_wade",
-          "label": "Wade depth (m)",
-          "type": "float",
-          "default": 0.5,
-          "min": 0.0,
-          "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_swim",
-          "label": "Swim depth (m)",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.0,
-          "lump": {
-            "key": "water-height",
-            "type": "water-height",
-            "slot": 2
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_water_bottom",
-          "label": "Bottom Y (world)",
-          "type": "float",
-          "default_from": "mesh_ymin",
-          "note": "Defines the kill-floor for the volume; not a direct lump field — consumed by the vol plane geometry."
-        },
-        {
-          "key": "og_water_attack",
-          "label": "Attack event",
-          "type": "enum",
-          "default": "drown",
-          "choices": [
-            {
-              "value": "drown",
-              "label": "Drown"
-            },
-            {
-              "value": "endlessfall",
-              "label": "Endless fall"
-            }
-          ],
-          "lump": {
-            "key": "attack-event",
-            "type": "symbol"
-          },
-          "write_if": "always"
-        }
-      ],
+      "lumps": [],
+      "fields": [],
       "color": [
         0.2,
         0.4,
@@ -8624,6 +8618,9 @@
     },
     {
       "etype": "springbox",
+      "panel": "launcher",
+      "is_launcher": true,
+      "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8670,6 +8667,8 @@
     },
     {
       "etype": "oracle",
+      "panel": "task-gated",
+      "schema_export": true,
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -8784,6 +8783,8 @@
     },
     {
       "etype": "eco-door",
+      "panel": "eco-door",
+      "export_as": "jng-iris-door",
       "label": "Eco Door (iris)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -8852,6 +8853,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -8864,6 +8876,7 @@
     },
     {
       "etype": "jng-iris-door",
+      "panel": "eco-door",
       "label": "Iris Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -8932,6 +8945,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -8944,6 +8968,7 @@
     },
     {
       "etype": "sidedoor",
+      "panel": "eco-door",
       "label": "Side Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9017,6 +9042,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -9029,6 +9065,7 @@
     },
     {
       "etype": "rounddoor",
+      "panel": "eco-door",
       "label": "Round Door (Misty)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9080,6 +9117,17 @@
           },
           "value_if_true": 64,
           "write_if": "if_true"
+        },
+        {
+          "key": "_door_state_lock",
+          "type": "const",
+          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+          "lump_bit": {
+            "key": "flags",
+            "type": "uint32",
+            "bit_value": 1,
+            "set_if_link": "state-actor"
+          }
         }
       ],
       "color": [
@@ -9092,6 +9140,8 @@
     },
     {
       "etype": "launcherdoor",
+      "panel": "launcherdoor",
+      "schema_export": true,
       "label": "Launcher Door",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9115,7 +9165,8 @@
           "default": "",
           "lump": {
             "key": "continue-name",
-            "type": "string"
+            "type": "string",
+            "bare": true
           },
           "write_if": "if_non_empty"
         }
@@ -9130,6 +9181,8 @@
     },
     {
       "etype": "sun-iris-door",
+      "panel": "sun-iris-door",
+      "schema_export": true,
       "label": "Iris Door (Sunken)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9196,6 +9249,7 @@
     },
     {
       "etype": "basebutton",
+      "schema_export": true,
       "label": "Wall Button",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -9270,6 +9324,7 @@
     },
     {
       "etype": "shover",
+      "schema_export": true,
       "label": "Shover Platform",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -9413,6 +9468,7 @@
     },
     {
       "etype": "windturbine",
+      "schema_export": true,
       "label": "Wind Turbine",
       "category": "Visuals",
       "parent": "prop",
@@ -15368,19 +15424,6 @@
       "shape": "CONE"
     },
     {
-      "etype": "steam-cap",
-      "label": "Steam Cap",
-      "category": "Objects",
-      "art_group": "steam-cap-ag.go",
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
-      "shape": "CUBE"
-    },
-    {
       "etype": "windmill-one",
       "label": "Windmill",
       "category": "Objects",
@@ -15723,6 +15766,93 @@
 
   // ── VertexExportTypes_notes ─────────────────────────────────────
   "VertexExportTypes_notes": "Mesh-only props usable by the vertex-lit export workflow. Some overlap with entries in Actors (same etype, repeated here); entries unique to this list (e.g. 'dark-plant', 'evilplant' — wait, those ARE in Actors…) are purely decorative and not spawnable via the normal picker. Note: etypes in VertexExportExcludedEtypes (top-level) cannot be vertex-exported regardless of whether they appear here.",
+
+  // ── TraitFields ─────────────────────────────────────────────────
+  // Predicate-tagged field groups: any actor for which the named predicate is
+  // true (see db.py _TRAIT_PREDICATES) inherits these fields for both export
+  // and UI. Replaces the old hardcoded enemy/spawner/notice branches.
+  "TraitFields": {
+    "is_enemy": [
+      {
+        "key": "og_idle_distance",
+        "label": "Idle distance (m)",
+        "type": "float",
+        "default": 80.0,
+        "note": "Player must be within this range for the enemy to leave idle. Engine default 80.",
+        "lump": { "key": "idle-distance", "type": "meters" }
+      },
+      {
+        "key": "og_vis_dist",
+        "label": "Vis distance (m)",
+        "type": "float",
+        "default": 200.0,
+        "note": "Keeps the enemy's process active/visible at range. Default 200.",
+        "lump": { "key": "vis-dist", "type": "meters" }
+      }
+    ],
+    "spawns_lurkers": [
+      {
+        "key": "og_num_lurkers",
+        "label": "Lurkers to spawn",
+        "type": "int",
+        "default": -1,
+        "note": "-1 leaves the engine default; 0+ overrides the spawn count.",
+        "lump": { "key": "num-lurkers", "type": "int32" },
+        "write_if": "if_nonneg"
+      }
+    ],
+    "needs_notice_dist": [
+      {
+        "key": "og_notice_dist",
+        "label": "Notice distance (m)",
+        "type": "float",
+        "default": -1.0,
+        "note": "-1 = always active; >=0 = eco required within range.",
+        "lump": { "key": "notice-dist", "type": "meters" }
+      }
+    ],
+    "is_water": [
+      {
+        "key": "og_water_surface",
+        "label": "Water surface Y (m)",
+        "type": "float",
+        "default": 0.0,
+        "note": "World Y of the water surface. Wade/swim are depths below this.",
+        "lump": {
+          "key": "water-height",
+          "type": "water-height",
+          "components": ["og_water_surface", "og_water_wade", "og_water_swim"],
+          "flags": "(water-flags wt02 wt03 wt05 wt22)"
+        }
+      },
+      {
+        "key": "og_water_wade",
+        "label": "Wade depth (m)",
+        "type": "float",
+        "default": 0.5,
+        "min": 0.0
+      },
+      {
+        "key": "og_water_swim",
+        "label": "Swim depth (m)",
+        "type": "float",
+        "default": 1.0,
+        "min": 0.0
+      },
+      {
+        "key": "og_water_attack",
+        "label": "Attack event",
+        "type": "enum",
+        "default": "drown",
+        "choices": [
+          { "value": "drown", "label": "Drown" },
+          { "value": "endlessfall", "label": "Endless fall" }
+        ],
+        "lump": { "key": "attack-event", "type": "symbol_literal" },
+        "write_if": "always"
+      }
+    ]
+  },
 
   // ── VertexExportExcludedEtypes ──────────────────────────────────
   "VertexExportExcludedEtypes": [

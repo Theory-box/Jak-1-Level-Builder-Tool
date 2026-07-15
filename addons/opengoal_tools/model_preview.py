@@ -210,9 +210,46 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     Handles both single-GLB enemies and double-lurker (list of GLBs).
     """
     from .data import ENTITY_DEFS
+    from . import db as _db
 
     info = ENTITY_DEFS.get(etype, {})
     glb_rel = info.get("glb")
+
+    # Variant override: a field marked "variant" (e.g. crate type) can select a
+    # different model per instance, so the preview matches the chosen variant.
+    _var = _db.actor_variant(etype, lambda k, d=None: actor_empty.get(k, d))
+    if _var.get("glb"):
+        glb_rel = _var["glb"]
+
+    preview_col = _ensure_preview_collection(ctx.scene)
+    attached    = False
+
+    # Preview offset in Blender metres: a manual override (set in Mesh Preview
+    # Settings) wins over the DB/variant default (e.g. bridge centring).
+    _ovr = actor_empty.get("_og_preview_offset_ovr")
+    if _ovr is not None:
+        _off = list(_ovr)
+    else:
+        _off = _db.preview_offset(etype, lambda k, d=None: actor_empty.get(k, d))
+    _off = [float(_off[0]), float(_off[1]), float(_off[2])] if _off and len(_off) >= 3 else [0.0, 0.0, 0.0]
+
+    # Override mesh (Mesh Preview Settings): use a user-picked mesh as the preview
+    # instead of the actor/variant model. Works even for etypes with no GLB.
+    override = getattr(actor_empty, "og_preview_override", None)
+    if override is not None and override.type == "MESH" and not _is_any_preview(override):
+        dup = override.copy()
+        dup.data = override.data.copy()
+        dup.name = f"{actor_empty.name}_preview"
+        dup.location              = (_off[0], _off[1], _off[2])
+        dup.parent                = actor_empty
+        dup.matrix_parent_inverse = mathutils.Matrix()
+        dup[_PREVIEW_PROP]        = True
+        preview_col.objects.link(dup)
+        dup.show_in_front = False
+        dup.display_type  = "TEXTURED"
+        dup.hide_select   = True
+        _fit_empty_to_mesh(actor_empty, dup)
+        return True
 
     if not glb_rel:
         return False  # etype has no GLB (lightning-mole, ice-cube, etc.)
@@ -222,9 +259,6 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         glb_rels = [glb_rel]
     else:
         glb_rels = list(glb_rel)
-
-    preview_col = _ensure_preview_collection(ctx.scene)
-    attached    = False
 
     for rel in glb_rels:
         glb_path  = _glb_path(rel)
@@ -238,7 +272,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         # The actor_empty is already at cursor_loc.
         # Set mesh local position to (0,0,0) so it sits exactly at the empty,
         # then use identity matrix_parent_inverse so no extra offset is applied.
-        mesh_obj.location              = (0.0, 0.0, 0.0)
+        mesh_obj.location              = (_off[0], _off[1], _off[2])
         mesh_obj.parent                = actor_empty
         mesh_obj.matrix_parent_inverse = mathutils.Matrix()  # identity
 

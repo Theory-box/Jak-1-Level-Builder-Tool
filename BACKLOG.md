@@ -30,6 +30,75 @@ in-Blender. Bumped here so they're not forgotten.
 
 ## Wanted features
 
+### Schema-driven export migration (current focus)
+Retire every per-actor hardcoded branch so the jsonc DB is the single source
+of truth — behaviour editable from the DB, and any feature copyable onto
+another actor by editing data, not code. Full audit with per-item IDs, "what
+it blocks", and a data-driven fix for each: `session-notes/hardcoding-audit.md`.
+
+Pattern proven by `eco-info-picker` (crate + green eco vent): for each item,
+reproduce the current exported bytes from the DB, prove equality in
+`export/test_schema_emit.py`, then delete the branch. Approve items per-ID.
+
+- [x] Reusable computed-encoder pattern established (eco-info-picker, const,
+      water-height, target-vector, need_vol)
+- [x] **A** · direct migrations done — redundant per-actor branches deleted;
+      enemy/spawner/notice-dist via predicate-tagged trait fields (TraitFields)
+- [x] **B1** · const-lump encoder (fuel-cell / buzzer / money eco-info)
+- [x] **B2** · eco-door flags: link-derived `ecdf00` bit via a computed handler
+- [x] **B3** · water-vol unified on the VOL_ system — `is_water` trait +
+      `need_vol` (convex `_vol_planes`); legacy WATER_/box paths removed
+- [x] **B4** · launcher target-vector encoder (`object_ref` → vector)
+- [x] **C** · trait flags moved into the DB (`db.py` trait layer + predicates)
+- [x] **D** · launcher / spawner → DB flags (`is_launcher` / `spawns_lurkers`)
+- [x] **E** · bespoke `OG_PT_Actor*` panels are KEPT in code, but which actor
+      uses one is now a DB flag (`"panel": "<id>"`, read via `db.actor_panel`).
+      Bespoke panel polls check the flag; the generic panel defers on it. The
+      hardcoded `DEDICATED_FIELD_UI_ETYPES` / `GENERIC_PANEL_ETYPES` sets are
+      gone. Attaching a bespoke panel to a new actor is now one DB line.
+- [x] **F** · spawn-time defaults seeded from DB `fields[]` (one loop)
+- [x] **G** · `export_as` field for abstract remap (eco-door → jng-iris-door)
+
+Beyond the audit, also delivered on this branch: the variant system
+(glb / art_group / code / defaults + preview offset + generalised pre-spawn
+menu + Mesh Preview Settings), and the Object Settings reorder + multi-select
+frame/duplicate/delete.
+
+Deferred actor-specific fixes (need engine source or a manual per-actor pass):
+- eco-door one-way / starts-open flag values — needs `baseplat.gc`
+- water damage types (drown / dark-eco / lava / electric / tar; `endlessfall`
+  is wrong for water) — needs `water.gc`; ideally an extensible DB table
+- alt-vector generalisation (launcher + fuel-cell `movie-pos`, `w_mode`
+  seconds/angle; grep actor code for other alt-vector users)
+
+### Fuel-cell / scout-fly game-task binding (future)
+fuel-cell and buzzer (scout fly) currently export a fixed `(game-task none)`
+in their eco-info const lump. To wire them into the task system — so
+collecting them actually increments the cell/fly count and drives task-based
+logic — the game-task must become settable per instance. Plan: replace the
+`const` eco-info lump with a picker-style computed encoder (like
+eco-info-picker) that formats a chosen game-task into the cell-info/buzzer-info
+lump. Not urgent; noted so the current const implementation isn't mistaken for
+final.
+
+### Default camera entities (revisit AFTER the export migration)
+Jak 1 now ships built-in camera entities, placed via a top-level `cameras[]`
+array (separate from `actors[]`) and triggered by a volume. Mode is chosen by
+which lumps are present: `cam-circular` (needs `pivot`, opt. `maxAngle` /
+`focalPull`), `cam-standoff` (needs `align`), or `cam-string` (default; any of
+the `stringMax/MinLength` / `stringMax/MinHeight` lumps). Generic lumps: `fov`,
+`interpTime`, `tiltAdjust`. `flags` takes a `cam-slave-options` enum. Three
+volume lumps at keyframe 0: `vol` (active inside), `pvol` (preferred on
+overlap), `cutoutvol` (disabled inside); optional `interesting` vector = point
+of interest. Documented example (test-zone):
+https://github.com/open-goal/jak-project/blob/697337166da69af6515e97c5a9894b8ba2abc93c/custom_assets/jak1/levels/test-zone/test-zone.jsonc#L165
+
+The addon's existing custom camera actor predates this; the built-in form is
+likely simpler to emit and needs no custom actor code. If the custom actor has
+capabilities the built-in lacks, expose **both**. **Do not start before the
+schema-driven migration above is finished** — restructuring is the priority;
+this is a feature addition to slot in afterward.
+
 ### Sliding tube zones (Snowy Mountain butt-slide style)
 The slide mechanic in Jak 1 (snow tubes, Lava Tube, Fire Canyon) is a
 **player state** (`target-tube`), not a placeable actor or surface effect.

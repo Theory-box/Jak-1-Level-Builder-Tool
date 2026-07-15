@@ -20,10 +20,9 @@
 # 2. New structural dependency (new prefix, scene-level rule):
 #    Add a function to _REGISTERED_CHECKS at the bottom of this file.
 
+from . import db as _db
 from .data import (
     ENTITY_DEFS,
-    NAV_UNSAFE_TYPES,
-    NEEDS_PATH_TYPES,
     GLOBAL_TPAGE_GROUPS,
     ACTOR_LINK_DEFS,
     _actor_link_slots,
@@ -102,7 +101,7 @@ def check_navmesh_links(scene):
     objects = scene.objects
     for o in _actor_objs(scene):
         et = _etype(o)
-        if not et or et not in NAV_UNSAFE_TYPES:
+        if not et or not _db.nav_unsafe(et):
             continue
         nm_name = o.get("og_navmesh_link", "")
         if not nm_name:
@@ -124,7 +123,7 @@ def check_missing_paths(scene):
     issues = []
     for o in _actor_objs(scene):
         et = _etype(o)
-        if not et or et not in NEEDS_PATH_TYPES:
+        if not et or not _db.needs_path(et):
             continue
         info      = ENTITY_DEFS.get(et, {})
         wp_prefix = o.name + "_wp_"

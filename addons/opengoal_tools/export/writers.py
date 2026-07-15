@@ -11,7 +11,6 @@ from .. import boundary_viz as _bviz
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     MOOD_FUNC_OVERRIDES,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,

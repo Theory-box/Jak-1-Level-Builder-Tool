@@ -10,7 +10,6 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, VERTEX_EXPORT_TYPES,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -67,7 +66,9 @@ def needed_ags(actors):
     """
     seen, r = set(), []
     for a in actors:
-        for g in ETYPE_AG.get(a["etype"], []):
+        # A variant may override the actor's art group (e.g. per-bridge variant).
+        ags = [a["art_group"]] if a.get("art_group") else ETYPE_AG.get(a["etype"], [])
+        for g in ags:
             if g and g not in seen:
                 seen.add(g); r.append(g)
     return r
@@ -84,7 +85,8 @@ def needed_extras_ags(actors):
     """
     seen, r = set(), []
     for a in actors:
-        for g in ETYPE_EXTRAS_AG.get(a["etype"], []):
+        extras = list(ETYPE_EXTRAS_AG.get(a["etype"], [])) + list(a.get("extra_art_groups", []))
+        for g in extras:
             if g and g not in seen:
                 seen.add(g); r.append(g)
     return r
@@ -103,15 +105,20 @@ def needed_code(actors):
     for a in actors:
         etype = a["etype"]
         info = ETYPE_CODE.get(etype)
-        if not info or info.get("in_game_cgo"):
-            continue
-        o = info["o"]
-        if o not in seen:
-            seen.add(o)
-            if info.get("o_only"):
+        if info and not info.get("in_game_cgo"):
+            o = info["o"]
+            if o not in seen:
+                seen.add(o)
+                if info.get("o_only"):
+                    r.append((o, None, None))
+                else:
+                    r.append((o, info["gc"], info.get("dep", "process-drawable")))
+        # Variant extra code (e.g. snow bridge -> target-ice.o). DGO-only:
+        # goal-src is already in game.gp, so inject the .o with no gc line.
+        for o in a.get("extra_code", []):
+            if o and o not in seen:
+                seen.add(o)
                 r.append((o, None, None))
-            else:
-                r.append((o, info["gc"], info.get("dep", "process-drawable")))
     return r
 
 def discover_custom_levels():

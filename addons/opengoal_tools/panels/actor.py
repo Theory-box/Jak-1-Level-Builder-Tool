@@ -18,7 +18,7 @@ from ..data import (
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
     LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, IS_PROP_TYPES, ETYPE_AG,
+    ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
     _parse_lump_row, _LUMP_HARDCODED_KEYS,
@@ -55,6 +55,7 @@ from ..utils import (
     _preview_collections, _load_previews, _unload_previews,
 )
 from .. import model_preview as _mp
+from .. import db as _db
 from ..audit import run_audit
 
 
@@ -106,7 +107,7 @@ class OG_PT_ActorActivation(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -131,7 +132,7 @@ class OG_PT_ActorTriggerBehaviour(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -171,7 +172,7 @@ class OG_PT_ActorNavMesh(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -216,7 +217,7 @@ class OG_PT_ActorLinks(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -242,7 +243,7 @@ class OG_PT_ActorPlatform(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -263,7 +264,7 @@ class OG_PT_ActorCrate(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -271,7 +272,7 @@ class OG_PT_ActorCrate(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "crate"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "crate"
 
     def draw(self, ctx):
         layout = self.layout
@@ -322,7 +323,7 @@ class OG_PT_ActorLauncher(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -405,7 +406,7 @@ class OG_PT_ActorEcoDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -413,8 +414,7 @@ class OG_PT_ActorEcoDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        ECO_DOOR_TYPES = {"eco-door", "jng-iris-door", "sidedoor", "rounddoor"}
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] in ECO_DOOR_TYPES
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "eco-door"
 
     def draw(self, ctx):
         layout = self.layout
@@ -480,7 +480,7 @@ class OG_PT_ActorWaterVol(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -493,39 +493,12 @@ class OG_PT_ActorWaterVol(Panel):
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-
-        # Scale warning — empties default to scale 1 = 2m box, must be scaled up
-        sx, sy = abs(sel.scale.x), abs(sel.scale.y)
-        if sx < 2.0 or sy < 2.0:
-            warn = layout.box()
-            warn.label(text="⚠  Scale empty to cover water area!", icon="ERROR")
-            warn.label(text=f"Current: {sx*2:.1f}m × {sy*2:.1f}m  (Scale X/Y in 3D view)")
-
-        # Surface height
         box = layout.box()
-        box.label(text="Water Heights (world Y)", icon="MOD_OCEAN")
-
-        water_y  = float(sel.get("og_water_surface", 0.0))
-        wade_y   = float(sel.get("og_water_wade",    water_y - 0.5))
-        swim_y   = float(sel.get("og_water_swim",    water_y - 1.0))
-        bottom_y = float(sel.get("og_water_bottom",  water_y - 5.0))
-
-        col = box.column(align=True)
-        _prop_row(col, sel, "og_water_surface", "Surface Y:",  water_y)
-        _prop_row(col, sel, "og_water_wade",    "Wade Y:",     wade_y)
-        _prop_row(col, sel, "og_water_swim",    "Swim Y:",     swim_y)
-        _prop_row(col, sel, "og_water_bottom",  "Bottom Y:",   bottom_y)
-
-        # Show computed depths relative to surface so user can sanity-check
-        sub = box.column(align=True)
-        sub.enabled = False
-        sub.label(text=f"  Wade at: {water_y - wade_y:.2f}m below surface", icon="INFO")
-        sub.label(text=f"  Swim at: {water_y - swim_y:.2f}m below surface")
-        sub.label(text=f"  Kill floor: {water_y - bottom_y:.2f}m below surface")
-
-        op = box.operator("og.sync_water_from_object", text="Sync Surface from Object Y", icon="OBJECT_ORIGIN")
+        box.label(text="Water Volume", icon="MOD_OCEAN")
+        box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        op = box.operator("og.sync_water_from_object",
+                          text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
         op.actor_name = sel.name
-
 
 
 class OG_PT_ActorLauncherDoor(Panel):
@@ -534,7 +507,7 @@ class OG_PT_ActorLauncherDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -542,7 +515,7 @@ class OG_PT_ActorLauncherDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "launcherdoor"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "launcherdoor"
 
     def draw(self, ctx):
         layout = self.layout
@@ -598,7 +571,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -606,7 +579,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "sun-iris-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "sun-iris-door"
 
     def draw(self, ctx):
         layout = self.layout
@@ -648,7 +621,7 @@ class OG_PT_ActorCaveElevator(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -656,7 +629,7 @@ class OG_PT_ActorCaveElevator(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "caveelevator"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "caveelevator"
 
     def draw(self, ctx):
         layout = self.layout
@@ -684,7 +657,7 @@ class OG_PT_ActorTaskGated(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     _TYPES = {"oracle", "pontoon"}
@@ -694,7 +667,7 @@ class OG_PT_ActorTaskGated(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] in cls._TYPES
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "task-gated"
 
     def draw(self, ctx):
         layout = self.layout
@@ -727,7 +700,7 @@ class OG_PT_ActorVisibility(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -808,7 +781,7 @@ class OG_PT_ActorWaypoints(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_actor_fields"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -968,6 +941,7 @@ class OG_PT_ActorGoalCode(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 30
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod

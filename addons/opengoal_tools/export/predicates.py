@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
+from .. import db as _db
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
+    ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -70,37 +70,28 @@ def _canonical_actor_objects(scene, objects=None):
 
 def _actor_uses_waypoints(etype):
     """True if this entity type can use waypoints (path lump or nav patrol)."""
-    info = ENTITY_DEFS.get(etype, {})
-    return (not info.get("nav_safe", True)    # nav-enemy — optional patrol path
-            or info.get("needs_path", False)  # process-drawable that requires path
-            or info.get("needs_pathb", False)
-            or info.get("needs_sync", False)) # sync platform — path drives movement
+    return _db.uses_waypoints(etype)
 
 def _actor_uses_navmesh(etype):
     """True if this entity type needs a nav-mesh link in entity.gc.
-    Covers two cases:
-    - nav-enemy subclasses (lookup via ai_type)
-    - platforms/actors that call nav-control-method-16 at runtime
-      (orbit-plat, square-platform, sharkey, sunkenfisha — flagged
-      requires_navmesh in the DB)"""
-    info = ENTITY_DEFS.get(etype, {})
-    return info.get("ai_type") == "nav-enemy" or bool(info.get("requires_navmesh"))
+    Covers nav-enemy subclasses (via ai_type) and actors that call
+    nav-control-method-16 at runtime (orbit-plat, square-platform, sharkey,
+    sunkenfisha — flagged `requires_navmesh` in the DB)."""
+    return _db.uses_navmesh(etype)
 
 def _actor_is_platform(etype):
     """True if this entity is in the Platforms category."""
-    return ENTITY_DEFS.get(etype, {}).get("cat") == "Platforms"
-
-_LAUNCHER_TYPES = {"launcher", "springbox"}
+    return _db.is_platform(etype)
 
 def _actor_is_launcher(etype):
-    """True if this entity is a launcher or springbox (spring-height lump)."""
-    return etype in _LAUNCHER_TYPES
-
-_SPAWNER_TYPES = {"swamp-bat", "yeti", "villa-starfish", "swamp-rat-nest"}
+    """True if this entity is a launcher (spring-height / alt-vector lumps).
+    Driven by the DB flag `is_launcher` — no hardcoded list."""
+    return _db.is_launcher(etype)
 
 def _actor_is_spawner(etype):
-    """True if this entity spawns child enemies (num-lurkers lump)."""
-    return etype in _SPAWNER_TYPES
+    """True if this entity spawns child enemies (num-lurkers lump).
+    Driven by the DB flag `spawns_lurkers` — no hardcoded list."""
+    return _db.spawns_lurkers(etype)
 
 def _actor_is_enemy(etype):
     """True if this entity is in the Enemies or Bosses category.
@@ -108,7 +99,7 @@ def _actor_is_enemy(etype):
     the entity's res-lump on construction (engine: fact-h.gc line 191).
     Engine default is 80 meters.
     """
-    return ENTITY_DEFS.get(etype, {}).get("cat") in ("Enemies", "Bosses")
+    return _db.is_enemy(etype)
 
 def _actor_supports_aggro_trigger(etype):
     """True if this enemy responds to 'cue-chase / 'cue-patrol / 'go-wait-for-cue.

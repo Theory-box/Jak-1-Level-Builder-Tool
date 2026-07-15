@@ -27,13 +27,9 @@ from .data import (
     ETYPE_AG,
     ETYPE_CODE,
     ETYPE_EXTRAS_AG,
-    IS_PROP_TYPES,
     LEVEL_BANKS,
     LUMP_REFERENCE,
     LUMP_TYPE_ITEMS,
-    NAV_UNSAFE_TYPES,
-    NEEDS_PATHB_TYPES,
-    NEEDS_PATH_TYPES,
     NPC_ENUM_ITEMS,
     PICKUP_ENUM_ITEMS,
     PLATFORM_ENUM_ITEMS,
@@ -193,6 +189,38 @@ def register():
     bpy.types.Object.collide_material      = bpy.props.EnumProperty(items=pat_surfaces, name="Material")
     bpy.types.Object.collide_event         = bpy.props.EnumProperty(items=pat_events,   name="Event")
     bpy.types.Object.collide_mode          = bpy.props.EnumProperty(items=pat_modes,    name="Mode")
+
+    # Mesh Preview Settings: per-object preview offset (metres) and an optional
+    # override mesh (blank = auto from actor/variant). The offset getter shows
+    # the DB/variant default until the user edits it (which stores an override).
+    def _prev_off_get(self):
+        ov = self.get("_og_preview_offset_ovr")
+        if ov is not None:
+            return tuple(float(x) for x in ov)
+        if self.name.startswith("ACTOR_"):
+            from . import db as _dbmod
+            try:
+                et = self.name.split("_", 2)[1]
+                return tuple(float(x) for x in _dbmod.preview_offset(et, lambda k, d=None: self.get(k, d)))
+            except Exception:
+                pass
+        return (0.0, 0.0, 0.0)
+
+    def _prev_off_set(self, value):
+        self["_og_preview_offset_ovr"] = [float(v) for v in value]
+        # Live-move any existing preview meshes so the offset updates without a
+        # full re-import (Refresh Model re-imports for model/override changes).
+        for c in self.children:
+            if c.get("og_preview_mesh") or c.get("og_waypoint_preview_mesh"):
+                c.location = (float(value[0]), float(value[1]), float(value[2]))
+
+    bpy.types.Object.og_preview_offset     = bpy.props.FloatVectorProperty(
+        name="Preview Offset", subtype="TRANSLATION", size=3,
+        get=_prev_off_get, set=_prev_off_set,
+        description="Shift the preview mesh from the actor centre (Blender metres)")
+    bpy.types.Object.og_preview_override   = bpy.props.PointerProperty(
+        name="Override Mesh", type=bpy.types.Object,
+        description="Use this mesh as the preview instead of the actor/variant model; leave blank to automate")
 
     # Trigger volume link collection — registered after OGVolLink is in classes tuple.
     # Each VOL_ mesh holds a list of (target_name, behaviour) entries.

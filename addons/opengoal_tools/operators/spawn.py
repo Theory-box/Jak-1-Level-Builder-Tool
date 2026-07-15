@@ -11,12 +11,12 @@ from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
+from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
     ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, NEEDS_PATHB_TYPES, IS_PROP_TYPES,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
@@ -215,40 +215,45 @@ class OG_OT_SpawnEntity(Operator):
         o.empty_display_size = 0.6
         o.color = color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
-        if etype == "crate":
-            o["og_crate_type"]          = ctx.scene.og_props.crate_type
-            o["og_crate_pickup"]        = "money"
-            o["og_crate_pickup_amount"] = 1
-        if etype in NAV_UNSAFE_TYPES:
+        # Pre-spawn variant selection -> the actor's variant field (any variant
+        # actor: crate types, bridge variants, ...).
+        _vf = _db.variant_field(etype)
+        if _vf:
+            _sv = getattr(ctx.scene.og_props, "spawn_variant", "")
+            if _sv and _sv != "NONE":
+                o[_vf["key"]] = _sv
+        # Apply the selected variant's default field values (e.g. crate contents
+        # per type). Runs before the generic default seeding below, which then
+        # fills any field the variant didn't set.
+        for _vk, _vv in _db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("defaults", {}).items():
+            o[_vk] = _vv
+        if _db.nav_unsafe(etype):
             o["og_nav_radius"] = ctx.scene.og_props.nav_radius
             self.report({"WARNING"},
                 f"Added {o.name}  —  nav-mesh workaround will be applied on export. "
                 f"Enemy will idle/notice but won't pathfind without a real navmesh.")
-        elif etype in NEEDS_PATHB_TYPES:
+        elif _db.needs_pathb(etype):
             self.report({"WARNING"},
                 f"Added {o.name}  —  swamp-bat needs TWO path sets: "
                 f"waypoints named _wp_00/_wp_01... AND _wpb_00/_wpb_01... (second patrol route).")
-        elif etype in NEEDS_PATH_TYPES:
+        elif _db.needs_path(etype):
             self.report({"WARNING"},
                 f"Added {o.name}  —  this entity requires at least 1 waypoint (_wp_00). "
                 f"It will crash or error at runtime without a path.")
-        elif etype in IS_PROP_TYPES:
+        elif _db.is_prop(etype):
             self.report({"INFO"}, f"Added {o.name}  (prop — idle animation only, no AI/combat)")
         else:
             self.report({"INFO"}, f"Added {o.name}")
 
-        # ---- Set default custom props so UI fields render immediately ------
-        if _actor_is_enemy(etype):
-            o["og_idle_distance"] = 80.0
-            o["og_vis_dist"]      = 200.0
-        if _actor_is_spawner(etype):
-            o["og_num_lurkers"] = -1
-        if etype == "orb-cache-top":
-            o["og_orb_count"] = 20
-        if etype == "sunkenfisha":
-            o["og_fish_count"] = 1
-        if etype in {"lavaballoon", "darkecobarrel"}:
-            o["og_move_speed"] = 3.0 if etype == "lavaballoon" else 15.0
+        # ---- Seed default custom props from the DB so UI fields render ------
+        # One loop over the actor's schema (own + trait fields) replaces the old
+        # per-actor default assignments. Won't overwrite props already set above.
+        for _f in _db.ui_fields(etype):
+            _k = _f.get("key")
+            if _k and _k not in o:
+                _dv = _db.field_default(_f, etype)
+                if _dv is not None:
+                    o[_k] = _dv
 
         # ---- Model preview ------------------------------------------------
         _prefs = bpy.context.preferences.addons.get("opengoal_tools")
@@ -271,56 +276,61 @@ class OG_OT_DuplicateEntity(Operator):
     bl_options  = {"UNDO"}
 
     def execute(self, ctx):
-        src = ctx.active_object
-        if src is None or not src.name.startswith("ACTOR_"):
+        srcs = [o for o in ctx.selected_objects
+                if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        if not srcs:
             self.report({"ERROR"}, "Select an ACTOR_ empty first")
             return {"CANCELLED"}
 
-        # Parse entity type from name: ACTOR_<etype>_<uid>
-        parts = src.name.split("_", 2)
-        if len(parts) < 3:
-            self.report({"ERROR"}, f"Cannot parse entity type from {src.name!r}")
-            return {"CANCELLED"}
-        etype = parts[1]
+        src_names = [o.name for o in srcs]
+        new_names = []
+        for sname in src_names:
+            src = ctx.scene.objects.get(sname)
+            if src is None:
+                continue
+            parts = src.name.split("_", 2)
+            if len(parts) < 3:
+                continue
+            etype = parts[1]
 
-        # --- Duplicate just the empty (no children) via ops ---
-        # Deselect all, select only the source, then duplicate
+            # Duplicate just the empty (no children) via ops.
+            bpy.ops.object.select_all(action="DESELECT")
+            src.select_set(True)
+            ctx.view_layer.objects.active = src
+            bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
+            new_empty = ctx.active_object
+
+            # Fresh unique ACTOR_<etype>_<n> name.
+            prefix = f"ACTOR_{etype}_"
+            existing = {o.name for o in bpy.data.objects}
+            n = 0
+            while f"{prefix}{n}" in existing:
+                n += 1
+            new_empty.name = f"{prefix}{n}"
+
+            # Strip any preview children the duplicate inherited, then re-attach
+            # a fresh independent preview.
+            _mp.remove_preview(new_empty)
+            for child in list(new_empty.children):
+                if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
+                    bpy.data.objects.remove(child, do_unlink=True)
+            _prefs = bpy.context.preferences.addons.get("opengoal_tools")
+            if _prefs and _prefs.preferences.preview_models:
+                try:
+                    _mp.attach_preview(ctx, etype, new_empty)
+                except Exception as e:
+                    log(f"duplicate_entity model_preview: {e}")
+            new_names.append(new_empty.name)
+
+        # Leave the new duplicates selected.
         bpy.ops.object.select_all(action="DESELECT")
-        src.select_set(True)
-        ctx.view_layer.objects.active = src
-        bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
-        new_empty = ctx.active_object
-
-        # Give it a fresh unique name (Blender appends .001 etc automatically,
-        # but we want to follow the ACTOR_<etype>_<n> convention)
-        prefix = f"ACTOR_{etype}_"
-        # Use bpy.data.objects (not just level objects) so we avoid collisions
-        # with the freshly duplicated object which may not yet be in the level col
-        existing = {o.name for o in bpy.data.objects}
-        n = 0
-        while f"{prefix}{n}" in existing:
-            n += 1
-        new_empty.name = f"{prefix}{n}"
-
-        # --- Strip any preview children the duplicate inherited ---
-        # bpy.ops.object.duplicate copies children too; remove them so we
-        # can attach a fresh independent preview below.
-        _mp.remove_preview(new_empty)
-
-        # Also unlink any child objects Blender may have copied
-        for child in list(new_empty.children):
-            if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
-                bpy.data.objects.remove(child, do_unlink=True)
-
-        # --- Re-attach a fresh preview mesh ---
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                _mp.attach_preview(ctx, etype, new_empty)
-            except Exception as e:
-                log(f"duplicate_entity model_preview: {e}")
-
-        self.report({"INFO"}, f"Duplicated as {new_empty.name}")
+        for nm in new_names:
+            o = ctx.scene.objects.get(nm)
+            if o:
+                o.select_set(True)
+        if new_names:
+            ctx.view_layer.objects.active = ctx.scene.objects.get(new_names[-1])
+        self.report({"INFO"}, f"Duplicated {len(new_names)} actor(s)")
         return {"FINISHED"}
 
 class OG_OT_ClearPreviews(Operator):
@@ -706,52 +716,55 @@ class OG_OT_AddLauncherDest(Operator):
         return {"FINISHED"}
 
 class OG_OT_AddWaterVolume(Operator):
-    """Add a water volume mesh at the 3D cursor.
-Place and scale it to cover your water area — rotation is supported."""
+    """Add a water volume: a water-vol actor empty plus a linked convex VOL_
+mesh you can reshape. Uses the shared volume system, so any convex mesh works
+(rotation and non-uniform shapes supported)."""
     bl_idname  = "og.add_water_volume"
     bl_label   = "Add Water Volume"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, ctx):
         scene = ctx.scene
+        cur   = scene.cursor.location
+        etype = "water-vol"
 
-        # Name: WATER_0, WATER_1, etc. Count only in current level objects.
-        existing = [o for o in _level_objects(scene) if o.name.startswith("WATER_")]
-        idx  = len(existing)
-        name = f"WATER_{idx}"
+        # 1) The water-vol actor empty (like any other actor).
+        n = len([o for o in _level_objects(scene) if o.name.startswith(f"ACTOR_{etype}_")])
+        actor_name = f"ACTOR_{etype}_{n}"
+        bpy.ops.object.empty_add(type="PLAIN_AXES", location=cur)
+        actor = ctx.active_object
+        actor.name = actor_name
+        actor.name = actor_name
+        actor.show_name          = True
+        actor.empty_display_size = 0.8
+        actor.color              = (0.1, 0.4, 1.0, 1.0)
+        actor["og_water_surface"] = round(cur.z + 2.0, 4)   # top of the size-4 starter cube
+        actor["og_water_wade"]    = 0.5
+        actor["og_water_swim"]    = 1.0
+        actor["og_water_attack"]  = "drown"
+        _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
-        # Create a cube mesh — primitive_cube_add sets it as the active object
-        bpy.ops.mesh.primitive_cube_add(size=2.0, location=ctx.scene.cursor.location)
-        o      = ctx.active_object
-        # Set name twice: Blender resolves data-block name conflicts after first set
-        o.name = name
-        o.name = name
+        # 2) A starter VOL_ cube linked to the actor (convex — reshape freely).
+        vn = len([o for o in _level_objects(scene)
+                  if o.type == "MESH" and o.name.startswith("VOL_")])
+        bpy.ops.mesh.primitive_cube_add(size=4.0, location=cur)
+        vol = ctx.active_object
+        vol.name = f"VOL_{vn}"
+        vol.name = f"VOL_{vn}"
+        vol["og_vol_id"]  = vn
+        vol.show_name     = True
+        vol.display_type  = "WIRE"
+        vol.color         = (0.1, 0.4, 1.0, 0.4)
+        vol.set_invisible = True
+        vol.set_collision = True
+        vol.ignore        = True
+        entry = _vol_links(vol).add()
+        entry.target_name = actor_name
+        _rename_vol_for_links(vol)
+        _link_object_to_sub_collection(scene, vol, *_COL_PATH_TRIGGERS)
 
-        # Style: wireframe blue so it doesn't obscure the level
-        o.display_type   = "WIRE"
-        o.color          = (0.1, 0.4, 1.0, 0.5)
-        o.show_name      = True
-        # set_invisible tells the level builder to skip this mesh entirely —
-        # it exports via extras in the GLB but generates no geometry or collision
-        o.set_invisible  = True
-
-        # Lock rotation — water-vol uses an AABB, rotation has no effect in-game
-        o.lock_rotation[0] = True
-        o.lock_rotation[1] = True
-        o.lock_rotation[2] = True
-
-        # Set default water properties from cursor Z (game Y)
-        surface_y = round(ctx.scene.cursor.location.z, 4)
-        o["og_water_surface"] = surface_y
-        o["og_water_wade"]    = 0.5   # depth below surface in meters
-        o["og_water_swim"]    = 1.0   # depth below surface in meters
-        o["og_water_bottom"]  = round(surface_y - 5.0, 4)  # absolute Y of kill floor
-        o["og_water_attack"]  = "drown"
-
-        # Link into the level collection
-        _link_object_to_sub_collection(scene, o, *_COL_PATH_WATER)
-
-        self.report({"INFO"}, f"Added {name} — scale to cover your water area, then export")
+        self.report({"INFO"},
+            f"Added {actor_name} + linked {vol.name} — reshape the VOL_ mesh to cover your water")
         return {"FINISHED"}
 
 class OG_OT_SpawnPlatform(Operator):
@@ -1064,6 +1077,34 @@ class OG_OT_ToggleSpawnFavorite(Operator):
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_OT_RefreshPreviewModel(Operator):
+    """Rebuild this actor's preview mesh from its current variant, offset and
+override mesh."""
+    bl_idname  = "og.refresh_preview_model"
+    bl_label   = "Refresh Model"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        actor = o
+        if not actor.name.startswith("ACTOR_") and o.parent and o.parent.name.startswith("ACTOR_"):
+            actor = o.parent
+        if not actor.name.startswith("ACTOR_"):
+            self.report({"WARNING"}, "Select an actor (or its preview mesh)")
+            return {"CANCELLED"}
+        etype = actor.name.split("_", 2)[1]
+        # Reset any manual offset override so the preview snaps to the current
+        # variant's default offset (e.g. switching bridge variants re-centres).
+        if "_og_preview_offset_ovr" in actor:
+            del actor["_og_preview_offset_ovr"]
+        _mp.remove_preview(actor)
+        ok = _mp.attach_preview(ctx, etype, actor)
+        self.report({"INFO"}, "Preview refreshed" if ok else "No preview model for this actor")
+        return {"FINISHED"}
+
+
 CLASSES = (
     OG_OT_SpawnPlayer,
     OG_OT_SpawnCheckpoint,
@@ -1084,6 +1125,7 @@ CLASSES = (
     OG_OT_SpawnCamLookAt,
     OG_OT_AddLauncherDest,
     OG_OT_AddWaterVolume,
+    OG_OT_RefreshPreviewModel,
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,
     OG_OT_SpawnCustomType,

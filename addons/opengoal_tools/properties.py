@@ -16,6 +16,7 @@ from .data import (
     TEXTURE_SOURCE_ITEMS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
+    _spawn_variant_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
     _search_results_cb,
     _parse_lump_row,
@@ -472,6 +473,7 @@ class OGProperties(PropertyGroup):
     )
     platform_type:  EnumProperty(name="Platform Type",  items=_platform_enum_cb)
     crate_type:  EnumProperty(name="Crate Type",  items=CRATE_ITEMS)
+    spawn_variant:  EnumProperty(name="Variant",  items=_spawn_variant_cb)
     # Per-category entity pickers — each Spawn sub-panel uses its own prop
     # so the dropdown only shows types relevant to that sub-panel.
     # items= uses a dynamic callback so the Limit Search tpage filter is respected.

@@ -17,7 +17,7 @@ from ..data import (
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
     LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
-    NAV_UNSAFE_TYPES, NEEDS_PATH_TYPES, IS_PROP_TYPES, ETYPE_AG,
+    ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
     _parse_lump_row, _LUMP_HARDCODED_KEYS,
@@ -751,12 +751,24 @@ class OG_PT_SelectedObject(Panel):
             layout.label(text="Select an object to inspect", icon="INFO")
             return
 
+        # ── Multi-select actor actions (operate on ALL selected actors) ──────
+        actor_sel = [o for o in ctx.selected_objects
+                     if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        if actor_sel:
+            n = len(actor_sel)
+            layout.label(text=f"{n} actor{'s' if n != 1 else ''} selected", icon="OBJECT_DATA")
+            row = layout.row(align=True)
+            row.operator("view3d.view_selected", text="Frame", icon="VIEWZOOM")
+            row.operator("og.duplicate_entity", text="Duplicate", icon="COPYDOWN")
+            row.operator("og.delete_selected", text="Delete", icon="TRASH")
+            layout.separator(factor=0.5)
+
         if not _og_managed_object(sel):
             layout.label(text=sel.name, icon="OBJECT_DATA")
             layout.label(text="Not an OpenGOAL-managed object", icon="INFO")
             return
 
-        # Name + type hint — sub-panels carry all the detail
+        # ── Active object name + type — sub-panels carry the detail ─────────
         name = sel.name
         if name.startswith("ACTOR_") and "_wp_" not in name:
             parts = name.split("_", 2)
@@ -787,15 +799,15 @@ class OG_PT_SelectedObject(Panel):
         else:
             layout.label(text=name, icon="OBJECT_DATA")
 
-        # Universal actions
-        layout.separator(factor=0.3)
-        row = layout.row(align=True)
-        op = row.operator("og.select_and_frame", text="Frame", icon="VIEWZOOM")
-        op.obj_name = name
-        if name.startswith("ACTOR_") and "_wp_" not in name:
-            row.operator("og.duplicate_entity", text="Duplicate", icon="COPYDOWN")
-        op = row.operator("og.delete_object", text="Delete", icon="TRASH")
-        op.obj_name = name
+        # Single-object actions for non-actor managed objects (actors use the
+        # multi-select buttons above).
+        if not (name.startswith("ACTOR_") and "_wp_" not in name):
+            layout.separator(factor=0.3)
+            row = layout.row(align=True)
+            op = row.operator("og.select_and_frame", text="Frame", icon="VIEWZOOM")
+            op.obj_name = name
+            op = row.operator("og.delete_object", text="Delete", icon="TRASH")
+            op.obj_name = name
 
 
 
@@ -1014,7 +1026,8 @@ def _draw_lump_panel(layout, obj):
         "OG_UL_LumpRows", "",
         obj, "og_lump_rows",
         obj, "og_lump_rows_index",
-        rows=5,
+        rows=2,
+        maxrows=6,
     )
 
     # Add / Remove buttons
@@ -1047,6 +1060,7 @@ class OG_PT_SelectedLumps(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 20
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -1091,7 +1105,7 @@ class OG_PT_SelectedLumpReference(Panel):
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
+    bl_parent_id   = "OG_PT_selected_lumps"
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -1118,24 +1132,53 @@ class OG_PT_SelectedLumpReference(Panel):
         layout.label(text="Click + to add a pre-filled row to Custom Lumps")
         layout.separator(factor=0.4)
 
-        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
         if actor_specific:
             _draw_lump_ref_section(layout, f"Specific to {label}", actor_specific, icon="OBJECT_DATA")
         else:
             sub = layout.row()
             sub.enabled = False
             sub.label(text=f"No additional lumps documented for {label}", icon="INFO")
+        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
 
 
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_PT_MeshPreviewSettings(Panel):
+    bl_label       = "Mesh Preview Settings"
+    bl_idname      = "OG_PT_mesh_preview_settings"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_selected_object"
+    bl_order       = 40
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        o = ctx.active_object
+        if o is None:
+            return False
+        return (o.name.startswith("ACTOR_")
+                or (o.parent is not None and o.parent.name.startswith("ACTOR_")))
+
+    def draw(self, ctx):
+        o     = ctx.active_object
+        actor = o if o.name.startswith("ACTOR_") else o.parent
+        col   = self.layout.column()
+        col.operator("og.refresh_preview_model", icon="FILE_REFRESH")
+        col.separator()
+        col.prop(actor, "og_preview_offset")
+        col.prop(actor, "og_preview_override")
+
+
 CLASSES = (
     OG_PT_SelectedObject,
     OG_PT_SelectedCollision,
     OG_PT_SelectedLightBaking,
     OG_PT_SelectedNavMeshTag,
     OG_PT_SpawnSettings,
+    OG_PT_MeshPreviewSettings,
     OG_PT_LoadBoundarySettings,
     OG_PT_SelectedLumps,
     OG_PT_SelectedLumpReference,
