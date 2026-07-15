@@ -215,8 +215,13 @@ class OG_OT_SpawnEntity(Operator):
         o.empty_display_size = 0.6
         o.color = color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
-        if etype == "crate":
-            o["og_crate_type"] = ctx.scene.og_props.crate_type
+        # Pre-spawn variant selection -> the actor's variant field (any variant
+        # actor: crate types, bridge variants, ...).
+        _vf = _db.variant_field(etype)
+        if _vf:
+            _sv = getattr(ctx.scene.og_props, "spawn_variant", "")
+            if _sv and _sv != "NONE":
+                o[_vf["key"]] = _sv
         # Apply the selected variant's default field values (e.g. crate contents
         # per type). Runs before the generic default seeding below, which then
         # fills any field the variant didn't set.
@@ -1085,6 +1090,10 @@ override mesh."""
             self.report({"WARNING"}, "Select an actor (or its preview mesh)")
             return {"CANCELLED"}
         etype = actor.name.split("_", 2)[1]
+        # Reset any manual offset override so the preview snaps to the current
+        # variant's default offset (e.g. switching bridge variants re-centres).
+        if "_og_preview_offset_ovr" in actor:
+            del actor["_og_preview_offset_ovr"]
         _mp.remove_preview(actor)
         ok = _mp.attach_preview(ctx, etype, actor)
         self.report({"INFO"}, "Preview refreshed" if ok else "No preview model for this actor")

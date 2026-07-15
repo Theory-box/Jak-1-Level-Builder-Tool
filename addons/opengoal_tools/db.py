@@ -499,6 +499,24 @@ def actor_variant(etype: str, prop_get) -> dict:
     return {}
 
 
+def variant_field(etype: str) -> dict | None:
+    """The field marked `"variant": true` for an actor, or None."""
+    for f in inherited_fields(etype):
+        if f.get("variant"):
+            return f
+    return None
+
+
+def actor_has_variant(etype: str) -> bool:
+    return variant_field(etype) is not None
+
+
+def variant_choices(etype: str) -> list[dict]:
+    """Resolved choices for an actor's variant field (or [])."""
+    f = variant_field(etype)
+    return _resolve_choices(f) if f else []
+
+
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
     trait fields, deduped by key (own wins), excluding output-only const lumps."""

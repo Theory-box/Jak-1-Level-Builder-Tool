@@ -125,6 +125,10 @@ def _draw_field_crate_type(layout, ctx, item):
     layout.prop(ctx.scene.og_props, "crate_type", text="Crate type")
 
 
+def _draw_field_variant(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "spawn_variant", text="Variant")
+
+
 def _draw_field_nav_radius(layout, ctx, item):
     box = layout.box()
     box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
@@ -181,6 +185,7 @@ def _draw_field_target_context(layout, ctx, item):
 
 FIELD_DRAWERS = {
     "crate_type":     _draw_field_crate_type,
+    "variant":        _draw_field_variant,
     "nav_radius":     _draw_field_nav_radius,
     "sfx_sound":      _draw_field_sfx_sound,
     "ambient_radius": _draw_field_ambient_radius,
