@@ -40,22 +40,36 @@ Pattern proven by `eco-info-picker` (crate + green eco vent): for each item,
 reproduce the current exported bytes from the DB, prove equality in
 `export/test_schema_emit.py`, then delete the branch. Approve items per-ID.
 
-- [x] Reusable computed-encoder pattern established (`eco-info-picker`)
-- [ ] **A** · 23 direct migrations, no new code (plat-flip, whirlpool,
-      orb-cache, sharkey, oracle alt-task, idle-distance, … — see audit A1–A23)
-- [ ] **B1** · `const-lump` encoder (fuel-cell / buzzer / money eco-info)
-- [ ] **B2** · eco-door flags: link-derived `ecdf00` bit convention
-- [ ] **B3** · `water-vol` geometry encoder (vol box + water-height from scale)
-- [ ] **B4** · `launcher` target-vector encoder (`object_ref` → vector)
-- [ ] **C** · move trait flags (`nav_safe`, `needs_path`, `is_prop`, `cat`,
-      `requires_navmesh`, `ai_type`, …) from `data.py::ENTITY_DEFS` into the DB
-- [ ] **D** · `_LAUNCHER_TYPES` / `_SPAWNER_TYPES` → DB flags
-- [ ] **E** · delete bespoke `OG_PT_Actor*` panels + `DEDICATED_FIELD_UI_ETYPES`
-      / `GENERIC_PANEL_ETYPES` entries as each actor migrates
-- [ ] **F** · seed spawn-time defaults from DB `fields[]` defaults (one loop)
-- [ ] **G** · `export_as` field for abstract remap (eco-door → jng-iris-door)
+- [x] Reusable computed-encoder pattern established (eco-info-picker, const,
+      water-height, target-vector, need_vol)
+- [x] **A** · direct migrations done — redundant per-actor branches deleted;
+      enemy/spawner/notice-dist via predicate-tagged trait fields (TraitFields)
+- [x] **B1** · const-lump encoder (fuel-cell / buzzer / money eco-info)
+- [x] **B2** · eco-door flags: link-derived `ecdf00` bit via a computed handler
+- [x] **B3** · water-vol unified on the VOL_ system — `is_water` trait +
+      `need_vol` (convex `_vol_planes`); legacy WATER_/box paths removed
+- [x] **B4** · launcher target-vector encoder (`object_ref` → vector)
+- [x] **C** · trait flags moved into the DB (`db.py` trait layer + predicates)
+- [x] **D** · launcher / spawner → DB flags (`is_launcher` / `spawns_lurkers`)
+- [~] **E** · REVISED per user: bespoke `OG_PT_Actor*` panels are KEPT in code;
+      their choice-lists are now DB tables (CrateTypes / BridgeVariants / …).
+      STILL OPEN: gate the bespoke panels by a DB flag (e.g. `"panel": "crate"`)
+      so attaching one to a new actor is a one-line DB edit rather than code +
+      a `DEDICATED_FIELD_UI_ETYPES` / `GENERIC_PANEL_ETYPES` entry.
+- [x] **F** · spawn-time defaults seeded from DB `fields[]` (one loop)
+- [x] **G** · `export_as` field for abstract remap (eco-door → jng-iris-door)
 
-Suggested order: D/C groundwork → batch A → B1/G → B4/B3/B2 → E/F cleanup.
+Beyond the audit, also delivered on this branch: the variant system
+(glb / art_group / code / defaults + preview offset + generalised pre-spawn
+menu + Mesh Preview Settings), and the Object Settings reorder + multi-select
+frame/duplicate/delete.
+
+Deferred actor-specific fixes (need engine source or a manual per-actor pass):
+- eco-door one-way / starts-open flag values — needs `baseplat.gc`
+- water damage types (drown / dark-eco / lava / electric / tar; `endlessfall`
+  is wrong for water) — needs `water.gc`; ideally an extensible DB table
+- alt-vector generalisation (launcher + fuel-cell `movie-pos`, `w_mode`
+  seconds/angle; grep actor code for other alt-vector users)
 
 ### Fuel-cell / scout-fly game-task binding (future)
 fuel-cell and buzzer (scout fly) currently export a fixed `(game-task none)`
