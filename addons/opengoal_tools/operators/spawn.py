@@ -237,18 +237,15 @@ class OG_OT_SpawnEntity(Operator):
         else:
             self.report({"INFO"}, f"Added {o.name}")
 
-        # ---- Set default custom props so UI fields render immediately ------
-        if _actor_is_enemy(etype):
-            o["og_idle_distance"] = 80.0
-            o["og_vis_dist"]      = 200.0
-        if _actor_is_spawner(etype):
-            o["og_num_lurkers"] = -1
-        if etype == "orb-cache-top":
-            o["og_orb_count"] = 20
-        if etype == "sunkenfisha":
-            o["og_fish_count"] = 1
-        if etype in {"lavaballoon", "darkecobarrel"}:
-            o["og_move_speed"] = 3.0 if etype == "lavaballoon" else 15.0
+        # ---- Seed default custom props from the DB so UI fields render ------
+        # One loop over the actor's schema (own + trait fields) replaces the old
+        # per-actor default assignments. Won't overwrite props already set above.
+        for _f in _db.ui_fields(etype):
+            _k = _f.get("key")
+            if _k and _k not in o:
+                _dv = _db.field_default(_f, etype)
+                if _dv is not None:
+                    o[_k] = _dv
 
         # ---- Model preview ------------------------------------------------
         _prefs = bpy.context.preferences.addons.get("opengoal_tools")

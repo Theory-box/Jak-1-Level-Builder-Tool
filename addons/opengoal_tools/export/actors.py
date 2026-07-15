@@ -338,7 +338,12 @@ def collect_actors(scene, depsgraph=None):
             ease_out = float(o.get("og_sync_ease_out", 0.15))
             ease_in  = float(o.get("og_sync_ease_in",  0.15))
             if path_pts:
-                lump["sync"] = ["float", period, phase, ease_out, ease_in]
+                if ease_in <= 0.0 or ease_out <= 0.0:
+                    # 2-value form: duration + offset only. Ease-in/out of 0 crash
+                    # the game on load, so omit them to disable easing entirely.
+                    lump["sync"] = ["float", period, phase]
+                else:
+                    lump["sync"] = ["float", period, phase, ease_out, ease_in]
                 wrap = bool(o.get("og_sync_wrap", False))
                 if wrap:
                     # fact-options wrap-phase: bit 3 of the options uint64

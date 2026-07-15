@@ -450,10 +450,16 @@ def _field_is_output_only(f: dict) -> bool:
     return f.get("type") == "const" or (f.get("lump") or {}).get("type") == "const"
 
 
+def field_default(f: dict, etype: str = None):
+    """Resolve a field's default value (honours default_per_etype)."""
+    if etype and isinstance(f.get("default_per_etype"), dict):
+        return f["default_per_etype"].get(etype, f.get("default"))
+    return f.get("default")
+
+
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
-    trait fields, deduped by key (an actor's own field wins over a trait one),
-    excluding output-only const lumps."""
+    trait fields, deduped by key (own wins), excluding output-only const lumps."""
     own = [f for f in inherited_fields(etype) if not _field_is_output_only(f)]
     seen = {f.get("key") for f in own}
     return own + [f for f in trait_fields(etype)
