@@ -1132,13 +1132,13 @@ class OG_PT_SelectedLumpReference(Panel):
         layout.label(text="Click + to add a pre-filled row to Custom Lumps")
         layout.separator(factor=0.4)
 
-        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
         if actor_specific:
             _draw_lump_ref_section(layout, f"Specific to {label}", actor_specific, icon="OBJECT_DATA")
         else:
             sub = layout.row()
             sub.enabled = False
             sub.label(text=f"No additional lumps documented for {label}", icon="INFO")
+        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
 
 
 
