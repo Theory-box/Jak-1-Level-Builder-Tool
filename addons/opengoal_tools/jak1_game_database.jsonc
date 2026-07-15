@@ -3090,31 +3090,36 @@
       "id": "ropebridge-32",
       "label": "Rope Bridge 32m (Village1)",
       "glb": "levels/village1/ropebridge-32-lod0.glb",
-      "art_group": "ropebridge-32-ag.go"
+      "art_group": "ropebridge-32-ag.go",
+      "offset": [0, -16, 0]
     },
     {
       "id": "ropebridge-36",
       "label": "Rope Bridge 36m (Misty)",
       "glb": "levels/misty/ropebridge-36-lod0.glb",
-      "art_group": "ropebridge-36-ag.go"
+      "art_group": "ropebridge-36-ag.go",
+      "offset": [0, -18, 0]
     },
     {
       "id": "ropebridge-52",
       "label": "Rope Bridge 52m (Jungle)",
       "glb": "levels/jungle/ropebridge-52-lod0.glb",
-      "art_group": "ropebridge-52-ag.go"
+      "art_group": "ropebridge-52-ag.go",
+      "offset": [0, -26, 0]
     },
     {
       "id": "ropebridge-70",
       "label": "Rope Bridge 70m (Jungle)",
       "glb": "levels/jungle/ropebridge-70-lod0.glb",
-      "art_group": "ropebridge-70-ag.go"
+      "art_group": "ropebridge-70-ag.go",
+      "offset": [0, -35, 0]
     },
     {
       "id": "snow-bridge-36",
       "label": "Snow Bridge 36m (Snowy)",
       "glb": "levels/snow/snow-bridge-36-lod0.glb",
       "art_group": "snow-bridge-36-ag.go",
+      "offset": [0, -18, 0],
       "extra_art_groups": ["eichar-ice+0-ag.go"],
       "extra_code": ["target-ice.o"]
     },
@@ -3122,7 +3127,8 @@
       "id": "vil3-bridge-36",
       "label": "Village3 Bridge 36m",
       "glb": "levels/village3/vil3-bridge-36-lod0.glb",
-      "art_group": "vil3-bridge-36-ag.go"
+      "art_group": "vil3-bridge-36-ag.go",
+      "offset": [0, -18, 0]
     }
   ],
 

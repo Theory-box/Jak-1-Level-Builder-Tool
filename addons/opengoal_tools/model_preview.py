@@ -233,6 +233,13 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     preview_col = _ensure_preview_collection(ctx.scene)
     attached    = False
 
+    # Preview offset in Blender metres: a per-object override (Mesh Preview
+    # Settings) wins over the DB/variant default (e.g. bridge centring).
+    _off = actor_empty.get("og_preview_offset")
+    if _off is None:
+        _off = _db.preview_offset(etype, lambda k, d=None: actor_empty.get(k, d))
+    _off = [float(_off[0]), float(_off[1]), float(_off[2])] if _off and len(_off) >= 3 else [0.0, 0.0, 0.0]
+
     for rel in glb_rels:
         glb_path  = _glb_path(rel)
         mesh_name = Path(rel).stem  # e.g. "babak-lod0-mg"
@@ -245,7 +252,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         # The actor_empty is already at cursor_loc.
         # Set mesh local position to (0,0,0) so it sits exactly at the empty,
         # then use identity matrix_parent_inverse so no extra offset is applied.
-        mesh_obj.location              = (0.0, 0.0, 0.0)
+        mesh_obj.location              = (_off[0], _off[1], _off[2])
         mesh_obj.parent                = actor_empty
         mesh_obj.matrix_parent_inverse = mathutils.Matrix()  # identity
 
