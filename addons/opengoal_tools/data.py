@@ -358,6 +358,27 @@ PLATFORM_ENUM_ITEMS = [
 _platform_enum_cb = _make_filtered_enum(PLATFORM_ENUM_ITEMS, {"Platforms"})
 
 
+_SPAWN_VARIANT_CACHE: list = []
+
+
+def _spawn_variant_cb(self, context):
+    """Dynamic pre-spawn variant dropdown: the variant choices of whichever
+    spawn item is currently highlighted (crate types, bridge variants, ...)."""
+    global _SPAWN_VARIANT_CACHE
+    from . import db as _db
+    from .spawn_items import get_selected_spawn_item
+    items = []
+    item = get_selected_spawn_item(context.scene)
+    if item is not None and getattr(item, "etype", None):
+        for c in _db.variant_choices(item.etype):
+            vid = c.get("id", c.get("value"))
+            items.append((vid, c.get("label", vid), ""))
+    if not items:
+        items = [("NONE", "\u2014", "")]
+    _SPAWN_VARIANT_CACHE = items   # hold a reference (Blender enum-GC workaround)
+    return items
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Derived lookup sets
 # ═══════════════════════════════════════════════════════════════════════════

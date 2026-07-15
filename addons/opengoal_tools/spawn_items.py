@@ -357,26 +357,6 @@ def get_selected_spawn_item(scene) -> Optional[SpawnItem]:
     return get_spawn_index().get(rows[idx].spawn_id)
 
 
-_SPAWN_VARIANT_CACHE: list = []
-
-
-def _spawn_variant_cb(self, context):
-    """Dynamic pre-spawn variant dropdown: the variant choices of whichever
-    spawn item is currently highlighted (crate types, bridge variants, ...)."""
-    global _SPAWN_VARIANT_CACHE
-    from . import db as _db
-    items = []
-    item = get_selected_spawn_item(context.scene)
-    if item is not None and getattr(item, "etype", None):
-        for c in _db.variant_choices(item.etype):
-            vid = c.get("id", c.get("value"))
-            items.append((vid, c.get("label", vid), ""))
-    if not items:
-        items = [("NONE", "\u2014", "")]
-    _SPAWN_VARIANT_CACHE = items   # hold a reference (Blender enum-GC workaround)
-    return items
-
-
 def count_filtered(scene) -> tuple[int, int]:
     """Return (visible_count, total_count) accounting for category and
     favorites filters. Does NOT include the UIList's native search-text
