@@ -1067,6 +1067,30 @@ class OG_OT_ToggleSpawnFavorite(Operator):
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_OT_RefreshPreviewModel(Operator):
+    """Rebuild this actor's preview mesh from its current variant, offset and
+override mesh."""
+    bl_idname  = "og.refresh_preview_model"
+    bl_label   = "Refresh Model"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        actor = o
+        if not actor.name.startswith("ACTOR_") and o.parent and o.parent.name.startswith("ACTOR_"):
+            actor = o.parent
+        if not actor.name.startswith("ACTOR_"):
+            self.report({"WARNING"}, "Select an actor (or its preview mesh)")
+            return {"CANCELLED"}
+        etype = actor.name.split("_", 2)[1]
+        _mp.remove_preview(actor)
+        ok = _mp.attach_preview(ctx, etype, actor)
+        self.report({"INFO"}, "Preview refreshed" if ok else "No preview model for this actor")
+        return {"FINISHED"}
+
+
 CLASSES = (
     OG_OT_SpawnPlayer,
     OG_OT_SpawnCheckpoint,
@@ -1087,6 +1111,7 @@ CLASSES = (
     OG_OT_SpawnCamLookAt,
     OG_OT_AddLauncherDest,
     OG_OT_AddWaterVolume,
+    OG_OT_RefreshPreviewModel,
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,
     OG_OT_SpawnCustomType,

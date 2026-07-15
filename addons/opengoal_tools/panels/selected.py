@@ -1130,12 +1130,40 @@ class OG_PT_SelectedLumpReference(Panel):
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_PT_MeshPreviewSettings(Panel):
+    bl_label       = "Mesh Preview Settings"
+    bl_idname      = "OG_PT_mesh_preview_settings"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_selected_object"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        o = ctx.active_object
+        if o is None:
+            return False
+        return (o.name.startswith("ACTOR_")
+                or (o.parent is not None and o.parent.name.startswith("ACTOR_")))
+
+    def draw(self, ctx):
+        o     = ctx.active_object
+        actor = o if o.name.startswith("ACTOR_") else o.parent
+        col   = self.layout.column()
+        col.operator("og.refresh_preview_model", icon="FILE_REFRESH")
+        col.separator()
+        col.prop(actor, "og_preview_offset")
+        col.prop(actor, "og_preview_override")
+
+
 CLASSES = (
     OG_PT_SelectedObject,
     OG_PT_SelectedCollision,
     OG_PT_SelectedLightBaking,
     OG_PT_SelectedNavMeshTag,
     OG_PT_SpawnSettings,
+    OG_PT_MeshPreviewSettings,
     OG_PT_LoadBoundarySettings,
     OG_PT_SelectedLumps,
     OG_PT_SelectedLumpReference,
