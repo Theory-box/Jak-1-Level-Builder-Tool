@@ -111,6 +111,13 @@ def _resolve_choices(choices_spec):
                 for s in sounds:
                     out.append({"value": s, "label": f"[{bank}] {s}"})
             return out
+        # Generic: any top-level named table of {id/value, label} entries
+        # (e.g. BridgeVariants) works without a bespoke case.
+        table = _db.choices_table(choices_spec)
+        if table:
+            return [{"value": e.get("id", e.get("value")),
+                     "label": e.get("label", e.get("id", e.get("value")))}
+                    for e in table]
     return []
 
 

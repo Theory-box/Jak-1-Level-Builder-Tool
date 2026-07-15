@@ -466,6 +466,11 @@ def _resolve_choices(f: dict) -> list[dict]:
     return ch or []
 
 
+def choices_table(name: str) -> list[dict] | None:
+    """A top-level named choices table (e.g. "BridgeVariants") or None."""
+    return DB.get(name)
+
+
 def actor_variant(etype: str, prop_get) -> dict:
     """The selected variant for an actor — the chosen entry of a field marked
     `"variant": true`, whose choices may carry `glb` / `art_group` / `code`

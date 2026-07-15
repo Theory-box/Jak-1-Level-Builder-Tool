@@ -85,7 +85,8 @@ def needed_extras_ags(actors):
     """
     seen, r = set(), []
     for a in actors:
-        for g in ETYPE_EXTRAS_AG.get(a["etype"], []):
+        extras = list(ETYPE_EXTRAS_AG.get(a["etype"], [])) + list(a.get("extra_art_groups", []))
+        for g in extras:
             if g and g not in seen:
                 seen.add(g); r.append(g)
     return r
@@ -104,15 +105,20 @@ def needed_code(actors):
     for a in actors:
         etype = a["etype"]
         info = ETYPE_CODE.get(etype)
-        if not info or info.get("in_game_cgo"):
-            continue
-        o = info["o"]
-        if o not in seen:
-            seen.add(o)
-            if info.get("o_only"):
+        if info and not info.get("in_game_cgo"):
+            o = info["o"]
+            if o not in seen:
+                seen.add(o)
+                if info.get("o_only"):
+                    r.append((o, None, None))
+                else:
+                    r.append((o, info["gc"], info.get("dep", "process-drawable")))
+        # Variant extra code (e.g. snow bridge -> target-ice.o). DGO-only:
+        # goal-src is already in game.gp, so inject the .o with no gc line.
+        for o in a.get("extra_code", []):
+            if o and o not in seen:
+                seen.add(o)
                 r.append((o, None, None))
-            else:
-                r.append((o, info["gc"], info.get("dep", "process-drawable")))
     return r
 
 def discover_custom_levels():

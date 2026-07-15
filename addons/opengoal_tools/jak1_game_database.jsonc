@@ -3081,6 +3081,51 @@
     }
   ],
 
+  // ── BridgeVariants ──────────────────────────────────────────────
+  // Each ropebridge variant: its own model + art group. All use ropebridge.o
+  // (already loaded in game.gd). The snow bridge also needs Jak's ice-sliding
+  // code + animation bundled (extra_code / extra_art_groups).
+  "BridgeVariants": [
+    {
+      "id": "ropebridge-32",
+      "label": "Rope Bridge 32m (Village1)",
+      "glb": "levels/village1/ropebridge-32-lod0.glb",
+      "art_group": "ropebridge-32-ag.go"
+    },
+    {
+      "id": "ropebridge-36",
+      "label": "Rope Bridge 36m (Misty)",
+      "glb": "levels/misty/ropebridge-36-lod0.glb",
+      "art_group": "ropebridge-36-ag.go"
+    },
+    {
+      "id": "ropebridge-52",
+      "label": "Rope Bridge 52m (Jungle)",
+      "glb": "levels/jungle/ropebridge-52-lod0.glb",
+      "art_group": "ropebridge-52-ag.go"
+    },
+    {
+      "id": "ropebridge-70",
+      "label": "Rope Bridge 70m (Jungle)",
+      "glb": "levels/jungle/ropebridge-70-lod0.glb",
+      "art_group": "ropebridge-70-ag.go"
+    },
+    {
+      "id": "snow-bridge-36",
+      "label": "Snow Bridge 36m (Snowy)",
+      "glb": "levels/snow/snow-bridge-36-lod0.glb",
+      "art_group": "snow-bridge-36-ag.go",
+      "extra_art_groups": ["eichar-ice+0-ag.go"],
+      "extra_code": ["target-ice.o"]
+    },
+    {
+      "id": "vil3-bridge-36",
+      "label": "Village3 Bridge 36m",
+      "glb": "levels/village3/vil3-bridge-36-lod0.glb",
+      "art_group": "vil3-bridge-36-ag.go"
+    }
+  ],
+
   // ── CratePickups ────────────────────────────────────────────────
   "CratePickups": [
     {
@@ -7736,32 +7781,8 @@
           "label": "Bridge Variant",
           "type": "enum",
           "default": "ropebridge-32",
-          "choices": [
-            {
-              "value": "ropebridge-32",
-              "label": "Rope Bridge 32m"
-            },
-            {
-              "value": "ropebridge-36",
-              "label": "Rope Bridge 36m"
-            },
-            {
-              "value": "ropebridge-52",
-              "label": "Rope Bridge 52m"
-            },
-            {
-              "value": "ropebridge-70",
-              "label": "Rope Bridge 70m"
-            },
-            {
-              "value": "snow-bridge-36",
-              "label": "Snow Bridge 36m"
-            },
-            {
-              "value": "vil3-bridge-36",
-              "label": "Village3 Bridge 36m"
-            }
-          ],
+          "choices": "BridgeVariants",
+          "variant": true,
           "lump": {
             "key": "art-name",
             "type": "symbol"
