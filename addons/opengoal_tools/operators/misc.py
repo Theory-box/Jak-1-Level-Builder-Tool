@@ -122,6 +122,42 @@ class OG_OT_DeleteObject(Operator):
         self.report({"INFO"}, f"Deleted '{self.obj_name}'")
         return {"FINISHED"}
 
+def _delete_og_managed(ctx, obj):
+    """Delete one OpenGOAL-managed object with full cleanup: unlink volumes
+    pointing to it, remove its preview meshes, and remove associated camera
+    helper empties."""
+    scene = ctx.scene
+    name = obj.name
+    for o in _level_objects(scene):
+        if o.type == "MESH" and o.name.startswith("VOL_"):
+            _vol_remove_link_to(o, name)
+    _mp.remove_preview(obj)
+    for suf in ("_CAM", "_ALIGN", "_PIVOT", "_LOOK_AT"):
+        assoc = scene.objects.get(name + suf)
+        if assoc:
+            bpy.data.objects.remove(assoc, do_unlink=True)
+    bpy.data.objects.remove(obj, do_unlink=True)
+
+
+class OG_OT_DeleteSelected(Operator):
+    """Delete all selected OpenGOAL actors, including their preview meshes and
+linked helper objects (which Blender's own Delete leaves behind)."""
+    bl_idname  = "og.delete_selected"
+    bl_label   = "Delete Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        targets = [o for o in ctx.selected_objects
+                   if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        if not targets:
+            self.report({"WARNING"}, "No OpenGOAL actors selected")
+            return {"CANCELLED"}
+        for o in list(targets):
+            _delete_og_managed(ctx, o)
+        self.report({"INFO"}, f"Deleted {len(targets)} actor(s)")
+        return {"FINISHED"}
+
+
 class OG_OT_SetCamProp(Operator):
     """Set a string custom property on a CAMERA_ object."""
     bl_idname   = "og.set_cam_prop"
@@ -270,6 +306,7 @@ def _draw_mat(self, ctx):
 CLASSES = (
     OG_OT_SelectAndFrame,
     OG_OT_DeleteObject,
+    OG_OT_DeleteSelected,
     OG_OT_SetCamProp,
     OG_OT_NudgeCamFloat,
     OG_OT_NudgeFloatProp,

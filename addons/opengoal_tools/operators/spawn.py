@@ -276,56 +276,61 @@ class OG_OT_DuplicateEntity(Operator):
     bl_options  = {"UNDO"}
 
     def execute(self, ctx):
-        src = ctx.active_object
-        if src is None or not src.name.startswith("ACTOR_"):
+        srcs = [o for o in ctx.selected_objects
+                if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        if not srcs:
             self.report({"ERROR"}, "Select an ACTOR_ empty first")
             return {"CANCELLED"}
 
-        # Parse entity type from name: ACTOR_<etype>_<uid>
-        parts = src.name.split("_", 2)
-        if len(parts) < 3:
-            self.report({"ERROR"}, f"Cannot parse entity type from {src.name!r}")
-            return {"CANCELLED"}
-        etype = parts[1]
+        src_names = [o.name for o in srcs]
+        new_names = []
+        for sname in src_names:
+            src = ctx.scene.objects.get(sname)
+            if src is None:
+                continue
+            parts = src.name.split("_", 2)
+            if len(parts) < 3:
+                continue
+            etype = parts[1]
 
-        # --- Duplicate just the empty (no children) via ops ---
-        # Deselect all, select only the source, then duplicate
+            # Duplicate just the empty (no children) via ops.
+            bpy.ops.object.select_all(action="DESELECT")
+            src.select_set(True)
+            ctx.view_layer.objects.active = src
+            bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
+            new_empty = ctx.active_object
+
+            # Fresh unique ACTOR_<etype>_<n> name.
+            prefix = f"ACTOR_{etype}_"
+            existing = {o.name for o in bpy.data.objects}
+            n = 0
+            while f"{prefix}{n}" in existing:
+                n += 1
+            new_empty.name = f"{prefix}{n}"
+
+            # Strip any preview children the duplicate inherited, then re-attach
+            # a fresh independent preview.
+            _mp.remove_preview(new_empty)
+            for child in list(new_empty.children):
+                if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
+                    bpy.data.objects.remove(child, do_unlink=True)
+            _prefs = bpy.context.preferences.addons.get("opengoal_tools")
+            if _prefs and _prefs.preferences.preview_models:
+                try:
+                    _mp.attach_preview(ctx, etype, new_empty)
+                except Exception as e:
+                    log(f"duplicate_entity model_preview: {e}")
+            new_names.append(new_empty.name)
+
+        # Leave the new duplicates selected.
         bpy.ops.object.select_all(action="DESELECT")
-        src.select_set(True)
-        ctx.view_layer.objects.active = src
-        bpy.ops.object.duplicate(linked=False, mode="TRANSLATION")
-        new_empty = ctx.active_object
-
-        # Give it a fresh unique name (Blender appends .001 etc automatically,
-        # but we want to follow the ACTOR_<etype>_<n> convention)
-        prefix = f"ACTOR_{etype}_"
-        # Use bpy.data.objects (not just level objects) so we avoid collisions
-        # with the freshly duplicated object which may not yet be in the level col
-        existing = {o.name for o in bpy.data.objects}
-        n = 0
-        while f"{prefix}{n}" in existing:
-            n += 1
-        new_empty.name = f"{prefix}{n}"
-
-        # --- Strip any preview children the duplicate inherited ---
-        # bpy.ops.object.duplicate copies children too; remove them so we
-        # can attach a fresh independent preview below.
-        _mp.remove_preview(new_empty)
-
-        # Also unlink any child objects Blender may have copied
-        for child in list(new_empty.children):
-            if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
-                bpy.data.objects.remove(child, do_unlink=True)
-
-        # --- Re-attach a fresh preview mesh ---
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                _mp.attach_preview(ctx, etype, new_empty)
-            except Exception as e:
-                log(f"duplicate_entity model_preview: {e}")
-
-        self.report({"INFO"}, f"Duplicated as {new_empty.name}")
+        for nm in new_names:
+            o = ctx.scene.objects.get(nm)
+            if o:
+                o.select_set(True)
+        if new_names:
+            ctx.view_layer.objects.active = ctx.scene.objects.get(new_names[-1])
+        self.report({"INFO"}, f"Duplicated {len(new_names)} actor(s)")
         return {"FINISHED"}
 
 class OG_OT_ClearPreviews(Operator):
