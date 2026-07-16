@@ -470,3 +470,17 @@ changing the *project* level set can shift a stored pick; leading + base-game
 items are order-stable. Converting `og_cp_vis` string→enum drops any old typed
 value → falls back to the "(this level's nick)" default (the previous blank
 behaviour), which is safe. UNTESTED IN BLENDER — needs a register + UI pass.
+
+### Fix — "(this level's nick)" now honors the set nickname override
+The auto/blank vis fallback resolved the home-level nick with `_nick(name)`
+(first 3 letters of the full level name), ignoring a nickname that was changed
+at level creation (`og_vis_nick_override`). Swapped both fallbacks to the
+existing override-aware `_effective_nick(scene, name)`:
+- `_make_continues` now takes `scene` (threaded from `patch_level_info`); both
+  the per-spawn blank-vis fallback and the no-spawns default use it.
+- `_lb_cmd_form` / `_make_static_boundary` now take `scene` (threaded from
+  `patch_load_boundaries`); the boundary `(vis …)` auto fallback uses it.
+Explicit picks (project/base/custom nick) and a per-checkpoint typed nick still
+win over the auto value; with no override set, behaviour is unchanged
+(name-derived). Verified with unit tests (override wins / no-override derives /
+explicit pick wins). writers.py compiles.

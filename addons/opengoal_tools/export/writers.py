@@ -683,7 +683,7 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     else:
         log(f"Skipped {p} (unchanged)")
 
-def _make_continues(name, spawns):
+def _make_continues(name, spawns, scene=None):
     """Build the GOAL :continues list for level-load-info.
 
     Each spawn dict carries full quat + camera data from collect_spawns, plus
@@ -729,7 +729,7 @@ def _make_continues(name, spawns):
         # vis-nick: blank → this level's nickname. Per Kuitar, vis is also how
         # the game knows which level you're in (music/menu), so don't use 'none.
         vn = (sp.get("cp_vis_nick") or "").strip()
-        vis_nick = f"'{vn}" if vn else f"'{_nick(name)}"
+        vis_nick = f"'{vn}" if vn else f"'{_effective_nick(scene, name)}"
         # load-commands: blank → empty list; else raw GOAL passthrough.
         lc = (sp.get("cp_load_commands") or "").strip()
         load_cmds = lc if lc else "'()"
@@ -768,7 +768,7 @@ def _make_continues(name, spawns):
             f"             :camera-trans (new 'static 'vector :x 0.0 :y (meters 14.) :z 0.0 :w 1.0)\n"
             f"             :camera-rot (new 'static 'array float 9 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0)\n"
             f"             :load-commands '()\n"
-            f"             :vis-nick '{_nick(name)}\n"
+            f"             :vis-nick '{_effective_nick(scene, name)}\n"
             f"             :lev0 '{name}\n"
             f"             :disp0 'display\n"
             f"             :lev1 #f\n"
@@ -846,7 +846,7 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sky {_sky_val}\n"
              f"       :sun-fade 1.0\n"
              f"       :continues\n"
-             f"       {_make_continues(name, spawns)}\n"
+             f"       {_make_continues(name, spawns, scene)}\n"
              f"       :tasks '()\n"
              f"       :priority 100\n"
              f"       :load-commands '()\n"
@@ -885,7 +885,7 @@ def patch_level_info(name, spawns, scene=None):
 # per-level block (its own static-lb-list + doarray). Stock entries untouched;
 # idempotent re-export via per-level markers.
 
-def _lb_cmd_form(cmd, lev0, lev1, disp, name, vis, level):
+def _lb_cmd_form(cmd, lev0, lev1, disp, name, vis, level, scene=None):
     """Return the GOAL (cmd a1 a2) form for a boundary direction, or None.
 
     Level args are emitted as BARE symbols (the macro quotes the whole list).
@@ -910,7 +910,7 @@ def _lb_cmd_form(cmd, lev0, lev1, disp, name, vis, level):
         d = "#f" if d in ("", "off", "#f") else d           # display / display-no-wait
         return f"(display {_sym(lev0)} {d})"
     if cmd == "vis":
-        nick = (vis or "").strip() or _nick(level)
+        nick = (vis or "").strip() or _effective_nick(scene, level)
         return f"(vis {nick} #f)"
     if cmd == "force-vis":
         return f"(force-vis {_sym(lev0)} #t)"
@@ -920,7 +920,7 @@ def _lb_cmd_form(cmd, lev0, lev1, disp, name, vis, level):
     return None
 
 
-def _make_static_boundary(b, level):
+def _make_static_boundary(b, level, scene=None):
     """One (static-load-boundary ...) form from a collected boundary dict.
 
     b keys: closed(bool), player(bool), custom_flags(str), top, bot (game units),
@@ -940,9 +940,9 @@ def _make_static_boundary(b, level):
     pts = " ".join(f"{v:.4f}" for v in b.get("points", []))
 
     fwd = _lb_cmd_form(b.get("fwd_cmd"), b.get("fwd_lev0"), b.get("fwd_lev1"),
-                       b.get("fwd_disp"), b.get("fwd_name"), b.get("fwd_vis"), level)
+                       b.get("fwd_disp"), b.get("fwd_name"), b.get("fwd_vis"), level, scene)
     bwd = _lb_cmd_form(b.get("bwd_cmd"), b.get("bwd_lev0"), b.get("bwd_lev1"),
-                       b.get("bwd_disp"), b.get("bwd_name"), b.get("bwd_vis"), level)
+                       b.get("bwd_disp"), b.get("bwd_name"), b.get("bwd_vis"), level, scene)
 
     lines = [f"(static-load-boundary :flags ({flags_str})",
              f"                      :top {b.get('top', 524288.0):.4f}"
@@ -976,7 +976,7 @@ def patch_load_boundaries(name, boundaries, scene=None):
     txt = re.sub(rf"\n{re.escape(begin)}.*?{re.escape(end)}\n", "\n", txt, flags=re.DOTALL)
 
     if boundaries:
-        entries = "\n        ".join(_make_static_boundary(b, name) for b in boundaries)
+        entries = "\n        ".join(_make_static_boundary(b, name, scene) for b in boundaries)
         sym = "*og-custom-lb-" + re.sub(r"[^a-z0-9-]", "-", name.lower()) + "*"
         # Match the stock pattern: define a named static list, then doarray over
         # the symbol. doarray substitutes its array arg multiple times, so it
