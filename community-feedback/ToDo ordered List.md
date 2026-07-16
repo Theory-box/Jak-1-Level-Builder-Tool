@@ -93,7 +93,7 @@ Instead of having just those two options, here's what I'm proposing:
   - To do so, each 2 anchor point and inbtween 2 handles of a bezier curve can be viewed as one clamped NURB curve then repeat for the next one
   - Here's an example of how it could work:
     - Let's say you have a Bezier curve with 4 anchor points (each with 2 handles)
-    - Let's use letters, A, B, C, D for those handle points position
+    - Let's use letters, A, B, C, D for those anchor points position
     - And A1, A2, B1, B2, C1, C2, D1, D2 for the handle positions
     - The first segment consist of this order: A, A2, B1, B (the A1 handle is on the other side of the first anchor and is only used on a looped bezier)
     - The second segment is: B, B2, C1, C (As you can see the first point is a repeat of the last segment as they're clamped at each other)
