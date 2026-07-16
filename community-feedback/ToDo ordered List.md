@@ -18,6 +18,28 @@ How I'm imagining it to work.:
 Jak 1 now has built in camera entities. They can be defined in the level's json's in the Camera field. 
 There's an example in test-zone.jsonc, here it is:
 ```json
+  // Camera entities you want to use in your level. These are used to dynamically adjust camera settings/modes when Jak enters a volume.
+  // There are a couple of different camera modes, depending on what lumps are present:
+  // - cam-circular: orbits a specified point. requires "pivot" lump.
+  //   - optional lumps: "maxAngle", "focalPull"
+  // - cam-standoff: requires "align" lump.
+  // - cam-string: the default camera mode. used when any of these lumps are present to override the default cam mode behavior:
+  //   - "stringMaxLength", "stringMinLength", "stringMaxHeight", "stringMinHeight"
+  //
+  // Some generic lumps that can be used for all camera modes:
+  // - "fov": set the camera fov (default is 64).
+  // - "interpTime": set the cam blend time when entering the camera entity volume.
+  // - "tiltAdjust": set the camera roll value.
+  //
+  // There's a "flags" lump that takes a cam-slave-options enum value:
+  // "flags": ["enum-uint32", "(cam-slave-options SAME_SIDE COLLIDE)"]
+  //
+  // There's three different volume types (these all have to be defined in keyframe 0, e.g. ["vector-vol@0.0": ...]):
+  // vol: sets camera entity when Jak is inside.
+  // pvol: preferred volume when camera entities overlap.
+  // cutoutvol: disables camera entity when Jak is inside.
+  //
+  // "interesting" is an optional vector lump that can be set to be used as a "point of interest" for the camera to focus on.
 "cameras": [
   {
     "trans": [17.26, 9.0, 13.2],
