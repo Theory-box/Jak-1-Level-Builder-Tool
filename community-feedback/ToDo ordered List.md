@@ -10,7 +10,8 @@ How I'm imagining it to work.:
 - Have a list of all included files in game.gd stored in the database. (Or check if it already exist, I can't see one myself)
 - Before any art group or code file is added to game.gd or the level's json, compare it with that list.
 - If the files are already part of that list, don't copy them.
-- maybe have an option in the developer tools to turn on/off "ignore game.gd files" to easily switch back to old behaviour if needed
+- maybe have an option in the developer tools to turn on/off "ignore game.gd files" to easily switch back to old behaviour if needed 
+  - this option should be ON by default.
 
 ---
 
@@ -65,9 +66,31 @@ There's an example in test-zone.jsonc, here it is:
 The current implementation, using a custom actor built for these camera might have more features so it could be kept.
 But if not, or if the features are not that meaningful, we can completely replace them. This can be discussed further.
 
+This will definitely need some custom build panel and since it's very specific to cameras, does can live mostly in the code.
+However, most fields and values should still use the database to be filled up instead of being hard coded.
+There's also a lot of previous functions that can be used such as 
+- The volume code and link UI for vol, pvol and cutoutvol
+- Placing an empty for the pivot point
+- Path/waypoint UI for camera's path
+- Varient selection for the camera modes
+  - Each of those varients can then have the different UI elements they need 
+  - as well as a decent explanation of how that specific camera mode works
+
+But also other completely new fields:
+- "fov" (float, default to -1 which wouldn't include the res-lump, Also indicate default FOV is 64 in the tool tip)
+- "interpTim" (float, how long it takes for the camera to switch to this for smooth transition, in seconds)
+- "tiltAdjust" 
+- "flags" Probably make this a menu that can collapse as there's a few of them that can all individually be turned on/off.
+  - For each turned on, it'll appear in the res-lump as such: `"flags": ["enum-uint32", "(cam-slave-options SAME_SIDE COLLIDE)"]`
+  - See `goal_src\jak1\engine\camera\camera-h.gc` on `cam-slave-options` enum to see the list of all flags.
+  - Probably need a little bit of research to see what each flag do exactly so the tooltip can be helpful
+
+
 ---
 
 ## Expending paths for more features/control
+The menu itself should be called Path as that'd be more consistent with how it's used in the game code.
+### Extra Path modes
 At the moment, there's not much control on paths. You can just change inbetween straight lines and curved. However, the path-k allows for much more control.
 Instead of having just those two options, here's what I'm proposing:
 - Automatic
@@ -137,6 +160,13 @@ Instead of having just those two options, here's what I'm proposing:
   - if this option is on then you could manually set all the path-k values yourself for full control.
   - This would need to automatically be able to add and remove fields depending on the number of points in the path.
   - This would never be automatically picked by the "Automatic" option
+### Extra paths
+Some actors require more than one path. These are usually demoninated as patha, pathb, etc up til pathh. And have their own path-k, patha-k, etc.
+The Menu should be identical as other paths for these but maybe have a button that's "add extra path" for actors that require these so the user can add as many path as needed without having the UI cluttered by 8 different path UI when they might not use all of them.
+
+Some actors might also use both path and then patha,b, etc while other actors might start directly at patha. Maybe an option for each path to set which one it is manually could also be useful for those cases.
+
+Maybe a full remodel of the path/waypoints UI so you have one general paths UI and inside of it, buttons to add/remove paths, then each path added is a sub menu inside of there with the option to set how each path is needed. This could either be the default or only be available if a "multiple_path" option is allowed in the actor's database entry.
 
 ---
 
@@ -205,7 +235,7 @@ Known Missed actors:
 - mood (either just a string or same as level, have a list in database + custom)
 - mood-func (same as mood)
 - Ocean (same as mood)
-- sun-fade (float, from 0.0 to 1.0
+- sun-fade (float, from 0.0 to 1.0)
 - bsphere (linked to a empty sphere and use it's position + size/scaling for W)
 ### For level's json
 - Automatic_wall_angle (float, -1 = off, any number on + set the angle)
@@ -214,6 +244,7 @@ Known Missed actors:
 ---
 
 ## Tasks & Menu implementation
+Tasks are the system that set missions to specific resolutions. It's also what the power cell count is based on. Although not every task is equal to a power cell. They can also be used for other logic like level state changes that needs to be saved as well. The task code is also heavily interlaced with the menu so we should take of both at the same time.
 
 ---
 
