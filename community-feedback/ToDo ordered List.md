@@ -188,6 +188,17 @@ Known Missed actors:
   - Allow you to spawn any collectable
   - Can be set to off by default and then triggered by another actor which is very useful
 
+### User notes:
+Going through all categories in this order, if I can't fix some things I'll not it here under each category:
+- Pickups
+- Platforms
+- Obstacles
+- Enemies
+- Visuals
+- Buttons and Doors
+- Interactive Objects
+- NPCs
+
 ---
 
 ## Addon/project settings
