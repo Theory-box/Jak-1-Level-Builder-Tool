@@ -174,23 +174,29 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
 There's a few features that might need to be added as well:
-- `movie-pos` field for flies/cell
-  - For Cells this will determine where the animation is played, including the rotation of this one with the W value
-  - For Flies, this will determine where the cell will spawn if this is the last fly collected as well as the position/rotation of the animation
-  - Should just be a small helper that spawn an empty (either at cursor or at the actor position)
-  - Similar to the alt-actor for launcher
-  - The rotation is set by the Z rotation of the spawned empty
+
 - Prev/next/alt actor fields
   - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
-
-Known Missed actors:
-- pickup-spawner missing
-  - Allow you to spawn any collectable
-  - Can be set to off by default and then triggered by another actor which is very useful
 
 ### User notes:
 Going through all categories in this order, if I can't fix some things I'll not it here under each category:
 - Pickups
+  - `movie-pos` field for flies/cells and crates/pickup-spawner which are holding a fly/cell
+    - For Cells this will determine where the animation is played, including the rotation of this one with the W value
+    - For Flies, this will determine where the cell will spawn if this is the last fly collected as well as the position/rotation of the animation
+    - Should just be a small helper that spawn an empty (either at cursor or at the actor position)
+    - Similar to the alt-actor for launcher
+    - The rotation should be set by the Z rotation of the spawned empty
+    - `movie-pos` also have its own type called the same that'll take XYZ in meters and W as a 360 angle directly. So no weird translation needed.
+  - `fact-option ` is an enum that allows you to set extra options for a lot of actors
+    - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
+    - Generalise all of these as a "options" menu inside of the actor settings
+    - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
+    - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
+    - You can ignore all the unused options (fop4, fop5 and fop17)
+    - Then it would be as simple as adding an "options" field in each of the actors that need it
+    - Then all the options that are available for that actor and if they should be turned on or off by default
+    - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
 - Platforms
 - Obstacles
 - Enemies

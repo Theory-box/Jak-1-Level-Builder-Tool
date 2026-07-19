@@ -3153,26 +3153,40 @@
       "label": "Yellow Eco",
       "engine_string": "(pickup-type eco-yellow)",
       "icon": "COLORSET_03_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-red",
       "label": "Red Eco",
       "engine_string": "(pickup-type eco-red)",
       "icon": "COLORSET_01_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-blue",
       "label": "Blue Eco",
       "engine_string": "(pickup-type eco-blue)",
       "icon": "COLORSET_04_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-green",
       "label": "Green Eco",
       "engine_string": "(pickup-type eco-green)",
+      "icon": "COLORSET_08_VEC",
+      "supports_multi_amount": true
+    },
+    {
+      "id": "eco-pill",
+      "label": "Green Eco Pills",
+      "engine_string": "(pickup-type eco-pill)",
+      "icon": "COLORSET_08_VEC",
+      "supports_multi_amount": true
+    },
+    {
+      "id": "eco-pill-random",
+      "label": "Green Eco Pills (Random)",
+      "engine_string": "(pickup-type eco-pill-random)",
       "icon": "COLORSET_08_VEC",
       "supports_multi_amount": false
     },
@@ -3180,6 +3194,14 @@
       "id": "buzzer",
       "label": "Scout Fly",
       "engine_string": "(pickup-type buzzer)",
+      "icon": "GP_SELECT",
+      "supports_multi_amount": false,
+      "force_amount": 1
+    },
+    {
+      "id": "fuel-cell",
+      "label": "Power Cell",
+      "engine_string": "(pickup-type fuel-cell)",
       "icon": "GP_SELECT",
       "supports_multi_amount": false,
       "force_amount": 1
@@ -5493,7 +5515,7 @@
         0.0,
         1.0
       ],
-      "shape": "ARROWS",
+      "shape": "SPHERE",
       "vertex_export": false,
       "code": {
         "in_game_cgo": true
@@ -5562,10 +5584,57 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES",
+      "shape": "SPHERE",
       "code": {
         "in_game_cgo": true
       }
+    },
+    {
+      "etype": "pickup-spawner",
+      "label": "Pickup Spawner", 
+      "category": "Pickups",
+      "parent": "eco-collectable",
+      "code": {
+        "in_game_cgo": true
+      },
+      "schema_export": true,
+      "lumps": [
+        {
+          "key": "eco-info",
+          "type": "eco-info",
+          "description": "Pickup contents: '(pickup-type X) amount'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-blue",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
+        }
+      ],
+      "color": [
+        0.1,
+        0.9,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "crate",
@@ -5662,7 +5731,7 @@
           "key": "og_orb_count",
           "label": "Orbs inside",
           "type": "int",
-          "default": 20,
+          "default": 10,
           "min": 1,
           "lump": {
             "key": "orb-cache-count",
@@ -5677,7 +5746,7 @@
         0.1,
         1.0
       ],
-      "shape": "CUBE",
+      "shape": "SPHERE",
       "vertex_export": false,
       "code": {
         "in_game_cgo": true
@@ -5726,7 +5795,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ecovent",
@@ -5736,9 +5805,6 @@
       "code": {
         "in_game_cgo": true
       },
-      // Green eco vents have no dedicated actor: spawn a bare `ecovent` and give
-      // it an eco-info lump. That lump is now schema-driven (eco-info-picker),
-      // defaulting to eco-green but configurable per instance.
       "schema_export": true,
       "lumps": [
         {
@@ -5776,7 +5842,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "plat",
@@ -7420,7 +7486,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventblue",
@@ -7449,7 +7515,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventred",
@@ -7478,7 +7544,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventyellow",
@@ -7507,7 +7573,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "eco-red",
@@ -7527,7 +7593,7 @@
         0.1,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "eco-yellow",
@@ -7556,7 +7622,7 @@
         0.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ecoventrock",
@@ -15332,7 +15398,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventyellow",
@@ -15581,7 +15647,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventblue",
