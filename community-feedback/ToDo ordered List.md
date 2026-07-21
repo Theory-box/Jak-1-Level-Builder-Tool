@@ -173,11 +173,6 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 ## Going through actor list to fix preview model/included code.
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
-There's a few features that might need to be added as well:
-
-- Prev/next/alt actor fields
-  - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
-
 ### User notes:
 Going through all categories in this order, if I can't fix some things I'll not it here under each category:
 - Pickups
@@ -190,7 +185,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - `movie-pos` also have its own type called the same that'll take XYZ in meters and W as a 360 angle directly. So no weird translation needed.
   - `fact-option ` is an enum that allows you to set extra options for a lot of actors
     - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
-    - Generalise all of these as a "options" menu inside of the actor settings
+    - Generalise all of these as an "options" menu inside of the actor settings
     - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
     - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
     - You can ignore all the unused options (fop4, fop5 and fop17)
@@ -198,6 +193,31 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Then all the options that are available for that actor and if they should be turned on or off by default
     - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
 - Platforms
+  - Actor link fields (needed for some platform and a bunch of other actors)
+    - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
+    - Add it as an "actor link" menu inside of the actor settings
+    - Set them up in database like the fact-options, aka each actor decide which links it needs 
+    - description for that particular actor to tell users what each of them do as that varies per actor
+    - Would be a field where you can select another actor directly from all the actors/objects in the blender scene.
+    - `alt-actor` and a few others specifically can have more than one linked actor for some actors (ex: battlecontroller) so this would need to work slightly different than the other links. Maybe something similar to lump/waypoints where you can add multiple ellements.
+    - Here's all link res-lump I can think of right now: `prev-actor`, `next-actor`, `alt-actor`(multiple), `trigger-actor`(multiple), `spawner-blocker-actor`(multiple), `water-actor`, `path-actor`, `nav-mesh-actor` 
+  - Empty "Platform settings"
+    - A lot of platforms have a "platform settings" menu that's empty since they don't need the sync options and others
+    - This empty menu could simply be removed if they don't have any settings there anyway
+  - caveelevator 
+    - crash because of *cavecrystal-light-control*, work if `cavecrystal-light.o` is also included, need a way to include multiple code files instead of just one
+    - Modes can be 0, 1 or 2, need an option for each. (missing 2) Also need to be able to change the description for each. Those fields don't seem to be living in the database right now?
+  - cavespatula
+    - when not in darkcave, cavespatula try to set a skeleton group that doesn't really exist (cavespatula-sg) Not sure how to fix that withou editing cavespatula code
+    - crash like caveelevator for *cavecrystal-light-control*
+  - Crashing actors:
+    - balance-plat (not in goal code stack trace) (looks to have correct art-group and code files included)
+    - mis-bone-bridge (same as balance plat)
+    - breakaway-right (same as balance plat)
+    - breakaway-mid (same as balance plat)
+    - breakaway-left (same as balance plat)
+    - cavetrapdoor (same as caveelevator / *cavecrystal-light-control*)
+  
 - Obstacles
 - Enemies
 - Visuals

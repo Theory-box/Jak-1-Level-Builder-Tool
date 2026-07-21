@@ -5940,8 +5940,8 @@
         },
         {
           "key": "bidirectional",
-          "type": "symbol",
-          "description": "Set to 'true' to allow platform to return."
+          "type": "uint32",
+          "description": "Set to '1' to allow platform to return."
         }
       ],
       "color": [
@@ -8025,7 +8025,7 @@
         {
           "key": "mode",
           "type": "uint32",
-          "description": "Elevator mode variant selector. Default 0."
+          "description": "Elevator mode variant selector. Default 0, Static 1, Extra floor 2."
         }
       ],
       "fields": [
@@ -8190,6 +8190,7 @@
     },
     {
       "etype": "cavespatula",
+      "schema_export": true,
       "label": "Cave Spatula Plat",
       "category": "Platforms",
       "parent": "prop",
@@ -8205,8 +8206,18 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}
+      ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
+        }
+      ],
       "color": [
         0.5,
         0.4,
@@ -8217,6 +8228,7 @@
     },
     {
       "etype": "cavespatulatwo",
+      "schema_export": true,
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
       "parent": "prop",
@@ -8232,8 +8244,18 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
+        }
+      ],
       "color": [
         0.5,
         0.4,
@@ -8684,8 +8706,6 @@
     },
     {
       "etype": "springbox",
-      "panel": "launcher",
-      "is_launcher": true,
       "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
@@ -8713,7 +8733,7 @@
       "fields": [
         {
           "key": "og_spring_height",
-          "label": "Spring height (m)",
+          "label": "Bounce height (m)",
           "type": "float",
           "default": -1.0,
           "lump": {
