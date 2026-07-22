@@ -173,7 +173,78 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 ## Going through actor list to fix preview model/included code.
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
-### User notes:
+### General changes for entities
+- Actor link fields (needed for some platform and a bunch of other actors)
+  - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
+  - Add it as an "actor link" menu inside of the actor settings
+  - Set them up in database like the fact-options, aka each actor decide which links it needs 
+  - description for that particular actor to tell users what each of them do as that varies per actor
+  - Would be a field where you can select another actor directly from all the actors/objects in the blender scene.
+  - `alt-actor` and a few others specifically can have more than one linked actor for some actors (ex: battlecontroller) so this would need to work slightly different than the other links. Maybe something similar to lump/waypoints where you can add multiple ellements.
+  - Here's all link res-lump I can think of right now: `prev-actor`, `next-actor`, `alt-actor`(multiple), `trigger-actor`(multiple), `spawner-blocker-actor`(multiple), `water-actor`, `path-actor`, `nav-mesh-actor`
+    - `path-actor` and `nav-mesh-actor` are especially useful as they allow you to set a path or a nav-mesh to other actors without having to set it all up for each of them. `nav-mesh-actor` are also needed on a lot more things than just enemies as they serve on boxes to see if they're blocking the way.
+- `fact-option ` is an enum that allows you to set extra options for a lot of actors
+  - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
+  - Generalise all of these as an "options" menu inside of the actor settings
+  - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
+  - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
+  - You can ignore all the unused options (fop4, fop5 and fop17)
+  - Then it would be as simple as adding an "options" field in each of the actors that need it
+  - Then all the options that are available for that actor and if they should be turned on or off by default
+  - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
+- Drivers between object properties and exported OG values
+  - This would allow for two things: 
+    - Either a good way to visualise changing one exported value into blender. (ex: having the size of the empty arrow in blender increase in size to show how high a launcher launches you)
+    - Or, let you modify a value in blender that'll then be applied to the export. (ex: Scaling objects and having that scale being exported as a res-lump for custom scaling, see TFL. Or the rotoffset on some object being directly taken from the Z axis rotation like for caveelevators)
+  - Drivers could live in the database as well as such:
+    - Set the driven variable
+    - Set the driver variable
+    - Set the default value
+    - Conditions to use the default value (ex for launcher, if value is negative, it should be 40)
+- Default empty size
+  - Being able to set the empty size in the database would be useful for some actors
+  - Wouldn't be set on all but nice for a few that clearly need to be smaller or larger
+- Clean up of the level json
+  - There's a few extra fields added on every actors that I'm not sure when they were added but they don't serve any purpose:
+    - "art-group"
+    - "code"
+    - "extra_art_groups": []
+    - "extra_code": []
+  - That kind of info shouldn't end up here
+  - Here's an example of an actor in the json:
+```json
+{
+  "trans": [
+    -511.08,
+    2.8933,
+    -208.7516
+  ],
+  "etype": "eco-blue",
+  "game_task": "(game-task none)",
+  "quat": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "vis_id": 0,
+  "bsphere": [
+    -511.08,
+    2.8933,
+    -208.7516,
+    10.0
+  ],
+  "lump": {
+    "name": "eco-blue-0"
+  },
+  // these next 4 lines shouldn't be here?
+  "art_group": null,
+  "code": null,
+  "extra_art_groups": [],
+  "extra_code": []
+},
+```
+### Per categories changes:
 Going through all categories in this order, if I can't fix some things I'll not it here under each category:
 - Pickups
   - `movie-pos` field for flies/cells and crates/pickup-spawner which are holding a fly/cell
@@ -183,24 +254,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Similar to the alt-actor for launcher
     - The rotation should be set by the Z rotation of the spawned empty
     - `movie-pos` also have its own type called the same that'll take XYZ in meters and W as a 360 angle directly. So no weird translation needed.
-  - `fact-option ` is an enum that allows you to set extra options for a lot of actors
-    - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
-    - Generalise all of these as an "options" menu inside of the actor settings
-    - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
-    - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
-    - You can ignore all the unused options (fop4, fop5 and fop17)
-    - Then it would be as simple as adding an "options" field in each of the actors that need it
-    - Then all the options that are available for that actor and if they should be turned on or off by default
-    - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
 - Platforms
-  - Actor link fields (needed for some platform and a bunch of other actors)
-    - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
-    - Add it as an "actor link" menu inside of the actor settings
-    - Set them up in database like the fact-options, aka each actor decide which links it needs 
-    - description for that particular actor to tell users what each of them do as that varies per actor
-    - Would be a field where you can select another actor directly from all the actors/objects in the blender scene.
-    - `alt-actor` and a few others specifically can have more than one linked actor for some actors (ex: battlecontroller) so this would need to work slightly different than the other links. Maybe something similar to lump/waypoints where you can add multiple ellements.
-    - Here's all link res-lump I can think of right now: `prev-actor`, `next-actor`, `alt-actor`(multiple), `trigger-actor`(multiple), `spawner-blocker-actor`(multiple), `water-actor`, `path-actor`, `nav-mesh-actor` 
   - Empty "Platform settings"
     - A lot of platforms have a "platform settings" menu that's empty since they don't need the sync options and others
     - This empty menu could simply be removed if they don't have any settings there anyway
@@ -210,6 +264,16 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - cavespatula
     - when not in darkcave, cavespatula try to set a skeleton group that doesn't really exist (cavespatula-sg) Not sure how to fix that withou editing cavespatula code
     - crash like caveelevator for *cavecrystal-light-control*
+  - Pontoonfive and pontoonten
+    - Seems to be something wrong with water volume right now, can't seem to add the link for them that easily too
+    - The task menu right now is all over the place, should definitely not have a checkbox list like this for something this long. It should be a drop down menu when you can only select one anyway. Also this might not even be needed to be in the pannel and can maybe just be part of the lump definitions
+  - square-platform, need prev/next/alt actor stuff, will have to verify when those are implemented
+  - ease in/out caviats doesn't work
+    - Values still seem to export even when they're set to 0
+  - swingpole
+    - Adding a general way to change base rotation as swingpoles need to be rotated 90° on their X axis to work at all
+    - That general way could then be used on any other actor that might need to use that as well
+    - don't have it on all actor in the database, just the one that might need it, like the preview mesh offset
   - Crashing actors:
     - balance-plat (not in goal code stack trace) (looks to have correct art-group and code files included)
     - mis-bone-bridge (same as balance plat)
@@ -217,7 +281,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - breakaway-mid (same as balance plat)
     - breakaway-left (same as balance plat)
     - cavetrapdoor (same as caveelevator / *cavecrystal-light-control*)
-  
+    - tar-plat (same as balance plat)
 - Obstacles
 - Enemies
 - Visuals

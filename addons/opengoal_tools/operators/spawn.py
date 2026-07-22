@@ -212,7 +212,7 @@ class OG_OT_SpawnEntity(Operator):
         o = ctx.active_object
         o.name = f"ACTOR_{etype}_{n}"
         o.show_name = True
-        o.empty_display_size = 0.6
+        o.empty_display_size = 1.0
         o.color = color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant

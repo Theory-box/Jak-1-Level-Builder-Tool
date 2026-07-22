@@ -6036,6 +6036,7 @@
     },
     {
       "etype": "wall-plat",
+      "schema_export": true,
       "label": "Wall Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -6051,6 +6052,11 @@
         "o_only": true
       },
       "glb": "levels/sunken/wall-plat-lod0.glb",
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, 
+        {"key": "og_sync_ease_out", "label": "Period Extended (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, 
+        {"key": "og_sync_ease_in", "label": "Period Retracted (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}],
       "lumps": [
         {
           "key": "tunemeters",
@@ -6064,7 +6070,7 @@
         0.7,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CONE"
     },
     {
       "etype": "balance-plat",
@@ -6181,6 +6187,7 @@
     {
       "etype": "wedge-plat",
       "label": "Wedge Platform",
+      "schema_export": true,
       "category": "Platforms",
       "parent": "prop",
       "art_group": "wedge-plat-ag.go",
@@ -6212,6 +6219,41 @@
           "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
         }
       ],
+      "fields": [
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_distance",
+          "label": "Rotation Radius (meters)",
+          "type": "meters",
+          "default": 9.0,
+          "lump": {
+            "key": "distance",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "wedge-plat-master to rotate around",
+          "accepts": [
+            "wedge-plat-master"
+          ],
+          "required": true
+        }
+      ],
       "color": [
         0.5,
         0.5,
@@ -6219,6 +6261,138 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "wedge-plat-outer",
+      "label": "Wedge Platform Outer",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "wedge-plat-ag.go",
+      "tpages": [
+        "tpage-661.go",
+        "tpage-663.go",
+        "tpage-714.go",
+        "tpage-662.go"
+      ],
+      "code": {
+        "o": "wedge-plats.o",
+        "o_only": true
+      },
+      "glb": "levels/sunken/wedge-plat-lod0.glb",
+      "lumps": [
+        {
+          "key": "rotspeed",
+          "type": "degrees",
+          "description": "Rotation speed in degrees/sec."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Initial rotation offset."
+        },
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_distance",
+          "label": "Rotation Radius (meters)",
+          "type": "meters",
+          "default": 17.0,
+          "lump": {
+            "key": "distance",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "wedge-plat-master to rotate around",
+          "accepts": [
+            "wedge-plat-master"
+          ],
+          "required": true
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.7,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "wedge-plat-master",
+      "label": "Wedge Platform Master",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [
+        "tpage-661.go",
+        "tpage-663.go",
+        "tpage-714.go",
+        "tpage-662.go"
+      ],
+      "code": {
+        "o": "wedge-plats.o",
+        "o_only": true
+      },
+      "lumps": [
+        {
+          "key": "rotspeed",
+          "type": "degrees",
+          "description": "Rotation speed in degrees/sec."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Initial rotation offset."
+        },
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_rotspeed",
+          "label": "Rotation Speed (degrees)",
+          "type": "degrees",
+          "default": 15.0,
+          "lump": {
+            "key": "rotspeed",
+            "type": "degrees"
+          },
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.7,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
     },
     {
       "etype": "tar-plat",
@@ -6350,7 +6524,7 @@
         0.1,
         1.0
       ],
-      "shape": "CONE"
+      "shape": "SINGLE_ARROW"
     },
     {
       "etype": "warpgate",
@@ -6519,13 +6693,12 @@
     },
     {
       "etype": "steam-cap",
-      "panel": "platform",
-      "label": "Steam Cap",
       "schema_export": true,
-      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
+      "label": "Steam Cap",
       "category": "Platforms",
       "parent": "prop",
       "art_group": "steam-cap-ag.go",
+      "tpage_group": "Sunken",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
@@ -6536,22 +6709,16 @@
         "o": "steam-cap.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
-      "is_prop": true,
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "percent",
-          "type": "float",
-          "description": "Completion percentage threshold for cap behaviour."
         }
       ],
       "color": [
