@@ -6730,9 +6730,157 @@
       "shape": "CUBE"
     },
     {
+      "etype": "lurkerm-piston",
+      "schema_export": true,
+      "label": "Piston",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "lurkerm-piston-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 5.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"},
+        {"key": "og_height_bot", "label": "Bottom Height (m)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 0}, "write_if": "if_not_default"}, 
+        {"key": "og_height_top", "label": "Top Height (m)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 1}, "write_if": "if_not_default"} 
+      ],
+      "glb": "levels/jungle/lurkerm-piston-geo.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '5.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "height-info",
+          "type": "meters",
+          "description": "Change bottom and top height"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Stop moving when this actor is dead",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "lurkerm-tall-sail",
+      "schema_export": true,
+      "label": "Sail (Tall)",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "lurkerm-tall-sail-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Stop moving when this actor is dead",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "precurbridge",
+      "schema_export": true,
+      "label": "Precursor Bridge",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "precurbridge-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/precurbridge-geo.glb",
+      "lumps": [],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "grottopole",
+      "schema_export": true,
+      "label": "Grotto Pole",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "grottopole-ag.go",
+      "tpage_group": "Beach",
+      "code": {
+        "o": "beach-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
+        {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
+        {"key": "og_num-positions", "label": "Number of positions", "type": "uint32", "default": 3, "lump": {"key": "num-positions", "type": "uint32"}, "write_if": "if_not_default"}  
+      ],
+      "glb": "levels/beach/grottopole-lod1.glb",
+      "lumps": [
+        {
+          "key": "speed", 
+          "type": "meters",
+          "description": "Speed when moving"
+        },
+        {
+          "key": "distance", 
+          "type": "meters",
+          "description": "Distance per move"
+        },
+        {
+          "key": "num-positions", 
+          "type": "uint32",
+          "description": "Max number of moves"
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
       "etype": "windmill-one",
-      "label": "Windmill",
-      "category": "Visuals",
+      "label": "Windmill Cog Wheel",
+      "category": "Platforms",
       "parent": "prop",
       "art_group": "windmill-one-ag.go",
       "tpages": [
@@ -6747,23 +6895,7 @@
       },
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Rotation radius."
-        },
-        {
-          "key": "num-positions",
-          "type": "int32",
-          "description": "Number of blade positions."
-        },
-        {
-          "key": "speed",
-          "type": "float",
-          "description": "Rotation speed."
-        }
-      ],
+      "lumps": [],
       "color": [
         0.7,
         0.7,
@@ -7751,8 +7883,6 @@
         "o": "collectables.o",
         "o_only": true
       },
-      "link_slots": [
-      ],
       "lumps": [],
       "color": [
         1.0,

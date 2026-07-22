@@ -283,35 +283,33 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - cavetrapdoor (same as caveelevator / *cavecrystal-light-control*)
     - tar-plat (same as balance plat)
   - Missing platforms: (look if not already in another cat)
-    - windmill-one (beach-obs.gc)
-    - grottopole (beach-obs.gc)
-    - lurkerm-piston (jungle-obs.gc)
-    - lurkerm-tall-sail (jungle-obs.gc)
-    - lurkerm-short-sail (jungle-obs.gc) ?
-    - precurbridge (jungle-obs.gc)
-    - jungle-elevator (jungle-elevator.gc)
+    - ~~windmill-one (beach-obs.gc)~~ Done
+    - ~~grottopole (beach-obs.gc)~~ Done
+    - ~~lurkerm-piston (jungle-obs.gc)~~ Done, investigate alt-actor later
+    - ~~lurkerm-tall-sail (jungle-obs.gc)~~ Done, to verify
+    - ~~precurbridge (jungle-obs.gc)~~ Done, (not really useable without modification as activation-point is hardcoded)
+    - ~~jungle-elevator (jungle-elevator.gc)~~ Maybe just ignore this as plat-button exists
     - bone-platform (misty-obs.gc)
     - sunken-elevator (sunken-elevator.gc)
     - qbert-plat (qbert-plat.gc)
     - slide-control (target-tube.gc)
     - floating-launcher (floating-launcher.gc)
     - ogre-isle (ogre-obs.gc)
-    - ogre-step (ogre-obs.gc) (+ a-b-c-d)
+    - ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS
     - minecartsteel (minecart)
     - spiderwebs (spiderwebs.gc)
-    - flutflut-plat-small (snow-flutflut-obs.gc)
+    - flutflut-plat-small (snow-flutflut-obs.gc) VARIANTS 
     - flutflut-plat-med (snow-flutflut-obs.gc)
     - flutflut-plat-large (snow-flutflut-obs.gc)
     - snow-log (snow-obs.gc)
     - snow-spatula (snow-obs.gc)
-    - citb-disc (citadel-obs.gc) (+ a-b-c-d)
+    - citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS
     - citb-launcher (citadel-obs.gc)
     - citb-drop-plat (citb-drop-plat.gc)
     - citb-stair-plat (citb-plat.gc)
     - citb-plat (citb-plat.gc)
     - citb-rotatebox (citb-plat.gc)
     - citb-donut (citb-plat.gc)
-    - citb-chain-plat (citb-plat.gc)
     - citb-chain-plat (citb-plat.gc)
     - citb-stopbox (citb-plat.gc)
     - citb-arm (citadel-obs.gc) (+ a bunch of others)
