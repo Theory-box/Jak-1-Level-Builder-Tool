@@ -3132,6 +3132,70 @@
     }
   ],
 
+  // ── OgreStepVariants ──────────────────────────────────────────────
+  "OgreStepVariants": [
+    {
+      "id": "ogre-step-a",
+      "etype": "ogre-step-a",
+      "label": "Klaww Step A",
+      "glb": "levels/ogre/ogre-step-a-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-b",
+      "etype": "ogre-step-b",
+      "label": "Klaww Step B",
+      "glb": "levels/ogre/ogre-step-b-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-c",
+      "etype": "ogre-step-c",
+      "label": "Klaww Step C",
+      "glb": "levels/ogre/ogre-step-c-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-d",
+      "etype": "ogre-step-d",
+      "label": "Klaww Step D",
+      "glb": "levels/ogre/ogre-step-b-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    }
+  ],
+
+  // ── MinecartAnim ──────────────────────────────────────────────
+  "MinecartAnim": [
+    {
+      "id": "0",
+      "label": "Anim 0 (Large oval)"
+    },
+    {
+      "id": "1",
+      "label": "Anim 1 (Figure of 8)"
+    },
+    {
+      "id": "2",
+      "label": "Anim 2 (Small oval)"
+    }
+  ],
+
+  // ── FlutflutPlatMode ──────────────────────────────────────────────
+  "FlutflutPlatMode": [
+    {
+      "id": "0",
+      "label": "Default platform behaviour"
+    },
+    {
+      "id": "1",
+      "label": "Button activated (Static)"
+    },
+    {
+      "id": "2",
+      "label": "Button activated (Use Path)"
+    }
+  ],
+
   // ── CratePickups ────────────────────────────────────────────────
   "CratePickups": [
     {
@@ -5956,6 +6020,334 @@
       }
     },
     {
+      "etype": "flutflut-plat-small",
+      "label": "Snowy Platform (Small Square)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order of aparition for button mode (order * 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-small-ag.go",
+      "glb": "levels/snow/flutflut-plat-small-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "flutflut-plat-med",
+      "label": "Snowy Platform (Medium Circle)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order for button (* 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-med-ag.go",
+      "glb": "levels/snow/flutflut-plat-med-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "flutflut-plat-large",
+      "label": "Snowy Platform (Long Capsule)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order of aparition for button mode (order * 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-large-ag.go",
+      "glb": "levels/snow/flutflut-plat-large-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "snow-log",
+      "label": "Snow Log",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "snow-log-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-log-lod0.glb",
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Snow Log Button to activate",
+          "accepts": [
+            "snow-log-button"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "etype": "snow-log-button",
+      "label": "Snow Log Button",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "art_group": "snow-switch-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-switch-lod0.glb",
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Snow Log to activate",
+          "accepts": [
+            "snow-log"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "etype": "snow-spatula",
+      "label": "Snow Spatula",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "snow-spatula-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-spatula-lod0.glb"
+    },
+    {
       "etype": "plat-flip",
       "schema_export": true,
       "label": "Flip Platform",
@@ -6609,6 +7001,40 @@
         1.0
       ],
       "shape": "SPHERE"
+    },
+    {
+      "etype": "minecartsteel",
+      "schema_export": true,
+      "label": "Minecarts",
+      "category": "Platforms",
+      "parent": "props",
+      "art_group": "minecartsteel-ag.go",
+      "glb": "levels/village3/minecartsteel-lod0.glb",
+      "lumps": [],
+      "code": {
+        "o": "minecart.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "_index",
+          "type": "enum",
+          "label": "Animation",
+          "default": 0,
+          "choices": "MinecartAnim",
+          "lump": {
+            "key": "index",
+            "type": "int32"
+          }
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.0,
+        1.0
+      ],
+      "shape": "CUBE"
     },
     {
       "etype": "tntbarrel",
@@ -8174,6 +8600,64 @@
       "shape": "CUBE"
     },
     {
+      "etype": "ogre-step",
+      "schema_export": true,
+      "label": "Klaww Step",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "ogre-obs.o",
+        "o_only": true
+      },
+      "lumps": [
+        {
+          "key": "Variant",
+          "type": "string",
+          "description": "Steps variant. Values: A, B, C, D. Default: A."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_ogre-step_variant",
+          "label": "Klaww Steps Variant",
+          "type": "enum",
+          "default": "ogre-step-a",
+          "choices": "OgreStepVariants",
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "This actor needs to be dead/removed for platforms to spawn",
+          "accepts": [
+            "any"
+          ],
+          "required": true
+        },
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Water surface entity",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
       "etype": "lavaballoon",
       "schema_export": true,
       "label": "Lava Balloon",
@@ -9049,6 +9533,46 @@
       "shape": "CUBE"
     },
     {
+      "etype": "spiderwebs",
+      "schema_export": true,
+      "label": "Spider Web (Bouncer)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "spiderwebs-ag.go",
+      "code": {
+        "o": "spiderwebs.o",
+        "o_only": true
+      },
+      "glb": "levels/maincave/spiderwebs-good-lod0.glb",
+      "lumps": [
+        {
+          "key": "spring-height",
+          "type": "meters",
+          "description": "Launch height in meters. Default 11m."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Bounce height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        }
+      ],
+      "color": [
+        0.9,
+        0.7,
+        0.1,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
       "etype": "oracle",
       "panel": "task-gated",
       "schema_export": true,
@@ -9688,9 +10212,9 @@
         {
           "lump_key": "next-actor",
           "slot": 0,
-          "label": "Next button in chain",
+          "label": "First activated actor",
           "accepts": [
-            "basebutton"
+            "any"
           ],
           "required": false
         },
@@ -9699,7 +10223,7 @@
           "slot": 0,
           "label": "Previous button in chain",
           "accepts": [
-            "basebutton"
+            "any"
           ],
           "required": false
         }
@@ -10427,42 +10951,6 @@
       "parent": "process-drawable",
       "spawnable": false,
       "description": "The robber is a lurker enemy in The Precursor Legacy, found in Precursor Basin. Robbers scared the rare lightning moles out of their underground holes — Jak must drive them off to restore order."
-    },
-    {
-      "etype": "snow-log",
-      "label": "Snow Log",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow log master controller",
-          "accepts": [
-            "any"
-          ],
-          "required": true
-        }
-      ]
-    },
-    {
-      "etype": "snow-log-button",
-      "label": "Snow Log Button",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow log to activate",
-          "accepts": [
-            "snow-log"
-          ],
-          "required": true
-        }
-      ]
     },
     {
       "etype": "snow-ram-boss",

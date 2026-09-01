@@ -174,6 +174,79 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
 ### General changes for entities
+- Reworking all the panel into one field in the database
+  - At the moment there's multiple ways to add panel information to actors via the database:
+    - "fields" to add custom fields
+    - "needs-sync" which add all the platform info (sync data + path data)
+    - "panel" which add a specific panel to some actors
+  - All of those are working differently and exist in separate places so grouping them and getting them all to work in a similar way would go a long way
+  - I'd like to reuse that "panel" field but instead of pointing it to one type and then create the whole panel from that, it'd contain all the panel information:
+    - inside of that panel field, you would have group of data for each of the different pannels that could be added 
+    - Example of the panels : "fields", "path", "sync", "actor link", "fact options", "volume", any other panel that will be needed to be used multiple time and is better as its own panel than custom entries in fields
+    - For each panel, you'd just be able to turn them on by having them in the "panel" field with a "show-panel" set to true
+    - If a panel would be set to shown, it would use some default values but you could also change any of the field of that default panel if you need to
+    - Here's an example of what it could look like:
+```json
+"Panels": [
+  {
+    "panel": "sync", // Name of the existing panel this will add
+    "show-panel": true, // with this set to true, the panel will appear in the actor options
+    "fields":[
+      {"key": "og_sync_period", "default": 10.0}, // as you can see the added field here only has the default value noted because everything else about that field will use the standard values
+      // the field for phase is not written at all since it'll just use the default values for that field
+      {"key": "og_sync_ease_out", "show-field": false}, // This actor, for example, wouldn't need the ease_out and ease_in so they're manually turned off here
+      {"key": "og_sync_ease_in", "show-field": false}, 
+    ]
+  },
+  {
+    "panel": "path",
+    "show-panel": true, 
+  },
+  {
+    "panel": "fact-option", // see the fact-option info a bit lower
+    "show-panel": true, 
+    "fields":[
+      {"key": "og_fact_option_wrap_phase", "show-field": true}, // For fact options, they probably should all be turned off by default as there's many of them and only a few are used per actors. So turning them true here instead.
+    ]
+  },
+  {
+    "panel": "custom-fields", // This would replace the old "fields", as "fields" is now used in each
+    "show-panel": true, 
+    "fields":[
+    // For custom fields, you'd need to type out the whole fields instead
+      {
+        "key": "og_plat-type",
+        "label": "Platform mode",
+        "type": "enum",
+        "choices": "FlutflutPlatMode",
+        "default": 0,
+        "lump":{
+          "key": "mode",
+          "type": "int32"
+        },
+        "write_if":"if_nonzero"
+      },
+      {
+        "key": "og_extra-id",
+        "label": "Order of aparition for button mode (order * 0.15s)",
+        "type": "int",
+        "default": 0,
+        "lump":{
+          "key": "extra-id",
+          "type": "int32"
+        },
+        "write_if":"if_nonzero"
+      }
+    ]
+  }
+]
+```
+- Panel/fields heritance from parents
+  - The point of having the parent actor in the database was for the child actor to be able to innherit from said parent.
+    - That way, any platform that moves along path could just be a child from a main platform parent
+    - It'd then innherit all of the panel and settings for platform
+    - then each specific platform would only need to have settings for things that are different or extra
+    - This would cut on a lot of repeated information in the database
 - Actor link fields (needed for some platform and a bunch of other actors)
   - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
   - Add it as an "actor link" menu inside of the actor settings
@@ -295,14 +368,14 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - slide-control (target-tube.gc)
     - floating-launcher (floating-launcher.gc)
     - ogre-isle (ogre-obs.gc)
-    - ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS
-    - minecartsteel (minecart)
-    - spiderwebs (spiderwebs.gc)
-    - flutflut-plat-small (snow-flutflut-obs.gc) VARIANTS 
-    - flutflut-plat-med (snow-flutflut-obs.gc)
-    - flutflut-plat-large (snow-flutflut-obs.gc)
-    - snow-log (snow-obs.gc)
-    - snow-spatula (snow-obs.gc)
+    - ~~~ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, need variants to be able to change etype as well, crash game after a second when they do spawn, seems to be some offsets for preview model 
+    - ~~minecartsteel (minecart.gc) VARIANTS~~ Done, maybe a way to show the anim path in blender?
+    - ~~spiderwebs (spiderwebs.gc)~~ Done
+    - ~~flutflut-plat-small (snow-flutflut-obs.gc)~~ Done, variants would need to be able to set etypes like ogre-step
+    - ~~flutflut-plat-med (snow-flutflut-obs.gc)~~ Done
+    - ~~flutflut-plat-large (snow-flutflut-obs.gc)~~ Done
+    - ~~snow-log (snow-obs.gc)~~ Done
+    - ~~snow-spatula (snow-obs.gc)~~ Done
     - citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS
     - citb-launcher (citadel-obs.gc)
     - citb-drop-plat (citb-drop-plat.gc)
