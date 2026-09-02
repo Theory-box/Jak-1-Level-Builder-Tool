@@ -3164,6 +3164,38 @@
     }
   ],
 
+    // ── CitbDiscVariants ──────────────────────────────────────────────
+  "CitbDiscVariants": [
+    {
+      "id": "citb-disc-a",
+      "etype": "citb-disc-a",
+      "label": "Disc Platform A (1 quarter)",
+      "glb": "levels/citadel/citb-disc-a-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-b",
+      "etype": "citb-disc-b",
+      "label": "Disc Platform B (half)",
+      "glb": "levels/citadel/citb-disc-b-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-c",
+      "etype": "citb-disc-c",
+      "label": "Disc Platform C (3 quarters)",
+      "glb": "levels/citadel/citb-disc-c-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-d",
+      "etype": "citb-disc-d",
+      "label": "Disc Platform D (full)",
+      "glb": "levels/citadel/citb-disc-d-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    }
+  ],
+
   // ── MinecartAnim ──────────────────────────────────────────────
   "MinecartAnim": [
     {
@@ -5989,6 +6021,308 @@
       }
     },
     {
+      "etype": "citb-plat",
+      "label": "Floating Platform (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "plat-citb-ag.go",
+      "glb": "levels/citadel/plat-citb-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "fields":[
+        {
+          "key": "og_scale_x",
+          "label": "Scale X",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_y",
+          "label": "Scale Y",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_z",
+          "label": "Scale Z",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_w",
+          "label": "Scale W (keep at 1.0)",
+          "type": "float",
+          "default": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "lump": {"key": "scale", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-rotatebox",
+      "label": "Rotate Box (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-rotatebox-ag.go",
+      "glb": "levels/citadel/citb-rotatebox-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-donut",
+      "label": "Spinning Donut (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-donut-ag.go",
+      "glb": "levels/citadel/citb-donut-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-chain-plat",
+      "label": "Chain Platforms (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-chain-plat-ag.go",
+      "glb": "levels/citadel/citb-chain-plat-lod0.glb",
+      "fields": [
+        {
+          "key": "og_height_info",
+          "label": "Height when active (m)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "height-info", "type": "meters"},
+          "write_if": "always"}
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "silodoor",
+      "label": "Silo Door (Final Boss)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "silodoor-ag.go",
+      "glb": "levels/finalboss/silodoor-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "SPHERE",
+      "code": {
+        "o": "robotboss-misc.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-stopbox",
+      "label": "Stop Box (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-stopbox-ag.go",
+      "glb": "levels/citadel/citb-stopbox-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-exit-plat",
+      "label": "Exit Platform (Citadel)",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-exit-plat-ag.go",
+      "glb": "levels/citadel/citb-exit-plat-lod0.glb",
+      "needs_path": true,
+      "lumps": [
+        {
+          "key": "camera-name",
+          "type": "string",
+          "description": "Name of camera to activate when button pressed."
+        },
+        {
+          "key": "bidirectional",
+          "type": "uint32",
+          "description": "Set to '1' to allow platform to return."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_bidirectional",
+          "label": "Bidirectional",
+          "type": "enum",
+          "default": "oneway",
+          "choices": [
+            {
+              "value": "oneway",
+              "label": "One Way (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "bidirectional",
+              "label": "Bidirectional",
+              "lump_value": 1
+            }
+          ],
+          "lump": {
+            "key": "bidirectional",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_continue_name",
+          "label": "Continue point name (checkpoints)",
+          "type": "string",
+          "default": "",
+          "lump": {
+            "key": "continue-name",
+            "type": "string",
+            "bare": true
+          },
+          "write_if": "if_non_empty"
+        },
+        {
+          "key": "og_camera_name",
+          "label": "Camera name to use while elevator move",
+          "type": "string",
+          "default": "",
+          "lump": {
+            "key": "camera-name",
+            "type": "string",
+            "bare": true
+          },
+          "write_if": "if_non_empty"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "state-actor",
+          "slot": 0,
+          "label": "Actor to activate the elevator",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "trigger-actor",
+          "slot": 0,
+          "label": "Actor that get activated by the elevator",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.7,
+        1
+      ],
+      "shape": "SPHERE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
       "etype": "plat-button",
       "label": "Button Platform",
       "category": "Platforms",
@@ -6008,13 +6342,38 @@
           "description": "Set to '1' to allow platform to return."
         }
       ],
+      "fields": [
+        {
+          "key": "og_bidirectional",
+          "label": "Bidirectional",
+          "type": "enum",
+          "default": "oneway",
+          "choices": [
+            {
+              "value": "oneway",
+              "label": "One Way (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "bidirectional",
+              "label": "Bidirectional",
+              "lump_value": 1
+            }
+          ],
+          "lump": {
+            "key": "bidirectional",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
       "color": [
         0.6,
         0.6,
         0.7,
-        1.0
+        1
       ],
-      "shape": "CUBE",
+      "shape": "SPHERE",
       "code": {
         "in_game_cgo": true
       }
@@ -6304,9 +6663,9 @@
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Snow Log Button to activate",
+          "label": "Snow Log Button or other to activate",
           "accepts": [
-            "snow-log-button"
+            "any"
           ],
           "required": true
         }
@@ -6327,9 +6686,9 @@
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Snow Log to activate",
+          "label": "Snow Log or other to activate",
           "accepts": [
-            "snow-log"
+            "any"
           ],
           "required": true
         }
@@ -6917,6 +7276,83 @@
         1.0
       ],
       "shape": "SINGLE_ARROW"
+    },
+    {
+      "etype": "citb-launcher",
+      "label": "Floating Launcher (citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-launcher-ag.go",
+      "code": {
+        "o": "citadel-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/citadel/citb-launcher-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "spring-height",
+          "type": "meters",
+          "description": "Launch height. Default ~40m."
+        },
+        {
+          "key": "mode",
+          "type": "uint32",
+          "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Spring height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        },
+        {
+          "key": "og_launcher_mode",
+          "label": "Camera on launch",
+          "type": "enum",
+          "default": "shortfall",
+          "choices": [
+            {
+              "value": "shortfall",
+              "label": "Short fall (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "longfall",
+              "label": "Long fall",
+              "lump_value": 1
+            },
+            {
+              "value": "none",
+              "label": "No camera",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "color": [
+        0.9,
+        0.6,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "warpgate",
@@ -8656,6 +9092,37 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "citb-disc",
+      "schema_export": true,
+      "label": "Disc Platform (citadel)",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "citadel-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_disc_variant",
+          "label": "Disc Platform Variant",
+          "type": "enum",
+          "default": "citb-disc-a",
+          "choices": "CitbDiscVariants",
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "lavaballoon",

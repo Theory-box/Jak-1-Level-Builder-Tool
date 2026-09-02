@@ -265,6 +265,13 @@ This is moslty a step that'll done by users to check on every actor, with the da
   - Then it would be as simple as adding an "options" field in each of the actors that need it
   - Then all the options that are available for that actor and if they should be turned on or off by default
   - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
+- Scale lump
+  - Some actors have a scale lump, while this can be added as fields there could be some better way to deal with it
+  - A really intuitive way would be to simply export that scale lump whenever an actor doesn't have default scaling in blender
+  - Some actors also require that scale lump (ex: citb-plat will crash without it) so an option to always export scale, even if default (1,1,1,1) could be added to the database
+  - scale lump wouldn't do anything on most actor 
+    - but there's very easy hack that I have added on TFL that allow me to use the scale on any process-drawable 
+    - so having it automatically when changing scale in blender would be ideal
 - Drivers between object properties and exported OG values
   - This would allow for two things: 
     - Either a good way to visualise changing one exported value into blender. (ex: having the size of the empty arrow in blender increase in size to show how high a launcher launches you)
@@ -355,6 +362,8 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - breakaway-left (same as balance plat)
     - cavetrapdoor (same as caveelevator / *cavecrystal-light-control*)
     - tar-plat (same as balance plat)
+    - citb-disc (same as balance plat)
+    - citb-launcher (same as balance plat)
   - Missing platforms: (look if not already in another cat)
     - ~~windmill-one (beach-obs.gc)~~ Done
     - ~~grottopole (beach-obs.gc)~~ Done
@@ -376,18 +385,18 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - ~~flutflut-plat-large (snow-flutflut-obs.gc)~~ Done
     - ~~snow-log (snow-obs.gc)~~ Done
     - ~~snow-spatula (snow-obs.gc)~~ Done
-    - citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS
-    - citb-launcher (citadel-obs.gc)
-    - citb-drop-plat (citb-drop-plat.gc)
-    - citb-stair-plat (citb-plat.gc)
-    - citb-plat (citb-plat.gc)
-    - citb-rotatebox (citb-plat.gc)
-    - citb-donut (citb-plat.gc)
-    - citb-chain-plat (citb-plat.gc)
-    - citb-stopbox (citb-plat.gc)
-    - citb-arm (citadel-obs.gc) (+ a bunch of others)
-    - citb-exit-plat (citb-plat.gc)
-    - silodoor (robotboss-misc.gc)
+    - ~~citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, variants would need to be able to set etypes like ogre-step, not in goal code crash
+    - ~~citb-launcher (citadel-obs.gc)~~ Done, not in goal code crash
+    - citb-drop-plat (citb-drop-plat.gc) This one would need some pretty complex setup to be intuitive to work within blender
+    - citb-stair-plat (citb-plat.gc) Hard coded tasks so not really useable
+    - ~~citb-plat (citb-plat.gc)~~ Done, the scale is done as 4 fields for each values, maybe not ideal see over for scale
+    - ~~citb-rotatebox (citb-plat.gc)~~ Done
+    - ~~citb-donut (citb-plat.gc)~~ Done
+    - ~~citb-chain-plat (citb-plat.gc)~~ Done
+    - ~~citb-stopbox (citb-plat.gc)~~ Done
+    - citb-arm (citadel-obs.gc) (+ a bunch of others) Waiting on this for etype variants
+    - ~~citb-exit-plat (citb-plat.gc)~~ Done, camera and checkpoint to test later
+    - ~~silodoor (robotboss-misc.gc)~~ Done 
 - Obstacles
 - Enemies
 - Visuals
