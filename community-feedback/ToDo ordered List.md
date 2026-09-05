@@ -174,6 +174,16 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
 ### General changes for entities
+- code and art-groups changes
+  - Make it so both the code and AG fields can be used to add multiple entries as some actors need multiple code files as well as mutliple art groups
+    - it shouldn't change much in the way it's setup already. It should just allow multiple string entries in a bracket when there's multiple ones.
+    - Example: `"art-group" : ["keg-conveyor-ag.go","keg-conveyor-paddle-ag.go","keg-ag.go"]`
+    - There's already a way to add multiple files in some variant example but it's done as another entry and that complexity shouldn't be added if it can all live within the same entry.
+  - Simplify how "code" files it's written in the database
+    - instead of having "code" entry which then has "o", "o_only" and "in_game_cgo". It should just be a single "code" or "o" entry with the code file (or files)
+    - Then to know if there's no need to include code files ort art groups, it should refere to a list which can simply be copied over to the database from game.gd
+    - That way, the code is always the same and cleaner for all actors in the database and if a modder has included some other actors in their game.gd, they can just also add it to the database and that'll directly work
+    - Could also keep the "code" entry and just have everything that's related to exporting code files there, such as "o", "art-group", "tpages", "tpage_group"
 - Reworking all the panel into one field in the database
   - At the moment there's multiple ways to add panel information to actors via the database:
     - "fields" to add custom fields
@@ -182,7 +192,7 @@ This is moslty a step that'll done by users to check on every actor, with the da
   - All of those are working differently and exist in separate places so grouping them and getting them all to work in a similar way would go a long way
   - I'd like to reuse that "panel" field but instead of pointing it to one type and then create the whole panel from that, it'd contain all the panel information:
     - inside of that panel field, you would have group of data for each of the different pannels that could be added 
-    - Example of the panels : "fields", "path", "sync", "actor link", "fact options", "volume", any other panel that will be needed to be used multiple time and is better as its own panel than custom entries in fields
+    - Example of the panels : "fields", "path", "sync", "actor link", "fact options", "volume", "nav-mesh", any other panel that will be needed to be used multiple time and is better as its own panel than custom entries in fields
     - For each panel, you'd just be able to turn them on by having them in the "panel" field with a "show-panel" set to true
     - If a panel would be set to shown, it would use some default values but you could also change any of the field of that default panel if you need to
     - Here's an example of what it could look like:
@@ -247,18 +257,19 @@ This is moslty a step that'll done by users to check on every actor, with the da
     - It'd then innherit all of the panel and settings for platform
     - then each specific platform would only need to have settings for things that are different or extra
     - This would cut on a lot of repeated information in the database
-- Actor link fields (needed for some platform and a bunch of other actors)
-  - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
-  - Add it as an "actor link" menu inside of the actor settings
-  - Set them up in database like the fact-options, aka each actor decide which links it needs 
-  - description for that particular actor to tell users what each of them do as that varies per actor
-  - Would be a field where you can select another actor directly from all the actors/objects in the blender scene.
-  - `alt-actor` and a few others specifically can have more than one linked actor for some actors (ex: battlecontroller) so this would need to work slightly different than the other links. Maybe something similar to lump/waypoints where you can add multiple ellements.
-  - Here's all link res-lump I can think of right now: `prev-actor`, `next-actor`, `alt-actor`(multiple), `trigger-actor`(multiple), `spawner-blocker-actor`(multiple), `water-actor`, `path-actor`, `nav-mesh-actor`
-    - `path-actor` and `nav-mesh-actor` are especially useful as they allow you to set a path or a nav-mesh to other actors without having to set it all up for each of them. `nav-mesh-actor` are also needed on a lot more things than just enemies as they serve on boxes to see if they're blocking the way.
+- Actor link fields changes
+  - An "allow-multiple" feature you can turn on would be nice as sometimes, things such as "alt-actor" can have multiple entries
+    - While it's already possible to add multiple ones by adding several links of the same type with increasing slot, that's not ideal when the number of actors isn't a specific set number. Some can have like 10+ alt-actor
+  - Maybe don't fully block the users from linking an actor that's not part of the allowed list and instead warn them instead that it might not work
+    - Reason is that it's hard to catch and add every single actors that would work in those links but then just changing all to "any" wouldn't help users
+- Variants being able to change etype
+  - Some actors are mostly copies of each other with some very small changes and having all of them added to the list would be too cumbersome
+  - Variants would be perfect for the task but at the moment, they're not able to change the etype of the actor
+  - It would be pretty simple in implementation in the database, just having an "etype" field in variant choices should automatically let the addon know they need to change the etype of that specific actor
+  - There's already some examples in the database of what it'd looks like, see "OgreStepVariants" and "CitbDiscVariants"
 - `fact-option ` is an enum that allows you to set extra options for a lot of actors
   - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
-  - Generalise all of these as an "options" menu inside of the actor settings
+  - Generalise all of these as an "options" panel inside of the actor settings
   - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
   - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
   - You can ignore all the unused options (fop4, fop5 and fop17)
@@ -365,10 +376,6 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - citb-disc (same as balance plat)
     - citb-launcher (same as balance plat)
   - Missing platforms: (look if not already in another cat)
-    - ~~windmill-one (beach-obs.gc)~~ Done
-    - ~~grottopole (beach-obs.gc)~~ Done
-    - ~~lurkerm-piston (jungle-obs.gc)~~ Done, investigate alt-actor later
-    - ~~lurkerm-tall-sail (jungle-obs.gc)~~ Done, to verify
     - ~~precurbridge (jungle-obs.gc)~~ Done, (not really useable without modification as activation-point is hardcoded)
     - ~~jungle-elevator (jungle-elevator.gc)~~ Maybe just ignore this as plat-button exists
     - bone-platform (misty-obs.gc)
@@ -377,30 +384,29 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - slide-control (target-tube.gc)
     - floating-launcher (floating-launcher.gc)
     - ogre-isle (ogre-obs.gc)
-    - ~~~ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, need variants to be able to change etype as well, crash game after a second when they do spawn, seems to be some offsets for preview model 
+    - ~~ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, need variants to be able to change etype as well, crash game after a second when they do spawn, seems to be some offsets for preview model 
     - ~~minecartsteel (minecart.gc) VARIANTS~~ Done, maybe a way to show the anim path in blender?
-    - ~~spiderwebs (spiderwebs.gc)~~ Done
     - ~~flutflut-plat-small (snow-flutflut-obs.gc)~~ Done, variants would need to be able to set etypes like ogre-step
-    - ~~flutflut-plat-med (snow-flutflut-obs.gc)~~ Done
-    - ~~flutflut-plat-large (snow-flutflut-obs.gc)~~ Done
-    - ~~snow-log (snow-obs.gc)~~ Done
-    - ~~snow-spatula (snow-obs.gc)~~ Done
     - ~~citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, variants would need to be able to set etypes like ogre-step, not in goal code crash
-    - ~~citb-launcher (citadel-obs.gc)~~ Done, not in goal code crash
     - citb-drop-plat (citb-drop-plat.gc) This one would need some pretty complex setup to be intuitive to work within blender
-    - citb-stair-plat (citb-plat.gc) Hard coded tasks so not really useable
-    - ~~citb-plat (citb-plat.gc)~~ Done, the scale is done as 4 fields for each values, maybe not ideal see over for scale
-    - ~~citb-rotatebox (citb-plat.gc)~~ Done
-    - ~~citb-donut (citb-plat.gc)~~ Done
-    - ~~citb-chain-plat (citb-plat.gc)~~ Done
-    - ~~citb-stopbox (citb-plat.gc)~~ Done
+    - ~~citb-stair-plat (citb-plat.gc)~~ Hard coded tasks so not really useable
     - citb-arm (citadel-obs.gc) (+ a bunch of others) Waiting on this for etype variants
-    - ~~citb-exit-plat (citb-plat.gc)~~ Done, camera and checkpoint to test later
-    - ~~silodoor (robotboss-misc.gc)~~ Done 
 - Obstacles
+  - keg-conveyor (misty-conveyor.o misty/keg-conveyor-lod0.glb keg-conveyor-ag.go keg-conveyor-paddle-ag.go keg-ag.go)
+    - Need multipe art group
+  - spike (firecanyon-obs.o firecanyon/spike-lod0.glb spike-ag.go)
+    - Need racer/zoomer to try it out
+  - swamp-spike (swamp-obs.o swamp/swamp-spike-lod0.glb swamp-spike-ag.go)
+    - Not in goal code crash
+  - snow-ball (snow-ball.o snow/snow-ball-lod0.glb snow-ball snow-ball-ag.go)
+    - Need path keying
+    - Need multiple art-group
+  - citb-firehose (citb-plat.o citadel/citb-firehose-lod0.glb citb-firehose-ag.go citadel-part.o)
+    - Need multiple code files (for particles )
 - Enemies
 - Visuals
 - Buttons and Doors
+  - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
 - Interactive Objects
 - NPCs
 

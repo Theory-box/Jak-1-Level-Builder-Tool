@@ -4767,7 +4767,7 @@
     },
     {
       "etype": "cavecrusher",
-      "label": "Cave Crusher",
+      "label": "Cave Crusher (robocave)",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "cavecrusher-ag.go",
@@ -4793,7 +4793,7 @@
         0.6,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "CUBE"
     },
     {
       "etype": "quicksandlurker",
@@ -4964,14 +4964,11 @@
         "o_only": true
       },
       "glb": "levels/village2/fireboulder-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "alt-task",
           "type": "uint32",
-          "description": "Second task gate ID. Door stays closed until this task is complete."
+          "description": "boulder hover when this task is complete"
         }
       ],
       "color": [
@@ -7474,9 +7471,9 @@
     },
     {
       "etype": "tntbarrel",
-      "label": "TNT Barrel",
+      "label": "TNT Barrel (ogre)",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "tntbarrel-ag.go",
       "tpages": [
         "tpage-875.go",
@@ -7527,9 +7524,10 @@
     },
     {
       "etype": "spike",
+      "schema_export": true,
       "label": "Spike",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "spike-ag.go",
       "tpages": [
         "tpage-1119.go",
@@ -7543,15 +7541,51 @@
         "o_only": true
       },
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "is_prop": true,
-      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 1,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 2,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 3,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.8,
         0.2,
         0.2,
         1.0
       ],
-      "shape": "CONE"
+      "shape": "SPHERE"
     },
     {
       "etype": "steam-cap",
@@ -7626,9 +7660,9 @@
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Stop moving when this actor is dead",
+          "label": "Stop moving when breaking the mirror",
           "accepts": [
-            "any"
+            "reflector-mirror"
           ],
           "required": false
         }
@@ -7659,9 +7693,9 @@
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Stop moving when this actor is dead",
+          "label": "Stop moving when breaking the mirror",
           "accepts": [
-            "any"
+            "reflector-mirror"
           ],
           "required": false
         }
@@ -7929,21 +7963,73 @@
     },
     {
       "etype": "swamp-spike",
-      "label": "Swamp Spike",
-      "category": "Interactive Objects",
-      "parent": "prop",
+      "schema_export": true,
+      "label": "Swamp Spike (Swamp)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
       "art_group": "swamp-spike-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "glb": "levels/swamp/swamp-spike-lod0.glb",
       "code": {
         "o": "swamp-obs.o",
         "o_only": true
       },
       "is_prop": true,
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 5.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_x",
+          "label": "Scale X",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_y",
+          "label": "Scale Y",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_z",
+          "label": "Scale Z",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_w",
+          "label": "Scale W (keep at 1.0)",
+          "type": "float",
+          "default": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "lump": {"key": "scale", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
       "lumps": [
         {
           "key": "distance",
@@ -7969,7 +8055,7 @@
       "schema_export": true,
       "label": "Whirlpool",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "whirlpool-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -7993,26 +8079,43 @@
       "fields": [
         {
           "key": "og_whirl_speed",
-          "label": "Speed base",
+          "label": "Base speed (Whirl at <11.12m)",
           "type": "float",
-          "default": 0.3,
+          "default": 8.0,
           "lump": {
             "key": "speed",
-            "type": "float",
+            "type": "meters",
             "slot": 0
           },
           "write_if": "always"
         },
         {
           "key": "og_whirl_var",
-          "label": "Speed variance",
+          "label": "Alternative speed (Whirl at <11.12m)",
           "type": "float",
-          "default": 0.1,
+          "default": 35.0,
           "lump": {
             "key": "speed",
-            "type": "float",
+            "type": "meters",
             "slot": 1
           },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 5.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
           "write_if": "always"
         }
       ],
@@ -9129,7 +9232,7 @@
       "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavaballoon-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -9228,6 +9331,42 @@
             "type": "meters"
           },
           "write_if": "always"
+        },
+        {
+          "key": "og_delay_one",
+          "label": "Delay One (m)",
+          "type": "float",
+          "default": 11.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_two",
+          "label": "Delay Two (m)",
+          "type": "float",
+          "default": 22.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_three",
+          "label": "Delay Three (m)",
+          "type": "float",
+          "default": 11.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_four",
+          "label": "Delay Four (m)",
+          "type": "float",
+          "default": 33.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 3},
+          "write_if": "always"
         }
       ],
       "color": [
@@ -9316,14 +9455,6 @@
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
-      "art_group": "caveflamepots-ag.go",
-      "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": {
         "o": "maincave-obs.o",
         "o_only": true
@@ -10772,7 +10903,7 @@
     {
       "etype": "swampgate",
       "label": "Swamp Spike Gate",
-      "category": "Obstacles",
+      "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "swamp-spike-gate-ag.go",
       "tpage_group": "Swamp",
@@ -11141,10 +11272,11 @@
     },
     {
       "etype": "chainmine",
-      "label": "Chain Mine",
+      "label": "Chain Mine (lavatube)",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "chainmine-ag.go",
+      "glb": "levels/lavatube/chainmine-lod0.glb",
       "tpage_group": "Lavatube",
       "tpages": [
         "tpage-1119.go",
@@ -11157,13 +11289,6 @@
         "o": "lavatube-obs.o",
         "o_only": true
       },
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Detonation delay after trigger."
-        }
-      ],
       "color": [
         0.6,
         0.1,
@@ -11206,19 +11331,11 @@
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "crate-darkeco-cluster-ag.go",
-      "tpage_group": "Firecanyon",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-815.go",
-        "tpage-822.go",
-        "tpage-854.go",
-        "tpage-1123.go"
-      ],
+      "glb": "levels/firecanyon/crate-darkeco-cluster-lod0.glb",
       "code": {
         "o": "firecanyon-obs.o",
         "o_only": true
       },
-      "lumps": [],
       "color": [
         0.3,
         0.0,
@@ -11226,6 +11343,193 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "logtrap",
+      "schema_export": true,
+      "label": "Log Trap (jungle)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "logtrap-ag.go",
+      "glb": "levels/jungle/logtrap-lod0.glb",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "pusher",
+      "schema_export": true,
+      "label": "Pusher (rolling)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "pusher-ag.go",
+      "glb": "levels/rolling/pusher-lod0.glb",
+      "code": {
+        "o": "rolling-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_in",
+          "label": "Pause while extended (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_out",
+          "label": "Pause while retracted (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "snowpusher",
+      "schema_export": true,
+      "label": "Snow Pusher (snowy)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "snowpusher-ag.go",
+      "glb": "levels/snow/snowpusher-lod0.glb",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_pusher_mode",
+          "label": "Collision and sound mode",
+          "type": "enum",
+          "default": 0,
+          "choices": [
+            {
+              "value": "0",
+              "label": "Collision ON (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "1",
+              "label": "Collision OFF",
+              "lump_value": 1
+            },
+            {
+              "value": "2",
+              "label": "Collision OFF (alternative sound)",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_nonzero"
+        },
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_in",
+          "label": "Pause while extended (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_out",
+          "label": "Pause while retracted (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "snow-ball",
+      "schema_export": true,
+      "label": "Snow Ball (Snowy)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "snow-ball-ag.go",
+      "glb": "levels/snow/snow-ball-lod0.glb",
+      "code": {
+        "o": "snow-ball.o",
+        "o_only": true
+      },
+      "needs_path": true,
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "swamp-tetherrock",
@@ -11264,6 +11568,45 @@
         1.0
       ],
       "shape": "SPHERE"
+    },
+    {
+      "etype": "citb-firehose",
+      "schema_export": true,
+      "label": "Fire Hose (citadel)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "citb-firehose-ag.go",
+      "glb": "levels/citadel/citb-firehose-lod0.glb",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "CUBE"
     },
     {
       "etype": "fishermans-boat",
