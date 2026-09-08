@@ -404,10 +404,84 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - citb-firehose (citb-plat.o citadel/citb-firehose-lod0.glb citb-firehose-ag.go citadel-part.o)
     - Need multiple code files (for particles )
 - Enemies
-- Visuals
+  - lurkercrab (lurkercrab.o beach/lurkercrab-lod0.glb lurkercrab-ag.go)
+    - Done
+  - lurkerworm (lurkerworm.o beach/lurkerworm-lod0.glb lurkerworm-ag.go) 
+    - Done
+  - sharkey (sharkey.o beach/sharkey-lod0.glb sharkey-ag.go)
+    - Error when spawning in blender:
+    - Could not select entity type sharkey: bpy_struct: item.attr = val: enum "sharkey" not found in
+  - lurkerpuppy (lurkerpuppy.o beach/lurkerpuppy-lod0.glb lurkerpuppy-ag.go)
+    - Done
+  - babak (babak.o beach/babak-lod0.glb babak-ag.go)
+    - Done
+  - babak-with-canon (babal-with-canon.o beach/babak-lod0.glb babak-ag.go)
+    - test with canon
+  - junglesnake (junglesnake.o jungle/junglesnake-lod0.glb junglesnake-ag.go) 
+    - Done
+  - darkvine (darkvine.o jungle/darkvine-lod0.glb darkvine-ag.go) 
+    - Done
+  - hopper (hopper.o jungle/hopper-lod0.glb hopper-ag.go)
+    - Done
+  - junglefish (junglefish.o jungle/junglefish-lod0.glb junglefish-ag.go)
+    - Done
+    - Interestingly, junglefish only agro jak if he's walking in shallow water and not while swimming
+  - plantboss (plant-boss.o aphid.o jungleb/plant-boss-main-lod0.glb plant-boss-ag.go plant-boss-main+0-ag.go aphid-lurker-ag.go)
+    - Done
+    - Need multiple code/ag (for aphids)
+    - Need to test movie-pos when that's implemented
+  - aphid (aphid.o jungleb/aphid-lurker-lod0.glb aphid-lurker-ag.go)
+    - Done
+  - bonelurker (bonelurker.o misty/bonelurker-lod0.glb bonelurker-ag.go)
+    - Done
+  - quicksandlurker (quicksandlurker.o misty/quicksandlurker-lod0.glb quicksandlurker-ag.go)
+    - Crashes (has GOAL stack trace)
+  - misty-battlecontroller (misty-obs.o)
+    - Maybe just have battlecontroller instead
+  - balloonlurker (balloonlurker.o misty/balloonlurker-lod0.glb balloonlurker-ag.go) 
+    - Test alt-actor for cell later (would need extra code/ag)
+  - robber (rolling-robber.o ogre/robber-lod0.glb robber-ag.go) 
+    - NOT NAV
+  - puffer (puffer.o sunken/puffer-main-lod0.glb puffer-ag.go)
+  - double-lurker (double-lurker.o sunken/double-lurker-lod0.glb double-lurker-ag.go double-lurker-top-ag.go)
+  - bully (bully.o sunken/bully-lod0.glb bully-ag.go)
+  - swamp-rat (swamp-rat.o swamp/swamp-rat-lod0.glb swamp-rat-ag.go)
+  - swamp-rat-nest (swamp-rat-nest.o swamp-rat-nest-a-lod0.glb swamp-rat-nest-ag.go)
+    - abc varients?
+    - need extra code/ag for rats
+  - swamp-bat (swamp-bat.o swamp/swamp-bat-lod0.glb swamp-bat-ag.go)
+    - NOT NAV
+  - kermit (kermit.o swamp/kermit-lod0.glb kermit-ag.go)
+  - swamp-battlecontroller (swamp-obs.o)
+    - Maybe just have battlecontroller instead
+  - ogreboss (ogreboss.o ogre/ogreboss-lod0.glb ogreboss-ag.go)
+    - BOSS
+  - flying-lurker (flying-lurker.o ogre/flying-lurker-lod0.glb flying-lurker-ag.go)
+    - NOT NAV
+  - plunger-lurker (flying-lurker.o ogre/plunger-lurker-lod0.glb plunger-lurker-ag.go)
+    - NOT NAV
+  - gnawer (gnawer.o maincave/gnawer-lod0.glb gnawer-ag.go)
+    - NOT NAV
+  - mother-spider (mother-spider.o mother-spider-h.o baby-spider.o maincave/mother-spider-lod0.glb mother-spider-ag.go mother-spider-egg.o baby-spider-ag.go)
+  - driller-lurker (driller-lurker.o robocave/driller-lurker-lod0.glb driller-lurker-ag.go)
+    - NOT NAV
+  - spider-egg (spider-egg.o baby-spider.o robocave/spider-egg-unbroken-lod0.glb spider-egg-ag.go baby-spider-ag.go)
+  - baby-spider (baby-spider.o maincave/baby-spider-lod0.glb baby-spider-ag.go)
+  - yeti (yeti.o snow/yeti-lod0.glb yeti-ag.go)
+  - ram (snow-ram.o snow-ram-h.o snow/ram-lod0.glb ram-ag.go)
+  - ram-boss (snow-ram-boss.o snow/ram-boss-lod0.glb ram-boss-ag.go)
+  - snow-bunny (snow-bunny.o snow/snow-bunny-lod0.glb snow-bunny-ag.go)
+  - citb-bunny (citb-bunny.o citadel/citb-bunny-lod0.glb citb-bunny-ag.go)
+  - green-eco-lurker (green-eco-lurker.o finalboss/green-eco-lurker-lod0.glb green-eco-lurker-ag.go)
+  - robotboss 
+    - robotboss.o robotboss-h.o robotboss-part.o robotboss-weapon.o robotboss-misc.o
+    - finalboss/robotboss-basic-lod0.glb
+    - robotboss-ag.go
+    - BOSS
 - Buttons and Doors
   - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
 - Interactive Objects
+- Visuals
 - NPCs
 
 ---

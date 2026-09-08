@@ -3891,6 +3891,40 @@
       "shape": "SPHERE"
     },
     {
+      "etype": "babak-with-canon",
+      "label": "Babak with canon (Lurker)",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The Babak with canon is a babak which will jump on nearby canon to shoot at jak",
+      "art_group": "babak-ag.go",
+      "tpage_group": "Beach",
+      "tpages": [
+        "tpage-212.go",
+        "tpage-214.go",
+        "tpage-213.go",
+        "tpage-215.go"
+      ],
+      "code": {
+        "o": "babak-with-canon.o",
+        "o_only": true
+      },
+      "glb": "levels/beach/babak-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [],
+      "color": [
+        1.0,
+        0.1,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
       "etype": "lurkercrab",
       "label": "Lurker Crab",
       "category": "Enemies",
@@ -3984,6 +4018,39 @@
         "need_enemy": true
       },
       "lumps": [],
+      "color": [
+        1.0,
+        0.2,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "aphid",
+      "label": "Aphid",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
+      "art_group": "aphid-lurker-ag.go",
+      "tpage_group": "Jungle",
+      "tpages": [
+        "tpage-385.go",
+        "tpage-531.go",
+        "tpage-386.go",
+        "tpage-388.go"
+      ],
+      "code": {
+        "o": "aphid.o",
+        "o_only": true
+      },
+      "glb": "levels/jungleb/aphid-lurker-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
       "color": [
         1.0,
         0.2,
@@ -4293,9 +4360,6 @@
         "o_only": true
       },
       "glb": "levels/beach/lurkerworm-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.3,
@@ -4324,9 +4388,6 @@
         "o_only": true
       },
       "glb": "levels/jungle/junglesnake-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.2,
@@ -4799,7 +4860,7 @@
       "etype": "quicksandlurker",
       "label": "Quicksand Lurker",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
       "tpage_group": "Misty",
@@ -4814,7 +4875,10 @@
         "o_only": true
       },
       "glb": "levels/misty/quicksandlurker-lod0.glb",
+      "nav_safe": false,
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "link_slots": [
@@ -5090,9 +5154,10 @@
     },
     {
       "etype": "plant-boss",
+      "schema_export": true,
       "label": "Plant Boss",
       "category": "Bosses",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
       "art_group": "plant-boss-ag.go",
       "tpages": [
@@ -5105,11 +5170,46 @@
         "o": "plant-boss.o",
         "o_only": true
       },
-      "glb": "levels/finalboss/plant-boss-main-lod0.glb",
+      "glb": "levels/jungleb/plant-boss-main-lod0.glb",
+      "nav_safe": false,
+      "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "movie-pos",
+          "type": "movie-pos",
+          "description": "Cutscene landing position: 'x y z rot_deg'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_extra-count-one",
+          "label": "Extra Count one",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_extra-count-two",
+          "label": "Extra Count two",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 1,
+            "write_if": "if_not_default"
+          }
+        }
+      ],
       "color": [
         0.1,
         0.7,
@@ -8181,14 +8281,30 @@
         "o_only": true
       },
       "glb": "levels/misty/balloonlurker-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
+      "needs_path": true,
       "link_slots": [
         {
-          "lump_key": "water-actor",
+          "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Water surface entity",
+          "label": "Cell to activate when all Balloon Lurkers are dead",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous Balloon lurkers if this isn't the first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next Balloon lurkers if this isn't the last",
           "accepts": [
             "any"
           ],
@@ -8217,12 +8333,10 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
+      "glb": "levels/jungle/darkvine-lod0.glb",
       "code": {
         "o": "darkvine.o",
         "o_only": true
-      },
-      "links": {
-        "need_enemy": true
       },
       "lumps": [],
       "color": [
@@ -8235,9 +8349,10 @@
     },
     {
       "etype": "junglefish",
+      "schema_export": true,
       "label": "Jungle Fish",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The jungle fish, also known as the fish lurker, is an enemy in The Precursor Legacy. Fish transformed into lurkers by Maia through dark eco sorcery — among the only lurkers known to be artificially created.",
       "art_group": "junglefish-ag.go",
       "tpage_group": "Jungle",
@@ -8251,7 +8366,11 @@
         "o": "junglefish.o",
         "o_only": true
       },
+      "glb": "levels/jungle/junglefish-lod0.glb",
+      "nav_safe": false,
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -8259,6 +8378,20 @@
           "key": "water-height",
           "type": "float",
           "description": "Y-coordinate of water surface in raw game units (not meters). Fish positions itself 1m below. Required."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_water-height-one",
+          "label": "Water height surface (m)",
+          "default": 0.0,
+          "type": "float",
+          "lump": {
+            "key": "water-height",
+            "type": "meters",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
         }
       ],
       "color": [
@@ -8564,21 +8697,18 @@
       "etype": "sharkey",
       "schema_export": true,
       "label": "Lurker Shark",
+      "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water.",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "sharkey-ag.go",
-      "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "glb": "levels/beach/sharkey-lod0.glb",
       "code": {
         "o": "sharkey.o",
         "o_only": true
       },
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -8660,8 +8790,7 @@
         0.1,
         1.0
       ],
-      "shape": "SPHERE",
-      "requires_navmesh": true
+      "shape": "SPHERE"
     },
     {
       "etype": "villa-starfish",
@@ -11659,14 +11788,6 @@
   // ── OrphanEtypes ────────────────────────────────────────────────
   "OrphanEtypes": [
     {
-      "etype": "aphid",
-      "label": "Aphid",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple."
-    },
-    {
       "etype": "helix-button",
       "label": "Helix Button",
       "category": "Hidden",
@@ -11737,14 +11858,6 @@
           "required": false
         }
       ]
-    },
-    {
-      "etype": "lurker-shark",
-      "label": "Lurker Shark",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water."
     },
     {
       "etype": "rolling-lightning-mole",
