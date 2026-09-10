@@ -66,13 +66,13 @@ There's an example in test-zone.jsonc, here it is:
 The current implementation, using a custom actor built for these camera might have more features so it could be kept.
 But if not, or if the features are not that meaningful, we can completely replace them. This can be discussed further.
 
-This will definitely need some custom build panel and since it's very specific to cameras, does can live mostly in the code.
+This will definitely need some custom build panel and since it's very specific to cameras, it can live mostly in the code.
 However, most fields and values should still use the database to be filled up instead of being hard coded.
 There's also a lot of previous functions that can be used such as 
 - The volume code and link UI for vol, pvol and cutoutvol
 - Placing an empty for the pivot point
 - Path/waypoint UI for camera's path
-- Varient selection for the camera modes
+- Varient/enum selections for the camera modes
   - Each of those varients can then have the different UI elements they need 
   - as well as a decent explanation of how that specific camera mode works
 
@@ -350,46 +350,49 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - A lot of platforms have a "platform settings" menu that's empty since they don't need the sync options and others
     - This empty menu could simply be removed if they don't have any settings there anyway
   - caveelevator 
-    - crash because of *cavecrystal-light-control*, work if `cavecrystal-light.o` is also included, need a way to include multiple code files instead of just one
-    - Modes can be 0, 1 or 2, need an option for each. (missing 2) Also need to be able to change the description for each. Those fields don't seem to be living in the database right now?
+    - require multiple code files to add `cavecrystal-light.o` 
   - cavespatula
-    - when not in darkcave, cavespatula try to set a skeleton group that doesn't really exist (cavespatula-sg) Not sure how to fix that withou editing cavespatula code
-    - crash like caveelevator for *cavecrystal-light-control*
+    - when not in darkcave, cavespatula try to set a skeleton group that doesn't really exist (cavespatula-sg) Not sure how to fix that without editing cavespatula code
+    - require multiple code files to add `cavecrystal-light.o` 
   - Pontoonfive and pontoonten
-    - Seems to be something wrong with water volume right now, can't seem to add the link for them that easily too
     - The task menu right now is all over the place, should definitely not have a checkbox list like this for something this long. It should be a drop down menu when you can only select one anyway. Also this might not even be needed to be in the pannel and can maybe just be part of the lump definitions
-  - square-platform, need prev/next/alt actor stuff, will have to verify when those are implemented
+  - square-platform, 
+    - need to test after square-platform-button and square-platform-master are implemented
   - ease in/out caviats doesn't work
     - Values still seem to export even when they're set to 0
   - swingpole
     - Adding a general way to change base rotation as swingpoles need to be rotated 90° on their X axis to work at all
     - That general way could then be used on any other actor that might need to use that as well
     - don't have it on all actor in the database, just the one that might need it, like the preview mesh offset
+  - floating-launcher (floating-launcher.gc) 
+    - alt-vector option doesn't work properly in blender
+  - ogre-isle (ogre-obs.gc) 
+    - need variants to be able to change etype as well
+    - Looks to have some model offset
+    - crashes
+  - ogre-step (ogre-obs.gc) (+ a-b-c-d) 
+    - need variants to be able to change etype as well
+    - crash game after a second when they do spawn
+    - seems to be some offsets for preview model 
+  - minecartsteel (minecart.gc)  
+    - maybe a way to show the anim path in blender?
+  - flutflut-plat-small (snow-flutflut-obs.gc) 
+    - variants would need to be able to set etypes like ogre-step
+  - citb-disc (citadel-obs.gc) (+ a-b-c-d) 
+    - variants would need to be able to set etypes like ogre-step
   - Crashing actors:
     - balance-plat (not in goal code stack trace) (looks to have correct art-group and code files included)
     - mis-bone-bridge (same as balance plat)
     - breakaway-right (same as balance plat)
     - breakaway-mid (same as balance plat)
     - breakaway-left (same as balance plat)
-    - cavetrapdoor (same as caveelevator / *cavecrystal-light-control*)
     - tar-plat (same as balance plat)
     - citb-disc (same as balance plat)
     - citb-launcher (same as balance plat)
-  - Missing platforms: (look if not already in another cat)
-    - ~~precurbridge (jungle-obs.gc)~~ Done, (not really useable without modification as activation-point is hardcoded)
-    - ~~jungle-elevator (jungle-elevator.gc)~~ Maybe just ignore this as plat-button exists
-    - bone-platform (misty-obs.gc)
-    - sunken-elevator (sunken-elevator.gc)
-    - qbert-plat (qbert-plat.gc)
-    - slide-control (target-tube.gc)
-    - floating-launcher (floating-launcher.gc)
-    - ogre-isle (ogre-obs.gc)
-    - ~~ogre-step (ogre-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, need variants to be able to change etype as well, crash game after a second when they do spawn, seems to be some offsets for preview model 
-    - ~~minecartsteel (minecart.gc) VARIANTS~~ Done, maybe a way to show the anim path in blender?
-    - ~~flutflut-plat-small (snow-flutflut-obs.gc)~~ Done, variants would need to be able to set etypes like ogre-step
-    - ~~citb-disc (citadel-obs.gc) (+ a-b-c-d) VARIANTS~~ Done, variants would need to be able to set etypes like ogre-step, not in goal code crash
+    - bone-platform (same as balance plat)
+    - ogre-isle (Assertion failed when trying to :di the stack trace)
+  - Missing platforms:
     - citb-drop-plat (citb-drop-plat.gc) This one would need some pretty complex setup to be intuitive to work within blender
-    - ~~citb-stair-plat (citb-plat.gc)~~ Hard coded tasks so not really useable
     - citb-arm (citadel-obs.gc) (+ a bunch of others) Waiting on this for etype variants
 - Obstacles
   - keg-conveyor (misty-conveyor.o misty/keg-conveyor-lod0.glb keg-conveyor-ag.go keg-conveyor-paddle-ag.go keg-ag.go)

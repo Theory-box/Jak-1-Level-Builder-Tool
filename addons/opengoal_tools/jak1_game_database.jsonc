@@ -7275,6 +7275,234 @@
       "shape": "CUBE"
     },
     {
+      "etype": "bone-platform",
+      "label": "Bone Platform",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "mis-bone-platform-ag.go",
+      "code": {
+        "o": "misty-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/misty/mis-bone-platform-lod0.glb",
+      "lumps": [],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "qbert-plat",
+      "label": "Qbert Platforms",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "qbert-plat-ag.go",
+      "extra_art_groups": ["qbert-plat-on-ag.go"],
+      "code": {
+        "o": "qbert-plat.o",
+        "o_only": true
+      },
+      "glb": "levels/sunken/qbert-plat-lod0.glb",
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Qbert Master",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous Qbert Platform or Master",
+          "accepts": [
+            "qbert-plat",
+            "qbert-plat-master"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next Qbert Platform",
+          "accepts": [
+            "qbert-plat"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "qbert-plat-master",
+      "label": "Qbert Platforms Master",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "qbert-plat-on-ag.go",
+      "code": {
+        "o": "qbert-plat.o",
+        "o_only": true
+      },
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Activate these when Qbert minegame is completed",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "First Qbert Platform",
+          "accepts": [
+            "qbert-plat"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "floating-launcher",
+      "label": "Floating Launcher (Sunken)",
+      "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
+      "is_launcher": true,
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "floating-launcher-ag.go",
+      "glb": "levels/sunkenb/floating-launcher-lod0.glb",
+      "needs_path": true,
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Spring height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        },
+        {
+          "key": "og_launcher_dest",
+          "label": "Destination object",
+          "type": "object_ref",
+          "default": "",
+          "lump": {
+            "key": "alt-vector",
+            "type": "vector",
+            "pairs_with": "og_launcher_fly_time"
+          },
+          "note": "xyz of alt-vector is the resolved location of the destination object.",
+          "write_if": "if_object_found"
+        },
+        {
+          "key": "og_launcher_fly_time",
+          "label": "Fly time (s)",
+          "type": "float",
+          "default": -1.0,
+          "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+        },
+        {
+          "key": "og_launcher_mode",
+          "label": "Camera on launch",
+          "type": "enum",
+          "default": "shortfall",
+          "choices": [
+            {
+              "value": "shortfall",
+              "label": "Short fall (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "longfall",
+              "label": "Long fall",
+              "lump_value": 1
+            },
+            {
+              "value": "none",
+              "label": "No camera",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_trigger_height",
+          "label": "Trigger height Coordinate (m)",
+          "type": "float",
+          "default": 20.0,
+          "lump": {
+            "key": "trigger-height",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "launcherdoor to open",
+          "accepts": [
+            "launcherdoor"
+          ],
+          "required": false
+        }
+      ],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "floating-launcher.o",
+        "o_only": true
+      }
+    },
+    {
       "etype": "launcher",
       "panel": "launcher",
       "is_launcher": true,
@@ -7377,6 +7605,7 @@
     {
       "etype": "citb-launcher",
       "label": "Floating Launcher (citadel)",
+      "description": "Citadel's floating launcher will follow paths like other floating platforms",
       "schema_export": true,
       "category": "Platforms",
       "parent": "prop",
@@ -9141,7 +9370,7 @@
       "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "square-platform-ag.go",
       "tpage_group": "Sunken",
       "tpages": [
@@ -9161,7 +9390,25 @@
           "slot": 0,
           "label": "Water entity (for splash effects)",
           "accepts": [
-            "water-vol"
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
           ],
           "required": false
         }
@@ -9257,6 +9504,68 @@
             "type": "symbol"
           },
           "write_if": "always"
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "ogre-isle-b",
+      "schema_export": true,
+      "label": "Klaww Platform Isles",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "ogre-obs.o",
+        "o_only": true
+      },
+      "lumps": [],
+      "fields": [
+        {
+          "key": "og_ogre-isle_variant",
+          "label": "Klaww Isles Variant",
+          "type": "enum",
+          "default": "ogre-isle-b",
+          "choices": [
+            {
+              "value": "ogre-isle-b",
+              "label": "Isle B",
+              "etype": "ogre-isle-b",
+              "glb": "levels/ogre/ogre-isle-b-lod0.glb"
+            },
+            {
+              "value": "ogre-isle-c",
+              "label": "Isle C",
+              "etype": "ogre-isle-c",
+              "glb": "levels/ogre/ogre-isle-c-lod0.glb"
+            },
+            {
+              "value": "ogre-isle-d",
+              "label": "Isle D",
+              "etype": "ogre-isle-d",
+              "glb": "levels/ogre/ogre-isle-d-lod0.glb"
+            }
+          ],
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Water surface entity",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -9508,11 +9817,12 @@
     },
     {
       "etype": "caveelevator",
-      "panel": "caveelevator",
+      // "panel": "caveelevator",
       "schema_export": true,
       "label": "Cave Elevator",
+      "description": "The cave elevator has multiple modes. However, the movement is based on animation so it can't be edited",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "caveelevator-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
@@ -9526,7 +9836,7 @@
         "o_only": true
       },
       "glb": "levels/darkcave/caveelevator-lod0.glb",
-      "needs_path": true,
+      // "needs_path": true,
       "lumps": [
         {
           "key": "trans-offset",
@@ -9548,14 +9858,30 @@
         {
           "key": "og_elevator_mode",
           "label": "Mode",
-          "type": "int",
-          "default": 0,
-          "min": 0,
+          "type": "enum",
+          "default": "2floor",
+          "choices": [
+            {
+              "value": "2floor",
+              "label": "2 Floors (0 and 12m)",
+              "lump_value": 0
+            },
+            {
+              "value": "down",
+              "label": "2 Floors on step (0 and -58.4m)",
+              "lump_value": 1
+            },
+            {
+              "value": "3floor",
+              "label": "3 Floors (0, 12 and 24m)",
+              "lump_value": 2
+            }
+          ],
           "lump": {
             "key": "mode",
             "type": "uint32"
           },
-          "write_if": "if_nonzero"
+          "write_if": "always"
         },
         {
           "key": "og_elevator_rot",
@@ -9842,7 +10168,7 @@
       "schema_export": true,
       "label": "Pontoon (Ten)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -9891,7 +10217,7 @@
       "etype": "pontoonfive",
       "label": "Pontoon (Five)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "pontoonfive-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -10203,6 +10529,27 @@
         "o_only": true
       },
       "extra_art_groups": ["eichar-pole+0-ag.go"],
+      "lumps": [],
+      "color": [
+        0.8,
+        0.6,
+        0.2,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "slide-control",
+      "label": "Sliding Tube",
+      "description": "Will force jak into his sliding state. Requires a physical mesh under. You may need to switch direction on the curve.",
+      "category": "Platforms",
+      "parent": "process",
+      "code": {
+        "o": "target-tube.o",
+        "o_only": true
+      },
+      "needs_path": true,
+      "extra_art_groups": ["eichar-tube+0-ag.go"],
       "lumps": [],
       "color": [
         0.8,
