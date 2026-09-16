@@ -4175,6 +4175,7 @@
       "parent": "nav-enemy",
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": "double-lurker-ag.go",
+      "extra_art_groups": ["double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
       "tpages": [
         "tpage-661.go",
@@ -4187,8 +4188,7 @@
         "o_only": true
       },
       "glb": [
-        "levels/sunken/double-lurker-lod0.glb",
-        "levels/sunken/double-lurker-top-lod0.glb"
+        "levels/sunken/double-lurker-lod0.glb"
       ],
       "nav_safe": false,
       "links": {
@@ -4420,6 +4420,7 @@
       "glb": "levels/swamp/swamp-bat-lod0.glb",
       "needs_path": true,
       "needs_pathb": true,
+      "need_vol": true,
       "links": {
         "need_pathb": true,
         "need_enemy": true
@@ -4434,10 +4435,11 @@
       "fields": [
         {
           "key": "og_num_lurkers",
-          "label": "Child count",
+          "label": "Child count (default 6)",
           "type": "int",
-          "default": -1,
-          "min": -1,
+          "default": 6,
+          "min": 2,
+          "max": 8,
           "lump": {
             "key": "num-lurkers",
             "type": "int32"
@@ -4514,9 +4516,10 @@
     },
     {
       "etype": "bully",
+      "schema_export": true,
       "label": "Bully",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
       "tpage_group": "Sunken",
@@ -4531,7 +4534,9 @@
         "o_only": true
       },
       "glb": "levels/sunken/bully-lod0.glb",
+      "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [],
@@ -4545,9 +4550,10 @@
     },
     {
       "etype": "puffer",
+      "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The puffer, also known as a flying lurker, is an enemy in The Precursor Legacy, found in the lost Precursor city. It inflates to deal damage on contact.",
       "art_group": "puffer-ag.go",
       "tpage_group": "Sunken",
@@ -4564,6 +4570,7 @@
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -4576,6 +4583,52 @@
           "key": "options",
           "type": "enum-uint32",
           "description": "Use '(fact-options instant-collect)' for instant-kill puffer."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period between spiky and not (s)",
+          "type": "float",
+          "default": 8.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_distance_top",
+          "label": "Top Height offset for patrol (m)",
+          "type": "float",
+          "default": 2.0,
+          "lump": {"key": "distance", "type": "meters", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_distance_bot",
+          "label": "Bottom Height offset for patrol (m)",
+          "type": "float",
+          "default": -2.0,
+          "lump": {"key": "distance", "type": "meters", "slot": 1},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Buddy alt actor",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -4606,10 +4659,36 @@
       },
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "plunger-lurker at the end of the path",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous flying lurker in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next flying lurker in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.5,
         0.2,
@@ -4636,10 +4715,19 @@
         "o_only": true
       },
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
+      "extra_code": ["ogre-obs.o"],
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "flying-lurker to activate the plunger",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.8,
         0.3,
@@ -5140,10 +5228,59 @@
         "o_only": true
       },
       "glb": "levels/ogre/ogreboss-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Ogre Drawbridge (ogre-bridge) for the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "target-actor",
+          "slot": 0,
+          "label": "Klaww Platform Isle (ogre-isles) for the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "trigger-actor",
+          "slot": 0,
+          "label": "Klaww Steps (ogre-bridge) to spawn after the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Lava actor",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "_movie-mask",
+          "label": "Movie Mask",
+          "default": 6,
+          "type": "int",
+          "lump": {
+            "key": "movie-mask",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "always"
+          }
+        }
+      ],
       "color": [
         1.0,
         0.3,
@@ -5622,8 +5759,9 @@
     },
     {
       "etype": "robber",
+      "schema_export": true,
       "label": "Robber (Lurker)",
-      "category": "NPCs",
+      "category": "Enemies",
       "parent": "process-drawable",
       "art_group": "robber-ag.go",
       "tpages": [
@@ -5639,6 +5777,7 @@
         "o_only": true
       },
       "glb": "levels/rolling/robber-lod0.glb",
+      "needs_path": true,
       "lumps": [
         {
           "key": "initial-spline-pos",
@@ -5653,7 +5792,73 @@
         {
           "key": "timeout",
           "type": "float",
-          "description": "Seconds before robber despawns. Default 10.0s."
+          "description": "Seconds before robber slow down. Default 10.0s."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spline_pos",
+          "type": "float",
+          "label": "Spawn position (0.0-1.0)",
+          "default": 0.0,
+          "lump": {
+            "key": "initial-spline-pos",
+            "type": "float"
+          },
+          "write_if":"always"
+        },
+        {
+          "key": "og_water-height",
+          "label": "Water height if robber goes over it (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "water-height",
+            "type": "meters"
+          },
+          "write_if":"if_not_default"
+        },
+        // {
+        //   "key": "og_idle-distance",
+        //   "type": "float",
+        //   "label": "Idle Distance (m)",
+        //   "default": 80.0,
+        //   "lump": {
+        //     "key": "idle-distance",
+        //     "type": "meters"
+        //   },
+        //   "write_if":"always"
+        // },
+        {
+          "key": "og_timeout",
+          "label": "Time before Robber slow down (s)",
+          "type": "float",
+          "default": 10.0,
+          "lump": {
+            "key": "timeout",
+            "type": "float"
+          },
+          "write_if":"if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous robber in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next robber in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -8809,7 +9014,7 @@
       "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "swamp-rat-nest-ag.go",
       "tpage_group": "Swamp",
       "tpages": [
@@ -8822,29 +9027,52 @@
         "o": "swamp-rat-nest.o",
         "o_only": true
       },
+      "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [
         {
           "key": "num-lurkers",
           "type": "uint32",
-          "description": "Max rats active at once. Range 1–4. Default 3. Needs 'path' waypoints set."
+          "description": "Max rats active at once. Range 1-4. Default 3. Needs 'path' waypoints set."
         }
       ],
       "fields": [
         {
           "key": "og_num_lurkers",
-          "label": "Child count",
+          "label": "Child count (default 3)",
           "type": "int",
-          "default": -1,
-          "min": -1,
+          "default": 3,
+          "min": 0,
           "lump": {
             "key": "num-lurkers",
             "type": "int32"
           },
-          "write_if": "if_nonneg"
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-blue",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
         }
       ],
       "color": [
@@ -10100,7 +10328,7 @@
     },
     {
       "etype": "ogre-bridge",
-      "label": "Ogre Drawbridge",
+      "label": "Klaww Drawbridge",
       "category": "Platforms",
       "parent": "prop",
       "art_group": "ogre-bridge-ag.go",
@@ -11306,7 +11534,8 @@
     {
       "etype": "shover",
       "schema_export": true,
-      "label": "Shover Platform",
+      "label": "Shover",
+      "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "shover-ag.go",

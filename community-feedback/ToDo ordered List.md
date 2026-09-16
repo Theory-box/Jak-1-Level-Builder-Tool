@@ -4,6 +4,7 @@ Features and fixes to work on, have been ordered and can be checked out when the
 ---
 
 ## level .gd and .json clean up
+### game.gd lookup to ignore code/ag
 If a code or art group file is included in the game.gd, it does not need to be included in the level's .gd or in the level's .json. 
 As those files are always loaded and part of the common fr3 too for art groups.
 How I'm imagining it to work.:
@@ -12,6 +13,72 @@ How I'm imagining it to work.:
 - If the files are already part of that list, don't copy them.
 - maybe have an option in the developer tools to turn on/off "ignore game.gd files" to easily switch back to old behaviour if needed 
   - this option should be ON by default.
+### Extra useless lines in the .json actors
+- There's a few extra fields added on every actors that I'm not sure when they were added but they don't serve any purpose:
+  - "art-group"
+  - "code"
+  - "extra_art_groups": []
+  - "extra_code": []
+- That kind of info shouldn't end up here
+- Here's an example of an actor in the json:
+```json
+{
+  "trans": [
+    -511.08,
+    2.8933,
+    -208.7516
+  ],
+  "etype": "eco-blue",
+  "game_task": "(game-task none)",
+  "quat": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "vis_id": 0,
+  "bsphere": [
+    -511.08,
+    2.8933,
+    -208.7516,
+    10.0
+  ],
+  "lump": {
+    "name": "eco-blue-0"
+  },
+  // these next 4 lines shouldn't appear here at all
+  "art_group": null,
+  "code": null,
+  "extra_art_groups": [],
+  "extra_code": []
+},
+```
+
+---
+
+## Addon/project settings and fixes
+Some of these could be added in the "Developper tools" or have its own "project settings" panel
+- overwrite folders
+  - Being able to overwrite the folders directly in the blend file
+  - Useful if you're working on multiple projects so you don't have to change inbetween, risk to overwrite files from one project on another
+  - Also useful when you need to update/re-install the addon, the file will already have those selected and you don't need to do it again
+- overwrite database
+  - Being able to directly load a file which overwrite the loaded database
+  - This way people can make changes to it without having to edit the base addon and re-install it
+  - Also makes working on devlopement a lot easier when making changes in the database to test, no need to re-install the addon everytime
+- Fix folder detections
+  - At the moment, when the main folder is set (dev env):
+    - You need to set the data folder manually even tho it's identical to the main folder
+    - You need to set the EXE folder which should always just look like this: BaseFolder\out\build\Release\bin\
+    - The Decompiler folder get set correctly when the data folder is set
+- Fix lag in settings
+  - Maybe due to the dev env issue, the setting menu for the addon become very unresponsive once the main folder is selected
+  - Guessing it might have to do with the fact that it's looking for the folder automatically but can't find them?
+  - But even after selecting them manually it's still very slow
+  - While fixing the previous issue could help with this, not finding the folders automatically shouldn't mean it becomes that slow
+- Quick open has the wrong .gd file name for the level
+  - Same as a previous issue, it's using the automated name instead of the one that was manually set
+  - Might be worth looking around to see if that's not an issue elsewhere in the code
 
 ---
 
@@ -84,7 +151,6 @@ But also other completely new fields:
   - For each turned on, it'll appear in the res-lump as such: `"flags": ["enum-uint32", "(cam-slave-options SAME_SIDE COLLIDE)"]`
   - See `goal_src\jak1\engine\camera\camera-h.gc` on `cam-slave-options` enum to see the list of all flags.
   - Probably need a little bit of research to see what each flag do exactly so the tooltip can be helpful
-
 
 ---
 
@@ -295,46 +361,12 @@ This is moslty a step that'll done by users to check on every actor, with the da
 - Default empty size
   - Being able to set the empty size in the database would be useful for some actors
   - Wouldn't be set on all but nice for a few that clearly need to be smaller or larger
-- Clean up of the level json
-  - There's a few extra fields added on every actors that I'm not sure when they were added but they don't serve any purpose:
-    - "art-group"
-    - "code"
-    - "extra_art_groups": []
-    - "extra_code": []
-  - That kind of info shouldn't end up here
-  - Here's an example of an actor in the json:
-```json
-{
-  "trans": [
-    -511.08,
-    2.8933,
-    -208.7516
-  ],
-  "etype": "eco-blue",
-  "game_task": "(game-task none)",
-  "quat": [
-    0.0,
-    0.0,
-    0.0,
-    1.0
-  ],
-  "vis_id": 0,
-  "bsphere": [
-    -511.08,
-    2.8933,
-    -208.7516,
-    10.0
-  ],
-  "lump": {
-    "name": "eco-blue-0"
-  },
-  // these next 4 lines shouldn't be here?
-  "art_group": null,
-  "code": null,
-  "extra_art_groups": [],
-  "extra_code": []
-},
-```
+- Removing/changing Color entry
+  - The color isn't that useful since the empties don't really show it or preview meshes which don't either
+  - If the color could be set on the preview mesh, that could be maybe useful
+  - Even if it was added to the preview mesh, I would still like it removed from the entry of every actor as it clogs the data a lot
+  - If anything it should be set per category, so the color coding can quickly show to users what type of actor are placed
+
 ### Per categories changes:
 Going through all categories in this order, if I can't fix some things I'll not it here under each category:
 - Pickups
@@ -407,6 +439,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - citb-firehose (citb-plat.o citadel/citb-firehose-lod0.glb citb-firehose-ag.go citadel-part.o)
     - Need multiple code files (for particles )
 - Enemies
+  - Being in the "enemies" category shouldn't automatically add any fields/panels. A lot of those are only useful for nav-enemies, which not all enemies are. Category, in general, shouldn't affect anything other than putting them in the correct menu in the UI.
   - lurkercrab (lurkercrab.o beach/lurkercrab-lod0.glb lurkercrab-ag.go)
     - Done
   - lurkerworm (lurkerworm.o beach/lurkerworm-lod0.glb lurkerworm-ag.go) 
@@ -444,25 +477,32 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - balloonlurker (balloonlurker.o misty/balloonlurker-lod0.glb balloonlurker-ag.go) 
     - Test alt-actor for cell later (would need extra code/ag)
   - robber (rolling-robber.o ogre/robber-lod0.glb robber-ag.go) 
-    - NOT NAV
+    - Need game-task implementation for the cell
   - puffer (puffer.o sunken/puffer-main-lod0.glb puffer-ag.go)
+    - Done
   - double-lurker (double-lurker.o sunken/double-lurker-lod0.glb double-lurker-ag.go double-lurker-top-ag.go)
+    - Need extra art-group, the current "extra_art_groups" doesn't add it to the .json
   - bully (bully.o sunken/bully-lod0.glb bully-ag.go)
+    - Done
   - swamp-rat (swamp-rat.o swamp/swamp-rat-lod0.glb swamp-rat-ag.go)
+    - Done
   - swamp-rat-nest (swamp-rat-nest.o swamp-rat-nest-a-lod0.glb swamp-rat-nest-ag.go)
-    - abc varients?
     - need extra code/ag for rats
   - swamp-bat (swamp-bat.o swamp/swamp-bat-lod0.glb swamp-bat-ag.go)
-    - NOT NAV
+    - pathb implementation isn't ideal (see the path changes)
+    - need_vol doesn't seem to add the volume linking panel
   - kermit (kermit.o swamp/kermit-lod0.glb kermit-ag.go)
+    - Done
   - swamp-battlecontroller (swamp-obs.o)
     - Maybe just have battlecontroller instead
   - ogreboss (ogreboss.o ogre/ogreboss-lod0.glb ogreboss-ag.go)
-    - BOSS
+    - Would need game-task for cell
+    - Would need movie-pos for cell
+    - Cutscene start positions are hard coded
   - flying-lurker (flying-lurker.o ogre/flying-lurker-lod0.glb flying-lurker-ag.go)
-    - NOT NAV
+    - Done
   - plunger-lurker (flying-lurker.o ogre/plunger-lurker-lod0.glb plunger-lurker-ag.go)
-    - NOT NAV
+    - need extra code "ogre-obs.o" for particles
   - gnawer (gnawer.o maincave/gnawer-lod0.glb gnawer-ag.go)
     - NOT NAV
   - mother-spider (mother-spider.o mother-spider-h.o baby-spider.o maincave/mother-spider-lod0.glb mother-spider-ag.go mother-spider-egg.o baby-spider-ag.go)
@@ -481,6 +521,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - finalboss/robotboss-basic-lod0.glb
     - robotboss-ag.go
     - BOSS
+  - battlecontroller
 - Buttons and Doors
   - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
 - Interactive Objects
@@ -489,29 +530,11 @@ Going through all categories in this order, if I can't fix some things I'll not 
 
 ---
 
-## Addon/project settings
-- overwrite folders
-  - Being able to overwrite the folders directly in the blend file
-  - Useful if you're working on multiple projects so you don't have to change inbetween, risk to overwrite files from one project on another
-  - Also useful when you need to update/re-install the addon, the file will already have those selected and you don't need to do it agian
-- overwrite database
-  - Being able to directly load a file which overwrite the loaded database
-  - This way people can make changes to it without having to edit the base addon and re-install it
-- Fix folder detections on dev env
-  - At the moment, when a dev env folder is set as the main folder:
-    - You need to set the data folder manually even tho it's identical to the main folder
-    - You need to set the EXE folder which should always just look like this: BaseFolder\out\build\Release\bin\
-    - The Decompiler folder get set correctly when the data folder is set
-- Fix lag in settings
-  - Maybe due to the dev env issue, the setting menu for the addon become very unresponsive once the main folder is selected
-  - Guessing it might have to do with the fact that it's looking for the folder automatically but can't find them?
-  - But even after selecting them manually it's still very slow
-  - While fixing the previous issue could help with this, not finding the folders automatically shouldn't mean it becomes that slow
-- Make spawn use mod-base spawn feature if mod-base detected
-  - Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
-  - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
-  - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
-  - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
+
+# Less Important features and fixes
+
+---
+
 ### Export settings
 - Geometry compression for export (Draco)
   - Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
@@ -521,10 +544,11 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - I'm guessing at the moment the addon uses "export selected" and manually select everything that's needed for the export which is why things doesn't get exported if the selection is turned off
   - I'm proposing to change that to use the "collection" export feature. It can even be set only to a main geometry collection. That way the glb export is also cleaner and doesn't have any extra data it doesn't need.
 - Vertex alpha export (need to test in newer blender version if it works different before)
-
----
-
-# Less Important features and fixes
+- Make spawn use mod-base spawn feature if mod-base detected
+  - Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
+  - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
+  - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
+  - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
 
 ---
 
