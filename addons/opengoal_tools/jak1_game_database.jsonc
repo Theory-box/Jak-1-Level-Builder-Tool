@@ -4129,7 +4129,8 @@
     },
     {
       "etype": "snow-bunny",
-      "label": "Snow Bunny",
+      "label": "Snow Bunny Lurker",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "The snow bunny is an enemy in The Precursor Legacy, encountered at Snowy Mountain and Gol and Maia's citadel. Small but aggressive cold-weather lurkers.",
@@ -4146,6 +4147,55 @@
         "o_only": true
       },
       "glb": "levels/snow/snow-bunny-lod0.glb",
+      "nav_safe": false,
+      "needs_path": true,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [
+        {
+          "key": "mode",
+          "type": "uint32",
+          "description": "Variant selector — controls snow-bunny behaviour variant."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_mode",
+          "label": "Retreating Mode",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "mode",
+            "type": "int32"
+          },
+          "value_if_true": 1,
+          "write_if": "if_true"
+        }
+      ],
+      "color": [
+        0.9,
+        0.9,
+        1.0,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "citb-bunny",
+      "label": "Citadel Bunny Lurker",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The citadel bunny is a varient of the Snow Bunny",
+      "art_group": "citb-bunny-ag.go",
+      "tpage_group": "Citadel",
+      "code": {
+        "o": "citb-bunny.o",
+        "o_only": true
+      },
+      "glb": "levels/citadel/citb-bunny-lod0.glb",
       "nav_safe": false,
       "needs_path": true,
       "links": {
@@ -4291,6 +4341,40 @@
         "o_only": true
       },
       "glb": "levels/darkcave/baby-spider-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [],
+      "color": [
+        0.5,
+        0.2,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "spider-egg",
+      "label": "Spider Egg",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
+      "art_group": "spider-egg-ag.go",
+      "tpage_group": "Maincave",
+      "tpages": [
+        "tpage-1313.go",
+        "tpage-1315.go",
+        "tpage-1314.go",
+        "tpage-1312.go"
+      ],
+      "code": {
+        "o": "spider-egg.o",
+        "o_only": true
+      },
+      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "nav_safe": false,
       "links": {
         "need_path": true,
@@ -4739,8 +4823,9 @@
     {
       "etype": "mother-spider",
       "label": "Mother Spider",
+      "schema_export": true,
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
       "art_group": "mother-spider-ag.go",
       "tpage_group": "Maincave",
@@ -4754,12 +4839,115 @@
         "o": "mother-spider.o",
         "o_only": true
       },
+      "extra_code":["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o"],
+      "extra_art_groups": ["baby-spider-ag.go", "spider-egg-ag.go"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [],
+      "fields":[
+        {
+          "key": "_og_thread-min-trans",
+          "type": "float",
+          "label": "Thread Min Trans Y (m * 4096)",
+          "default": 28672.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 0
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_anchor-trans",
+          "type": "float",
+          "label": "Anchor Trans Y (m * 4096)",
+          "default": 204800.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-swing-radius",
+          "type": "float",
+          "label": "Max Swing Radius (m * 4096)",
+          "default": 73728.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 2
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-baby-count",
+          "type": "int",
+          "label": "Max Baby Spider count",
+          "default": 4,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 3
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_mother-spider_bool",
+          "label": "To check what it does",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "extra-count",
+            "type": "float",
+            "slot": 4
+          },
+          "value_if_true": 1.0,
+          "value_if_false": 0.0,
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-spit-xz-dist",
+          "type": "float",
+          "label": "Max Spit Distance (m * 4096)",
+          "default": 81920.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 5
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_activate-xz-dist",
+          "type": "float",
+          "label": "Activate Distance (m * 4096)",
+          "default": 143360.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 6
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_deactivate-xz-dist",
+          "type": "float",
+          "label": "Deactivate Distance (m * 4096)",
+          "default": 163430.4,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 7
+          },
+          "write_if": "always"
+        }
+      ],
       "color": [
         0.6,
         0.2,
@@ -4771,6 +4959,7 @@
     {
       "etype": "gnawer",
       "label": "Gnawer",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
@@ -4787,10 +4976,9 @@
         "o_only": true
       },
       "glb": "levels/maincave/gnawer-lod0.glb",
+      "extra_art_groups": ["maincavecam-ag.go"],
+      "extra_code": ["maincave-obs.o"],
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "extra-count",
@@ -4813,6 +5001,100 @@
           "description": "Rotation offset applied on spawn."
         }
       ],
+      "link_slots": [
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous gnawer in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next gnawer in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "fields":[
+        {
+          "key": "_extra-count-one",
+          "label": "Spawn an orb",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "extra-count",
+            "type": "int32",
+            "slot": 0
+          },
+          "value_if_true": 5,
+          "write_if": "if_true"
+        },
+        {
+          "key": "_extra-count-two",
+          "type": "int",
+          "label": "Orb extra count",
+          "default": "0",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "_gnawer-one",
+          "label": "Gnawer one",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_gnawer-two",
+          "label": "Gnawer two",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 1,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_gnawer-three",
+          "label": "Gnawer three",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 2,
+            "write_if": "if_not_default"
+          }
+        }
+      ],
       "color": [
         0.6,
         0.3,
@@ -4824,6 +5106,7 @@
     {
       "etype": "driller-lurker",
       "label": "Driller Lurker",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The driller lurker is an enemy in The Precursor Legacy that mines cave rock with its drill. Found in Spider Cave, drilling away at the Precursor robot excavation site.",
@@ -4841,10 +5124,59 @@
       },
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "fields":[
+        {
+          "key": "og_driller-lurker_pos",
+          "label": "Starting Position on path (0.0-1.0)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 0
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_rot",
+          "label": "Starting Drilling Rotation",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 2
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_dir",
+          "label": "Inverse direction",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 1
+          },
+          "value_if_true": -1.0,
+          "value_if_false": 1.0,
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_option",
+          "label": "Option 17",
+          "type": "bool",
+          "default": false,
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 17
+          },
+          "write_if": "if_true"
+        }
+      ],
       "color": [
         0.5,
         0.5,
@@ -4992,23 +5324,20 @@
     {
       "etype": "ram",
       "label": "Ram",
+      "schema_export": true,
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "ram-ag.go",
-      "tpage_group": "Village1",
-      "tpages": [
-        "tpage-710.go",
-        "tpage-842.go",
-        "tpage-711.go",
-        "tpage-712.go"
-      ],
+      "tpage_group": "Snow",
       "code": {
         "o": "snow-ram.o",
         "o_only": true
       },
       "glb": "levels/snow/ram-lod0.glb",
+      "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [
         {
@@ -5022,6 +5351,96 @@
           "description": "1 = boss-fight mode. Default 0 (normal patrol mode)."
         }
       ],
+      "fields": [
+        {
+          "key": "og_extra-id",
+          "label": "Id for task (1 to max ram)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "lump": {
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if": "if_nonzero"
+        },
+        {
+          "key": "og_mode",
+          "label": "No Ram boss",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "mode",
+            "type": "int32"
+          },
+          "value_if_true": 1,
+          "write_if": "if_true"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "1st Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 1,
+          "label": "2nd Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 2,
+          "label": "3rd Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "First Enemy in the list before Ram boss jump down",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.7,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "ram-boss",
+      "label": "Ram Boss",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
+      "art_group": "ram-boss-ag.go",
+      "tpage_group": "Snow",
+      "code": {
+        "o": "snow-ram-boss.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/ram-boss-lod0.glb",
+      "needs_path": true,
+      "links": {
+        "need_enemy": true,
+        "need_nav": true
+      },
       "color": [
         0.7,
         0.4,
@@ -5357,9 +5776,9 @@
     },
     {
       "etype": "robotboss",
-      "label": "Metal Head Boss",
+      "label": "Precursor Robot Boss",
       "category": "Bosses",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": "robotboss-ag.go",
       "tpages": [
@@ -5373,9 +5792,13 @@
         "o": "robotboss-h.o",
         "o_only": true
       },
-      "glb": "levels/citadel/robotboss-basic-lod0.glb",
+      "extra_code": ["robotboss.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
+      "extra_art_groups": ["green-eco-lurker-ag.go", "darkecobomb-ag.go"],
+      "glb": "levels/finalboss/robotboss-basic-lod0.glb",
+      "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need-nav": true
       },
       "lumps": [],
       "color": [
@@ -8869,9 +9292,11 @@
     },
     {
       "etype": "cave-trap",
-      "label": "Cave Trap",
+      "label": "Cave Spider Trap",
+      "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "schema_export": true,
+      "parent": "nav-enemy",
       "tpage_group": "Robocave",
       "tpages": [
         "tpage-1313.go",
@@ -8885,44 +9310,59 @@
       },
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "link_slots": [
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Spider Egg 0",
+          "label": "Spider Egg or vent 0",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 1,
-          "label": "Spider Egg 1",
+          "label": "Spider Egg or vent 1",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 2,
-          "label": "Spider Egg 2",
+          "label": "Spider Egg or vent 2",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 3,
-          "label": "Spider Egg 3",
+          "label": "Spider Egg or vent 3",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_nav-max-users",
+          "label": "Max Spawned Enemies (default 50)",
+          "type": "int",
+          "default": 50,
+          "min": 0,
+          "lump": {
+            "key": "nav-max-users",
+            "type": "int32"
+          },
+          "write_if": "always"
         }
       ],
       "lumps": [
@@ -8944,7 +9384,7 @@
       "etype": "spider-egg",
       "label": "Spider Egg",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "spider-egg-ag.go",
       "tpage_group": "Robocave",
       "tpages": [
@@ -8957,8 +9397,10 @@
         "o": "spider-egg.o",
         "o_only": true
       },
+      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "link_slots": [
         {
@@ -8983,6 +9425,7 @@
     {
       "etype": "spider-vent",
       "label": "Spider Vent",
+      "description":"Connect to a Cave Spider Trap (cave-trap) to infinitely spawn spiders from here",
       "category": "Enemies",
       "parent": "process-drawable",
       "tpage_group": "Robocave",
@@ -12450,14 +12893,6 @@
       "parent": "process-drawable",
       "spawnable": false,
       "description": "The robber is a lurker enemy in The Precursor Legacy, found in Precursor Basin. Robbers scared the rare lightning moles out of their underground holes — Jak must drive them off to restore order."
-    },
-    {
-      "etype": "snow-ram-boss",
-      "label": "Snow Ram Boss",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The ice lurker, also known as the ice monster, is an enemy in The Precursor Legacy, spawning from the slippery ice regions of Snowy Mountain."
     }
   ],
 

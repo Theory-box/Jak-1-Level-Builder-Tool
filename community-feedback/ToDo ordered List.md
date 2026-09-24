@@ -156,6 +156,7 @@ But also other completely new fields:
 
 ## Expending paths for more features/control
 The menu itself should be called Path as that'd be more consistent with how it's used in the game code.
+When adding waypoints, I'm personally not sure if I'm a fan of the preview mesh getting added. Personally I'm moslty only using it with curves which at least don't do that.
 ### Extra Path modes
 At the moment, there's not much control on paths. You can just change inbetween straight lines and curved. However, the path-k allows for much more control.
 Instead of having just those two options, here's what I'm proposing:
@@ -440,25 +441,12 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Need multiple code files (for particles )
 - Enemies
   - Being in the "enemies" category shouldn't automatically add any fields/panels. A lot of those are only useful for nav-enemies, which not all enemies are. Category, in general, shouldn't affect anything other than putting them in the correct menu in the UI.
-  - lurkercrab (lurkercrab.o beach/lurkercrab-lod0.glb lurkercrab-ag.go)
-    - Done
-  - lurkerworm (lurkerworm.o beach/lurkerworm-lod0.glb lurkerworm-ag.go) 
-    - Done
+  - "need-nav" seems to only work if the parent is "nav-enemy". That shouldn't be the case, any actor with "need-nav" should give you field. Some actors aren't nav-enemies by themselves but they do still need the field because they can spawn nav-enemy actors, such as mother-spider or battlecontroller for example.
   - sharkey (sharkey.o beach/sharkey-lod0.glb sharkey-ag.go)
     - Error when spawning in blender:
     - Could not select entity type sharkey: bpy_struct: item.attr = val: enum "sharkey" not found in
-  - lurkerpuppy (lurkerpuppy.o beach/lurkerpuppy-lod0.glb lurkerpuppy-ag.go)
-    - Done
-  - babak (babak.o beach/babak-lod0.glb babak-ag.go)
-    - Done
   - babak-with-canon (babal-with-canon.o beach/babak-lod0.glb babak-ag.go)
     - test with canon
-  - junglesnake (junglesnake.o jungle/junglesnake-lod0.glb junglesnake-ag.go) 
-    - Done
-  - darkvine (darkvine.o jungle/darkvine-lod0.glb darkvine-ag.go) 
-    - Done
-  - hopper (hopper.o jungle/hopper-lod0.glb hopper-ag.go)
-    - Done
   - junglefish (junglefish.o jungle/junglefish-lod0.glb junglefish-ag.go)
     - Done
     - Interestingly, junglefish only agro jak if he's walking in shallow water and not while swimming
@@ -466,10 +454,6 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Done
     - Need multiple code/ag (for aphids)
     - Need to test movie-pos when that's implemented
-  - aphid (aphid.o jungleb/aphid-lurker-lod0.glb aphid-lurker-ag.go)
-    - Done
-  - bonelurker (bonelurker.o misty/bonelurker-lod0.glb bonelurker-ag.go)
-    - Done
   - quicksandlurker (quicksandlurker.o misty/quicksandlurker-lod0.glb quicksandlurker-ag.go)
     - Crashes (has GOAL stack trace)
   - misty-battlecontroller (misty-obs.o)
@@ -478,50 +462,62 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Test alt-actor for cell later (would need extra code/ag)
   - robber (rolling-robber.o ogre/robber-lod0.glb robber-ag.go) 
     - Need game-task implementation for the cell
-  - puffer (puffer.o sunken/puffer-main-lod0.glb puffer-ag.go)
-    - Done
   - double-lurker (double-lurker.o sunken/double-lurker-lod0.glb double-lurker-ag.go double-lurker-top-ag.go)
     - Need extra art-group, the current "extra_art_groups" doesn't add it to the .json
-  - bully (bully.o sunken/bully-lod0.glb bully-ag.go)
-    - Done
-  - swamp-rat (swamp-rat.o swamp/swamp-rat-lod0.glb swamp-rat-ag.go)
-    - Done
   - swamp-rat-nest (swamp-rat-nest.o swamp-rat-nest-a-lod0.glb swamp-rat-nest-ag.go)
     - need extra code/ag for rats
   - swamp-bat (swamp-bat.o swamp/swamp-bat-lod0.glb swamp-bat-ag.go)
     - pathb implementation isn't ideal (see the path changes)
     - need_vol doesn't seem to add the volume linking panel
-  - kermit (kermit.o swamp/kermit-lod0.glb kermit-ag.go)
-    - Done
   - swamp-battlecontroller (swamp-obs.o)
     - Maybe just have battlecontroller instead
   - ogreboss (ogreboss.o ogre/ogreboss-lod0.glb ogreboss-ag.go)
     - Would need game-task for cell
     - Would need movie-pos for cell
     - Cutscene start positions are hard coded
-  - flying-lurker (flying-lurker.o ogre/flying-lurker-lod0.glb flying-lurker-ag.go)
-    - Done
-  - plunger-lurker (flying-lurker.o ogre/plunger-lurker-lod0.glb plunger-lurker-ag.go)
+  - plunger-lurker (flying-lurker.o ogre-obs.o ogre/plunger-lurker-lod0.glb plunger-lurker-ag.go)
     - need extra code "ogre-obs.o" for particles
   - gnawer (gnawer.o maincave/gnawer-lod0.glb gnawer-ag.go)
-    - NOT NAV
-  - mother-spider (mother-spider.o mother-spider-h.o baby-spider.o maincave/mother-spider-lod0.glb mother-spider-ag.go mother-spider-egg.o baby-spider-ag.go)
-  - driller-lurker (driller-lurker.o robocave/driller-lurker-lod0.glb driller-lurker-ag.go)
-    - NOT NAV
-  - spider-egg (spider-egg.o baby-spider.o robocave/spider-egg-unbroken-lod0.glb spider-egg-ag.go baby-spider-ag.go)
-  - baby-spider (baby-spider.o maincave/baby-spider-lod0.glb baby-spider-ag.go)
-  - yeti (yeti.o snow/yeti-lod0.glb yeti-ag.go)
+    - need movie-pos implementation
+    - need extra code and art-group for the cam
+    - Camera/cell position seems to be hardcoded
+    - check what the "gnawer" lump does 
+    - extra-count second value need investigation for how it works and should be implemented for orb spawning
+  - mother-spider (mother-spider.o mother-spider-h.o baby-spider.o mother-spider-egg.o mother-spider-proj.o maincave/mother-spider-lod0.glb mother-spider-ag.go mother-spider-egg.o baby-spider-ag.go)
+    - need extra code/art group for eggs and spiders
+    - Maybe a way to multiply/divide values before they're sent because the mother-spider lump is a float with a lot of meters but then also has a count. So either you'd have to write the meters values as x4096 or the count as x4096
+    - mother-spider need to check slot 4 to see what it does
+    - Not in goal code crash
+  - spider-egg (spider-egg.o baby-spider.o mother-spider-egg.o robocave/spider-egg-unbroken-lod0.glb spider-egg-ag.go baby-spider-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes and others
+  - baby-spider (baby-spider.o cavecrystal-light.o maincave/baby-spider-lod0.glb baby-spider-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes
+  - cave-trap (cavecrystal-light.o)
+    - need "multi" link-slop as there can be a lot more than 4 eggs and vents 
+    - need extra code for "cavecrystal-light.o" or crashes
+  - driller-lurker (driller-lurker.o cavecrystal-light.o robocave/driller-lurker-lod0.glb driller-lurker-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes
+    - find what option 17 does if anything
   - ram (snow-ram.o snow-ram-h.o snow/ram-lod0.glb ram-ag.go)
+    - need game task implementation
+    - alt-actor needs to be able to include itself somehow as that's needed for the task.
+    - next-actor for all surrounding enemies which means all enemies might need next/prev-actor linking
+    - need extra code for ram-boss code/art
+    - not in goal crash
   - ram-boss (snow-ram-boss.o snow/ram-boss-lod0.glb ram-boss-ag.go)
-  - snow-bunny (snow-bunny.o snow/snow-bunny-lod0.glb snow-bunny-ag.go)
+    - Don't throw their fireball?
   - citb-bunny (citb-bunny.o citadel/citb-bunny-lod0.glb citb-bunny-ag.go)
+    - Error when trying to spawn in blender
+    - Could not select entity type citb-bunny: bpy_struct: item.attr = val: enum "citb-bunny" not found in
   - green-eco-lurker (green-eco-lurker.o finalboss/green-eco-lurker-lod0.glb green-eco-lurker-ag.go)
+    - Memory map assertion failed crash
   - robotboss 
-    - robotboss.o robotboss-h.o robotboss-part.o robotboss-weapon.o robotboss-misc.o
-    - finalboss/robotboss-basic-lod0.glb
-    - robotboss-ag.go
-    - BOSS
+    - need extra code for: robotboss.o robotboss-h.o robotboss-part.o robotboss-weapon.o robotboss-misc.o
+    - need extra code and art group from green-eco-lurker and darkecobomb-ag.go
+    - works until it needs to play the cutscene before light eco then crash
   - battlecontroller
+    - Would need a pretty specific UI setup
+    - Choosing lurkers, % spawn per lurker, eco drops, etc
 - Buttons and Doors
   - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
 - Interactive Objects
