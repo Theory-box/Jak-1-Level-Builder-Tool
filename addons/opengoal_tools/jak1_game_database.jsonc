@@ -8312,7 +8312,7 @@
       "etype": "warpgate",
       "label": "Warp Gate",
       "category": "Buttons and Doors",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "warpgate-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -9086,29 +9086,32 @@
     },
     {
       "etype": "warp-gate",
-      "label": "Warp Gate Switch",
+      "label": "Warp Gate (unused?)",
+      "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "prop",
       "art_group": "warp-gate-switch-ag.go",
       "code": {
-        "in_game_cgo": true
+        "o": "villagep-obs.o",
+        "o_only": true
       },
-      "is_prop": true,
+      "glb": "levels/village1/warp-gate-switch-lod0.glb",
       "lumps": [
         {
-          "key": "timeout",
-          "type": "float",
-          "description": "Activation timeout."
-        },
-        {
-          "key": "next-actor",
+          "key": "alt-actor",
           "type": "structure",
-          "description": "Next warp target."
-        },
+          "description": "warp target."
+        }
+      ],
+      "link_slots": [
         {
-          "key": "prev-actor",
-          "type": "structure",
-          "description": "Previous warp target."
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Warp position actor. (Usually the particle effect)",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -9117,7 +9120,45 @@
         0.8,
         1.0
       ],
-      "shape": "CIRCLE"
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "warp-gate-switch",
+      "label": "Warp Gate Switch",
+      "schema_export": true,
+      "category": "Buttons and Doors",
+      "parent": "prop",
+      "art_group": "warp-gate-switch-ag.go",
+      "code": {
+        "o": "villagep-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/village1/warp-gate-switch-lod0.glb",
+      "lumps": [
+        {
+          "key": "alt-actor",
+          "type": "structure",
+          "description": "warp target."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Warp position actor. (Usually the particle effect)",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.7,
+        0.8,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "balloonlurker",
@@ -11434,17 +11475,17 @@
       "shape": "SPHERE"
     },
     {
-      "etype": "eco-door",
-      "panel": "eco-door",
-      "export_as": "jng-iris-door",
-      "label": "Eco Door (iris)",
+      "etype": "jng-iris-door",
+      "schema_export": true,
+      "label": "Iris Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "jng-iris-door-ag.go",
       "code": {
-        "o": "baseplat.o",
+        "o": "jungleb-obs.o",
         "o_only": true
       },
+      "glb":"levels/jungleb/jng-iris-door-lod0.glb",
       "link_slots": [
         {
           "lump_key": "state-actor",
@@ -11527,93 +11568,21 @@
       "shape": "CUBE"
     },
     {
-      "etype": "jng-iris-door",
-      "panel": "eco-door",
-      "label": "Iris Door (Jungle)",
+      "etype": "eggtop",
+      "schema_export": true,
+      "label": "Egg Top Button (Jungleb)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
-      "art_group": "jng-iris-door-ag.go",
+      "art_group": "eggtop-ag.go",
       "code": {
         "o": "jungleb-obs.o",
         "o_only": true
       },
-      "link_slots": [
-        {
-          "lump_key": "state-actor",
-          "slot": 0,
-          "label": "Lock controller (door unlocks when this entity is activated)",
-          "accepts": [
-            "basebutton",
-            "any"
-          ],
-          "required": false
-        }
-      ],
-      "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale. Default 1.0."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
-        }
-      ],
-      "fields": [
-        {
-          "key": "og_door_auto_close",
-          "label": "Auto-close",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 4
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_one_way",
-          "label": "One-way",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_starts_open",
-          "label": "Starts open",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "perm-status",
-            "type": "uint32"
-          },
-          "value_if_true": 64,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_door_state_lock",
-          "type": "const",
-          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 1,
-            "set_if_link": "state-actor"
-          }
-        }
-      ],
+      "glb":"levels/jungleb/eggtop-lod0.glb",
       "color": [
         0.3,
-        0.7,
-        0.5,
+        0.6,
+        0.8,
         1.0
       ],
       "shape": "CUBE"
@@ -11629,6 +11598,7 @@
         "o": "jungle-obs.o",
         "o_only": true
       },
+      "glb": "levels/jungle/sidedoor-lod1.glb",
       "link_slots": [
         {
           "lump_key": "state-actor",
@@ -11707,6 +11677,25 @@
           }
         }
       ],
+      "color": [
+        0.4,
+        0.6,
+        0.4,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "maindoor",
+      "label": "Main Door (Jungle)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "art_group": "maindoor-ag.go",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/maindoor-lod1.glb",
       "color": [
         0.4,
         0.6,
@@ -18345,19 +18334,6 @@
       "color": [
         0.2,
         0.4,
-        0.8,
-        1.0
-      ],
-      "shape": "CIRCLE"
-    },
-    {
-      "etype": "warp-gate",
-      "label": "Warp Gate Switch",
-      "category": "Objects",
-      "art_group": "warp-gate-switch-ag.go",
-      "color": [
-        0.2,
-        0.7,
         0.8,
         1.0
       ],

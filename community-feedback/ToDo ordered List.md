@@ -573,11 +573,24 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Choosing lurkers, % spawn per lurker, eco drops, etc
 - Buttons and Doors
   - warp-gate-switch
+    - task for activating it or that gets activated when pressing it?
+    - level list and how they get unlocked is hard coded
+    - Doesn't seem to give the menu atm
   - tra-iris-door
+    - check if all iris door can be combined into one (maybe eco-door has all features?)
   - sidedoor
+    - cmds lump?
+    - play-mode?
+    - sound-name?
+    - text-id?
+    - game task implementation
   - maindoor
+    - game task implementation
   - jng-iris-door
+    - start-open option doesn't seem to do anything atm
   - eggtop
+    - game task implementation
+    - movie-pos
   - launcherdoor
   - rounddoor
   - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
