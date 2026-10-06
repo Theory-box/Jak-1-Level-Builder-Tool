@@ -171,13 +171,17 @@ def discover_custom_levels():
             if not d.is_dir():
                 continue
             name = d.name
-            nick = _nick(name)
+            # The exported .gd is named after the level's effective nick (Vis
+            # Nickname override, else auto) and write_gd sweeps stale siblings,
+            # so the .gd on disk is the source of truth when present.
+            gds  = sorted(d.glob("*.gd"))
+            nick = gds[0].stem if gds else _nick(name)
             dgo  = f"{nick.upper()}.DGO"
             found[name] = {
                 "name":      name,
                 "has_glb":   (d / f"{name}.glb").exists(),
                 "has_jsonc": (d / f"{name}.jsonc").exists(),
-                "has_gd":    (d / f"{nick}.gd").exists(),
+                "has_gd":    bool(gds),
                 "has_obs":   (goal_levels / name / f"{name}-obs.gc").exists(),
                 "has_gp":    name in gp_names,
                 "nick":      nick,

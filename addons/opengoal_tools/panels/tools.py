@@ -41,6 +41,7 @@ from ..export import (
     _vol_get_link_to, _vol_has_link_to,
     collect_cameras, collect_aggro_triggers, log,
 )
+from ..export.writers import _effective_nick
 from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
@@ -261,7 +262,7 @@ class OG_PT_DevTools(Panel):
         # Quick Open — nested here
         layout.label(text="Quick Open", icon="FILE_FOLDER")
         name = _lname(ctx)
-        self._quick_open(layout, name)
+        self._quick_open(layout, name, ctx.scene)
 
     def _btn(self, layout, label, icon, path, is_file=False):
         p = Path(path) if path else None
@@ -276,7 +277,7 @@ class OG_PT_DevTools(Panel):
         if p and not p.exists():
             row.label(text="", icon="ERROR")
 
-    def _quick_open(self, layout, name):
+    def _quick_open(self, layout, name, scene=None):
         col = layout.column(align=True)
         self._btn(col, "goal_src/",    "FILE_FOLDER", str(_goal_src()) if _goal_src().parent.exists() else "")
         self._btn(col, "game.gp",      "FILE_SCRIPT", str(_game_gp()), is_file=True)
@@ -291,7 +292,8 @@ class OG_PT_DevTools(Panel):
             self._btn(col2, f"{name}/",           "FILE_FOLDER", str(ldir))
             self._btn(col2, f"{name}.jsonc",      "FILE_TEXT",   str(ldir / f"{name}.jsonc"), is_file=True)
             self._btn(col2, f"{name}.glb",        "FILE_3D",     str(ldir / f"{name}.glb"),   is_file=True)
-            self._btn(col2, f"{_nick(name)}.gd",  "FILE_SCRIPT", str(ldir / f"{_nick(name)}.gd"), is_file=True)
+            nick = _effective_nick(scene, name)   # same name write_gd uses
+            self._btn(col2, f"{nick}.gd",  "FILE_SCRIPT", str(ldir / f"{nick}.gd"), is_file=True)
             self._btn(col2, f"{name}-obs.gc",     "FILE_SCRIPT", str(goal_level / f"{name}-obs.gc"), is_file=True)
 
         layout.separator(factor=0.3)

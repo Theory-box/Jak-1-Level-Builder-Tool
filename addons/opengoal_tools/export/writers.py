@@ -690,7 +690,7 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     else:
         log(f"Skipped {p} (unchanged)")
 
-def _make_continues(name, spawns):
+def _make_continues(name, spawns, vis_nick=None):
     """Build the GOAL :continues list for level-load-info.
 
     Each spawn dict carries full quat + camera data from collect_spawns, plus
@@ -706,6 +706,9 @@ def _make_continues(name, spawns):
     opens), so a real nick is wanted even though custom levels lack vis BSP
     data. Override per-checkpoint via the Vis Nickname field.
     """
+    # Level's vis-nick (honours the Vis Nickname override when the caller
+    # passes it) - default for checkpoints that leave their own vis-nick blank.
+    _default_vnick = vis_nick or _nick(name)
     def _lev(val):
         v = (val or "").strip()
         if v in ("", "none", "#f"):
@@ -736,7 +739,7 @@ def _make_continues(name, spawns):
         # vis-nick: blank → this level's nickname. Per Kuitar, vis is also how
         # the game knows which level you're in (music/menu), so don't use 'none.
         vn = (sp.get("cp_vis_nick") or "").strip()
-        vis_nick = f"'{vn}" if vn else f"'{_nick(name)}"
+        vis_nick = f"'{vn}" if vn else f"'{_default_vnick}"
         # load-commands: blank → empty list; else raw GOAL passthrough.
         lc = (sp.get("cp_load_commands") or "").strip()
         load_cmds = lc if lc else "'()"
@@ -775,7 +778,7 @@ def _make_continues(name, spawns):
             f"             :camera-trans (new 'static 'vector :x 0.0 :y (meters 14.) :z 0.0 :w 1.0)\n"
             f"             :camera-rot (new 'static 'array float 9 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0)\n"
             f"             :load-commands '()\n"
-            f"             :vis-nick '{_nick(name)}\n"
+            f"             :vis-nick '{_default_vnick}\n"
             f"             :lev0 '{name}\n"
             f"             :disp0 'display\n"
             f"             :lev1 #f\n"
@@ -853,7 +856,7 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sky {_sky_val}\n"
              f"       :sun-fade 1.0\n"
              f"       :continues\n"
-             f"       {_make_continues(name, spawns)}\n"
+             f"       {_make_continues(name, spawns, _vnick)}\n"
              f"       :tasks '()\n"
              f"       :priority 100\n"
              f"       :load-commands '()\n"
