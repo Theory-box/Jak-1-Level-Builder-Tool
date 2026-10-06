@@ -387,6 +387,12 @@ class OGProperties(PropertyGroup):
         description="Seconds to wait between sending (lt) and (start). Usually fine at 2s; bump if the spawn occasionally misses on cold start.",
         default=2.0, min=0.0, max=10.0, soft_min=0.5, soft_max=5.0,
     )
+    og_ignore_game_gd: BoolProperty(
+        name="Ignore game.gd files",
+        description="Don't add code / art group files that are already in GAME.CGO (game.gd) to the level's .gd or .jsonc — they're always loaded. "
+                    "The list lives in the database (Defaults > game_gd_files). Turn off to get the old behaviour",
+        default=True,
+    )
     entity_type:    EnumProperty(name="Entity Type",    items=ENTITY_ENUM_ITEMS)
     # Search bar (Spawn Objects panel)
     entity_search:          StringProperty(name="", description="Search all spawnable objects by name", default="")

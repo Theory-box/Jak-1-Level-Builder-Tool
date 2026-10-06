@@ -179,6 +179,10 @@ PROP_ENUM_ITEMS         = INTERACTIVE_ENUM_ITEMS
 # ═══════════════════════════════════════════════════════════════════════════
 GLOBAL_TPAGE_GROUPS = set(_db.defaults().get("global_tpage_groups", []))
 
+# Files already in GAME.CGO (always loaded). Skipped from level .gd / .jsonc
+# when Developer Tools > "Ignore game.gd files" is on (see export/levels.py).
+GAME_GD_FILES = frozenset(_db.defaults().get("game_gd_files", []))
+
 
 def _collect_global_tpage_gos():
     """Every tpage .go file that belongs to an always-loaded global tpage group.

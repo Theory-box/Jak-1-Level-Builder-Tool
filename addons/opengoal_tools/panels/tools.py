@@ -251,6 +251,13 @@ class OG_PT_DevTools(Panel):
 
         layout.separator()
 
+        # Build — what goes into the level's .gd / .jsonc
+        layout.label(text="Build", icon="MODIFIER")
+        box = layout.box()
+        box.prop(props, "og_ignore_game_gd")
+
+        layout.separator()
+
         # Quick Open — nested here
         layout.label(text="Quick Open", icon="FILE_FOLDER")
         name = _lname(ctx)

@@ -10,6 +10,7 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, ETYPE_EXTRA_CODE, VERTEX_EXPORT_TYPES,
+    GAME_GD_FILES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -54,6 +55,18 @@ from .paths import (
 # Cross-module imports (siblings in the export package)
 
 
+def _in_game_gd(f):
+    """True if `f` ships in GAME.CGO and the "Ignore game.gd files" toggle is on
+    (default). Such files are always loaded, so they never need to go in the
+    level's .gd or .jsonc."""
+    if f not in GAME_GD_FILES:
+        return False
+    try:
+        return bool(bpy.context.scene.og_props.og_ignore_game_gd)
+    except Exception:
+        return True
+
+
 def needed_ags(actors):
     """Entity-own art groups (the visible mesh/skel for each actor).
 
@@ -70,7 +83,7 @@ def needed_ags(actors):
         vag = a.get("art_group")
         ags = (list(vag) if isinstance(vag, list) else [vag]) if vag else ETYPE_AG.get(a.get("_db_etype") or a["etype"], [])
         for g in ags:
-            if g and g not in seen:
+            if g and g not in seen and not _in_game_gd(g):
                 seen.add(g); r.append(g)
     return r
 
@@ -88,7 +101,7 @@ def needed_extras_ags(actors):
     for a in actors:
         extras = list(ETYPE_EXTRAS_AG.get(a.get("_db_etype") or a["etype"], [])) + list(a.get("extra_art_groups", []))
         for g in extras:
-            if g and g not in seen:
+            if g and g not in seen and not _in_game_gd(g):
                 seen.add(g); r.append(g)
     return r
 
@@ -107,13 +120,13 @@ def needed_code(actors):
         etype = a.get("_db_etype") or a["etype"]
         # Actor-level dependency code first (DGO-only, goal-src already in game.gp).
         for o in ETYPE_EXTRA_CODE.get(etype, []):
-            if o and o not in seen:
+            if o and o not in seen and not _in_game_gd(o):
                 seen.add(o)
                 r.append((o, None, None))
         info = ETYPE_CODE.get(etype)
         if info and not info.get("in_game_cgo"):
             o = info["o"]
-            if o not in seen:
+            if o not in seen and not _in_game_gd(o):
                 seen.add(o)
                 if info.get("o_only"):
                     r.append((o, None, None))
@@ -122,7 +135,7 @@ def needed_code(actors):
         # Variant extra code (e.g. snow bridge -> target-ice.o). DGO-only:
         # goal-src is already in game.gp, so inject the .o with no gc line.
         for o in a.get("extra_code", []):
-            if o and o not in seen:
+            if o and o not in seen and not _in_game_gd(o):
                 seen.add(o)
                 r.append((o, None, None))
     return r
