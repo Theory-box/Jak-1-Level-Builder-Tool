@@ -237,6 +237,56 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 
 ---
 
+
+## Ways to include code without it coming from an actor
+While, ideally, you should never have to add anything extra and everything should be automated. It'll be hard to cover every cases and someone making custom features might be blocked a bit. Having custom code to always include could cover weird edge cases much easier than trying to manually fix every single one of them.
+### General idea for custom code
+What I'm thinking is having text files in blender you can edit which would either be separated files for each or have one well organised file.
+Then having one or multiple option in the level settings to include those files with a descriptive tool tip.
+### Included code files
+This would include a list of you always want included in your level's .gd and .json file.
+Here's how it could look:
+```json
+"gd":[
+  "codefile.o",
+  "anothercodefile.o",
+  "artgroup-ag.go",
+  "anotherartgroup-ag.go"
+],
+"json_ag":[
+  "artgroup-ag",
+  "anotherartgroup-ag"
+],
+"json_texture":[
+  "some-texture-name"
+]
+```
+These would then get added as well as all the ones defined by actors in the blend file.
+### Included actors
+This would include actor code you want to always include that's not defined by an actor object in the blend file.
+Here's how it could look:
+```json
+"actors":[
+  {
+      "trans": [-511.08, 2.8933, -209.8895],
+      "etype": "eco-blue",
+      "game_task": "(game-task none)",
+      "quat": [0.0, 0.0, 0.0, 1.0],
+      "vis_id": 0,
+      "bsphere": [-511.08, 2.8933, -209.8895, 10.0],
+      "lump": {"name": "eco-blue-0"}
+    }
+],
+"ambiants":[]
+```
+Then all the actors and ambients defined here would be added to the level's json as well as the ones added in the blend file.
+### Included level-info in level-info.gc
+This might not be fully needed, not 100% sure how the addon work with existing level code but if it might wipe out other custom level code in `level-info.gc` then there should be a way to include these in a text file. If they're not being affected then this isn't needed.
+### Included level build data in game.gp
+Same as with the level-info data, if other custom levels aren't affected then there's no need for this.
+
+---
+
 ## Going through actor list to fix preview model/included code.
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
@@ -246,6 +296,7 @@ This is moslty a step that'll done by users to check on every actor, with the da
     - it shouldn't change much in the way it's setup already. It should just allow multiple string entries in a bracket when there's multiple ones.
     - Example: `"art-group" : ["keg-conveyor-ag.go","keg-conveyor-paddle-ag.go","keg-ag.go"]`
     - There's already a way to add multiple files in some variant example but it's done as another entry and that complexity shouldn't be added if it can all live within the same entry.
+    - The "extra_art-group" could be kept as is since that one doesn't copy the art-group in the level json. Which is fine for things that are just adding animation without models (jak animations or camera for example)
   - Simplify how "code" files it's written in the database
     - instead of having "code" entry which then has "o", "o_only" and "in_game_cgo". It should just be a single "code" or "o" entry with the code file (or files)
     - Then to know if there's no need to include code files ort art groups, it should refere to a list which can simply be copied over to the database from game.gd
@@ -256,6 +307,8 @@ This is moslty a step that'll done by users to check on every actor, with the da
     - "fields" to add custom fields
     - "needs-sync" which add all the platform info (sync data + path data)
     - "panel" which add a specific panel to some actors
+    - "links" which add a couple of different pannels, including path which also alreay has another way to get added.
+    - etc
   - All of those are working differently and exist in separate places so grouping them and getting them all to work in a similar way would go a long way
   - I'd like to reuse that "panel" field but instead of pointing it to one type and then create the whole panel from that, it'd contain all the panel information:
     - inside of that panel field, you would have group of data for each of the different pannels that could be added 
@@ -519,13 +572,89 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Would need a pretty specific UI setup
     - Choosing lurkers, % spawn per lurker, eco drops, etc
 - Buttons and Doors
+  - warp-gate-switch
+  - tra-iris-door
+  - sidedoor
+  - maindoor
+  - jng-iris-door
+  - eggtop
+  - launcherdoor
+  - rounddoor
   - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
+  - sun-iris-door
+  - square-platform-button
+  - sunken-pipegame
+  - helix-button
+  - swampgate
+  - snow-bumper
+  - snow-button
+  - snow-switch
+  - snow-fort-gate
+  - snow-log-button
+  - snow-eggtop
+  - energydoor
+  - citb-iris-door
+  - citb-button
 - Interactive Objects
 - Visuals
 - NPCs
+- Volumes
 
 ---
 
+## Particles implementation
+### Existing Particles
+- The game has already a bunch of particles that can be used to be placed in levels.
+- Most of these are usually in particle files called "level-part.gc" or in actor code files that are spawning particles
+- The default etype for particles is `part-spawner`, each level file creates its own etype, (for example `swamp-part`), to separate them in the list but it is not a requirement to use those child type.
+  - `art-name` lump is then used to choose which particle group that part-spawner should spawn
+  - game task can be used to turn off 
+- Particles can have a sound effect attached to them.
+  - `effect-name` for the sound name 
+  - `effect-param` 4 values to edit the sound
+  - `cycle-speed` 2 values to edit how the sound play/repeat 
+    - -1.0 , 0.0 for constant loop which should be default
+    - Need some testing to see how these two numbers work
+### Implementation for existing Particles
+- Particles should probably have their own category, although, as with a few categories, there's not that many actors that'll fill the list. (like audio, volumes and level flow) Maybe some of these could end up being combined. Like audio and particles together
+- Particles might need a specifically built UI panel BUT it should still be database driven
+  - The list of level-part files should be in the database and then the particle group should be listed within them
+  - While particles are also in other actor code files, I think only those level ones should be implemented this way to not make the list too long and also to avoid including huge code files in the level's gd for just one particle effect. (if users really want to do that, they'll be able to do it via a custom particle)
+- When selecting the Particle Spawner, there would be two variant choices:
+  - The particle level file
+    - As a drop down list
+    - This will tell the addon which code file to add to the level's gd
+    - If implemented, this would also change the etype to that level's specific part-spawner child type
+  - The particle group
+    - As a drop down list
+    - This tell what to put in the `art-name` lump of the actor.
+    - It should only list the group that are contained within
+    - If a second option for the variant isn't something trivial to add, this doesn't n
+- Once a particle spawner is added. Those two options should still be editable.
+  - Also as drop down lists.
+  - This means, if the etype change is added, it needs to be able to be changed by this too. Otherwise the game might try to spawn an actor which isn't defined if a part-spawner was added as one level then edited after. Which is also why it might be easier to just set every particles to be `part-spawner` etype.
+  - The Particle group menu should correctly switch everytime the particle level file is changed
+- The sound options should also appear in the panel
+  - None of the audio lumps need to be exported if no audio is selected.
+  - The audio list option should automatically be populated by the available audio sounds (common bank + the two added bank to the level or all of them if the hack for all audio bank to be loaded is implemented)
+  - If the audio isn't `none` then it can export all 3 lumps:
+    - `effect-name` for the sound name that was selected as a string 
+    - `effect-param` 4 float values:
+    - `cycle-speed` 2 values to edit how the sound play/repeat 
+      - -1.0 , 0.0 for constant loop which should be default
+      - Need some testing to see how these two numbers work
+### Implementation for custom Particles
+- Custom particles would work almost identically but instead of choosing level and group in a list, you'd have 3 string input to write them down:
+  - "File Name" to include in the gd
+  - "etype" defaulting to `part-spawner` to change the etype.
+  - "Particle group" to change the `effect-name` lump
+- Sound options should be identical
+### Creating custom Particles
+It's a lot easier to just have people creating their own particle files and edit them in terms of buidling the addon but ideally. 
+It would be very useful to have a particle editor and preview directly in blender where you can create, edit and see how each particle group work as that would be a lot quicker than editing particle files and then seeing the affect in game.
+This would, however, be a huge undertaking and isn't priority at the moment.
+
+---
 
 # Less Important features and fixes
 
@@ -548,9 +677,17 @@ Going through all categories in this order, if I can't fix some things I'll not 
 
 ---
 
+### Ignore unedited files
+At the moment, every file is rebuilt everytime you click on the export button. The way the compiler work is by checking which files got edited since last time via the file edit time. Which means it'll always have to compile almost the whole game since it's editing files such as `game.gp` or `level-info.gc`.
+If only the level's .json, gd and glb were changed. Which is going to be a vast majority of edits. Then only the level needs to be compiled bringing the compile time down to a few seconds instead.
+How I think this solution could work would be to still generate all files but instead of directly modifying the final files, these could be in a buffer or temporary file that is then compared to the final file. If there's any difference, then the file can get replaced with the new edited file. If there's no changes, then it can be ignored.
+
+---
+
 ## Adding missing level settings:
 ### For level-info.gc
 - music/sound-banks (already exist, just move it inside of the level settings)
+  - There's a hack to load in every sound-banks at the same time, this could be an option so that all sounds become available for audio and particles
 - mood (either just a string or same as level, have a list in database + custom)
 - mood-func (same as mood)
 - Ocean (same as mood)
