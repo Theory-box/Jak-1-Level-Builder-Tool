@@ -5789,10 +5789,10 @@
         "tpage-545.go"
       ],
       "code": {
-        "o": "robotboss-h.o",
+        "o": "robotboss.o",
         "o_only": true
       },
-      "extra_code": ["robotboss.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
+      "extra_code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
       "extra_art_groups": ["green-eco-lurker-ag.go", "darkecobomb-ag.go"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
       "needs_path": true,

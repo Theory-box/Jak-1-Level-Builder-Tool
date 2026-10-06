@@ -395,6 +395,13 @@ ETYPE_CODE: dict[str, dict] = {
     a["etype"]: dict(a["code"]) for a in _db.actors() if a.get("code")
 }
 
+# Actor-level extra_code: dependency .o files the actor needs in the level DGO
+# (headers, child-actor code, particle files). Loaded BEFORE the actor's own .o,
+# matching vanilla DGO order (e.g. mother-spider-h.o ... then mother-spider.o).
+ETYPE_EXTRA_CODE: dict[str, list] = {
+    a["etype"]: list(a["extra_code"]) for a in _db.actors() if a.get("extra_code")
+}
+
 ETYPE_TPAGES: dict[str, list] = {
     a["etype"]: list(a["tpages"]) for a in _db.actors() if a.get("tpages")
 }

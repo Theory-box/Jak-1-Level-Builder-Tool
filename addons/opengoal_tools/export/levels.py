@@ -9,7 +9,7 @@ from __future__ import annotations
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, VERTEX_EXPORT_TYPES,
+    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, ETYPE_EXTRA_CODE, VERTEX_EXPORT_TYPES,
     needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -104,6 +104,11 @@ def needed_code(actors):
     seen, r = set(), []
     for a in actors:
         etype = a["etype"]
+        # Actor-level dependency code first (DGO-only, goal-src already in game.gp).
+        for o in ETYPE_EXTRA_CODE.get(etype, []):
+            if o and o not in seen:
+                seen.add(o)
+                r.append((o, None, None))
         info = ETYPE_CODE.get(etype)
         if info and not info.get("in_game_cgo"):
             o = info["o"]
