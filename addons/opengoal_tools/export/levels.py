@@ -68,7 +68,7 @@ def needed_ags(actors):
     for a in actors:
         # A variant may override the actor's art group (e.g. per-bridge variant).
         vag = a.get("art_group")
-        ags = (list(vag) if isinstance(vag, list) else [vag]) if vag else ETYPE_AG.get(a["etype"], [])
+        ags = (list(vag) if isinstance(vag, list) else [vag]) if vag else ETYPE_AG.get(a.get("_db_etype") or a["etype"], [])
         for g in ags:
             if g and g not in seen:
                 seen.add(g); r.append(g)
@@ -86,7 +86,7 @@ def needed_extras_ags(actors):
     """
     seen, r = set(), []
     for a in actors:
-        extras = list(ETYPE_EXTRAS_AG.get(a["etype"], [])) + list(a.get("extra_art_groups", []))
+        extras = list(ETYPE_EXTRAS_AG.get(a.get("_db_etype") or a["etype"], [])) + list(a.get("extra_art_groups", []))
         for g in extras:
             if g and g not in seen:
                 seen.add(g); r.append(g)
@@ -104,7 +104,7 @@ def needed_code(actors):
     """
     seen, r = set(), []
     for a in actors:
-        etype = a["etype"]
+        etype = a.get("_db_etype") or a["etype"]
         # Actor-level dependency code first (DGO-only, goal-src already in game.gp).
         for o in ETYPE_EXTRA_CODE.get(etype, []):
             if o and o not in seen:

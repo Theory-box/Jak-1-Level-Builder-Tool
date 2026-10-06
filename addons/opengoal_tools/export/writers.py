@@ -570,6 +570,11 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         p.write_text(new_text)
         log(f"Wrote {p}")
 
+# Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
+# that are not part of the level format — never written to the .jsonc.
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code")
+
+
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
@@ -599,7 +604,9 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         "art_groups": [g.replace(".go","") for g in ags],
         "custom_models": [], "textures": _textures,
         "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
-        "ambients": ambients, "actors": all_actors,
+        "ambients": ambients,
+        "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
+                   for a in all_actors],
     }
     p = d / f"{name}.jsonc"
     new_text = f"// OpenGOAL custom level: {name}\n" + json.dumps(data, indent=2)

@@ -502,14 +502,19 @@ def collect_actors(scene, depsgraph=None):
         # to the actor's own art group/code when the variant doesn't specify one.
         _variant = _schema_db.actor_variant(etype, lambda k, d=None: o.get(k, d))
 
+        # A variant may also switch the exported etype (e.g. OgreStepVariants:
+        # ogre-step -> ogre-step-a). The DB lookups (code, tpages, art groups)
+        # keep using the DB actor's etype via _db_etype.
         out.append({
             "trans":     [gx, gy, gz],
-            "etype":     etype,
+            "etype":     _variant.get("etype") or etype,
             "game_task": "(game-task none)",
             "quat":      [aqx, aqy, aqz, aqw],
             "vis_id":    0,
             "bsphere":   [gx, gy, gz, bsph_r],
             "lump":      lump,
+            # Internal build bookkeeping below — stripped by write_jsonc.
+            "_db_etype": etype,
             "art_group": _variant.get("art_group"),   # None -> fall back to ETYPE_AG
             "code":      _variant.get("code"),
             "extra_art_groups": _variant.get("extra_art_groups") or [],
