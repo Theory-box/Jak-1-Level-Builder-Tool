@@ -260,9 +260,13 @@ def build_spawn_index() -> dict[str, SpawnItem]:
         db_cat = info.get("cat")
         if not db_cat:
             continue
-        tile = DB_CAT_TO_TILE.get(db_cat)
-        if not tile:
+        if db_cat == "Hidden":
             continue
+        # Any DB category gets a tile: a known mapping, a tile of the same name
+        # (e.g. "Volumes"), or "Custom Types" — never silently dropped, so
+        # actors added to the database always show up in the picker.
+        tile = DB_CAT_TO_TILE.get(db_cat) or (
+            db_cat if db_cat in TILE_CATEGORIES else "Custom Types")
 
         pre_fields: list[str] = []
         if _db.actor_has_variant(etype):
@@ -274,7 +278,7 @@ def build_spawn_index() -> dict[str, SpawnItem]:
             spawn_id=f"entity:{etype}",
             label=info.get("label", etype),
             category=tile,
-            art_group=info.get("ag"),
+            art_group=(info.get("ag")[0] if isinstance(info.get("ag"), list) else info.get("ag")),
             tpage_group=info.get("tpage_group"),
             description=ENTITY_WIKI.get(etype, {}).get("desc", "") or "",
             operator="og.spawn_entity",

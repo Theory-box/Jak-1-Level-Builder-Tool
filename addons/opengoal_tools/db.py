@@ -15,6 +15,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -31,7 +32,70 @@ _CANDIDATES = [
 ]
 
 
-def _resolve_db_path() -> Path:
+# ── User override ───────────────────────────────────────────────────────────
+# Preferences > "Database override" picks a .jsonc that replaces the bundled
+# database (edit a copy without touching / reinstalling the addon). The path
+# is kept in a small settings file in Blender's user config folder, because
+# this module loads before the addon preferences exist.
+def settings_file() -> Path | None:
+    try:
+        import bpy
+        return Path(bpy.utils.user_resource("CONFIG")) / "opengoal_tools_settings.json"
+    except Exception:
+        return None
+
+
+def read_settings() -> dict:
+    f = settings_file()
+    try:
+        return json.loads(f.read_text(encoding="utf-8")) if f and f.exists() else {}
+    except Exception:
+        return {}
+
+
+def write_settings(**changes) -> None:
+    f = settings_file()
+    if not f:
+        return
+    s = read_settings()
+    s.update(changes)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(s, indent=2), encoding="utf-8")
+
+
+# A .blend's Project Folders can name its own database. The addon passes it
+# here through this environment variable (set before reloading), because the
+# scene can't be read while the addon is being enabled.
+BLEND_DB_ENV = "OPENGOAL_TOOLS_DB"
+
+
+def _abspath(p: str) -> Path:
+    try:
+        import bpy
+        return Path(bpy.path.abspath(p))
+    except Exception:
+        return Path(p)
+
+
+def override_path() -> Path | None:
+    """Preferences override (settings file), or None."""
+    p = str(read_settings().get("db_override_path", "") or "").strip()
+    return _abspath(p) if p else None
+
+
+def wanted_override() -> tuple[Path | None, str]:
+    """(path, source) of the database that should be loaded: the .blend's
+    (env var) first, then the preferences override, else (None, "bundled")."""
+    env = os.environ.get(BLEND_DB_ENV, "").strip()
+    if env:
+        return Path(env), "blend"
+    ov = override_path()
+    if ov:
+        return ov, "preferences"
+    return None, "bundled"
+
+
+def _bundled_db_path() -> Path:
     for p in _CANDIDATES:
         if p.exists():
             return p
@@ -44,14 +108,39 @@ def _resolve_db_path() -> Path:
 # ── Load + parse (strip // line comments, parse JSON) ────────────────────────
 _COMMENT_RE = re.compile(r'^\s*//.*$', re.MULTILINE)
 
+# What was actually loaded (shown in the preferences) and, if the override
+# could not be used, why — the bundled database is used instead so the addon
+# still loads.
+DB_PATH: Path | None = None
+DB_WANTED: Path | None = None       # override that was asked for (even if it failed)
+DB_SOURCE: str = "bundled"          # "blend" / "preferences" / "bundled"
+DB_OVERRIDE_ERROR: str = ""
 
-def _load() -> dict:
-    path = _resolve_db_path()
+
+def _parse(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     # Strip line comments. The database uses only // line comments (not /* */),
     # and no string values contain `//` at line start — so a simple regex works.
-    stripped = _COMMENT_RE.sub('', text)
-    return json.loads(stripped)
+    return json.loads(_COMMENT_RE.sub('', text))
+
+
+def _load() -> dict:
+    global DB_PATH, DB_WANTED, DB_SOURCE, DB_OVERRIDE_ERROR
+    DB_OVERRIDE_ERROR = ""
+    ov, source = wanted_override()
+    DB_WANTED = ov
+    if ov:
+        try:
+            data = _parse(ov)
+            DB_PATH, DB_SOURCE = ov, source
+            return data
+        except FileNotFoundError:
+            DB_OVERRIDE_ERROR = f"Override not found: {ov}"
+        except Exception as e:
+            DB_OVERRIDE_ERROR = f"Override failed to load ({type(e).__name__}: {e})"
+        print(f"[OpenGOAL] {DB_OVERRIDE_ERROR} - using the bundled database")
+    DB_PATH, DB_SOURCE = _bundled_db_path(), "bundled"
+    return _parse(DB_PATH)
 
 
 # ── Module-level cache ──────────────────────────────────────────────────────
@@ -268,6 +357,11 @@ def aggro_events() -> list[dict]:
 
 def defaults() -> dict:
     return DB["Defaults"]
+
+
+def cameras() -> dict:
+    """Built-in camera entity settings: modes / fields / flags."""
+    return DB.get("Cameras", {})
 
 
 def level_collection_schema() -> dict:

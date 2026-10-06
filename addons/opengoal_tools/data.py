@@ -100,6 +100,11 @@ def _build_entity_enum():
              # Legacy aliases — kept so actors that didn't receive a new
              # category yet (or future additions using old names) still show.
              "Props", "Objects", "Debug"]
+    # The lists above only set display ORDER. Every DB actor must end up in this
+    # enum (spawning sets entity_type to the picked etype), so any category or
+    # tpage group not named above is appended rather than dropped. Only the
+    # "Hidden" category stays out of the picker.
+    order += sorted(c for c in cats if c not in order and c != "Hidden")
     items, i = [], 0
     for cat in order:
         if cat not in cats:
@@ -107,9 +112,11 @@ def _build_entity_enum():
         if cat == "Enemies":
             by_group: dict = {}
             for etype, info in cats[cat]:
-                g = info.get("tpage_group", "Other")
+                g = info.get("tpage_group") or "Other"
                 by_group.setdefault(g, []).append((etype, info))
-            for group in TPAGE_GROUP_ORDER:
+            group_order = TPAGE_GROUP_ORDER + sorted(
+                g for g in by_group if g not in TPAGE_GROUP_ORDER and g != "Other") + ["Other"]
+            for group in group_order:
                 if group not in by_group:
                     continue
                 for etype, info in sorted(by_group[group], key=lambda x: x[1]["label"]):
@@ -171,6 +178,10 @@ PROP_ENUM_ITEMS         = INTERACTIVE_ENUM_ITEMS
 # Tpage filter
 # ═══════════════════════════════════════════════════════════════════════════
 GLOBAL_TPAGE_GROUPS = set(_db.defaults().get("global_tpage_groups", []))
+
+# Files already in GAME.CGO (always loaded). Skipped from level .gd / .jsonc
+# when Developer Tools > "Ignore game.gd files" is on (see export/levels.py).
+GAME_GD_FILES = frozenset(_db.defaults().get("game_gd_files", []))
 
 
 def _collect_global_tpage_gos():
@@ -384,7 +395,10 @@ def _spawn_variant_cb(self, context):
 # ═══════════════════════════════════════════════════════════════════════════
 # Trait sets moved to db.py: use db.nav_unsafe / db.needs_path / db.needs_pathb /
 # db.is_prop (per-etype), or db.*_types() for the whole set. No shim constants.
-ETYPE_AG          = {e: [info["ag"]] for e, info in ENTITY_DEFS.items() if info.get("ag")}
+# art_group may be a single file or a list (actors whose children need their own
+# model art groups, e.g. double-lurker + double-lurker-top).
+ETYPE_AG          = {e: (list(info["ag"]) if isinstance(info["ag"], list) else [info["ag"]])
+                     for e, info in ENTITY_DEFS.items() if info.get("ag")}
 ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items() if info.get("extras_ag")}
 
 
@@ -393,6 +407,13 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 # ═══════════════════════════════════════════════════════════════════════════
 ETYPE_CODE: dict[str, dict] = {
     a["etype"]: dict(a["code"]) for a in _db.actors() if a.get("code")
+}
+
+# Actor-level extra_code: dependency .o files the actor needs in the level DGO
+# (headers, child-actor code, particle files). Loaded BEFORE the actor's own .o,
+# matching vanilla DGO order (e.g. mother-spider-h.o ... then mother-spider.o).
+ETYPE_EXTRA_CODE: dict[str, list] = {
+    a["etype"]: list(a["extra_code"]) for a in _db.actors() if a.get("extra_code")
 }
 
 ETYPE_TPAGES: dict[str, list] = {
@@ -447,7 +468,7 @@ def needed_tpages(actors):
     """Return de-duplicated ordered list of tpage .go files needed for placed entities."""
     seen, r = set(), []
     for a in actors:
-        for tp in ETYPE_TPAGES.get(a["etype"], []):
+        for tp in ETYPE_TPAGES.get(a.get("_db_etype") or a["etype"], []):
             if tp not in seen:
                 seen.add(tp)
                 r.append(tp)

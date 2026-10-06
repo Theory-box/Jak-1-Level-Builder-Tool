@@ -570,6 +570,11 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         p.write_text(new_text)
         log(f"Wrote {p}")
 
+# Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
+# that are not part of the level format — never written to the .jsonc.
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code")
+
+
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
@@ -591,6 +596,22 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     else:
         _tex_remap = _sky_src = _src
         _textures  = [[f"{_src}-vis-alpha"]]
+    # Built-in camera entities (OpenGOAL v0.3.4+). In legacy mode
+    # collect_cameras() produced camera-marker/trigger actors instead.
+    cameras = []
+    if scene is not None:
+        from .scene import camera_system, collect_builtin_cameras
+        if camera_system(scene) == "builtin":
+            cameras = collect_builtin_cameras(scene)
+            if cameras and not all_actors:
+                # OpenGOAL build_level (v0.3.4-v0.3.8) numbers cameras from the
+                # max actor id and dereferences max_element() of an EMPTY list
+                # when the level has no actors -> goalc segfaults. Skip cameras
+                # rather than hand goalc a level that crashes it.
+                log(f"  [camera] WARNING: {len(cameras)} built-in camera(s) NOT exported — "
+                    f"the level has no actors, and OpenGOAL's build_level crashes on "
+                    f"cameras without actors. Add at least one actor.")
+                cameras = []
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
@@ -599,7 +620,10 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         "art_groups": [g.replace(".go","") for g in ags],
         "custom_models": [], "textures": _textures,
         "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
-        "ambients": ambients, "actors": all_actors,
+        "ambients": ambients,
+        "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
+                   for a in all_actors],
+        **({"cameras": cameras} if cameras else {}),
     }
     p = d / f"{name}.jsonc"
     new_text = f"// OpenGOAL custom level: {name}\n" + json.dumps(data, indent=2)
@@ -607,7 +631,8 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         log(f"Skipped {p} (unchanged)")
     else:
         p.write_text(new_text)
-        log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} cameras)")
+        log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} camera/trigger actors"
+            f" + {len(cameras)} built-in cameras)")
 
 def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     """Write .gd file.
@@ -683,7 +708,7 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     else:
         log(f"Skipped {p} (unchanged)")
 
-def _make_continues(name, spawns):
+def _make_continues(name, spawns, vis_nick=None):
     """Build the GOAL :continues list for level-load-info.
 
     Each spawn dict carries full quat + camera data from collect_spawns, plus
@@ -699,6 +724,9 @@ def _make_continues(name, spawns):
     opens), so a real nick is wanted even though custom levels lack vis BSP
     data. Override per-checkpoint via the Vis Nickname field.
     """
+    # Level's vis-nick (honours the Vis Nickname override when the caller
+    # passes it) - default for checkpoints that leave their own vis-nick blank.
+    _default_vnick = vis_nick or _nick(name)
     def _lev(val):
         v = (val or "").strip()
         if v in ("", "none", "#f"):
@@ -729,7 +757,7 @@ def _make_continues(name, spawns):
         # vis-nick: blank → this level's nickname. Per Kuitar, vis is also how
         # the game knows which level you're in (music/menu), so don't use 'none.
         vn = (sp.get("cp_vis_nick") or "").strip()
-        vis_nick = f"'{vn}" if vn else f"'{_nick(name)}"
+        vis_nick = f"'{vn}" if vn else f"'{_default_vnick}"
         # load-commands: blank → empty list; else raw GOAL passthrough.
         lc = (sp.get("cp_load_commands") or "").strip()
         load_cmds = lc if lc else "'()"
@@ -768,7 +796,7 @@ def _make_continues(name, spawns):
             f"             :camera-trans (new 'static 'vector :x 0.0 :y (meters 14.) :z 0.0 :w 1.0)\n"
             f"             :camera-rot (new 'static 'array float 9 1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0)\n"
             f"             :load-commands '()\n"
-            f"             :vis-nick '{_nick(name)}\n"
+            f"             :vis-nick '{_default_vnick}\n"
             f"             :lev0 '{name}\n"
             f"             :disp0 'display\n"
             f"             :lev1 #f\n"
@@ -846,7 +874,7 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sky {_sky_val}\n"
              f"       :sun-fade 1.0\n"
              f"       :continues\n"
-             f"       {_make_continues(name, spawns)}\n"
+             f"       {_make_continues(name, spawns, _vnick)}\n"
              f"       :tasks '()\n"
              f"       :priority 100\n"
              f"       :load-commands '()\n"

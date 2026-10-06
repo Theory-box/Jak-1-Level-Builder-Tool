@@ -41,6 +41,7 @@ from ..export import (
     _vol_get_link_to, _vol_has_link_to,
     collect_cameras, collect_aggro_triggers, log,
 )
+from ..export.writers import _effective_nick
 from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
@@ -210,6 +211,135 @@ class OG_OT_ReloadAddon(Operator):
 
 
 
+def reload_addon_full(mod: str) -> None:
+    """Disable the addon, drop every one of its modules, enable it again — so
+    db.py re-reads the database and every table built from it is rebuilt.
+    Preference values are carried over."""
+    import sys, addon_utils
+    a = bpy.context.preferences.addons.get(mod)
+    keep = {}
+    if a:
+        for k in a.preferences.bl_rna.properties.keys():
+            if k != "rna_type":
+                try:
+                    keep[k] = getattr(a.preferences, k)
+                except Exception:
+                    pass
+    addon_utils.disable(mod, default_set=False)
+    for name in [n for n in sys.modules if n == mod or n.startswith(mod + ".")]:
+        del sys.modules[name]
+    addon_utils.enable(mod, default_set=False)
+    a2 = bpy.context.preferences.addons.get(mod)
+    if a2:
+        for k, v in keep.items():
+            try:
+                if getattr(a2.preferences, k) != v:
+                    setattr(a2.preferences, k, v)
+            except Exception:
+                pass
+
+
+def _addon_module() -> str:
+    return __package__.rsplit(".", 1)[0]          # "opengoal_tools"
+
+
+def sync_blend_db(force_reload: bool = False) -> bool:
+    """Point the database at what the open .blend asks for (Project Folders >
+    Database override, when enabled) and reload the addon if that changes the
+    file in use. Returns True if a reload was scheduled."""
+    import os
+    from .. import db as _db
+    want = ""
+    try:
+        props = bpy.context.scene.og_props
+        if props.og_blend_paths_enabled and props.og_blend_db_override_path.strip():
+            want = str(_db._abspath(props.og_blend_db_override_path.strip()))
+    except Exception:
+        return False
+    if want:
+        os.environ[_db.BLEND_DB_ENV] = want
+    else:
+        os.environ.pop(_db.BLEND_DB_ENV, None)
+    # Compare with what the loaded database was ASKED to be — a missing or
+    # broken override falls back to the bundled file, and must not trigger a
+    # reload on every check.
+    target, _src = _db.wanted_override()
+    tried = _db.DB_WANTED
+    same = (str(target) if target else None) == (str(tried) if tried else None)
+    if same and not force_reload:
+        return False
+    mod = _addon_module()
+
+    def _later():
+        reload_addon_full(mod)
+        from importlib import import_module
+        _d = import_module(mod + ".db")
+        print(f"[OpenGOAL] Database reloaded from {_d.DB_PATH} ({_d.DB_SOURCE})")
+        return None
+
+    # After the current operator / handler returns — this module gets unloaded.
+    bpy.app.timers.register(_later, first_interval=0.05)
+    return True
+
+
+from bpy.app.handlers import persistent as _persistent
+
+
+@_persistent
+def _db_on_load_post(_dummy=None):
+    sync_blend_db()
+
+
+def register_db_handlers():
+    if _db_on_load_post not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_db_on_load_post)
+    # Addon enabled with a file already open (startup / reload): check once
+    # the register() restrictions are lifted.
+    bpy.app.timers.register(lambda: (sync_blend_db(), None)[1], first_interval=0.0)
+
+
+def unregister_db_handlers():
+    if _db_on_load_post in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_db_on_load_post)
+
+
+class OG_OT_ReloadDatabase(Operator):
+    """Re-read the game database (bundled or the Preferences override) by fully
+    re-enabling the addon, so every table built from it is rebuilt."""
+    bl_idname = "og.reload_database"
+    bl_label  = "Reload Database"
+    bl_description = "Reload the game database (and the addon) from disk — use after editing the database or changing the override"
+
+    def execute(self, ctx):
+        # Picks up the open .blend's override (if any), then reloads.
+        sync_blend_db(force_reload=True)
+        self.report({"INFO"}, "Reloading database…")
+        return {"FINISHED"}
+
+
+class OG_OT_BlendPathsFromPrefs(Operator):
+    """Copy the folders currently in use into this .blend's Project Folders."""
+    bl_idname = "og.blend_paths_from_prefs"
+    bl_label  = "Copy From Preferences"
+    bl_description = "Fill this .blend's folders with the ones the addon preferences currently resolve to"
+
+    def execute(self, ctx):
+        from .. import paths_core as _pc
+        props = ctx.scene.og_props
+        props.og_blend_paths_enabled = False         # resolve from preferences only
+        try:
+            props.og_blend_exe_path        = str(_pc.exe_root())
+            props.og_blend_data_path       = str(_pc.data_root())
+            props.og_blend_decompiler_path = str(_pc.decompiler_path())
+            pr = _pc.prefs()
+            if pr and pr.db_override_path.strip() and not props.og_blend_db_override_path.strip():
+                props.og_blend_db_override_path = pr.db_override_path.strip()
+        finally:
+            props.og_blend_paths_enabled = True   # copied -> use them
+        self.report({"INFO"}, "Project folders saved in this .blend")
+        return {"FINISHED"}
+
+
 class OG_PT_DevTools(Panel):
     bl_label       = "🔧  Developer Tools"
     bl_idname      = "OG_PT_dev_tools"
@@ -236,7 +366,24 @@ class OG_PT_DevTools(Panel):
         box.label(text=f"gk{_EXE}:    {'✓ OK' if gk_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gk_ok else "ERROR")
         box.label(text=f"goalc{_EXE}: {'✓ OK' if gc_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gc_ok else "ERROR")
         box.label(text=f"game.gp:   {'✓ OK' if gp_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gp_ok else "ERROR")
-        box.operator("preferences.addon_show", text="Set EXE / Data Paths", icon="PREFERENCES").module = __name__
+        box.operator("preferences.addon_show", text="Set EXE / Data Paths", icon="PREFERENCES").module = __package__.rsplit(".", 1)[0]
+
+        # Project Folders — saved in this .blend, override the preferences
+        props = ctx.scene.og_props
+        layout.label(text="Project Folders (this .blend)", icon="FILE_BLEND")
+        box = layout.box()
+        box.prop(props, "og_blend_paths_enabled")
+        col = box.column()
+        col.enabled = props.og_blend_paths_enabled
+        col.prop(props, "og_blend_exe_path")
+        col.prop(props, "og_blend_data_path")
+        col.prop(props, "og_blend_decompiler_path")
+        row = col.row(align=True)
+        row.prop(props, "og_blend_db_override_path")
+        row.operator("og.reload_database", text="", icon="FILE_REFRESH")
+        box.operator("og.blend_paths_from_prefs", icon="IMPORT")
+        from ..properties import draw_db_status
+        draw_db_status(box)
 
         layout.separator()
 
@@ -251,10 +398,25 @@ class OG_PT_DevTools(Panel):
 
         layout.separator()
 
+        # Build — what goes into the level's .gd / .jsonc
+        layout.label(text="Build", icon="MODIFIER")
+        box = layout.box()
+        box.prop(props, "og_ignore_game_gd")
+        from ..export.scene import builtin_cameras_supported, camera_system
+        row = box.row(align=True)
+        row.prop(props, "og_camera_system")
+        sub = box.column(); sub.scale_y = 0.8
+        sub.label(text=("Built-in cameras supported by this OpenGOAL" if builtin_cameras_supported()
+                        else "This OpenGOAL predates built-in cameras (needs v0.3.4+)"),
+                  icon="CHECKMARK" if builtin_cameras_supported() else "INFO")
+        sub.label(text=f"Exporting cameras as: {camera_system(ctx.scene)}")
+
+        layout.separator()
+
         # Quick Open — nested here
         layout.label(text="Quick Open", icon="FILE_FOLDER")
         name = _lname(ctx)
-        self._quick_open(layout, name)
+        self._quick_open(layout, name, ctx.scene)
 
     def _btn(self, layout, label, icon, path, is_file=False):
         p = Path(path) if path else None
@@ -269,7 +431,7 @@ class OG_PT_DevTools(Panel):
         if p and not p.exists():
             row.label(text="", icon="ERROR")
 
-    def _quick_open(self, layout, name):
+    def _quick_open(self, layout, name, scene=None):
         col = layout.column(align=True)
         self._btn(col, "goal_src/",    "FILE_FOLDER", str(_goal_src()) if _goal_src().parent.exists() else "")
         self._btn(col, "game.gp",      "FILE_SCRIPT", str(_game_gp()), is_file=True)
@@ -284,7 +446,8 @@ class OG_PT_DevTools(Panel):
             self._btn(col2, f"{name}/",           "FILE_FOLDER", str(ldir))
             self._btn(col2, f"{name}.jsonc",      "FILE_TEXT",   str(ldir / f"{name}.jsonc"), is_file=True)
             self._btn(col2, f"{name}.glb",        "FILE_3D",     str(ldir / f"{name}.glb"),   is_file=True)
-            self._btn(col2, f"{_nick(name)}.gd",  "FILE_SCRIPT", str(ldir / f"{_nick(name)}.gd"), is_file=True)
+            nick = _effective_nick(scene, name)   # same name write_gd uses
+            self._btn(col2, f"{nick}.gd",  "FILE_SCRIPT", str(ldir / f"{nick}.gd"), is_file=True)
             self._btn(col2, f"{name}-obs.gc",     "FILE_SCRIPT", str(goal_level / f"{name}-obs.gc"), is_file=True)
 
         layout.separator(factor=0.3)
@@ -385,5 +548,7 @@ CLASSES = (
     OG_PT_VertexExport,
     OG_PT_BuildPlay,
     OG_OT_ReloadAddon,
+    OG_OT_ReloadDatabase,
+    OG_OT_BlendPathsFromPrefs,
     OG_PT_DevTools,
 )

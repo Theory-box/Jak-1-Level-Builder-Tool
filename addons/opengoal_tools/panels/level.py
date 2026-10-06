@@ -520,8 +520,10 @@ class OG_OT_CleanLevelFiles(Operator):
             obs_gc,
             assets / f"{name}.jsonc",
             assets / f"{name}.glb",
-            assets / f"{_nick(name)}.gd",
         ]
+        # .gd is named after the effective nick (override or auto) - remove any.
+        if assets.exists():
+            targets += sorted(assets.glob("*.gd"))
 
         for p in targets:
             if p.exists():
