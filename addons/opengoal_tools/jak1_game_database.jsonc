@@ -3891,11 +3891,11 @@
       "shape": "SPHERE"
     },
     {
-      "etype": "babak-with-canon",
-      "label": "Babak with canon (Lurker)",
+      "etype": "babak-with-cannon",
+      "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "description": "The Babak with canon is a babak which will jump on nearby canon to shoot at jak",
+      "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
       "tpages": [
@@ -3905,7 +3905,7 @@
         "tpage-215.go"
       ],
       "code": {
-        "o": "babak-with-canon.o",
+        "o": "babak-with-cannon.o",
         "o_only": true
       },
       "glb": "levels/beach/babak-lod0.glb",
@@ -5478,7 +5478,7 @@
         1.0
       ],
       "shape": "SPHERE",
-      "art_group": "lightning-mole-ag"
+      "art_group": "lightning-mole-ag.go"
     },
     {
       "etype": "ice-cube",
@@ -5514,7 +5514,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "art_group": "ice-cube-ag"
+      "art_group": "ice-cube-ag.go"
     },
     {
       "etype": "fireboulder",
@@ -8853,7 +8853,7 @@
         "o": "village3-obs.o",
         "o_only": true
       },
-      "glb": "levels/village2/gondola-lod0.glb",
+      "glb": "levels/village3/gondola-lod0.glb",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -9631,7 +9631,7 @@
         1.0
       ],
       "shape": "SPHERE",
-      "art_group": "sunkenfisha-ag",
+      "art_group": "sunkenfisha-ag.go",
       "requires_navmesh": true
     },
     {
@@ -9784,7 +9784,7 @@
         1.0
       ],
       "shape": "SPHERE",
-      "art_group": "villa-starfish-ag"
+      "art_group": "villa-starfish-ag.go"
     },
     {
       "etype": "eco-pill",
@@ -12042,7 +12042,7 @@
       "label": "Swamp Spike Gate",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
-      "art_group": "swamp-spike-gate-ag.go",
+      "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",
       "tpages": [
         "tpage-358.go",
@@ -18277,7 +18277,7 @@
       "label": "Gondola",
       "category": "Objects",
       "art_group": "gondola-ag.go",
-      "glb": "levels/village2/gondola-lod0.glb",
+      "glb": "levels/village3/gondola-lod0.glb",
       "color": [
         0.5,
         0.4,
