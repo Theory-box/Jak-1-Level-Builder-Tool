@@ -166,11 +166,11 @@ def audit(args) -> int:
             if xo not in dgos:
                 issues.append(f"extra_code: {xo} not in any DGO")
         ag = a.get("art_group")
-        if ag:
-            if ag not in dgos:
-                issues.append(f"ag: {ag} not in any DGO")
+        for g in (ag if isinstance(ag, list) else [ag] if ag else []):
+            if g not in dgos:
+                issues.append(f"ag: {g} not in any DGO")
             else:
-                notes.append(f"ag DGOs: {', '.join(sorted(set(dgos[ag])))}")
+                notes.append(f"ag {g} DGOs: {', '.join(sorted(set(dgos[g])))}")
         for xag in a.get("extra_art_groups", []) or []:
             if xag not in dgos:
                 issues.append(f"extra_ag: {xag} not in any DGO")

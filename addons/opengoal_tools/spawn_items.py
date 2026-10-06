@@ -274,7 +274,7 @@ def build_spawn_index() -> dict[str, SpawnItem]:
             spawn_id=f"entity:{etype}",
             label=info.get("label", etype),
             category=tile,
-            art_group=info.get("ag"),
+            art_group=(info.get("ag")[0] if isinstance(info.get("ag"), list) else info.get("ag")),
             tpage_group=info.get("tpage_group"),
             description=ENTITY_WIKI.get(etype, {}).get("desc", "") or "",
             operator="og.spawn_entity",

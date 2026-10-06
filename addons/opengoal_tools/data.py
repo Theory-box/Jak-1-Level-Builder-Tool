@@ -384,7 +384,10 @@ def _spawn_variant_cb(self, context):
 # ═══════════════════════════════════════════════════════════════════════════
 # Trait sets moved to db.py: use db.nav_unsafe / db.needs_path / db.needs_pathb /
 # db.is_prop (per-etype), or db.*_types() for the whole set. No shim constants.
-ETYPE_AG          = {e: [info["ag"]] for e, info in ENTITY_DEFS.items() if info.get("ag")}
+# art_group may be a single file or a list (actors whose children need their own
+# model art groups, e.g. double-lurker + double-lurker-top).
+ETYPE_AG          = {e: (list(info["ag"]) if isinstance(info["ag"], list) else [info["ag"]])
+                     for e, info in ENTITY_DEFS.items() if info.get("ag")}
 ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items() if info.get("extras_ag")}
 
 

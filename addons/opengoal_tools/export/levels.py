@@ -67,7 +67,8 @@ def needed_ags(actors):
     seen, r = set(), []
     for a in actors:
         # A variant may override the actor's art group (e.g. per-bridge variant).
-        ags = [a["art_group"]] if a.get("art_group") else ETYPE_AG.get(a["etype"], [])
+        vag = a.get("art_group")
+        ags = (list(vag) if isinstance(vag, list) else [vag]) if vag else ETYPE_AG.get(a["etype"], [])
         for g in ags:
             if g and g not in seen:
                 seen.add(g); r.append(g)

@@ -4224,8 +4224,7 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
-      "art_group": "double-lurker-ag.go",
-      "extra_art_groups": ["double-lurker-top-ag.go"],
+      "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
       "tpages": [
         "tpage-661.go",
@@ -4827,7 +4826,7 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
-      "art_group": "mother-spider-ag.go",
+      "art_group": ["mother-spider-ag.go", "baby-spider-ag.go", "spider-egg-ag.go"],
       "tpage_group": "Maincave",
       "tpages": [
         "tpage-1313.go",
@@ -4840,7 +4839,6 @@
         "o_only": true
       },
       "extra_code":["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o"],
-      "extra_art_groups": ["baby-spider-ag.go", "spider-egg-ag.go"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "needs_path": true,
       "links": {
@@ -4963,7 +4961,7 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
-      "art_group": "gnawer-ag.go",
+      "art_group": ["gnawer-ag.go", "maincavecam-ag.go"],
       "tpage_group": "Maincave",
       "tpages": [
         "tpage-1313.go",
@@ -4976,7 +4974,6 @@
         "o_only": true
       },
       "glb": "levels/maincave/gnawer-lod0.glb",
-      "extra_art_groups": ["maincavecam-ag.go"],
       "extra_code": ["maincave-obs.o"],
       "needs_path": true,
       "lumps": [
@@ -5780,7 +5777,7 @@
       "category": "Bosses",
       "parent": "nav-enemy",
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
-      "art_group": "robotboss-ag.go",
+      "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
       "tpages": [
         "tpage-1419.go",
         "tpage-1420.go",
@@ -5793,7 +5790,6 @@
         "o_only": true
       },
       "extra_code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
-      "extra_art_groups": ["green-eco-lurker-ag.go", "darkecobomb-ag.go"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
       "needs_path": true,
       "links": {
@@ -7927,8 +7923,7 @@
       "label": "Qbert Platforms",
       "category": "Platforms",
       "parent": "prop",
-      "art_group": "qbert-plat-ag.go",
-      "extra_art_groups": ["qbert-plat-on-ag.go"],
+      "art_group": ["qbert-plat-ag.go", "qbert-plat-on-ag.go"],
       "code": {
         "o": "qbert-plat.o",
         "o_only": true
