@@ -4380,6 +4380,17 @@
         "need_nav": true,
         "need_enemy": true
       },
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Notify actor (sent 'notify 'die when the egg is destroyed)",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
       "lumps": [],
       "color": [
         0.5,
@@ -9412,48 +9423,6 @@
         0.5,
         0.2,
         0.1,
-        1.0
-      ],
-      "shape": "SPHERE"
-    },
-    {
-      "etype": "spider-egg",
-      "label": "Spider Egg",
-      "category": "Enemies",
-      "parent": "nav-enemy",
-      "art_group": "spider-egg-ag.go",
-      "tpage_group": "Robocave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
-      "code": {
-        "o": "spider-egg.o",
-        "o_only": true
-      },
-      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Notify actor (messaged on hatch)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
-      "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
         1.0
       ],
       "shape": "SPHERE"

@@ -191,6 +191,10 @@ def audit(args) -> int:
                        "issues": issues, "notes": notes})
 
     if not args.category and not args.etype:
+        dup = collections.Counter(a["etype"] for a in db["Actors"])
+        for e, n in sorted(dup.items()):
+            if n > 1:
+                print(f"!! duplicate etype {e} appears {n}x in Actors (lookups disagree on which wins)")
         for name, c in variant_rows:
             probs = []
             if isinstance(c.get("glb"), str) and not (decomp / c["glb"]).exists():
