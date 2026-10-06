@@ -209,9 +209,6 @@ class OGPreferences(AddonPreferences):
         from pathlib import Path
         layout = self.layout
 
-        # ── Database override (doesn't need any folder set) ───────────────────
-        self._draw_database(layout)
-
         # ── Root path + scan button ───────────────────────────────────────────
         row = layout.row(align=True)
         row.prop(self, "og_root_path", text="OpenGOAL Root")
@@ -220,6 +217,9 @@ class OGPreferences(AddonPreferences):
         if not self.og_root_path.strip():
             layout.separator()
             layout.prop(self, "preview_models")
+            # Advanced — always last, and doesn't need any folder set.
+            layout.separator()
+            self._draw_database(layout)
             return
 
         root    = Path(self.og_root_path.strip().rstrip("\\/"))
@@ -324,6 +324,10 @@ class OGPreferences(AddonPreferences):
 
         layout.separator()
         layout.prop(self, "preview_models")
+
+        # Advanced — always last.
+        layout.separator()
+        self._draw_database(layout)
 
     def _draw_database(self, layout):
         from . import db as _db
