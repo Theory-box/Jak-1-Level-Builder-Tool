@@ -45,28 +45,12 @@ from ..collections import (
 
 
 def _data_root():
-    import bpy as _bpy
-    from pathlib import Path as _Path
-    def _s(p): return p.strip().rstrip("\\").rstrip("/")
-    prefs = _bpy.context.preferences.addons.get("opengoal_tools")
-    if prefs:
-        manual = _s(prefs.preferences.data_path)
-        if manual:
-            return _Path(manual)
-        root = _s(getattr(prefs.preferences, "og_root_path", ""))
-        # Prefer og_active_data (separate data folder), fall back to og_active_version
-        dat = _s(getattr(prefs.preferences, "og_active_data", ""))
-        if not dat:
-            dat = _s(getattr(prefs.preferences, "og_active_version", ""))
-        if root and dat:
-            return _Path(root) / dat
-    return _Path(".")
+    from .. import paths_core as _pc
+    return _pc.data_root()
 
 def _data():
-    root = _data_root()
-    if (root / "goal_src" / "jak1").exists():
-        return root      # dev build — no data/ layer
-    return root / "data" # release build
+    from .. import paths_core as _pc
+    return _pc.data()
 
 def _levels_dir(): return _data() / "custom_assets" / "jak1" / "levels"
 

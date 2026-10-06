@@ -98,6 +98,27 @@ def _lb_level_items(self, context):
             ("self", "(This level)", "The level this boundary belongs to")] \
         + _cp_level_items_base(context)
 
+def _on_root_path_changed(self, context):
+    """Scan the new root once (result cached for the panel) and auto-pick an
+    exe + data folder if none is picked yet — e.g. a dev clone picked as the
+    root selects itself as data and out/build/Release/bin as exe."""
+    from pathlib import Path
+    from . import paths_core as _pc
+    raw = _pc.strip(self.og_root_path)
+    if not raw or not Path(raw).exists():
+        return
+    root = Path(raw)
+    exe_folders, data_folders = _pc.cached_scan(root, refresh=True)
+    _pc.auto_select(self, root, exe_folders, data_folders, only_if_empty=True)
+
+
+def _on_db_override_changed(self, context):
+    # db.py loads before the preferences exist, so it reads the override from
+    # a settings file — keep that file in sync with this field.
+    from . import db as _db
+    _db.write_settings(db_override_path=self.db_override_path.strip())
+
+
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"
@@ -112,6 +133,7 @@ class OGPreferences(AddonPreferences):
         ),
         subtype="DIR_PATH",
         default="",
+        update=_on_root_path_changed,
     )
     og_active_version: StringProperty(
         name="Active Version",
@@ -153,6 +175,16 @@ class OGPreferences(AddonPreferences):
         subtype="DIR_PATH",
         default="",
     )
+    db_override_path: StringProperty(
+        name="Database override",
+        description=(
+            "A .jsonc that replaces the bundled jak1_game_database.jsonc — edit a copy "
+            "without touching or reinstalling the addon. Click Reload Database after changing it"
+        ),
+        subtype="FILE_PATH",
+        default="",
+        update=_on_db_override_changed,
+    )
     preview_models: BoolProperty(
         name="Preview Models",
         description="Automatically show the enemy's game model as a viewport stand-in when spawning",
@@ -177,20 +209,13 @@ class OGPreferences(AddonPreferences):
         root    = Path(self.og_root_path.strip().rstrip("\\/"))
         exe_ext = ".exe" if sys.platform == "win32" else ""
 
-        exe_folders  = []
-        data_folders = []
-        if root.exists():
-            try:
-                from .build import _scan_for_installs
-                exe_folders, data_folders = _scan_for_installs(root)
-            except Exception:
-                pass
+        # Cached: scanned once per root (or on Find Files), never per redraw —
+        # walking the install tree on every draw made this panel lag.
+        from . import paths_core as _pc
+        exe_folders, data_folders = _pc.cached_scan(root)
 
         def _rel(p: Path) -> str:
-            try:
-                return str(p.relative_to(root)).replace("\\", "/")
-            except ValueError:
-                return str(p)
+            return _pc.rel_to(root, p)
 
         # ── EXE picker ────────────────────────────────────────────────────────
         box = layout.box()
@@ -283,6 +308,20 @@ class OGPreferences(AddonPreferences):
 
         layout.separator()
         layout.prop(self, "preview_models")
+
+        # ── Database override ────────────────────────────────────────────────
+        from . import db as _db
+        layout.separator()
+        box = layout.box()
+        box.label(text="Game database", icon="FILE_TEXT")
+        row = box.row(align=True)
+        row.prop(self, "db_override_path", text="Override")
+        row.operator("og.reload_database", text="Reload Database", icon="FILE_REFRESH")
+        sub = box.column(); sub.scale_y = 0.8
+        sub.label(text=f"In use: {_db.DB_PATH}",
+                  icon="CHECKMARK" if not _db.DB_OVERRIDE_ERROR else "ERROR")
+        if _db.DB_OVERRIDE_ERROR:
+            sub.label(text=_db.DB_OVERRIDE_ERROR, icon="ERROR")
 
 
 
@@ -386,6 +425,25 @@ class OGProperties(PropertyGroup):
         name="Listener Settle (s)",
         description="Seconds to wait between sending (lt) and (start). Usually fine at 2s; bump if the spawn occasionally misses on cold start.",
         default=2.0, min=0.0, max=10.0, soft_min=0.5, soft_max=5.0,
+    )
+    # Project Folders — saved in this .blend, override the addon preferences
+    # (see paths_core). Handy for several projects / after reinstalling.
+    og_blend_paths_enabled: BoolProperty(
+        name="Use this .blend's folders",
+        description="Use the folders below (saved in this .blend) instead of the addon preferences. Empty fields fall back to the preferences",
+        default=False,
+    )
+    og_blend_exe_path: StringProperty(
+        name="EXE folder", subtype="DIR_PATH", default="",
+        description="Folder containing gk / goalc for this project (dev clone: <repo>/out/build/Release/bin)",
+    )
+    og_blend_data_path: StringProperty(
+        name="Data folder", subtype="DIR_PATH", default="",
+        description="Release install: parent of data/. Dev clone: the repository root",
+    )
+    og_blend_decompiler_path: StringProperty(
+        name="Decompiler output", subtype="DIR_PATH", default="",
+        description="decompiler_out/jak1/ for this project. Blank = <data>/decompiler_out/jak1",
     )
     og_ignore_game_gd: BoolProperty(
         name="Ignore game.gd files",

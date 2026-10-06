@@ -22,14 +22,6 @@ _PREVIEW_COL   = "Preview Meshes"   # sub-collection name (no-export)
 _PREVIEW_PROP  = "og_preview_mesh"  # custom property key on each mesh object
 
 
-def _data_root() -> Path:
-    """Return the addon data_path preference as a Path (mirrors build.py)."""
-    prefs = bpy.context.preferences.addons.get("opengoal_tools")
-    p = prefs.preferences.data_path if prefs else ""
-    p = p.strip().rstrip("\\").rstrip("/")
-    return Path(p) if p else Path(".")
-
-
 def _glb_path(glb_rel: str) -> Path:
     """Resolve a relative glb path (e.g. 'levels/beach/babak-lod0.glb')
     against the decompiler output directory."""

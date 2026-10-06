@@ -211,6 +211,76 @@ class OG_OT_ReloadAddon(Operator):
 
 
 
+def reload_addon_full(mod: str) -> None:
+    """Disable the addon, drop every one of its modules, enable it again — so
+    db.py re-reads the database and every table built from it is rebuilt.
+    Preference values are carried over."""
+    import sys, addon_utils
+    a = bpy.context.preferences.addons.get(mod)
+    keep = {}
+    if a:
+        for k in a.preferences.bl_rna.properties.keys():
+            if k != "rna_type":
+                try:
+                    keep[k] = getattr(a.preferences, k)
+                except Exception:
+                    pass
+    addon_utils.disable(mod, default_set=False)
+    for name in [n for n in sys.modules if n == mod or n.startswith(mod + ".")]:
+        del sys.modules[name]
+    addon_utils.enable(mod, default_set=False)
+    a2 = bpy.context.preferences.addons.get(mod)
+    if a2:
+        for k, v in keep.items():
+            try:
+                if getattr(a2.preferences, k) != v:
+                    setattr(a2.preferences, k, v)
+            except Exception:
+                pass
+
+
+class OG_OT_ReloadDatabase(Operator):
+    """Re-read the game database (bundled or the Preferences override) by fully
+    re-enabling the addon, so every table built from it is rebuilt."""
+    bl_idname = "og.reload_database"
+    bl_label  = "Reload Database"
+    bl_description = "Reload the game database (and the addon) from disk — use after editing the database or changing the override"
+
+    def execute(self, ctx):
+        mod = __package__.rsplit(".", 1)[0]          # "opengoal_tools"
+
+        def _later():
+            reload_addon_full(mod)
+            from importlib import import_module
+            print(f"[OpenGOAL] Database reloaded from {import_module(mod + '.db').DB_PATH}")
+            return None
+
+        # Run after this operator returns — it lives in a module being unloaded.
+        bpy.app.timers.register(_later, first_interval=0.05)
+        self.report({"INFO"}, "Reloading database…")
+        return {"FINISHED"}
+
+
+class OG_OT_BlendPathsFromPrefs(Operator):
+    """Copy the folders currently in use into this .blend's Project Folders."""
+    bl_idname = "og.blend_paths_from_prefs"
+    bl_label  = "Copy From Preferences"
+    bl_description = "Fill this .blend's folders with the ones the addon preferences currently resolve to"
+
+    def execute(self, ctx):
+        from .. import paths_core as _pc
+        props = ctx.scene.og_props
+        props.og_blend_paths_enabled = False         # resolve from preferences only
+        try:
+            props.og_blend_exe_path        = str(_pc.exe_root())
+            props.og_blend_data_path       = str(_pc.data_root())
+            props.og_blend_decompiler_path = str(_pc.decompiler_path())
+        finally:
+            props.og_blend_paths_enabled = True   # copied -> use them
+        self.report({"INFO"}, "Project folders saved in this .blend")
+        return {"FINISHED"}
+
+
 class OG_PT_DevTools(Panel):
     bl_label       = "🔧  Developer Tools"
     bl_idname      = "OG_PT_dev_tools"
@@ -237,7 +307,19 @@ class OG_PT_DevTools(Panel):
         box.label(text=f"gk{_EXE}:    {'✓ OK' if gk_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gk_ok else "ERROR")
         box.label(text=f"goalc{_EXE}: {'✓ OK' if gc_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gc_ok else "ERROR")
         box.label(text=f"game.gp:   {'✓ OK' if gp_ok else '✗ NOT FOUND'}", icon="CHECKMARK" if gp_ok else "ERROR")
-        box.operator("preferences.addon_show", text="Set EXE / Data Paths", icon="PREFERENCES").module = __name__
+        box.operator("preferences.addon_show", text="Set EXE / Data Paths", icon="PREFERENCES").module = __package__.rsplit(".", 1)[0]
+
+        # Project Folders — saved in this .blend, override the preferences
+        props = ctx.scene.og_props
+        layout.label(text="Project Folders (this .blend)", icon="FILE_BLEND")
+        box = layout.box()
+        box.prop(props, "og_blend_paths_enabled")
+        col = box.column()
+        col.enabled = props.og_blend_paths_enabled
+        col.prop(props, "og_blend_exe_path")
+        col.prop(props, "og_blend_data_path")
+        col.prop(props, "og_blend_decompiler_path")
+        box.operator("og.blend_paths_from_prefs", icon="IMPORT")
 
         layout.separator()
 
@@ -394,5 +476,7 @@ CLASSES = (
     OG_PT_VertexExport,
     OG_PT_BuildPlay,
     OG_OT_ReloadAddon,
+    OG_OT_ReloadDatabase,
+    OG_OT_BlendPathsFromPrefs,
     OG_PT_DevTools,
 )

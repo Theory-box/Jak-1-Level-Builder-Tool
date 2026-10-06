@@ -753,13 +753,8 @@ class OG_OT_ScanPaths(bpy.types.Operator):
         if not root.exists():
             self.report({"WARNING"}, f"Folder not found: {root}"); return {"CANCELLED"}
 
-        exe_folders, data_folders = _scan_for_installs(root)
-
-        def _rel(d: Path) -> str:
-            try:
-                return str(d.relative_to(root)).replace("\\", "/")
-            except ValueError:
-                return str(d)
+        from .. import paths_core as _pc
+        exe_folders, data_folders = _pc.cached_scan(root, refresh=True)
 
         if not exe_folders and not data_folders:
             self.report({"WARNING"},
@@ -767,20 +762,7 @@ class OG_OT_ScanPaths(bpy.types.Operator):
                 "under the root. Use Manual path overrides below.")
             return {"CANCELLED"}
 
-        # Auto-select best exe version (highest semver, else last sorted)
-        if exe_folders:
-            def _ver_key(d: Path):
-                m = re.search(r"(\d+)[._-](\d+)[._-](\d+)", d.name)
-                return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
-            exe_folders.sort(key=_ver_key, reverse=True)
-            p.og_active_version = _rel(exe_folders[0])
-
-        # Auto-select data folder (prefer one named "active", else first found)
-        if data_folders:
-            active_pref = next(
-                (d for d in data_folders if "active" in str(d).lower()), data_folders[0]
-            )
-            p.og_active_data = _rel(active_pref)
+        _pc.auto_select(p, root, exe_folders, data_folders)
 
         parts = []
         if exe_folders:

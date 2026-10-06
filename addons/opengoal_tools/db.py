@@ -31,7 +31,43 @@ _CANDIDATES = [
 ]
 
 
-def _resolve_db_path() -> Path:
+# ── User override ───────────────────────────────────────────────────────────
+# Preferences > "Database override" picks a .jsonc that replaces the bundled
+# database (edit a copy without touching / reinstalling the addon). The path
+# is kept in a small settings file in Blender's user config folder, because
+# this module loads before the addon preferences exist.
+def settings_file() -> Path | None:
+    try:
+        import bpy
+        return Path(bpy.utils.user_resource("CONFIG")) / "opengoal_tools_settings.json"
+    except Exception:
+        return None
+
+
+def read_settings() -> dict:
+    f = settings_file()
+    try:
+        return json.loads(f.read_text(encoding="utf-8")) if f and f.exists() else {}
+    except Exception:
+        return {}
+
+
+def write_settings(**changes) -> None:
+    f = settings_file()
+    if not f:
+        return
+    s = read_settings()
+    s.update(changes)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(s, indent=2), encoding="utf-8")
+
+
+def override_path() -> Path | None:
+    p = str(read_settings().get("db_override_path", "") or "").strip()
+    return Path(p) if p else None
+
+
+def _bundled_db_path() -> Path:
     for p in _CANDIDATES:
         if p.exists():
             return p
@@ -44,14 +80,36 @@ def _resolve_db_path() -> Path:
 # ── Load + parse (strip // line comments, parse JSON) ────────────────────────
 _COMMENT_RE = re.compile(r'^\s*//.*$', re.MULTILINE)
 
+# What was actually loaded (shown in the preferences) and, if the override
+# could not be used, why — the bundled database is used instead so the addon
+# still loads.
+DB_PATH: Path | None = None
+DB_OVERRIDE_ERROR: str = ""
 
-def _load() -> dict:
-    path = _resolve_db_path()
+
+def _parse(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     # Strip line comments. The database uses only // line comments (not /* */),
     # and no string values contain `//` at line start — so a simple regex works.
-    stripped = _COMMENT_RE.sub('', text)
-    return json.loads(stripped)
+    return json.loads(_COMMENT_RE.sub('', text))
+
+
+def _load() -> dict:
+    global DB_PATH, DB_OVERRIDE_ERROR
+    DB_OVERRIDE_ERROR = ""
+    ov = override_path()
+    if ov:
+        try:
+            data = _parse(ov)
+            DB_PATH = ov
+            return data
+        except FileNotFoundError:
+            DB_OVERRIDE_ERROR = f"Override not found: {ov}"
+        except Exception as e:
+            DB_OVERRIDE_ERROR = f"Override failed to load ({type(e).__name__}: {e})"
+        print(f"[OpenGOAL] {DB_OVERRIDE_ERROR} - using the bundled database")
+    DB_PATH = _bundled_db_path()
+    return _parse(DB_PATH)
 
 
 # ── Module-level cache ──────────────────────────────────────────────────────
