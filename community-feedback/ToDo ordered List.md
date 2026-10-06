@@ -4,6 +4,7 @@ Features and fixes to work on, have been ordered and can be checked out when the
 ---
 
 ## level .gd and .json clean up
+### game.gd lookup to ignore code/ag
 If a code or art group file is included in the game.gd, it does not need to be included in the level's .gd or in the level's .json. 
 As those files are always loaded and part of the common fr3 too for art groups.
 How I'm imagining it to work.:
@@ -12,6 +13,72 @@ How I'm imagining it to work.:
 - If the files are already part of that list, don't copy them.
 - maybe have an option in the developer tools to turn on/off "ignore game.gd files" to easily switch back to old behaviour if needed 
   - this option should be ON by default.
+### Extra useless lines in the .json actors
+- There's a few extra fields added on every actors that I'm not sure when they were added but they don't serve any purpose:
+  - "art-group"
+  - "code"
+  - "extra_art_groups": []
+  - "extra_code": []
+- That kind of info shouldn't end up here
+- Here's an example of an actor in the json:
+```json
+{
+  "trans": [
+    -511.08,
+    2.8933,
+    -208.7516
+  ],
+  "etype": "eco-blue",
+  "game_task": "(game-task none)",
+  "quat": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "vis_id": 0,
+  "bsphere": [
+    -511.08,
+    2.8933,
+    -208.7516,
+    10.0
+  ],
+  "lump": {
+    "name": "eco-blue-0"
+  },
+  // these next 4 lines shouldn't appear here at all
+  "art_group": null,
+  "code": null,
+  "extra_art_groups": [],
+  "extra_code": []
+},
+```
+
+---
+
+## Addon/project settings and fixes
+Some of these could be added in the "Developper tools" or have its own "project settings" panel
+- overwrite folders
+  - Being able to overwrite the folders directly in the blend file
+  - Useful if you're working on multiple projects so you don't have to change inbetween, risk to overwrite files from one project on another
+  - Also useful when you need to update/re-install the addon, the file will already have those selected and you don't need to do it again
+- overwrite database
+  - Being able to directly load a file which overwrite the loaded database
+  - This way people can make changes to it without having to edit the base addon and re-install it
+  - Also makes working on devlopement a lot easier when making changes in the database to test, no need to re-install the addon everytime
+- Fix folder detections
+  - At the moment, when the main folder is set (dev env):
+    - You need to set the data folder manually even tho it's identical to the main folder
+    - You need to set the EXE folder which should always just look like this: BaseFolder\out\build\Release\bin\
+    - The Decompiler folder get set correctly when the data folder is set
+- Fix lag in settings
+  - Maybe due to the dev env issue, the setting menu for the addon become very unresponsive once the main folder is selected
+  - Guessing it might have to do with the fact that it's looking for the folder automatically but can't find them?
+  - But even after selecting them manually it's still very slow
+  - While fixing the previous issue could help with this, not finding the folders automatically shouldn't mean it becomes that slow
+- Quick open has the wrong .gd file name for the level
+  - Same as a previous issue, it's using the automated name instead of the one that was manually set
+  - Might be worth looking around to see if that's not an issue elsewhere in the code
 
 ---
 
@@ -66,13 +133,13 @@ There's an example in test-zone.jsonc, here it is:
 The current implementation, using a custom actor built for these camera might have more features so it could be kept.
 But if not, or if the features are not that meaningful, we can completely replace them. This can be discussed further.
 
-This will definitely need some custom build panel and since it's very specific to cameras, does can live mostly in the code.
+This will definitely need some custom build panel and since it's very specific to cameras, it can live mostly in the code.
 However, most fields and values should still use the database to be filled up instead of being hard coded.
 There's also a lot of previous functions that can be used such as 
 - The volume code and link UI for vol, pvol and cutoutvol
 - Placing an empty for the pivot point
 - Path/waypoint UI for camera's path
-- Varient selection for the camera modes
+- Varient/enum selections for the camera modes
   - Each of those varients can then have the different UI elements they need 
   - as well as a decent explanation of how that specific camera mode works
 
@@ -85,11 +152,11 @@ But also other completely new fields:
   - See `goal_src\jak1\engine\camera\camera-h.gc` on `cam-slave-options` enum to see the list of all flags.
   - Probably need a little bit of research to see what each flag do exactly so the tooltip can be helpful
 
-
 ---
 
 ## Expending paths for more features/control
 The menu itself should be called Path as that'd be more consistent with how it's used in the game code.
+When adding waypoints, I'm personally not sure if I'm a fan of the preview mesh getting added. Personally I'm moslty only using it with curves which at least don't do that.
 ### Extra Path modes
 At the moment, there's not much control on paths. You can just change inbetween straight lines and curved. However, the path-k allows for much more control.
 Instead of having just those two options, here's what I'm proposing:
@@ -170,49 +237,442 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 
 ---
 
-## Going through actor list to fix preview model/included code.
-This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
-There's a few features that might need to be added as well:
-- `movie-pos` field for flies/cell
-  - For Cells this will determine where the animation is played, including the rotation of this one with the W value
-  - For Flies, this will determine where the cell will spawn if this is the last fly collected as well as the position/rotation of the animation
-  - Should just be a small helper that spawn an empty (either at cursor or at the actor position)
-  - Similar to the alt-actor for launcher
-  - The rotation is set by the Z rotation of the spawned empty
-- Prev/next/alt actor fields
-  - While it's already in the lump reference on some actors, these should be direct fields that are already there and easy to use for some of the actors
-
-Known Missed actors:
-- pickup-spawner missing
-  - Allow you to spawn any collectable
-  - Can be set to off by default and then triggered by another actor which is very useful
+## Ways to include code without it coming from an actor
+While, ideally, you should never have to add anything extra and everything should be automated. It'll be hard to cover every cases and someone making custom features might be blocked a bit. Having custom code to always include could cover weird edge cases much easier than trying to manually fix every single one of them.
+### General idea for custom code
+What I'm thinking is having text files in blender you can edit which would either be separated files for each or have one well organised file.
+Then having one or multiple option in the level settings to include those files with a descriptive tool tip.
+### Included code files
+This would include a list of you always want included in your level's .gd and .json file.
+Here's how it could look:
+```json
+"gd":[
+  "codefile.o",
+  "anothercodefile.o",
+  "artgroup-ag.go",
+  "anotherartgroup-ag.go"
+],
+"json_ag":[
+  "artgroup-ag",
+  "anotherartgroup-ag"
+],
+"json_texture":[
+  "some-texture-name"
+]
+```
+These would then get added as well as all the ones defined by actors in the blend file.
+### Included actors
+This would include actor code you want to always include that's not defined by an actor object in the blend file.
+Here's how it could look:
+```json
+"actors":[
+  {
+      "trans": [-511.08, 2.8933, -209.8895],
+      "etype": "eco-blue",
+      "game_task": "(game-task none)",
+      "quat": [0.0, 0.0, 0.0, 1.0],
+      "vis_id": 0,
+      "bsphere": [-511.08, 2.8933, -209.8895, 10.0],
+      "lump": {"name": "eco-blue-0"}
+    }
+],
+"ambiants":[]
+```
+Then all the actors and ambients defined here would be added to the level's json as well as the ones added in the blend file.
+### Included level-info in level-info.gc
+This might not be fully needed, not 100% sure how the addon work with existing level code but if it might wipe out other custom level code in `level-info.gc` then there should be a way to include these in a text file. If they're not being affected then this isn't needed.
+### Included level build data in game.gp
+Same as with the level-info data, if other custom levels aren't affected then there's no need for this.
 
 ---
 
-## Addon/project settings
-- overwrite folders
-  - Being able to overwrite the folders directly in the blend file
-  - Useful if you're working on multiple projects so you don't have to change inbetween, risk to overwrite files from one project on another
-  - Also useful when you need to update/re-install the addon, the file will already have those selected and you don't need to do it agian
-- overwrite database
-  - Being able to directly load a file which overwrite the loaded database
-  - This way people can make changes to it without having to edit the base addon and re-install it
-- Fix folder detections on dev env
-  - At the moment, when a dev env folder is set as the main folder:
-    - You need to set the data folder manually even tho it's identical to the main folder
-    - You need to set the EXE folder which should always just look like this: BaseFolder\out\build\Release\bin\
-    - The Decompiler folder get set correctly when the data folder is set
-- Fix lag in settings
-  - Maybe due to the dev env issue, the setting menu for the addon become very unresponsive once the main folder is selected
-  - Guessing it might have to do with the fact that it's looking for the folder automatically but can't find them?
-  - But even after selecting them manually it's still very slow
-  - While fixing the previous issue could help with this, not finding the folders automatically shouldn't mean it becomes that slow
-- Make spawn use mod-base spawn feature if mod-base detected
-  - Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
-  - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
-  - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
-  - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
+## Going through actor list to fix preview model/included code.
+This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
+
+### General changes for entities
+- code and art-groups changes
+  - Make it so both the code and AG fields can be used to add multiple entries as some actors need multiple code files as well as mutliple art groups
+    - it shouldn't change much in the way it's setup already. It should just allow multiple string entries in a bracket when there's multiple ones.
+    - Example: `"art-group" : ["keg-conveyor-ag.go","keg-conveyor-paddle-ag.go","keg-ag.go"]`
+    - There's already a way to add multiple files in some variant example but it's done as another entry and that complexity shouldn't be added if it can all live within the same entry.
+    - The "extra_art-group" could be kept as is since that one doesn't copy the art-group in the level json. Which is fine for things that are just adding animation without models (jak animations or camera for example)
+  - Simplify how "code" files it's written in the database
+    - instead of having "code" entry which then has "o", "o_only" and "in_game_cgo". It should just be a single "code" or "o" entry with the code file (or files)
+    - Then to know if there's no need to include code files ort art groups, it should refere to a list which can simply be copied over to the database from game.gd
+    - That way, the code is always the same and cleaner for all actors in the database and if a modder has included some other actors in their game.gd, they can just also add it to the database and that'll directly work
+    - Could also keep the "code" entry and just have everything that's related to exporting code files there, such as "o", "art-group", "tpages", "tpage_group"
+- Reworking all the panel into one field in the database
+  - At the moment there's multiple ways to add panel information to actors via the database:
+    - "fields" to add custom fields
+    - "needs-sync" which add all the platform info (sync data + path data)
+    - "panel" which add a specific panel to some actors
+    - "links" which add a couple of different pannels, including path which also alreay has another way to get added.
+    - etc
+  - All of those are working differently and exist in separate places so grouping them and getting them all to work in a similar way would go a long way
+  - I'd like to reuse that "panel" field but instead of pointing it to one type and then create the whole panel from that, it'd contain all the panel information:
+    - inside of that panel field, you would have group of data for each of the different pannels that could be added 
+    - Example of the panels : "fields", "path", "sync", "actor link", "fact options", "volume", "nav-mesh", any other panel that will be needed to be used multiple time and is better as its own panel than custom entries in fields
+    - For each panel, you'd just be able to turn them on by having them in the "panel" field with a "show-panel" set to true
+    - If a panel would be set to shown, it would use some default values but you could also change any of the field of that default panel if you need to
+    - Here's an example of what it could look like:
+```json
+"Panels": [
+  {
+    "panel": "sync", // Name of the existing panel this will add
+    "show-panel": true, // with this set to true, the panel will appear in the actor options
+    "fields":[
+      {"key": "og_sync_period", "default": 10.0}, // as you can see the added field here only has the default value noted because everything else about that field will use the standard values
+      // the field for phase is not written at all since it'll just use the default values for that field
+      {"key": "og_sync_ease_out", "show-field": false}, // This actor, for example, wouldn't need the ease_out and ease_in so they're manually turned off here
+      {"key": "og_sync_ease_in", "show-field": false}, 
+    ]
+  },
+  {
+    "panel": "path",
+    "show-panel": true, 
+  },
+  {
+    "panel": "fact-option", // see the fact-option info a bit lower
+    "show-panel": true, 
+    "fields":[
+      {"key": "og_fact_option_wrap_phase", "show-field": true}, // For fact options, they probably should all be turned off by default as there's many of them and only a few are used per actors. So turning them true here instead.
+    ]
+  },
+  {
+    "panel": "custom-fields", // This would replace the old "fields", as "fields" is now used in each
+    "show-panel": true, 
+    "fields":[
+    // For custom fields, you'd need to type out the whole fields instead
+      {
+        "key": "og_plat-type",
+        "label": "Platform mode",
+        "type": "enum",
+        "choices": "FlutflutPlatMode",
+        "default": 0,
+        "lump":{
+          "key": "mode",
+          "type": "int32"
+        },
+        "write_if":"if_nonzero"
+      },
+      {
+        "key": "og_extra-id",
+        "label": "Order of aparition for button mode (order * 0.15s)",
+        "type": "int",
+        "default": 0,
+        "lump":{
+          "key": "extra-id",
+          "type": "int32"
+        },
+        "write_if":"if_nonzero"
+      }
+    ]
+  }
+]
+```
+- Panel/fields heritance from parents
+  - The point of having the parent actor in the database was for the child actor to be able to innherit from said parent.
+    - That way, any platform that moves along path could just be a child from a main platform parent
+    - It'd then innherit all of the panel and settings for platform
+    - then each specific platform would only need to have settings for things that are different or extra
+    - This would cut on a lot of repeated information in the database
+- Actor link fields changes
+  - An "allow-multiple" feature you can turn on would be nice as sometimes, things such as "alt-actor" can have multiple entries
+    - While it's already possible to add multiple ones by adding several links of the same type with increasing slot, that's not ideal when the number of actors isn't a specific set number. Some can have like 10+ alt-actor
+  - Maybe don't fully block the users from linking an actor that's not part of the allowed list and instead warn them instead that it might not work
+    - Reason is that it's hard to catch and add every single actors that would work in those links but then just changing all to "any" wouldn't help users
+- Variants being able to change etype
+  - Some actors are mostly copies of each other with some very small changes and having all of them added to the list would be too cumbersome
+  - Variants would be perfect for the task but at the moment, they're not able to change the etype of the actor
+  - It would be pretty simple in implementation in the database, just having an "etype" field in variant choices should automatically let the addon know they need to change the etype of that specific actor
+  - There's already some examples in the database of what it'd looks like, see "OgreStepVariants" and "CitbDiscVariants"
+- `fact-option ` is an enum that allows you to set extra options for a lot of actors
+  - It's already kind of used for platforms, for the wrap-phase or fuel cell for the skip jump anim
+  - Generalise all of these as an "options" panel inside of the actor settings
+  - Have all the options that can be set live in the database with their name, description and the string required to add to the json.
+  - they can be found in `goal_src\jak1\engine\game\fact-h.gc` `fact-options` enum with some comments already
+  - You can ignore all the unused options (fop4, fop5 and fop17)
+  - Then it would be as simple as adding an "options" field in each of the actors that need it
+  - Then all the options that are available for that actor and if they should be turned on or off by default
+  - Then only the checkboxes for the existing options would appear on each specific actor, with them enabled/disabled correctly by default
+- Scale lump
+  - Some actors have a scale lump, while this can be added as fields there could be some better way to deal with it
+  - A really intuitive way would be to simply export that scale lump whenever an actor doesn't have default scaling in blender
+  - Some actors also require that scale lump (ex: citb-plat will crash without it) so an option to always export scale, even if default (1,1,1,1) could be added to the database
+  - scale lump wouldn't do anything on most actor 
+    - but there's very easy hack that I have added on TFL that allow me to use the scale on any process-drawable 
+    - so having it automatically when changing scale in blender would be ideal
+- Drivers between object properties and exported OG values
+  - This would allow for two things: 
+    - Either a good way to visualise changing one exported value into blender. (ex: having the size of the empty arrow in blender increase in size to show how high a launcher launches you)
+    - Or, let you modify a value in blender that'll then be applied to the export. (ex: Scaling objects and having that scale being exported as a res-lump for custom scaling, see TFL. Or the rotoffset on some object being directly taken from the Z axis rotation like for caveelevators)
+  - Drivers could live in the database as well as such:
+    - Set the driven variable
+    - Set the driver variable
+    - Set the default value
+    - Conditions to use the default value (ex for launcher, if value is negative, it should be 40)
+- Default empty size
+  - Being able to set the empty size in the database would be useful for some actors
+  - Wouldn't be set on all but nice for a few that clearly need to be smaller or larger
+- Removing/changing Color entry
+  - The color isn't that useful since the empties don't really show it or preview meshes which don't either
+  - If the color could be set on the preview mesh, that could be maybe useful
+  - Even if it was added to the preview mesh, I would still like it removed from the entry of every actor as it clogs the data a lot
+  - If anything it should be set per category, so the color coding can quickly show to users what type of actor are placed
+
+### Per categories changes:
+Going through all categories in this order, if I can't fix some things I'll not it here under each category:
+- Pickups
+  - `movie-pos` field for flies/cells and crates/pickup-spawner which are holding a fly/cell
+    - For Cells this will determine where the animation is played, including the rotation of this one with the W value
+    - For Flies, this will determine where the cell will spawn if this is the last fly collected as well as the position/rotation of the animation
+    - Should just be a small helper that spawn an empty (either at cursor or at the actor position)
+    - Similar to the alt-actor for launcher
+    - The rotation should be set by the Z rotation of the spawned empty
+    - `movie-pos` also have its own type called the same that'll take XYZ in meters and W as a 360 angle directly. So no weird translation needed.
+- Platforms
+  - Empty "Platform settings"
+    - A lot of platforms have a "platform settings" menu that's empty since they don't need the sync options and others
+    - This empty menu could simply be removed if they don't have any settings there anyway
+  - caveelevator 
+    - require multiple code files to add `cavecrystal-light.o` 
+  - cavespatula
+    - when not in darkcave, cavespatula try to set a skeleton group that doesn't really exist (cavespatula-sg) Not sure how to fix that without editing cavespatula code
+    - require multiple code files to add `cavecrystal-light.o` 
+  - Pontoonfive and pontoonten
+    - The task menu right now is all over the place, should definitely not have a checkbox list like this for something this long. It should be a drop down menu when you can only select one anyway. Also this might not even be needed to be in the pannel and can maybe just be part of the lump definitions
+  - square-platform, 
+    - need to test after square-platform-button and square-platform-master are implemented
+  - ease in/out caviats doesn't work
+    - Values still seem to export even when they're set to 0
+  - swingpole
+    - Adding a general way to change base rotation as swingpoles need to be rotated 90° on their X axis to work at all
+    - That general way could then be used on any other actor that might need to use that as well
+    - don't have it on all actor in the database, just the one that might need it, like the preview mesh offset
+  - floating-launcher (floating-launcher.gc) 
+    - alt-vector option doesn't work properly in blender
+  - ogre-isle (ogre-obs.gc) 
+    - need variants to be able to change etype as well
+    - Looks to have some model offset
+    - crashes
+  - ogre-step (ogre-obs.gc) (+ a-b-c-d) 
+    - need variants to be able to change etype as well
+    - crash game after a second when they do spawn
+    - seems to be some offsets for preview model 
+  - minecartsteel (minecart.gc)  
+    - maybe a way to show the anim path in blender?
+  - flutflut-plat-small (snow-flutflut-obs.gc) 
+    - variants would need to be able to set etypes like ogre-step
+  - citb-disc (citadel-obs.gc) (+ a-b-c-d) 
+    - variants would need to be able to set etypes like ogre-step
+  - Crashing actors:
+    - balance-plat (not in goal code stack trace) (looks to have correct art-group and code files included)
+    - mis-bone-bridge (same as balance plat)
+    - breakaway-right (same as balance plat)
+    - breakaway-mid (same as balance plat)
+    - breakaway-left (same as balance plat)
+    - tar-plat (same as balance plat)
+    - citb-disc (same as balance plat)
+    - citb-launcher (same as balance plat)
+    - bone-platform (same as balance plat)
+    - ogre-isle (Assertion failed when trying to :di the stack trace)
+  - Missing platforms:
+    - citb-drop-plat (citb-drop-plat.gc) This one would need some pretty complex setup to be intuitive to work within blender
+    - citb-arm (citadel-obs.gc) (+ a bunch of others) Waiting on this for etype variants
+- Obstacles
+  - keg-conveyor (misty-conveyor.o misty/keg-conveyor-lod0.glb keg-conveyor-ag.go keg-conveyor-paddle-ag.go keg-ag.go)
+    - Need multipe art group
+  - spike (firecanyon-obs.o firecanyon/spike-lod0.glb spike-ag.go)
+    - Need racer/zoomer to try it out
+  - swamp-spike (swamp-obs.o swamp/swamp-spike-lod0.glb swamp-spike-ag.go)
+    - Not in goal code crash
+  - snow-ball (snow-ball.o snow/snow-ball-lod0.glb snow-ball snow-ball-ag.go)
+    - Need path keying
+    - Need multiple art-group
+  - citb-firehose (citb-plat.o citadel/citb-firehose-lod0.glb citb-firehose-ag.go citadel-part.o)
+    - Need multiple code files (for particles )
+- Enemies
+  - Being in the "enemies" category shouldn't automatically add any fields/panels. A lot of those are only useful for nav-enemies, which not all enemies are. Category, in general, shouldn't affect anything other than putting them in the correct menu in the UI.
+  - "need-nav" seems to only work if the parent is "nav-enemy". That shouldn't be the case, any actor with "need-nav" should give you field. Some actors aren't nav-enemies by themselves but they do still need the field because they can spawn nav-enemy actors, such as mother-spider or battlecontroller for example.
+  - sharkey (sharkey.o beach/sharkey-lod0.glb sharkey-ag.go)
+    - Error when spawning in blender:
+    - Could not select entity type sharkey: bpy_struct: item.attr = val: enum "sharkey" not found in
+  - babak-with-canon (babal-with-canon.o beach/babak-lod0.glb babak-ag.go)
+    - test with canon
+  - junglefish (junglefish.o jungle/junglefish-lod0.glb junglefish-ag.go)
+    - Done
+    - Interestingly, junglefish only agro jak if he's walking in shallow water and not while swimming
+  - plantboss (plant-boss.o aphid.o jungleb/plant-boss-main-lod0.glb plant-boss-ag.go plant-boss-main+0-ag.go aphid-lurker-ag.go)
+    - Done
+    - Need multiple code/ag (for aphids)
+    - Need to test movie-pos when that's implemented
+  - quicksandlurker (quicksandlurker.o misty/quicksandlurker-lod0.glb quicksandlurker-ag.go)
+    - Crashes (has GOAL stack trace)
+  - misty-battlecontroller (misty-obs.o)
+    - Maybe just have battlecontroller instead
+  - balloonlurker (balloonlurker.o misty/balloonlurker-lod0.glb balloonlurker-ag.go) 
+    - Test alt-actor for cell later (would need extra code/ag)
+  - robber (rolling-robber.o ogre/robber-lod0.glb robber-ag.go) 
+    - Need game-task implementation for the cell
+  - double-lurker (double-lurker.o sunken/double-lurker-lod0.glb double-lurker-ag.go double-lurker-top-ag.go)
+    - Need extra art-group, the current "extra_art_groups" doesn't add it to the .json
+  - swamp-rat-nest (swamp-rat-nest.o swamp-rat-nest-a-lod0.glb swamp-rat-nest-ag.go)
+    - need extra code/ag for rats
+  - swamp-bat (swamp-bat.o swamp/swamp-bat-lod0.glb swamp-bat-ag.go)
+    - pathb implementation isn't ideal (see the path changes)
+    - need_vol doesn't seem to add the volume linking panel
+  - swamp-battlecontroller (swamp-obs.o)
+    - Maybe just have battlecontroller instead
+  - ogreboss (ogreboss.o ogre/ogreboss-lod0.glb ogreboss-ag.go)
+    - Would need game-task for cell
+    - Would need movie-pos for cell
+    - Cutscene start positions are hard coded
+  - plunger-lurker (flying-lurker.o ogre-obs.o ogre/plunger-lurker-lod0.glb plunger-lurker-ag.go)
+    - need extra code "ogre-obs.o" for particles
+  - gnawer (gnawer.o maincave/gnawer-lod0.glb gnawer-ag.go)
+    - need movie-pos implementation
+    - need extra code and art-group for the cam
+    - Camera/cell position seems to be hardcoded
+    - check what the "gnawer" lump does 
+    - extra-count second value need investigation for how it works and should be implemented for orb spawning
+  - mother-spider (mother-spider.o mother-spider-h.o baby-spider.o mother-spider-egg.o mother-spider-proj.o maincave/mother-spider-lod0.glb mother-spider-ag.go mother-spider-egg.o baby-spider-ag.go)
+    - need extra code/art group for eggs and spiders
+    - Maybe a way to multiply/divide values before they're sent because the mother-spider lump is a float with a lot of meters but then also has a count. So either you'd have to write the meters values as x4096 or the count as x4096
+    - mother-spider need to check slot 4 to see what it does
+    - Not in goal code crash
+  - spider-egg (spider-egg.o baby-spider.o mother-spider-egg.o robocave/spider-egg-unbroken-lod0.glb spider-egg-ag.go baby-spider-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes and others
+  - baby-spider (baby-spider.o cavecrystal-light.o maincave/baby-spider-lod0.glb baby-spider-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes
+  - cave-trap (cavecrystal-light.o)
+    - need "multi" link-slop as there can be a lot more than 4 eggs and vents 
+    - need extra code for "cavecrystal-light.o" or crashes
+  - driller-lurker (driller-lurker.o cavecrystal-light.o robocave/driller-lurker-lod0.glb driller-lurker-ag.go)
+    - need extra code for "cavecrystal-light.o" or crashes
+    - find what option 17 does if anything
+  - ram (snow-ram.o snow-ram-h.o snow/ram-lod0.glb ram-ag.go)
+    - need game task implementation
+    - alt-actor needs to be able to include itself somehow as that's needed for the task.
+    - next-actor for all surrounding enemies which means all enemies might need next/prev-actor linking
+    - need extra code for ram-boss code/art
+    - not in goal crash
+  - ram-boss (snow-ram-boss.o snow/ram-boss-lod0.glb ram-boss-ag.go)
+    - Don't throw their fireball?
+  - citb-bunny (citb-bunny.o citadel/citb-bunny-lod0.glb citb-bunny-ag.go)
+    - Error when trying to spawn in blender
+    - Could not select entity type citb-bunny: bpy_struct: item.attr = val: enum "citb-bunny" not found in
+  - green-eco-lurker (green-eco-lurker.o finalboss/green-eco-lurker-lod0.glb green-eco-lurker-ag.go)
+    - Memory map assertion failed crash
+  - robotboss 
+    - need extra code for: robotboss.o robotboss-h.o robotboss-part.o robotboss-weapon.o robotboss-misc.o
+    - need extra code and art group from green-eco-lurker and darkecobomb-ag.go
+    - works until it needs to play the cutscene before light eco then crash
+  - battlecontroller
+    - Would need a pretty specific UI setup
+    - Choosing lurkers, % spawn per lurker, eco drops, etc
+- Buttons and Doors
+  - warp-gate-switch
+    - task for activating it or that gets activated when pressing it?
+    - level list and how they get unlocked is hard coded
+    - Doesn't seem to give the menu atm
+  - tra-iris-door
+    - check if all iris door can be combined into one (maybe eco-door has all features?)
+  - sidedoor
+    - cmds lump?
+    - play-mode?
+    - sound-name?
+    - text-id?
+    - game task implementation
+  - maindoor
+    - game task implementation
+  - jng-iris-door
+    - start-open option doesn't seem to do anything atm
+  - eggtop
+    - game task implementation
+    - movie-pos
+  - launcherdoor
+  - rounddoor
+  - gorge-pusher (rolling-obs.o rolling/pusher-lod0.glb pusher-ag.go)
+  - sun-iris-door
+  - square-platform-button
+  - sunken-pipegame
+  - helix-button
+  - swampgate
+  - snow-bumper
+  - snow-button
+  - snow-switch
+  - snow-fort-gate
+  - snow-log-button
+  - snow-eggtop
+  - energydoor
+  - citb-iris-door
+  - citb-button
+- Interactive Objects
+- Visuals
+- NPCs
+- Volumes
+
+---
+
+## Particles implementation
+### Existing Particles
+- The game has already a bunch of particles that can be used to be placed in levels.
+- Most of these are usually in particle files called "level-part.gc" or in actor code files that are spawning particles
+- The default etype for particles is `part-spawner`, each level file creates its own etype, (for example `swamp-part`), to separate them in the list but it is not a requirement to use those child type.
+  - `art-name` lump is then used to choose which particle group that part-spawner should spawn
+  - game task can be used to turn off 
+- Particles can have a sound effect attached to them.
+  - `effect-name` for the sound name 
+  - `effect-param` 4 values to edit the sound
+  - `cycle-speed` 2 values to edit how the sound play/repeat 
+    - -1.0 , 0.0 for constant loop which should be default
+    - Need some testing to see how these two numbers work
+### Implementation for existing Particles
+- Particles should probably have their own category, although, as with a few categories, there's not that many actors that'll fill the list. (like audio, volumes and level flow) Maybe some of these could end up being combined. Like audio and particles together
+- Particles might need a specifically built UI panel BUT it should still be database driven
+  - The list of level-part files should be in the database and then the particle group should be listed within them
+  - While particles are also in other actor code files, I think only those level ones should be implemented this way to not make the list too long and also to avoid including huge code files in the level's gd for just one particle effect. (if users really want to do that, they'll be able to do it via a custom particle)
+- When selecting the Particle Spawner, there would be two variant choices:
+  - The particle level file
+    - As a drop down list
+    - This will tell the addon which code file to add to the level's gd
+    - If implemented, this would also change the etype to that level's specific part-spawner child type
+  - The particle group
+    - As a drop down list
+    - This tell what to put in the `art-name` lump of the actor.
+    - It should only list the group that are contained within
+    - If a second option for the variant isn't something trivial to add, this doesn't n
+- Once a particle spawner is added. Those two options should still be editable.
+  - Also as drop down lists.
+  - This means, if the etype change is added, it needs to be able to be changed by this too. Otherwise the game might try to spawn an actor which isn't defined if a part-spawner was added as one level then edited after. Which is also why it might be easier to just set every particles to be `part-spawner` etype.
+  - The Particle group menu should correctly switch everytime the particle level file is changed
+- The sound options should also appear in the panel
+  - None of the audio lumps need to be exported if no audio is selected.
+  - The audio list option should automatically be populated by the available audio sounds (common bank + the two added bank to the level or all of them if the hack for all audio bank to be loaded is implemented)
+  - If the audio isn't `none` then it can export all 3 lumps:
+    - `effect-name` for the sound name that was selected as a string 
+    - `effect-param` 4 float values:
+    - `cycle-speed` 2 values to edit how the sound play/repeat 
+      - -1.0 , 0.0 for constant loop which should be default
+      - Need some testing to see how these two numbers work
+### Implementation for custom Particles
+- Custom particles would work almost identically but instead of choosing level and group in a list, you'd have 3 string input to write them down:
+  - "File Name" to include in the gd
+  - "etype" defaulting to `part-spawner` to change the etype.
+  - "Particle group" to change the `effect-name` lump
+- Sound options should be identical
+### Creating custom Particles
+It's a lot easier to just have people creating their own particle files and edit them in terms of buidling the addon but ideally. 
+It would be very useful to have a particle editor and preview directly in blender where you can create, edit and see how each particle group work as that would be a lot quicker than editing particle files and then seeing the affect in game.
+This would, however, be a huge undertaking and isn't priority at the moment.
+
+---
+
+# Less Important features and fixes
+
+---
+
 ### Export settings
 - Geometry compression for export (Draco)
   - Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
@@ -222,16 +682,25 @@ Known Missed actors:
   - I'm guessing at the moment the addon uses "export selected" and manually select everything that's needed for the export which is why things doesn't get exported if the selection is turned off
   - I'm proposing to change that to use the "collection" export feature. It can even be set only to a main geometry collection. That way the glb export is also cleaner and doesn't have any extra data it doesn't need.
 - Vertex alpha export (need to test in newer blender version if it works different before)
+- Make spawn use mod-base spawn feature if mod-base detected
+  - Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
+  - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
+  - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
+  - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
 
 ---
 
-# Less Important features and fixes
+### Ignore unedited files
+At the moment, every file is rebuilt everytime you click on the export button. The way the compiler work is by checking which files got edited since last time via the file edit time. Which means it'll always have to compile almost the whole game since it's editing files such as `game.gp` or `level-info.gc`.
+If only the level's .json, gd and glb were changed. Which is going to be a vast majority of edits. Then only the level needs to be compiled bringing the compile time down to a few seconds instead.
+How I think this solution could work would be to still generate all files but instead of directly modifying the final files, these could be in a buffer or temporary file that is then compared to the final file. If there's any difference, then the file can get replaced with the new edited file. If there's no changes, then it can be ignored.
 
 ---
 
 ## Adding missing level settings:
 ### For level-info.gc
 - music/sound-banks (already exist, just move it inside of the level settings)
+  - There's a hack to load in every sound-banks at the same time, this could be an option so that all sounds become available for audio and particles
 - mood (either just a string or same as level, have a list in database + custom)
 - mood-func (same as mood)
 - Ocean (same as mood)

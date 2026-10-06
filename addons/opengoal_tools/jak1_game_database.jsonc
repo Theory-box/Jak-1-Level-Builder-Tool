@@ -3132,6 +3132,102 @@
     }
   ],
 
+  // ── OgreStepVariants ──────────────────────────────────────────────
+  "OgreStepVariants": [
+    {
+      "id": "ogre-step-a",
+      "etype": "ogre-step-a",
+      "label": "Klaww Step A",
+      "glb": "levels/ogre/ogre-step-a-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-b",
+      "etype": "ogre-step-b",
+      "label": "Klaww Step B",
+      "glb": "levels/ogre/ogre-step-b-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-c",
+      "etype": "ogre-step-c",
+      "label": "Klaww Step C",
+      "glb": "levels/ogre/ogre-step-c-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    },
+    {
+      "id": "ogre-step-d",
+      "etype": "ogre-step-d",
+      "label": "Klaww Step D",
+      "glb": "levels/ogre/ogre-step-b-lod0.glb",
+      "art_group": "ogre-step-ag.go"
+    }
+  ],
+
+    // ── CitbDiscVariants ──────────────────────────────────────────────
+  "CitbDiscVariants": [
+    {
+      "id": "citb-disc-a",
+      "etype": "citb-disc-a",
+      "label": "Disc Platform A (1 quarter)",
+      "glb": "levels/citadel/citb-disc-a-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-b",
+      "etype": "citb-disc-b",
+      "label": "Disc Platform B (half)",
+      "glb": "levels/citadel/citb-disc-b-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-c",
+      "etype": "citb-disc-c",
+      "label": "Disc Platform C (3 quarters)",
+      "glb": "levels/citadel/citb-disc-c-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    },
+    {
+      "id": "citb-disc-d",
+      "etype": "citb-disc-d",
+      "label": "Disc Platform D (full)",
+      "glb": "levels/citadel/citb-disc-d-lod0.glb",
+      "art_group": "citb-disc-ag.go"
+    }
+  ],
+
+  // ── MinecartAnim ──────────────────────────────────────────────
+  "MinecartAnim": [
+    {
+      "id": "0",
+      "label": "Anim 0 (Large oval)"
+    },
+    {
+      "id": "1",
+      "label": "Anim 1 (Figure of 8)"
+    },
+    {
+      "id": "2",
+      "label": "Anim 2 (Small oval)"
+    }
+  ],
+
+  // ── FlutflutPlatMode ──────────────────────────────────────────────
+  "FlutflutPlatMode": [
+    {
+      "id": "0",
+      "label": "Default platform behaviour"
+    },
+    {
+      "id": "1",
+      "label": "Button activated (Static)"
+    },
+    {
+      "id": "2",
+      "label": "Button activated (Use Path)"
+    }
+  ],
+
   // ── CratePickups ────────────────────────────────────────────────
   "CratePickups": [
     {
@@ -3153,26 +3249,40 @@
       "label": "Yellow Eco",
       "engine_string": "(pickup-type eco-yellow)",
       "icon": "COLORSET_03_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-red",
       "label": "Red Eco",
       "engine_string": "(pickup-type eco-red)",
       "icon": "COLORSET_01_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-blue",
       "label": "Blue Eco",
       "engine_string": "(pickup-type eco-blue)",
       "icon": "COLORSET_04_VEC",
-      "supports_multi_amount": false
+      "supports_multi_amount": true
     },
     {
       "id": "eco-green",
       "label": "Green Eco",
       "engine_string": "(pickup-type eco-green)",
+      "icon": "COLORSET_08_VEC",
+      "supports_multi_amount": true
+    },
+    {
+      "id": "eco-pill",
+      "label": "Green Eco Pills",
+      "engine_string": "(pickup-type eco-pill)",
+      "icon": "COLORSET_08_VEC",
+      "supports_multi_amount": true
+    },
+    {
+      "id": "eco-pill-random",
+      "label": "Green Eco Pills (Random)",
+      "engine_string": "(pickup-type eco-pill-random)",
       "icon": "COLORSET_08_VEC",
       "supports_multi_amount": false
     },
@@ -3180,6 +3290,14 @@
       "id": "buzzer",
       "label": "Scout Fly",
       "engine_string": "(pickup-type buzzer)",
+      "icon": "GP_SELECT",
+      "supports_multi_amount": false,
+      "force_amount": 1
+    },
+    {
+      "id": "fuel-cell",
+      "label": "Power Cell",
+      "engine_string": "(pickup-type fuel-cell)",
       "icon": "GP_SELECT",
       "supports_multi_amount": false,
       "force_amount": 1
@@ -3773,6 +3891,40 @@
       "shape": "SPHERE"
     },
     {
+      "etype": "babak-with-canon",
+      "label": "Babak with canon (Lurker)",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The Babak with canon is a babak which will jump on nearby canon to shoot at jak",
+      "art_group": "babak-ag.go",
+      "tpage_group": "Beach",
+      "tpages": [
+        "tpage-212.go",
+        "tpage-214.go",
+        "tpage-213.go",
+        "tpage-215.go"
+      ],
+      "code": {
+        "o": "babak-with-canon.o",
+        "o_only": true
+      },
+      "glb": "levels/beach/babak-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [],
+      "color": [
+        1.0,
+        0.1,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
       "etype": "lurkercrab",
       "label": "Lurker Crab",
       "category": "Enemies",
@@ -3875,6 +4027,39 @@
       "shape": "SPHERE"
     },
     {
+      "etype": "aphid",
+      "label": "Aphid",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
+      "art_group": "aphid-lurker-ag.go",
+      "tpage_group": "Jungle",
+      "tpages": [
+        "tpage-385.go",
+        "tpage-531.go",
+        "tpage-386.go",
+        "tpage-388.go"
+      ],
+      "code": {
+        "o": "aphid.o",
+        "o_only": true
+      },
+      "glb": "levels/jungleb/aphid-lurker-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "color": [
+        1.0,
+        0.2,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
       "etype": "swamp-rat",
       "label": "Swamp Rat",
       "category": "Enemies",
@@ -3944,7 +4129,8 @@
     },
     {
       "etype": "snow-bunny",
-      "label": "Snow Bunny",
+      "label": "Snow Bunny Lurker",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "The snow bunny is an enemy in The Precursor Legacy, encountered at Snowy Mountain and Gol and Maia's citadel. Small but aggressive cold-weather lurkers.",
@@ -3975,6 +4161,55 @@
           "description": "Variant selector — controls snow-bunny behaviour variant."
         }
       ],
+      "fields": [
+        {
+          "key": "og_mode",
+          "label": "Retreating Mode",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "mode",
+            "type": "int32"
+          },
+          "value_if_true": 1,
+          "write_if": "if_true"
+        }
+      ],
+      "color": [
+        0.9,
+        0.9,
+        1.0,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "citb-bunny",
+      "label": "Citadel Bunny Lurker",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The citadel bunny is a varient of the Snow Bunny",
+      "art_group": "citb-bunny-ag.go",
+      "tpage_group": "Citadel",
+      "code": {
+        "o": "citb-bunny.o",
+        "o_only": true
+      },
+      "glb": "levels/citadel/citb-bunny-lod0.glb",
+      "nav_safe": false,
+      "needs_path": true,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [
+        {
+          "key": "mode",
+          "type": "uint32",
+          "description": "Variant selector — controls snow-bunny behaviour variant."
+        }
+      ],
       "color": [
         0.9,
         0.9,
@@ -3990,6 +4225,7 @@
       "parent": "nav-enemy",
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": "double-lurker-ag.go",
+      "extra_art_groups": ["double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
       "tpages": [
         "tpage-661.go",
@@ -4002,8 +4238,7 @@
         "o_only": true
       },
       "glb": [
-        "levels/sunken/double-lurker-lod0.glb",
-        "levels/sunken/double-lurker-top-lod0.glb"
+        "levels/sunken/double-lurker-lod0.glb"
       ],
       "nav_safe": false,
       "links": {
@@ -4122,6 +4357,40 @@
       "shape": "SPHERE"
     },
     {
+      "etype": "spider-egg",
+      "label": "Spider Egg",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
+      "art_group": "spider-egg-ag.go",
+      "tpage_group": "Maincave",
+      "tpages": [
+        "tpage-1313.go",
+        "tpage-1315.go",
+        "tpage-1314.go",
+        "tpage-1312.go"
+      ],
+      "code": {
+        "o": "spider-egg.o",
+        "o_only": true
+      },
+      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
+      "nav_safe": false,
+      "links": {
+        "need_path": true,
+        "need_nav": true,
+        "need_enemy": true
+      },
+      "lumps": [],
+      "color": [
+        0.5,
+        0.2,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
       "etype": "green-eco-lurker",
       "label": "Green Eco Lurker",
       "category": "Enemies",
@@ -4175,9 +4444,6 @@
         "o_only": true
       },
       "glb": "levels/beach/lurkerworm-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.3,
@@ -4206,9 +4472,6 @@
         "o_only": true
       },
       "glb": "levels/jungle/junglesnake-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.2,
@@ -4241,6 +4504,7 @@
       "glb": "levels/swamp/swamp-bat-lod0.glb",
       "needs_path": true,
       "needs_pathb": true,
+      "need_vol": true,
       "links": {
         "need_pathb": true,
         "need_enemy": true
@@ -4255,10 +4519,11 @@
       "fields": [
         {
           "key": "og_num_lurkers",
-          "label": "Child count",
+          "label": "Child count (default 6)",
           "type": "int",
-          "default": -1,
-          "min": -1,
+          "default": 6,
+          "min": 2,
+          "max": 8,
           "lump": {
             "key": "num-lurkers",
             "type": "int32"
@@ -4335,9 +4600,10 @@
     },
     {
       "etype": "bully",
+      "schema_export": true,
       "label": "Bully",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
       "tpage_group": "Sunken",
@@ -4352,7 +4618,9 @@
         "o_only": true
       },
       "glb": "levels/sunken/bully-lod0.glb",
+      "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [],
@@ -4366,9 +4634,10 @@
     },
     {
       "etype": "puffer",
+      "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The puffer, also known as a flying lurker, is an enemy in The Precursor Legacy, found in the lost Precursor city. It inflates to deal damage on contact.",
       "art_group": "puffer-ag.go",
       "tpage_group": "Sunken",
@@ -4385,6 +4654,7 @@
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -4397,6 +4667,52 @@
           "key": "options",
           "type": "enum-uint32",
           "description": "Use '(fact-options instant-collect)' for instant-kill puffer."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period between spiky and not (s)",
+          "type": "float",
+          "default": 8.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_distance_top",
+          "label": "Top Height offset for patrol (m)",
+          "type": "float",
+          "default": 2.0,
+          "lump": {"key": "distance", "type": "meters", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_distance_bot",
+          "label": "Bottom Height offset for patrol (m)",
+          "type": "float",
+          "default": -2.0,
+          "lump": {"key": "distance", "type": "meters", "slot": 1},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Buddy alt actor",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -4427,10 +4743,36 @@
       },
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "plunger-lurker at the end of the path",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous flying lurker in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next flying lurker in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.5,
         0.2,
@@ -4457,10 +4799,19 @@
         "o_only": true
       },
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
+      "extra_code": ["ogre-obs.o"],
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "flying-lurker to activate the plunger",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.8,
         0.3,
@@ -4472,8 +4823,9 @@
     {
       "etype": "mother-spider",
       "label": "Mother Spider",
+      "schema_export": true,
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
       "art_group": "mother-spider-ag.go",
       "tpage_group": "Maincave",
@@ -4487,12 +4839,115 @@
         "o": "mother-spider.o",
         "o_only": true
       },
+      "extra_code":["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o"],
+      "extra_art_groups": ["baby-spider-ag.go", "spider-egg-ag.go"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [],
+      "fields":[
+        {
+          "key": "_og_thread-min-trans",
+          "type": "float",
+          "label": "Thread Min Trans Y (m * 4096)",
+          "default": 28672.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 0
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_anchor-trans",
+          "type": "float",
+          "label": "Anchor Trans Y (m * 4096)",
+          "default": 204800.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-swing-radius",
+          "type": "float",
+          "label": "Max Swing Radius (m * 4096)",
+          "default": 73728.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 2
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-baby-count",
+          "type": "int",
+          "label": "Max Baby Spider count",
+          "default": 4,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 3
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_mother-spider_bool",
+          "label": "To check what it does",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "extra-count",
+            "type": "float",
+            "slot": 4
+          },
+          "value_if_true": 1.0,
+          "value_if_false": 0.0,
+          "write_if": "always"
+        },
+        {
+          "key": "_og_max-spit-xz-dist",
+          "type": "float",
+          "label": "Max Spit Distance (m * 4096)",
+          "default": 81920.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 5
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_activate-xz-dist",
+          "type": "float",
+          "label": "Activate Distance (m * 4096)",
+          "default": 143360.0,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 6
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "_og_deactivate-xz-dist",
+          "type": "float",
+          "label": "Deactivate Distance (m * 4096)",
+          "default": 163430.4,
+          "lump": {
+            "key": "mother-spider",
+            "type": "float",
+            "slot": 7
+          },
+          "write_if": "always"
+        }
+      ],
       "color": [
         0.6,
         0.2,
@@ -4504,6 +4959,7 @@
     {
       "etype": "gnawer",
       "label": "Gnawer",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
@@ -4520,10 +4976,9 @@
         "o_only": true
       },
       "glb": "levels/maincave/gnawer-lod0.glb",
+      "extra_art_groups": ["maincavecam-ag.go"],
+      "extra_code": ["maincave-obs.o"],
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "extra-count",
@@ -4546,6 +5001,100 @@
           "description": "Rotation offset applied on spawn."
         }
       ],
+      "link_slots": [
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous gnawer in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next gnawer in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "fields":[
+        {
+          "key": "_extra-count-one",
+          "label": "Spawn an orb",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "extra-count",
+            "type": "int32",
+            "slot": 0
+          },
+          "value_if_true": 5,
+          "write_if": "if_true"
+        },
+        {
+          "key": "_extra-count-two",
+          "type": "int",
+          "label": "Orb extra count",
+          "default": "0",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "_gnawer-one",
+          "label": "Gnawer one",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_gnawer-two",
+          "label": "Gnawer two",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 1,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_gnawer-three",
+          "label": "Gnawer three",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "gnawer",
+            "type": "uint32",
+            "slot": 2,
+            "write_if": "if_not_default"
+          }
+        }
+      ],
       "color": [
         0.6,
         0.3,
@@ -4557,6 +5106,7 @@
     {
       "etype": "driller-lurker",
       "label": "Driller Lurker",
+      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The driller lurker is an enemy in The Precursor Legacy that mines cave rock with its drill. Found in Spider Cave, drilling away at the Precursor robot excavation site.",
@@ -4574,10 +5124,59 @@
       },
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "needs_path": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "fields":[
+        {
+          "key": "og_driller-lurker_pos",
+          "label": "Starting Position on path (0.0-1.0)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 0
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_rot",
+          "label": "Starting Drilling Rotation",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 2
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_dir",
+          "label": "Inverse direction",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "driller-lurker",
+            "type": "float",
+            "slot": 1
+          },
+          "value_if_true": -1.0,
+          "value_if_false": 1.0,
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_driller-lurker_option",
+          "label": "Option 17",
+          "type": "bool",
+          "default": false,
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 17
+          },
+          "write_if": "if_true"
+        }
+      ],
       "color": [
         0.5,
         0.5,
@@ -4649,7 +5248,7 @@
     },
     {
       "etype": "cavecrusher",
-      "label": "Cave Crusher",
+      "label": "Cave Crusher (robocave)",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "cavecrusher-ag.go",
@@ -4675,13 +5274,13 @@
         0.6,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "CUBE"
     },
     {
       "etype": "quicksandlurker",
       "label": "Quicksand Lurker",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
       "tpage_group": "Misty",
@@ -4696,7 +5295,10 @@
         "o_only": true
       },
       "glb": "levels/misty/quicksandlurker-lod0.glb",
+      "nav_safe": false,
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "link_slots": [
@@ -4722,23 +5324,20 @@
     {
       "etype": "ram",
       "label": "Ram",
+      "schema_export": true,
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "ram-ag.go",
-      "tpage_group": "Village1",
-      "tpages": [
-        "tpage-710.go",
-        "tpage-842.go",
-        "tpage-711.go",
-        "tpage-712.go"
-      ],
+      "tpage_group": "Snow",
       "code": {
         "o": "snow-ram.o",
         "o_only": true
       },
       "glb": "levels/snow/ram-lod0.glb",
+      "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [
         {
@@ -4752,6 +5351,96 @@
           "description": "1 = boss-fight mode. Default 0 (normal patrol mode)."
         }
       ],
+      "fields": [
+        {
+          "key": "og_extra-id",
+          "label": "Id for task (1 to max ram)",
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "lump": {
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if": "if_nonzero"
+        },
+        {
+          "key": "og_mode",
+          "label": "No Ram boss",
+          "type": "bool",
+          "default": false,
+          "lump": {
+            "key": "mode",
+            "type": "int32"
+          },
+          "value_if_true": 1,
+          "write_if": "if_true"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "1st Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 1,
+          "label": "2nd Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 2,
+          "label": "3rd Ram part of the task, including this one",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "First Enemy in the list before Ram boss jump down",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.7,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "ram-boss",
+      "label": "Ram Boss",
+      "category": "Enemies",
+      "parent": "nav-enemy",
+      "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
+      "art_group": "ram-boss-ag.go",
+      "tpage_group": "Snow",
+      "code": {
+        "o": "snow-ram-boss.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/ram-boss-lod0.glb",
+      "needs_path": true,
+      "links": {
+        "need_enemy": true,
+        "need_nav": true
+      },
       "color": [
         0.7,
         0.4,
@@ -4846,14 +5535,11 @@
         "o_only": true
       },
       "glb": "levels/village2/fireboulder-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "alt-task",
           "type": "uint32",
-          "description": "Second task gate ID. Door stays closed until this task is complete."
+          "description": "boulder hover when this task is complete"
         }
       ],
       "color": [
@@ -4961,10 +5647,59 @@
         "o_only": true
       },
       "glb": "levels/ogre/ogreboss-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Ogre Drawbridge (ogre-bridge) for the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "target-actor",
+          "slot": 0,
+          "label": "Klaww Platform Isle (ogre-isles) for the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "trigger-actor",
+          "slot": 0,
+          "label": "Klaww Steps (ogre-bridge) to spawn after the fight",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Lava actor",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "_movie-mask",
+          "label": "Movie Mask",
+          "default": 6,
+          "type": "int",
+          "lump": {
+            "key": "movie-mask",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "always"
+          }
+        }
+      ],
       "color": [
         1.0,
         0.3,
@@ -4975,9 +5710,10 @@
     },
     {
       "etype": "plant-boss",
+      "schema_export": true,
       "label": "Plant Boss",
       "category": "Bosses",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
       "art_group": "plant-boss-ag.go",
       "tpages": [
@@ -4990,11 +5726,46 @@
         "o": "plant-boss.o",
         "o_only": true
       },
-      "glb": "levels/finalboss/plant-boss-main-lod0.glb",
+      "glb": "levels/jungleb/plant-boss-main-lod0.glb",
+      "nav_safe": false,
+      "needs_path": true,
       "links": {
+        "need_nav": true,
         "need_enemy": true
       },
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "movie-pos",
+          "type": "movie-pos",
+          "description": "Cutscene landing position: 'x y z rot_deg'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_extra-count-one",
+          "label": "Extra Count one",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
+        },
+        {
+          "key": "_extra-count-two",
+          "label": "Extra Count two",
+          "default": 0,
+          "type": "int",
+          "lump": {
+            "key": "extra-count",
+            "type": "uint32",
+            "slot": 1,
+            "write_if": "if_not_default"
+          }
+        }
+      ],
       "color": [
         0.1,
         0.7,
@@ -5005,9 +5776,9 @@
     },
     {
       "etype": "robotboss",
-      "label": "Metal Head Boss",
+      "label": "Precursor Robot Boss",
       "category": "Bosses",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": "robotboss-ag.go",
       "tpages": [
@@ -5021,9 +5792,13 @@
         "o": "robotboss-h.o",
         "o_only": true
       },
-      "glb": "levels/citadel/robotboss-basic-lod0.glb",
+      "extra_code": ["robotboss.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
+      "extra_art_groups": ["green-eco-lurker-ag.go", "darkecobomb-ag.go"],
+      "glb": "levels/finalboss/robotboss-basic-lod0.glb",
+      "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need-nav": true
       },
       "lumps": [],
       "color": [
@@ -5407,8 +6182,9 @@
     },
     {
       "etype": "robber",
+      "schema_export": true,
       "label": "Robber (Lurker)",
-      "category": "NPCs",
+      "category": "Enemies",
       "parent": "process-drawable",
       "art_group": "robber-ag.go",
       "tpages": [
@@ -5424,6 +6200,7 @@
         "o_only": true
       },
       "glb": "levels/rolling/robber-lod0.glb",
+      "needs_path": true,
       "lumps": [
         {
           "key": "initial-spline-pos",
@@ -5438,7 +6215,73 @@
         {
           "key": "timeout",
           "type": "float",
-          "description": "Seconds before robber despawns. Default 10.0s."
+          "description": "Seconds before robber slow down. Default 10.0s."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spline_pos",
+          "type": "float",
+          "label": "Spawn position (0.0-1.0)",
+          "default": 0.0,
+          "lump": {
+            "key": "initial-spline-pos",
+            "type": "float"
+          },
+          "write_if":"always"
+        },
+        {
+          "key": "og_water-height",
+          "label": "Water height if robber goes over it (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "water-height",
+            "type": "meters"
+          },
+          "write_if":"if_not_default"
+        },
+        // {
+        //   "key": "og_idle-distance",
+        //   "type": "float",
+        //   "label": "Idle Distance (m)",
+        //   "default": 80.0,
+        //   "lump": {
+        //     "key": "idle-distance",
+        //     "type": "meters"
+        //   },
+        //   "write_if":"always"
+        // },
+        {
+          "key": "og_timeout",
+          "label": "Time before Robber slow down (s)",
+          "type": "float",
+          "default": 10.0,
+          "lump": {
+            "key": "timeout",
+            "type": "float"
+          },
+          "write_if":"if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous robber in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next robber in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -5493,7 +6336,7 @@
         0.0,
         1.0
       ],
-      "shape": "ARROWS",
+      "shape": "SPHERE",
       "vertex_export": false,
       "code": {
         "in_game_cgo": true
@@ -5562,10 +6405,57 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES",
+      "shape": "SPHERE",
       "code": {
         "in_game_cgo": true
       }
+    },
+    {
+      "etype": "pickup-spawner",
+      "label": "Pickup Spawner", 
+      "category": "Pickups",
+      "parent": "eco-collectable",
+      "code": {
+        "in_game_cgo": true
+      },
+      "schema_export": true,
+      "lumps": [
+        {
+          "key": "eco-info",
+          "type": "eco-info",
+          "description": "Pickup contents: '(pickup-type X) amount'."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-blue",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
+        }
+      ],
+      "color": [
+        0.1,
+        0.9,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "crate",
@@ -5662,7 +6552,7 @@
           "key": "og_orb_count",
           "label": "Orbs inside",
           "type": "int",
-          "default": 20,
+          "default": 10,
           "min": 1,
           "lump": {
             "key": "orb-cache-count",
@@ -5677,7 +6567,7 @@
         0.1,
         1.0
       ],
-      "shape": "CUBE",
+      "shape": "SPHERE",
       "vertex_export": false,
       "code": {
         "in_game_cgo": true
@@ -5726,7 +6616,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ecovent",
@@ -5736,9 +6626,6 @@
       "code": {
         "in_game_cgo": true
       },
-      // Green eco vents have no dedicated actor: spawn a bare `ecovent` and give
-      // it an eco-info lump. That lump is now schema-driven (eco-info-picker),
-      // defaulting to eco-green but configurable per instance.
       "schema_export": true,
       "lumps": [
         {
@@ -5776,7 +6663,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "plat",
@@ -5859,6 +6746,308 @@
       }
     },
     {
+      "etype": "citb-plat",
+      "label": "Floating Platform (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "plat-citb-ag.go",
+      "glb": "levels/citadel/plat-citb-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "fields":[
+        {
+          "key": "og_scale_x",
+          "label": "Scale X",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_y",
+          "label": "Scale Y",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_z",
+          "label": "Scale Z",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_w",
+          "label": "Scale W (keep at 1.0)",
+          "type": "float",
+          "default": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "lump": {"key": "scale", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-rotatebox",
+      "label": "Rotate Box (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-rotatebox-ag.go",
+      "glb": "levels/citadel/citb-rotatebox-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-donut",
+      "label": "Spinning Donut (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-donut-ag.go",
+      "glb": "levels/citadel/citb-donut-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-chain-plat",
+      "label": "Chain Platforms (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-chain-plat-ag.go",
+      "glb": "levels/citadel/citb-chain-plat-lod0.glb",
+      "fields": [
+        {
+          "key": "og_height_info",
+          "label": "Height when active (m)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "height-info", "type": "meters"},
+          "write_if": "always"}
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "silodoor",
+      "label": "Silo Door (Final Boss)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "silodoor-ag.go",
+      "glb": "levels/finalboss/silodoor-lod0.glb",
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "SPHERE",
+      "code": {
+        "o": "robotboss-misc.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-stopbox",
+      "label": "Stop Box (Citadel)",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-stopbox-ag.go",
+      "glb": "levels/citadel/citb-stopbox-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "citb-exit-plat",
+      "label": "Exit Platform (Citadel)",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-exit-plat-ag.go",
+      "glb": "levels/citadel/citb-exit-plat-lod0.glb",
+      "needs_path": true,
+      "lumps": [
+        {
+          "key": "camera-name",
+          "type": "string",
+          "description": "Name of camera to activate when button pressed."
+        },
+        {
+          "key": "bidirectional",
+          "type": "uint32",
+          "description": "Set to '1' to allow platform to return."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_bidirectional",
+          "label": "Bidirectional",
+          "type": "enum",
+          "default": "oneway",
+          "choices": [
+            {
+              "value": "oneway",
+              "label": "One Way (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "bidirectional",
+              "label": "Bidirectional",
+              "lump_value": 1
+            }
+          ],
+          "lump": {
+            "key": "bidirectional",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_continue_name",
+          "label": "Continue point name (checkpoints)",
+          "type": "string",
+          "default": "",
+          "lump": {
+            "key": "continue-name",
+            "type": "string",
+            "bare": true
+          },
+          "write_if": "if_non_empty"
+        },
+        {
+          "key": "og_camera_name",
+          "label": "Camera name to use while elevator move",
+          "type": "string",
+          "default": "",
+          "lump": {
+            "key": "camera-name",
+            "type": "string",
+            "bare": true
+          },
+          "write_if": "if_non_empty"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "state-actor",
+          "slot": 0,
+          "label": "Actor to activate the elevator",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "trigger-actor",
+          "slot": 0,
+          "label": "Actor that get activated by the elevator",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.7,
+        1
+      ],
+      "shape": "SPHERE",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      }
+    },
+    {
       "etype": "plat-button",
       "label": "Button Platform",
       "category": "Platforms",
@@ -5874,20 +7063,373 @@
         },
         {
           "key": "bidirectional",
-          "type": "symbol",
-          "description": "Set to 'true' to allow platform to return."
+          "type": "uint32",
+          "description": "Set to '1' to allow platform to return."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_bidirectional",
+          "label": "Bidirectional",
+          "type": "enum",
+          "default": "oneway",
+          "choices": [
+            {
+              "value": "oneway",
+              "label": "One Way (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "bidirectional",
+              "label": "Bidirectional",
+              "lump_value": 1
+            }
+          ],
+          "lump": {
+            "key": "bidirectional",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
         }
       ],
       "color": [
         0.6,
         0.6,
         0.7,
+        1
+      ],
+      "shape": "SPHERE",
+      "code": {
+        "in_game_cgo": true
+      }
+    },
+    {
+      "etype": "flutflut-plat-small",
+      "label": "Snowy Platform (Small Square)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order of aparition for button mode (order * 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-small-ag.go",
+      "glb": "levels/snow/flutflut-plat-small-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
         1.0
       ],
       "shape": "CUBE",
       "code": {
-        "in_game_cgo": true
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
       }
+    },
+    {
+      "etype": "flutflut-plat-med",
+      "label": "Snowy Platform (Medium Circle)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order for button (* 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-med-ag.go",
+      "glb": "levels/snow/flutflut-plat-med-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "flutflut-plat-large",
+      "label": "Snowy Platform (Long Capsule)",
+      "schema_export": true,
+      "fields": [
+        {
+          "key": "og_plat-type",
+          "label": "Platform mode",
+          "type": "enum",
+          "choices": "FlutflutPlatMode",
+          "default": 0,
+          "lump":{
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        },
+        {
+          "key": "og_extra-id",
+          "label": "Order of aparition for button mode (order * 0.15s)",
+          "type": "int",
+          "default": 0,
+          "lump":{
+            "key": "extra-id",
+            "type": "int32"
+          },
+          "write_if":"if_nonzero"
+        }
+      ],
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "flutflut-plat-large-ag.go",
+      "glb": "levels/snow/flutflut-plat-large-lod0.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Button to activate platform in button mode",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "snow-flutflut-obs.o",
+        "o_only": true
+      }
+    },
+    {
+      "etype": "snow-log",
+      "label": "Snow Log",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "snow-log-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-log-lod0.glb",
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Snow Log Button or other to activate",
+          "accepts": [
+            "any"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "etype": "snow-log-button",
+      "label": "Snow Log Button",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "art_group": "snow-switch-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-switch-lod0.glb",
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Snow Log or other to activate",
+          "accepts": [
+            "any"
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "etype": "snow-spatula",
+      "label": "Snow Spatula",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "snow-spatula-ag.go",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/snow/snow-spatula-lod0.glb"
     },
     {
       "etype": "plat-flip",
@@ -5970,6 +7512,7 @@
     },
     {
       "etype": "wall-plat",
+      "schema_export": true,
       "label": "Wall Platform",
       "category": "Platforms",
       "parent": "prop",
@@ -5985,6 +7528,11 @@
         "o_only": true
       },
       "glb": "levels/sunken/wall-plat-lod0.glb",
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, 
+        {"key": "og_sync_ease_out", "label": "Period Extended (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, 
+        {"key": "og_sync_ease_in", "label": "Period Retracted (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}],
       "lumps": [
         {
           "key": "tunemeters",
@@ -5998,7 +7546,7 @@
         0.7,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "CONE"
     },
     {
       "etype": "balance-plat",
@@ -6115,6 +7663,7 @@
     {
       "etype": "wedge-plat",
       "label": "Wedge Platform",
+      "schema_export": true,
       "category": "Platforms",
       "parent": "prop",
       "art_group": "wedge-plat-ag.go",
@@ -6146,6 +7695,41 @@
           "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
         }
       ],
+      "fields": [
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_distance",
+          "label": "Rotation Radius (meters)",
+          "type": "meters",
+          "default": 9.0,
+          "lump": {
+            "key": "distance",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "wedge-plat-master to rotate around",
+          "accepts": [
+            "wedge-plat-master"
+          ],
+          "required": true
+        }
+      ],
       "color": [
         0.5,
         0.5,
@@ -6153,6 +7737,138 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "wedge-plat-outer",
+      "label": "Wedge Platform Outer",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "wedge-plat-ag.go",
+      "tpages": [
+        "tpage-661.go",
+        "tpage-663.go",
+        "tpage-714.go",
+        "tpage-662.go"
+      ],
+      "code": {
+        "o": "wedge-plats.o",
+        "o_only": true
+      },
+      "glb": "levels/sunken/wedge-plat-lod0.glb",
+      "lumps": [
+        {
+          "key": "rotspeed",
+          "type": "degrees",
+          "description": "Rotation speed in degrees/sec."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Initial rotation offset."
+        },
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_rotoffset",
+          "label": "Rotation Offset (degrees)",
+          "type": "degrees",
+          "default": 0.0,
+          "lump": {
+            "key": "rotoffset",
+            "type": "degrees"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_distance",
+          "label": "Rotation Radius (meters)",
+          "type": "meters",
+          "default": 17.0,
+          "lump": {
+            "key": "distance",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "wedge-plat-master to rotate around",
+          "accepts": [
+            "wedge-plat-master"
+          ],
+          "required": true
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.7,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "wedge-plat-master",
+      "label": "Wedge Platform Master",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [
+        "tpage-661.go",
+        "tpage-663.go",
+        "tpage-714.go",
+        "tpage-662.go"
+      ],
+      "code": {
+        "o": "wedge-plats.o",
+        "o_only": true
+      },
+      "lumps": [
+        {
+          "key": "rotspeed",
+          "type": "degrees",
+          "description": "Rotation speed in degrees/sec."
+        },
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Initial rotation offset."
+        },
+        {
+          "key": "distance",
+          "type": "meters",
+          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_rotspeed",
+          "label": "Rotation Speed (degrees)",
+          "type": "degrees",
+          "default": 15.0,
+          "lump": {
+            "key": "rotspeed",
+            "type": "degrees"
+          },
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.7,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
     },
     {
       "etype": "tar-plat",
@@ -6185,6 +7901,234 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "bone-platform",
+      "label": "Bone Platform",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "mis-bone-platform-ag.go",
+      "code": {
+        "o": "misty-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/misty/mis-bone-platform-lod0.glb",
+      "lumps": [],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "qbert-plat",
+      "label": "Qbert Platforms",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "qbert-plat-ag.go",
+      "extra_art_groups": ["qbert-plat-on-ag.go"],
+      "code": {
+        "o": "qbert-plat.o",
+        "o_only": true
+      },
+      "glb": "levels/sunken/qbert-plat-lod0.glb",
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Qbert Master",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous Qbert Platform or Master",
+          "accepts": [
+            "qbert-plat",
+            "qbert-plat-master"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next Qbert Platform",
+          "accepts": [
+            "qbert-plat"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "qbert-plat-master",
+      "label": "Qbert Platforms Master",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "qbert-plat-on-ag.go",
+      "code": {
+        "o": "qbert-plat.o",
+        "o_only": true
+      },
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Activate these when Qbert minegame is completed",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "First Qbert Platform",
+          "accepts": [
+            "qbert-plat"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.2,
+        0.2,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
+      "etype": "floating-launcher",
+      "label": "Floating Launcher (Sunken)",
+      "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
+      "is_launcher": true,
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "floating-launcher-ag.go",
+      "glb": "levels/sunkenb/floating-launcher-lod0.glb",
+      "needs_path": true,
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Spring height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        },
+        {
+          "key": "og_launcher_dest",
+          "label": "Destination object",
+          "type": "object_ref",
+          "default": "",
+          "lump": {
+            "key": "alt-vector",
+            "type": "vector",
+            "pairs_with": "og_launcher_fly_time"
+          },
+          "note": "xyz of alt-vector is the resolved location of the destination object.",
+          "write_if": "if_object_found"
+        },
+        {
+          "key": "og_launcher_fly_time",
+          "label": "Fly time (s)",
+          "type": "float",
+          "default": -1.0,
+          "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+        },
+        {
+          "key": "og_launcher_mode",
+          "label": "Camera on launch",
+          "type": "enum",
+          "default": "shortfall",
+          "choices": [
+            {
+              "value": "shortfall",
+              "label": "Short fall (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "longfall",
+              "label": "Long fall",
+              "lump_value": 1
+            },
+            {
+              "value": "none",
+              "label": "No camera",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_trigger_height",
+          "label": "Trigger height Coordinate (m)",
+          "type": "float",
+          "default": 20.0,
+          "lump": {
+            "key": "trigger-height",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "launcherdoor to open",
+          "accepts": [
+            "launcherdoor"
+          ],
+          "required": false
+        }
+      ],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        },
+        {
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
+        }
+      ],
+      "color": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE",
+      "code": {
+        "o": "floating-launcher.o",
+        "o_only": true
+      }
     },
     {
       "etype": "launcher",
@@ -6284,13 +8228,91 @@
         0.1,
         1.0
       ],
-      "shape": "CONE"
+      "shape": "SINGLE_ARROW"
+    },
+    {
+      "etype": "citb-launcher",
+      "label": "Floating Launcher (citadel)",
+      "description": "Citadel's floating launcher will follow paths like other floating platforms",
+      "schema_export": true,
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "citb-launcher-ag.go",
+      "code": {
+        "o": "citadel-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/citadel/citb-launcher-lod0.glb",
+      "needs_sync": true,
+      "links": {
+        "need_sync": true
+      },
+      "lumps": [
+        {
+          "key": "spring-height",
+          "type": "meters",
+          "description": "Launch height. Default ~40m."
+        },
+        {
+          "key": "mode",
+          "type": "uint32",
+          "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Spring height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        },
+        {
+          "key": "og_launcher_mode",
+          "label": "Camera on launch",
+          "type": "enum",
+          "default": "shortfall",
+          "choices": [
+            {
+              "value": "shortfall",
+              "label": "Short fall (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "longfall",
+              "label": "Long fall",
+              "lump_value": 1
+            },
+            {
+              "value": "none",
+              "label": "No camera",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_not_default"
+        }
+      ],
+      "color": [
+        0.9,
+        0.6,
+        0.1,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "warpgate",
       "label": "Warp Gate",
       "category": "Buttons and Doors",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "warpgate-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -6371,10 +8393,44 @@
       "shape": "SPHERE"
     },
     {
+      "etype": "minecartsteel",
+      "schema_export": true,
+      "label": "Minecarts",
+      "category": "Platforms",
+      "parent": "props",
+      "art_group": "minecartsteel-ag.go",
+      "glb": "levels/village3/minecartsteel-lod0.glb",
+      "lumps": [],
+      "code": {
+        "o": "minecart.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "_index",
+          "type": "enum",
+          "label": "Animation",
+          "default": 0,
+          "choices": "MinecartAnim",
+          "lump": {
+            "key": "index",
+            "type": "int32"
+          }
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.0,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
       "etype": "tntbarrel",
-      "label": "TNT Barrel",
+      "label": "TNT Barrel (ogre)",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "tntbarrel-ag.go",
       "tpages": [
         "tpage-875.go",
@@ -6425,9 +8481,10 @@
     },
     {
       "etype": "spike",
+      "schema_export": true,
       "label": "Spike",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "spike-ag.go",
       "tpages": [
         "tpage-1119.go",
@@ -6441,25 +8498,60 @@
         "o_only": true
       },
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "is_prop": true,
-      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 1,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 2,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "alt-actor",
+          "slot": 3,
+          "label": "Other spikes part of the same group",
+          "accepts": [
+            "spike"
+          ],
+          "required": false
+        }
+      ],
       "color": [
         0.8,
         0.2,
         0.2,
         1.0
       ],
-      "shape": "CONE"
+      "shape": "SPHERE"
     },
     {
       "etype": "steam-cap",
-      "panel": "platform",
-      "label": "Steam Cap",
       "schema_export": true,
-      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
+      "label": "Steam Cap",
       "category": "Platforms",
       "parent": "prop",
       "art_group": "steam-cap-ag.go",
+      "tpage_group": "Sunken",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
@@ -6470,22 +8562,164 @@
         "o": "steam-cap.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
-      "is_prop": true,
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "lurkerm-piston",
+      "schema_export": true,
+      "label": "Piston",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "lurkerm-piston-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 5.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"},
+        {"key": "og_height_bot", "label": "Bottom Height (m)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 0}, "write_if": "if_not_default"}, 
+        {"key": "og_height_top", "label": "Top Height (m)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 1}, "write_if": "if_not_default"} 
+      ],
+      "glb": "levels/jungle/lurkerm-piston-geo.glb",
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '5.0 0.0 0.15 0.15'."
         },
         {
-          "key": "percent",
-          "type": "float",
-          "description": "Completion percentage threshold for cap behaviour."
+          "key": "height-info",
+          "type": "meters",
+          "description": "Change bottom and top height"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Stop moving when breaking the mirror",
+          "accepts": [
+            "reflector-mirror"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "lurkerm-tall-sail",
+      "schema_export": true,
+      "label": "Sail (Tall)",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "lurkerm-tall-sail-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
+      "lumps": [],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Stop moving when breaking the mirror",
+          "accepts": [
+            "reflector-mirror"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "precurbridge",
+      "schema_export": true,
+      "label": "Precursor Bridge",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "precurbridge-ag.go",
+      "tpage_group": "Jungle",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/precurbridge-geo.glb",
+      "lumps": [],
+      "color": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "grottopole",
+      "schema_export": true,
+      "label": "Grotto Pole",
+      "category": "Platforms",
+      "parent": "prop",
+      "art_group": "grottopole-ag.go",
+      "tpage_group": "Beach",
+      "code": {
+        "o": "beach-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
+        {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
+        {"key": "og_num-positions", "label": "Number of positions", "type": "uint32", "default": 3, "lump": {"key": "num-positions", "type": "uint32"}, "write_if": "if_not_default"}  
+      ],
+      "glb": "levels/beach/grottopole-lod1.glb",
+      "lumps": [
+        {
+          "key": "speed", 
+          "type": "meters",
+          "description": "Speed when moving"
+        },
+        {
+          "key": "distance", 
+          "type": "meters",
+          "description": "Distance per move"
+        },
+        {
+          "key": "num-positions", 
+          "type": "uint32",
+          "description": "Max number of moves"
         }
       ],
       "color": [
@@ -6498,8 +8732,8 @@
     },
     {
       "etype": "windmill-one",
-      "label": "Windmill",
-      "category": "Visuals",
+      "label": "Windmill Cog Wheel",
+      "category": "Platforms",
       "parent": "prop",
       "art_group": "windmill-one-ag.go",
       "tpages": [
@@ -6514,23 +8748,7 @@
       },
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Rotation radius."
-        },
-        {
-          "key": "num-positions",
-          "type": "int32",
-          "description": "Number of blade positions."
-        },
-        {
-          "key": "speed",
-          "type": "float",
-          "description": "Rotation speed."
-        }
-      ],
+      "lumps": [],
       "color": [
         0.7,
         0.7,
@@ -6702,21 +8920,73 @@
     },
     {
       "etype": "swamp-spike",
-      "label": "Swamp Spike",
-      "category": "Interactive Objects",
-      "parent": "prop",
+      "schema_export": true,
+      "label": "Swamp Spike (Swamp)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
       "art_group": "swamp-spike-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "glb": "levels/swamp/swamp-spike-lod0.glb",
       "code": {
         "o": "swamp-obs.o",
         "o_only": true
       },
       "is_prop": true,
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 5.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_x",
+          "label": "Scale X",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_y",
+          "label": "Scale Y",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_z",
+          "label": "Scale Z",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.01,
+          "lump": {"key": "scale", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_scale_w",
+          "label": "Scale W (keep at 1.0)",
+          "type": "float",
+          "default": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "lump": {"key": "scale", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
       "lumps": [
         {
           "key": "distance",
@@ -6742,7 +9012,7 @@
       "schema_export": true,
       "label": "Whirlpool",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "whirlpool-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -6766,26 +9036,43 @@
       "fields": [
         {
           "key": "og_whirl_speed",
-          "label": "Speed base",
+          "label": "Base speed (Whirl at <11.12m)",
           "type": "float",
-          "default": 0.3,
+          "default": 8.0,
           "lump": {
             "key": "speed",
-            "type": "float",
+            "type": "meters",
             "slot": 0
           },
           "write_if": "always"
         },
         {
           "key": "og_whirl_var",
-          "label": "Speed variance",
+          "label": "Alternative speed (Whirl at <11.12m)",
           "type": "float",
-          "default": 0.1,
+          "default": 35.0,
           "lump": {
             "key": "speed",
-            "type": "float",
+            "type": "meters",
             "slot": 1
           },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 5.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
           "write_if": "always"
         }
       ],
@@ -6799,29 +9086,32 @@
     },
     {
       "etype": "warp-gate",
-      "label": "Warp Gate Switch",
+      "label": "Warp Gate (unused?)",
+      "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "prop",
       "art_group": "warp-gate-switch-ag.go",
       "code": {
-        "in_game_cgo": true
+        "o": "villagep-obs.o",
+        "o_only": true
       },
-      "is_prop": true,
+      "glb": "levels/village1/warp-gate-switch-lod0.glb",
       "lumps": [
         {
-          "key": "timeout",
-          "type": "float",
-          "description": "Activation timeout."
-        },
-        {
-          "key": "next-actor",
+          "key": "alt-actor",
           "type": "structure",
-          "description": "Next warp target."
-        },
+          "description": "warp target."
+        }
+      ],
+      "link_slots": [
         {
-          "key": "prev-actor",
-          "type": "structure",
-          "description": "Previous warp target."
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Warp position actor. (Usually the particle effect)",
+          "accepts": [
+            "any"
+          ],
+          "required": false
         }
       ],
       "color": [
@@ -6830,7 +9120,45 @@
         0.8,
         1.0
       ],
-      "shape": "CIRCLE"
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "warp-gate-switch",
+      "label": "Warp Gate Switch",
+      "schema_export": true,
+      "category": "Buttons and Doors",
+      "parent": "prop",
+      "art_group": "warp-gate-switch-ag.go",
+      "code": {
+        "o": "villagep-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/village1/warp-gate-switch-lod0.glb",
+      "lumps": [
+        {
+          "key": "alt-actor",
+          "type": "structure",
+          "description": "warp target."
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "Warp position actor. (Usually the particle effect)",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.2,
+        0.7,
+        0.8,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "balloonlurker",
@@ -6851,14 +9179,30 @@
         "o_only": true
       },
       "glb": "levels/misty/balloonlurker-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
+      "needs_path": true,
       "link_slots": [
         {
-          "lump_key": "water-actor",
+          "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Water surface entity",
+          "label": "Cell to activate when all Balloon Lurkers are dead",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous Balloon lurkers if this isn't the first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next Balloon lurkers if this isn't the last",
           "accepts": [
             "any"
           ],
@@ -6887,12 +9231,10 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
+      "glb": "levels/jungle/darkvine-lod0.glb",
       "code": {
         "o": "darkvine.o",
         "o_only": true
-      },
-      "links": {
-        "need_enemy": true
       },
       "lumps": [],
       "color": [
@@ -6905,9 +9247,10 @@
     },
     {
       "etype": "junglefish",
+      "schema_export": true,
       "label": "Jungle Fish",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "description": "The jungle fish, also known as the fish lurker, is an enemy in The Precursor Legacy. Fish transformed into lurkers by Maia through dark eco sorcery — among the only lurkers known to be artificially created.",
       "art_group": "junglefish-ag.go",
       "tpage_group": "Jungle",
@@ -6921,7 +9264,11 @@
         "o": "junglefish.o",
         "o_only": true
       },
+      "glb": "levels/jungle/junglefish-lod0.glb",
+      "nav_safe": false,
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -6929,6 +9276,20 @@
           "key": "water-height",
           "type": "float",
           "description": "Y-coordinate of water surface in raw game units (not meters). Fish positions itself 1m below. Required."
+        }
+      ],
+      "fields": [
+        {
+          "key": "_water-height-one",
+          "label": "Water height surface (m)",
+          "default": 0.0,
+          "type": "float",
+          "lump": {
+            "key": "water-height",
+            "type": "meters",
+            "slot": 0,
+            "write_if": "if_not_default"
+          }
         }
       ],
       "color": [
@@ -6972,9 +9333,11 @@
     },
     {
       "etype": "cave-trap",
-      "label": "Cave Trap",
+      "label": "Cave Spider Trap",
+      "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "schema_export": true,
+      "parent": "nav-enemy",
       "tpage_group": "Robocave",
       "tpages": [
         "tpage-1313.go",
@@ -6988,44 +9351,59 @@
       },
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "link_slots": [
         {
           "lump_key": "alt-actor",
           "slot": 0,
-          "label": "Spider Egg 0",
+          "label": "Spider Egg or vent 0",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 1,
-          "label": "Spider Egg 1",
+          "label": "Spider Egg or vent 1",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 2,
-          "label": "Spider Egg 2",
+          "label": "Spider Egg or vent 2",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
         },
         {
           "lump_key": "alt-actor",
           "slot": 3,
-          "label": "Spider Egg 3",
+          "label": "Spider Egg or vent 3",
           "accepts": [
-            "spider-egg"
+            "any"
           ],
           "required": false
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_nav-max-users",
+          "label": "Max Spawned Enemies (default 50)",
+          "type": "int",
+          "default": 50,
+          "min": 0,
+          "lump": {
+            "key": "nav-max-users",
+            "type": "int32"
+          },
+          "write_if": "always"
         }
       ],
       "lumps": [
@@ -7047,7 +9425,7 @@
       "etype": "spider-egg",
       "label": "Spider Egg",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "spider-egg-ag.go",
       "tpage_group": "Robocave",
       "tpages": [
@@ -7060,8 +9438,10 @@
         "o": "spider-egg.o",
         "o_only": true
       },
+      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "link_slots": [
         {
@@ -7086,6 +9466,7 @@
     {
       "etype": "spider-vent",
       "label": "Spider Vent",
+      "description":"Connect to a Cave Spider Trap (cave-trap) to infinitely spawn spiders from here",
       "category": "Enemies",
       "parent": "process-drawable",
       "tpage_group": "Robocave",
@@ -7117,7 +9498,7 @@
       "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "swamp-rat-nest-ag.go",
       "tpage_group": "Swamp",
       "tpages": [
@@ -7130,29 +9511,52 @@
         "o": "swamp-rat-nest.o",
         "o_only": true
       },
+      "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "needs_path": true,
       "links": {
-        "need_enemy": true
+        "need_enemy": true,
+        "need_nav": true
       },
       "lumps": [
         {
           "key": "num-lurkers",
           "type": "uint32",
-          "description": "Max rats active at once. Range 1–4. Default 3. Needs 'path' waypoints set."
+          "description": "Max rats active at once. Range 1-4. Default 3. Needs 'path' waypoints set."
         }
       ],
       "fields": [
         {
           "key": "og_num_lurkers",
-          "label": "Child count",
+          "label": "Child count (default 3)",
           "type": "int",
-          "default": -1,
-          "min": -1,
+          "default": 3,
+          "min": 0,
           "lump": {
             "key": "num-lurkers",
             "type": "int32"
           },
-          "write_if": "if_nonneg"
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_crate_pickup",
+          "label": "Pickup",
+          "type": "enum",
+          "default": "eco-blue",
+          "choices": "CratePickups",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_crate_pickup_amount"
+          },
+          "write_if": "if_not_none"
+        },
+        {
+          "key": "og_crate_pickup_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99
         }
       ],
       "color": [
@@ -7234,21 +9638,18 @@
       "etype": "sharkey",
       "schema_export": true,
       "label": "Lurker Shark",
+      "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water.",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "art_group": "sharkey-ag.go",
-      "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "glb": "levels/beach/sharkey-lod0.glb",
       "code": {
         "o": "sharkey.o",
         "o_only": true
       },
       "links": {
+        "need_path": true,
+        "need_nav": true,
         "need_enemy": true
       },
       "lumps": [
@@ -7330,8 +9731,7 @@
         0.1,
         1.0
       ],
-      "shape": "SPHERE",
-      "requires_navmesh": true
+      "shape": "SPHERE"
     },
     {
       "etype": "villa-starfish",
@@ -7420,7 +9820,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventblue",
@@ -7449,7 +9849,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventred",
@@ -7478,7 +9878,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventyellow",
@@ -7507,7 +9907,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "eco-red",
@@ -7518,8 +9918,6 @@
         "o": "collectables.o",
         "o_only": true
       },
-      "link_slots": [
-      ],
       "lumps": [],
       "color": [
         1.0,
@@ -7527,7 +9925,7 @@
         0.1,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "eco-yellow",
@@ -7556,7 +9954,7 @@
         0.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ecoventrock",
@@ -7684,7 +10082,7 @@
       "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "square-platform-ag.go",
       "tpage_group": "Sunken",
       "tpages": [
@@ -7704,7 +10102,25 @@
           "slot": 0,
           "label": "Water entity (for splash effects)",
           "accepts": [
-            "water-vol"
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "prev-actor",
+          "slot": 0,
+          "label": "Previous platform in the list or button if first",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        },
+        {
+          "lump_key": "next-actor",
+          "slot": 0,
+          "label": "Next platform in the list",
+          "accepts": [
+            "any"
           ],
           "required": false
         }
@@ -7811,11 +10227,162 @@
       "shape": "CUBE"
     },
     {
+      "etype": "ogre-isle-b",
+      "schema_export": true,
+      "label": "Klaww Platform Isles",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "ogre-obs.o",
+        "o_only": true
+      },
+      "lumps": [],
+      "fields": [
+        {
+          "key": "og_ogre-isle_variant",
+          "label": "Klaww Isles Variant",
+          "type": "enum",
+          "default": "ogre-isle-b",
+          "choices": [
+            {
+              "value": "ogre-isle-b",
+              "label": "Isle B",
+              "etype": "ogre-isle-b",
+              "glb": "levels/ogre/ogre-isle-b-lod0.glb"
+            },
+            {
+              "value": "ogre-isle-c",
+              "label": "Isle C",
+              "etype": "ogre-isle-c",
+              "glb": "levels/ogre/ogre-isle-c-lod0.glb"
+            },
+            {
+              "value": "ogre-isle-d",
+              "label": "Isle D",
+              "etype": "ogre-isle-d",
+              "glb": "levels/ogre/ogre-isle-d-lod0.glb"
+            }
+          ],
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Water surface entity",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "ogre-step",
+      "schema_export": true,
+      "label": "Klaww Step",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "ogre-obs.o",
+        "o_only": true
+      },
+      "lumps": [
+        {
+          "key": "Variant",
+          "type": "string",
+          "description": "Steps variant. Values: A, B, C, D. Default: A."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_ogre-step_variant",
+          "label": "Klaww Steps Variant",
+          "type": "enum",
+          "default": "ogre-step-a",
+          "choices": "OgreStepVariants",
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "link_slots": [
+        {
+          "lump_key": "alt-actor",
+          "slot": 0,
+          "label": "This actor needs to be dead/removed for platforms to spawn",
+          "accepts": [
+            "any"
+          ],
+          "required": true
+        },
+        {
+          "lump_key": "water-actor",
+          "slot": 0,
+          "label": "Water surface entity",
+          "accepts": [
+            "any"
+          ],
+          "required": false
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "citb-disc",
+      "schema_export": true,
+      "label": "Disc Platform (citadel)",
+      "category": "Platforms",
+      "parent": "prop",
+      "tpages": [],
+      "code": {
+        "o": "citadel-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_disc_variant",
+          "label": "Disc Platform Variant",
+          "type": "enum",
+          "default": "citb-disc-a",
+          "choices": "CitbDiscVariants",
+          "variant": true,
+          "lump": {},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.6,
+        0.4,
+        0.2,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
       "etype": "lavaballoon",
       "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavaballoon-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -7914,6 +10481,42 @@
             "type": "meters"
           },
           "write_if": "always"
+        },
+        {
+          "key": "og_delay_one",
+          "label": "Delay One (m)",
+          "type": "float",
+          "default": 11.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_two",
+          "label": "Delay Two (m)",
+          "type": "float",
+          "default": 22.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_three",
+          "label": "Delay Three (m)",
+          "type": "float",
+          "default": 11.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_delay_four",
+          "label": "Delay Four (m)",
+          "type": "float",
+          "default": 33.0,
+          "min": 0.0,
+          "lump": {"key": "delay", "type": "meters", "slot": 3},
+          "write_if": "always"
         }
       ],
       "color": [
@@ -7926,11 +10529,12 @@
     },
     {
       "etype": "caveelevator",
-      "panel": "caveelevator",
+      // "panel": "caveelevator",
       "schema_export": true,
       "label": "Cave Elevator",
+      "description": "The cave elevator has multiple modes. However, the movement is based on animation so it can't be edited",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "caveelevator-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
@@ -7944,7 +10548,7 @@
         "o_only": true
       },
       "glb": "levels/darkcave/caveelevator-lod0.glb",
-      "needs_path": true,
+      // "needs_path": true,
       "lumps": [
         {
           "key": "trans-offset",
@@ -7959,21 +10563,37 @@
         {
           "key": "mode",
           "type": "uint32",
-          "description": "Elevator mode variant selector. Default 0."
+          "description": "Elevator mode variant selector. Default 0, Static 1, Extra floor 2."
         }
       ],
       "fields": [
         {
           "key": "og_elevator_mode",
           "label": "Mode",
-          "type": "int",
-          "default": 0,
-          "min": 0,
+          "type": "enum",
+          "default": "2floor",
+          "choices": [
+            {
+              "value": "2floor",
+              "label": "2 Floors (0 and 12m)",
+              "lump_value": 0
+            },
+            {
+              "value": "down",
+              "label": "2 Floors on step (0 and -58.4m)",
+              "lump_value": 1
+            },
+            {
+              "value": "3floor",
+              "label": "3 Floors (0, 12 and 24m)",
+              "lump_value": 2
+            }
+          ],
           "lump": {
             "key": "mode",
             "type": "uint32"
           },
-          "write_if": "if_nonzero"
+          "write_if": "always"
         },
         {
           "key": "og_elevator_rot",
@@ -8002,14 +10622,6 @@
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
-      "art_group": "caveflamepots-ag.go",
-      "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": {
         "o": "maincave-obs.o",
         "o_only": true
@@ -8124,6 +10736,7 @@
     },
     {
       "etype": "cavespatula",
+      "schema_export": true,
       "label": "Cave Spatula Plat",
       "category": "Platforms",
       "parent": "prop",
@@ -8139,8 +10752,18 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}
+      ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
+        }
+      ],
       "color": [
         0.5,
         0.4,
@@ -8151,6 +10774,7 @@
     },
     {
       "etype": "cavespatulatwo",
+      "schema_export": true,
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
       "parent": "prop",
@@ -8166,8 +10790,18 @@
         "o": "maincave-obs.o",
         "o_only": true
       },
+      "fields": [
+        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
-      "lumps": [],
+      "lumps": [
+        {
+          "key": "sync",
+          "type": "float",
+          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
+        }
+      ],
       "color": [
         0.5,
         0.4,
@@ -8178,7 +10812,7 @@
     },
     {
       "etype": "ogre-bridge",
-      "label": "Ogre Drawbridge",
+      "label": "Klaww Drawbridge",
       "category": "Platforms",
       "parent": "prop",
       "art_group": "ogre-bridge-ag.go",
@@ -8246,7 +10880,7 @@
       "schema_export": true,
       "label": "Pontoon (Ten)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -8295,7 +10929,7 @@
       "etype": "pontoonfive",
       "label": "Pontoon (Five)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "pontoonfive-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -8617,9 +11251,28 @@
       "shape": "PLAIN_AXES"
     },
     {
+      "etype": "slide-control",
+      "label": "Sliding Tube",
+      "description": "Will force jak into his sliding state. Requires a physical mesh under. You may need to switch direction on the curve.",
+      "category": "Platforms",
+      "parent": "process",
+      "code": {
+        "o": "target-tube.o",
+        "o_only": true
+      },
+      "needs_path": true,
+      "extra_art_groups": ["eichar-tube+0-ag.go"],
+      "lumps": [],
+      "color": [
+        0.8,
+        0.6,
+        0.2,
+        1.0
+      ],
+      "shape": "PLAIN_AXES"
+    },
+    {
       "etype": "springbox",
-      "panel": "launcher",
-      "is_launcher": true,
       "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
@@ -8647,7 +11300,47 @@
       "fields": [
         {
           "key": "og_spring_height",
-          "label": "Spring height (m)",
+          "label": "Bounce height (m)",
+          "type": "float",
+          "default": -1.0,
+          "lump": {
+            "key": "spring-height",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        }
+      ],
+      "color": [
+        0.9,
+        0.7,
+        0.1,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "spiderwebs",
+      "schema_export": true,
+      "label": "Spider Web (Bouncer)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "art_group": "spiderwebs-ag.go",
+      "code": {
+        "o": "spiderwebs.o",
+        "o_only": true
+      },
+      "glb": "levels/maincave/spiderwebs-good-lod0.glb",
+      "lumps": [
+        {
+          "key": "spring-height",
+          "type": "meters",
+          "description": "Launch height in meters. Default 11m."
+        }
+      ],
+      "fields": [
+        {
+          "key": "og_spring_height",
+          "label": "Bounce height (m)",
           "type": "float",
           "default": -1.0,
           "lump": {
@@ -8782,17 +11475,17 @@
       "shape": "SPHERE"
     },
     {
-      "etype": "eco-door",
-      "panel": "eco-door",
-      "export_as": "jng-iris-door",
-      "label": "Eco Door (iris)",
+      "etype": "jng-iris-door",
+      "schema_export": true,
+      "label": "Iris Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "jng-iris-door-ag.go",
       "code": {
-        "o": "baseplat.o",
+        "o": "jungleb-obs.o",
         "o_only": true
       },
+      "glb":"levels/jungleb/jng-iris-door-lod0.glb",
       "link_slots": [
         {
           "lump_key": "state-actor",
@@ -8875,93 +11568,21 @@
       "shape": "CUBE"
     },
     {
-      "etype": "jng-iris-door",
-      "panel": "eco-door",
-      "label": "Iris Door (Jungle)",
+      "etype": "eggtop",
+      "schema_export": true,
+      "label": "Egg Top Button (Jungleb)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
-      "art_group": "jng-iris-door-ag.go",
+      "art_group": "eggtop-ag.go",
       "code": {
         "o": "jungleb-obs.o",
         "o_only": true
       },
-      "link_slots": [
-        {
-          "lump_key": "state-actor",
-          "slot": 0,
-          "label": "Lock controller (door unlocks when this entity is activated)",
-          "accepts": [
-            "basebutton",
-            "any"
-          ],
-          "required": false
-        }
-      ],
-      "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale. Default 1.0."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
-        }
-      ],
-      "fields": [
-        {
-          "key": "og_door_auto_close",
-          "label": "Auto-close",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 4
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_one_way",
-          "label": "One-way",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_starts_open",
-          "label": "Starts open",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "perm-status",
-            "type": "uint32"
-          },
-          "value_if_true": 64,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_door_state_lock",
-          "type": "const",
-          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 1,
-            "set_if_link": "state-actor"
-          }
-        }
-      ],
+      "glb":"levels/jungleb/eggtop-lod0.glb",
       "color": [
         0.3,
-        0.7,
-        0.5,
+        0.6,
+        0.8,
         1.0
       ],
       "shape": "CUBE"
@@ -8977,6 +11598,7 @@
         "o": "jungle-obs.o",
         "o_only": true
       },
+      "glb": "levels/jungle/sidedoor-lod1.glb",
       "link_slots": [
         {
           "lump_key": "state-actor",
@@ -9055,6 +11677,25 @@
           }
         }
       ],
+      "color": [
+        0.4,
+        0.6,
+        0.4,
+        1.0
+      ],
+      "shape": "CUBE"
+    },
+    {
+      "etype": "maindoor",
+      "label": "Main Door (Jungle)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "art_group": "maindoor-ag.go",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "glb": "levels/jungle/maindoor-lod1.glb",
       "color": [
         0.4,
         0.6,
@@ -9305,9 +11946,9 @@
         {
           "lump_key": "next-actor",
           "slot": 0,
-          "label": "Next button in chain",
+          "label": "First activated actor",
           "accepts": [
-            "basebutton"
+            "any"
           ],
           "required": false
         },
@@ -9316,7 +11957,7 @@
           "slot": 0,
           "label": "Previous button in chain",
           "accepts": [
-            "basebutton"
+            "any"
           ],
           "required": false
         }
@@ -9325,7 +11966,8 @@
     {
       "etype": "shover",
       "schema_export": true,
-      "label": "Shover Platform",
+      "label": "Shover",
+      "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "shover-ag.go",
@@ -9398,7 +12040,7 @@
     {
       "etype": "swampgate",
       "label": "Swamp Spike Gate",
-      "category": "Obstacles",
+      "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "swamp-spike-gate-ag.go",
       "tpage_group": "Swamp",
@@ -9767,10 +12409,11 @@
     },
     {
       "etype": "chainmine",
-      "label": "Chain Mine",
+      "label": "Chain Mine (lavatube)",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "chainmine-ag.go",
+      "glb": "levels/lavatube/chainmine-lod0.glb",
       "tpage_group": "Lavatube",
       "tpages": [
         "tpage-1119.go",
@@ -9783,13 +12426,6 @@
         "o": "lavatube-obs.o",
         "o_only": true
       },
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Detonation delay after trigger."
-        }
-      ],
       "color": [
         0.6,
         0.1,
@@ -9832,19 +12468,11 @@
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "crate-darkeco-cluster-ag.go",
-      "tpage_group": "Firecanyon",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-815.go",
-        "tpage-822.go",
-        "tpage-854.go",
-        "tpage-1123.go"
-      ],
+      "glb": "levels/firecanyon/crate-darkeco-cluster-lod0.glb",
       "code": {
         "o": "firecanyon-obs.o",
         "o_only": true
       },
-      "lumps": [],
       "color": [
         0.3,
         0.0,
@@ -9852,6 +12480,193 @@
         1.0
       ],
       "shape": "CUBE"
+    },
+    {
+      "etype": "logtrap",
+      "schema_export": true,
+      "label": "Log Trap (jungle)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "logtrap-ag.go",
+      "glb": "levels/jungle/logtrap-lod0.glb",
+      "code": {
+        "o": "jungle-obs.o",
+        "o_only": true
+      },
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "pusher",
+      "schema_export": true,
+      "label": "Pusher (rolling)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "pusher-ag.go",
+      "glb": "levels/rolling/pusher-lod0.glb",
+      "code": {
+        "o": "rolling-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_in",
+          "label": "Pause while extended (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_out",
+          "label": "Pause while retracted (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "snowpusher",
+      "schema_export": true,
+      "label": "Snow Pusher (snowy)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "snowpusher-ag.go",
+      "glb": "levels/snow/snowpusher-lod0.glb",
+      "code": {
+        "o": "snow-obs.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_pusher_mode",
+          "label": "Collision and sound mode",
+          "type": "enum",
+          "default": 0,
+          "choices": [
+            {
+              "value": "0",
+              "label": "Collision ON (default)",
+              "lump_value": 0
+            },
+            {
+              "value": "1",
+              "label": "Collision OFF",
+              "lump_value": 1
+            },
+            {
+              "value": "2",
+              "label": "Collision OFF (alternative sound)",
+              "lump_value": 2
+            }
+          ],
+          "lump": {
+            "key": "mode",
+            "type": "uint32"
+          },
+          "write_if": "if_nonzero"
+        },
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_in",
+          "label": "Pause while extended (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 2},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_out",
+          "label": "Pause while retracted (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "lump": {"key": "sync", "type": "float", "slot": 3},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
+    },
+    {
+      "etype": "snow-ball",
+      "schema_export": true,
+      "label": "Snow Ball (Snowy)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "snow-ball-ag.go",
+      "glb": "levels/snow/snow-ball-lod0.glb",
+      "code": {
+        "o": "snow-ball.o",
+        "o_only": true
+      },
+      "needs_path": true,
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "swamp-tetherrock",
@@ -9890,6 +12705,45 @@
         1.0
       ],
       "shape": "SPHERE"
+    },
+    {
+      "etype": "citb-firehose",
+      "schema_export": true,
+      "label": "Fire Hose (citadel)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": "citb-firehose-ag.go",
+      "glb": "levels/citadel/citb-firehose-lod0.glb",
+      "code": {
+        "o": "citb-plat.o",
+        "o_only": true
+      },
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 0},
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {"key": "sync", "type": "float", "slot": 1},
+          "write_if": "always"
+        }
+      ],
+      "color": [
+        0.3,
+        0.0,
+        0.5,
+        1.0
+      ],
+      "shape": "CUBE"
     },
     {
       "etype": "fishermans-boat",
@@ -9941,14 +12795,6 @@
 
   // ── OrphanEtypes ────────────────────────────────────────────────
   "OrphanEtypes": [
-    {
-      "etype": "aphid",
-      "label": "Aphid",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple."
-    },
     {
       "etype": "helix-button",
       "label": "Helix Button",
@@ -10022,14 +12868,6 @@
       ]
     },
     {
-      "etype": "lurker-shark",
-      "label": "Lurker Shark",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water."
-    },
-    {
       "etype": "rolling-lightning-mole",
       "label": "Rolling Lightning Mole",
       "category": "Hidden",
@@ -10044,50 +12882,6 @@
       "parent": "process-drawable",
       "spawnable": false,
       "description": "The robber is a lurker enemy in The Precursor Legacy, found in Precursor Basin. Robbers scared the rare lightning moles out of their underground holes — Jak must drive them off to restore order."
-    },
-    {
-      "etype": "snow-log",
-      "label": "Snow Log",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow log master controller",
-          "accepts": [
-            "any"
-          ],
-          "required": true
-        }
-      ]
-    },
-    {
-      "etype": "snow-log-button",
-      "label": "Snow Log Button",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow log to activate",
-          "accepts": [
-            "snow-log"
-          ],
-          "required": true
-        }
-      ]
-    },
-    {
-      "etype": "snow-ram-boss",
-      "label": "Snow Ram Boss",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "spawnable": false,
-      "description": "The ice lurker, also known as the ice monster, is an enemy in The Precursor Legacy, spawning from the slippery ice regions of Snowy Mountain."
     }
   ],
 
@@ -15332,7 +18126,7 @@
         0.2,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventyellow",
@@ -15546,19 +18340,6 @@
       "shape": "CIRCLE"
     },
     {
-      "etype": "warp-gate",
-      "label": "Warp Gate Switch",
-      "category": "Objects",
-      "art_group": "warp-gate-switch-ag.go",
-      "color": [
-        0.2,
-        0.7,
-        0.8,
-        1.0
-      ],
-      "shape": "CIRCLE"
-    },
-    {
       "etype": "eco-pill",
       "label": "Eco Pill (Health)",
       "category": "Pickups",
@@ -15581,7 +18362,7 @@
         1.0,
         1.0
       ],
-      "shape": "PLAIN_AXES"
+      "shape": "SPHERE"
     },
     {
       "etype": "ventblue",
