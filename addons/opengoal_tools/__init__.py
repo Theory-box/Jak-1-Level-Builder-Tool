@@ -387,6 +387,8 @@ def register():
     # in _RestrictData during register() and bpy.data.scenes is inaccessible.
     # A zero-delay timer fires on the next tick when restrictions are lifted.
     _spawn_register_handlers()
+    from .panels.tools import register_db_handlers
+    register_db_handlers()
 
     def _deferred_populate_spawn_lists():
         try:
@@ -402,6 +404,8 @@ def register():
     bpy.app.timers.register(_deferred_populate_spawn_lists, first_interval=0.0)
 
 def unregister():
+    from .panels.tools import unregister_db_handlers
+    unregister_db_handlers()
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()

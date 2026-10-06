@@ -119,6 +119,19 @@ def _on_db_override_changed(self, context):
     _db.write_settings(db_override_path=self.db_override_path.strip())
 
 
+def draw_db_status(layout):
+    """'In use: <path> (source)' + any override error. Shared by Preferences
+    and Developer Tools > Project Folders."""
+    from . import db as _db
+    sub = layout.column(); sub.scale_y = 0.8
+    src = {"blend": "this .blend", "preferences": "preferences override",
+           "bundled": "bundled"}.get(_db.DB_SOURCE, _db.DB_SOURCE)
+    sub.label(text=f"In use ({src}): {_db.DB_PATH}",
+              icon="CHECKMARK" if not _db.DB_OVERRIDE_ERROR else "ERROR")
+    if _db.DB_OVERRIDE_ERROR:
+        sub.label(text=_db.DB_OVERRIDE_ERROR, icon="ERROR")
+
+
 # --- OGPreferences ---
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"
@@ -195,6 +208,9 @@ class OGPreferences(AddonPreferences):
         import sys
         from pathlib import Path
         layout = self.layout
+
+        # ── Database override (doesn't need any folder set) ───────────────────
+        self._draw_database(layout)
 
         # ── Root path + scan button ───────────────────────────────────────────
         row = layout.row(align=True)
@@ -309,19 +325,15 @@ class OGPreferences(AddonPreferences):
         layout.separator()
         layout.prop(self, "preview_models")
 
-        # ── Database override ────────────────────────────────────────────────
+    def _draw_database(self, layout):
         from . import db as _db
-        layout.separator()
         box = layout.box()
         box.label(text="Game database", icon="FILE_TEXT")
         row = box.row(align=True)
         row.prop(self, "db_override_path", text="Override")
         row.operator("og.reload_database", text="Reload Database", icon="FILE_REFRESH")
-        sub = box.column(); sub.scale_y = 0.8
-        sub.label(text=f"In use: {_db.DB_PATH}",
-                  icon="CHECKMARK" if not _db.DB_OVERRIDE_ERROR else "ERROR")
-        if _db.DB_OVERRIDE_ERROR:
-            sub.label(text=_db.DB_OVERRIDE_ERROR, icon="ERROR")
+        draw_db_status(box)
+        layout.separator()
 
 
 
@@ -444,6 +456,11 @@ class OGProperties(PropertyGroup):
     og_blend_decompiler_path: StringProperty(
         name="Decompiler output", subtype="DIR_PATH", default="",
         description="decompiler_out/jak1/ for this project. Blank = <data>/decompiler_out/jak1",
+    )
+    og_blend_db_override_path: StringProperty(
+        name="Database override", subtype="FILE_PATH", default="",
+        description="A .jsonc used instead of the game database while this .blend is open "
+                    "(switched to automatically when the file is opened). Blank = preferences / bundled",
     )
     og_ignore_game_gd: BoolProperty(
         name="Ignore game.gd files",

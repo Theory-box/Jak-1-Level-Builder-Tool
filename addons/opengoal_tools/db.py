@@ -15,6 +15,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -62,9 +63,36 @@ def write_settings(**changes) -> None:
     f.write_text(json.dumps(s, indent=2), encoding="utf-8")
 
 
+# A .blend's Project Folders can name its own database. The addon passes it
+# here through this environment variable (set before reloading), because the
+# scene can't be read while the addon is being enabled.
+BLEND_DB_ENV = "OPENGOAL_TOOLS_DB"
+
+
+def _abspath(p: str) -> Path:
+    try:
+        import bpy
+        return Path(bpy.path.abspath(p))
+    except Exception:
+        return Path(p)
+
+
 def override_path() -> Path | None:
+    """Preferences override (settings file), or None."""
     p = str(read_settings().get("db_override_path", "") or "").strip()
-    return Path(p) if p else None
+    return _abspath(p) if p else None
+
+
+def wanted_override() -> tuple[Path | None, str]:
+    """(path, source) of the database that should be loaded: the .blend's
+    (env var) first, then the preferences override, else (None, "bundled")."""
+    env = os.environ.get(BLEND_DB_ENV, "").strip()
+    if env:
+        return Path(env), "blend"
+    ov = override_path()
+    if ov:
+        return ov, "preferences"
+    return None, "bundled"
 
 
 def _bundled_db_path() -> Path:
@@ -84,6 +112,8 @@ _COMMENT_RE = re.compile(r'^\s*//.*$', re.MULTILINE)
 # could not be used, why — the bundled database is used instead so the addon
 # still loads.
 DB_PATH: Path | None = None
+DB_WANTED: Path | None = None       # override that was asked for (even if it failed)
+DB_SOURCE: str = "bundled"          # "blend" / "preferences" / "bundled"
 DB_OVERRIDE_ERROR: str = ""
 
 
@@ -95,20 +125,21 @@ def _parse(path: Path) -> dict:
 
 
 def _load() -> dict:
-    global DB_PATH, DB_OVERRIDE_ERROR
+    global DB_PATH, DB_WANTED, DB_SOURCE, DB_OVERRIDE_ERROR
     DB_OVERRIDE_ERROR = ""
-    ov = override_path()
+    ov, source = wanted_override()
+    DB_WANTED = ov
     if ov:
         try:
             data = _parse(ov)
-            DB_PATH = ov
+            DB_PATH, DB_SOURCE = ov, source
             return data
         except FileNotFoundError:
             DB_OVERRIDE_ERROR = f"Override not found: {ov}"
         except Exception as e:
             DB_OVERRIDE_ERROR = f"Override failed to load ({type(e).__name__}: {e})"
         print(f"[OpenGOAL] {DB_OVERRIDE_ERROR} - using the bundled database")
-    DB_PATH = _bundled_db_path()
+    DB_PATH, DB_SOURCE = _bundled_db_path(), "bundled"
     return _parse(DB_PATH)
 
 

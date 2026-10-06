@@ -239,6 +239,70 @@ def reload_addon_full(mod: str) -> None:
                 pass
 
 
+def _addon_module() -> str:
+    return __package__.rsplit(".", 1)[0]          # "opengoal_tools"
+
+
+def sync_blend_db(force_reload: bool = False) -> bool:
+    """Point the database at what the open .blend asks for (Project Folders >
+    Database override, when enabled) and reload the addon if that changes the
+    file in use. Returns True if a reload was scheduled."""
+    import os
+    from .. import db as _db
+    want = ""
+    try:
+        props = bpy.context.scene.og_props
+        if props.og_blend_paths_enabled and props.og_blend_db_override_path.strip():
+            want = str(_db._abspath(props.og_blend_db_override_path.strip()))
+    except Exception:
+        return False
+    if want:
+        os.environ[_db.BLEND_DB_ENV] = want
+    else:
+        os.environ.pop(_db.BLEND_DB_ENV, None)
+    # Compare with what the loaded database was ASKED to be — a missing or
+    # broken override falls back to the bundled file, and must not trigger a
+    # reload on every check.
+    target, _src = _db.wanted_override()
+    tried = _db.DB_WANTED
+    same = (str(target) if target else None) == (str(tried) if tried else None)
+    if same and not force_reload:
+        return False
+    mod = _addon_module()
+
+    def _later():
+        reload_addon_full(mod)
+        from importlib import import_module
+        _d = import_module(mod + ".db")
+        print(f"[OpenGOAL] Database reloaded from {_d.DB_PATH} ({_d.DB_SOURCE})")
+        return None
+
+    # After the current operator / handler returns — this module gets unloaded.
+    bpy.app.timers.register(_later, first_interval=0.05)
+    return True
+
+
+from bpy.app.handlers import persistent as _persistent
+
+
+@_persistent
+def _db_on_load_post(_dummy=None):
+    sync_blend_db()
+
+
+def register_db_handlers():
+    if _db_on_load_post not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_db_on_load_post)
+    # Addon enabled with a file already open (startup / reload): check once
+    # the register() restrictions are lifted.
+    bpy.app.timers.register(lambda: (sync_blend_db(), None)[1], first_interval=0.0)
+
+
+def unregister_db_handlers():
+    if _db_on_load_post in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_db_on_load_post)
+
+
 class OG_OT_ReloadDatabase(Operator):
     """Re-read the game database (bundled or the Preferences override) by fully
     re-enabling the addon, so every table built from it is rebuilt."""
@@ -247,16 +311,8 @@ class OG_OT_ReloadDatabase(Operator):
     bl_description = "Reload the game database (and the addon) from disk — use after editing the database or changing the override"
 
     def execute(self, ctx):
-        mod = __package__.rsplit(".", 1)[0]          # "opengoal_tools"
-
-        def _later():
-            reload_addon_full(mod)
-            from importlib import import_module
-            print(f"[OpenGOAL] Database reloaded from {import_module(mod + '.db').DB_PATH}")
-            return None
-
-        # Run after this operator returns — it lives in a module being unloaded.
-        bpy.app.timers.register(_later, first_interval=0.05)
+        # Picks up the open .blend's override (if any), then reloads.
+        sync_blend_db(force_reload=True)
         self.report({"INFO"}, "Reloading database…")
         return {"FINISHED"}
 
@@ -275,6 +331,9 @@ class OG_OT_BlendPathsFromPrefs(Operator):
             props.og_blend_exe_path        = str(_pc.exe_root())
             props.og_blend_data_path       = str(_pc.data_root())
             props.og_blend_decompiler_path = str(_pc.decompiler_path())
+            pr = _pc.prefs()
+            if pr and pr.db_override_path.strip() and not props.og_blend_db_override_path.strip():
+                props.og_blend_db_override_path = pr.db_override_path.strip()
         finally:
             props.og_blend_paths_enabled = True   # copied -> use them
         self.report({"INFO"}, "Project folders saved in this .blend")
@@ -319,7 +378,12 @@ class OG_PT_DevTools(Panel):
         col.prop(props, "og_blend_exe_path")
         col.prop(props, "og_blend_data_path")
         col.prop(props, "og_blend_decompiler_path")
+        row = col.row(align=True)
+        row.prop(props, "og_blend_db_override_path")
+        row.operator("og.reload_database", text="", icon="FILE_REFRESH")
         box.operator("og.blend_paths_from_prefs", icon="IMPORT")
+        from ..properties import draw_db_status
+        draw_db_status(box)
 
         layout.separator()
 
