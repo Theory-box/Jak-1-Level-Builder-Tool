@@ -603,6 +603,15 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         from .scene import camera_system, collect_builtin_cameras
         if camera_system(scene) == "builtin":
             cameras = collect_builtin_cameras(scene)
+            if cameras and not all_actors:
+                # OpenGOAL build_level (v0.3.4-v0.3.8) numbers cameras from the
+                # max actor id and dereferences max_element() of an EMPTY list
+                # when the level has no actors -> goalc segfaults. Skip cameras
+                # rather than hand goalc a level that crashes it.
+                log(f"  [camera] WARNING: {len(cameras)} built-in camera(s) NOT exported — "
+                    f"the level has no actors, and OpenGOAL's build_level crashes on "
+                    f"cameras without actors. Add at least one actor.")
+                cameras = []
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
@@ -622,7 +631,8 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         log(f"Skipped {p} (unchanged)")
     else:
         p.write_text(new_text)
-        log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} cameras)")
+        log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} camera/trigger actors"
+            f" + {len(cameras)} built-in cameras)")
 
 def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     """Write .gd file.
