@@ -199,6 +199,205 @@ def collect_custom_triggers(scene):
             log(f"  [vol-trigger] {vol.name} → {entry.target_name} (lump: {target_lump_name})")
     return out
 
+def _camera_game_quat(cam_obj, scene):
+    """Game-space camera quaternion for a CAMERA_ object.
+
+    Returns (qx, qy, qz, qw, look_obj, look_at_name).
+
+    1. Look direction in world space: towards the look-at target if one is
+       set (target_world - camera_world), else the camera's own -local_Z.
+    2. Remap to game space: bl(x,y,z) -> game(x,z,-y)
+    3. Build the rotation forward-down->inv-matrix style (world-down =
+       (0,-1,0) roll reference).
+    4. Conjugate (negate xyz) — the game's quaternion->matrix reads the
+       inverse convention from what standard math produces.
+
+    Steps 2-4 confirmed empirically via nREPL inv-camera-rot readback. The
+    look-at branch bakes the aim into the quat because the engine's
+    'interesting' lump is only a POI bias for follow cams — for fixed cameras
+    it is effectively a no-op. Built-in camera entities store this quat at
+    the same offset as an actor's, read through cam-slave-get-rot, so the same
+    convention applies to both camera systems.
+    """
+    loc = cam_obj.matrix_world.translation
+    look_at_name = cam_obj.get("og_cam_look_at", "").strip()
+    look_obj = scene.objects.get(look_at_name) if look_at_name else None
+    if look_obj:
+        tgt = look_obj.matrix_world.translation
+        bl_look = mathutils.Vector((tgt.x - loc.x, tgt.y - loc.y, tgt.z - loc.z))
+        if bl_look.length < 1e-6:
+            # Degenerate: target at the camera position -> native rotation.
+            bl_look = -cam_obj.matrix_world.to_3x3().col[2]
+    else:
+        bl_look = -cam_obj.matrix_world.to_3x3().col[2]
+    gl = mathutils.Vector((bl_look.x, bl_look.z, -bl_look.y))
+    gl.normalize()
+    game_down = mathutils.Vector((0.0, -1.0, 0.0))
+    right = gl.cross(game_down)
+    if right.length < 1e-6:
+        right = mathutils.Vector((1.0, 0.0, 0.0))  # degenerate: straight up/down
+    right.normalize()
+    up = gl.cross(right)
+    up.normalize()
+    gq = mathutils.Matrix([right, up, gl]).to_quaternion()
+    return (round(-gq.x, 6), round(-gq.y, 6), round(-gq.z, 6), round(gq.w, 6),
+            look_obj, look_at_name)
+
+
+# ── Camera system: built-in entities vs legacy marker/trigger actors ─────────
+# Built-in camera entities need OpenGOAL v0.3.4+ (jak-project PR #4310), which
+# changed entity-camera's `connect` field to an inline `quat`. That change in
+# the install's goal_src is how we detect support.
+_CAM_SUPPORT_CACHE: dict = {}
+
+
+def builtin_cameras_supported() -> bool:
+    from .paths import _goal_src
+    p = _goal_src() / "engine" / "entity" / "entity-h.gc"
+    try:
+        key = (str(p), p.stat().st_mtime)
+    except OSError:
+        return False
+    if key not in _CAM_SUPPORT_CACHE:
+        try:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+            _CAM_SUPPORT_CACHE.clear()
+            _CAM_SUPPORT_CACHE[key] = bool(re.search(
+                r"\(deftype entity-camera \(entity\)\s*\(\(quat\s+quaternion", txt))
+        except OSError:
+            return False
+    return _CAM_SUPPORT_CACHE[key]
+
+
+def camera_system(scene) -> str:
+    """"builtin" or "legacy" for this scene (Developer Tools > Camera system)."""
+    try:
+        choice = scene.og_props.og_camera_system
+    except Exception:
+        choice = "AUTO"
+    if choice == "BUILTIN":
+        return "builtin"
+    if choice == "LEGACY":
+        return "legacy"
+    return "builtin" if builtin_cameras_supported() else "legacy"
+
+
+def _cam_vols_by_role(level_objs):
+    """cam_name -> {"vol": [vol_obj...], "pvol": [...], "cutoutvol": [...]}"""
+    out = {}
+    for o in level_objs:
+        if o.type == "MESH" and o.name.startswith("VOL_"):
+            for entry in _vol_links(o):
+                if _classify_target(entry.target_name) == "camera":
+                    role = getattr(entry, "cam_role", "vol") or "vol"
+                    out.setdefault(entry.target_name, {}).setdefault(role, []).append(o)
+    return out
+
+
+def collect_builtin_cameras(scene):
+    """Built-in camera entities for the level .jsonc "cameras" array.
+
+    One entry per CAMERA_ object, driven by the DB "Cameras" section (fields +
+    flags). Volumes come from linked VOL_ meshes by role, at keyframe 0 as the
+    engine reads them ('exact 0.0 in in-cam-entity-volume?). A JSON lump key
+    can only appear once, so a camera with several "vol" volumes is exported
+    as one entry per volume with identical settings ("<name>", "<name>-1", ...).
+    pvol / cutoutvol use the first linked volume of that role.
+    """
+    from .. import db as _db
+    from .schema_emit import emit_schema_lumps
+    from .actors import _collect_waypoint_points, _make_path_knots
+    cam_db = _db.cameras()
+    fields = cam_db.get("fields", [])
+    flags = cam_db.get("flags", [])
+
+    level_objs = _level_objects(scene)
+    cam_objects = sorted([o for o in level_objs
+                          if o.name.startswith("CAMERA_") and o.type == "CAMERA"],
+                         key=lambda o: o.name)
+    vols = _cam_vols_by_role(level_objs)
+    out = []
+    for cam_obj in cam_objects:
+        name = cam_obj.name
+        mode = cam_obj.get("og_cam_mode", "fixed")
+        loc = cam_obj.matrix_world.translation
+        trans = [round(loc.x, 4), round(loc.z, 4), round(-loc.y, 4)]
+        qx, qy, qz, qw, look_obj, look_at_name = _camera_game_quat(cam_obj, scene)
+
+        lump = {"name": name}
+        # DB fields for this mode (visible_if.og_cam_mode lists the modes).
+        def _applies(f):
+            modes = (f.get("visible_if") or {}).get("og_cam_mode")
+            return modes is None or mode in (modes if isinstance(modes, list) else [modes])
+        lump.update(emit_schema_lumps(lambda k, d=None: cam_obj.get(k, d),
+                                      [f for f in fields if _applies(f)]))
+
+        on = [f["id"] for f in flags if cam_obj.get("og_cam_flag_" + f["id"], False)]
+        if on:
+            lump["flags"] = ["enum-uint32", "(cam-slave-options " + " ".join(on) + ")"]
+
+        def _g(o):
+            p = o.matrix_world.translation
+            return [round(p.x, 4), round(p.z, 4), round(-p.y, 4)]
+
+        if look_obj:
+            lump["interesting"] = ["vector3m", _g(look_obj)]
+        elif look_at_name:
+            log(f"  [camera] WARNING: look-at object '{look_at_name}' not found in scene")
+
+        if mode == "standoff":
+            a = scene.objects.get(name + "_ALIGN")
+            if a:
+                lump["align"] = ["vector3m", _g(a)]
+            else:
+                log(f"  [camera] WARNING: {name} side-scroll but no {name}_ALIGN — exports as fixed")
+        elif mode == "orbit":
+            pv = scene.objects.get(name + "_PIVOT")
+            if pv:
+                lump["pivot"] = ["vector3m", _g(pv)]
+            else:
+                log(f"  [camera] WARNING: {name} orbit but no {name}_PIVOT — exports as fixed")
+        elif mode == "spline":
+            pts = _collect_waypoint_points(cam_obj)
+            if len(pts) >= 4:
+                lump["campath"] = ["vector4m"] + pts
+                lump["campath-k"] = ["float"] + _make_path_knots(len(pts))
+            else:
+                log(f"  [camera] WARNING: {name} path mode needs 4+ path points "
+                    f"(has {len(pts)}) — exports as fixed")
+
+        def _planes(o):
+            planes, _r = _vol_planes(o)
+            if not planes:
+                log(f"  [WARNING] camera {name}: volume {o.name} has no usable faces "
+                    f"(needs a closed convex mesh) — skipped")
+            return planes
+
+        roles = vols.get(name, {})
+        for role in ("pvol", "cutoutvol"):
+            for o in roles.get(role, [])[:1]:
+                pl = _planes(o)
+                if pl:
+                    lump[role] = ["vector-vol@0"] + pl
+            if len(roles.get(role, [])) > 1:
+                log(f"  [camera] WARNING: {name} has {len(roles[role])} '{role}' volumes — "
+                    f"only {roles[role][0].name} is used")
+        vol_planes = [p for p in (_planes(o) for o in roles.get("vol", [])) if p]
+        if not vol_planes:
+            log(f"  [camera] WARNING: {name} has no trigger volume — it will never activate")
+            vol_planes = [None]
+        for i, pl in enumerate(vol_planes):
+            l = dict(lump)
+            if i:
+                l["name"] = f"{name}-{i}"
+            if pl:
+                l["vol"] = ["vector-vol@0"] + pl
+            out.append({"trans": trans, "quat": [qx, qy, qz, qw], "lump": l})
+        log(f"  [camera] {name} ({mode}) built-in, {len(vol_planes)} entr"
+            f"{'y' if len(vol_planes) == 1 else 'ies'}")
+    return out
+
+
 def collect_cameras(scene):
     """Build camera actor list from CAMERA_ camera objects.
 
@@ -209,6 +408,8 @@ def collect_cameras(scene):
     A volume can hold multiple links. We iterate every VOL_ mesh's links and
     emit one camera-trigger actor per (volume, camera_link) pair.
     """
+    if camera_system(scene) == "builtin":
+        return [], []          # exported as level "cameras" (collect_builtin_cameras)
     level_objs = _level_objects(scene)
 
     cam_objects = sorted(
@@ -224,6 +425,13 @@ def collect_cameras(scene):
         if o.type == "MESH" and o.name.startswith("VOL_"):
             for entry in _vol_links(o):
                 if _classify_target(entry.target_name) == "camera":
+                    # Preferred / cut-out roles are built-in-camera features; the
+                    # legacy trigger can only switch a camera ON inside a volume.
+                    role = getattr(entry, "cam_role", "vol") or "vol"
+                    if role != "vol":
+                        log(f"  [camera] WARNING: {o.name} is a '{role}' volume for "
+                            f"{entry.target_name} — legacy cameras ignore it (needs built-in cameras)")
+                        continue
                     vols_by_cam.setdefault(entry.target_name, []).append(o)
 
     camera_actors  = []
@@ -237,53 +445,7 @@ def collect_cameras(scene):
         gy = round(loc.z, 4)
         gz = round(-loc.y, 4)
 
-        # Blender -> game camera quaternion.
-        #
-        # 1. Determine the look direction in world space:
-        #    - If the camera has a look-at target, aim at the target
-        #      (target_world - camera_world).  Otherwise use the Blender
-        #      camera's own -local_Z axis (its native orientation).
-        # 2. Remap to game space: bl(x,y,z) -> game(x,z,-y)
-        # 3. Build canonical rotation via forward-down->inv-matrix style
-        #    (world-down = (0,-1,0) roll reference).
-        # 4. Conjugate the result (negate xyz) — the game's quaternion->matrix
-        #    reads the inverse convention from what standard math produces.
-        #
-        # Steps 2-4 confirmed empirically via nREPL inv-camera-rot readback.
-        # Step 1's look-at branch is the fix for the look-at-target UI:
-        # previously the quat was always built from the Blender camera's own
-        # rotation, with a separate 'interesting' lump for the target.  But
-        # the engine's 'interesting' lump only acts as a POI *bias* on cameras
-        # that have a follow-pt (gameplay follow-cams); for fixed cameras it's
-        # effectively a no-op.  The only way to make a fixed camera actually
-        # face a point is to bake the look direction into the quat itself.
-        look_at_name = cam_obj.get("og_cam_look_at", "").strip()
-        look_obj = scene.objects.get(look_at_name) if look_at_name else None
-        if look_obj:
-            # Aim from camera toward target in Blender world space, then remap.
-            tgt = look_obj.matrix_world.translation
-            bl_look = mathutils.Vector((tgt.x - loc.x, tgt.y - loc.y, tgt.z - loc.z))
-            if bl_look.length < 1e-6:
-                # Degenerate: target at same position as camera, fall back to
-                # the camera's native rotation so we don't emit a bad quat.
-                bl_look = -cam_obj.matrix_world.to_3x3().col[2]
-        else:
-            bl_look = -cam_obj.matrix_world.to_3x3().col[2]
-        gl = mathutils.Vector((bl_look.x, bl_look.z, -bl_look.y))
-        gl.normalize()
-        game_down = mathutils.Vector((0.0, -1.0, 0.0))
-        right = gl.cross(game_down)
-        if right.length < 1e-6:
-            right = mathutils.Vector((1.0, 0.0, 0.0))  # degenerate: straight up/down
-        right.normalize()
-        up = gl.cross(right)
-        up.normalize()
-        game_mat = mathutils.Matrix([right, up, gl])
-        gq = game_mat.to_quaternion()
-        qx = round(-gq.x, 6)
-        qy = round(-gq.y, 6)
-        qz = round(-gq.z, 6)
-        qw = round( gq.w, 6)
+        qx, qy, qz, qw, look_obj, look_at_name = _camera_game_quat(cam_obj, scene)
 
         cam_mode = cam_obj.get("og_cam_mode",  "fixed")
         interp_t = float(cam_obj.get("og_cam_interp", 1.0))

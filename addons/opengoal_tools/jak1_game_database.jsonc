@@ -39,6 +39,7 @@
 //   VertexExportTypes        — mesh-only props for vertex-lit export
 //   VertexExportTypes_notes  — overlap + exclusion rules
 //   VertexExportExcludedEtypes — etypes that cannot be vertex-exported
+//   Cameras                  — built-in camera entities: modes, fields, cam-slave-options flags
 //   ObjectTypes              — non-actor placeables (cameras, sound emitters, checkpoints)
 {
 
@@ -18956,6 +18957,85 @@
     "orb-cache-top",
     "powercellalt"
   ],
+
+  // ── Cameras ─────────────────────────────────────────────────────
+  // Built-in camera entities (level .jsonc "cameras" array, OpenGOAL v0.3.4+,
+  // jak-project PR #4310). Each CAMERA_ object exports one entry; the mode,
+  // fields and flags below drive both the Selected Object camera panel and the
+  // export. The engine picks the camera mode from which lumps are present
+  // (camera.gc cam-state-from-entity): pivot -> circular, align -> standoff,
+  // campath -> spline, stringMaxLength > 0 -> string, else fixed.
+  "Cameras": {
+    "min_opengoal": "v0.3.4",
+    "note": "Fields use the same schema as Actors[].fields (key/label/type/default/lump/write_if). visible_if.og_cam_mode lists the modes a field applies to. Volumes come from linked VOL_ meshes (role vol / pvol / cutoutvol, keyframe 0).",
+    "modes": [
+      {"id": "fixed",    "label": "Fixed",       "description": "Camera stays where the CAMERA_ object is, aimed by its rotation (or a Look-At target)."},
+      {"id": "standoff", "label": "Side-Scroll", "description": "Keeps the offset from the Anchor empty to the camera, moving with Jak (cam-standoff, 'align lump)."},
+      {"id": "orbit",    "label": "Orbit",       "description": "Circles around the Pivot empty, staying on the far side from Jak (cam-circular, 'pivot lump)."},
+      {"id": "follow",   "label": "Follow",      "description": "Normal gameplay camera with custom leash lengths (cam-string). The camera object only marks the region."},
+      {"id": "spline",   "label": "Path",        "description": "Rides along the camera's Path (waypoints/curve, 4+ points), at the point closest to Jak (cam-spline, 'campath lump)."}
+    ],
+    "fields": [
+      {"key": "og_cam_interp", "label": "Blend time (s)", "type": "float", "default": 1.0, "min": 0.0,
+       "lump": {"key": "interpTime", "type": "float"}, "write_if": "always",
+       "note": "How long the switch to this camera blends, in seconds."},
+      {"key": "og_cam_fov", "label": "FOV (degrees, 0 = default 64)", "type": "float", "default": 0.0, "min": 0.0,
+       "lump": {"key": "fov", "type": "degrees"}, "write_if": "if_positive"},
+      {"key": "og_cam_tilt", "label": "Tilt / roll (degrees, 0 = default)", "type": "float", "default": 0.0,
+       "lump": {"key": "tiltAdjust", "type": "degrees"}, "write_if": "if_nonzero"},
+
+      {"key": "og_cam_max_angle", "label": "Max angle (degrees, 0 = none)", "type": "float", "default": 0.0, "min": 0.0,
+       "visible_if": {"og_cam_mode": ["orbit"]},
+       "lump": {"key": "maxAngle", "type": "degrees"}, "write_if": "if_positive",
+       "note": "How far the orbit may swing away from its rest angle."},
+      {"key": "og_cam_focal_pull", "label": "Focal pull (degrees)", "type": "float", "default": 0.0,
+       "visible_if": {"og_cam_mode": ["orbit"]},
+       "lump": {"key": "focalPull", "type": "degrees"}, "write_if": "if_nonzero",
+       "note": "FOV the orbit camera blends towards as Jak moves (0 = off)."},
+
+      {"key": "og_cam_string_min_length", "label": "Min length (m)", "type": "float", "default": 5.0,
+       "visible_if": {"og_cam_mode": ["follow"]}, "lump": {"key": "stringMinLength", "type": "meters"}, "write_if": "always"},
+      {"key": "og_cam_string_max_length", "label": "Max length (m)", "type": "float", "default": 12.5,
+       "visible_if": {"og_cam_mode": ["follow"]}, "lump": {"key": "stringMaxLength", "type": "meters"}, "write_if": "always",
+       "note": "Must be above 0 - that is what selects the follow mode."},
+      {"key": "og_cam_string_min_height", "label": "Min height (m)", "type": "float", "default": 1.0,
+       "visible_if": {"og_cam_mode": ["follow"]}, "lump": {"key": "stringMinHeight", "type": "meters"}, "write_if": "always"},
+      {"key": "og_cam_string_max_height", "label": "Max height (m)", "type": "float", "default": 3.0,
+       "visible_if": {"og_cam_mode": ["follow"]}, "lump": {"key": "stringMaxHeight", "type": "meters"}, "write_if": "always"},
+      {"key": "og_cam_string_cliff_height", "label": "Cliff height (m)", "type": "float", "default": 40.0,
+       "visible_if": {"og_cam_mode": ["follow"]}, "lump": {"key": "stringCliffHeight", "type": "meters"}, "write_if": "always",
+       "note": "How far the camera peeks down over ledges."},
+
+      {"key": "og_cam_spline_follow_dist", "label": "Follow distance (m)", "type": "float", "default": 0.0,
+       "visible_if": {"og_cam_mode": ["spline"]},
+       "lump": {"key": "spline-follow-dist", "type": "meters"}, "write_if": "if_nonzero",
+       "note": "Stay this far along the path from the point closest to Jak (0 = closest point)."}
+    ],
+    // cam-slave-options (camera-h.gc). Exported as
+    // "flags": ["enum-uint32", "(cam-slave-options A B ...)"]. Descriptions come
+    // from reading the engine code (cam-states.gc / cam-master.gc); "runtime"
+    // flags are set by the engine itself and normally left off.
+    "flags": [
+      {"id": "BUTT_CAM",             "label": "Behind Jak",          "modes": ["follow"], "description": "Follow camera swings round behind Jak by itself."},
+      {"id": "SAME_SIDE",            "label": "Same side",           "modes": ["orbit"],  "description": "Orbit camera stays on Jak's side of the pivot instead of the far side."},
+      {"id": "MOVE_SPHERICAL",       "label": "Move spherical",      "modes": ["orbit"],  "description": "Orbit moves in 3D around the pivot (not flattened to a horizontal circle)."},
+      {"id": "ALLOW_Z_ROT",          "label": "Allow roll",          "modes": [],         "description": "Free-look camera may roll instead of staying level."},
+      {"id": "JUMP_PITCHES",         "label": "Jump pitches",        "modes": [],         "description": "Not referenced by the Jak 1 camera code (no effect found)."},
+      {"id": "COLLIDE",              "label": "Collide",             "modes": ["follow"], "description": "Follow camera collides with level geometry instead of passing through walls."},
+      {"id": "FIND_HIDDEN_TARGET",   "label": "Find hidden Jak",     "modes": ["follow"], "description": "Follow camera moves to find Jak again when he is hidden behind geometry."},
+      {"id": "DRAG",                 "label": "Drag",                "modes": ["orbit"],  "description": "Orbit camera is dragged along behind Jak at the pivot radius."},
+      {"id": "PLAYER_MOVING_CAMERA", "label": "Player moving camera","modes": [],         "description": "Runtime: set while the player turns the camera. Normally off."},
+      {"id": "LINE_OF_SIGHT",        "label": "Line of sight",       "modes": ["follow"], "description": "Follow camera keeps a clear line of sight to Jak."},
+      {"id": "MOVEMENT_BLOCKED",     "label": "Movement blocked",    "modes": [],         "description": "Runtime: line-of-sight blocking state. Normally off."},
+      {"id": "SHRINK_MAX_ANGLE",     "label": "Shrink max angle",    "modes": ["orbit"],  "description": "Orbit's max angle tightens as Jak pushes against it."},
+      {"id": "GOTO_GOOD_POINT",      "label": "Go to good point",    "modes": [],         "description": "Runtime: set by line-of-sight code to jump to a clear spot. Normally off."},
+      {"id": "BLOCK_SHIFT_BUTTONS",  "label": "Block L/R buttons",   "modes": [],         "description": "Not referenced by the Jak 1 camera code (no effect found)."},
+      {"id": "BIKE_MODE",            "label": "Zoomer mode",         "modes": ["follow"], "description": "Tighter, faster follow for the zoomer."},
+      {"id": "NO_ROTATE",            "label": "Keep own rotation",   "modes": ["spline"], "description": "Path camera keeps the CAMERA_ object's rotation instead of turning towards Jak."},
+      {"id": "STICKY_ANGLE",         "label": "Sticky angle",        "modes": [],         "description": "Not referenced by the Jak 1 camera code (no effect found)."},
+      {"id": "AIR_EXIT",             "label": "Air exit",            "modes": [],         "description": "Not referenced by the Jak 1 camera code (no effect found)."}
+    ]
+  },
 
   // ── ObjectTypes ─────────────────────────────────────────────────
   "ObjectTypes": [

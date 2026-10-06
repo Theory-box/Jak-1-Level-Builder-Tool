@@ -596,6 +596,13 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     else:
         _tex_remap = _sky_src = _src
         _textures  = [[f"{_src}-vis-alpha"]]
+    # Built-in camera entities (OpenGOAL v0.3.4+). In legacy mode
+    # collect_cameras() produced camera-marker/trigger actors instead.
+    cameras = []
+    if scene is not None:
+        from .scene import camera_system, collect_builtin_cameras
+        if camera_system(scene) == "builtin":
+            cameras = collect_builtin_cameras(scene)
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
@@ -607,6 +614,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         "ambients": ambients,
         "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
                    for a in all_actors],
+        **({"cameras": cameras} if cameras else {}),
     }
     p = d / f"{name}.jsonc"
     new_text = f"// OpenGOAL custom level: {name}\n" + json.dumps(data, indent=2)

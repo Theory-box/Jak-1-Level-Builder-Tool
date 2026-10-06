@@ -402,6 +402,14 @@ class OG_PT_DevTools(Panel):
         layout.label(text="Build", icon="MODIFIER")
         box = layout.box()
         box.prop(props, "og_ignore_game_gd")
+        from ..export.scene import builtin_cameras_supported, camera_system
+        row = box.row(align=True)
+        row.prop(props, "og_camera_system")
+        sub = box.column(); sub.scale_y = 0.8
+        sub.label(text=("Built-in cameras supported by this OpenGOAL" if builtin_cameras_supported()
+                        else "This OpenGOAL predates built-in cameras (needs v0.3.4+)"),
+                  icon="CHECKMARK" if builtin_cameras_supported() else "INFO")
+        sub.label(text=f"Exporting cameras as: {camera_system(ctx.scene)}")
 
         layout.separator()
 

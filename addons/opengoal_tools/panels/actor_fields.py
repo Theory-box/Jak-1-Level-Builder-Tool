@@ -129,7 +129,11 @@ def _field_visible(obj, field) -> bool:
     if not cond:
         return True
     for k, expected in cond.items():
-        if obj.get(k) != expected:
+        # A list means "any of these values" (e.g. camera fields per mode).
+        if isinstance(expected, list):
+            if obj.get(k) not in expected:
+                return False
+        elif obj.get(k) != expected:
             return False
     return True
 

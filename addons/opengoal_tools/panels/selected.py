@@ -517,20 +517,45 @@ def _draw_selected_camera(layout, sel, scene):
     layout.label(text=sel.name, icon="CAMERA_DATA")
 
     mode   = sel.get("og_cam_mode",   "fixed")
+    from .. import db as _db
+    from ..export.scene import camera_system, builtin_cameras_supported
+    from .actor_fields import _draw_field
+    cam_db  = _db.cameras()
+    builtin = camera_system(scene) == "builtin"
 
-    # ── Mode selector ────────────────────────────────────────────────────
+    # ── Camera system ────────────────────────────────────────────────────
+    srow = layout.row()
+    if builtin:
+        srow.label(text="Built-in camera entity", icon="CHECKMARK")
+    else:
+        why = ("" if builtin_cameras_supported()
+               else f" — needs OpenGOAL {cam_db.get('min_opengoal', 'v0.3.4')}+ for built-in")
+        srow.label(text=f"Legacy camera actors{why}", icon="INFO")
+
+    # ── Mode selector (DB Cameras.modes) ─────────────────────────────────
     box = layout.box()
     box.label(text="Mode", icon="OUTLINER_DATA_CAMERA")
     mrow = box.row(align=True)
-    for m, lbl in (("fixed","Fixed"),("standoff","Side-Scroll"),("orbit","Orbit"),("follow","Follow")):
-        op = mrow.operator("og.set_cam_prop", text=lbl, depress=(mode == m))
-        op.cam_name = sel.name; op.prop_name = "og_cam_mode"; op.str_val = m
+    modes = cam_db.get("modes", [])
+    for m in modes:
+        sub = mrow.row(align=True)
+        sub.enabled = builtin or m["id"] != "spline"   # path cameras: built-in only
+        op = sub.operator("og.set_cam_prop", text=m.get("label", m["id"]), depress=(mode == m["id"]))
+        op.cam_name = sel.name; op.prop_name = "og_cam_mode"; op.str_val = m["id"]
+    desc = next((m.get("description", "") for m in modes if m["id"] == mode), "")
+    if desc:
+        d = box.row(); d.enabled = False
+        d.label(text=desc, icon="INFO")
 
-    # ── Blend time ───────────────────────────────────────────────────────
-    _prop_row(box, sel, "og_cam_interp", "Blend (s):", 0.5)
-
-    # ── FOV ──────────────────────────────────────────────────────────────
-    _prop_row(box, sel, "og_cam_fov", "FOV (0=default):", 0.0)
+    # ── Fields (DB Cameras.fields, filtered by mode via visible_if) ─────
+    builtin_only = {"og_cam_tilt", "og_cam_max_angle", "og_cam_focal_pull", "og_cam_spline_follow_dist"}
+    for f in cam_db.get("fields", []):
+        if not builtin and f["key"] in builtin_only:
+            continue
+        _draw_field(box, sel, f)
+    if not builtin:
+        n = box.row(); n.enabled = False
+        n.label(text="Tilt, orbit angles, flags, Path mode and volume roles need built-in cameras")
 
     # ── Mode-specific helpers ────────────────────────────────────────────
     if mode == "standoff":
@@ -557,23 +582,60 @@ def _draw_selected_camera(layout, sel, scene):
             prow.label(text="No pivot", icon="ERROR")
             prow.operator("og.spawn_cam_pivot", text="Add Pivot")
 
-    elif mode == "follow":
-        # Gameplay follow-cam (cam-string in the engine) — tracks Jak on all
-        # three axes, right-stick orbits, leash auto-adjusts via the 5 params
-        # below.  Camera's Blender position/rotation acts only as a "region
-        # marker" — the runtime camera's position is derived entirely from
-        # Jak, so placing the camera object anywhere sensible is fine.
-        fbox = box.column(align=True)
-        fbox.label(text="String Length (camera ↔ Jak):", icon="DRIVER_DISTANCE")
-        _prop_row(fbox, sel, "og_cam_string_min_length", "Min length (m):", 5.0)
-        _prop_row(fbox, sel, "og_cam_string_max_length", "Max length (m):", 12.5)
-        fbox.separator(factor=0.3)
-        fbox.label(text="String Height (vertical leash range):", icon="EMPTY_SINGLE_ARROW")
-        _prop_row(fbox, sel, "og_cam_string_min_height", "Min height (m):", 1.0)
-        _prop_row(fbox, sel, "og_cam_string_max_height", "Max height (m):", 3.0)
-        fbox.separator(factor=0.3)
-        fbox.label(text="Cliff peek-down distance:", icon="TRIA_DOWN")
-        _prop_row(fbox, sel, "og_cam_string_cliff_height", "Cliff height (m):", 40.0)
+    elif mode == "spline":
+        # Path camera (cam-spline): rides along this camera's own path — the
+        # same waypoint / curve list actors use.
+        pbox = box.box()
+        n_pts = 0
+        for s in sel.og_waypoint_sources:
+            o = s.obj
+            if o and o.type == "CURVE":
+                n_pts += sum(len(sp.bezier_points) or len(sp.points) for sp in o.data.splines)
+            elif o and o.type == "EMPTY":
+                n_pts += 1
+        pbox.label(text=f"Path ({n_pts} point{'s' if n_pts != 1 else ''})",
+                   icon="CHECKMARK" if n_pts >= 4 else "ERROR")
+        if n_pts < 4:
+            pbox.label(text="Needs 4+ points (cubic path)", icon="INFO")
+        lrow = pbox.row()
+        lrow.template_list("OG_UL_WaypointSources", "", sel, "og_waypoint_sources",
+                           sel, "og_waypoint_sources_index", rows=3)
+        side = lrow.column(align=True)
+        side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM")
+        side.operator("og.waypoint_source_remove", text="", icon="X")
+        side.separator()
+        side.operator("og.waypoint_source_move", text="", icon="TRIA_UP").direction = "UP"
+        side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN").direction = "DOWN"
+        arow = pbox.row(align=True)
+        arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS").enemy_name = sel.name
+        arow.operator("og.waypoint_source_link_curve", text="Link Curve",
+                      icon="CURVE_DATA").actor_name = sel.name
+
+    # ── Flags (DB Cameras.flags, built-in only) ─────────────────────────
+    if builtin:
+        props = scene.og_props
+        flags = cam_db.get("flags", [])
+        n_on = sum(1 for f in flags if sel.get("og_cam_flag_" + f["id"], False))
+        fbox = layout.box()
+        fbox.prop(props, "og_cam_show_flags", text=f"Flags ({n_on} on)",
+                  icon="TRIA_DOWN" if props.og_cam_show_flags else "TRIA_RIGHT", emboss=False)
+        if props.og_cam_show_flags:
+            mine  = [f for f in flags if mode in f.get("modes", [])]
+            other = [f for f in flags if mode not in f.get("modes", [])]
+            for group, title in ((mine, "For this mode"), (other, "Other")):
+                if not group:
+                    continue
+                col = fbox.column(align=True)
+                col.label(text=title + ":")
+                for f in group:
+                    key = "og_cam_flag_" + f["id"]
+                    on = bool(sel.get(key, False))
+                    r = col.row(align=True)
+                    op = r.operator("og.toggle_actor_bool_field", text=f.get("label", f["id"]),
+                                    icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT")
+                    op.prop_key = key
+                    i = r.row(); i.enabled = False
+                    i.label(text=f.get("description", ""))
 
     # ── Look-at target ───────────────────────────────────────────────────
     look_at_name = sel.get("og_cam_look_at", "").strip()
@@ -612,13 +674,18 @@ def _draw_selected_camera(layout, sel, scene):
         for v in vols:
             row = vbox.row(align=True)
             row.label(text=v.name, icon="CHECKMARK")
+            if builtin:
+                for entry in _vol_links(v):
+                    if entry.target_name == sel.name:
+                        row.prop(entry, "cam_role", text="")
+                        break
             op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
             op.obj_name = v.name
             op = row.operator("og.remove_vol_link", text="", icon="X")
             op.vol_name = v.name
             op.target_name = sel.name
     else:
-        vbox.label(text="No trigger — always active", icon="INFO")
+        vbox.label(text="No trigger volume — camera never activates", icon="ERROR")
     op = vbox.operator("og.spawn_volume_autolink", text="Add Volume", icon="ADD")
     op.target_name = sel.name
 

@@ -466,6 +466,16 @@ class OGProperties(PropertyGroup):
         description="A .jsonc used instead of the game database while this .blend is open "
                     "(switched to automatically when the file is opened). Blank = preferences / bundled",
     )
+    og_camera_system: EnumProperty(
+        name="Camera system",
+        items=[
+            ("AUTO",    "Auto",     "Built-in camera entities when this OpenGOAL supports them (v0.3.4+), else the legacy camera actors"),
+            ("BUILTIN", "Built-in", "Level .jsonc \"cameras\" (OpenGOAL v0.3.4+): pvol / cut-out volumes, flags, path cameras"),
+            ("LEGACY",  "Legacy",   "camera-marker + camera-trigger actors (works on any OpenGOAL version)"),
+        ],
+        default="AUTO",
+    )
+    og_cam_show_flags: BoolProperty(name="Camera flags", default=False)
     og_ignore_game_gd: BoolProperty(
         name="Ignore game.gd files",
         description="Don't add code / art group files that are already in GAME.CGO (game.gd) to the level's .gd or .jsonc — they're always loaded. "
@@ -880,6 +890,16 @@ class OGVolLink(PropertyGroup):
         items=AGGRO_EVENT_ENUM_ITEMS,
         default="cue-chase",
         description="Event sent to the enemy on volume enter (nav-enemies only — ignored for cameras/checkpoints)",
+    )
+    cam_role:    EnumProperty(
+        name="Volume role",
+        items=[
+            ("vol",       "Volume",    "Camera is used while Jak is inside"),
+            ("pvol",      "Preferred", "Preferred volume: wins when several camera volumes overlap"),
+            ("cutoutvol", "Cut-out",   "Camera is NOT used while Jak is inside (cuts a hole in its volume)"),
+        ],
+        default="vol",
+        description="How a linked camera uses this volume (built-in cameras only)",
     )
 
 

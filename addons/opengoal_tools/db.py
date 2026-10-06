@@ -359,6 +359,11 @@ def defaults() -> dict:
     return DB["Defaults"]
 
 
+def cameras() -> dict:
+    """Built-in camera entity settings: modes / fields / flags."""
+    return DB.get("Cameras", {})
+
+
 def level_collection_schema() -> dict:
     return DB["LevelCollectionSchema"]
 
