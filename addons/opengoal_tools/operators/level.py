@@ -796,23 +796,39 @@ class OG_OT_IncludeCreate(Operator):
         return {"FINISHED"}
 
 
+def _include_text_for(ctx, text_name=""):
+    if text_name:
+        return bpy.data.texts.get(text_name)
+    col = _active_level_col(ctx.scene)
+    return bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+
+
 class OG_OT_IncludeTemplate(Operator):
-    """Fill the selected (empty) include text with the commented template
-    that shows every key and an example of each"""
+    """Fill the include text with the commented template that shows every
+    key with an example. Asks first if the text already has content (it
+    is replaced)"""
     bl_idname  = "og.include_template"
     bl_label   = "Insert Include Template"
     bl_options = {"REGISTER", "UNDO"}
 
+    text_name: bpy.props.StringProperty(default="", options={"SKIP_SAVE"})
+
+    def invoke(self, ctx, event):
+        txt = _include_text_for(ctx, self.text_name)
+        if txt is not None and txt.as_string().strip():
+            return ctx.window_manager.invoke_confirm(
+                self, event, title="Replace with template?",
+                message=f"'{txt.name}' already has content. Replace it with the template?",
+                confirm_text="Replace")
+        return self.execute(ctx)
+
     def execute(self, ctx):
         from ..export import includes as _inc
-        col = _active_level_col(ctx.scene)
-        txt = bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+        txt = _include_text_for(ctx, self.text_name)
         if txt is None:
+            self.report({"WARNING"}, "No include text selected")
             return {"CANCELLED"}
-        if txt.as_string().strip():
-            txt.write("\n" + _inc.TEMPLATE)
-        else:
-            txt.from_string(_inc.TEMPLATE)
+        txt.from_string(_inc.TEMPLATE)
         txt.use_fake_user = True
         return {"FINISHED"}
 
@@ -833,11 +849,33 @@ class OG_OT_IncludeEdit(Operator):
             for area in win.screen.areas:
                 if area.type == "TEXT_EDITOR":
                     area.spaces.active.text = txt
+                    area.tag_redraw()
                     return {"FINISHED"}
         bpy.ops.wm.window_new()
-        area = ctx.window_manager.windows[-1].screen.areas[0]
+        new_win = ctx.window_manager.windows[-1]
+        area = new_win.screen.areas[0]
         area.type = "TEXT_EDITOR"
-        area.spaces.active.text = txt
+        name = txt.name
+
+        # A brand-new window finishes setting up its areas after this
+        # operator returns, which drops a text assigned now (blank editor).
+        # Assign it again on the next tick, to every empty Text Editor.
+        def _assign():
+            t = bpy.data.texts.get(name)
+            if t is None:
+                return None
+            for w in bpy.context.window_manager.windows:
+                for a in w.screen.areas:
+                    if a.type != "TEXT_EDITOR":
+                        continue
+                    for sp in a.spaces:
+                        if sp.type == "TEXT_EDITOR" and sp.text is None:
+                            sp.text = t
+                    a.tag_redraw()
+            return None
+        _assign()
+        bpy.app.timers.register(_assign, first_interval=0.05)
+        bpy.app.timers.register(_assign, first_interval=0.3)
         return {"FINISHED"}
 
 

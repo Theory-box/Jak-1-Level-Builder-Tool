@@ -177,6 +177,8 @@ def register():
     bpy.types.Material.collide_event    = bpy.props.EnumProperty(items=pat_events,   name="Event")
     bpy.types.Material.collide_mode     = bpy.props.EnumProperty(items=pat_modes,    name="Mode")
     bpy.types.MATERIAL_PT_custom_props.prepend(_draw_mat)
+    from .panels.level import draw_text_editor_header as _draw_txt_hdr
+    bpy.types.TEXT_HT_header.append(_draw_txt_hdr)
 
     bpy.types.Object.set_invisible         = bpy.props.BoolProperty(name="Invisible")
     bpy.types.Object.set_collision         = bpy.props.BoolProperty(name="Apply Collision Properties")
@@ -417,6 +419,11 @@ def unregister():
     _bviz.unregister_handler()
     unregister_texturing()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
+    try:
+        from .panels.level import draw_text_editor_header as _draw_txt_hdr
+        bpy.types.TEXT_HT_header.remove(_draw_txt_hdr)
+    except Exception:
+        pass
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     if hasattr(bpy.types.Scene, "og_props"):
