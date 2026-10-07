@@ -359,7 +359,7 @@ def collect_actors(scene, depsgraph=None):
                     # Read via: (res-lump-value ent 'options fact-options)
                     lump["options"] = ["uint32", 8]
                 log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}  wrap={wrap}")
-            else:
+            elif _schema_db.has_panel(etype, "path"):
                 log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
 

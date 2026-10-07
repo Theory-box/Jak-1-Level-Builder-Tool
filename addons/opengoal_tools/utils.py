@@ -84,21 +84,36 @@ def _draw_platform_settings(layout, sel, scene):
         return
     from .export import path_modes as _pm
     from .panels.actor_fields import _draw_field     # runtime import (no cycle)
-    try:
-        n_pts = len(_pm.build(_pm.gather_sources(sel), "LINEAR")[0])
-    except Exception:
-        n_pts = 0
     box = layout.box()
-    if n_pts < 2:
-        box.label(text="⚠ Add ≥2 waypoints to enable movement", icon="INFO")
-    else:
-        box.label(text=f"✓ {n_pts} points — will move", icon="CHECKMARK")
+    # What sync does on this actor: its own "description", else the default.
+    desc = _db.panel_option(etype, "sync", "description") or _db.panel_type("sync").get("description", "")
+    if desc:
+        dcol = box.column(align=True); dcol.scale_y = 0.8
+        line = ""
+        for w in desc.split():
+            if len(line) + len(w) + 1 > 44:
+                dcol.label(text=line); line = w
+            else:
+                line = f"{line} {w}".strip()
+        if line:
+            dcol.label(text=line)
+    path_driven = _db.has_panel(etype, "path")
+    n_pts = 0
+    if path_driven:
+        try:
+            n_pts = len(_pm.build(_pm.gather_sources(sel), "LINEAR")[0])
+        except Exception:
+            n_pts = 0
+        if n_pts < 2:
+            box.label(text="⚠ Add ≥2 waypoints to enable movement", icon="INFO")
+        else:
+            box.label(text=f"✓ {n_pts} points — will move", icon="CHECKMARK")
     col = box.column(align=True)
     info = {"etype": etype, **(_db.find_actor(etype) or {})}
     for f in _db.panel_fields(etype, "sync", visible_only=True):
         _draw_field(col, sel, f, info)
     box.operator("og.set_platform_defaults", text="Reset to Defaults", icon="LOOP_BACK")
-    if n_pts >= 2:
+    if path_driven and n_pts >= 2:
         box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
 
 

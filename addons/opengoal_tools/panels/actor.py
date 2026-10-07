@@ -238,8 +238,8 @@ class OG_PT_ActorLinks(Panel):
 
 
 class OG_PT_ActorPlatform(Panel):
-    """DB "sync" panel (path timing). Was category-driven (all Platforms)."""
-    bl_label       = "Sync (Path Timing)"
+    """DB "sync" panel. Was category-driven (all Platforms)."""
+    bl_label       = "Sync"
     bl_idname      = "OG_PT_actor_platform"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
