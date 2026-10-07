@@ -29,6 +29,8 @@ from .collections import (
     _get_base_id_live, _set_base_id_live,
     _get_level_index_live, _set_level_index_live,
     _get_vis_nick_live, _set_vis_nick_live,
+    _get_include_enabled_live, _set_include_enabled_live,
+    _get_include_text_live, _set_include_text_live,
     _on_mood_changed, _on_sky_changed,
     _get_texture_source_live, _set_texture_source_live,
     _on_fog_override_changed,
@@ -681,6 +683,15 @@ class OGProperties(PropertyGroup):
     vis_nick_override: StringProperty(name="Vis Nickname", default="",
                                       get=_get_vis_nick_live, set=_set_vis_nick_live,
                                       description="3-letter DGO/vis nickname. Empty = auto-derive from name. Must be unique across levels.")
+    include_enabled: BoolProperty(name="Always Include",
+        get=_get_include_enabled_live, set=_set_include_enabled_live,
+        description="Add the contents of an include text (Text Editor) to this level on every export: "
+                    "extra .gd files, art groups, textures, game.gp goal-src lines, actors and ambients "
+                    "that no actor in the .blend brings")
+    include_text: StringProperty(name="Include Text",
+        get=_get_include_text_live, set=_set_include_text_live,
+        description="Text datablock (JSONC) with the always-included content. "
+                    "Keys: gd, json_ag, json_texture, goal_src, actors, ambients")
     # UI collapse state
     show_camera_list:       BoolProperty(name="Show Camera List",       default=True)
     show_volume_list:       BoolProperty(name="Show Volume List",       default=True)

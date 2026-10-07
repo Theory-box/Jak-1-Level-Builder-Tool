@@ -596,6 +596,8 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     else:
         _tex_remap = _sky_src = _src
         _textures  = [[f"{_src}-vis-alpha"]]
+    from . import includes as _inc
+    _incl, _incl_err = _inc.load(scene)
     # Built-in camera entities (OpenGOAL v0.3.4+). In legacy mode
     # collect_cameras() produced camera-marker/trigger actors instead.
     cameras = []
@@ -603,7 +605,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         from .scene import camera_system, collect_builtin_cameras
         if camera_system(scene) == "builtin":
             cameras = collect_builtin_cameras(scene)
-            if cameras and not all_actors:
+            if cameras and not all_actors and not _incl["actors"]:
                 # OpenGOAL build_level (v0.3.4-v0.3.8) numbers cameras from the
                 # max actor id and dereferences max_element() of an EMPTY list
                 # when the level has no actors -> goalc segfaults. Skip cameras
@@ -612,17 +614,28 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
                     f"the level has no actors, and OpenGOAL's build_level crashes on "
                     f"cameras without actors. Add at least one actor.")
                 cameras = []
+    # Level > Settings > Always Include (export/includes.py): extra art
+    # groups, textures, actors and ambients added as-is.
+    for _e in _incl_err:
+        log(f"  [include] WARNING: {_e}")
+    _ag_names = [g.replace(".go", "") for g in ags]
+    _ag_names += [g for g in _incl["json_ag"] if g not in _ag_names]
+    _textures = list(_textures) + [t for t in _incl["json_texture"] if t not in _textures]
+    ambients = list(ambients) + _incl["ambients"]
+    if any(_incl[k] for k in ("json_ag", "json_texture", "actors", "ambients")):
+        log(f"  [include] .jsonc: +{len(_incl['json_ag'])} art groups, +{len(_incl['json_texture'])} textures, "
+            f"+{len(_incl['actors'])} actors, +{len(_incl['ambients'])} ambients")
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
         "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
         "double_sided_collide": False, "base_id": base_id,
-        "art_groups": [g.replace(".go","") for g in ags],
+        "art_groups": _ag_names,
         "custom_models": [], "textures": _textures,
         "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
         "ambients": ambients,
         "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
-                   for a in all_actors],
+                   for a in all_actors] + _incl["actors"],
         **({"cameras": cameras} if cameras else {}),
     }
     p = d / f"{name}.jsonc"
@@ -679,12 +692,21 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     level_tpages = [f'  "{tp}"' for tp in (tpages or [])
                     if tp not in GLOBAL_TPAGE_GOS]
     extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
+    # Always Include: code (.o) links with the actor code, everything else
+    # after the art groups; skips files the actors already bring.
+    from . import includes as _inc
+    _incl, _ = _inc.load(scene)
+    _have = {f.strip().strip('"') for f in code_o + level_tpages + extras_lines} | set(ags)
+    inc_o   = [f'  "{f}"' for f in _incl["gd"] if f.endswith(".o") and f not in _have]
+    inc_go  = [f'  "{f}"' for f in _incl["gd"] if not f.endswith(".o") and f not in _have]
+    if inc_o or inc_go:
+        log(f"  [include] .gd: +{len(inc_o) + len(inc_go)} file(s)")
     files = (
         [f'  "{name}-obs.o"']
-        + code_o
+        + code_o + inc_o
         + level_tpages
         + [f'  "{g}"' for g in ags]
-        + extras_lines
+        + extras_lines + inc_go
         + [f'  "{name}.go"']
     )
     lines = (
@@ -1054,6 +1076,14 @@ def patch_game_gp(name, code_deps=None, scene=None):
                 seen_gc.add(gc)
                 extra_goal_src += f'(goal-src "{gc}" "{dep}")\n'
 
+    # Always Include goal_src lines, tagged so the next export of this level
+    # replaces them (other levels' lines are never touched).
+    from . import includes as _inc
+    _incl, _ = _inc.load(scene)
+    _tag = f"; og-include {name}"
+    for _gc, _dep in _incl["goal_src"]:
+        extra_goal_src += f'(goal-src "{_gc}" "{_dep}") {_tag}\n'
+
     correct_block = (
         f'(build-custom-level "{name}")\n'
         f'(custom-level-cgo "{dgo}" "{name}/{nick}.gd")\n'
@@ -1067,7 +1097,8 @@ def patch_game_gp(name, code_deps=None, scene=None):
     # FIX v0.5.0 (Bug 2): was r'/[^"]+\"[^)]*\)' — the \" was a literal
     # backslash+quote so the regex never matched, leaving stale goal-src lines
     # in game.gp across exports which caused duplicate-compile crashes in GOALC.
-    txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)\n', '', txt)
+    txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)[^\n]*\n', '', txt)
+    txt = re.sub(r'[^\n]*; og-include ' + re.escape(name) + r'\n', '', txt)
     # Strip ALL enemy goal-src lines that could have been injected by any previous export.
     # This catches leftover entries even if the dep changed between exports.
     # We match any goal-src line whose path matches a known ETYPE_CODE gc file.

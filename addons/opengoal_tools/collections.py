@@ -71,6 +71,8 @@ _LEVEL_COL_DEFAULTS = {
     "og_music_bank":        "none",
     "og_mood":              "village1",
     "og_texture_source":    "village1",
+    "og_include_enabled":   False,
+    "og_include_text":      "",
     "og_sky":               True,
     "og_fog_override_enabled": False,
     "og_fog_color":         (0.376, 0.502, 0.627),
@@ -504,6 +506,26 @@ def _set_vis_nick_live(self, value):
     if col is not None:
         clean = str(value).strip().lower()[:3]
         col["og_vis_nick_override"] = clean
+
+
+def _get_include_enabled_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    return bool(col.get("og_include_enabled", False)) if col is not None else False
+
+def _set_include_enabled_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        col["og_include_enabled"] = bool(value)
+
+
+def _get_include_text_live(self):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    return str(col.get("og_include_text", "") or "") if col is not None else ""
+
+def _set_include_text_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None:
+        col["og_include_text"] = str(value)
 
 
 def _on_active_level_changed(self, context):

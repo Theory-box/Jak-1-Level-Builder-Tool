@@ -774,7 +774,55 @@ class OG_OT_ScanPaths(bpy.types.Operator):
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_OT_IncludeCreate(Operator):
+    """Create an include text for the active level from the template and
+    select it (Level > Settings > Always Include)"""
+    bl_idname  = "og.include_create"
+    bl_label   = "New Include Text"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..export import includes as _inc
+        col = _active_level_col(ctx.scene)
+        if col is None:
+            return {"CANCELLED"}
+        name = str(col.get("og_level_name", col.name))
+        txt = bpy.data.texts.new(f"{name}-include.jsonc")
+        txt.from_string(_inc.TEMPLATE)
+        txt.use_fake_user = True
+        col["og_include_text"] = txt.name
+        col["og_include_enabled"] = True
+        self.report({"INFO"}, f"Created '{txt.name}' — edit it in the Text Editor")
+        return {"FINISHED"}
+
+
+class OG_OT_IncludeEdit(Operator):
+    """Show the level's include text in a Text Editor (opens one in a new
+    window if none is visible)"""
+    bl_idname  = "og.include_edit"
+    bl_label   = "Edit Include Text"
+
+    def execute(self, ctx):
+        col = _active_level_col(ctx.scene)
+        txt = bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+        if txt is None:
+            self.report({"WARNING"}, "No include text selected")
+            return {"CANCELLED"}
+        for win in ctx.window_manager.windows:
+            for area in win.screen.areas:
+                if area.type == "TEXT_EDITOR":
+                    area.spaces.active.text = txt
+                    return {"FINISHED"}
+        bpy.ops.wm.window_new()
+        area = ctx.window_manager.windows[-1].screen.areas[0]
+        area.type = "TEXT_EDITOR"
+        area.spaces.active.text = txt
+        return {"FINISHED"}
+
+
 CLASSES = (
+    OG_OT_IncludeCreate,
+    OG_OT_IncludeEdit,
     OG_OT_CreateLevel,
     OG_OT_AssignCollectionAsLevel,
     OG_OT_SetActiveLevel,

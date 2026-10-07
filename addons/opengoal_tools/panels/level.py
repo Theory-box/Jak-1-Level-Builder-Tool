@@ -157,6 +157,25 @@ class OG_PT_LevelSettings(Panel):
             w = layout.row(); w.alert = True
             w.label(text=f"Nickname '{nick_eff}' collides with another level", icon="ERROR")
 
+        # Always Include (export/includes.py)
+        box = layout.box()
+        box.prop(props, "include_enabled")
+        if props.include_enabled:
+            row = box.row(align=True)
+            row.prop_search(props, "include_text", bpy.data, "texts", text="")
+            row.operator("og.include_create", text="", icon="ADD")
+            row.operator("og.include_edit", text="", icon="TEXT")
+            from ..export import includes as _inc
+            txt = bpy.data.texts.get(props.include_text) if props.include_text else None
+            if txt is None:
+                box.label(text="Pick or create an include text", icon="INFO")
+            else:
+                data, errs = _inc.parse(txt.as_string())
+                st = box.column(); st.scale_y = 0.8
+                st.label(text=_inc.summary(data), icon="CHECKMARK" if not errs else "INFO")
+                for e in errs[:4]:
+                    w = st.row(); w.alert = True; w.label(text=e, icon="ERROR")
+
 
 
 class OG_PT_LevelManagerSub(Panel):
