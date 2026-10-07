@@ -429,7 +429,7 @@ def panel_exports(etype: str, pid: str) -> bool:
 def panel_option(etype: str, pid: str, key: str, default=None):
     """A panel-level option (e.g. path "linear-only") or `default`."""
     p = actor_panels(etype).get(pid)
-    return p["options"].get(key, default) if p else default
+    return p["options"].get(key, default) if p and p["export"] else default
 
 
 def _field_exports(f: dict) -> bool:

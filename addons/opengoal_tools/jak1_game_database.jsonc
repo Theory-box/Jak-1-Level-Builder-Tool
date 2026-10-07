@@ -4378,6 +4378,28 @@
         {
           "panel": "aggro-trigger",
           "show-panel": true
+        },
+        {
+          "panel": "activation",
+          "show-panel": true
+        },
+        {
+          "panel": "aggro-trigger",
+          "show-panel": true
+        },
+        {
+          "panel": "nav-mesh",
+          "show-panel": true,
+          "fallback-sphere": true
+        },
+        {
+          "panel": "path",
+          "show-panel": true,
+          "linear-only": true
+        },
+        {
+          "panel": "visibility",
+          "show-panel": true
         }
       ],
       "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
@@ -4423,7 +4445,24 @@
     {
       "etype": "vent",
       "parent": "process-drawable",
-      "description": "Game type (deftype vent (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype vent (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Blocker entity",
+              "lump_key": "alt-actor",
+              "required": false,
+              "slot": 0
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "citb-base-plat",
@@ -4438,7 +4477,51 @@
     {
       "etype": "flutflut-plat",
       "parent": "plat",
-      "description": "Game type (deftype flutflut-plat (plat)) in levels\\snow\\snow-flutflut-obs.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype flutflut-plat (plat)) in levels\\snow\\snow-flutflut-obs.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Button to activate platform in button mode",
+              "lump_key": "alt-actor",
+              "required": false,
+              "slot": 0
+            },
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Previous platform in the list or button if first",
+              "lump_key": "prev-actor",
+              "required": false,
+              "slot": 0
+            },
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Next platform in the list",
+              "lump_key": "next-actor",
+              "required": false,
+              "slot": 0
+            }
+          ]
+        },
+        {
+          "panel": "path",
+          "show-panel": true,
+          "min-points": 2
+        },
+        {
+          "panel": "sync",
+          "show-panel": true
+        }
+      ]
     },
     {
       "etype": "process-hidden",
@@ -4458,7 +4541,13 @@
     {
       "etype": "ogre-plat",
       "parent": "rigid-body-platform",
-      "description": "Game type (deftype ogre-plat (rigid-body-platform)) in levels\\ogre\\ogre-obs.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype ogre-plat (rigid-body-platform)) in levels\\ogre\\ogre-obs.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true
+        }
+      ]
     },
     {
       "etype": "darkecobarrel-base",
@@ -4494,12 +4583,6 @@
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -4525,12 +4608,6 @@
       "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
       "parent": "babak",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -4556,12 +4633,6 @@
       "label": "Lurker Crab",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The lurker crab is an enemy found at Sentinel Beach. They closely resemble hermit crabs, hiding under their shell until they reach out for an attack.",
       "art_group": "lurkercrab-ag.go",
       "tpage_group": "Beach",
@@ -4587,12 +4658,6 @@
       "label": "Lurker Puppy",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The lurker puppy is a small lurker patrolling the higher regions of Sentinel Beach. Maroon in colour, bearing close resemblance to a small dog.",
       "art_group": "lurkerpuppy-ag.go",
       "tpage_group": "Beach",
@@ -4618,12 +4683,6 @@
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
@@ -4649,12 +4708,6 @@
       "label": "Aphid",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
       "art_group": "aphid-lurker-ag.go",
       "tpage_group": "Jungle",
@@ -4679,12 +4732,6 @@
       "label": "Swamp Rat",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The swamp rat, also known as the rat lurker, is an enemy in The Precursor Legacy. Mutated rats bearing lurker traits, dwelling in the poisonous mud of Boggy Swamp. They spawn from nest-like structures.",
       "art_group": "swamp-rat-ag.go",
       "tpage_group": "Swamp",
@@ -4710,12 +4757,6 @@
       "label": "Kermit (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The lurker toad is an enemy in The Precursor Legacy. A large purple frog lurker found hopping around Boggy Swamp, making a very loud croaking noise.",
       "art_group": "kermit-ag.go",
       "tpage_group": "Swamp",
@@ -4761,10 +4802,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_mode",
@@ -4779,10 +4819,7 @@
               "write_if": "if_true"
             }
           ]
-        },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        }
       ],
       "color": [
         0.9,
@@ -4798,10 +4835,6 @@
       "category": "Enemies",
       "parent": "snow-bunny",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
         {"panel": "custom-fields", "export": false}
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
@@ -4829,12 +4862,6 @@
       "label": "Double Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
@@ -4862,12 +4889,6 @@
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
@@ -4894,8 +4915,8 @@
       "category": "Interactive Objects",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "visibility", "export": false},
+        {"panel": "activation", "export": false}
       ],
       "art_group": "muse-ag.go",
       "tpage_group": "Misty",
@@ -4921,12 +4942,6 @@
       "label": "Baby Spider",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
       "tpage_group": "Maincave",
@@ -4953,10 +4968,9 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true},
+        {"panel": "path"},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -4969,9 +4983,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh", "fallback-sphere": true}
       ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
       "art_group": ["spider-egg-ag.go", "baby-spider-ag.go"],
@@ -4998,12 +5012,6 @@
       "label": "Green Eco Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
-      ],
       "description": "The green eco lurker, also known as the dark eco lurker, is a lurker enemy in The Precursor Legacy. They were created by Gol Acheron and Maia — one of the only lurkers known to be artificially created.",
       "art_group": "green-eco-lurker-ag.go",
       "tpage_group": "Final",
@@ -5031,8 +5039,8 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "description": "The sand worm, also known as the sea serpent lurker, is an enemy in The Precursor Legacy. Lurkers dwelling in sand pits at Sentinel Beach — they burst from the ground to attack.",
       "art_group": "lurkerworm-ag.go",
@@ -5060,8 +5068,8 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "description": "The lurker snake is an enemy in The Precursor Legacy — large brown serpentine lurkers residing in the canopy of Forbidden Jungle. They hang from branches at fixed points, attacking intruders below.",
       "art_group": "junglesnake-ag.go",
@@ -5108,13 +5116,12 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": ["path", "pathb"], "paths": ["path", "pathb"]},
-        {"panel": "volume", "show-panel": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
+        {"panel": "path", "required": ["path", "pathb"], "paths": ["path", "pathb"]},
+        {"panel": "volume"},
+        {"panel": "activation"},
+        {"panel": "visibility"},
         {
           "panel": "spawner",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_num_lurkers",
@@ -5164,20 +5171,10 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {
-          "panel": "spawner",
-          "show-panel": true,
-          "fields": [
-            {
-              "key": "og_num_lurkers",
-              "label": "Child count",
-              "min": -1
-            }
-          ]
-        }
+        {"panel": "path", "required": true, "linear-only": true},
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
       "color": [
         0.9,
@@ -5194,10 +5191,10 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "path", "required": true},
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
@@ -5249,11 +5246,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Timing of the spiky / not spiky cycle.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -5272,11 +5267,11 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Timing of the spiky / not spiky cycle."
         },
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_distance_top",
@@ -5306,7 +5301,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -5319,9 +5313,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "color": [
         0.3,
@@ -5337,10 +5331,9 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -5371,8 +5364,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
@@ -5402,7 +5395,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -5415,8 +5407,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
@@ -5456,10 +5448,9 @@
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "lumps": [],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_og_thread-min-trans",
@@ -5561,9 +5552,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "color": [
         0.6,
@@ -5613,10 +5604,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_extra-count-one",
@@ -5694,7 +5684,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "prev-actor",
@@ -5716,8 +5705,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "color": [
         0.6,
@@ -5746,10 +5735,9 @@
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "lumps": [],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_driller-lurker_pos",
@@ -5803,8 +5791,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "color": [
         0.5,
@@ -5850,7 +5838,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_crystal_underwater",
@@ -5905,11 +5892,10 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "path"},
+        {"panel": "nav-mesh", "fallback-sphere": true},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "water-actor",
@@ -5922,8 +5908,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
@@ -5968,10 +5954,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_extra-id",
@@ -6001,7 +5986,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -6041,9 +6025,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "color": [
         0.7,
@@ -6059,9 +6043,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "path", "required": true},
+        {"panel": "nav-mesh", "fallback-sphere": false}
       ],
       "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
       "art_group": "ram-boss-ag.go",
@@ -6081,6 +6064,12 @@
       "label": "Lightning Mole",
       "category": "Interactive Objects",
       "parent": "fleeing-nav-enemy",
+      "panels": [
+        {"panel": "path", "export": false},
+        {"panel": "visibility", "export": false},
+        {"panel": "activation", "export": false},
+        {"panel": "nav-mesh", "fallback-sphere": false}
+      ],
       "tpage_group": "Rolling",
       "tpages": [
         "tpage-1119.go",
@@ -6107,9 +6096,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "path", "required": true},
+        {"panel": "nav-mesh", "fallback-sphere": false}
       ],
       "tpage_group": "Snow",
       "tpages": [
@@ -6258,7 +6246,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_movie-mask",
@@ -6276,7 +6263,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -6316,8 +6302,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "color": [
         1.0,
@@ -6351,10 +6337,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_extra-count-one",
@@ -6382,9 +6367,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh", "fallback-sphere": true}
       ],
       "color": [
         0.1,
@@ -6400,10 +6385,10 @@
       "category": "Bosses",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "path", "required": true, "linear-only": true},
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
@@ -6431,7 +6416,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "nav-mesh"}
       ],
       "art_group": "yakow-ag.go",
       "tpages": [
@@ -6551,7 +6536,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "required": true}
       ],
       "art_group": "fisher-ag.go",
       "tpages": [
@@ -6696,7 +6681,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "required": true}
       ],
       "description": "A lurker frog type found in Boggy Swamp.",
       "art_group": "billy-ag.go",
@@ -6723,7 +6708,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "required": true}
       ],
       "art_group": "pelican-ag.go",
       "tpages": [
@@ -6801,10 +6786,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_spline_pos",
@@ -6815,7 +6799,7 @@
                 "key": "initial-spline-pos",
                 "type": "float"
               },
-              "write_if":"always"
+              "write_if": "always"
             },
             {
               "key": "og_water-height",
@@ -6826,19 +6810,8 @@
                 "key": "water-height",
                 "type": "meters"
               },
-              "write_if":"if_not_default"
+              "write_if": "if_not_default"
             },
-            // {
-            //   "key": "og_idle-distance",
-            //   "type": "float",
-            //   "label": "Idle Distance (m)",
-            //   "default": 80.0,
-            //   "lump": {
-            //     "key": "idle-distance",
-            //     "type": "meters"
-            //   },
-            //   "write_if":"always"
-            // },
             {
               "key": "og_timeout",
               "label": "Time before Robber slow down (s)",
@@ -6848,13 +6821,12 @@
                 "key": "timeout",
                 "type": "float"
               },
-              "write_if":"if_not_default"
+              "write_if": "if_not_default"
             }
           ]
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "prev-actor",
@@ -6876,8 +6848,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "color": [
         0.3,
@@ -6905,7 +6877,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_eco_info_const",
@@ -6913,7 +6884,10 @@
               "lump": {
                 "key": "eco-info",
                 "type": "const",
-                "const": ["cell-info", "(game-task none)"]
+                "const": [
+                  "cell-info",
+                  "(game-task none)"
+                ]
               }
             },
             {
@@ -6959,7 +6933,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_eco_info_const",
@@ -6967,7 +6940,11 @@
               "lump": {
                 "key": "eco-info",
                 "type": "const",
-                "const": ["eco-info", "(pickup-type money)", 1]
+                "const": [
+                  "eco-info",
+                  "(pickup-type money)",
+                  1
+                ]
               }
             }
           ]
@@ -6994,7 +6971,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_eco_info_const",
@@ -7002,7 +6978,11 @@
               "lump": {
                 "key": "eco-info",
                 "type": "const",
-                "const": ["buzzer-info", "(game-task none)", 1]
+                "const": [
+                  "buzzer-info",
+                  "(game-task none)",
+                  1
+                ]
               }
             }
           ]
@@ -7032,33 +7012,7 @@
         }
       ],
       "panels": [
-        {
-          "panel": "custom-fields",
-          "show-panel": true,
-          "fields": [
-            {
-              "key": "og_crate_pickup",
-              "label": "Pickup",
-              "type": "enum",
-              "default": "eco-blue",
-              "choices": "CratePickups",
-              "lump": {
-                "key": "eco-info",
-                "type": "eco-info-picker",
-                "pairs_with": "og_crate_pickup_amount"
-              },
-              "write_if": "if_not_none"
-            },
-            {
-              "key": "og_crate_pickup_amount",
-              "label": "Amount",
-              "type": "int",
-              "default": 1,
-              "min": 1,
-              "max": 99
-            }
-          ]
-        },
+        {"panel": "custom-fields", "fields": [{"key": "og_crate_pickup", "default": "eco-blue"}], "show-panel": true},
         {"panel": "crate", "export": false},
         {
           "panel": "custom-fields",
@@ -7069,7 +7023,7 @@
             },
             {
               "key": "og_crate_pickup_amount",
-              "note": null
+              "note": ""
             }
           ]
         }
@@ -7103,10 +7057,9 @@
         }
       ],
       "panels": [
-        {"panel": "crate", "show-panel": true},
+        {"panel": "crate"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_crate_type",
@@ -7143,7 +7096,8 @@
               "max": 99,
               "note": "Forced to 1 when pickup == buzzer (engine always spawns 1 scout fly)."
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -7179,7 +7133,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_orb_count",
@@ -7263,7 +7216,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_crate_pickup",
@@ -7287,7 +7239,8 @@
               "max": 99
             }
           ]
-        }
+        },
+        {"panel": "actor-link", "export": false}
       ],
       "color": [
         0.1,
@@ -7302,8 +7255,8 @@
       "label": "Floating Platform",
       "schema_export": true,
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true}
+        {"panel": "path", "min-points": 2},
+        {"panel": "sync"}
       ],
       "category": "Platforms",
       "parent": "baseplat",
@@ -7335,18 +7288,7 @@
       "label": "Eco Platform",
       "schema_export": true,
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
-        {
-          "panel": "notice-dist",
-          "show-panel": true,
-          "fields": [
-            {
-              "key": "og_notice_dist",
-              "write_if": "always"
-            }
-          ]
-        }
+        {"panel": "notice-dist", "fields": [{"key": "og_notice_dist", "write_if": "always"}]}
       ],
       "category": "Platforms",
       "parent": "plat",
@@ -7399,11 +7341,8 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_scale_x",
@@ -7411,7 +7350,11 @@
               "type": "float",
               "default": 1.0,
               "min": 0.01,
-              "lump": {"key": "scale", "type": "float", "slot": 0},
+              "lump": {
+                "key": "scale",
+                "type": "float",
+                "slot": 0
+              },
               "write_if": "always"
             },
             {
@@ -7420,7 +7363,11 @@
               "type": "float",
               "default": 1.0,
               "min": 0.01,
-              "lump": {"key": "scale", "type": "float", "slot": 1},
+              "lump": {
+                "key": "scale",
+                "type": "float",
+                "slot": 1
+              },
               "write_if": "always"
             },
             {
@@ -7429,7 +7376,11 @@
               "type": "float",
               "default": 1.0,
               "min": 0.01,
-              "lump": {"key": "scale", "type": "float", "slot": 2},
+              "lump": {
+                "key": "scale",
+                "type": "float",
+                "slot": 2
+              },
               "write_if": "always"
             },
             {
@@ -7439,7 +7390,11 @@
               "default": 1.0,
               "min": 1.0,
               "max": 1.0,
-              "lump": {"key": "scale", "type": "float", "slot": 3},
+              "lump": {
+                "key": "scale",
+                "type": "float",
+                "slot": 3
+              },
               "write_if": "always"
             }
           ]
@@ -7499,7 +7454,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_height_info",
@@ -7507,8 +7461,12 @@
               "type": "float",
               "default": 4.0,
               "min": 0.0,
-              "lump": {"key": "height-info", "type": "meters"},
-              "write_if": "always"}
+              "lump": {
+                "key": "height-info",
+                "type": "meters"
+              },
+              "write_if": "always"
+            }
           ]
         }
       ],
@@ -7544,10 +7502,6 @@
       "schema_export": true,
       "category": "Platforms",
       "parent": "plat",
-      "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true}
-      ],
       "art_group": "citb-stopbox-ag.go",
       "glb": "levels/citadel/citb-stopbox-lod0.glb",
       "lumps": [
@@ -7591,34 +7545,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
-            {
-              "key": "og_bidirectional",
-              "label": "Bidirectional",
-              "type": "enum",
-              "default": "oneway",
-              "choices": [
-                {
-                  "value": "oneway",
-                  "label": "One Way (default)",
-                  "lump_value": 0
-                },
-                {
-                  "value": "bidirectional",
-                  "label": "Bidirectional",
-                  "lump_value": 1
-                }
-              ],
-              "lump": {
-                "key": "bidirectional",
-                "type": "uint32"
-              },
-              "write_if": "if_not_default"
-            },
             {
               "key": "og_continue_name",
               "label": "Continue point name (checkpoints)",
@@ -7647,7 +7576,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "state-actor",
@@ -7669,7 +7597,7 @@
             }
           ]
         },
-        {"panel": "path", "min-points": null}
+        {"panel": "path", "min-points": 1}
       ],
       "color": [
         0.6,
@@ -7700,10 +7628,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "min-points": 2},
+        {"panel": "path", "required": true, "min-points": 2},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_bidirectional",
@@ -7745,11 +7672,8 @@
       "label": "Snowy Platform (Small Square)",
       "schema_export": true,
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_plat-type",
@@ -7757,55 +7681,22 @@
               "type": "enum",
               "choices": "FlutflutPlatMode",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "mode",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
+              "write_if": "if_nonzero"
             },
             {
               "key": "og_extra-id",
               "label": "Order of aparition for button mode (order * 0.15s)",
               "type": "int",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "extra-id",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Button to activate platform in button mode",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "prev-actor",
-              "slot": 0,
-              "label": "Previous platform in the list or button if first",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "next-actor",
-              "slot": 0,
-              "label": "Next platform in the list",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "write_if": "if_nonzero"
             }
           ]
         }
@@ -7840,11 +7731,8 @@
       "label": "Snowy Platform (Medium Circle)",
       "schema_export": true,
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_plat-type",
@@ -7852,55 +7740,22 @@
               "type": "enum",
               "choices": "FlutflutPlatMode",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "mode",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
+              "write_if": "if_nonzero"
             },
             {
               "key": "og_extra-id",
               "label": "Order for button (* 0.15s)",
               "type": "int",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "extra-id",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Button to activate platform in button mode",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "prev-actor",
-              "slot": 0,
-              "label": "Previous platform in the list or button if first",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "next-actor",
-              "slot": 0,
-              "label": "Next platform in the list",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "write_if": "if_nonzero"
             }
           ]
         }
@@ -7935,11 +7790,8 @@
       "label": "Snowy Platform (Long Capsule)",
       "schema_export": true,
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_plat-type",
@@ -7947,55 +7799,22 @@
               "type": "enum",
               "choices": "FlutflutPlatMode",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "mode",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
+              "write_if": "if_nonzero"
             },
             {
               "key": "og_extra-id",
               "label": "Order of aparition for button mode (order * 0.15s)",
               "type": "int",
               "default": 0,
-              "lump":{
+              "lump": {
                 "key": "extra-id",
                 "type": "int32"
               },
-              "write_if":"if_nonzero"
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Button to activate platform in button mode",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "prev-actor",
-              "slot": 0,
-              "label": "Previous platform in the list or button if first",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "next-actor",
-              "slot": 0,
-              "label": "Next platform in the list",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "write_if": "if_nonzero"
             }
           ]
         }
@@ -8033,7 +7852,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8059,7 +7877,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8116,7 +7933,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_flip_sync_pct",
@@ -8133,7 +7949,7 @@
             },
             {
               "key": "og_flip_delay_down",
-              "label": "Delay — down (s)",
+              "label": "Delay \u2014 down (s)",
               "type": "float",
               "default": 2.0,
               "min": 0.0,
@@ -8146,7 +7962,7 @@
             },
             {
               "key": "og_flip_delay_up",
-              "label": "Delay — up (s)",
+              "label": "Delay \u2014 up (s)",
               "type": "float",
               "default": 2.0,
               "min": 0.0,
@@ -8186,8 +8002,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Extend / retract cycle: period, phase, and how long it stays extended / retracted.",
           "fields": [
             {
               "key": "og_sync_ease_out",
@@ -8203,7 +8017,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Extend / retract cycle: period, phase, and how long it stays extended / retracted."
         }
       ],
       "lumps": [
@@ -8287,10 +8102,6 @@
       "etype": "side-to-side-plat",
       "label": "Side-to-Side Plat",
       "schema_export": true,
-      "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true}
-      ],
       "category": "Platforms",
       "parent": "plat",
       "art_group": "side-to-side-plat-ag.go",
@@ -8357,7 +8168,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_rotoffset",
@@ -8385,7 +8195,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8440,49 +8249,7 @@
         }
       ],
       "panels": [
-        {
-          "panel": "custom-fields",
-          "show-panel": true,
-          "fields": [
-            {
-              "key": "og_rotoffset",
-              "label": "Rotation Offset (degrees)",
-              "type": "degrees",
-              "default": 0.0,
-              "lump": {
-                "key": "rotoffset",
-                "type": "degrees"
-              },
-              "write_if": "if_not_default"
-            },
-            {
-              "key": "og_distance",
-              "label": "Rotation Radius (meters)",
-              "type": "meters",
-              "default": 17.0,
-              "lump": {
-                "key": "distance",
-                "type": "meters"
-              },
-              "write_if": "if_not_default"
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "wedge-plat-master to rotate around",
-              "accepts": [
-                "wedge-plat-master"
-              ],
-              "required": true
-            }
-          ]
-        }
+        {"panel": "custom-fields", "fields": [{"key": "og_distance", "default": 17.0}]}
       ],
       "color": [
         0.5,
@@ -8525,7 +8292,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_rotspeed",
@@ -8603,7 +8369,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8656,7 +8421,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8700,10 +8464,9 @@
       "art_group": "floating-launcher-ag.go",
       "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_spring_height",
@@ -8734,7 +8497,7 @@
               "label": "Fly time (s)",
               "type": "float",
               "default": -1.0,
-              "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+              "note": "w component of alt-vector = fly_time_seconds \u00d7 300 (engine frames)."
             },
             {
               "key": "og_launcher_mode",
@@ -8777,10 +8540,9 @@
             }
           ]
         },
-        {"panel": "launcher", "show-panel": true},
+        {"panel": "launcher"},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -8845,10 +8607,9 @@
         }
       ],
       "panels": [
-        {"panel": "launcher", "show-panel": true},
+        {"panel": "launcher"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_spring_height",
@@ -8879,7 +8640,7 @@
               "label": "Fly time (s)",
               "type": "float",
               "default": -1.0,
-              "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+              "note": "w component of alt-vector = fly_time_seconds \u00d7 300 (engine frames)."
             },
             {
               "key": "og_launcher_mode",
@@ -8909,7 +8670,8 @@
               },
               "write_if": "if_not_default"
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -8943,11 +8705,8 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "min-points": 2},
-        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_spring_height",
@@ -9087,7 +8846,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_index",
@@ -9167,7 +8925,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9244,8 +9001,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Steam cycle timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_ease_out",
@@ -9259,7 +9014,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Steam cycle timing: period and phase."
         }
       ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
@@ -9290,8 +9046,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Piston cycle timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -9309,11 +9063,11 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Piston cycle timing: period and phase."
         },
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_height_bot",
@@ -9345,7 +9099,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9389,7 +9142,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9447,11 +9199,41 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
-            {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
-            {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
-            {"key": "og_num-positions", "label": "Number of positions", "type": "uint32", "default": 3, "lump": {"key": "num-positions", "type": "uint32"}, "write_if": "if_not_default"}  
+            {
+              "key": "og_speed",
+              "label": "Speed (m)",
+              "type": "meters",
+              "default": 2.0,
+              "min": 0.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_distance",
+              "label": "Distance per move (m)",
+              "type": "meters",
+              "default": 0.75,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_num-positions",
+              "label": "Number of positions",
+              "type": "uint32",
+              "default": 3,
+              "lump": {
+                "key": "num-positions",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
+            }
           ]
         }
       ],
@@ -9662,8 +9444,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Spike cycle timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -9681,11 +9461,11 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Spike cycle timing: period and phase."
         },
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_scale_x",
@@ -9789,8 +9569,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Whirlpool cycle timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -9808,11 +9586,11 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Whirlpool cycle timing: period and phase."
         },
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_whirl_speed",
@@ -9858,7 +9636,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9899,7 +9676,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9938,10 +9714,9 @@
       "category": "Enemies",
       "parent": "rigid-body-platform",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -9972,8 +9747,8 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
@@ -10001,8 +9776,8 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "art_group": "darkvine-ag.go",
       "tpage_group": "Jungle",
@@ -10048,10 +9823,8 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "_water-height-one",
@@ -10066,10 +9839,7 @@
               }
             }
           ]
-        },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        }
       ],
       "color": [
         0.3,
@@ -10120,10 +9890,9 @@
       ],
       "code": "cave-trap.o",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_nav-max-users",
@@ -10141,7 +9910,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -10181,9 +9949,9 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"},
+        {"panel": "nav-mesh"}
       ],
       "lumps": [
         {
@@ -10207,8 +9975,8 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "activation"},
+        {"panel": "visibility"}
       ],
       "tpage_group": "Robocave",
       "tpages": [
@@ -10251,10 +10019,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_crate_pickup",
@@ -10279,11 +10046,10 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true},
+        {"panel": "activation"},
+        {"panel": "visibility"},
         {
           "panel": "spawner",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_num_lurkers",
@@ -10293,7 +10059,7 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "nav-mesh"}
       ],
       "color": [
         0.4,
@@ -10340,10 +10106,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_fish_count",
@@ -10359,7 +10124,7 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true}
+        {"panel": "nav-mesh"}
       ],
       "color": [
         0.2,
@@ -10408,10 +10173,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": false, "linear-only": true},
+        {"panel": "path", "show-panel": false},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_shark_scale",
@@ -10459,8 +10223,7 @@
             }
           ]
         },
-        {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "nav-mesh", "fallback-sphere": false}
       ],
       "color": [
         0.6,
@@ -10493,18 +10256,8 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {
-          "panel": "spawner",
-          "show-panel": true,
-          "fields": [
-            {
-              "key": "og_num_lurkers",
-              "label": "Child count",
-              "min": -1
-            }
-          ]
-        }
+        {"panel": "path", "required": true, "linear-only": true},
+        {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
       "color": [
         1.0,
@@ -10550,23 +10303,6 @@
       "label": "Eco Vent (Blue)",
       "category": "Pickups",
       "parent": "vent",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Blocker entity",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
       "code": "collectables.o",
       "lumps": [],
       "color": [
@@ -10582,23 +10318,6 @@
       "label": "Eco Vent (Red)",
       "category": "Pickups",
       "parent": "vent",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Blocker entity",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
       "code": "collectables.o",
       "lumps": [],
       "color": [
@@ -10614,23 +10333,6 @@
       "label": "Eco Vent (Yellow)",
       "category": "Pickups",
       "parent": "vent",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Blocker entity",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
       "code": "collectables.o",
       "lumps": [],
       "color": [
@@ -10664,7 +10366,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -10763,7 +10464,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_orbit_scale",
@@ -10789,10 +10489,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true},
+        {"panel": "nav-mesh"},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -10841,7 +10540,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_sq_down",
@@ -10871,10 +10569,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true},
+        {"panel": "nav-mesh"},
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -10948,7 +10645,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_bridge_variant",
@@ -10986,7 +10682,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_ogre-isle_variant",
@@ -11021,7 +10716,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "water-actor",
@@ -11061,7 +10755,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_ogre-step_variant",
@@ -11077,7 +10770,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -11119,7 +10811,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_disc_variant",
@@ -11172,10 +10863,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_move_speed",
@@ -11232,10 +10922,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_move_speed",
@@ -11257,7 +10946,11 @@
               "type": "float",
               "default": 11.0,
               "min": 0.0,
-              "lump": {"key": "delay", "type": "meters", "slot": 0},
+              "lump": {
+                "key": "delay",
+                "type": "meters",
+                "slot": 0
+              },
               "write_if": "always"
             },
             {
@@ -11266,7 +10959,11 @@
               "type": "float",
               "default": 22.0,
               "min": 0.0,
-              "lump": {"key": "delay", "type": "meters", "slot": 1},
+              "lump": {
+                "key": "delay",
+                "type": "meters",
+                "slot": 1
+              },
               "write_if": "always"
             },
             {
@@ -11275,7 +10972,11 @@
               "type": "float",
               "default": 11.0,
               "min": 0.0,
-              "lump": {"key": "delay", "type": "meters", "slot": 2},
+              "lump": {
+                "key": "delay",
+                "type": "meters",
+                "slot": 2
+              },
               "write_if": "always"
             },
             {
@@ -11284,7 +10985,11 @@
               "type": "float",
               "default": 33.0,
               "min": 0.0,
-              "lump": {"key": "delay", "type": "meters", "slot": 3},
+              "lump": {
+                "key": "delay",
+                "type": "meters",
+                "slot": 3
+              },
               "write_if": "always"
             }
           ]
@@ -11337,7 +11042,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_elevator_mode",
@@ -11369,7 +11073,7 @@
             },
             {
               "key": "og_elevator_rot",
-              "label": "Rotation offset (°)",
+              "label": "Rotation offset (\u00b0)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -11415,10 +11119,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_flame_shove",
@@ -11526,8 +11229,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Rotation timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -11545,7 +11246,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Rotation timing: period and phase."
         }
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
@@ -11582,8 +11284,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Rotation timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_period",
@@ -11601,7 +11301,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Rotation timing: period and phase."
         }
       ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
@@ -11628,7 +11329,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -11712,7 +11412,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_alt_task",
@@ -11789,7 +11488,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_bone_bridge_anim",
@@ -11850,7 +11548,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_breakaway_h1",
@@ -11923,7 +11620,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_breakaway_h1",
@@ -11996,7 +11692,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_breakaway_h1",
@@ -12039,8 +11734,8 @@
       "category": "Hidden",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "volume", "show-panel": true},
-        {"panel": "water", "show-panel": true}
+        {"panel": "volume"},
+        {"panel": "water"}
       ],
       "code": "water-h.o",
       "lumps": [],
@@ -12075,7 +11770,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "required": true}
       ],
       "code": "target-tube.o",
       "extra_art_groups": ["eichar-tube+0-ag.go"],
@@ -12114,7 +11809,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_spring_height",
@@ -12157,7 +11851,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_spring_height",
@@ -12206,10 +11899,9 @@
         }
       ],
       "panels": [
-        {"panel": "task-gated", "show-panel": true},
+        {"panel": "task-gated"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_alt_task",
@@ -12224,7 +11916,8 @@
               },
               "write_if": "if_not_none"
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -12243,7 +11936,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -12324,7 +12016,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_door_auto_close",
@@ -12377,7 +12068,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "state-actor",
@@ -12443,10 +12133,9 @@
         }
       ],
       "panels": [
-        {"panel": "eco-door", "show-panel": true},
+        {"panel": "eco-door"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_door_auto_close",
@@ -12495,11 +12184,11 @@
                 "set_if_link": "state-actor"
               }
             }
-          ]
+          ],
+          "show-panel": false
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "state-actor",
@@ -12553,10 +12242,9 @@
         }
       ],
       "panels": [
-        {"panel": "eco-door", "show-panel": true},
+        {"panel": "eco-door"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_door_auto_close",
@@ -12605,7 +12293,8 @@
                 "set_if_link": "state-actor"
               }
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -12632,10 +12321,9 @@
         }
       ],
       "panels": [
-        {"panel": "launcherdoor", "show-panel": true},
+        {"panel": "launcherdoor"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_continue_name",
@@ -12649,7 +12337,8 @@
               },
               "write_if": "if_non_empty"
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -12691,10 +12380,9 @@
         }
       ],
       "panels": [
-        {"panel": "sun-iris-door", "show-panel": true},
+        {"panel": "sun-iris-door"},
         {
           "panel": "custom-fields",
-          "show-panel": false,
           "fields": [
             {
               "key": "og_door_proximity",
@@ -12720,7 +12408,8 @@
               },
               "write_if": "if_positive"
             }
-          ]
+          ],
+          "show-panel": false
         }
       ],
       "color": [
@@ -12764,7 +12453,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_button_timeout",
@@ -12782,7 +12470,6 @@
         },
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "next-actor",
@@ -12852,10 +12539,9 @@
         }
       ],
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_shover_force",
@@ -12870,7 +12556,7 @@
             },
             {
               "key": "og_shover_rot",
-              "label": "Rotation offset (°)",
+              "label": "Rotation offset (\u00b0)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -12985,7 +12671,6 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_turbine_particles",
@@ -13053,7 +12738,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -13340,8 +13024,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Push cycle: period, phase, and pauses while extended / retracted.",
           "fields": [
             {
               "key": "og_sync_ease_out",
@@ -13371,7 +13053,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Push cycle: period, phase, and pauses while extended / retracted."
         }
       ],
       "color": [
@@ -13394,8 +13077,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Push cycle: period, phase, and pauses while extended / retracted.",
           "fields": [
             {
               "key": "og_sync_ease_out",
@@ -13425,11 +13106,11 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Push cycle: period, phase, and pauses while extended / retracted."
         },
         {
           "panel": "custom-fields",
-          "show-panel": true,
           "fields": [
             {
               "key": "og_pusher_mode",
@@ -13477,7 +13158,7 @@
       "category": "Obstacles",
       "parent": "process",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "required": true}
       ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
@@ -13498,7 +13179,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -13543,8 +13223,6 @@
       "panels": [
         {
           "panel": "sync",
-          "show-panel": true,
-          "description": "Fire cycle timing: period and phase.",
           "fields": [
             {
               "key": "og_sync_ease_out",
@@ -13558,7 +13236,8 @@
               "key": "og_sync_wrap",
               "export": false
             }
-          ]
+          ],
+          "description": "Fire cycle timing: period and phase."
         }
       ],
       "color": [
@@ -13621,7 +13300,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
@@ -13654,7 +13332,6 @@
       "panels": [
         {
           "panel": "actor-link",
-          "show-panel": true,
           "slots": [
             {
               "lump_key": "alt-actor",
