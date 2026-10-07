@@ -306,7 +306,8 @@ def collect_builtin_cameras(scene):
     """
     from .. import db as _db
     from .schema_emit import emit_schema_lumps
-    from .actors import _collect_waypoint_points, _make_path_knots
+    from .actors import _to_game_coords
+    from . import path_modes as _pm
     cam_db = _db.cameras()
     fields = cam_db.get("fields", [])
     flags = cam_db.get("flags", [])
@@ -358,13 +359,21 @@ def collect_builtin_cameras(scene):
             else:
                 log(f"  [camera] WARNING: {name} orbit but no {name}_PIVOT — exports as fixed")
         elif mode == "spline":
-            pts = _collect_waypoint_points(cam_obj)
-            if len(pts) >= 4:
-                lump["campath"] = ["vector4m"] + pts
-                lump["campath-k"] = ["float"] + _make_path_knots(len(pts))
+            # Same path modes as actors. The camera always reads a curve
+            # (campath + campath-k), so a linear result becomes straight
+            # Bezier segments — exactly the same lines.
+            raw, knots, pmode, pwarn = _pm.build(
+                _pm.gather_sources(cam_obj), getattr(cam_obj, "og_path_mode", "AUTO"))
+            if pwarn:
+                log(f"  [camera] {name}: {pwarn}")
+            if knots is None and len(raw) >= 2:
+                raw, knots = _pm.straight_bezier(raw)
+            if knots and len(raw) <= _pm.MAX_CVERTS:
+                lump["campath"] = ["vector4m"] + [_to_game_coords(mathutils.Vector(p)) for p in raw]
+                lump["campath-k"] = ["float"] + knots
             else:
-                log(f"  [camera] WARNING: {name} path mode needs 4+ path points "
-                    f"(has {len(pts)}) — exports as fixed")
+                log(f"  [camera] WARNING: {name} path mode needs 2+ path points "
+                    f"(has {len(raw)}) — exports as fixed")
 
         def _planes(o):
             planes, _r = _vol_planes(o)

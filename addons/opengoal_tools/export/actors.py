@@ -277,7 +277,19 @@ def collect_actors(scene, depsgraph=None):
         # point). Falls back to legacy <actor>_wp_NN name-grep for older
         # levels with no collection populated. Applies ping-pong reversal
         # if og_waypoint_pingpong is set.
-        path_pts = _collect_waypoint_points(o)
+        # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
+        # decides the control points and, for curve-control actors, path-k.
+        # Actors flagged path_linear_only in the DB (path-control readers that
+        # ignore path-k) always get the straight-line reading.
+        from . import path_modes as _pm
+        _arec_p = _schema_db.find_actor(etype) or {}
+        _ppts, path_knots, _pmode, _pwarn = _pm.build(
+            _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
+            linear_only=bool(_arec_p.get("path_linear_only")),
+            pingpong=bool(getattr(o, "og_waypoint_pingpong", False)))
+        path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
+        if _pwarn and path_pts:
+            log(f"  [path] {o.name}: {_pwarn}")
 
         # ── Nav-enemy workaround (nav_safe=False) ────────────────────────────
         # These extend nav-enemy. Without a real navmesh they idle forever.
@@ -381,21 +393,10 @@ def collect_actors(scene, depsgraph=None):
         # got cverts but no knots"). Emitting it for a plain path-control actor
         # is harmless — only curve-control reads path-k.
         # A cubic needs >= 4 control points; fewer falls back to linear.
-        if getattr(o, "og_path_mode", "LINEAR") == "SMOOTH" and "path" in lump:
-            n_cv = len(path_pts)
-            if n_cv > 256:
-                # Engine clamps cverts to MAX_CURVE_CONTROL_POINTS (256) in
-                # res.gc but would NOT clamp the knots — emitting path-k here
-                # would desync num-cverts vs num-knots. Skip path-k so the
-                # actor stays a safe linear path-control instead.
-                log(f"  [WARNING] {o.name} Path Mode=Smooth has {n_cv} points "
-                    f"(>256 engine limit) — exporting linear (no path-k)")
-            elif n_cv >= 4:
-                lump["path-k"] = ["float"] + _make_path_knots(n_cv)
-                log(f"  [path-k] {o.name}  smooth B-spline  {n_cv} cverts  {n_cv + 4} knots")
-            else:
-                log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
-                    f"(has {n_cv}) — exporting linear (no path-k)")
+        if path_knots and "path" in lump:
+            lump["path-k"] = ["float"] + path_knots
+            log(f"  [path-k] {o.name}  {_pm.MODE_LABELS.get(_pmode, _pmode)}  "
+                f"{len(path_pts)} cverts  {len(path_knots)} knots")
 
         # ── Trait fields ──────────────────────────────────────────────────────
         # Behaviours shared across many actors by predicate: idle-distance +

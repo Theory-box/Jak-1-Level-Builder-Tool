@@ -4210,6 +4210,7 @@
   "Actors": [
     {
       "etype": "babak",
+      "path_linear_only": true,
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4243,6 +4244,7 @@
     },
     {
       "etype": "babak-with-cannon",
+      "path_linear_only": true,
       "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4277,6 +4279,7 @@
     },
     {
       "etype": "lurkercrab",
+      "path_linear_only": true,
       "label": "Lurker Crab",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4311,6 +4314,7 @@
     },
     {
       "etype": "lurkerpuppy",
+      "path_linear_only": true,
       "label": "Lurker Puppy",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4345,6 +4349,7 @@
     },
     {
       "etype": "hopper",
+      "path_linear_only": true,
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4379,6 +4384,7 @@
     },
     {
       "etype": "aphid",
+      "path_linear_only": true,
       "label": "Aphid",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4412,6 +4418,7 @@
     },
     {
       "etype": "swamp-rat",
+      "path_linear_only": true,
       "label": "Swamp Rat",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4446,6 +4453,7 @@
     },
     {
       "etype": "kermit",
+      "path_linear_only": true,
       "label": "Kermit (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4480,6 +4488,7 @@
     },
     {
       "etype": "snow-bunny",
+      "path_linear_only": true,
       "label": "Snow Bunny Lurker",
       "schema_export": true,
       "category": "Enemies",
@@ -4536,6 +4545,7 @@
     },
     {
       "etype": "citb-bunny",
+      "path_linear_only": true,
       "label": "Citadel Bunny Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4571,6 +4581,7 @@
     },
     {
       "etype": "double-lurker",
+      "path_linear_only": true,
       "label": "Double Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4607,6 +4618,7 @@
     },
     {
       "etype": "bonelurker",
+      "path_linear_only": true,
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4641,6 +4653,7 @@
     },
     {
       "etype": "muse",
+      "path_linear_only": true,
       "label": "Muse",
       "category": "Interactive Objects",
       "parent": "nav-enemy",
@@ -4674,6 +4687,7 @@
     },
     {
       "etype": "baby-spider",
+      "path_linear_only": true,
       "label": "Baby Spider",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4753,6 +4767,7 @@
     },
     {
       "etype": "green-eco-lurker",
+      "path_linear_only": true,
       "label": "Green Eco Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4902,6 +4917,7 @@
     },
     {
       "etype": "yeti",
+      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Yeti",
@@ -4995,6 +5011,7 @@
     },
     {
       "etype": "puffer",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
@@ -5183,6 +5200,7 @@
     },
     {
       "etype": "mother-spider",
+      "path_linear_only": true,
       "label": "Mother Spider",
       "schema_export": true,
       "category": "Enemies",
@@ -5784,6 +5802,7 @@
     },
     {
       "etype": "ram-boss",
+      "path_linear_only": true,
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5841,6 +5860,7 @@
     },
     {
       "etype": "ice-cube",
+      "path_linear_only": true,
       "label": "Ice Cube",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6135,6 +6155,7 @@
     },
     {
       "etype": "robotboss",
+      "path_linear_only": true,
       "label": "Precursor Robot Boss",
       "category": "Bosses",
       "parent": "nav-enemy",
@@ -8371,6 +8392,7 @@
     },
     {
       "etype": "floating-launcher",
+      "path_linear_only": true,
       "label": "Floating Launcher (Sunken)",
       "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
       "is_launcher": true,
@@ -9519,6 +9541,7 @@
     },
     {
       "etype": "balloonlurker",
+      "path_linear_only": true,
       "label": "Balloon Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -9604,6 +9627,7 @@
     },
     {
       "etype": "junglefish",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Jungle Fish",
       "category": "Enemies",
@@ -9690,6 +9714,7 @@
     },
     {
       "etype": "cave-trap",
+      "path_linear_only": true,
       "label": "Cave Spider Trap",
       "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
@@ -9809,6 +9834,7 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Rat Nest",
@@ -9951,6 +9977,7 @@
     },
     {
       "etype": "sharkey",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Lurker Shark",
       "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water.",
@@ -10050,6 +10077,7 @@
     },
     {
       "etype": "villa-starfish",
+      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Villa Starfish",
@@ -10694,6 +10722,7 @@
     },
     {
       "etype": "lavaballoon",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
@@ -10933,6 +10962,7 @@
     },
     {
       "etype": "caveflamepots",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
@@ -12280,6 +12310,7 @@
     },
     {
       "etype": "shover",
+      "path_linear_only": true,
       "schema_export": true,
       "label": "Shover",
       "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",

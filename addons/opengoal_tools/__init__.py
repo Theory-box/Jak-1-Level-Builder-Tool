@@ -250,28 +250,30 @@ def register():
                     "forward path; the engine's modulo walk handles the rest.",
         default=False,
     )
-    # Path interpolation mode. LINEAR (default) emits only the `path` lump, so
-    # the engine walks the control points in straight segments — current/legacy
-    # behavior, hits every waypoint exactly. SMOOTH additionally emits a
-    # `path-k` knot lump, which makes curve-control actors (plat, plat-eco,
-    # plat-button) load as a true cubic B-spline curve for gliding motion.
-    # Note: a B-spline does NOT pass through interior waypoints — it cuts the
-    # corners, touching only the first and last point. Needs >= 4 waypoints;
-    # with fewer it falls back to linear at export.
+    # Path mode — see export/path_modes.py. Item numbers are fixed so files
+    # saved before the expanded list keep their value: 0 = Linear, 1 = the old
+    # "Smooth", which was the clamped B-spline (now "Smooth Clamped").
+    from .export.path_modes import MODE_LABELS as _PM_LABELS
     bpy.types.Object.og_path_mode = bpy.props.EnumProperty(
         name="Path Mode",
-        description="How the actor moves along its waypoints. Linear hits every "
-                    "waypoint with straight segments. Smooth emits a path-k knot "
-                    "vector so curve-control platforms glide as a cubic B-spline "
-                    "(cuts corners; needs at least 4 waypoints)",
+        description="How the path's points are turned into the 'path' (and 'path-k' curve) lumps",
         items=[
-            ("LINEAR", "Linear", "Straight segments through every waypoint "
-                                 "(only the 'path' lump is exported)"),
-            ("SMOOTH", "Smooth", "Cubic B-spline gliding motion via a 'path-k' "
-                                 "knot lump. Cuts corners and skips interior "
-                                 "waypoints. Requires >= 4 waypoints"),
+            ("AUTO", _PM_LABELS["AUTO"],
+             "Pick from the path: waypoints = Linear; Poly curve = Linear (Looped if cyclic); "
+             "NURBS = Smooth / Smooth Clamped (Endpoint), Looped if cyclic; Bezier = Bezier (Looped if cyclic)", 2),
+            ("LINEAR", _PM_LABELS["LINEAR"], "Straight segments through every point (no path-k)", 0),
+            ("LINEAR_LOOP", _PM_LABELS["LINEAR_LOOP"], "Linear, plus the first point again at the end", 3),
+            ("SMOOTH", _PM_LABELS["SMOOTH"],
+             "Uniform cubic B-spline — smooth, doesn't reach the first/last points. Needs 4+ points", 4),
+            ("SMOOTH_LOOP", _PM_LABELS["SMOOTH_LOOP"], "Smooth closed loop (first 3 points repeated)", 5),
+            ("SMOOTH_CLAMPED", _PM_LABELS["SMOOTH_CLAMPED"],
+             "Cubic B-spline that starts and ends exactly on the end points. Needs 4+ points", 1),
+            ("SMOOTH_CLAMPED_LOOP", _PM_LABELS["SMOOTH_CLAMPED_LOOP"], "Smooth Clamped, plus the first point again", 6),
+            ("BEZIER", _PM_LABELS["BEZIER"],
+             "One Bezier curve: passes through every anchor, handles shape each segment, sharp corners allowed", 7),
+            ("BEZIER_LOOP", _PM_LABELS["BEZIER_LOOP"], "Bezier with a closing segment back to the first anchor", 8),
         ],
-        default="LINEAR",
+        default="AUTO",
     )
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.

@@ -776,7 +776,7 @@ def _count_curve_points(curve_obj) -> int:
 
 
 class OG_PT_ActorWaypoints(Panel):
-    bl_label       = "Waypoints"
+    bl_label       = "Path"
     bl_idname      = "OG_PT_actor_waypoints"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -866,20 +866,34 @@ class OG_PT_ActorWaypoints(Panel):
         toggle_row.prop(sel, "og_waypoint_pingpong",
                         text="Ping-pong", toggle=True, icon="ARROW_LEFTRIGHT")
 
-        # Path interpolation mode — linear (default) vs smooth B-spline.
-        # Smooth only changes behavior for curve-control actors (plat,
-        # plat-eco, plat-button); it emits a path-k knot lump at export.
-        mode_row = layout.row(align=True)
-        mode_row.prop(sel, "og_path_mode", text="Path Mode")
-        if getattr(sel, "og_path_mode", "LINEAR") == "SMOOTH":
-            eff_pts = total_pts if n_sources > 0 else len(legacy_wps)
-            box = layout.box()
-            box.label(text="Smooth: cubic B-spline (curve-control platforms)",
-                      icon="IPO_BEZIER")
-            box.label(text="Cuts corners — does not pass through interior waypoints")
-            if eff_pts < 4:
-                box.label(text=f"⚠ Needs ≥4 waypoints (has {eff_pts}); exports linear",
-                          icon="ERROR")
+        # Path mode (export/path_modes.py). Linear-only actors (path-control —
+        # they ignore path-k) only get the straight-line choices.
+        from ..export import path_modes as _pm
+        linear_only = bool((_db.find_actor(etype) or {}).get("path_linear_only"))
+        mode_box = layout.box()
+        if linear_only:
+            mode_box.label(text="Path Mode (this actor only moves in straight lines):", icon="IPO_LINEAR")
+            mrow = mode_box.row(align=True)
+            for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
+                mrow.prop_enum(sel, "og_path_mode", m)
+        else:
+            mode_box.prop(sel, "og_path_mode", text="Path Mode")
+        try:
+            _pts, _knots, _eff, _warn = _pm.build(
+                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only,
+                pingpong=sel.og_waypoint_pingpong)
+            info = mode_box.column(); info.scale_y = 0.8
+            label = _pm.MODE_LABELS.get(_eff, _eff)
+            if sel.og_path_mode == "AUTO":
+                label = f"Automatic → {label}"
+            info.label(text=f"{label}: {len(_pts)} points"
+                            + (f", {len(_knots)} knots (path-k)" if _knots else ""),
+                       icon="IPO_BEZIER" if _knots else "IPO_LINEAR")
+            if _warn:
+                w = info.row(); w.alert = True
+                w.label(text=_warn, icon="ERROR")
+        except Exception:
+            pass
 
         # Validation hints.
         if einfo.get("needs_path"):
