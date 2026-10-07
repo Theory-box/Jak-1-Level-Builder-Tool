@@ -109,6 +109,51 @@ def knots_bezier(segments: int) -> list[float]:
     return [float(v) for v in range(segments + 1) for _ in range(4)]
 
 
+def resize_knots(vals, need: int) -> list[float]:
+    """Fit a manual knot list to `need` values (cverts + 4) after points were
+    added or removed: keeps the leading values and the last 4 (the end
+    clamp), dropping or inserting values just before them (+1 steps)."""
+    vals = [float(v) for v in vals]
+    if need <= 0:
+        return []
+    if len(vals) == need:
+        return vals
+    if len(vals) < 4:
+        return knots_clamped(max(need - 4, 4))[:need]
+    head, tail = vals[:-4], vals[-4:]
+    if len(vals) > need:
+        return head[:need - 4] + tail
+    add = need - len(vals)
+    last = head[-1] if head else tail[0]
+    return head + [last + i + 1 for i in range(add)] + [t + add for t in tail]
+
+
+def manual_knots(auto_knots, manual_vals) -> tuple[list[float] | None, str]:
+    """Knots to export when the user edits them by hand: the manual list,
+    resized to the curve's current knot count if points changed. Returns
+    (knots, note); knots is None when the path has no knots (linear)."""
+    if not auto_knots:
+        return None, ""
+    need = len(auto_knots)
+    vals = [float(v) for v in manual_vals]
+    note = ""
+    if len(vals) != need:
+        note = f"manual knots resized {len(vals)} -> {need} (points changed — Fit to keep it)"
+        vals = resize_knots(vals, need)
+    if any(b < a for a, b in zip(vals, vals[1:])):
+        note = (note + "; " if note else "") + "knots must never decrease"
+    return vals, note
+
+
+def knot_presets(n_cverts: int, auto_knots) -> dict:
+    """Preset knot lists for the manual editor."""
+    out = {"AUTO": list(auto_knots or [])}
+    if n_cverts >= 4:
+        out["CLAMPED"] = knots_clamped(n_cverts)
+        out["UNIFORM"] = knots_uniform(n_cverts)
+    return out
+
+
 # ── Automatic mode ──────────────────────────────────────────────────────────
 
 def auto_mode(sources: list[dict]) -> str:

@@ -101,7 +101,7 @@ from .properties import (
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
-    OGWaypointSource, OGExtraPath,
+    OGWaypointSource, OGKnot, OGExtraPath,
     _cp_lev0_items, _cp_lev1_items, CP_DISP_ITEMS,
     _lb_level_items, LB_CMD_ITEMS, LB_DISP_ITEMS,
 )
@@ -141,6 +141,7 @@ classes = (
     OGSpawnListRow,
     OGSpawnFavorite,
     OGWaypointSource,
+    OGKnot,
     OGExtraPath,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
@@ -270,6 +271,13 @@ def register():
         name="Keyframe", default="",
         description="Main path lump keyframe (e.g. 1). Blank = default; exported as vector4m@<keyframe>")
     bpy.types.Object.og_extra_paths = bpy.props.CollectionProperty(type=OGExtraPath)
+    # Manual knot list for the main path (path-k); off = automatic.
+    bpy.types.Object.og_path_knots_manual = bpy.props.BoolProperty(
+        name="Manual Knots", default=False,
+        description="Export the knot list below instead of the automatic one")
+    bpy.types.Object.og_path_knots = bpy.props.CollectionProperty(type=OGKnot)
+    bpy.types.Object.og_path_knots_index = bpy.props.IntProperty(default=0)
+    bpy.types.Object.og_path_knots_open = bpy.props.BoolProperty(default=False)
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
     # Each ACTOR_ empty can reference a Blender text block to inject into obs.gc.
@@ -434,7 +442,8 @@ def unregister():
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
-              "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths"):
+              "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
+              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")

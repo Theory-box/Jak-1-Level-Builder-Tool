@@ -290,6 +290,9 @@ def collect_actors(scene, depsgraph=None):
         path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
         if _pwarn and path_pts:
             log(f"  [path] {o.name}: {_pwarn}")
+        if path_knots and getattr(o, "og_path_knots_manual", False):
+            path_knots, _kn = _pm.manual_knots(path_knots, [k.value for k in o.og_path_knots])
+            log(f"  [path-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
 
         # ── Nav-enemy workaround (nav_safe=False) ────────────────────────────
         # These extend nav-enemy. Without a real navmesh they idle forever.
@@ -516,6 +519,9 @@ def collect_actors(scene, depsgraph=None):
                 linear_only=bool(_arec_p.get("path_linear_only")), pingpong=_xp.pingpong)
             if _xwarn and _xpts:
                 log(f"  [path] {o.name} '{_xn}': {_xwarn}")
+            if _xk and getattr(_xp, "knots_manual", False):
+                _xk, _kn = _pm.manual_knots(_xk, [k.value for k in _xp.knots])
+                log(f"  [{_xn}-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if _xpts:
                 lump[_xn] = ["vector4m" + _xkf] + [_to_game_coords(mathutils.Vector(p)) for p in _xpts]
                 lump.pop(_xn + "-k", None)

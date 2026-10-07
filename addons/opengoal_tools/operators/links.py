@@ -555,6 +555,65 @@ class OG_OT_AddExtraPath(Operator):
         return {"FINISHED"}
 
 
+def path_knot_target(actor, path_index):
+    """(owner, manual_attr, list_attr, index_attr, built) for a path's manual
+    knot editor; built = path_modes.build() output for that path."""
+    from ..export import path_modes as _pm
+    from .. import db as _db
+    lin = bool((_db.find_actor(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "") or {})
+               .get("path_linear_only"))
+    if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
+        xp = actor.og_extra_paths[path_index]
+        built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin, pingpong=xp.pingpong)
+        return xp, "knots_manual", "knots", "knots_index", built
+    built = _pm.build(_pm.gather_sources(actor), actor.og_path_mode, linear_only=lin,
+                      pingpong=bool(getattr(actor, "og_waypoint_pingpong", False)))
+    return actor, "og_path_knots_manual", "og_path_knots", "og_path_knots_index", built
+
+
+class OG_OT_PathKnotsPreset(Operator):
+    """Fill a path's manual knot list (path-k) from a preset and turn manual
+    knots on. Clamped = starts/ends on the end points; Uniform = unclamped;
+    Automatic = what the path mode exports now; Fit = keep your values but
+    match the current point count"""
+    bl_idname  = "og.path_knots_preset"
+    bl_label   = "Set Knots"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    path_index: bpy.props.IntProperty(default=-1)
+    preset: bpy.props.EnumProperty(items=[
+        ("AUTO", "Automatic", "Copy the knots the current path mode would export"),
+        ("CLAMPED", "Clamped", "0 0 0 0 1 2 ... n n n n — reaches both end points"),
+        ("UNIFORM", "Uniform", "Unclamped uniform — smooth, doesn't reach the end points"),
+        ("FIT", "Fit", "Keep the values, add/remove entries to match the current points"),
+    ], default="AUTO")
+
+    def execute(self, ctx):
+        from ..export import path_modes as _pm
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        owner, man_attr, list_attr, idx_attr, (pts, auto_k, _m, _w) = path_knot_target(actor, self.path_index)
+        if not auto_k:
+            self.report({"WARNING"}, "This path has no knots (Linear) — pick a curve path mode first")
+            return {"CANCELLED"}
+        coll = getattr(owner, list_attr)
+        if self.preset == "FIT":
+            vals = _pm.resize_knots([k.value for k in coll], len(auto_k))
+        else:
+            vals = _pm.knot_presets(len(pts), auto_k).get(self.preset)
+            if vals is None or len(vals) != len(auto_k):
+                self.report({"WARNING"}, f"'{self.preset}' doesn't fit this path ({len(pts)} points) — using Automatic")
+                vals = list(auto_k)
+        coll.clear()
+        for v in vals:
+            coll.add().value = v
+        setattr(owner, idx_attr, 0)
+        setattr(owner, man_attr, True)
+        return {"FINISHED"}
+
+
 class OG_OT_RemoveExtraPath(Operator):
     """Remove an extra path. Its addon-made waypoint empties are deleted;
     linked curves are kept."""
@@ -814,6 +873,7 @@ CLASSES = (
     OG_OT_WaypointSourceLinkCurve,
     OG_OT_AddExtraPath,
     OG_OT_RemoveExtraPath,
+    OG_OT_PathKnotsPreset,
     OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,

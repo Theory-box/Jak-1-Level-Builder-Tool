@@ -774,6 +774,11 @@ class OGWaypointSource(bpy.types.PropertyGroup):
 
 
 
+class OGKnot(bpy.types.PropertyGroup):
+    """One value of a manually edited knot list (path-k)."""
+    value: FloatProperty(name="Knot", default=0.0)
+
+
 def _extra_path_mode_items():
     from .export.path_modes import MODE_ITEMS
     return MODE_ITEMS
@@ -794,6 +799,11 @@ class OGExtraPath(bpy.types.PropertyGroup):
     sources: CollectionProperty(type=OGWaypointSource)
     sources_index: IntProperty(default=0)
     expanded: BoolProperty(default=True)
+    knots_manual: BoolProperty(name="Manual Knots", default=False,
+                               description="Export the knot list below instead of the automatic one")
+    knots: CollectionProperty(type=OGKnot)
+    knots_index: IntProperty(default=0)
+    knots_open: BoolProperty(default=False)
 
 
 # --- OG_OT_AddLumpRow + OG_OT_RemoveLumpRow ---

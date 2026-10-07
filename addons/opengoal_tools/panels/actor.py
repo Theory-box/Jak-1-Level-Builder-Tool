@@ -723,6 +723,62 @@ class OG_PT_ActorVisibility(Panel):
 
 
 
+class OG_UL_PathKnots(bpy.types.UIList):
+    """Manual knot list (path-k): index + editable value per row."""
+
+    def draw_item(self, ctx, layout, data, item, icon, active_data,
+                  active_propname, index):
+        row = layout.row(align=True)
+        row.label(text=f"{index}")
+        row.prop(item, "value", text="", emboss=True)
+
+
+def draw_knot_editor(layout, owner, lump_name, actor_name, path_index, auto_knots,
+                     manual_attr, list_attr, index_attr, open_attr):
+    """Collapsed-by-default knot (path-k) box. Automatic unless the user
+    switches to a manual list; presets fill the list, Fit follows point
+    count changes, the export resizes on its own if they differ."""
+    if not auto_knots:
+        return
+    from ..export import path_modes as _pm
+    manual = getattr(owner, manual_attr)
+    coll = getattr(owner, list_attr)
+    box = layout.box()
+    hdr = box.row(align=True)
+    is_open = getattr(owner, open_attr)
+    hdr.prop(owner, open_attr, text="", emboss=False, icon="TRIA_DOWN" if is_open else "TRIA_RIGHT")
+    hdr.label(text=f"Knots ({lump_name}-k): {'Manual' if manual else 'Automatic'} · {len(auto_knots)} values",
+              icon="IPO_BEZIER")
+    if not is_open:
+        if manual and len(coll) != len(auto_knots):
+            w = box.row(); w.alert = True
+            w.label(text=f"Manual list has {len(coll)}, path needs {len(auto_knots)}", icon="ERROR")
+        return
+
+    def _op(row, preset, text, icon="NONE"):
+        op = row.operator("og.path_knots_preset", text=text, icon=icon)
+        op.actor_name = actor_name; op.path_index = path_index; op.preset = preset
+
+    if not manual:
+        _op(box.row(), "AUTO", "Edit Knots Manually", "GREASEPENCIL")
+        return
+    row = box.row(align=True)
+    _op(row, "CLAMPED", "Clamped")
+    _op(row, "UNIFORM", "Uniform")
+    _op(row, "AUTO", "Automatic")
+    box.template_list("OG_UL_PathKnots", f"knots{path_index}", owner, list_attr, owner, index_attr,
+                      rows=4, maxrows=8)
+    _vals, note = _pm.manual_knots(auto_knots, [k.value for k in coll])
+    if len(coll) != len(auto_knots):
+        w = box.row(align=True); w.alert = True
+        w.label(text=f"Points changed: list {len(coll)}, needs {len(auto_knots)}", icon="ERROR")
+        _op(w, "FIT", "Fit")
+    elif note:
+        w = box.row(); w.alert = True
+        w.label(text=note, icon="ERROR")
+    box.prop(owner, manual_attr, text="Manual knots (off = automatic)", toggle=True)
+
+
 class OG_UL_WaypointSources(bpy.types.UIList):
     """List of waypoint source entries for an actor. Each entry points to
     either an EMPTY (legacy _wp_NN style, single point) or a CURVE (each
@@ -892,6 +948,9 @@ class OG_PT_ActorWaypoints(Panel):
             if _warn:
                 w = info.row(); w.alert = True
                 w.label(text=_warn, icon="ERROR")
+            draw_knot_editor(mode_box, sel, (sel.og_path_lump or "path").strip(), sel.name, -1, _knots,
+                             "og_path_knots_manual", "og_path_knots", "og_path_knots_index",
+                             "og_path_knots_open")
         except Exception:
             pass
 
@@ -964,6 +1023,8 @@ class OG_PT_ActorWaypoints(Panel):
                            icon="IPO_BEZIER" if knots else "IPO_LINEAR")
                 if warn:
                     w = info.row(); w.alert = True; w.label(text=warn, icon="ERROR")
+                draw_knot_editor(box, xp, xp.name.strip() or "path", sel.name, i, knots,
+                                 "knots_manual", "knots", "knots_index", "knots_open")
             except Exception:
                 pass
 
@@ -1103,6 +1164,7 @@ class OG_PT_ActorGoalCode(Panel):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_UL_PathKnots,
     OG_UL_WaypointSources,
     OG_PT_ActorActivation,
     OG_PT_ActorTriggerBehaviour,
