@@ -4109,10 +4109,16 @@
   // "export": false (panel or field) hides it and stops it being exported.
   // Other keys on a panel entry are panel options (path: required, linear-only, paths, min-points).
   "PanelTypes": [
-    {"id": "path", "label": "Path", "description": "Waypoints/curves exported as 'path' (+ path-k). Options: \"required\": true or [lump names] (errors without them), \"linear-only\": true (path-control, no path-k), \"paths\": [lump names Add Path offers], \"multi-path\": true, \"min-points\": N.", "fields": []},
     {
-      "id": "sync", "label": "Sync",
-      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase sets the fact-options wrap-phase bit. Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
+      "id": "path",
+      "label": "Path",
+      "description": "Waypoints/curves exported as 'path' (+ path-k). Options: \"required\": true or [lump names] (errors without them), \"linear-only\": true (path-control, no path-k), \"paths\": [lump names Add Path offers], \"multi-path\": true, \"min-points\": N.",
+      "fields": []
+    },
+    {
+      "id": "sync",
+      "label": "Sync",
+      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase is in the fact-options panel. Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
       "fields": [
         {
           "key": "og_sync_period",
@@ -4162,27 +4168,21 @@
             "slot": 3
           },
           "write_if": "always"
-        },
-        {
-          "key": "og_sync_wrap",
-          "label": "Wrap phase",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "options",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
         }
       ]
     },
     {"id": "actor-link", "label": "Actor Links", "description": "Links to other actors (alt-actor, next-actor ...). Option \"slots\": [{lump_key, slot, label, accepts, required}].", "fields": []},
-    {"id": "nav-mesh", "label": "Nav-mesh", "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked.", "fields": []},
+    {
+      "id": "nav-mesh",
+      "label": "Nav-mesh",
+      "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked.",
+      "fields": []
+    },
     {"id": "aggro-trigger", "label": "Trigger Behaviour", "description": "Aggro trigger volumes (cue-chase / cue-patrol / wait-for-cue). On the nav-enemy parent.", "fields": []},
     {"id": "volume", "label": "Volume", "description": "vol lump from a linked VOL_ mesh.", "fields": []},
     {
-      "id": "water", "label": "Water Volume",
+      "id": "water",
+      "label": "Water Volume",
       "description": "Water attributes; the volume comes from a linked VOL_ mesh.",
       "fields": [
         {
@@ -4240,7 +4240,8 @@
       ]
     },
     {
-      "id": "activation", "label": "Activation",
+      "id": "activation",
+      "label": "Activation",
       "description": "fact-info-enemy idle distance: the player must be closer than this to wake the actor.",
       "fields": [
         {
@@ -4257,7 +4258,8 @@
       ]
     },
     {
-      "id": "visibility", "label": "Visibility",
+      "id": "visibility",
+      "label": "Visibility",
       "description": "fact-info-enemy vis distance: keeps the process active/visible at range.",
       "fields": [
         {
@@ -4274,7 +4276,9 @@
       ]
     },
     {
-      "id": "spawner", "label": "Spawner", "draw": "generic",
+      "id": "spawner",
+      "label": "Spawner",
+      "draw": "generic",
       "description": "Child actors to spawn (num-lurkers).",
       "fields": [
         {
@@ -4292,7 +4296,9 @@
       ]
     },
     {
-      "id": "notice-dist", "label": "Notice Distance", "draw": "generic",
+      "id": "notice-dist",
+      "label": "Notice Distance",
+      "draw": "generic",
       "description": "notice-dist lump: -1 = always active, >= 0 = needs eco within range.",
       "fields": [
         {
@@ -4305,6 +4311,253 @@
             "key": "notice-dist",
             "type": "meters"
           }
+        }
+      ]
+    },
+    {
+      "id": "fact-options",
+      "label": "Options",
+      "description": "fact-options bits ('options' lump, engine/game/fact-h.gc). Every option is hidden by default; a parent or actor turns on the ones its code reads with \"show-field\": true, and \"highlight\": true lists it first.",
+      "fields": [
+        {
+          "key": "og_fop_vent_blocked",
+          "label": "Vent blocked",
+          "type": "bool",
+          "default": false,
+          "note": "Vent starts blocked (opened by its blocker actor).",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 1
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_has_power_cell",
+          "label": "Has power cell",
+          "type": "bool",
+          "default": false,
+          "note": "Drops a power cell when killed (uses the actor's game task).",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 2
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_vent_valve",
+          "label": "Vent valve",
+          "type": "bool",
+          "default": false,
+          "note": "Vent controlled by a valve.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 4
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_wrap_phase",
+          "label": "Wrap phase",
+          "type": "bool",
+          "default": false,
+          "note": "Sync phase wraps from 1 to 0 instead of mirroring (loops instead of ping-pong).",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 8
+          },
+          "write_if": "if_true",
+          "show-field": false,
+          "legacy_key": "og_sync_wrap"
+        },
+        {
+          "key": "og_fop_instant_collect",
+          "label": "Instant collect",
+          "type": "bool",
+          "default": false,
+          "note": "Pickup is collected instantly (balloon lurker, puffer).",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 64
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_skip_jump_anim",
+          "label": "Skip jump animation",
+          "type": "bool",
+          "default": false,
+          "note": "Skips the power cell 'jump' animation on collect.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 128
+          },
+          "write_if": "if_true",
+          "show-field": false,
+          "legacy_key": "og_cell_skip_jump"
+        },
+        {
+          "key": "og_fop_can_collect",
+          "label": "Can collect",
+          "type": "bool",
+          "default": false,
+          "note": "Pickup can be collected.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 256
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_fade",
+          "label": "Fade",
+          "type": "bool",
+          "default": false,
+          "note": "Pickup fades out after a while.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 512
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_large",
+          "label": "Large",
+          "type": "bool",
+          "default": false,
+          "note": "Large pickup.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 1024
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_require_zoomer",
+          "label": "Require zoomer",
+          "type": "bool",
+          "default": false,
+          "note": "Crate can only be broken while riding the zoomer.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 2048
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_powerup",
+          "label": "Powerup",
+          "type": "bool",
+          "default": false,
+          "note": "Eco powerup.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 4096
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_touch",
+          "label": "Strength: touch",
+          "type": "bool",
+          "default": false,
+          "note": "Crate breaks on touch.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 8192
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_normal_attack",
+          "label": "Strength: normal attack",
+          "type": "bool",
+          "default": false,
+          "note": "Crate breaks on a normal attack.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 16384
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_strong_attack",
+          "label": "Strength: strong attack",
+          "type": "bool",
+          "default": false,
+          "note": "Crate needs a strong attack.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 32768
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_indestructible",
+          "label": "Indestructible",
+          "type": "bool",
+          "default": false,
+          "note": "Crate can't be broken.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 65536
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_eco_blocked",
+          "label": "Eco blocked",
+          "type": "bool",
+          "default": false,
+          "note": "Hidden until the actor's task is complete.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 262144
+          },
+          "write_if": "if_true",
+          "show-field": false
+        },
+        {
+          "key": "og_fop_respawn",
+          "label": "Respawn",
+          "type": "bool",
+          "default": false,
+          "note": "Pickup respawns.",
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 524288
+          },
+          "write_if": "if_true",
+          "show-field": false
         }
       ]
     },
@@ -4400,6 +4653,16 @@
         {
           "panel": "visibility",
           "show-panel": true
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_has_power_cell",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
         }
       ],
       "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
@@ -4435,7 +4698,42 @@
     {
       "etype": "collectable",
       "parent": "process-drawable",
-      "description": "Game type (deftype collectable (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype collectable (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_fade",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_can_collect",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_respawn",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_large",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_instant_collect",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_powerup",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_eco_blocked",
+              "show-field": true
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "baseplat",
@@ -4459,6 +4757,21 @@
               "lump_key": "alt-actor",
               "required": false,
               "slot": 0
+            }
+          ]
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_vent_blocked",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_vent_valve",
+              "show-field": true,
+              "highlight": true
             }
           ]
         }
@@ -4531,7 +4844,19 @@
     {
       "etype": "eco",
       "parent": "eco-collectable",
-      "description": "Game type (deftype eco (eco-collectable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype eco (eco-collectable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_eco_blocked",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "ogre-isle",
@@ -5262,10 +5587,6 @@
             {
               "key": "og_sync_ease_in",
               "export": false
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Timing of the spiky / not spiky cycle."
@@ -5315,7 +5636,17 @@
         },
         {"panel": "activation"},
         {"panel": "visibility"},
-        {"panel": "nav-mesh"}
+        {"panel": "nav-mesh"},
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_instant_collect",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
       ],
       "color": [
         0.3,
@@ -5776,18 +6107,6 @@
               "value_if_true": -1.0,
               "value_if_false": 1.0,
               "write_if": "if_not_default"
-            },
-            {
-              "key": "og_driller-lurker_option",
-              "label": "Option 17",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "options",
-                "type": "uint32",
-                "bit_value": 17
-              },
-              "write_if": "if_true"
             }
           ]
         },
@@ -6303,7 +6622,8 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility"},
+        {"panel": "fact-options", "fields": [{"key": "og_fop_fade", "show-field": true, "highlight": true}]}
       ],
       "color": [
         1.0,
@@ -6889,21 +7209,10 @@
                   "(game-task none)"
                 ]
               }
-            },
-            {
-              "key": "og_cell_skip_jump",
-              "label": "Skip jump animation",
-              "type": "bool",
-              "default": false,
-              "lump": {
-                "key": "options",
-                "type": "uint32"
-              },
-              "value_if_true": 4,
-              "write_if": "if_true"
             }
           ]
-        }
+        },
+        {"panel": "fact-options", "fields": [{"key": "og_fop_skip_jump_anim", "show-field": true, "highlight": true}]}
       ],
       "color": [
         1.0,
@@ -7098,6 +7407,48 @@
             }
           ],
           "show-panel": false
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_touch",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_normal_attack",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_strong_attack",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_indestructible",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_require_zoomer",
+              "show-field": true,
+              "highlight": true
+            },
+            {
+              "key": "og_fop_can_collect",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_instant_collect",
+              "show-field": true
+            },
+            {
+              "key": "og_fop_vent_blocked",
+              "show-field": true
+            }
+          ]
         }
       ],
       "color": [
@@ -7256,7 +7607,8 @@
       "schema_export": true,
       "panels": [
         {"panel": "path", "min-points": 2},
-        {"panel": "sync"}
+        {"panel": "sync"},
+        {"panel": "fact-options", "fields": [{"key": "og_fop_wrap_phase", "show-field": true, "highlight": true}]}
       ],
       "category": "Platforms",
       "parent": "baseplat",
@@ -8012,10 +8364,6 @@
               "key": "og_sync_ease_in",
               "label": "Period Retracted (0-.5)",
               "default": 0.375
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Extend / retract cycle: period, phase, and how long it stays extended / retracted."
@@ -8983,10 +9331,6 @@
             {
               "key": "og_sync_ease_in",
               "export": false
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Steam cycle timing: period and phase."
@@ -9031,10 +9375,6 @@
             },
             {
               "key": "og_sync_ease_in",
-              "export": false
-            },
-            {
-              "key": "og_sync_wrap",
               "export": false
             }
           ],
@@ -9430,10 +9770,6 @@
             {
               "key": "og_sync_ease_in",
               "export": false
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Spike cycle timing: period and phase."
@@ -9554,10 +9890,6 @@
             },
             {
               "key": "og_sync_ease_in",
-              "export": false
-            },
-            {
-              "key": "og_sync_wrap",
               "export": false
             }
           ],
@@ -9722,7 +10054,17 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility"},
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_instant_collect",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
       ],
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
@@ -11189,10 +11531,6 @@
             {
               "key": "og_sync_ease_in",
               "export": false
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Rotation timing: period and phase."
@@ -11243,10 +11581,6 @@
             },
             {
               "key": "og_sync_ease_in",
-              "export": false
-            },
-            {
-              "key": "og_sync_wrap",
               "export": false
             }
           ],
@@ -12996,10 +13330,6 @@
                 "type": "float",
                 "slot": 2
               }
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Push cycle: period, phase, and pauses while extended / retracted."
@@ -13049,10 +13379,6 @@
                 "type": "float",
                 "slot": 2
               }
-            },
-            {
-              "key": "og_sync_wrap",
-              "export": false
             }
           ],
           "description": "Push cycle: period, phase, and pauses while extended / retracted."
@@ -13178,10 +13504,6 @@
             },
             {
               "key": "og_sync_ease_in",
-              "export": false
-            },
-            {
-              "key": "og_sync_wrap",
               "export": false
             }
           ],

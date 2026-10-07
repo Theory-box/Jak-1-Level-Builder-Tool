@@ -351,14 +351,8 @@ def collect_actors(scene, depsgraph=None):
                     lump["sync"] = ["float", period, phase]
                 else:
                     lump["sync"] = ["float", period, phase, ease_out, ease_in]
-                wrap = "og_sync_wrap" in _sf and bool(o.get("og_sync_wrap", False))
-                if wrap:
-                    # fact-options wrap-phase: bit 3 of the options uint64
-                    # GOAL: (defenum fact-options :bitfield #t  (wrap-phase 3))
-                    # value = 1 << 3 = 8
-                    # Read via: (res-lump-value ent 'options fact-options)
-                    lump["options"] = ["uint32", 8]
-                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}  wrap={wrap}")
+                # wrap-phase lives in the fact-options panel now ('options' lump)
+                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}")
             elif _schema_db.has_panel(etype, "path"):
                 log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
@@ -383,7 +377,7 @@ def collect_actors(scene, depsgraph=None):
         # (needs_notice_dist). Driven by the DB's TraitFields section and applied
         # to every matching actor, regardless of schema_export.
         for _tk, _tv in emit_schema_lumps(
-                lambda k, d=None: o.get(k, d),
+                _schema_db.prop_getter(o),
                 _schema_db.trait_fields(etype),
                 etype=etype).items():
             lump[_tk] = _tv
@@ -395,7 +389,7 @@ def collect_actors(scene, depsgraph=None):
                 if _pid == "custom-fields":
                     continue
                 for _tk, _tv in emit_schema_lumps(
-                        lambda k, d=None: o.get(k, d),
+                        _schema_db.prop_getter(o),
                         _schema_db.panel_fields(etype, _pid),
                         etype=etype).items():
                     lump[_tk] = _tv
@@ -467,7 +461,7 @@ def collect_actors(scene, depsgraph=None):
         _arec = _schema_db.find_actor(etype)
         if _schema_db.schema_export_enabled(etype):
             for _lk, _lv in emit_schema_lumps(
-                    lambda k, d=None: o.get(k, d),
+                    _schema_db.prop_getter(o),
                     _schema_db.inherited_fields(etype),
                     etype=etype,
                     choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
@@ -537,7 +531,7 @@ def collect_actors(scene, depsgraph=None):
 
         # Variant art-group/code override (e.g. per-bridge art group). Falls back
         # to the actor's own art group/code when the variant doesn't specify one.
-        _variant = _schema_db.actor_variant(etype, lambda k, d=None: o.get(k, d))
+        _variant = _schema_db.actor_variant(etype, _schema_db.prop_getter(o))
 
         # A variant may also switch the exported etype (e.g. OgreStepVariants:
         # ogre-step -> ogre-step-a). The DB lookups (code, tpages, art groups)
@@ -666,7 +660,7 @@ def collect_actors(scene, depsgraph=None):
             ve_counter += 1
             lump_v = {"name": f"{etype}-{uid}"}
             for _lk, _lv in emit_schema_lumps(
-                    lambda k, d=None: o.get(k, d),
+                    _schema_db.prop_getter(o),
                     _schema_db.inherited_fields(etype),
                     etype=etype,
                     choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():

@@ -149,6 +149,21 @@ classes = (
     *_PANELS_CLASSES,
 )
 
+@bpy.app.handlers.persistent
+def _migrate_legacy_props(*_args):
+    """Copy props saved under an old key (DB field "legacy_key", e.g.
+    og_sync_wrap -> og_fop_wrap_phase) to the new key, once, on file load."""
+    try:
+        from . import db as _dbm
+        leg = _dbm.legacy_keys()
+        for o in bpy.data.objects:
+            for new, old in leg.items():
+                if old in o.keys() and new not in o.keys():
+                    o[new] = o[old]
+    except Exception:
+        pass
+
+
 def register():
     _load_previews()
     _mp.register_handler()
@@ -396,6 +411,8 @@ def register():
     _spawn_register_handlers()
     from .panels.tools import register_db_handlers
     register_db_handlers()
+    if _migrate_legacy_props not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_migrate_legacy_props)
 
     def _deferred_populate_spawn_lists():
         try:
@@ -413,6 +430,8 @@ def register():
 def unregister():
     from .panels.tools import unregister_db_handlers
     unregister_db_handlers()
+    if _migrate_legacy_props in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_migrate_legacy_props)
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()

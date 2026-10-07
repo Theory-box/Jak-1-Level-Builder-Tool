@@ -728,6 +728,46 @@ def _draw_panel_fields(layout, sel, pid):
         _draw_field(layout, sel, f, info)
 
 
+class OG_PT_ActorFactOptions(Panel):
+    """DB "fact-options" panel: the 'options' lump bits the actor's code reads
+    (fact-h.gc). Options marked "highlight" for this actor come first."""
+    bl_label       = "Options"
+    bl_idname      = "OG_PT_actor_fact_options"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return (len(parts) >= 3 and parts[0] == "ACTOR"
+                and bool(_db.panel_fields(parts[1], "fact-options", visible_only=True)))
+
+    def draw(self, ctx):
+        from .actor_fields import _draw_field
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        flds = _db.panel_fields(etype, "fact-options", visible_only=True)
+        top = [f for f in flds if f.get("highlight")]
+        rest = [f for f in flds if not f.get("highlight")]
+        if top:
+            box = self.layout.box()
+            box.label(text="For this actor", icon="SOLO_ON")
+            for f in top:
+                _draw_field(box, sel, f, info)
+        if rest:
+            col = self.layout.column()
+            if top:
+                col.label(text="Other options")
+            for f in rest:
+                _draw_field(col, sel, f, info)
+
+
 class OG_UL_PathKnots(bpy.types.UIList):
     """Manual knot list (path-k): index + editable value per row."""
 
@@ -1176,6 +1216,7 @@ class OG_PT_ActorGoalCode(Panel):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_PT_ActorFactOptions,
     OG_UL_PathKnots,
     OG_UL_WaypointSources,
     OG_PT_ActorActivation,

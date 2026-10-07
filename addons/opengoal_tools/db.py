@@ -413,6 +413,31 @@ def actor_panels(etype: str) -> dict:
     return out
 
 
+def legacy_keys() -> dict:
+    """{field key: older prop key} from PanelTypes fields' "legacy_key" —
+    props saved under the old name (e.g. og_sync_wrap -> og_fop_wrap_phase)
+    are read through this so old .blend files keep their values."""
+    out = {}
+    for p in DB.get("PanelTypes", []):
+        for f in p.get("fields", []):
+            if f.get("key") and f.get("legacy_key"):
+                out[f["key"]] = f["legacy_key"]
+    return out
+
+
+def prop_getter(obj):
+    """get(key, default) for an object's props that also reads legacy keys."""
+    leg = legacy_keys()
+    def get(k, d=None):
+        if k in obj.keys():
+            return obj.get(k)
+        old = leg.get(k)
+        if old and old in obj.keys():
+            return obj.get(old)
+        return d
+    return get
+
+
 def has_panel(etype: str, pid: str) -> bool:
     """True if the actor (or its parent chain) shows panel `pid`."""
     p = actor_panels(etype).get(pid)
@@ -832,7 +857,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist")
+                  "spawner", "notice-dist", "fact-options")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:
