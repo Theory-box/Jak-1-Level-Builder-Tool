@@ -284,27 +284,100 @@ def inherited_link_descriptions(etype: str) -> dict:
     return result
 
 
-def inherited_fields(etype: str) -> list[dict]:
-    """Combined export-schema fields[] for an etype: parent fields (root-first)
-    then the actor's own, with the actor (or a nearer ancestor) overriding any
-    inherited field that targets the same `key`. Const fields (no `key`) are
-    always kept. Used by the schema-driven exporter (export/schema_emit.py)."""
-    by_key: dict = {}
-    order: list = []
-    def _add(flds):
-        for f in flds:
-            k = f.get("key")
-            if not k:                      # const field: keep, never dedupe
-                k = ("__const__", id(f))
-            if k not in by_key:
-                order.append(k)
-            by_key[k] = f
-    for p in reversed(parent_chain(etype)):   # root-first
-        _add(p.get("fields", []))
+# ── Panels ──────────────────────────────────────────────────────────────────
+# An actor (or a Parents entry) lists the UI panels it uses:
+#   "panels": [{"panel": "<PanelTypes id>", "show-panel": true,
+#               "fields": [{"key": ..., <only what differs>}, ...]}, ...]
+# Panels come from the parent chain (root-first) and then the actor itself —
+# never from the category. The same panel id from a nearer record overrides
+# "show-panel" and merges its fields by key into the panel's standard fields
+# (PanelTypes[id].fields). "custom-fields" holds fully written-out fields.
+# "show-panel": false keeps a panel's fields exported but hides the panel;
+# "show-field": false does the same for one field.
+
+def panel_types() -> list[dict]:
+    return DB.get("PanelTypes", [])
+
+
+def panel_type(pid: str) -> dict:
+    for p in DB.get("PanelTypes", []):
+        if p.get("id") == pid:
+            return p
+    return {}
+
+
+def _record_panels(rec: dict) -> list[dict]:
+    """A record's panels list. Older override databases (separate "fields" and
+    "panel" keys) are read as the equivalent panels list."""
+    if not rec:
+        return []
+    if "panels" in rec:
+        return rec.get("panels") or []
+    out = []
+    if rec.get("panel"):
+        out.append({"panel": rec["panel"], "show-panel": True})
+    if rec.get("fields"):
+        out.append({"panel": "custom-fields", "show-panel": not rec.get("panel"),
+                    "fields": rec["fields"]})
+    return out
+
+
+def _merge_fields(base: list, over: list) -> list:
+    """Fields merged by key: an override dict updates the field with the same
+    key (only the keys it lists); new keys and const fields (no key) append."""
+    out = [dict(f) for f in base]
+    idx = {f.get("key"): i for i, f in enumerate(out) if f.get("key")}
+    for f in over or []:
+        k = f.get("key")
+        if k and k in idx:
+            out[idx[k]].update(f)
+        else:
+            if k:
+                idx[k] = len(out)
+            out.append(dict(f))
+    return out
+
+
+def actor_panels(etype: str) -> dict:
+    """Resolved panels for an etype, in first-seen order:
+    {panel_id: {"show": bool, "fields": [...]}}."""
+    out: dict = {}
     actor = find_actor(etype)
-    if actor:
-        _add(actor.get("fields", []))
-    return [by_key[k] for k in order]
+    for rec in list(reversed(parent_chain(etype))) + ([actor] if actor else []):
+        for e in _record_panels(rec):
+            pid = e.get("panel")
+            if not pid:
+                continue
+            cur = out.get(pid)
+            if cur is None:
+                cur = out[pid] = {"show": True,
+                                  "fields": [dict(f) for f in panel_type(pid).get("fields", [])]}
+            if "show-panel" in e:
+                cur["show"] = bool(e["show-panel"])
+            cur["fields"] = _merge_fields(cur["fields"], e.get("fields"))
+    return out
+
+
+def has_panel(etype: str, pid: str) -> bool:
+    """True if the actor (or its parent chain) shows panel `pid`."""
+    p = actor_panels(etype).get(pid)
+    return bool(p and p["show"])
+
+
+def panel_fields(etype: str, pid: str, visible_only: bool = False) -> list[dict]:
+    """Fields of one panel (standard + overrides). visible_only drops panels
+    that are hidden and fields with "show-field": false."""
+    p = actor_panels(etype).get(pid)
+    if not p or (visible_only and not p["show"]):
+        return []
+    return [f for f in p["fields"] if not (visible_only and f.get("show-field") is False)]
+
+
+def inherited_fields(etype: str) -> list[dict]:
+    """Every exported custom field for an etype (the "custom-fields" panel,
+    parents first, nearer records overriding by key; hidden ones included).
+    Used by the schema-driven exporter (export/schema_emit.py)."""
+    return panel_fields(etype, "custom-fields")
 
 
 def schema_export_enabled(etype: str) -> bool:
@@ -635,11 +708,12 @@ def variant_choices(etype: str) -> list[dict]:
 
 
 def actor_panel(etype: str) -> str | None:
-    """The bespoke UI panel id an actor uses (DB `"panel"` flag), or None if it
-    uses the generic Actor Settings field panel. Lets a bespoke panel be
-    attached to an actor with one DB line instead of a hardcoded etype list."""
-    a = find_actor(etype) or {}
-    return a.get("panel")
+    """The first shown bespoke panel id (anything but "custom-fields") of an
+    actor, or None. Kept for the hand-written panels' polls."""
+    for pid, p in actor_panels(etype).items():
+        if pid != "custom-fields" and p["show"]:
+            return pid
+    return None
 
 
 def ui_fields(etype: str) -> list[dict]:

@@ -4099,6 +4099,25 @@
     }
   ],
 
+  // ── PanelTypes ──────────────────────────────────────────────────
+  // UI panels an actor (or a Parents entry) can list in its "panels":
+  //   {"panel": "<id>", "show-panel": true, "fields": [{"key": ..., <only what differs>}]}
+  // Panels come from the parent chain and then the actor — never from the
+  // category. "fields" here are each panel's standard fields; an actor's
+  // entry overrides them by key ("default", "show-field": false, ...).
+  // "custom-fields" takes fully written-out fields (the old "fields" key).
+  "PanelTypes": [
+    {"id": "custom-fields", "label": "Actor Settings", "description": "Generic per-actor fields, written out in full in the actor's entry.", "fields": []},
+    {"id": "crate", "label": "Crate", "description": "Crate type and contents.", "fields": []},
+    {"id": "platform", "label": "Platform", "description": "Platform settings (fields drawn by the Platform panel).", "fields": []},
+    {"id": "launcher", "label": "Launcher", "description": "Launch height and destination.", "fields": []},
+    {"id": "eco-door", "label": "Eco Door", "description": "Door state, lock and flags.", "fields": []},
+    {"id": "launcherdoor", "label": "Launcher Door", "description": "Launcher door settings.", "fields": []},
+    {"id": "sun-iris-door", "label": "Sun Iris Door", "description": "Iris door settings.", "fields": []},
+    {"id": "task-gated", "label": "Task Gated", "description": "Task picker for task-gated actors (oracle).", "fields": []},
+    {"id": "caveelevator", "label": "Cave Elevator", "description": "Cave elevator settings.", "fields": []}
+  ],
+
   // ── Parents ─────────────────────────────────────────────────────
   "Parents": [
     {
@@ -4495,18 +4514,24 @@
           "description": "Variant selector — controls snow-bunny behaviour variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_mode",
-          "label": "Retreating Mode",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "mode",
-            "type": "int32"
-          },
-          "value_if_true": 1,
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_mode",
+              "label": "Retreating Mode",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "value_if_true": 1,
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "color": [
@@ -4837,19 +4862,25 @@
           "description": "Number of bat slaves spawned. Range 2–8, default 6."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_num_lurkers",
-          "label": "Child count (default 6)",
-          "type": "int",
-          "default": 6,
-          "min": 2,
-          "max": 8,
-          "lump": {
-            "key": "num-lurkers",
-            "type": "int32"
-          },
-          "write_if": "if_nonneg"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Child count (default 6)",
+              "type": "int",
+              "default": 6,
+              "min": 2,
+              "max": 8,
+              "lump": {
+                "key": "num-lurkers",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
         }
       ],
       "color": [
@@ -4895,18 +4926,24 @@
           "description": "Distance at which yeti notices player. Default 50m."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_num_lurkers",
-          "label": "Child count",
-          "type": "int",
-          "default": -1,
-          "min": -1,
-          "lump": {
-            "key": "num-lurkers",
-            "type": "int32"
-          },
-          "write_if": "if_nonneg"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Child count",
+              "type": "int",
+              "default": -1,
+              "min": -1,
+              "lump": {
+                "key": "num-lurkers",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
         }
       ],
       "color": [
@@ -4983,39 +5020,45 @@
           "description": "Use '(fact-options instant-collect)' for instant-kill puffer."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_sync_period",
-          "label": "Period between spiky and not (s)",
-          "type": "float",
-          "default": 8.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_distance_top",
-          "label": "Top Height offset for patrol (m)",
-          "type": "float",
-          "default": 2.0,
-          "lump": {"key": "distance", "type": "meters", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_distance_bot",
-          "label": "Bottom Height offset for patrol (m)",
-          "type": "float",
-          "default": -2.0,
-          "lump": {"key": "distance", "type": "meters", "slot": 1},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "label": "Period between spiky and not (s)",
+              "type": "float",
+              "default": 8.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_distance_top",
+              "label": "Top Height offset for patrol (m)",
+              "type": "float",
+              "default": 2.0,
+              "lump": {"key": "distance", "type": "meters", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_distance_bot",
+              "label": "Bottom Height offset for patrol (m)",
+              "type": "float",
+              "default": -2.0,
+              "lump": {"key": "distance", "type": "meters", "slot": 1},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -5151,104 +5194,110 @@
         "need_nav": true
       },
       "lumps": [],
-      "fields":[
+      "panels": [
         {
-          "key": "_og_thread-min-trans",
-          "type": "float",
-          "label": "Thread Min Trans Y (m * 4096)",
-          "default": 28672.0,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_anchor-trans",
-          "type": "float",
-          "label": "Anchor Trans Y (m * 4096)",
-          "default": 204800.0,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_max-swing-radius",
-          "type": "float",
-          "label": "Max Swing Radius (m * 4096)",
-          "default": 73728.0,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 2
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_max-baby-count",
-          "type": "int",
-          "label": "Max Baby Spider count",
-          "default": 4,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 3
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_mother-spider_bool",
-          "label": "To check what it does",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "extra-count",
-            "type": "float",
-            "slot": 4
-          },
-          "value_if_true": 1.0,
-          "value_if_false": 0.0,
-          "write_if": "always"
-        },
-        {
-          "key": "_og_max-spit-xz-dist",
-          "type": "float",
-          "label": "Max Spit Distance (m * 4096)",
-          "default": 81920.0,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 5
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_activate-xz-dist",
-          "type": "float",
-          "label": "Activate Distance (m * 4096)",
-          "default": 143360.0,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 6
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "_og_deactivate-xz-dist",
-          "type": "float",
-          "label": "Deactivate Distance (m * 4096)",
-          "default": 163430.4,
-          "lump": {
-            "key": "mother-spider",
-            "type": "float",
-            "slot": 7
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_og_thread-min-trans",
+              "type": "float",
+              "label": "Thread Min Trans Y (m * 4096)",
+              "default": 28672.0,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 0
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_anchor-trans",
+              "type": "float",
+              "label": "Anchor Trans Y (m * 4096)",
+              "default": 204800.0,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 1
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_max-swing-radius",
+              "type": "float",
+              "label": "Max Swing Radius (m * 4096)",
+              "default": 73728.0,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 2
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_max-baby-count",
+              "type": "int",
+              "label": "Max Baby Spider count",
+              "default": 4,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 3
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_mother-spider_bool",
+              "label": "To check what it does",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "extra-count",
+                "type": "float",
+                "slot": 4
+              },
+              "value_if_true": 1.0,
+              "value_if_false": 0.0,
+              "write_if": "always"
+            },
+            {
+              "key": "_og_max-spit-xz-dist",
+              "type": "float",
+              "label": "Max Spit Distance (m * 4096)",
+              "default": 81920.0,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 5
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_activate-xz-dist",
+              "type": "float",
+              "label": "Activate Distance (m * 4096)",
+              "default": 143360.0,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 6
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "_og_deactivate-xz-dist",
+              "type": "float",
+              "label": "Deactivate Distance (m * 4096)",
+              "default": 163430.4,
+              "lump": {
+                "key": "mother-spider",
+                "type": "float",
+                "slot": 7
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -5319,78 +5368,84 @@
           "required": false
         }
       ],
-      "fields":[
+      "panels": [
         {
-          "key": "_extra-count-one",
-          "label": "Spawn an orb",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "extra-count",
-            "type": "int32",
-            "slot": 0
-          },
-          "value_if_true": 5,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_extra-count-two",
-          "type": "int",
-          "label": "Orb extra count",
-          "default": "0",
-          "lump": {
-            "key": "extra-count",
-            "type": "uint32",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_rotoffset",
-          "label": "Rotation Offset (degrees)",
-          "type": "degrees",
-          "default": 0.0,
-          "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "_gnawer-one",
-          "label": "Gnawer one",
-          "default": 0,
-          "type": "int",
-          "lump": {
-            "key": "gnawer",
-            "type": "uint32",
-            "slot": 0,
-            "write_if": "if_not_default"
-          }
-        },
-        {
-          "key": "_gnawer-two",
-          "label": "Gnawer two",
-          "default": 0,
-          "type": "int",
-          "lump": {
-            "key": "gnawer",
-            "type": "uint32",
-            "slot": 1,
-            "write_if": "if_not_default"
-          }
-        },
-        {
-          "key": "_gnawer-three",
-          "label": "Gnawer three",
-          "default": 0,
-          "type": "int",
-          "lump": {
-            "key": "gnawer",
-            "type": "uint32",
-            "slot": 2,
-            "write_if": "if_not_default"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_extra-count-one",
+              "label": "Spawn an orb",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "extra-count",
+                "type": "int32",
+                "slot": 0
+              },
+              "value_if_true": 5,
+              "write_if": "if_true"
+            },
+            {
+              "key": "_extra-count-two",
+              "type": "int",
+              "label": "Orb extra count",
+              "default": "0",
+              "lump": {
+                "key": "extra-count",
+                "type": "uint32",
+                "slot": 1
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_rotoffset",
+              "label": "Rotation Offset (degrees)",
+              "type": "degrees",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "_gnawer-one",
+              "label": "Gnawer one",
+              "default": 0,
+              "type": "int",
+              "lump": {
+                "key": "gnawer",
+                "type": "uint32",
+                "slot": 0,
+                "write_if": "if_not_default"
+              }
+            },
+            {
+              "key": "_gnawer-two",
+              "label": "Gnawer two",
+              "default": 0,
+              "type": "int",
+              "lump": {
+                "key": "gnawer",
+                "type": "uint32",
+                "slot": 1,
+                "write_if": "if_not_default"
+              }
+            },
+            {
+              "key": "_gnawer-three",
+              "label": "Gnawer three",
+              "default": 0,
+              "type": "int",
+              "lump": {
+                "key": "gnawer",
+                "type": "uint32",
+                "slot": 2,
+                "write_if": "if_not_default"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -5420,56 +5475,62 @@
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "needs_path": true,
       "lumps": [],
-      "fields":[
+      "panels": [
         {
-          "key": "og_driller-lurker_pos",
-          "label": "Starting Position on path (0.0-1.0)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "driller-lurker",
-            "type": "float",
-            "slot": 0
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_driller-lurker_rot",
-          "label": "Starting Drilling Rotation",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "driller-lurker",
-            "type": "float",
-            "slot": 2
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_driller-lurker_dir",
-          "label": "Inverse direction",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "driller-lurker",
-            "type": "float",
-            "slot": 1
-          },
-          "value_if_true": -1.0,
-          "value_if_false": 1.0,
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_driller-lurker_option",
-          "label": "Option 17",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "options",
-            "type": "uint32",
-            "bit_value": 17
-          },
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_driller-lurker_pos",
+              "label": "Starting Position on path (0.0-1.0)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "driller-lurker",
+                "type": "float",
+                "slot": 0
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_driller-lurker_rot",
+              "label": "Starting Drilling Rotation",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "driller-lurker",
+                "type": "float",
+                "slot": 2
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_driller-lurker_dir",
+              "label": "Inverse direction",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "driller-lurker",
+                "type": "float",
+                "slot": 1
+              },
+              "value_if_true": -1.0,
+              "value_if_false": 1.0,
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_driller-lurker_option",
+              "label": "Option 17",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "options",
+                "type": "uint32",
+                "bit_value": 17
+              },
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "color": [
@@ -5516,18 +5577,24 @@
           "description": "Collision/activation radius override."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_crystal_underwater",
-          "label": "Underwater variant",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "mode",
-            "type": "int32"
-          },
-          "value_if_true": 1,
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_crystal_underwater",
+              "label": "Underwater variant",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "value_if_true": 1,
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "color": [
@@ -5634,30 +5701,36 @@
           "description": "1 = boss-fight mode. Default 0 (normal patrol mode)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_extra-id",
-          "label": "Id for task (1 to max ram)",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "lump": {
-            "key": "extra-id",
-            "type": "int32"
-          },
-          "write_if": "if_nonzero"
-        },
-        {
-          "key": "og_mode",
-          "label": "No Ram boss",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "mode",
-            "type": "int32"
-          },
-          "value_if_true": 1,
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_extra-id",
+              "label": "Id for task (1 to max ram)",
+              "type": "int",
+              "default": 0,
+              "min": 0,
+              "lump": {
+                "key": "extra-id",
+                "type": "int32"
+              },
+              "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_mode",
+              "label": "No Ram boss",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "value_if_true": 1,
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -5950,18 +6023,24 @@
           "required": false
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "_movie-mask",
-          "label": "Movie Mask",
-          "default": 6,
-          "type": "int",
-          "lump": {
-            "key": "movie-mask",
-            "type": "uint32",
-            "slot": 0,
-            "write_if": "always"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_movie-mask",
+              "label": "Movie Mask",
+              "default": 6,
+              "type": "int",
+              "lump": {
+                "key": "movie-mask",
+                "type": "uint32",
+                "slot": 0,
+                "write_if": "always"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -6001,30 +6080,36 @@
           "description": "Cutscene landing position: 'x y z rot_deg'."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "_extra-count-one",
-          "label": "Extra Count one",
-          "default": 0,
-          "type": "int",
-          "lump": {
-            "key": "extra-count",
-            "type": "uint32",
-            "slot": 0,
-            "write_if": "if_not_default"
-          }
-        },
-        {
-          "key": "_extra-count-two",
-          "label": "Extra Count two",
-          "default": 0,
-          "type": "int",
-          "lump": {
-            "key": "extra-count",
-            "type": "uint32",
-            "slot": 1,
-            "write_if": "if_not_default"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_extra-count-one",
+              "label": "Extra Count one",
+              "default": 0,
+              "type": "int",
+              "lump": {
+                "key": "extra-count",
+                "type": "uint32",
+                "slot": 0,
+                "write_if": "if_not_default"
+              }
+            },
+            {
+              "key": "_extra-count-two",
+              "label": "Extra Count two",
+              "default": 0,
+              "type": "int",
+              "lump": {
+                "key": "extra-count",
+                "type": "uint32",
+                "slot": 1,
+                "write_if": "if_not_default"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -6433,50 +6518,56 @@
           "description": "Seconds before robber slow down. Default 10.0s."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_spline_pos",
-          "type": "float",
-          "label": "Spawn position (0.0-1.0)",
-          "default": 0.0,
-          "lump": {
-            "key": "initial-spline-pos",
-            "type": "float"
-          },
-          "write_if":"always"
-        },
-        {
-          "key": "og_water-height",
-          "label": "Water height if robber goes over it (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "water-height",
-            "type": "meters"
-          },
-          "write_if":"if_not_default"
-        },
-        // {
-        //   "key": "og_idle-distance",
-        //   "type": "float",
-        //   "label": "Idle Distance (m)",
-        //   "default": 80.0,
-        //   "lump": {
-        //     "key": "idle-distance",
-        //     "type": "meters"
-        //   },
-        //   "write_if":"always"
-        // },
-        {
-          "key": "og_timeout",
-          "label": "Time before Robber slow down (s)",
-          "type": "float",
-          "default": 10.0,
-          "lump": {
-            "key": "timeout",
-            "type": "float"
-          },
-          "write_if":"if_not_default"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_spline_pos",
+              "type": "float",
+              "label": "Spawn position (0.0-1.0)",
+              "default": 0.0,
+              "lump": {
+                "key": "initial-spline-pos",
+                "type": "float"
+              },
+              "write_if":"always"
+            },
+            {
+              "key": "og_water-height",
+              "label": "Water height if robber goes over it (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "water-height",
+                "type": "meters"
+              },
+              "write_if":"if_not_default"
+            },
+            // {
+            //   "key": "og_idle-distance",
+            //   "type": "float",
+            //   "label": "Idle Distance (m)",
+            //   "default": 80.0,
+            //   "lump": {
+            //     "key": "idle-distance",
+            //     "type": "meters"
+            //   },
+            //   "write_if":"always"
+            // },
+            {
+              "key": "og_timeout",
+              "label": "Time before Robber slow down (s)",
+              "type": "float",
+              "default": 10.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if":"if_not_default"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -6522,27 +6613,33 @@
           "description": "Cutscene landing position: 'x y z rot_deg'."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "_eco_info_const",
-          "type": "const",
-          "lump": {
-            "key": "eco-info",
-            "type": "const",
-            "const": ["cell-info", "(game-task none)"]
-          }
-        },
-        {
-          "key": "og_cell_skip_jump",
-          "label": "Skip jump animation",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "options",
-            "type": "uint32"
-          },
-          "value_if_true": 4,
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_eco_info_const",
+              "type": "const",
+              "lump": {
+                "key": "eco-info",
+                "type": "const",
+                "const": ["cell-info", "(game-task none)"]
+              }
+            },
+            {
+              "key": "og_cell_skip_jump",
+              "label": "Skip jump animation",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "options",
+                "type": "uint32"
+              },
+              "value_if_true": 4,
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "color": [
@@ -6570,15 +6667,21 @@
           "description": "Hide-during-cutscene bitmask."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "_eco_info_const",
-          "type": "const",
-          "lump": {
-            "key": "eco-info",
-            "type": "const",
-            "const": ["eco-info", "(pickup-type money)", 1]
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_eco_info_const",
+              "type": "const",
+              "lump": {
+                "key": "eco-info",
+                "type": "const",
+                "const": ["eco-info", "(pickup-type money)", 1]
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -6599,15 +6702,21 @@
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
       "lumps": [],
-      "fields": [
+      "panels": [
         {
-          "key": "_eco_info_const",
-          "type": "const",
-          "lump": {
-            "key": "eco-info",
-            "type": "const",
-            "const": ["buzzer-info", "(game-task none)", 1]
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_eco_info_const",
+              "type": "const",
+              "lump": {
+                "key": "eco-info",
+                "type": "const",
+                "const": ["buzzer-info", "(game-task none)", 1]
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -6633,27 +6742,33 @@
           "description": "Pickup contents: '(pickup-type X) amount'."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_crate_pickup",
-          "label": "Pickup",
-          "type": "enum",
-          "default": "eco-blue",
-          "choices": "CratePickups",
-          "lump": {
-            "key": "eco-info",
-            "type": "eco-info-picker",
-            "pairs_with": "og_crate_pickup_amount"
-          },
-          "write_if": "if_not_none"
-        },
-        {
-          "key": "og_crate_pickup_amount",
-          "label": "Amount",
-          "type": "int",
-          "default": 1,
-          "min": 1,
-          "max": 99
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_crate_pickup",
+              "label": "Pickup",
+              "type": "enum",
+              "default": "eco-blue",
+              "choices": "CratePickups",
+              "lump": {
+                "key": "eco-info",
+                "type": "eco-info-picker",
+                "pairs_with": "og_crate_pickup_amount"
+              },
+              "write_if": "if_not_none"
+            },
+            {
+              "key": "og_crate_pickup_amount",
+              "label": "Amount",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "max": 99
+            }
+          ]
         }
       ],
       "color": [
@@ -6666,7 +6781,6 @@
     },
     {
       "etype": "crate",
-      "panel": "crate",
       "schema_export": true,
       "label": "Crate",
       "category": "Pickups",
@@ -6685,41 +6799,48 @@
           "description": "Pickup contents: '(pickup-type money) amount'."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "crate", "show-panel": true},
         {
-          "key": "og_crate_type",
-          "label": "Crate Type",
-          "type": "enum",
-          "default": "steel",
-          "choices": "CrateTypes",
-          "variant": true,
-          "lump": {
-            "key": "crate-type",
-            "type": "symbol_literal"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_crate_pickup",
-          "label": "Pickup",
-          "type": "enum",
-          "default": "money",
-          "choices": "CratePickups",
-          "lump": {
-            "key": "eco-info",
-            "type": "eco-info-picker",
-            "pairs_with": "og_crate_pickup_amount"
-          },
-          "write_if": "if_not_none"
-        },
-        {
-          "key": "og_crate_pickup_amount",
-          "label": "Amount",
-          "type": "int",
-          "default": 1,
-          "min": 1,
-          "max": 99,
-          "note": "Forced to 1 when pickup == buzzer (engine always spawns 1 scout fly)."
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_crate_type",
+              "label": "Crate Type",
+              "type": "enum",
+              "default": "steel",
+              "choices": "CrateTypes",
+              "variant": true,
+              "lump": {
+                "key": "crate-type",
+                "type": "symbol_literal"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_crate_pickup",
+              "label": "Pickup",
+              "type": "enum",
+              "default": "money",
+              "choices": "CratePickups",
+              "lump": {
+                "key": "eco-info",
+                "type": "eco-info-picker",
+                "pairs_with": "og_crate_pickup_amount"
+              },
+              "write_if": "if_not_none"
+            },
+            {
+              "key": "og_crate_pickup_amount",
+              "label": "Amount",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "max": 99,
+              "note": "Forced to 1 when pickup == buzzer (engine always spawns 1 scout fly)."
+            }
+          ]
         }
       ],
       "color": [
@@ -6752,18 +6873,24 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_orb_count",
-          "label": "Orbs inside",
-          "type": "int",
-          "default": 10,
-          "min": 1,
-          "lump": {
-            "key": "orb-cache-count",
-            "type": "int32"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_orb_count",
+              "label": "Orbs inside",
+              "type": "int",
+              "default": 10,
+              "min": 1,
+              "lump": {
+                "key": "orb-cache-count",
+                "type": "int32"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -6830,27 +6957,33 @@
           "description": "Pickup contents: '(pickup-type X) amount'."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_crate_pickup",
-          "label": "Pickup",
-          "type": "enum",
-          "default": "eco-green",
-          "choices": "CratePickups",
-          "lump": {
-            "key": "eco-info",
-            "type": "eco-info-picker",
-            "pairs_with": "og_crate_pickup_amount"
-          },
-          "write_if": "if_not_none"
-        },
-        {
-          "key": "og_crate_pickup_amount",
-          "label": "Amount",
-          "type": "int",
-          "default": 1,
-          "min": 1,
-          "max": 99
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_crate_pickup",
+              "label": "Pickup",
+              "type": "enum",
+              "default": "eco-green",
+              "choices": "CratePickups",
+              "lump": {
+                "key": "eco-info",
+                "type": "eco-info-picker",
+                "pairs_with": "og_crate_pickup_amount"
+              },
+              "write_if": "if_not_none"
+            },
+            {
+              "key": "og_crate_pickup_amount",
+              "label": "Amount",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "max": 99
+            }
+          ]
         }
       ],
       "color": [
@@ -6863,10 +6996,16 @@
     },
     {
       "etype": "plat",
-      "panel": "platform",
       "label": "Floating Platform",
       "schema_export": true,
-      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
+      "panels": [
+        {"panel": "platform", "show-panel": true},
+        {
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}]
+        }
+      ],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-ag.go",
@@ -6898,10 +7037,16 @@
     },
     {
       "etype": "plat-eco",
-      "panel": "platform",
       "label": "Eco Platform",
       "schema_export": true,
-      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "label": "Notice distance (m)", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}],
+      "panels": [
+        {"panel": "platform", "show-panel": true},
+        {
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "label": "Notice distance (m)", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}]
+        }
+      ],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
@@ -6961,43 +7106,49 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "fields":[
+      "panels": [
         {
-          "key": "og_scale_x",
-          "label": "Scale X",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_y",
-          "label": "Scale Y",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_z",
-          "label": "Scale Z",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 2},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_w",
-          "label": "Scale W (keep at 1.0)",
-          "type": "float",
-          "default": 1.0,
-          "min": 1.0,
-          "max": 1.0,
-          "lump": {"key": "scale", "type": "float", "slot": 3},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_scale_x",
+              "label": "Scale X",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_y",
+              "label": "Scale Y",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_z",
+              "label": "Scale Z",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 2},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_w",
+              "label": "Scale W (keep at 1.0)",
+              "type": "float",
+              "default": 1.0,
+              "min": 1.0,
+              "max": 1.0,
+              "lump": {"key": "scale", "type": "float", "slot": 3},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -7051,15 +7202,21 @@
       "parent": "prop",
       "art_group": "citb-chain-plat-ag.go",
       "glb": "levels/citadel/citb-chain-plat-lod0.glb",
-      "fields": [
+      "panels": [
         {
-          "key": "og_height_info",
-          "label": "Height when active (m)",
-          "type": "float",
-          "default": 4.0,
-          "min": 0.0,
-          "lump": {"key": "height-info", "type": "meters"},
-          "write_if": "always"}
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_height_info",
+              "label": "Height when active (m)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {"key": "height-info", "type": "meters"},
+              "write_if": "always"}
+          ]
+        }
       ],
       "color": [
         0.5,
@@ -7140,53 +7297,59 @@
           "description": "Set to '1' to allow platform to return."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_bidirectional",
-          "label": "Bidirectional",
-          "type": "enum",
-          "default": "oneway",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "oneway",
-              "label": "One Way (default)",
-              "lump_value": 0
+              "key": "og_bidirectional",
+              "label": "Bidirectional",
+              "type": "enum",
+              "default": "oneway",
+              "choices": [
+                {
+                  "value": "oneway",
+                  "label": "One Way (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "bidirectional",
+                  "label": "Bidirectional",
+                  "lump_value": 1
+                }
+              ],
+              "lump": {
+                "key": "bidirectional",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
             },
             {
-              "value": "bidirectional",
-              "label": "Bidirectional",
-              "lump_value": 1
+              "key": "og_continue_name",
+              "label": "Continue point name (checkpoints)",
+              "type": "string",
+              "default": "",
+              "lump": {
+                "key": "continue-name",
+                "type": "string",
+                "bare": true
+              },
+              "write_if": "if_non_empty"
+            },
+            {
+              "key": "og_camera_name",
+              "label": "Camera name to use while elevator move",
+              "type": "string",
+              "default": "",
+              "lump": {
+                "key": "camera-name",
+                "type": "string",
+                "bare": true
+              },
+              "write_if": "if_non_empty"
             }
-          ],
-          "lump": {
-            "key": "bidirectional",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_continue_name",
-          "label": "Continue point name (checkpoints)",
-          "type": "string",
-          "default": "",
-          "lump": {
-            "key": "continue-name",
-            "type": "string",
-            "bare": true
-          },
-          "write_if": "if_non_empty"
-        },
-        {
-          "key": "og_camera_name",
-          "label": "Camera name to use while elevator move",
-          "type": "string",
-          "default": "",
-          "lump": {
-            "key": "camera-name",
-            "type": "string",
-            "bare": true
-          },
-          "write_if": "if_non_empty"
+          ]
         }
       ],
       "link_slots": [
@@ -7238,29 +7401,35 @@
           "description": "Set to '1' to allow platform to return."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_bidirectional",
-          "label": "Bidirectional",
-          "type": "enum",
-          "default": "oneway",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "oneway",
-              "label": "One Way (default)",
-              "lump_value": 0
-            },
-            {
-              "value": "bidirectional",
+              "key": "og_bidirectional",
               "label": "Bidirectional",
-              "lump_value": 1
+              "type": "enum",
+              "default": "oneway",
+              "choices": [
+                {
+                  "value": "oneway",
+                  "label": "One Way (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "bidirectional",
+                  "label": "Bidirectional",
+                  "lump_value": 1
+                }
+              ],
+              "lump": {
+                "key": "bidirectional",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
             }
-          ],
-          "lump": {
-            "key": "bidirectional",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
+          ]
         }
       ],
       "color": [
@@ -7276,29 +7445,35 @@
       "etype": "flutflut-plat-small",
       "label": "Snowy Platform (Small Square)",
       "schema_export": true,
-      "fields": [
+      "panels": [
         {
-          "key": "og_plat-type",
-          "label": "Platform mode",
-          "type": "enum",
-          "choices": "FlutflutPlatMode",
-          "default": 0,
-          "lump":{
-            "key": "mode",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
-        },
-        {
-          "key": "og_extra-id",
-          "label": "Order of aparition for button mode (order * 0.15s)",
-          "type": "int",
-          "default": 0,
-          "lump":{
-            "key": "extra-id",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_plat-type",
+              "label": "Platform mode",
+              "type": "enum",
+              "choices": "FlutflutPlatMode",
+              "default": 0,
+              "lump":{
+                "key": "mode",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            },
+            {
+              "key": "og_extra-id",
+              "label": "Order of aparition for button mode (order * 0.15s)",
+              "type": "int",
+              "default": 0,
+              "lump":{
+                "key": "extra-id",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            }
+          ]
         }
       ],
       "needs_sync": true,
@@ -7363,29 +7538,35 @@
       "etype": "flutflut-plat-med",
       "label": "Snowy Platform (Medium Circle)",
       "schema_export": true,
-      "fields": [
+      "panels": [
         {
-          "key": "og_plat-type",
-          "label": "Platform mode",
-          "type": "enum",
-          "choices": "FlutflutPlatMode",
-          "default": 0,
-          "lump":{
-            "key": "mode",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
-        },
-        {
-          "key": "og_extra-id",
-          "label": "Order for button (* 0.15s)",
-          "type": "int",
-          "default": 0,
-          "lump":{
-            "key": "extra-id",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_plat-type",
+              "label": "Platform mode",
+              "type": "enum",
+              "choices": "FlutflutPlatMode",
+              "default": 0,
+              "lump":{
+                "key": "mode",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            },
+            {
+              "key": "og_extra-id",
+              "label": "Order for button (* 0.15s)",
+              "type": "int",
+              "default": 0,
+              "lump":{
+                "key": "extra-id",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            }
+          ]
         }
       ],
       "needs_sync": true,
@@ -7450,29 +7631,35 @@
       "etype": "flutflut-plat-large",
       "label": "Snowy Platform (Long Capsule)",
       "schema_export": true,
-      "fields": [
+      "panels": [
         {
-          "key": "og_plat-type",
-          "label": "Platform mode",
-          "type": "enum",
-          "choices": "FlutflutPlatMode",
-          "default": 0,
-          "lump":{
-            "key": "mode",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
-        },
-        {
-          "key": "og_extra-id",
-          "label": "Order of aparition for button mode (order * 0.15s)",
-          "type": "int",
-          "default": 0,
-          "lump":{
-            "key": "extra-id",
-            "type": "int32"
-          },
-          "write_if":"if_nonzero"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_plat-type",
+              "label": "Platform mode",
+              "type": "enum",
+              "choices": "FlutflutPlatMode",
+              "default": 0,
+              "lump":{
+                "key": "mode",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            },
+            {
+              "key": "og_extra-id",
+              "label": "Order of aparition for button mode (order * 0.15s)",
+              "type": "int",
+              "default": 0,
+              "lump":{
+                "key": "extra-id",
+                "type": "int32"
+              },
+              "write_if":"if_nonzero"
+            }
+          ]
         }
       ],
       "needs_sync": true,
@@ -7609,45 +7796,51 @@
           "description": "Phase offset as fraction of cycle (0.0–1.0)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_flip_sync_pct",
-          "label": "Sync phase offset",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "max": 1.0,
-          "lump": {
-            "key": "sync-percent",
-            "type": "float"
-          },
-          "write_if": "if_nonzero"
-        },
-        {
-          "key": "og_flip_delay_down",
-          "label": "Delay — down (s)",
-          "type": "float",
-          "default": 2.0,
-          "min": 0.0,
-          "lump": {
-            "key": "delay",
-            "type": "float",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_flip_delay_up",
-          "label": "Delay — up (s)",
-          "type": "float",
-          "default": 2.0,
-          "min": 0.0,
-          "lump": {
-            "key": "delay",
-            "type": "float",
-            "slot": 1
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_flip_sync_pct",
+              "label": "Sync phase offset",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "sync-percent",
+                "type": "float"
+              },
+              "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_flip_delay_down",
+              "label": "Delay — down (s)",
+              "type": "float",
+              "default": 2.0,
+              "min": 0.0,
+              "lump": {
+                "key": "delay",
+                "type": "float",
+                "slot": 0
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_flip_delay_up",
+              "label": "Delay — up (s)",
+              "type": "float",
+              "default": 2.0,
+              "min": 0.0,
+              "lump": {
+                "key": "delay",
+                "type": "float",
+                "slot": 1
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -7673,11 +7866,17 @@
       ],
       "code": "wall-plat.o",
       "glb": "levels/sunken/wall-plat-lod0.glb",
-      "fields": [
-        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
-        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, 
-        {"key": "og_sync_ease_out", "label": "Period Extended (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, 
-        {"key": "og_sync_ease_in", "label": "Period Retracted (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}],
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+            {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, 
+            {"key": "og_sync_ease_out", "label": "Period Extended (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, 
+            {"key": "og_sync_ease_in", "label": "Period Retracted (0-.5)", "type": "float", "default": 0.375, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}]
+        }
+      ],
       "lumps": [
         {
           "key": "tunemeters",
@@ -7757,10 +7956,16 @@
     },
     {
       "etype": "side-to-side-plat",
-      "panel": "platform",
       "label": "Side-to-Side Plat",
       "schema_export": true,
-      "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}],
+      "panels": [
+        {"panel": "platform", "show-panel": true},
+        {
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}]
+        }
+      ],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "side-to-side-plat-ag.go",
@@ -7828,28 +8033,34 @@
           "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_rotoffset",
-          "label": "Rotation Offset (degrees)",
-          "type": "degrees",
-          "default": 0.0,
-          "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_distance",
-          "label": "Rotation Radius (meters)",
-          "type": "meters",
-          "default": 9.0,
-          "lump": {
-            "key": "distance",
-            "type": "meters"
-          },
-          "write_if": "if_not_default"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_rotoffset",
+              "label": "Rotation Offset (degrees)",
+              "type": "degrees",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_distance",
+              "label": "Rotation Radius (meters)",
+              "type": "meters",
+              "default": 9.0,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -7903,28 +8114,34 @@
           "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_rotoffset",
-          "label": "Rotation Offset (degrees)",
-          "type": "degrees",
-          "default": 0.0,
-          "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_distance",
-          "label": "Rotation Radius (meters)",
-          "type": "meters",
-          "default": 17.0,
-          "lump": {
-            "key": "distance",
-            "type": "meters"
-          },
-          "write_if": "if_not_default"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_rotoffset",
+              "label": "Rotation Offset (degrees)",
+              "type": "degrees",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_distance",
+              "label": "Rotation Radius (meters)",
+              "type": "meters",
+              "default": 17.0,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -7976,17 +8193,23 @@
           "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_rotspeed",
-          "label": "Rotation Speed (degrees)",
-          "type": "degrees",
-          "default": 15.0,
-          "lump": {
-            "key": "rotspeed",
-            "type": "degrees"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_rotspeed",
+              "label": "Rotation Speed (degrees)",
+              "type": "degrees",
+              "default": 15.0,
+              "lump": {
+                "key": "rotspeed",
+                "type": "degrees"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -8138,76 +8361,82 @@
       "art_group": "floating-launcher-ag.go",
       "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "needs_path": true,
-      "fields": [
+      "panels": [
         {
-          "key": "og_spring_height",
-          "label": "Spring height (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "spring-height",
-            "type": "meters"
-          },
-          "write_if": "if_nonneg"
-        },
-        {
-          "key": "og_launcher_dest",
-          "label": "Destination object",
-          "type": "object_ref",
-          "default": "",
-          "lump": {
-            "key": "alt-vector",
-            "type": "vector",
-            "pairs_with": "og_launcher_fly_time"
-          },
-          "note": "xyz of alt-vector is the resolved location of the destination object.",
-          "write_if": "if_object_found"
-        },
-        {
-          "key": "og_launcher_fly_time",
-          "label": "Fly time (s)",
-          "type": "float",
-          "default": -1.0,
-          "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
-        },
-        {
-          "key": "og_launcher_mode",
-          "label": "Camera on launch",
-          "type": "enum",
-          "default": "shortfall",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "shortfall",
-              "label": "Short fall (default)",
-              "lump_value": 0
+              "key": "og_spring_height",
+              "label": "Spring height (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "spring-height",
+                "type": "meters"
+              },
+              "write_if": "if_nonneg"
             },
             {
-              "value": "longfall",
-              "label": "Long fall",
-              "lump_value": 1
+              "key": "og_launcher_dest",
+              "label": "Destination object",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "alt-vector",
+                "type": "vector",
+                "pairs_with": "og_launcher_fly_time"
+              },
+              "note": "xyz of alt-vector is the resolved location of the destination object.",
+              "write_if": "if_object_found"
             },
             {
-              "value": "none",
-              "label": "No camera",
-              "lump_value": 2
+              "key": "og_launcher_fly_time",
+              "label": "Fly time (s)",
+              "type": "float",
+              "default": -1.0,
+              "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+            },
+            {
+              "key": "og_launcher_mode",
+              "label": "Camera on launch",
+              "type": "enum",
+              "default": "shortfall",
+              "choices": [
+                {
+                  "value": "shortfall",
+                  "label": "Short fall (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "longfall",
+                  "label": "Long fall",
+                  "lump_value": 1
+                },
+                {
+                  "value": "none",
+                  "label": "No camera",
+                  "lump_value": 2
+                }
+              ],
+              "lump": {
+                "key": "mode",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_trigger_height",
+              "label": "Trigger height Coordinate (m)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "trigger-height",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
             }
-          ],
-          "lump": {
-            "key": "mode",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_trigger_height",
-          "label": "Trigger height Coordinate (m)",
-          "type": "float",
-          "default": 20.0,
-          "lump": {
-            "key": "trigger-height",
-            "type": "meters"
-          },
-          "write_if": "if_not_default"
+          ]
         }
       ],
       "link_slots": [
@@ -8244,7 +8473,6 @@
     },
     {
       "etype": "launcher",
-      "panel": "launcher",
       "is_launcher": true,
       "schema_export": true,
       "label": "Launcher",
@@ -8273,65 +8501,72 @@
           "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "launcher", "show-panel": true},
         {
-          "key": "og_spring_height",
-          "label": "Spring height (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "spring-height",
-            "type": "meters"
-          },
-          "write_if": "if_nonneg"
-        },
-        {
-          "key": "og_launcher_dest",
-          "label": "Destination object",
-          "type": "object_ref",
-          "default": "",
-          "lump": {
-            "key": "alt-vector",
-            "type": "vector",
-            "pairs_with": "og_launcher_fly_time"
-          },
-          "note": "xyz of alt-vector is the resolved location of the destination object.",
-          "write_if": "if_object_found"
-        },
-        {
-          "key": "og_launcher_fly_time",
-          "label": "Fly time (s)",
-          "type": "float",
-          "default": -1.0,
-          "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
-        },
-        {
-          "key": "og_launcher_mode",
-          "label": "Camera on launch",
-          "type": "enum",
-          "default": "shortfall",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
             {
-              "value": "shortfall",
-              "label": "Short fall (default)",
-              "lump_value": 0
+              "key": "og_spring_height",
+              "label": "Spring height (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "spring-height",
+                "type": "meters"
+              },
+              "write_if": "if_nonneg"
             },
             {
-              "value": "longfall",
-              "label": "Long fall",
-              "lump_value": 1
+              "key": "og_launcher_dest",
+              "label": "Destination object",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "alt-vector",
+                "type": "vector",
+                "pairs_with": "og_launcher_fly_time"
+              },
+              "note": "xyz of alt-vector is the resolved location of the destination object.",
+              "write_if": "if_object_found"
             },
             {
-              "value": "none",
-              "label": "No camera",
-              "lump_value": 2
+              "key": "og_launcher_fly_time",
+              "label": "Fly time (s)",
+              "type": "float",
+              "default": -1.0,
+              "note": "w component of alt-vector = fly_time_seconds × 300 (engine frames)."
+            },
+            {
+              "key": "og_launcher_mode",
+              "label": "Camera on launch",
+              "type": "enum",
+              "default": "shortfall",
+              "choices": [
+                {
+                  "value": "shortfall",
+                  "label": "Short fall (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "longfall",
+                  "label": "Long fall",
+                  "lump_value": 1
+                },
+                {
+                  "value": "none",
+                  "label": "No camera",
+                  "lump_value": 2
+                }
+              ],
+              "lump": {
+                "key": "mode",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
             }
-          ],
-          "lump": {
-            "key": "mode",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
+          ]
         }
       ],
       "color": [
@@ -8368,45 +8603,51 @@
           "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_spring_height",
-          "label": "Spring height (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "spring-height",
-            "type": "meters"
-          },
-          "write_if": "if_nonneg"
-        },
-        {
-          "key": "og_launcher_mode",
-          "label": "Camera on launch",
-          "type": "enum",
-          "default": "shortfall",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "shortfall",
-              "label": "Short fall (default)",
-              "lump_value": 0
+              "key": "og_spring_height",
+              "label": "Spring height (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "spring-height",
+                "type": "meters"
+              },
+              "write_if": "if_nonneg"
             },
             {
-              "value": "longfall",
-              "label": "Long fall",
-              "lump_value": 1
-            },
-            {
-              "value": "none",
-              "label": "No camera",
-              "lump_value": 2
+              "key": "og_launcher_mode",
+              "label": "Camera on launch",
+              "type": "enum",
+              "default": "shortfall",
+              "choices": [
+                {
+                  "value": "shortfall",
+                  "label": "Short fall (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "longfall",
+                  "label": "Long fall",
+                  "lump_value": 1
+                },
+                {
+                  "value": "none",
+                  "label": "No camera",
+                  "lump_value": 2
+                }
+              ],
+              "lump": {
+                "key": "mode",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
             }
-          ],
-          "lump": {
-            "key": "mode",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
+          ]
         }
       ],
       "color": [
@@ -8502,17 +8743,23 @@
       "glb": "levels/village3/minecartsteel-lod0.glb",
       "lumps": [],
       "code": "minecart.o",
-      "fields": [
+      "panels": [
         {
-          "key": "_index",
-          "type": "enum",
-          "label": "Animation",
-          "default": 0,
-          "choices": "MinecartAnim",
-          "lump": {
-            "key": "index",
-            "type": "int32"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_index",
+              "type": "enum",
+              "label": "Animation",
+              "default": 0,
+              "choices": "MinecartAnim",
+              "lump": {
+                "key": "index",
+                "type": "int32"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -8647,9 +8894,15 @@
         "tpage-662.go"
       ],
       "code": "steam-cap.o",
-      "fields": [
-        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
-        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+            {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+          ]
+        }
       ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
       "lumps": [
@@ -8676,11 +8929,17 @@
       "art_group": "lurkerm-piston-ag.go",
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
-      "fields": [
-        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 5.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
-        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"},
-        {"key": "og_height_bot", "label": "Bottom Height (m)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 0}, "write_if": "if_not_default"}, 
-        {"key": "og_height_top", "label": "Top Height (m)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 1}, "write_if": "if_not_default"} 
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 5.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+            {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"},
+            {"key": "og_height_bot", "label": "Bottom Height (m)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 0}, "write_if": "if_not_default"}, 
+            {"key": "og_height_top", "label": "Top Height (m)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "height-info", "type": "meters", "slot": 1}, "write_if": "if_not_default"} 
+          ]
+        }
       ],
       "glb": "levels/jungle/lurkerm-piston-geo.glb",
       "lumps": [
@@ -8772,10 +9031,16 @@
       "art_group": "grottopole-ag.go",
       "tpage_group": "Beach",
       "code": "beach-obs.o",
-      "fields": [
-        {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
-        {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
-        {"key": "og_num-positions", "label": "Number of positions", "type": "uint32", "default": 3, "lump": {"key": "num-positions", "type": "uint32"}, "write_if": "if_not_default"}  
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
+            {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
+            {"key": "og_num-positions", "label": "Number of positions", "type": "uint32", "default": 3, "lump": {"key": "num-positions", "type": "uint32"}, "write_if": "if_not_default"}  
+          ]
+        }
       ],
       "glb": "levels/beach/grottopole-lod1.glb",
       "lumps": [
@@ -8981,60 +9246,66 @@
       "glb": "levels/swamp/swamp-spike-lod0.glb",
       "code": "swamp-obs.o",
       "is_prop": true,
-      "fields": [
+      "panels": [
         {
-          "key": "og_sync_period",
-          "label": "Period (s)",
-          "type": "float",
-          "default": 5.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_x",
-          "label": "Scale X",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_y",
-          "label": "Scale Y",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_z",
-          "label": "Scale Z",
-          "type": "float",
-          "default": 1.0,
-          "min": 0.01,
-          "lump": {"key": "scale", "type": "float", "slot": 2},
-          "write_if": "always"
-        },
-        {
-          "key": "og_scale_w",
-          "label": "Scale W (keep at 1.0)",
-          "type": "float",
-          "default": 1.0,
-          "min": 1.0,
-          "max": 1.0,
-          "lump": {"key": "scale", "type": "float", "slot": 3},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "label": "Period (s)",
+              "type": "float",
+              "default": 5.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_x",
+              "label": "Scale X",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_y",
+              "label": "Scale Y",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_z",
+              "label": "Scale Z",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {"key": "scale", "type": "float", "slot": 2},
+              "write_if": "always"
+            },
+            {
+              "key": "og_scale_w",
+              "label": "Scale W (keep at 1.0)",
+              "type": "float",
+              "default": 1.0,
+              "min": 1.0,
+              "max": 1.0,
+              "lump": {"key": "scale", "type": "float", "slot": 3},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "lumps": [
@@ -9080,47 +9351,53 @@
           "description": "Two floats: 'base_speed_units random_range'. Controls spin rate."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_whirl_speed",
-          "label": "Base speed (Whirl at <11.12m)",
-          "type": "float",
-          "default": 8.0,
-          "lump": {
-            "key": "speed",
-            "type": "meters",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_whirl_var",
-          "label": "Alternative speed (Whirl at <11.12m)",
-          "type": "float",
-          "default": 35.0,
-          "lump": {
-            "key": "speed",
-            "type": "meters",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_period",
-          "label": "Period (s)",
-          "type": "float",
-          "default": 5.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_whirl_speed",
+              "label": "Base speed (Whirl at <11.12m)",
+              "type": "float",
+              "default": 8.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_whirl_var",
+              "label": "Alternative speed (Whirl at <11.12m)",
+              "type": "float",
+              "default": 35.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_period",
+              "label": "Period (s)",
+              "type": "float",
+              "default": 5.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -9312,18 +9589,24 @@
           "description": "Y-coordinate of water surface in raw game units (not meters). Fish positions itself 1m below. Required."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "_water-height-one",
-          "label": "Water height surface (m)",
-          "default": 0.0,
-          "type": "float",
-          "lump": {
-            "key": "water-height",
-            "type": "meters",
-            "slot": 0,
-            "write_if": "if_not_default"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "_water-height-one",
+              "label": "Water height surface (m)",
+              "default": 0.0,
+              "type": "float",
+              "lump": {
+                "key": "water-height",
+                "type": "meters",
+                "slot": 0,
+                "write_if": "if_not_default"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -9421,18 +9704,24 @@
           "required": false
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_nav-max-users",
-          "label": "Max Spawned Enemies (default 50)",
-          "type": "int",
-          "default": 50,
-          "min": 0,
-          "lump": {
-            "key": "nav-max-users",
-            "type": "int32"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_nav-max-users",
+              "label": "Max Spawned Enemies (default 50)",
+              "type": "int",
+              "default": 50,
+              "min": 0,
+              "lump": {
+                "key": "nav-max-users",
+                "type": "int32"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "lumps": [
@@ -9506,39 +9795,45 @@
           "description": "Max rats active at once. Range 1-4. Default 3. Needs 'path' waypoints set."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_num_lurkers",
-          "label": "Child count (default 3)",
-          "type": "int",
-          "default": 3,
-          "min": 0,
-          "lump": {
-            "key": "num-lurkers",
-            "type": "int32"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_crate_pickup",
-          "label": "Pickup",
-          "type": "enum",
-          "default": "eco-blue",
-          "choices": "CratePickups",
-          "lump": {
-            "key": "eco-info",
-            "type": "eco-info-picker",
-            "pairs_with": "og_crate_pickup_amount"
-          },
-          "write_if": "if_not_none"
-        },
-        {
-          "key": "og_crate_pickup_amount",
-          "label": "Amount",
-          "type": "int",
-          "default": 1,
-          "min": 1,
-          "max": 99
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Child count (default 3)",
+              "type": "int",
+              "default": 3,
+              "min": 0,
+              "lump": {
+                "key": "num-lurkers",
+                "type": "int32"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_crate_pickup",
+              "label": "Pickup",
+              "type": "enum",
+              "default": "eco-blue",
+              "choices": "CratePickups",
+              "lump": {
+                "key": "eco-info",
+                "type": "eco-info-picker",
+                "pairs_with": "og_crate_pickup_amount"
+              },
+              "write_if": "if_not_none"
+            },
+            {
+              "key": "og_crate_pickup_amount",
+              "label": "Amount",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "max": 99
+            }
+          ]
         }
       ],
       "color": [
@@ -9589,18 +9884,24 @@
           "description": "Offset the entire path: 'x y z' in raw game units. Default 0 0 0."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_fish_count",
-          "label": "Fish count",
-          "type": "int",
-          "default": 1,
-          "min": 1,
-          "lump": {
-            "key": "count",
-            "type": "uint32"
-          },
-          "write_if": "if_not_default"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_fish_count",
+              "label": "Fish count",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "lump": {
+                "key": "count",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
         }
       ],
       "color": [
@@ -9656,50 +9957,56 @@
           "description": "Chase speed in meters/sec. Default ~12m/s."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_shark_scale",
-          "label": "Scale",
-          "type": "float",
-          "default": 1.0,
-          "lump": {
-            "key": "scale",
-            "type": "float"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_shark_delay",
-          "label": "Delay (s)",
-          "type": "float",
-          "default": 1.0,
-          "lump": {
-            "key": "delay",
-            "type": "float"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_shark_distance",
-          "label": "Alert distance (m)",
-          "type": "float",
-          "default": 30.0,
-          "lump": {
-            "key": "distance",
-            "type": "meters"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_shark_speed",
-          "label": "Speed (m/s)",
-          "type": "float",
-          "default": 12.0,
-          "lump": {
-            "key": "speed",
-            "type": "meters"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_shark_scale",
+              "label": "Scale",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "scale",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_shark_delay",
+              "label": "Delay (s)",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "delay",
+                "type": "float"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_shark_distance",
+              "label": "Alert distance (m)",
+              "type": "float",
+              "default": 30.0,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_shark_speed",
+              "label": "Speed (m/s)",
+              "type": "float",
+              "default": 12.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -9738,18 +10045,24 @@
           "description": "Number of starfish children. Range 1–8. Default 3. Needs path waypoints."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_num_lurkers",
-          "label": "Child count",
-          "type": "int",
-          "default": -1,
-          "min": -1,
-          "lump": {
-            "key": "num-lurkers",
-            "type": "int32"
-          },
-          "write_if": "if_nonneg"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Child count",
+              "type": "int",
+              "default": -1,
+              "min": -1,
+              "lump": {
+                "key": "num-lurkers",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
         }
       ],
       "color": [
@@ -9991,28 +10304,34 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_orbit_scale",
-          "label": "Orbit scale",
-          "type": "float",
-          "default": 1.0,
-          "lump": {
-            "key": "scale",
-            "type": "float"
-          },
-          "write_if": "if_not_default"
-        },
-        {
-          "key": "og_orbit_timeout",
-          "label": "Orbit timeout (s)",
-          "type": "float",
-          "default": 10.0,
-          "lump": {
-            "key": "timeout",
-            "type": "float"
-          },
-          "write_if": "if_not_default"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_orbit_scale",
+              "label": "Orbit scale",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "scale",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_orbit_timeout",
+              "label": "Orbit timeout (s)",
+              "type": "float",
+              "default": 10.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
         }
       ],
       "color": [
@@ -10077,32 +10396,38 @@
           "description": "Travel range: 'down_units up_units'. Defaults '-8192 16384' (-2m down, +4m up). Raw units."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_sq_down",
-          "label": "Down travel (m)",
-          "type": "float",
-          "default": -2.0,
-          "lump": {
-            "key": "distance",
-            "type": "float",
-            "slot": 0,
-            "scale": 4096
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_sq_up",
-          "label": "Up travel (m)",
-          "type": "float",
-          "default": 4.0,
-          "lump": {
-            "key": "distance",
-            "type": "float",
-            "slot": 1,
-            "scale": 4096
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_sq_down",
+              "label": "Down travel (m)",
+              "type": "float",
+              "default": -2.0,
+              "lump": {
+                "key": "distance",
+                "type": "float",
+                "slot": 0,
+                "scale": 4096
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_sq_up",
+              "label": "Up travel (m)",
+              "type": "float",
+              "default": 4.0,
+              "lump": {
+                "key": "distance",
+                "type": "float",
+                "slot": 1,
+                "scale": 4096
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10145,19 +10470,25 @@
           "description": "Spline curve offset."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_bridge_variant",
-          "label": "Bridge Variant",
-          "type": "enum",
-          "default": "ropebridge-32",
-          "choices": "BridgeVariants",
-          "variant": true,
-          "lump": {
-            "key": "art-name",
-            "type": "symbol"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_bridge_variant",
+              "label": "Bridge Variant",
+              "type": "enum",
+              "default": "ropebridge-32",
+              "choices": "BridgeVariants",
+              "variant": true,
+              "lump": {
+                "key": "art-name",
+                "type": "symbol"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10177,35 +10508,41 @@
       "tpages": [],
       "code": "ogre-obs.o",
       "lumps": [],
-      "fields": [
+      "panels": [
         {
-          "key": "og_ogre-isle_variant",
-          "label": "Klaww Isles Variant",
-          "type": "enum",
-          "default": "ogre-isle-b",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "ogre-isle-b",
-              "label": "Isle B",
-              "etype": "ogre-isle-b",
-              "glb": "levels/ogre/ogre-isle-b-lod0.glb"
-            },
-            {
-              "value": "ogre-isle-c",
-              "label": "Isle C",
-              "etype": "ogre-isle-c",
-              "glb": "levels/ogre/ogre-isle-c-lod0.glb"
-            },
-            {
-              "value": "ogre-isle-d",
-              "label": "Isle D",
-              "etype": "ogre-isle-d",
-              "glb": "levels/ogre/ogre-isle-d-lod0.glb"
+              "key": "og_ogre-isle_variant",
+              "label": "Klaww Isles Variant",
+              "type": "enum",
+              "default": "ogre-isle-b",
+              "choices": [
+                {
+                  "value": "ogre-isle-b",
+                  "label": "Isle B",
+                  "etype": "ogre-isle-b",
+                  "glb": "levels/ogre/ogre-isle-b-lod0.glb"
+                },
+                {
+                  "value": "ogre-isle-c",
+                  "label": "Isle C",
+                  "etype": "ogre-isle-c",
+                  "glb": "levels/ogre/ogre-isle-c-lod0.glb"
+                },
+                {
+                  "value": "ogre-isle-d",
+                  "label": "Isle D",
+                  "etype": "ogre-isle-d",
+                  "glb": "levels/ogre/ogre-isle-d-lod0.glb"
+                }
+              ],
+              "variant": true,
+              "lump": {},
+              "write_if": "always"
             }
-          ],
-          "variant": true,
-          "lump": {},
-          "write_if": "always"
+          ]
         }
       ],
       "link_slots": [
@@ -10242,16 +10579,22 @@
           "description": "Steps variant. Values: A, B, C, D. Default: A."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_ogre-step_variant",
-          "label": "Klaww Steps Variant",
-          "type": "enum",
-          "default": "ogre-step-a",
-          "choices": "OgreStepVariants",
-          "variant": true,
-          "lump": {},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_ogre-step_variant",
+              "label": "Klaww Steps Variant",
+              "type": "enum",
+              "default": "ogre-step-a",
+              "choices": "OgreStepVariants",
+              "variant": true,
+              "lump": {},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "link_slots": [
@@ -10290,16 +10633,22 @@
       "parent": "prop",
       "tpages": [],
       "code": "citadel-obs.o",
-      "fields": [
+      "panels": [
         {
-          "key": "og_disc_variant",
-          "label": "Disc Platform Variant",
-          "type": "enum",
-          "default": "citb-disc-a",
-          "choices": "CitbDiscVariants",
-          "variant": true,
-          "lump": {},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_disc_variant",
+              "label": "Disc Platform Variant",
+              "type": "enum",
+              "default": "citb-disc-a",
+              "choices": "CitbDiscVariants",
+              "variant": true,
+              "lump": {},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10341,20 +10690,26 @@
           "description": "Cycle delay."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_move_speed",
-          "label": "Move speed (m/s)",
-          "type": "float",
-          "default_per_etype": {
-            "lavaballoon": 3.0,
-            "darkecobarrel": 15.0
-          },
-          "lump": {
-            "key": "speed",
-            "type": "meters"
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_move_speed",
+              "label": "Move speed (m/s)",
+              "type": "float",
+              "default_per_etype": {
+                "lavaballoon": 3.0,
+                "darkecobarrel": 15.0
+              },
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10395,56 +10750,62 @@
           "description": "Optional: array of spawn delay times in seconds. Replaces the 4 hardcoded defaults when set."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_move_speed",
-          "label": "Move speed (m/s)",
-          "type": "float",
-          "default_per_etype": {
-            "lavaballoon": 3.0,
-            "darkecobarrel": 15.0
-          },
-          "lump": {
-            "key": "speed",
-            "type": "meters"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_delay_one",
-          "label": "Delay One (m)",
-          "type": "float",
-          "default": 11.0,
-          "min": 0.0,
-          "lump": {"key": "delay", "type": "meters", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_delay_two",
-          "label": "Delay Two (m)",
-          "type": "float",
-          "default": 22.0,
-          "min": 0.0,
-          "lump": {"key": "delay", "type": "meters", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_delay_three",
-          "label": "Delay Three (m)",
-          "type": "float",
-          "default": 11.0,
-          "min": 0.0,
-          "lump": {"key": "delay", "type": "meters", "slot": 2},
-          "write_if": "always"
-        },
-        {
-          "key": "og_delay_four",
-          "label": "Delay Four (m)",
-          "type": "float",
-          "default": 33.0,
-          "min": 0.0,
-          "lump": {"key": "delay", "type": "meters", "slot": 3},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_move_speed",
+              "label": "Move speed (m/s)",
+              "type": "float",
+              "default_per_etype": {
+                "lavaballoon": 3.0,
+                "darkecobarrel": 15.0
+              },
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_delay_one",
+              "label": "Delay One (m)",
+              "type": "float",
+              "default": 11.0,
+              "min": 0.0,
+              "lump": {"key": "delay", "type": "meters", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_delay_two",
+              "label": "Delay Two (m)",
+              "type": "float",
+              "default": 22.0,
+              "min": 0.0,
+              "lump": {"key": "delay", "type": "meters", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_delay_three",
+              "label": "Delay Three (m)",
+              "type": "float",
+              "default": 11.0,
+              "min": 0.0,
+              "lump": {"key": "delay", "type": "meters", "slot": 2},
+              "write_if": "always"
+            },
+            {
+              "key": "og_delay_four",
+              "label": "Delay Four (m)",
+              "type": "float",
+              "default": 33.0,
+              "min": 0.0,
+              "lump": {"key": "delay", "type": "meters", "slot": 3},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10491,46 +10852,52 @@
           "description": "Elevator mode variant selector. Default 0, Static 1, Extra floor 2."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_elevator_mode",
-          "label": "Mode",
-          "type": "enum",
-          "default": "2floor",
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "2floor",
-              "label": "2 Floors (0 and 12m)",
-              "lump_value": 0
+              "key": "og_elevator_mode",
+              "label": "Mode",
+              "type": "enum",
+              "default": "2floor",
+              "choices": [
+                {
+                  "value": "2floor",
+                  "label": "2 Floors (0 and 12m)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "down",
+                  "label": "2 Floors on step (0 and -58.4m)",
+                  "lump_value": 1
+                },
+                {
+                  "value": "3floor",
+                  "label": "3 Floors (0, 12 and 24m)",
+                  "lump_value": 2
+                }
+              ],
+              "lump": {
+                "key": "mode",
+                "type": "uint32"
+              },
+              "write_if": "always"
             },
             {
-              "value": "down",
-              "label": "2 Floors on step (0 and -58.4m)",
-              "lump_value": 1
-            },
-            {
-              "value": "3floor",
-              "label": "3 Floors (0, 12 and 24m)",
-              "lump_value": 2
+              "key": "og_elevator_rot",
+              "label": "Rotation offset (°)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero",
+              "note": "NOTE: engine actually reads 'trans-offset' (3 floats X Y Z, see levels/maincave/maincave-obs.gc). Our addon currently writes 'rotoffset' which the engine ignores. To fix, we'd need to: (1) change this field to vector3, (2) update the property-setter + export pipeline, (3) migrate any existing scenes. Tracked for a future bug-fix commit."
             }
-          ],
-          "lump": {
-            "key": "mode",
-            "type": "uint32"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_elevator_rot",
-          "label": "Rotation offset (°)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
-          },
-          "write_if": "if_nonzero",
-          "note": "NOTE: engine actually reads 'trans-offset' (3 floats X Y Z, see levels/maincave/maincave-obs.gc). Our addon currently writes 'rotoffset' which the engine ignores. To fix, we'd need to: (1) change this field to vector3, (2) update the property-setter + export pipeline, (3) migrate any existing scenes. Tracked for a future bug-fix commit."
+          ]
         }
       ],
       "color": [
@@ -10567,53 +10934,59 @@
           "description": "Three floats: 'period_sec phase_fraction pause_sec'. Defaults: '4.0 0.0 2.0'. Phase offsets multiple pots."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_flame_shove",
-          "label": "Shove force (m)",
-          "type": "float",
-          "default": 2.0,
-          "lump": {
-            "key": "shove",
-            "type": "meters"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_flame_period",
-          "label": "Cycle period (s)",
-          "type": "float",
-          "default": 4.0,
-          "lump": {
-            "key": "cycle-speed",
-            "type": "float",
-            "slot": 0
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_flame_phase",
-          "label": "Cycle phase",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "cycle-speed",
-            "type": "float",
-            "slot": 1
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_flame_pause",
-          "label": "Cycle pause (s)",
-          "type": "float",
-          "default": 2.0,
-          "lump": {
-            "key": "cycle-speed",
-            "type": "float",
-            "slot": 2
-          },
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_flame_shove",
+              "label": "Shove force (m)",
+              "type": "float",
+              "default": 2.0,
+              "lump": {
+                "key": "shove",
+                "type": "meters"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_flame_period",
+              "label": "Cycle period (s)",
+              "type": "float",
+              "default": 4.0,
+              "lump": {
+                "key": "cycle-speed",
+                "type": "float",
+                "slot": 0
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_flame_phase",
+              "label": "Cycle phase",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "cycle-speed",
+                "type": "float",
+                "slot": 1
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_flame_pause",
+              "label": "Cycle pause (s)",
+              "type": "float",
+              "default": 2.0,
+              "lump": {
+                "key": "cycle-speed",
+                "type": "float",
+                "slot": 2
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -10669,9 +11042,15 @@
         "tpage-1312.go"
       ],
       "code": "maincave-obs.o",
-      "fields": [
-        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
-        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+            {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}
+          ]
+        }
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
       "lumps": [
@@ -10704,9 +11083,15 @@
         "tpage-1312.go"
       ],
       "code": "maincave-obs.o",
-      "fields": [
-        {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
-        {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
+            {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
+          ]
+        }
       ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
       "lumps": [
@@ -10807,19 +11192,25 @@
           "description": "Second task ID gate — if this task is complete, pontoon sinks. Default 0 (unused). Main task from entity perm."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_alt_task",
-          "label": "Linked Task",
-          "type": "enum",
-          "default": "none",
-          "choices": "GameTasks",
-          "lump": {
-            "key": "alt-task",
-            "type": "enum-uint32",
-            "format": "(game-task {value})"
-          },
-          "write_if": "if_not_none"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_alt_task",
+              "label": "Linked Task",
+              "type": "enum",
+              "default": "none",
+              "choices": "GameTasks",
+              "lump": {
+                "key": "alt-task",
+                "type": "enum-uint32",
+                "format": "(game-task {value})"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
         }
       ],
       "color": [
@@ -10878,18 +11269,24 @@
           "description": "Selects bone bridge variant and particle group. Values: 1, 2, 3, 7. Default 0 (no particles)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_bone_bridge_anim",
-          "label": "Animation index",
-          "type": "int",
-          "default": 0,
-          "min": 0,
-          "lump": {
-            "key": "animation-select",
-            "type": "uint32"
-          },
-          "write_if": "if_nonzero"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_bone_bridge_anim",
+              "label": "Animation index",
+              "type": "int",
+              "default": 0,
+              "min": 0,
+              "lump": {
+                "key": "animation-select",
+                "type": "uint32"
+              },
+              "write_if": "if_nonzero"
+            }
+          ]
         }
       ],
       "color": [
@@ -10933,30 +11330,36 @@
           "description": "Particle variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_breakaway_h1",
-          "label": "Height 1",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 0,
-            "pairs_with": "og_breakaway_h2"
-          },
-          "write_if": "if_any_nonzero"
-        },
-        {
-          "key": "og_breakaway_h2",
-          "label": "Height 2",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 1
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_breakaway_h1",
+              "label": "Height 1",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 0,
+                "pairs_with": "og_breakaway_h2"
+              },
+              "write_if": "if_any_nonzero"
+            },
+            {
+              "key": "og_breakaway_h2",
+              "label": "Height 2",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 1
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11000,30 +11403,36 @@
           "description": "Particle variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_breakaway_h1",
-          "label": "Height 1",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 0,
-            "pairs_with": "og_breakaway_h2"
-          },
-          "write_if": "if_any_nonzero"
-        },
-        {
-          "key": "og_breakaway_h2",
-          "label": "Height 2",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 1
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_breakaway_h1",
+              "label": "Height 1",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 0,
+                "pairs_with": "og_breakaway_h2"
+              },
+              "write_if": "if_any_nonzero"
+            },
+            {
+              "key": "og_breakaway_h2",
+              "label": "Height 2",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 1
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11067,30 +11476,36 @@
           "description": "Particle variant."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_breakaway_h1",
-          "label": "Height 1",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 0,
-            "pairs_with": "og_breakaway_h2"
-          },
-          "write_if": "if_any_nonzero"
-        },
-        {
-          "key": "og_breakaway_h2",
-          "label": "Height 2",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "height-info",
-            "type": "float",
-            "slot": 1
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_breakaway_h1",
+              "label": "Height 1",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 0,
+                "pairs_with": "og_breakaway_h2"
+              },
+              "write_if": "if_any_nonzero"
+            },
+            {
+              "key": "og_breakaway_h2",
+              "label": "Height 2",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "float",
+                "slot": 1
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11110,7 +11525,6 @@
       "parent": "process-drawable",
       "code": "water-h.o",
       "lumps": [],
-      "fields": [],
       "color": [
         0.2,
         0.4,
@@ -11176,17 +11590,23 @@
           "description": "Launch height in meters. Default ~11m."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_spring_height",
-          "label": "Bounce height (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "spring-height",
-            "type": "meters"
-          },
-          "write_if": "if_nonneg"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_spring_height",
+              "label": "Bounce height (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "spring-height",
+                "type": "meters"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
         }
       ],
       "color": [
@@ -11213,17 +11633,23 @@
           "description": "Launch height in meters. Default 11m."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_spring_height",
-          "label": "Bounce height (m)",
-          "type": "float",
-          "default": -1.0,
-          "lump": {
-            "key": "spring-height",
-            "type": "meters"
-          },
-          "write_if": "if_nonneg"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_spring_height",
+              "label": "Bounce height (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "spring-height",
+                "type": "meters"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
         }
       ],
       "color": [
@@ -11236,7 +11662,6 @@
     },
     {
       "etype": "oracle",
-      "panel": "task-gated",
       "schema_export": true,
       "label": "Oracle",
       "category": "NPCs",
@@ -11259,19 +11684,26 @@
           "description": "Second orb task ID (game-task enum value). For two-orb oracle. Default 0 (one orb only). First task from entity perm."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "task-gated", "show-panel": true},
         {
-          "key": "og_alt_task",
-          "label": "Linked Task",
-          "type": "enum",
-          "default": "none",
-          "choices": "GameTasks",
-          "lump": {
-            "key": "alt-task",
-            "type": "enum-uint32",
-            "format": "(game-task {value})"
-          },
-          "write_if": "if_not_none"
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_alt_task",
+              "label": "Linked Task",
+              "type": "enum",
+              "default": "none",
+              "choices": "GameTasks",
+              "lump": {
+                "key": "alt-task",
+                "type": "enum-uint32",
+                "format": "(game-task {value})"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
         }
       ],
       "color": [
@@ -11374,53 +11806,59 @@
           "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_door_auto_close",
-          "label": "Auto-close",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 4
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_one_way",
-          "label": "One-way",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_starts_open",
-          "label": "Starts open",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "perm-status",
-            "type": "uint32"
-          },
-          "value_if_true": 64,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_door_state_lock",
-          "type": "const",
-          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 1,
-            "set_if_link": "state-actor"
-          }
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_door_auto_close",
+              "label": "Auto-close",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 4
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_one_way",
+              "label": "One-way",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 8
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_starts_open",
+              "label": "Starts open",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "perm-status",
+                "type": "uint32"
+              },
+              "value_if_true": 64,
+              "write_if": "if_true"
+            },
+            {
+              "key": "_door_state_lock",
+              "type": "const",
+              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 1,
+                "set_if_link": "state-actor"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11450,7 +11888,6 @@
     },
     {
       "etype": "sidedoor",
-      "panel": "eco-door",
       "label": "Side Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -11486,53 +11923,60 @@
           "description": "Height parameters: 2 floats."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "eco-door", "show-panel": true},
         {
-          "key": "og_door_auto_close",
-          "label": "Auto-close",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 4
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_one_way",
-          "label": "One-way",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_starts_open",
-          "label": "Starts open",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "perm-status",
-            "type": "uint32"
-          },
-          "value_if_true": 64,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_door_state_lock",
-          "type": "const",
-          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 1,
-            "set_if_link": "state-actor"
-          }
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_door_auto_close",
+              "label": "Auto-close",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 4
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_one_way",
+              "label": "One-way",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 8
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_starts_open",
+              "label": "Starts open",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "perm-status",
+                "type": "uint32"
+              },
+              "value_if_true": 64,
+              "write_if": "if_true"
+            },
+            {
+              "key": "_door_state_lock",
+              "type": "const",
+              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 1,
+                "set_if_link": "state-actor"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11561,7 +12005,6 @@
     },
     {
       "etype": "rounddoor",
-      "panel": "eco-door",
       "label": "Round Door (Misty)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -11574,53 +12017,60 @@
           "description": "Travel distance."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "eco-door", "show-panel": true},
         {
-          "key": "og_door_auto_close",
-          "label": "Auto-close",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 4
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_one_way",
-          "label": "One-way",
-          "type": "bool",
-          "default": false,
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 8
-          },
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_starts_open",
-          "label": "Starts open",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "perm-status",
-            "type": "uint32"
-          },
-          "value_if_true": 64,
-          "write_if": "if_true"
-        },
-        {
-          "key": "_door_state_lock",
-          "type": "const",
-          "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-          "lump_bit": {
-            "key": "flags",
-            "type": "uint32",
-            "bit_value": 1,
-            "set_if_link": "state-actor"
-          }
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_door_auto_close",
+              "label": "Auto-close",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 4
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_one_way",
+              "label": "One-way",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 8
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_starts_open",
+              "label": "Starts open",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "perm-status",
+                "type": "uint32"
+              },
+              "value_if_true": 64,
+              "write_if": "if_true"
+            },
+            {
+              "key": "_door_state_lock",
+              "type": "const",
+              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 1,
+                "set_if_link": "state-actor"
+              }
+            }
+          ]
         }
       ],
       "color": [
@@ -11633,7 +12083,6 @@
     },
     {
       "etype": "launcherdoor",
-      "panel": "launcherdoor",
       "schema_export": true,
       "label": "Launcher Door",
       "category": "Buttons and Doors",
@@ -11647,18 +12096,25 @@
           "description": "Level continue point name set when door is passed through. e.g. \"village1-hut\"."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "launcherdoor", "show-panel": true},
         {
-          "key": "og_continue_name",
-          "label": "Continue point name",
-          "type": "string",
-          "default": "",
-          "lump": {
-            "key": "continue-name",
-            "type": "string",
-            "bare": true
-          },
-          "write_if": "if_non_empty"
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_continue_name",
+              "label": "Continue point name",
+              "type": "string",
+              "default": "",
+              "lump": {
+                "key": "continue-name",
+                "type": "string",
+                "bare": true
+              },
+              "write_if": "if_non_empty"
+            }
+          ]
         }
       ],
       "color": [
@@ -11671,7 +12127,6 @@
     },
     {
       "etype": "sun-iris-door",
-      "panel": "sun-iris-door",
       "schema_export": true,
       "label": "Iris Door (Sunken)",
       "category": "Buttons and Doors",
@@ -11700,30 +12155,37 @@
           "description": "Open-position offset (3 floats X Y Z meters)."
         }
       ],
-      "fields": [
+      "panels": [
+        {"panel": "sun-iris-door", "show-panel": true},
         {
-          "key": "og_door_proximity",
-          "label": "Opens on proximity",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "proximity",
-            "type": "uint32"
-          },
-          "value_if_true": 1,
-          "write_if": "if_true"
-        },
-        {
-          "key": "og_door_timeout",
-          "label": "Auto-close timeout (s)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "lump": {
-            "key": "timeout",
-            "type": "float"
-          },
-          "write_if": "if_positive"
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_door_proximity",
+              "label": "Opens on proximity",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "proximity",
+                "type": "uint32"
+              },
+              "value_if_true": 1,
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_timeout",
+              "label": "Auto-close timeout (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_positive"
+            }
+          ]
         }
       ],
       "color": [
@@ -11764,18 +12226,24 @@
           "description": "Previous button in a chain (for grouped buttons)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_button_timeout",
-          "label": "Auto-release timeout (s)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "lump": {
-            "key": "timeout",
-            "type": "float"
-          },
-          "write_if": "if_positive"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_button_timeout",
+              "label": "Auto-release timeout (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_positive"
+            }
+          ]
         }
       ],
       "color": [
@@ -11846,28 +12314,34 @@
           "description": "Y-axis rotation. Default 0."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_shover_force",
-          "label": "Shove force (m)",
-          "type": "float",
-          "default": 3.0,
-          "lump": {
-            "key": "shove",
-            "type": "meters"
-          },
-          "write_if": "always"
-        },
-        {
-          "key": "og_shover_rot",
-          "label": "Rotation offset (°)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {
-            "key": "rotoffset",
-            "type": "degrees"
-          },
-          "write_if": "if_nonzero"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_shover_force",
+              "label": "Shove force (m)",
+              "type": "float",
+              "default": 3.0,
+              "lump": {
+                "key": "shove",
+                "type": "meters"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_shover_rot",
+              "label": "Rotation offset (°)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero"
+            }
+          ]
         }
       ],
       "color": [
@@ -11966,18 +12440,24 @@
           "description": "Set to 1 to enable particle effects. Default 0 (off)."
         }
       ],
-      "fields": [
+      "panels": [
         {
-          "key": "og_turbine_particles",
-          "label": "Particles on",
-          "type": "bool",
-          "default": false,
-          "lump": {
-            "key": "particle-select",
-            "type": "uint32"
-          },
-          "value_if_true": 1,
-          "write_if": "if_true"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_turbine_particles",
+              "label": "Particles on",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "particle-select",
+                "type": "uint32"
+              },
+              "value_if_true": 1,
+              "write_if": "if_true"
+            }
+          ]
         }
       ],
       "color": [
@@ -12309,43 +12789,49 @@
       "art_group": "pusher-ag.go",
       "glb": "levels/rolling/pusher-lod0.glb",
       "code": "rolling-obs.o",
-      "fields": [
+      "panels": [
         {
-          "key": "og_sync_period",
-          "label": "Period (s)",
-          "type": "float",
-          "default": 4.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_ease_in",
-          "label": "Pause while extended (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "max": 1.0,
-          "lump": {"key": "sync", "type": "float", "slot": 2},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_ease_out",
-          "label": "Pause while retracted (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "max": 1.0,
-          "lump": {"key": "sync", "type": "float", "slot": 3},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "label": "Period (s)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_ease_in",
+              "label": "Pause while extended (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {"key": "sync", "type": "float", "slot": 2},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_ease_out",
+              "label": "Pause while retracted (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {"key": "sync", "type": "float", "slot": 3},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [
@@ -12365,71 +12851,77 @@
       "art_group": "snowpusher-ag.go",
       "glb": "levels/snow/snowpusher-lod0.glb",
       "code": "snow-obs.o",
-      "fields": [
+      "panels": [
         {
-          "key": "og_pusher_mode",
-          "label": "Collision and sound mode",
-          "type": "enum",
-          "default": 0,
-          "choices": [
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
             {
-              "value": "0",
-              "label": "Collision ON (default)",
-              "lump_value": 0
+              "key": "og_pusher_mode",
+              "label": "Collision and sound mode",
+              "type": "enum",
+              "default": 0,
+              "choices": [
+                {
+                  "value": "0",
+                  "label": "Collision ON (default)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "1",
+                  "label": "Collision OFF",
+                  "lump_value": 1
+                },
+                {
+                  "value": "2",
+                  "label": "Collision OFF (alternative sound)",
+                  "lump_value": 2
+                }
+              ],
+              "lump": {
+                "key": "mode",
+                "type": "uint32"
+              },
+              "write_if": "if_nonzero"
             },
             {
-              "value": "1",
-              "label": "Collision OFF",
-              "lump_value": 1
+              "key": "og_sync_period",
+              "label": "Period (s)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
             },
             {
-              "value": "2",
-              "label": "Collision OFF (alternative sound)",
-              "lump_value": 2
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_ease_in",
+              "label": "Pause while extended (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {"key": "sync", "type": "float", "slot": 2},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_ease_out",
+              "label": "Pause while retracted (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {"key": "sync", "type": "float", "slot": 3},
+              "write_if": "always"
             }
-          ],
-          "lump": {
-            "key": "mode",
-            "type": "uint32"
-          },
-          "write_if": "if_nonzero"
-        },
-        {
-          "key": "og_sync_period",
-          "label": "Period (s)",
-          "type": "float",
-          "default": 4.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_ease_in",
-          "label": "Pause while extended (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "max": 1.0,
-          "lump": {"key": "sync", "type": "float", "slot": 2},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_ease_out",
-          "label": "Pause while retracted (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "min": 0.0,
-          "max": 1.0,
-          "lump": {"key": "sync", "type": "float", "slot": 3},
-          "write_if": "always"
+          ]
         }
       ],
       "color": [
@@ -12502,23 +12994,29 @@
       "art_group": "citb-firehose-ag.go",
       "glb": "levels/citadel/citb-firehose-lod0.glb",
       "code": "citb-plat.o",
-      "fields": [
+      "panels": [
         {
-          "key": "og_sync_period",
-          "label": "Period (s)",
-          "type": "float",
-          "default": 4.0,
-          "min": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 0},
-          "write_if": "always"
-        },
-        {
-          "key": "og_sync_phase",
-          "label": "Phase (0-1)",
-          "type": "float",
-          "default": 0.0,
-          "lump": {"key": "sync", "type": "float", "slot": 1},
-          "write_if": "always"
+          "panel": "custom-fields",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "label": "Period (s)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 0},
+              "write_if": "always"
+            },
+            {
+              "key": "og_sync_phase",
+              "label": "Phase (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {"key": "sync", "type": "float", "slot": 1},
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "color": [

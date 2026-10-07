@@ -15,7 +15,12 @@ def _load_fields():
             raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.S)
             raw = re.sub(r'(?m)//.*$', '', raw)
             db = json.loads(raw)
-            return ({a["etype"]: a.get("fields", []) for a in db["Actors"]},
+            def _fields(a):  # custom-fields panel (older DBs: "fields")
+                for p in a.get("panels", []):
+                    if p.get("panel") == "custom-fields":
+                        return p.get("fields", [])
+                return a.get("fields", [])
+            return ({a["etype"]: _fields(a) for a in db["Actors"]},
                     {"CratePickups": db.get("CratePickups", [])},
                     db.get("TraitFields", {}),
                     {a["etype"]: a for a in db["Actors"]})
