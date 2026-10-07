@@ -60,6 +60,7 @@ from ..utils import (
     _draw_wiki_preview,
 )
 from .. import model_preview as _mp
+from .. import db as _db
 import re as _re
 
 
@@ -79,8 +80,11 @@ class OG_OT_SetActorLink(Operator):
     lump_key:     bpy.props.StringProperty()
     slot_index:   bpy.props.IntProperty(default=0)
     target_name:  bpy.props.StringProperty()
+    append:       bpy.props.BoolProperty(default=False,
+        description="Add to an allow-multiple slot instead of replacing it")
 
     def execute(self, ctx):
+        from ..data import _actor_add_multi_link
         obj = ctx.scene.objects.get(self.source_name)
         if not obj:
             self.report({"ERROR"}, f"Source '{self.source_name}' not found")
@@ -89,8 +93,21 @@ class OG_OT_SetActorLink(Operator):
         if not target:
             self.report({"ERROR"}, f"Target '{self.target_name}' not found")
             return {"CANCELLED"}
-        _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
-        self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}[{self.slot_index}]] → {self.target_name}")
+        if self.append:
+            if not _actor_add_multi_link(obj, self.lump_key, self.slot_index, self.target_name):
+                self.report({"INFO"}, f"{self.target_name} is already linked")
+                return {"CANCELLED"}
+        else:
+            _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
+        # Unexpected types are allowed, with a warning (they may not work in game).
+        src_et = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
+        tgt_et = target.name.split("_", 2)[1] if target.name.count("_") >= 2 else ""
+        slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
+        if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
+            self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
+                                     f"{', '.join(slot.get('accepts') or [])} — it may not work in game")
+        else:
+            self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}
 
 class OG_OT_ToggleDoorFlag(Operator):

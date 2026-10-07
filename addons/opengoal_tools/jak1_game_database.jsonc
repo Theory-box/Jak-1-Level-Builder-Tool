@@ -8929,38 +8929,12 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Other spikes part of the same group",
+              "label": "Other spikes of the same group",
               "accepts": [
                 "spike"
               ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "Other spikes part of the same group",
-              "accepts": [
-                "spike"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 2,
-              "label": "Other spikes part of the same group",
-              "accepts": [
-                "spike"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 3,
-              "label": "Other spikes part of the same group",
-              "accepts": [
-                "spike"
-              ],
-              "required": false
+              "required": false,
+              "allow-multiple": true
             }
           ]
         }
@@ -9914,38 +9888,12 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Spider Egg or vent 0",
+              "label": "Spider eggs / vents",
               "accepts": [
                 "any"
               ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "Spider Egg or vent 1",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 2,
-              "label": "Spider Egg or vent 2",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 3,
-              "label": "Spider Egg or vent 3",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "required": false,
+              "allow-multiple": true
             }
           ]
         },
@@ -13336,38 +13284,12 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Helix button 0",
+              "label": "Helix buttons",
               "accepts": [
                 "helix-button"
               ],
-              "required": true
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "Helix button 1",
-              "accepts": [
-                "helix-button"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 2,
-              "label": "Helix button 2",
-              "accepts": [
-                "helix-button"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 3,
-              "label": "Helix button 3",
-              "accepts": [
-                "helix-button"
-              ],
-              "required": false
+              "required": true,
+              "allow-multiple": true
             }
           ]
         }

@@ -847,13 +847,19 @@ class OG_OT_ClearActorLink(Operator):
     source_name: bpy.props.StringProperty()
     lump_key:    bpy.props.StringProperty()
     slot_index:  bpy.props.IntProperty(default=0)
+    first_slot:  bpy.props.IntProperty(default=-1,
+        description="allow-multiple slot start: re-pack the list after removing")
 
     def execute(self, ctx):
         obj = ctx.scene.objects.get(self.source_name)
         if not obj:
             self.report({"ERROR"}, f"Source '{self.source_name}' not found")
             return {"CANCELLED"}
-        _actor_remove_link(obj, self.lump_key, self.slot_index)
+        if self.first_slot >= 0:
+            from ..data import _actor_remove_multi_link
+            _actor_remove_multi_link(obj, self.lump_key, self.first_slot, self.slot_index)
+        else:
+            _actor_remove_link(obj, self.lump_key, self.slot_index)
         self.report({"INFO"}, f"Cleared {self.source_name} [{self.lump_key}[{self.slot_index}]]")
         return {"FINISHED"}
 

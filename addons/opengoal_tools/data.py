@@ -615,6 +615,32 @@ def _actor_remove_link(obj, lump_key, slot_index):
     return False
 
 
+def _actor_multi_links(obj, lump_key, first_slot):
+    """Entries of an "allow-multiple" slot: lump_key entries with slot_index
+    >= first_slot, in order."""
+    return sorted((e for e in (_actor_links(obj) or []) if e.lump_key == lump_key and e.slot_index >= first_slot),
+                  key=lambda e: e.slot_index)
+
+
+def _actor_add_multi_link(obj, lump_key, first_slot, target_name):
+    """Append target to an "allow-multiple" slot (next free index). Returns
+    False if it's already linked there."""
+    ents = _actor_multi_links(obj, lump_key, first_slot)
+    if any(e.target_name == target_name for e in ents):
+        return False
+    nxt = (ents[-1].slot_index + 1) if ents else first_slot
+    _actor_set_link(obj, lump_key, nxt, target_name)
+    return True
+
+
+def _actor_remove_multi_link(obj, lump_key, first_slot, slot_index):
+    """Remove one entry of an "allow-multiple" slot and close the gap so the
+    exported list stays in order."""
+    _actor_remove_link(obj, lump_key, slot_index)
+    for i, e in enumerate(_actor_multi_links(obj, lump_key, first_slot)):
+        e.slot_index = first_slot + i
+
+
 def _build_actor_link_lumps(obj, etype):
     """Build dict of lump_key → ["string", name0, name1, ...] for all set links."""
     slots = _actor_link_slots(etype)

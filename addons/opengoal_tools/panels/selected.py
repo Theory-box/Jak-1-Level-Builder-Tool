@@ -948,68 +948,93 @@ def _draw_actor_links(layout, obj, scene, etype):
         box.label(text=lkey, icon="LINKED")
 
         for (sidx, label, accepted, required) in key_slots:
-            entry = _actor_get_link(obj, lkey, sidx)
-            current_name = entry.target_name if entry else ""
-            current_obj  = scene.objects.get(current_name) if current_name else None
+            _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors)
 
-            row = box.row(align=True)
 
-            # Slot label
-            req_mark = " *" if required else ""
-            row.label(text=f"[{sidx}] {label}{req_mark}")
+def _link_target_etype(o):
+    parts = o.name.split("_", 2)
+    return parts[1] if len(parts) >= 3 else ""
 
-            if current_obj:
-                # Linked — show name, jump-to, clear buttons
-                row2 = box.row(align=True)
-                row2.label(text=current_name, icon="CHECKMARK")
-                op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
-                op.obj_name = current_name
-                op = row2.operator("og.clear_actor_link", text="", icon="X")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
-            elif current_name:
-                # Name stored but object missing from scene
-                row2 = box.row(align=True)
-                row2.alert = True
-                row2.label(text=f"⚠ missing: {current_name}", icon="ERROR")
-                op = row2.operator("og.clear_actor_link", text="", icon="X")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
+
+def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=()):
+    """One Link button per shift-selected actor. Types outside "accepts"
+    (or their parent types) still link, flagged with a warning."""
+    cands = [o for o in sel_actors if o.name not in skip]
+    if not cands:
+        hint = box.row(); hint.enabled = False
+        hint.label(text="Shift-select target(s) then click Link →", icon="INFO")
+        return
+    for tgt in cands[:6]:
+        ok = _db.link_accepts(accepted, _link_target_etype(tgt))
+        row = box.row()
+        if not ok:
+            row.alert = True
+        op = row.operator("og.set_actor_link",
+                          text=(f"{'Add' if append else 'Link'} → {tgt.name}" + ("" if ok else "  (unexpected type)")),
+                          icon="LINKED" if ok else "ERROR")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+        op.target_name = tgt.name; op.append = append
+    if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
+        hint = box.row(); hint.enabled = False
+        hint.label(text=f"  Expected: {', '.join(accepted)} — others may not work", icon="INFO")
+    if len(cands) > 6:
+        box.label(text=f"... and {len(cands) - 6} more selected")
+
+
+def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors):
+    from ..data import _actor_multi_links
+    multi = bool(_db.link_slot(etype, lkey, sidx).get("allow-multiple"))
+    row = box.row(align=True)
+    req_mark = " *" if required else ""
+    row.label(text=f"[{sidx}{'+' if multi else ''}] {label}{req_mark}")
+
+    if multi:
+        ents = _actor_multi_links(obj, lkey, sidx)
+        for e in ents:
+            r2 = box.row(align=True)
+            tgt = scene.objects.get(e.target_name)
+            if tgt is None:
+                r2.alert = True
+                r2.label(text=f"⚠ missing: {e.target_name}", icon="ERROR")
             else:
-                # Not set
-                row2 = box.row(align=True)
-                row2.enabled = False
-                req_text = "Required — not set" if required else "Optional — not set"
-                row2.label(text=req_text, icon="ERROR" if required else "DOT")
+                ok = _db.link_accepts(accepted, _link_target_etype(tgt))
+                r2.label(text=e.target_name + ("" if ok else "  (unexpected type)"),
+                         icon="CHECKMARK" if ok else "ERROR")
+                op = r2.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = e.target_name
+            op = r2.operator("og.clear_actor_link", text="", icon="X")
+            op.source_name = obj.name; op.lump_key = lkey; op.slot_index = e.slot_index; op.first_slot = sidx
+        if not ents:
+            r2 = box.row(); r2.enabled = False
+            r2.label(text=("Required — none linked" if required else "Optional — none linked"),
+                     icon="ERROR" if required else "DOT")
+        _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=True,
+                           skip={e.target_name for e in ents})
+        return
 
-            # Link button: visible when one compatible actor is shift-selected
-            compatible = [
-                o for o in sel_actors
-                if accepted == ["any"] or
-                   (len(o.name.split("_", 2)) >= 3 and o.name.split("_", 2)[1] in accepted)
-            ]
-            if len(compatible) == 1:
-                tgt = compatible[0]
-                op = box.operator("og.set_actor_link",
-                                  text=f"Link → {tgt.name}", icon="LINKED")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
-                op.target_name = tgt.name
-            elif len(sel_actors) > 0 and len(compatible) == 0:
-                hint = box.row()
-                hint.enabled = False
-                hint.label(text=f"Selected actor not valid for this slot", icon="INFO")
-                hint2 = box.row()
-                hint2.enabled = False
-                hint2.label(text=f"  Accepted: {', '.join(accepted)}")
-            else:
-                hint = box.row()
-                hint.enabled = False
-                hint.label(text="Shift-select target then click Link →", icon="INFO")
-
+    entry = _actor_get_link(obj, lkey, sidx)
+    current_name = entry.target_name if entry else ""
+    current_obj  = scene.objects.get(current_name) if current_name else None
+    if current_obj:
+        row2 = box.row(align=True)
+        ok = _db.link_accepts(accepted, _link_target_etype(current_obj))
+        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "ERROR")
+        op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        op.obj_name = current_name
+        op = row2.operator("og.clear_actor_link", text="", icon="X")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+    elif current_name:
+        row2 = box.row(align=True)
+        row2.alert = True
+        row2.label(text=f"⚠ missing: {current_name}", icon="ERROR")
+        op = row2.operator("og.clear_actor_link", text="", icon="X")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+    else:
+        row2 = box.row(align=True)
+        row2.enabled = False
+        req_text = "Required — not set" if required else "Optional — not set"
+        row2.label(text=req_text, icon="ERROR" if required else "DOT")
+    _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=False,
+                       skip={current_name} if current_obj else ())
 
 
 class OG_PT_SpawnSettings(Panel):

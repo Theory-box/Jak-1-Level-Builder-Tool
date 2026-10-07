@@ -163,13 +163,26 @@ def check_actor_links(scene):
                     issues.append(_issue("WARNING",
                         f"'{o.name}' ({et}): required link slot '{lump_key}' is unset.",
                         o.name))
+        slots = list(_actor_link_slots(et))
         for lk in getattr(o, "og_actor_links", []):
             if not lk.target_name.strip():
                 continue
-            if objects.get(lk.target_name) is None:
+            tgt = objects.get(lk.target_name)
+            if tgt is None:
                 issues.append(_issue("ERROR",
                     f"'{o.name}' ({et}): link '{lk.lump_key}' points to "
                     f"'{lk.target_name}' which does not exist.", o.name))
+                continue
+            # the slot this entry belongs to (allow-multiple slots cover later indices)
+            cand = [s for s in slots if s[0] == lk.lump_key and s[1] <= lk.slot_index]
+            if not cand:
+                continue
+            accepts = max(cand, key=lambda s: s[1])[3]
+            t_et = _etype(tgt) or ""
+            if t_et and not _db.link_accepts(accepts, t_et):
+                issues.append(_issue("WARNING",
+                    f"'{o.name}' ({et}): link '{lk.lump_key}' → '{lk.target_name}' ({t_et}) is not an "
+                    f"expected type ({', '.join(accepts)}). It may not work in game.", o.name))
     return issues
 
 

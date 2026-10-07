@@ -674,6 +674,24 @@ def supports_aggro_trigger(etype: str) -> bool:
     return has_panel(etype, "aggro-trigger")
 
 
+def link_accepts(accepted, target_etype: str) -> bool:
+    """True when `target_etype` fits a link slot's "accepts" list: "any"
+    anywhere in the list, the etype itself, or any of its parent types
+    (accepts ["basebutton"] also takes warp-gate-switch, a basebutton child)."""
+    acc = list(accepted or [])
+    if not acc or "any" in acc or target_etype in acc:
+        return True
+    return any(p.get("etype") in acc for p in parent_chain(target_etype))
+
+
+def link_slot(etype: str, lump_key: str, slot: int) -> dict:
+    """The slot dict ({} if none) — e.g. to read "allow-multiple"."""
+    for s in link_slots(etype):
+        if s.get("lump_key") == lump_key and s.get("slot", 0) == slot:
+            return s
+    return {}
+
+
 def link_slots(etype: str) -> list[dict]:
     """The "actor-link" panel's "slots" (lump_key, slot, label, accepts, required)."""
     return list(panel_option(etype, "actor-link", "slots", []) or []) if panel_exports(etype, "actor-link") else []
