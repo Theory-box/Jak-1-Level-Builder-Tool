@@ -526,6 +526,12 @@ def _set_include_text_live(self, value):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is not None:
         col["og_include_text"] = str(value)
+        # A freshly made (empty) text gets the commented template right away.
+        txt = bpy.data.texts.get(str(value)) if value else None
+        if txt is not None and not txt.as_string().strip():
+            from .export.includes import TEMPLATE
+            txt.from_string(TEMPLATE)
+            txt.use_fake_user = True
 
 
 def _on_active_level_changed(self, context):

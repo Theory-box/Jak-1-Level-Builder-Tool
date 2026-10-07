@@ -169,6 +169,8 @@ class OG_PT_LevelSettings(Panel):
             txt = bpy.data.texts.get(props.include_text) if props.include_text else None
             if txt is None:
                 box.label(text="Pick or create an include text", icon="INFO")
+            elif not txt.as_string().strip():
+                box.operator("og.include_template", text="Insert Template", icon="FILE_TEXT")
             else:
                 data, errs = _inc.parse(txt.as_string())
                 st = box.column(); st.scale_y = 0.8

@@ -622,9 +622,16 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     _ag_names += [g for g in _incl["json_ag"] if g not in _ag_names]
     _textures = list(_textures) + [t for t in _incl["json_texture"] if t not in _textures]
     ambients = list(ambients) + _incl["ambients"]
-    if any(_incl[k] for k in ("json_ag", "json_texture", "actors", "ambients")):
+    if _incl["cameras"]:
+        # Included cameras go in with either camera system; same no-actor
+        # guard as above (build_level crashes on cameras without actors).
+        if all_actors or _incl["actors"]:
+            cameras = list(cameras) + _incl["cameras"]
+        else:
+            log(f"  [include] WARNING: {len(_incl['cameras'])} included camera(s) skipped — the level has no actors")
+    if any(_incl[k] for k in ("json_ag", "json_texture", "actors", "ambients", "cameras")):
         log(f"  [include] .jsonc: +{len(_incl['json_ag'])} art groups, +{len(_incl['json_texture'])} textures, "
-            f"+{len(_incl['actors'])} actors, +{len(_incl['ambients'])} ambients")
+            f"+{len(_incl['actors'])} actors, +{len(_incl['ambients'])} ambients, +{len(_incl['cameras'])} cameras")
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",

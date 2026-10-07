@@ -11,6 +11,8 @@
 #                 ("levels/my-level/my-code.gc" or ["file.gc", "dep"])
 #   actors        actor objects copied as-is into the .jsonc "actors"
 #   ambients      ambient objects copied as-is into the .jsonc "ambients"
+#   cameras       built-in camera objects copied as-is into the .jsonc "cameras"
+#                 (OpenGOAL v0.3.4+)
 #
 # level-info.gc and game.gp entries of OTHER levels are never touched by an
 # export (each level only replaces its own block), so there are no keys for
@@ -21,7 +23,7 @@ import re
 
 import bpy
 
-KEYS = ("gd", "json_ag", "json_texture", "goal_src", "actors", "ambients")
+KEYS = ("gd", "json_ag", "json_texture", "goal_src", "actors", "ambients", "cameras")
 
 TEMPLATE = """// Always-included content for this level (OpenGOAL Level Tools).
 // Everything here is ADDED to what the actors in the .blend already need.
@@ -54,6 +56,24 @@ TEMPLATE = """// Always-included content for this level (OpenGOAL Level Tools).
   ],
   // Ambients copied as-is into the level .jsonc
   "ambients": [
+    // {
+    //   "trans": [0.0, 2.0, 0.0, 10.0], "bsphere": [0.0, 2.0, 0.0, 15.0],
+    //   "lump": {"name": "included-ambient-0", "type": "'hint", "text-id": ["enum-uint32", "(text-id fuel-cell)"], "play-mode": "'notice"}
+    // },
+  ],
+  // Built-in cameras copied as-is into the level .jsonc (OpenGOAL v0.3.4+)
+  "cameras": [
+    // {
+    //   "trans": [17.26, 9.0, 13.2], "quat": [0, 1, 0, 0],
+    //   "lump": {
+    //     "name": "included-cam-0",
+    //     "flags": ["enum-uint32", "(cam-slave-options SAME_SIDE)"],
+    //     "pivot": ["vector3m", [15.0761, 2.6482, 25.548]],
+    //     "interpTime": ["float", 1.0],
+    //     // volume planes [nx, ny, nz, d] — Jak inside all of them = camera active
+    //     "vol": ["vector-vol@0", [-0.09, 0.03, 0.996, 32.5], [-0.996, 0.007, -0.09, -8.7]]
+    //   }
+    // },
   ]
 }
 """
@@ -131,7 +151,7 @@ def parse(text: str) -> tuple[dict, list[str]]:
             data["goal_src"].append((v[0].strip(), v[1].strip()))
         else:
             errors.append(f"'goal_src': {v!r} must be a path or [path, dependency]")
-    for key in ("actors", "ambients"):
+    for key in ("actors", "ambients", "cameras"):
         for i, v in enumerate(raw.get(key) or []):
             if not isinstance(v, dict):
                 errors.append(f"'{key}' #{i}: must be an object {{...}}"); continue

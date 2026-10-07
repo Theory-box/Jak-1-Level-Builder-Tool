@@ -796,6 +796,27 @@ class OG_OT_IncludeCreate(Operator):
         return {"FINISHED"}
 
 
+class OG_OT_IncludeTemplate(Operator):
+    """Fill the selected (empty) include text with the commented template
+    that shows every key and an example of each"""
+    bl_idname  = "og.include_template"
+    bl_label   = "Insert Include Template"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..export import includes as _inc
+        col = _active_level_col(ctx.scene)
+        txt = bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+        if txt is None:
+            return {"CANCELLED"}
+        if txt.as_string().strip():
+            txt.write("\n" + _inc.TEMPLATE)
+        else:
+            txt.from_string(_inc.TEMPLATE)
+        txt.use_fake_user = True
+        return {"FINISHED"}
+
+
 class OG_OT_IncludeEdit(Operator):
     """Show the level's include text in a Text Editor (opens one in a new
     window if none is visible)"""
@@ -823,6 +844,7 @@ class OG_OT_IncludeEdit(Operator):
 CLASSES = (
     OG_OT_IncludeCreate,
     OG_OT_IncludeEdit,
+    OG_OT_IncludeTemplate,
     OG_OT_CreateLevel,
     OG_OT_AssignCollectionAsLevel,
     OG_OT_SetActiveLevel,
