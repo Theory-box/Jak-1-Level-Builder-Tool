@@ -157,6 +157,29 @@ class OG_PT_LevelSettings(Panel):
             w = layout.row(); w.alert = True
             w.label(text=f"Nickname '{nick_eff}' collides with another level", icon="ERROR")
 
+        # Always Include (export/includes.py)
+        box = layout.box()
+        box.prop(props, "include_enabled")
+        if props.include_enabled:
+            row = box.row(align=True)
+            row.prop_search(props, "include_text", bpy.data, "texts", text="")
+            row.operator("og.include_create", text="", icon="ADD")
+            row.operator("og.include_edit", text="", icon="TEXT")
+            row.operator("og.include_template", text="", icon="FILE_TEXT")
+            from ..export import includes as _inc
+            txt = bpy.data.texts.get(props.include_text) if props.include_text else None
+            if txt is None:
+                box.label(text="Pick or create an include text", icon="INFO")
+            elif not txt.as_string().strip():
+                box.operator("og.include_template", text="Insert Template", icon="FILE_TEXT")
+                box.label(text="Empty — Insert Template shows every key", icon="INFO")
+            else:
+                data, errs = _inc.parse(txt.as_string())
+                st = box.column(); st.scale_y = 0.8
+                st.label(text=_inc.summary(data), icon="CHECKMARK" if not errs else "INFO")
+                for e in errs[:4]:
+                    w = st.row(); w.alert = True; w.label(text=e, icon="ERROR")
+
 
 
 class OG_PT_LevelManagerSub(Panel):
@@ -557,3 +580,17 @@ CLASSES = (
     OG_PT_LevelAudit,
     OG_OT_CleanLevelFiles,
 )
+
+
+def draw_text_editor_header(self, ctx):
+    """Text Editor header: Insert Template button while editing a level's
+    include text (Level > Settings > Always Include)."""
+    space = ctx.space_data
+    txt = getattr(space, "text", None)
+    if txt is None:
+        return
+    for col in bpy.data.collections:
+        if col.get("og_is_level") and col.get("og_include_text") == txt.name:
+            op = self.layout.operator("og.include_template", text="Insert Template", icon="FILE_TEXT")
+            op.text_name = txt.name
+            return

@@ -774,7 +774,115 @@ class OG_OT_ScanPaths(bpy.types.Operator):
 
 
 # ─── Classes to register ───────────────────────────────────────────────────
+class OG_OT_IncludeCreate(Operator):
+    """Create an include text for the active level from the template and
+    select it (Level > Settings > Always Include)"""
+    bl_idname  = "og.include_create"
+    bl_label   = "New Include Text"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..export import includes as _inc
+        col = _active_level_col(ctx.scene)
+        if col is None:
+            return {"CANCELLED"}
+        name = str(col.get("og_level_name", col.name))
+        txt = bpy.data.texts.new(f"{name}-include.jsonc")
+        txt.from_string(_inc.TEMPLATE)
+        txt.use_fake_user = True
+        col["og_include_text"] = txt.name
+        col["og_include_enabled"] = True
+        self.report({"INFO"}, f"Created '{txt.name}' — edit it in the Text Editor")
+        return {"FINISHED"}
+
+
+def _include_text_for(ctx, text_name=""):
+    if text_name:
+        return bpy.data.texts.get(text_name)
+    col = _active_level_col(ctx.scene)
+    return bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+
+
+class OG_OT_IncludeTemplate(Operator):
+    """Fill the include text with the commented template that shows every
+    key with an example. Asks first if the text already has content (it
+    is replaced)"""
+    bl_idname  = "og.include_template"
+    bl_label   = "Insert Include Template"
+    bl_options = {"REGISTER", "UNDO"}
+
+    text_name: bpy.props.StringProperty(default="", options={"SKIP_SAVE"})
+
+    def invoke(self, ctx, event):
+        txt = _include_text_for(ctx, self.text_name)
+        if txt is not None and txt.as_string().strip():
+            return ctx.window_manager.invoke_confirm(
+                self, event, title="Replace with template?",
+                message=f"'{txt.name}' already has content. Replace it with the template?",
+                confirm_text="Replace")
+        return self.execute(ctx)
+
+    def execute(self, ctx):
+        from ..export import includes as _inc
+        txt = _include_text_for(ctx, self.text_name)
+        if txt is None:
+            self.report({"WARNING"}, "No include text selected")
+            return {"CANCELLED"}
+        txt.from_string(_inc.TEMPLATE)
+        txt.use_fake_user = True
+        return {"FINISHED"}
+
+
+class OG_OT_IncludeEdit(Operator):
+    """Show the level's include text in a Text Editor (opens one in a new
+    window if none is visible)"""
+    bl_idname  = "og.include_edit"
+    bl_label   = "Edit Include Text"
+
+    def execute(self, ctx):
+        col = _active_level_col(ctx.scene)
+        txt = bpy.data.texts.get(str(col.get("og_include_text", "") or "")) if col else None
+        if txt is None:
+            self.report({"WARNING"}, "No include text selected")
+            return {"CANCELLED"}
+        for win in ctx.window_manager.windows:
+            for area in win.screen.areas:
+                if area.type == "TEXT_EDITOR":
+                    area.spaces.active.text = txt
+                    area.tag_redraw()
+                    return {"FINISHED"}
+        bpy.ops.wm.window_new()
+        new_win = ctx.window_manager.windows[-1]
+        area = new_win.screen.areas[0]
+        area.type = "TEXT_EDITOR"
+        name = txt.name
+
+        # A brand-new window finishes setting up its areas after this
+        # operator returns, which drops a text assigned now (blank editor).
+        # Assign it again on the next tick, to every empty Text Editor.
+        def _assign():
+            t = bpy.data.texts.get(name)
+            if t is None:
+                return None
+            for w in bpy.context.window_manager.windows:
+                for a in w.screen.areas:
+                    if a.type != "TEXT_EDITOR":
+                        continue
+                    for sp in a.spaces:
+                        if sp.type == "TEXT_EDITOR" and sp.text is None:
+                            sp.text = t
+                    a.tag_redraw()
+            return None
+        _assign()
+        bpy.app.timers.register(_assign, first_interval=0.05)
+        bpy.app.timers.register(_assign, first_interval=0.3)
+        return {"FINISHED"}
+
+
 CLASSES = (
+    OG_OT_IncludeCreate,
+    OG_OT_IncludeEdit,
+    OG_OT_IncludeTemplate,
     OG_OT_CreateLevel,
     OG_OT_AssignCollectionAsLevel,
     OG_OT_SetActiveLevel,
