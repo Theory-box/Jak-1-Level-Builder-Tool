@@ -225,15 +225,21 @@ def all_sfx() -> list[dict]:
 
 
 def find_parent(etype: str) -> dict | None:
+    """A parent record: the Parents section first, then any actor/orphan
+    (actors can be parents too: plat -> plat-eco, babak -> babak-with-cannon)."""
     for p in DB["Parents"]:
+        if p["etype"] == etype:
+            return p
+    for p in DB["Actors"] + DB.get("OrphanEtypes", []):
         if p["etype"] == etype:
             return p
     return None
 
 
 def parent_chain(etype: str) -> list[dict]:
-    """Return the full parent chain for an etype, root-last.
-    Example: parent_chain('babak') → [nav-enemy_dict, process-drawable_dict]"""
+    """Return the full parent chain for an etype, nearest first (root last),
+    following the game's deftype tree through Parents and actors.
+    Example: parent_chain('plat-eco') → [plat, baseplat, process-drawable]"""
     chain: list[dict] = []
     actor = find_actor(etype)
     current = actor.get("parent") if actor else None

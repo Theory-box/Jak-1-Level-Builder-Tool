@@ -546,9 +546,11 @@ UNIVERSAL_LUMPS: list = (
 
 def _lump_ref_for_etype(etype):
     """Return (universal_lumps, actor_lumps) for a given etype."""
-    actor_entries = list(LUMP_REFERENCE.get(etype, []))
-    if _db.is_enemy(etype):
-        actor_entries = list(LUMP_REFERENCE.get("_enemy", [])) + actor_entries
+    # Lumps documented on every record of the parent chain (root first,
+    # process-drawable's are the universal ones), then the actor's own.
+    chain = [p for p in reversed(_db.parent_chain(etype)) if p.get("etype") != "process-drawable"]
+    actor_entries = [t for p in chain for t in _tuples_from_lumps(p.get("lumps", []))]
+    actor_entries += list(LUMP_REFERENCE.get(etype, []))
     return UNIVERSAL_LUMPS, actor_entries
 
 

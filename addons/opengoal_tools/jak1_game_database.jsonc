@@ -4363,7 +4363,7 @@
         {
           "key": "visvol",
           "type": "vector4m",
-          "description": "Visibility bounding box — two vector4m entries (min corner, max corner)."
+          "description": "Visibility bounding box \u2014 two vector4m entries (min corner, max corner)."
         }
       ]
     },
@@ -4371,8 +4371,14 @@
       "etype": "nav-enemy",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "nav-mesh", "show-panel": true},
-        {"panel": "aggro-trigger", "show-panel": true}
+        {
+          "panel": "nav-mesh",
+          "show-panel": true
+        },
+        {
+          "panel": "aggro-trigger",
+          "show-panel": true
+        }
       ],
       "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
       "lumps": [
@@ -4389,16 +4395,95 @@
       ]
     },
     {
-      "etype": "prop",
-      "parent": "process-drawable",
-      "description": "Decorative only. No AI, no combat, idle animation only.",
+      "etype": "eco-collectable",
+      "parent": "collectable",
+      "description": "Pickups (orbs, eco, scout flies, fuel cells). Picked up on contact.",
       "lumps": []
     },
     {
-      "etype": "eco-collectable",
+      "etype": "fleeing-nav-enemy",
+      "parent": "nav-enemy",
+      "description": "Game type (deftype fleeing-nav-enemy (nav-enemy)) in levels\\rolling\\rolling-lightning-mole.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "process-taskable",
       "parent": "process-drawable",
-      "description": "Pickups (orbs, eco, scout flies, fuel cells). Picked up on contact.",
-      "lumps": []
+      "description": "Game type (deftype process-taskable (process-drawable)) in engine\\game\\task\\task-control-h.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "collectable",
+      "parent": "process-drawable",
+      "description": "Game type (deftype collectable (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "baseplat",
+      "parent": "process-drawable",
+      "description": "Game type (deftype baseplat (process-drawable)) in engine\\common-obs\\baseplat.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "vent",
+      "parent": "process-drawable",
+      "description": "Game type (deftype vent (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "citb-base-plat",
+      "parent": "process-drawable",
+      "description": "Game type (deftype citb-base-plat (process-drawable)) in levels\\citadel\\citb-plat.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "rigid-body-platform",
+      "parent": "process-drawable",
+      "description": "Game type (deftype rigid-body-platform (process-drawable)) in engine\\common-obs\\rigid-body.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "flutflut-plat",
+      "parent": "plat",
+      "description": "Game type (deftype flutflut-plat (plat)) in levels\\snow\\snow-flutflut-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "process-hidden",
+      "parent": "process",
+      "description": "Game type (deftype process-hidden (process)) in engine\\common-obs\\generic-obs-h.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "eco",
+      "parent": "eco-collectable",
+      "description": "Game type (deftype eco (eco-collectable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "ogre-isle",
+      "parent": "ogre-plat",
+      "description": "Game type (deftype ogre-isle (ogre-plat)) in levels\\ogre\\ogre-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "ogre-plat",
+      "parent": "rigid-body-platform",
+      "description": "Game type (deftype ogre-plat (rigid-body-platform)) in levels\\ogre\\ogre-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "darkecobarrel-base",
+      "parent": "process-drawable",
+      "description": "Game type (deftype darkecobarrel-base (process-drawable)) in levels\\lavatube\\lavatube-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "pontoon",
+      "parent": "rigid-body-platform",
+      "description": "Game type (deftype pontoon (rigid-body-platform)) in levels\\village2\\village2-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "breakaway",
+      "parent": "process-drawable",
+      "description": "Game type (deftype breakaway (process-drawable)) in levels\\misty\\misty-obs.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "eco-door",
+      "parent": "process-drawable",
+      "description": "Game type (deftype eco-door (process-drawable)) in engine\\common-obs\\baseplat.gc. Parent record only, not spawnable."
+    },
+    {
+      "etype": "pusher-base",
+      "parent": "process-drawable",
+      "description": "Game type (deftype pusher-base (process-drawable)) in levels\\rolling\\rolling-obs.gc. Parent record only, not spawnable."
     }
   ],
 
@@ -4439,7 +4524,7 @@
       "etype": "babak-with-cannon",
       "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "babak",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
         {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
@@ -4711,12 +4796,13 @@
       "etype": "citb-bunny",
       "label": "Citadel Bunny Lurker",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "snow-bunny",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "custom-fields", "export": false}
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
@@ -4865,10 +4951,9 @@
       "etype": "spider-egg",
       "label": "Spider Egg",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "panels": [
         {"panel": "path", "show-panel": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
         {
           "panel": "actor-link",
           "show-panel": true,
@@ -5106,11 +5191,12 @@
       "schema_export": true,
       "label": "Bully",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true},
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
@@ -5137,7 +5223,7 @@
       "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "description": "The puffer, also known as a flying lurker, is an enemy in The Precursor Legacy, found in the lost Precursor city. It inflates to deal damage on contact.",
       "art_group": "puffer-ag.go",
       "tpage_group": "Sunken",
@@ -5233,7 +5319,8 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "color": [
         0.3,
@@ -5354,7 +5441,7 @@
       "label": "Mother Spider",
       "schema_export": true,
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
       "art_group": ["mother-spider-ag.go", "baby-spider-ag.go", "spider-egg-ag.go"],
       "tpage_group": "Maincave",
@@ -5814,7 +5901,7 @@
       "etype": "quicksandlurker",
       "label": "Quicksand Lurker",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "panels": [
         {"panel": "path", "show-panel": true},
         {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
@@ -5861,7 +5948,7 @@
       "label": "Ram",
       "schema_export": true,
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "art_group": "ram-ag.go",
       "tpage_group": "Snow",
       "code": "snow-ram.o",
@@ -5990,7 +6077,7 @@
       "etype": "lightning-mole",
       "label": "Lightning Mole",
       "category": "Interactive Objects",
-      "parent": "process-drawable",
+      "parent": "fleeing-nav-enemy",
       "tpage_group": "Rolling",
       "tpages": [
         "tpage-1119.go",
@@ -6015,7 +6102,7 @@
       "etype": "ice-cube",
       "label": "Ice Cube",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {"panel": "activation", "show-panel": true},
@@ -6080,7 +6167,7 @@
       "etype": "evilplant",
       "label": "Evil Plant (Prop)",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "evilplant-ag.go",
       "tpages": [
         "tpage-398.go",
@@ -6116,7 +6203,7 @@
       "etype": "dark-plant",
       "label": "Dark Plant (Prop)",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "dark-plant-ag.go",
       "tpages": [
         "tpage-1119.go",
@@ -6242,7 +6329,7 @@
       "schema_export": true,
       "label": "Plant Boss",
       "category": "Bosses",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
       "art_group": "plant-boss-ag.go",
       "tpages": [
@@ -6292,7 +6379,6 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
         {"panel": "activation", "show-panel": true},
         {"panel": "visibility", "show-panel": true}
       ],
@@ -6308,7 +6394,7 @@
       "etype": "robotboss",
       "label": "Precursor Robot Boss",
       "category": "Bosses",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {"panel": "activation", "show-panel": true},
@@ -6339,6 +6425,9 @@
       "label": "Yakow",
       "category": "NPCs",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "nav-mesh", "show-panel": true}
+      ],
       "art_group": "yakow-ag.go",
       "tpages": [
         "tpage-398.go",
@@ -6407,7 +6496,7 @@
       "etype": "mayor",
       "label": "Mayor",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "mayor-ag.go",
       "tpages": [
         "tpage-398.go",
@@ -6431,7 +6520,7 @@
       "etype": "farmer",
       "label": "Farmer",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "farmer-ag.go",
       "tpages": [
         "tpage-398.go",
@@ -6455,7 +6544,7 @@
       "etype": "fisher",
       "label": "Fisher",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true}
       ],
@@ -6481,7 +6570,7 @@
       "etype": "explorer",
       "label": "Explorer",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "explorer-ag.go",
       "tpages": [
         "tpage-398.go",
@@ -6505,7 +6594,7 @@
       "etype": "geologist",
       "label": "Geologist",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "geologist-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -6529,7 +6618,7 @@
       "etype": "warrior",
       "label": "Warrior",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "warrior-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -6553,7 +6642,7 @@
       "etype": "gambler",
       "label": "Gambler",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "gambler-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -6577,7 +6666,7 @@
       "etype": "sculptor",
       "label": "Sculptor",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "sculptor-ag.go",
       "tpages": [
         "tpage-212.go",
@@ -6600,7 +6689,7 @@
       "etype": "billy",
       "label": "Billy",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true}
       ],
@@ -6927,7 +7016,7 @@
       "etype": "pickup-spawner",
       "label": "Pickup Spawner", 
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "crate",
       "code": "crates.o",
       "schema_export": true,
       "lumps": [
@@ -6964,6 +7053,20 @@
               "max": 99
             }
           ]
+        },
+        {"panel": "crate", "export": false},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_crate_type",
+              "export": false
+            },
+            {
+              "key": "og_crate_pickup_amount",
+              "note": null
+            }
+          ]
         }
       ],
       "color": [
@@ -6979,7 +7082,7 @@
       "schema_export": true,
       "label": "Crate",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "process-drawable",
       "art_group": "crate-ag.go",
       "glb": "levels/common/crate-wood-lod0.glb",
       "lumps": [
@@ -7053,7 +7156,7 @@
       "schema_export": true,
       "label": "Orb Cache",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "baseplat",
       "art_group": "orb-cache-top-ag.go",
       "glb": "levels/beach/orb-cache-top-lod0.glb",
       "lumps": [
@@ -7142,7 +7245,7 @@
       "etype": "ecovent",
       "label": "Eco Vent (Green)", 
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "vent",
       "code": "collectables.o",
       "schema_export": true,
       "lumps": [
@@ -7198,7 +7301,7 @@
         {"panel": "sync", "show-panel": true}
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "baseplat",
       "art_group": "plat-ag.go",
       "glb": "levels/maincave/plat-lod0.glb",
       "lumps": [
@@ -7241,7 +7344,7 @@
         }
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat",
       "art_group": "plat-eco-ag.go",
       "glb": "levels/jungle/plat-eco-lod0.glb",
       "lumps": [
@@ -7275,7 +7378,7 @@
       "label": "Floating Platform (Citadel)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat",
       "art_group": "plat-citb-ag.go",
       "glb": "levels/citadel/plat-citb-lod0.glb",
       "lumps": [
@@ -7351,7 +7454,7 @@
       "label": "Rotate Box (Citadel)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "citb-base-plat",
       "art_group": "citb-rotatebox-ag.go",
       "glb": "levels/citadel/citb-rotatebox-lod0.glb",
       "color": [
@@ -7368,7 +7471,7 @@
       "label": "Spinning Donut (Citadel)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "citb-base-plat",
       "art_group": "citb-donut-ag.go",
       "glb": "levels/citadel/citb-donut-lod0.glb",
       "color": [
@@ -7385,7 +7488,7 @@
       "label": "Chain Platforms (Citadel)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "rigid-body-platform",
       "art_group": "citb-chain-plat-ag.go",
       "glb": "levels/citadel/citb-chain-plat-lod0.glb",
       "panels": [
@@ -7418,7 +7521,7 @@
       "label": "Silo Door (Final Boss)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "silodoor-ag.go",
       "glb": "levels/finalboss/silodoor-lod0.glb",
       "color": [
@@ -7435,7 +7538,7 @@
       "label": "Stop Box (Citadel)",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat",
       "panels": [
         {"panel": "path", "show-panel": true, "min-points": 2},
         {"panel": "sync", "show-panel": true}
@@ -7467,7 +7570,7 @@
       "etype": "citb-exit-plat",
       "label": "Exit Platform (Citadel)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat-button",
       "art_group": "citb-exit-plat-ag.go",
       "glb": "levels/citadel/citb-exit-plat-lod0.glb",
       "lumps": [
@@ -7560,7 +7663,8 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "path", "min-points": null}
       ],
       "color": [
         0.6,
@@ -7575,7 +7679,7 @@
       "etype": "plat-button",
       "label": "Button Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "plat-button-ag.go",
       "glb": "levels/jungle/plat-button-geo.glb",
       "lumps": [
@@ -7702,7 +7806,7 @@
         }
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "flutflut-plat",
       "art_group": "flutflut-plat-small-ag.go",
       "glb": "levels/snow/flutflut-plat-small-lod0.glb",
       "lumps": [
@@ -7797,7 +7901,7 @@
         }
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "flutflut-plat",
       "art_group": "flutflut-plat-med-ag.go",
       "glb": "levels/snow/flutflut-plat-med-lod0.glb",
       "lumps": [
@@ -7892,7 +7996,7 @@
         }
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "flutflut-plat",
       "art_group": "flutflut-plat-large-ag.go",
       "glb": "levels/snow/flutflut-plat-large-lod0.glb",
       "lumps": [
@@ -7972,7 +8076,7 @@
       "etype": "snow-spatula",
       "label": "Snow Spatula",
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "baseplat",
       "art_group": "snow-spatula-ag.go",
       "code": "snow-obs.o",
       "glb": "levels/snow/snow-spatula-lod0.glb"
@@ -7982,7 +8086,7 @@
       "schema_export": true,
       "label": "Flip Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "plat-flip-ag.go",
       "tpages": [
         "tpage-485.go",
@@ -8064,7 +8168,7 @@
       "schema_export": true,
       "label": "Wall Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "wall-plat-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -8155,7 +8259,7 @@
       "etype": "teetertotter",
       "label": "Teeter Totter",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "teetertotter-ag.go",
       "tpages": [
         "tpage-516.go",
@@ -8183,7 +8287,7 @@
         {"panel": "sync", "show-panel": true}
       ],
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat",
       "art_group": "side-to-side-plat-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -8218,7 +8322,7 @@
       "label": "Wedge Platform",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "baseplat",
       "art_group": "wedge-plat-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -8303,7 +8407,7 @@
       "label": "Wedge Platform Outer",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "wedge-plat",
       "art_group": "wedge-plat-ag.go",
       "tpages": [
         "tpage-661.go",
@@ -8388,7 +8492,7 @@
       "label": "Wedge Platform Master",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
@@ -8444,7 +8548,7 @@
       "etype": "tar-plat",
       "label": "Tar Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "rigid-body-platform",
       "art_group": "tar-plat-ag.go",
       "tpages": [
         "tpage-358.go",
@@ -8473,7 +8577,7 @@
       "etype": "bone-platform",
       "label": "Bone Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "rigid-body-platform",
       "art_group": "mis-bone-platform-ag.go",
       "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
@@ -8490,7 +8594,7 @@
       "etype": "qbert-plat",
       "label": "Qbert Platforms",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "rigid-body-platform",
       "panels": [
         {
           "panel": "actor-link",
@@ -8543,7 +8647,7 @@
       "etype": "qbert-plat-master",
       "label": "Qbert Platforms Master",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "panels": [
         {
           "panel": "actor-link",
@@ -8587,7 +8691,7 @@
       "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "baseplat",
       "art_group": "floating-launcher-ag.go",
       "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "panels": [
@@ -8711,7 +8815,7 @@
       "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "tpages": [
         "tpage-661.go",
         "tpage-663.go",
@@ -8817,7 +8921,7 @@
       "description": "Citadel's floating launcher will follow paths like other floating platforms",
       "schema_export": true,
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "plat",
       "art_group": "citb-launcher-ag.go",
       "code": "citadel-obs.o",
       "glb": "levels/citadel/citb-launcher-lod0.glb",
@@ -8894,7 +8998,7 @@
       "etype": "warpgate",
       "label": "Warp Gate",
       "category": "Buttons and Doors",
-      "parent": "process-drawable",
+      "parent": "process-hidden",
       "art_group": "warpgate-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -8918,7 +9022,7 @@
       "etype": "cavecrystal",
       "label": "Cave Crystal",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "cavecrystal-ag.go",
       "tpages": [
         "tpage-1306.go",
@@ -8947,7 +9051,7 @@
       "etype": "cavegem",
       "label": "Cave Gem",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
       "tpages": [
         "tpage-1208.go",
@@ -8970,7 +9074,7 @@
       "schema_export": true,
       "label": "Minecarts",
       "category": "Platforms",
-      "parent": "props",
+      "parent": "process-drawable",
       "art_group": "minecartsteel-ag.go",
       "glb": "levels/village3/minecartsteel-lod0.glb",
       "lumps": [],
@@ -9030,7 +9134,7 @@
       "etype": "shortcut-boulder",
       "label": "Shortcut Boulder",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "shortcut-boulder-ag.go",
       "tpages": [
         "tpage-875.go",
@@ -9122,7 +9226,7 @@
       "schema_export": true,
       "label": "Steam Cap",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "steam-cap-ag.go",
       "tpage_group": "Sunken",
       "tpages": [
@@ -9174,7 +9278,7 @@
       "schema_export": true,
       "label": "Piston",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lurkerm-piston-ag.go",
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
@@ -9276,7 +9380,7 @@
       "schema_export": true,
       "label": "Sail (Tall)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "panels": [
         {
           "panel": "actor-link",
@@ -9312,7 +9416,7 @@
       "schema_export": true,
       "label": "Precursor Bridge",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "precurbridge-ag.go",
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
@@ -9331,7 +9435,7 @@
       "schema_export": true,
       "label": "Grotto Pole",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "grottopole-ag.go",
       "tpage_group": "Beach",
       "code": "beach-obs.o",
@@ -9376,7 +9480,7 @@
       "etype": "windmill-one",
       "label": "Windmill Cog Wheel",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "windmill-one-ag.go",
       "tpages": [
         "tpage-212.go",
@@ -9400,7 +9504,7 @@
       "etype": "ecoclaw",
       "label": "Eco Claw",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "ecoclaw-ag.go",
       "tpages": [
         "tpage-1419.go",
@@ -9425,7 +9529,7 @@
       "etype": "ecovalve",
       "label": "Eco Valve",
       "category": "Pickups",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "ecovalve-ag.go",
       "glb": "levels/beach/ecovalve-geo.glb",
       "is_prop": true,
@@ -9443,7 +9547,7 @@
       "etype": "swamp-rock",
       "label": "Swamp Rock",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "swamp-rock-ag.go",
       "tpages": [
         "tpage-358.go",
@@ -9472,7 +9576,7 @@
       "etype": "gondola",
       "label": "Gondola",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "gondola-ag.go",
       "tpages": [
         "tpage-1208.go",
@@ -9496,7 +9600,7 @@
       "etype": "swamp-blimp",
       "label": "Swamp Blimp",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "swamp-blimp-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -9520,7 +9624,7 @@
       "etype": "swamp-rope",
       "label": "Swamp Rope",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "swamp-rope-ag.go",
       "tpages": [
         "tpage-919.go",
@@ -9745,7 +9849,7 @@
       "label": "Warp Gate (unused?)",
       "schema_export": true,
       "category": "Buttons and Doors",
-      "parent": "prop",
+      "parent": "process-drawable",
       "panels": [
         {
           "panel": "actor-link",
@@ -9786,7 +9890,7 @@
       "label": "Warp Gate Switch",
       "schema_export": true,
       "category": "Buttons and Doors",
-      "parent": "prop",
+      "parent": "basebutton",
       "panels": [
         {
           "panel": "actor-link",
@@ -9802,7 +9906,8 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "custom-fields", "export": false}
       ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
@@ -9826,7 +9931,7 @@
       "etype": "balloonlurker",
       "label": "Balloon Lurker",
       "category": "Enemies",
-      "parent": "process-drawable",
+      "parent": "rigid-body-platform",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
@@ -10000,7 +10105,7 @@
       "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
       "schema_export": true,
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "tpage_group": "Robocave",
       "tpages": [
         "tpage-1313.go",
@@ -10072,7 +10177,8 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "lumps": [
         {
@@ -10121,7 +10227,7 @@
       "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
-      "parent": "nav-enemy",
+      "parent": "process-drawable",
       "art_group": "swamp-rat-nest-ag.go",
       "tpage_group": "Swamp",
       "tpages": [
@@ -10181,7 +10287,8 @@
               "min": 0
             }
           ]
-        }
+        },
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "color": [
         0.4,
@@ -10422,7 +10529,7 @@
       "etype": "eco-blue",
       "label": "Eco (Blue)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "eco",
       "code": "collectables.o",
       "lumps": [],
       "color": [
@@ -10437,7 +10544,7 @@
       "etype": "ventblue",
       "label": "Eco Vent (Blue)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "vent",
       "panels": [
         {
           "panel": "actor-link",
@@ -10469,7 +10576,7 @@
       "etype": "ventred",
       "label": "Eco Vent (Red)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "vent",
       "panels": [
         {
           "panel": "actor-link",
@@ -10501,7 +10608,7 @@
       "etype": "ventyellow",
       "label": "Eco Vent (Yellow)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "vent",
       "panels": [
         {
           "panel": "actor-link",
@@ -10533,7 +10640,7 @@
       "etype": "eco-red",
       "label": "Eco (Red)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "eco",
       "code": "collectables.o",
       "lumps": [],
       "color": [
@@ -10548,7 +10655,7 @@
       "etype": "eco-yellow",
       "label": "Eco (Yellow)",
       "category": "Pickups",
-      "parent": "eco-collectable",
+      "parent": "eco",
       "panels": [
         {
           "panel": "actor-link",
@@ -10580,7 +10687,7 @@
       "etype": "ecoventrock",
       "label": "Eco Vent (Rock)",
       "category": "Interactive Objects",
-      "parent": "eco-collectable",
+      "parent": "process-drawable",
       "art_group": "ecoventrock-ag.go",
       "tpage_group": "Beach",
       "tpages": [
@@ -10620,7 +10727,7 @@
       "schema_export": true,
       "label": "Orbit Platform",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "baseplat",
       "art_group": "orbit-plat-ag.go",
       "tpage_group": "Sunken",
       "tpages": [
@@ -10708,7 +10815,7 @@
       "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "baseplat",
       "art_group": "square-platform-ag.go",
       "tpage_group": "Sunken",
       "tpages": [
@@ -10807,7 +10914,7 @@
       "schema_export": true,
       "label": "Rope Bridge",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "tpage_group": "Jungle",
       "tpages": [
         "tpage-385.go",
@@ -10867,7 +10974,7 @@
       "schema_export": true,
       "label": "Klaww Platform Isles",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "ogre-isle",
       "tpages": [],
       "code": "ogre-obs.o",
       "lumps": [],
@@ -10936,7 +11043,7 @@
       "schema_export": true,
       "label": "Klaww Step",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "ogre-plat",
       "tpages": [],
       "code": "ogre-obs.o",
       "lumps": [
@@ -11001,7 +11108,7 @@
       "schema_export": true,
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "tpages": [],
       "code": "citadel-obs.o",
       "panels": [
@@ -11095,7 +11202,7 @@
       "schema_export": true,
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "darkecobarrel-base",
       "art_group": "darkecobarrel-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -11283,7 +11390,7 @@
       "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
-      "parent": "prop",
+      "parent": "process-drawable",
       "code": "maincave-obs.o",
       "lumps": [
         {
@@ -11370,7 +11477,7 @@
       "etype": "cavetrapdoor",
       "label": "Cave Trap Door",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "cavetrapdoor-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
@@ -11401,7 +11508,7 @@
       "schema_export": true,
       "label": "Cave Spatula Plat",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
@@ -11457,7 +11564,7 @@
       "schema_export": true,
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "cavespatulatwo-ag.go",
       "tpage_group": "Maincave",
       "tpages": [
@@ -11512,7 +11619,7 @@
       "etype": "ogre-bridge",
       "label": "Klaww Drawbridge",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "panels": [
         {
           "panel": "actor-link",
@@ -11553,7 +11660,7 @@
       "etype": "ogre-bridgeend",
       "label": "Ogre Bridge End",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "ogre-bridgeend-ag.go",
       "tpage_group": "Ogre",
       "tpages": [
@@ -11578,7 +11685,7 @@
       "schema_export": true,
       "label": "Pontoon (Ten)",
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "pontoon",
       "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -11630,7 +11737,7 @@
       "etype": "pontoonfive",
       "label": "Pontoon (Five)",
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "pontoon",
       "art_group": "pontoonfive-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -11656,7 +11763,7 @@
       "schema_export": true,
       "label": "Bone Bridge",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "mis-bone-bridge-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -11707,7 +11814,7 @@
       "schema_export": true,
       "label": "Breakaway Plat (L)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "breakaway",
       "art_group": "breakaway-left-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -11780,7 +11887,7 @@
       "schema_export": true,
       "label": "Breakaway Plat (M)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "breakaway",
       "art_group": "breakaway-mid-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -11853,7 +11960,7 @@
       "schema_export": true,
       "label": "Breakaway Plat (R)",
       "category": "Platforms",
-      "parent": "prop",
+      "parent": "breakaway",
       "art_group": "breakaway-right-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -11944,7 +12051,7 @@
       "etype": "swingpole",
       "label": "Swing Pole",
       "category": "Platforms",
-      "parent": "process-drawable",
+      "parent": "process",
       "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
       "lumps": [],
@@ -11961,7 +12068,7 @@
       "label": "Sliding Tube",
       "description": "Will force jak into his sliding state. Requires a physical mesh under. You may need to switch direction on the curve.",
       "category": "Platforms",
-      "parent": "process",
+      "parent": "process-drawable",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true}
       ],
@@ -12074,7 +12181,7 @@
       "schema_export": true,
       "label": "Oracle",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "oracle-ag.go",
       "tpage_group": "Village1",
       "tpages": [
@@ -12127,7 +12234,7 @@
       "etype": "minershort",
       "label": "Miner (Short)",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "panels": [
         {
           "panel": "actor-link",
@@ -12168,7 +12275,7 @@
       "etype": "minertall",
       "label": "Miner (Tall)",
       "category": "NPCs",
-      "parent": "process-drawable",
+      "parent": "process-taskable",
       "art_group": "minertall-ag.go",
       "tpage_group": "Village3",
       "tpages": [
@@ -12193,7 +12300,7 @@
       "schema_export": true,
       "label": "Iris Door (Jungle)",
       "category": "Buttons and Doors",
-      "parent": "process-drawable",
+      "parent": "eco-door",
       "art_group": "jng-iris-door-ag.go",
       "code": "jungleb-obs.o",
       "glb":"levels/jungleb/jng-iris-door-lod0.glb",
@@ -12309,7 +12416,7 @@
       "etype": "sidedoor",
       "label": "Side Door (Jungle)",
       "category": "Buttons and Doors",
-      "parent": "process-drawable",
+      "parent": "eco-door",
       "art_group": "sidedoor-ag.go",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/sidedoor-lod1.glb",
@@ -12430,7 +12537,7 @@
       "etype": "rounddoor",
       "label": "Round Door (Misty)",
       "category": "Buttons and Doors",
-      "parent": "process-drawable",
+      "parent": "eco-door",
       "art_group": "rounddoor-ag.go",
       "code": "misty-warehouse.o",
       "lumps": [
@@ -12782,7 +12889,11 @@
       "etype": "swampgate",
       "label": "Swamp Spike Gate",
       "category": "Buttons and Doors",
-      "parent": "process-drawable",
+      "parent": "swamp-spike",
+      "panels": [
+        {"panel": "sync", "export": false},
+        {"panel": "custom-fields", "export": false}
+      ],
       "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",
       "tpages": [
@@ -12816,7 +12927,7 @@
       "etype": "ceilingflag",
       "label": "Ceiling Flag",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "ceilingflag-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -12848,7 +12959,7 @@
       "schema_export": true,
       "label": "Wind Turbine",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "windturbine-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -12898,7 +13009,7 @@
       "etype": "boatpaddle",
       "label": "Boat Paddle",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "boatpaddle-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -12979,7 +13090,7 @@
       "etype": "lavafall",
       "label": "Lava Fall",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavafall-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -13010,7 +13121,7 @@
       "etype": "lavafallsewera",
       "label": "Lava Fall Sewer A",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavafallsewera-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -13041,7 +13152,7 @@
       "etype": "lavafallsewerb",
       "label": "Lava Fall Sewer B",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavafallsewerb-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -13072,7 +13183,7 @@
       "etype": "lavabase",
       "label": "Lava Base",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavabase-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -13103,7 +13214,7 @@
       "etype": "lavayellowtarp",
       "label": "Yellow Tarp (prop)",
       "category": "Visuals",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "lavayellowtarp-ag.go",
       "tpage_group": "Lavatube",
       "tpages": [
@@ -13158,7 +13269,7 @@
       "etype": "balloon",
       "label": "Balloon Obstacle",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "balloon-ag.go",
       "tpage_group": "Firecanyon",
       "tpages": [
@@ -13217,7 +13328,7 @@
       "schema_export": true,
       "label": "Pusher (rolling)",
       "category": "Obstacles",
-      "parent": "process-drawable",
+      "parent": "pusher-base",
       "art_group": "pusher-ag.go",
       "glb": "levels/rolling/pusher-lod0.glb",
       "code": "rolling-obs.o",
@@ -13359,7 +13470,7 @@
       "schema_export": true,
       "label": "Snow Ball (Snowy)",
       "category": "Obstacles",
-      "parent": "process-drawable",
+      "parent": "process",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true}
       ],
@@ -13457,7 +13568,7 @@
       "etype": "fishermans-boat",
       "label": "Fisherman's Boat",
       "category": "Interactive Objects",
-      "parent": "prop",
+      "parent": "rigid-body-platform",
       "art_group": "fishermans-boat-ag.go",
       "tpage_group": "Village1",
       "tpages": [
@@ -13482,7 +13593,7 @@
       "etype": "test-actor",
       "label": "Test Actor",
       "category": "Debug",
-      "parent": "prop",
+      "parent": "process-drawable",
       "art_group": "test-actor-ag.go",
       "lumps": [],
       "color": [
