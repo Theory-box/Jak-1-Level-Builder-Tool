@@ -912,18 +912,13 @@ class OG_PT_ActorWaypoints(Panel):
         from ..export import path_modes as _pm
         layout.separator(factor=0.5)
         hdr = layout.row(align=True)
-        hdr.label(text="Main path lump:")
+        hdr.label(text="Lump:")
         hdr.prop(sel, "og_path_lump", text="")
-
-        # Legacy swamp-bat Path B empties -> offer the one-click convert.
-        legacy_b = [o for o in bpy.data.objects
-                    if o.name.startswith(sel.name + "_wpb_") and o.type == "EMPTY"]
+        hdr.label(text="Keyframe:")
+        hdr.prop(sel, "og_path_keyframe", text="")
         has_b = any(p.name == "pathb" for p in sel.og_extra_paths)
-        if legacy_b and not has_b:
-            box = layout.box()
-            box.label(text=f"{len(legacy_b)} old Path B waypoint(s) found", icon="INFO")
-            box.operator("og.convert_legacy_pathb", text="Convert to path 'pathb'",
-                         icon="FILE_REFRESH").actor_name = sel.name
+        _arec = _db.find_actor(etype) or {}
+        multi = bool(_arec.get("multi_path") or len(_arec.get("paths") or []) > 1)
 
         for i, xp in enumerate(sel.og_extra_paths):
             box = layout.box()
@@ -931,6 +926,7 @@ class OG_PT_ActorWaypoints(Panel):
             row.prop(xp, "expanded", text="", emboss=False,
                      icon="TRIA_DOWN" if xp.expanded else "TRIA_RIGHT")
             row.prop(xp, "name", text="")
+            row.prop(xp, "keyframe", text="@")
             n_src = len(xp.sources)
             row.label(text=f"{n_src} source{'s' if n_src != 1 else ''}")
             op = row.operator("og.remove_extra_path", text="", icon="X")
@@ -971,13 +967,21 @@ class OG_PT_ActorWaypoints(Panel):
             except Exception:
                 pass
 
-        wanted = [n for n in ((_db.find_actor(etype) or {}).get("paths") or [])
-                  if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
-        add = layout.row()
-        op = add.operator("og.add_extra_path",
-                          text=f"Add Path ({wanted[0]})" if wanted else "Add Path", icon="ADD")
-        op.actor_name = sel.name
-        if einfo.get("needs_pathb") and not has_b and not legacy_b:
+        names = [p.name for p in sel.og_extra_paths] + [sel.og_path_lump]
+        dup = sorted({n for n in names if names.count(n) > 1})
+        if dup:
+            w = layout.row(); w.alert = True
+            w.label(text=f"Same name twice ({', '.join(dup)}): only the first exports", icon="ERROR")
+        # Extra paths only for actors the DB marks multi-path ("paths" list
+        # or "multi_path": true); existing ones always stay visible.
+        if multi:
+            wanted = [n for n in (_arec.get("paths") or [])
+                      if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
+            add = layout.row()
+            op = add.operator("og.add_extra_path",
+                              text=f"Add Path ({wanted[0]})" if wanted else "Add Path", icon="ADD")
+            op.actor_name = sel.name
+        if einfo.get("needs_pathb") and not has_b:
             layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
 
     def _discover_legacy_wps(self, actor_obj, scene):

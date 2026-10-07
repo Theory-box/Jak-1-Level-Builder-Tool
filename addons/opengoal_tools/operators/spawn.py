@@ -234,12 +234,12 @@ class OG_OT_SpawnEntity(Operator):
                 f"Enemy will idle/notice but won't pathfind without a real navmesh.")
         elif _db.needs_pathb(etype):
             self.report({"WARNING"},
-                f"Added {o.name}  —  swamp-bat needs TWO path sets: "
-                f"waypoints named _wp_00/_wp_01... AND _wpb_00/_wpb_01... (second patrol route).")
+                f"Added {o.name}  —  needs two paths: 'path' and 'pathb' "
+                f"(Path panel > Add Path for the second route).")
         elif _db.needs_path(etype):
             self.report({"WARNING"},
-                f"Added {o.name}  —  this entity requires at least 1 waypoint (_wp_00). "
-                f"It will crash or error at runtime without a path.")
+                f"Added {o.name}  —  needs a path (waypoints or a curve in the Path panel). "
+                f"It will crash or error at runtime without one.")
         elif _db.is_prop(etype):
             self.report({"INFO"}, f"Added {o.name}  (prop — idle animation only, no AI/combat)")
         else:

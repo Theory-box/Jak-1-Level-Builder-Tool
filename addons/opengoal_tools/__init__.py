@@ -266,6 +266,9 @@ def register():
     bpy.types.Object.og_path_lump = bpy.props.StringProperty(
         name="Lump", default="path",
         description="Lump name the main path exports to (knots go to <name>-k). Normally 'path'")
+    bpy.types.Object.og_path_keyframe = bpy.props.StringProperty(
+        name="Keyframe", default="",
+        description="Main path lump keyframe (e.g. 1). Blank = default; exported as vector4m@<keyframe>")
     bpy.types.Object.og_extra_paths = bpy.props.CollectionProperty(type=OGExtraPath)
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
@@ -431,7 +434,7 @@ def unregister():
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
-              "og_path_mode", "og_path_lump", "og_extra_paths"):
+              "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")

@@ -131,9 +131,8 @@ def check_missing_paths(scene):
         wp_count  = len(getattr(o, "og_waypoint_sources", [])) or sum(
             1 for ob in _level_objects(scene)
             if ob.name.startswith(wp_prefix) and ob.name[len(wp_prefix):].isdigit())
-        wpb_count = sum(1 for ob in _level_objects(scene) if ob.name.startswith(wpb_prefix))
-        wpb_count += sum(len(p.sources) for p in getattr(o, "og_extra_paths", [])
-                         if p.name.strip() == "pathb")
+        wpb_count = sum(len(p.sources) for p in getattr(o, "og_extra_paths", [])
+                        if p.name.strip() == "pathb")
         if wp_count == 0:
             issues.append(_issue("ERROR",
                 f"'{o.name}' ({et}) requires path waypoints but has none.", o.name))

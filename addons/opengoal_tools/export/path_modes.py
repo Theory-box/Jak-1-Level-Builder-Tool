@@ -74,6 +74,18 @@ STANDARD_PATH_NAMES = ["path", "patha", "pathb", "pathc", "pathd", "pathe", "pat
                        "pathg", "pathh", "pathspawn"]
 
 
+def keyframe_suffix(text) -> str:
+    """Lump type suffix for a path keyframe: "" for blank (default res time),
+    else "@<float>" (build_level reads e.g. "vector4m@1.0"). Invalid -> ""."""
+    t = str(text or "").strip()
+    if not t:
+        return ""
+    try:
+        return "@" + repr(float(t))
+    except ValueError:
+        return ""
+
+
 # ── Knot vectors ────────────────────────────────────────────────────────────
 
 def knots_clamped(n: int) -> list[float]:

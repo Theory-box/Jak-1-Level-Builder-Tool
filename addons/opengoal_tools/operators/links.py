@@ -171,8 +171,6 @@ class OG_OT_AddWaypoint(Operator):
     bl_label  = "Add Waypoint"
 
     enemy_name: bpy.props.StringProperty()
-    pathb_mode: bpy.props.BoolProperty(default=False,
-        description="Add to secondary path (pathb) — swamp-bat only")
     path_index: bpy.props.IntProperty(default=-1,
         description="-1 = the main path, otherwise which extra path (og_extra_paths) to add to")
 
@@ -181,7 +179,8 @@ class OG_OT_AddWaypoint(Operator):
             self.report({"ERROR"}, "No enemy name provided")
             return {"CANCELLED"}
 
-        # Find next available index for primary (_wp_) or secondary (_wpb_) path
+        # Find next available index for the main (_wp_NN) or an extra
+        # (_wp_<lump>_NN) path.
         # Scope to level objects so multi-level .blends don't cross-count
         actor_obj = bpy.data.objects.get(self.enemy_name)
         xpath = None
@@ -191,7 +190,7 @@ class OG_OT_AddWaypoint(Operator):
         if xpath is not None:
             suffix = f"_wp_{xpath.name.strip() or 'path'}_"
         else:
-            suffix = "_wpb_" if self.pathb_mode else "_wp_"
+            suffix = "_wp_"
         prefix = self.enemy_name + suffix
         existing = {o.name for o in _level_objects(ctx.scene) if o.name.startswith(prefix)}
         idx = 0
@@ -239,13 +238,11 @@ class OG_OT_AddWaypoint(Operator):
 
         # New: also append this empty to the actor's reorderable waypoint
         # source list, so the new UI stays in sync with manual spawns.
-        # Skip for Path B (swamp-bat) — it stays on the legacy name-grep
-        # system for now.
         if xpath is not None:
             src = xpath.sources.add()
             src.obj = empty
             xpath.sources_index = len(xpath.sources) - 1
-        elif not self.pathb_mode and actor_obj is not None:
+        elif actor_obj is not None:
             try:
                 # If the actor has legacy _wp_NN empties but the collection
                 # is empty, auto-migrate them first. Without this step the
@@ -588,32 +585,6 @@ class OG_OT_RemoveExtraPath(Operator):
         return {"FINISHED"}
 
 
-class OG_OT_ConvertLegacyPathB(Operator):
-    """Move legacy <actor>_wpb_NN empties (old swamp-bat Path B) into an
-    extra path named 'pathb' so it gets the normal path list and modes."""
-    bl_idname  = "og.convert_legacy_pathb"
-    bl_label   = "Convert Path B"
-    bl_options = {"REGISTER", "UNDO"}
-
-    actor_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        actor = bpy.data.objects.get(self.actor_name)
-        if actor is None:
-            return {"CANCELLED"}
-        prefix = actor.name + "_wpb_"
-        # same lookup as the exporter's legacy pathb block
-        legacy = sorted((o for o in bpy.data.objects
-                         if o.name.startswith(prefix) and o.type == "EMPTY"), key=lambda o: o.name)
-        p = next((x for x in actor.og_extra_paths if x.name == "pathb"), None)
-        if p is None:
-            p = actor.og_extra_paths.add(); p.name = "pathb"
-        for o in legacy:
-            s = p.sources.add(); s.obj = o
-        self.report({"INFO"}, f"Moved {len(legacy)} Path B waypoint(s) into 'pathb'")
-        return {"FINISHED"}
-
-
 class OG_OT_WaypointSourceMigrate(Operator):
     """One-time migration for actors with legacy _wp_NN empties but no
     og_waypoint_sources collection. Walks the empties in name order and
@@ -843,7 +814,6 @@ CLASSES = (
     OG_OT_WaypointSourceLinkCurve,
     OG_OT_AddExtraPath,
     OG_OT_RemoveExtraPath,
-    OG_OT_ConvertLegacyPathB,
     OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,
