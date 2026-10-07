@@ -124,13 +124,12 @@ def _draw_selected_actor(layout, sel, scene):
     # Per-instance override of the engine's 80m default. Below this distance
     # the enemy wakes up and starts noticing the player. Lower = stays asleep
     # longer. Reads og_idle_distance, emitted as 'idle-distance lump at build.
-    if _actor_is_enemy(etype):
+    if _db.has_panel(etype, "activation"):
         box = layout.box()
         box.label(text="Activation", icon="RADIOBUT_ON")
-        _prop_row(box, sel, "og_idle_distance", "Idle Distance (m):", 80.0)
-        sub = box.row()
-        sub.enabled = False
-        sub.label(text="Player must be closer than this to wake the enemy", icon="INFO")
+        from .actor_fields import _draw_field
+        for f in _db.panel_fields(etype, "activation", visible_only=True):
+            _draw_field(box, sel, f, {"etype": etype})
 
     # ── Nav-enemy: Trigger Behaviour (aggro / patrol / wait-for-cue) ─────
     # Lists every volume that links to this enemy. Each link has its own

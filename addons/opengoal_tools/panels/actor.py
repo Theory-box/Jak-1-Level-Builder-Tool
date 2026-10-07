@@ -115,14 +115,10 @@ class OG_PT_ActorActivation(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_is_enemy(parts[1])
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "activation")
 
     def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
-        _prop_row(layout, sel, "og_idle_distance", "Idle Distance (m):", 80.0)
-        sub = layout.row(); sub.enabled = False
-        sub.label(text="Player must be closer than this to wake the enemy", icon="INFO")
+        _draw_panel_fields(self.layout, ctx.active_object, "activation")
 
 
 
@@ -716,18 +712,20 @@ class OG_PT_ActorVisibility(Panel):
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
         if len(parts) < 3 or parts[0] != "ACTOR": return False
-        return _actor_is_enemy(parts[1])
+        return _db.has_panel(parts[1], "visibility")
 
     def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
+        _draw_panel_fields(self.layout, ctx.active_object, "visibility")
 
-        box = layout.box()
-        box.label(text="Vis Distance", icon="HIDE_OFF")
-        _prop_row(box, sel, "og_vis_dist", "Distance (m):", 200.0)
-        sub = box.row(); sub.enabled = False
-        sub.label(text="Default 200m. Reduce for distant background enemies.", icon="INFO")
 
+
+def _draw_panel_fields(layout, sel, pid):
+    """Draw one DB panel's visible fields (labels/defaults/notes from the DB)."""
+    from .actor_fields import _draw_field
+    etype = sel.name.split("_", 2)[1]
+    info = {"etype": etype, **(_db.find_actor(etype) or {})}
+    for f in _db.panel_fields(etype, pid, visible_only=True):
+        _draw_field(layout, sel, f, info)
 
 
 class OG_UL_PathKnots(bpy.types.UIList):

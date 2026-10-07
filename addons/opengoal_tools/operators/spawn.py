@@ -246,9 +246,9 @@ class OG_OT_SpawnEntity(Operator):
             self.report({"INFO"}, f"Added {o.name}")
 
         # ---- Seed default custom props from the DB so UI fields render ------
-        # One loop over the actor's schema (own + trait fields) replaces the old
-        # per-actor default assignments. Won't overwrite props already set above.
-        for _f in _db.ui_fields(etype):
+        # One loop over every exported field of the actor's panels (custom,
+        # sync, activation, spawner ...). Won't overwrite props already set above.
+        for _f in [f for f in _db.inherited_fields(etype) if not _db._field_is_output_only(f)]:
             _k = _f.get("key")
             if _k and _k not in o:
                 _dv = _db.field_default(_f, etype)

@@ -351,6 +351,13 @@ def _record_panels(rec: dict) -> list[dict]:
         out.append({"panel": "launcher", "show-panel": True})
     if rec.get("is_water"):
         out.append({"panel": "water", "show-panel": True})
+    if rec.get("category") in ("Enemies", "Bosses") and "panels" not in rec:
+        out.append({"panel": "activation", "show-panel": True})
+        out.append({"panel": "visibility", "show-panel": True})
+    if rec.get("spawns_lurkers"):
+        out.append({"panel": "spawner", "show-panel": True})
+    if rec.get("needs_notice_dist"):
+        out.append({"panel": "notice-dist", "show-panel": True})
     return out
 
 
@@ -600,9 +607,8 @@ def needs_sync(etype: str) -> bool:
 
 
 def needs_notice_dist(etype: str) -> bool:
-    """Enemy variants that read a notice-distance lump on construction."""
-    a = find_actor(etype) or {}
-    return bool(a.get("needs_notice_dist"))
+    """"notice-dist" panel (plat-eco): reads a notice-distance lump."""
+    return panel_exports(etype, "notice-dist")
 
 
 def is_prop(etype: str) -> bool:
@@ -616,9 +622,9 @@ def requires_navmesh_flag(etype: str) -> bool:
 
 
 def is_enemy(etype: str) -> bool:
-    """Enemies and bosses inherit fact-info-enemy (idle-distance, vis-dist)."""
-    a = find_actor(etype) or {}
-    return a.get("category") in ("Enemies", "Bosses")
+    """fact-info-enemy readers (idle-distance): the "activation" panel.
+    Never from the category."""
+    return panel_exports(etype, "activation")
 
 
 def is_platform(etype: str) -> bool:
@@ -633,9 +639,8 @@ def is_launcher(etype: str) -> bool:
 
 
 def spawns_lurkers(etype: str) -> bool:
-    """Spawns child enemies (num-lurkers lump). DB flag `spawns_lurkers: true`."""
-    a = find_actor(etype) or {}
-    return bool(a.get("spawns_lurkers"))
+    """Spawns child enemies (num-lurkers lump): the "spawner" panel."""
+    return panel_exports(etype, "spawner")
 
 
 def is_water(etype: str) -> bool:
@@ -695,7 +700,7 @@ def launcher_types() -> set[str]:
 
 
 def spawner_types() -> set[str]:
-    return {a["etype"] for a in actors() if a.get("spawns_lurkers")}
+    return {a["etype"] for a in actors() if spawns_lurkers(a["etype"])}
 
 
 # ── Trait fields (predicate-tagged field groups) ────────────────────────────
@@ -802,7 +807,15 @@ def variant_choices(etype: str) -> list[dict]:
 
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
-                  "aggro-trigger", "volume", "water")
+                  "aggro-trigger", "volume", "water", "activation", "visibility",
+                  "spawner", "notice-dist")
+
+
+def generic_panels(etype: str) -> list[tuple[str, dict]]:
+    """Shown panels whose PanelType says "draw": "generic" (no hand-written
+    Blender panel): drawn as boxes in Actor Settings. [(pid, panel_type)]"""
+    return [(pid, panel_type(pid)) for pid, p in actor_panels(etype).items()
+            if p["show"] and panel_type(pid).get("draw") == "generic"]
 
 
 def actor_panel(etype: str) -> str | None:

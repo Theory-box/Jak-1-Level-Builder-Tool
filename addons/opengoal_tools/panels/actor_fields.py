@@ -282,22 +282,24 @@ class OG_PT_ActorFields(Panel):
         # The generic field list is the "custom-fields" panel; actors with a
         # bespoke panel keep it hidden ("show-panel": false) and this container
         # just parents their sub-panels.
-        if not _db.has_panel(etype, "custom-fields"):
-            return
         actor = _db.find_actor(etype)
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
-        fields = _db.ui_fields(etype)
-        if not fields:
-            return  # container only — child sub-panels provide the settings
         # Include etype on actor_info dict so per-etype defaults work for
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}
-        for field in fields:
-            if field.get("show-field") is False:   # DB: hidden but still exported
-                continue
-            _draw_field(self.layout, sel, field, actor_info)
+        if _db.has_panel(etype, "custom-fields"):
+            for field in _db.ui_fields(etype):
+                if field.get("show-field") is False:   # DB: hidden but still exported
+                    continue
+                _draw_field(self.layout, sel, field, actor_info)
+        # Small DB panels with no hand-written Blender panel ("draw": "generic").
+        for pid, pt in _db.generic_panels(etype):
+            box = self.layout.box()
+            box.label(text=pt.get("label", pid))
+            for field in _db.panel_fields(etype, pid, visible_only=True):
+                _draw_field(box, sel, field, actor_info)
 
 
 # Exported registry for __init__.py

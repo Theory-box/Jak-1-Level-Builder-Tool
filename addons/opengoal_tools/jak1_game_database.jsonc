@@ -4239,6 +4239,75 @@
         }
       ]
     },
+    {
+      "id": "activation", "label": "Activation",
+      "description": "fact-info-enemy idle distance: the player must be closer than this to wake the actor.",
+      "fields": [
+        {
+          "key": "og_idle_distance",
+          "label": "Idle distance (m)",
+          "type": "float",
+          "default": 80.0,
+          "note": "Player must be within this range for the enemy to leave idle. Engine default 80.",
+          "lump": {
+            "key": "idle-distance",
+            "type": "meters"
+          }
+        }
+      ]
+    },
+    {
+      "id": "visibility", "label": "Visibility",
+      "description": "fact-info-enemy vis distance: keeps the process active/visible at range.",
+      "fields": [
+        {
+          "key": "og_vis_dist",
+          "label": "Vis distance (m)",
+          "type": "float",
+          "default": 200.0,
+          "note": "Keeps the enemy's process active/visible at range. Default 200.",
+          "lump": {
+            "key": "vis-dist",
+            "type": "meters"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spawner", "label": "Spawner", "draw": "generic",
+      "description": "Child actors to spawn (num-lurkers).",
+      "fields": [
+        {
+          "key": "og_num_lurkers",
+          "label": "Lurkers to spawn",
+          "type": "int",
+          "default": -1,
+          "note": "-1 leaves the engine default; 0+ overrides the spawn count.",
+          "lump": {
+            "key": "num-lurkers",
+            "type": "int32"
+          },
+          "write_if": "if_nonneg"
+        }
+      ]
+    },
+    {
+      "id": "notice-dist", "label": "Notice Distance", "draw": "generic",
+      "description": "notice-dist lump: -1 = always active, >= 0 = needs eco within range.",
+      "fields": [
+        {
+          "key": "og_notice_dist",
+          "label": "Notice distance (m)",
+          "type": "float",
+          "default": -1.0,
+          "note": "-1 = always active; >=0 = eco required within range.",
+          "lump": {
+            "key": "notice-dist",
+            "type": "meters"
+          }
+        }
+      ]
+    },
     {"id": "custom-fields", "label": "Actor Settings", "description": "Generic per-actor fields, written out in full in the actor's entry.", "fields": []},
     {"id": "crate", "label": "Crate", "description": "Crate type and contents.", "fields": []},
     {"id": "launcher", "label": "Launcher", "description": "Launch height and destination.", "fields": []},
@@ -4342,7 +4411,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
@@ -4371,7 +4442,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
@@ -4400,7 +4473,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The lurker crab is an enemy found at Sentinel Beach. They closely resemble hermit crabs, hiding under their shell until they reach out for an attack.",
       "art_group": "lurkercrab-ag.go",
@@ -4429,7 +4504,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The lurker puppy is a small lurker patrolling the higher regions of Sentinel Beach. Maroon in colour, bearing close resemblance to a small dog.",
       "art_group": "lurkerpuppy-ag.go",
@@ -4458,7 +4535,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
@@ -4487,7 +4566,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
       "art_group": "aphid-lurker-ag.go",
@@ -4515,7 +4596,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The swamp rat, also known as the rat lurker, is an enemy in The Precursor Legacy. Mutated rats bearing lurker traits, dwelling in the poisonous mud of Boggy Swamp. They spawn from nest-like structures.",
       "art_group": "swamp-rat-ag.go",
@@ -4544,7 +4627,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The lurker toad is an enemy in The Precursor Legacy. A large purple frog lurker found hopping around Boggy Swamp, making a very loud croaking noise.",
       "art_group": "kermit-ag.go",
@@ -4610,7 +4695,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.9,
@@ -4627,7 +4714,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
@@ -4656,7 +4745,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
@@ -4687,7 +4778,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
@@ -4744,7 +4837,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
@@ -4788,7 +4883,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
       "art_group": "spider-egg-ag.go",
@@ -4817,7 +4914,9 @@
       "parent": "nav-enemy",
       "panels": [
         {"panel": "path", "show-panel": true, "linear-only": true},
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The green eco lurker, also known as the dark eco lurker, is a lurker enemy in The Precursor Legacy. They were created by Gol Acheron and Maia — one of the only lurkers known to be artificially created.",
       "art_group": "green-eco-lurker-ag.go",
@@ -4845,6 +4944,10 @@
       "label": "Lurker Worm",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
+      ],
       "description": "The sand worm, also known as the sea serpent lurker, is an enemy in The Precursor Legacy. Lurkers dwelling in sand pits at Sentinel Beach — they burst from the ground to attack.",
       "art_group": "lurkerworm-ag.go",
       "tpage_group": "Beach",
@@ -4870,6 +4973,10 @@
       "label": "Jungle Snake",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
+      ],
       "description": "The lurker snake is an enemy in The Precursor Legacy — large brown serpentine lurkers residing in the canopy of Forbidden Jungle. They hang from branches at fixed points, attacking intruders below.",
       "art_group": "junglesnake-ag.go",
       "tpage_group": "Jungle",
@@ -4892,7 +4999,6 @@
     },
     {
       "etype": "swamp-bat",
-      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
@@ -4917,26 +5023,22 @@
       ],
       "panels": [
         {"panel": "path", "show-panel": true, "required": ["path", "pathb"], "paths": ["path", "pathb"]},
+        {"panel": "volume", "show-panel": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true},
         {
-          "panel": "custom-fields",
+          "panel": "spawner",
           "show-panel": true,
           "fields": [
             {
               "key": "og_num_lurkers",
               "label": "Child count (default 6)",
-              "type": "int",
               "default": 6,
               "min": 2,
-              "max": 8,
-              "lump": {
-                "key": "num-lurkers",
-                "type": "int32"
-              },
-              "write_if": "if_nonneg"
+              "max": 8
             }
           ]
-        },
-        {"panel": "volume", "show-panel": true}
+        }
       ],
       "color": [
         0.4,
@@ -4948,7 +5050,6 @@
     },
     {
       "etype": "yeti",
-      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Yeti",
       "category": "Enemies",
@@ -4978,21 +5079,16 @@
       ],
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true},
         {
-          "panel": "custom-fields",
+          "panel": "spawner",
           "show-panel": true,
           "fields": [
             {
               "key": "og_num_lurkers",
               "label": "Child count",
-              "type": "int",
-              "default": -1,
-              "min": -1,
-              "lump": {
-                "key": "num-lurkers",
-                "type": "int32"
-              },
-              "write_if": "if_nonneg"
+              "min": -1
             }
           ]
         }
@@ -5012,7 +5108,9 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "show-panel": true, "required": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
@@ -5133,7 +5231,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.3,
@@ -5182,7 +5282,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
@@ -5224,7 +5326,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
@@ -5368,7 +5472,9 @@
               "write_if": "always"
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.6,
@@ -5520,7 +5626,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.6,
@@ -5605,7 +5713,9 @@
               "write_if": "if_true"
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.5,
@@ -5722,7 +5832,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
@@ -5839,7 +5951,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.7,
@@ -5855,7 +5969,9 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
       "art_group": "ram-boss-ag.go",
@@ -5901,7 +6017,9 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "tpage_group": "Snow",
       "tpages": [
@@ -6107,7 +6225,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         1.0,
@@ -6172,7 +6292,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.1,
@@ -6188,7 +6310,9 @@
       "category": "Bosses",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
@@ -6657,7 +6781,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.3,
@@ -7104,18 +7230,11 @@
         {"panel": "path", "show-panel": true, "min-points": 2},
         {"panel": "sync", "show-panel": true},
         {
-          "panel": "custom-fields",
+          "panel": "notice-dist",
           "show-panel": true,
           "fields": [
             {
               "key": "og_notice_dist",
-              "label": "Notice distance (m)",
-              "type": "float",
-              "default": -1.0,
-              "lump": {
-                "key": "notice-dist",
-                "type": "meters"
-              },
               "write_if": "always"
             }
           ]
@@ -7125,7 +7244,6 @@
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
       "glb": "levels/jungle/plat-eco-lod0.glb",
-      "needs_notice_dist": true,
       "lumps": [
         {
           "key": "sync",
@@ -9743,7 +9861,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
@@ -9770,6 +9890,10 @@
       "label": "Dark Vine",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
+      ],
       "art_group": "darkvine-ag.go",
       "tpage_group": "Jungle",
       "tpages": [
@@ -9833,7 +9957,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.3,
@@ -9944,7 +10070,9 @@
               "required": false
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "lumps": [
         {
@@ -9967,6 +10095,10 @@
       "description":"Connect to a Cave Spider Trap (cave-trap) to infinitely spawn spiders from here",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
+      ],
       "tpage_group": "Robocave",
       "tpages": [
         "tpage-1313.go",
@@ -9986,7 +10118,6 @@
     },
     {
       "etype": "swamp-rat-nest",
-      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
@@ -10015,18 +10146,6 @@
           "show-panel": true,
           "fields": [
             {
-              "key": "og_num_lurkers",
-              "label": "Child count (default 3)",
-              "type": "int",
-              "default": 3,
-              "min": 0,
-              "lump": {
-                "key": "num-lurkers",
-                "type": "int32"
-              },
-              "write_if": "if_not_default"
-            },
-            {
               "key": "og_crate_pickup",
               "label": "Pickup",
               "type": "enum",
@@ -10046,6 +10165,20 @@
               "default": 1,
               "min": 1,
               "max": 99
+            }
+          ]
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true},
+        {
+          "panel": "spawner",
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Child count (default 3)",
+              "default": 3,
+              "min": 0
             }
           ]
         }
@@ -10213,7 +10346,9 @@
               "write_if": "always"
             }
           ]
-        }
+        },
+        {"panel": "activation", "show-panel": true},
+        {"panel": "visibility", "show-panel": true}
       ],
       "color": [
         0.6,
@@ -10225,7 +10360,6 @@
     },
     {
       "etype": "villa-starfish",
-      "spawns_lurkers": true,
       "schema_export": true,
       "label": "Villa Starfish",
       "category": "Visuals",
@@ -10249,20 +10383,13 @@
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
-          "panel": "custom-fields",
+          "panel": "spawner",
           "show-panel": true,
           "fields": [
             {
               "key": "og_num_lurkers",
               "label": "Child count",
-              "type": "int",
-              "default": -1,
-              "min": -1,
-              "lump": {
-                "key": "num-lurkers",
-                "type": "int32"
-              },
-              "write_if": "if_nonneg"
+              "min": -1
             }
           ]
         }
@@ -19136,50 +19263,10 @@
   "VertexExportTypes_notes": "Mesh-only props usable by the vertex-lit export workflow. Some overlap with entries in Actors (same etype, repeated here); entries unique to this list (e.g. 'dark-plant', 'evilplant' — wait, those ARE in Actors…) are purely decorative and not spawnable via the normal picker. Note: etypes in VertexExportExcludedEtypes (top-level) cannot be vertex-exported regardless of whether they appear here.",
 
   // ── TraitFields ─────────────────────────────────────────────────
-  // Predicate-tagged field groups: any actor for which the named predicate is
-  // true (see db.py _TRAIT_PREDICATES) inherits these fields for both export
-  // and UI. Replaces the old hardcoded enemy/spawner/notice branches.
-  "TraitFields": {
-    "is_enemy": [
-      {
-        "key": "og_idle_distance",
-        "label": "Idle distance (m)",
-        "type": "float",
-        "default": 80.0,
-        "note": "Player must be within this range for the enemy to leave idle. Engine default 80.",
-        "lump": { "key": "idle-distance", "type": "meters" }
-      },
-      {
-        "key": "og_vis_dist",
-        "label": "Vis distance (m)",
-        "type": "float",
-        "default": 200.0,
-        "note": "Keeps the enemy's process active/visible at range. Default 200.",
-        "lump": { "key": "vis-dist", "type": "meters" }
-      }
-    ],
-    "spawns_lurkers": [
-      {
-        "key": "og_num_lurkers",
-        "label": "Lurkers to spawn",
-        "type": "int",
-        "default": -1,
-        "note": "-1 leaves the engine default; 0+ overrides the spawn count.",
-        "lump": { "key": "num-lurkers", "type": "int32" },
-        "write_if": "if_nonneg"
-      }
-    ],
-    "needs_notice_dist": [
-      {
-        "key": "og_notice_dist",
-        "label": "Notice distance (m)",
-        "type": "float",
-        "default": -1.0,
-        "note": "-1 = always active; >=0 = eco required within range.",
-        "lump": { "key": "notice-dist", "type": "meters" }
-      }
-    ]
-  },
+  // Empty: the old trait groups are panels now (PanelTypes activation,
+  // visibility, spawner, notice-dist, water). Kept so older override
+  // databases that still fill it keep loading.
+  "TraitFields": {},
 
   // ── VertexExportExcludedEtypes ──────────────────────────────────
   "VertexExportExcludedEtypes": [
