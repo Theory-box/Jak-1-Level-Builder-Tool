@@ -75,71 +75,37 @@ def _vol_for_target(scene, target_name):
 
 
 def _draw_platform_settings(layout, sel, scene):
-    """Draw per-platform settings for the active platform actor."""
+    """DB "sync" panel: path timing for sync-driven actors (plat, plat-eco,
+    citb-plat ...). Fields, labels and defaults come from the panel's fields
+    (PanelTypes "sync" + the actor's overrides); "show-field": false /
+    "export": false fields are left out."""
     etype = sel.name.split("_", 2)[1]
-    einfo = ENTITY_DEFS.get(etype, {})
+    if not _db.has_panel(etype, "sync"):
+        return
+    from .export import path_modes as _pm
+    from .panels.actor_fields import _draw_field     # runtime import (no cycle)
+    try:
+        n_pts = len(_pm.build(_pm.gather_sources(sel), "LINEAR")[0])
+    except Exception:
+        n_pts = 0
+    box = layout.box()
+    if n_pts < 2:
+        box.label(text="⚠ Add ≥2 waypoints to enable movement", icon="INFO")
+    else:
+        box.label(text=f"✓ {n_pts} points — will move", icon="CHECKMARK")
+    col = box.column(align=True)
+    info = {"etype": etype, **(_db.find_actor(etype) or {})}
+    for f in _db.panel_fields(etype, "sync", visible_only=True):
+        _draw_field(col, sel, f, info)
+    box.operator("og.set_platform_defaults", text="Reset to Defaults", icon="LOOP_BACK")
+    if n_pts >= 2:
+        box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
 
-    layout.label(text=einfo.get("label", etype), icon="CUBE")
 
-    # ── Sync controls (plat, plat-eco, side-to-side-plat) ────────────────────
-    if einfo.get("needs_sync"):
-        box = layout.box()
-        box.label(text="Sync (Path Timing)", icon="TIME")
-
-        wp_prefix = sel.name + "_wp_"
-        wp_count  = sum(1 for o in _level_objects(scene)
-                        if o.name.startswith(wp_prefix) and o.type == "EMPTY")
-
-        if wp_count < 2:
-            box.label(text="⚠ Add ≥2 waypoints to enable movement", icon="INFO")
-        else:
-            box.label(text=f"✓ {wp_count} waypoints — platform will move", icon="CHECKMARK")
-
-        col = box.column(align=True)
-
-        # Period / Phase / Ease — use _prop_row (safe: no writes in draw)
-        _prop_row(col, sel, "og_sync_period",   "Period (s):",  4.0)
-        _prop_row(col, sel, "og_sync_phase",    "Phase (0–1):", 0.0)
-        _prop_row(col, sel, "og_sync_ease_out", "Ease Out:",    0.15)
-        _prop_row(col, sel, "og_sync_ease_in",  "Ease In:",     0.15)
-
-        # Wrap phase toggle
-        wrap = bool(sel.get("og_sync_wrap", 0))
-        row = box.row()
-        icon = "CHECKBOX_HLT" if wrap else "CHECKBOX_DEHLT"
-        label = "Loop (wrap-phase) ✓" if wrap else "Loop (wrap-phase)"
-        row.operator("og.toggle_platform_wrap", text=label, icon=icon)
-
-        box.operator("og.set_platform_defaults", text="Reset to Defaults", icon="LOOP_BACK")
-
-        if wp_count >= 2:
-            box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
-
-    # ── plat-button path info ─────────────────────────────────────────────────
-    if einfo.get("needs_path") and not einfo.get("needs_sync"):
-        box = layout.box()
-        box.label(text="Path (Button Travel)", icon="ANIM")
-        wp_prefix = sel.name + "_wp_"
-        wp_count  = sum(1 for o in _level_objects(scene)
-                        if o.name.startswith(wp_prefix) and o.type == "EMPTY")
-        if wp_count < 2:
-            box.label(text="⚠ Needs ≥2 waypoints (start + end)", icon="ERROR")
-        else:
-            box.label(text=f"✓ {wp_count} waypoints", icon="CHECKMARK")
-        box.label(text="Use Waypoints panel to add points ↓", icon="INFO")
-
-    # ── notice-dist (plat-eco) ────────────────────────────────────────────────
-    if einfo.get("needs_notice_dist"):
-        box = layout.box()
-        box.label(text="Eco Notice Distance", icon="RADIOBUT_ON")
-        notice = float(sel.get("og_notice_dist", -1.0))
-        _prop_row(box, sel, "og_notice_dist", "Distance (m, -1=always):", -1.0)
-        toggle_row = box.row()
-        if notice >= 0:
-            op = toggle_row.operator("og.nudge_float_prop", text="Set Always Active", icon="RADIOBUT_ON")
-            op.prop_name = "og_notice_dist"; op.delta = -999.0; op.val_min = -1.0
-        else:
-            toggle_row.label(text="Moves without eco — set value above to limit range", icon="INFO")
+def sync_defaults(etype: str) -> dict:
+    """{prop key: default} for the actor's "sync" panel fields."""
+    return {f["key"]: _db.field_default(f, etype)
+            for f in _db.panel_fields(etype, "sync") if f.get("key")}
 
 
 # ===========================================================================
@@ -245,8 +211,8 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
                         box2.label(text="Shift-select a mesh to link", icon="INFO")
     elif einfo.get("needs_pathb"):
         box = layout.box()
-        box.label(text="Needs 2 path sets", icon="INFO")
-        box.label(text="Waypoints: _wp_00... and _wpb_00...")
+        box.label(text="Needs 2 paths: path + pathb", icon="INFO")
+        box.label(text="Path panel > Add Path (pathb)")
     elif einfo.get("needs_path"):
         box = layout.box()
         box.label(text="Needs waypoints to patrol", icon="INFO")

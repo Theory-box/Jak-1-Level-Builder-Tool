@@ -326,11 +326,10 @@ class OG_OT_SetPlatformDefaults(Operator):
         o = ctx.active_object
         if not o:
             return {"CANCELLED"}
-        o["og_sync_period"]   = 4.0
-        o["og_sync_phase"]    = 0.0
-        o["og_sync_ease_out"] = 0.15
-        o["og_sync_ease_in"]  = 0.15
-        o["og_sync_wrap"]     = 0
+        from ..utils import sync_defaults
+        etype = o.name.split("_", 2)[1] if o.name.count("_") >= 2 else ""
+        for k, v in sync_defaults(etype).items():
+            o[k] = int(v) if isinstance(v, bool) else v
         return {"FINISHED"}
 
 class OG_OT_SetVersionField(bpy.types.Operator):

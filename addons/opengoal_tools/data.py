@@ -48,9 +48,9 @@ def _entity_info_from_actor(a: dict) -> dict:
     info["ai_type"] = "prop" if parent == "eco-collectable" else parent
     # Runtime-required flags — read from top-level actor record, NOT from links
     # (links are UI-availability; top-level is the old-schema runtime flag).
-    info["needs_path"]  = bool(a.get("needs_path"))
-    info["needs_pathb"] = bool(a.get("needs_pathb"))
-    info["needs_sync"]  = bool(a.get("needs_sync"))
+    info["needs_path"]  = _db.needs_path(a["etype"])     # path panel "required"
+    info["needs_pathb"] = _db.needs_pathb(a["etype"])
+    info["needs_sync"]  = _db.needs_sync(a["etype"])     # "sync" panel
     info["needs_notice_dist"] = bool(a.get("needs_notice_dist"))
     info["requires_navmesh"]  = bool(a.get("requires_navmesh"))
     return info

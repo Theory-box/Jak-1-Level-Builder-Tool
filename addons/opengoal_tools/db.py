@@ -293,7 +293,10 @@ def inherited_link_descriptions(etype: str) -> dict:
 # "show-panel" and merges its fields by key into the panel's standard fields
 # (PanelTypes[id].fields). "custom-fields" holds fully written-out fields.
 # "show-panel": false keeps a panel's fields exported but hides the panel;
-# "show-field": false does the same for one field.
+# "show-field": false does the same for one field. "export": false (on a
+# panel or a field) hides it AND stops it being exported.
+# Any other key on a panel entry is a panel option, merged the same way
+# (nearer record wins), e.g. path: "required", "linear-only", "paths".
 
 def panel_types() -> list[dict]:
     return DB.get("PanelTypes", [])
@@ -319,6 +322,18 @@ def _record_panels(rec: dict) -> list[dict]:
     if rec.get("fields"):
         out.append({"panel": "custom-fields", "show-panel": not rec.get("panel"),
                     "fields": rec["fields"]})
+    # old path/sync flags
+    if rec.get("needs_path") or rec.get("needs_sync") or rec.get("nav_safe") is False:
+        p = {"panel": "path", "show-panel": True}
+        if rec.get("needs_path"):
+            p["required"] = ["path", "pathb"] if rec.get("needs_pathb") else True
+        if rec.get("path_linear_only"):
+            p["linear-only"] = True
+        if rec.get("paths"):
+            p["paths"] = rec["paths"]
+        out.append(p)
+    if rec.get("needs_sync"):
+        out.append({"panel": "sync", "show-panel": True})
     return out
 
 
@@ -350,11 +365,21 @@ def actor_panels(etype: str) -> dict:
                 continue
             cur = out.get(pid)
             if cur is None:
-                cur = out[pid] = {"show": True,
-                                  "fields": [dict(f) for f in panel_type(pid).get("fields", [])]}
+                pt = panel_type(pid)
+                cur = out[pid] = {"show": True, "export": True,
+                                  "fields": [dict(f) for f in pt.get("fields", [])],
+                                  "options": dict(pt.get("options", {}))}
             if "show-panel" in e:
                 cur["show"] = bool(e["show-panel"])
+            if "export" in e:
+                cur["export"] = bool(e["export"])
             cur["fields"] = _merge_fields(cur["fields"], e.get("fields"))
+            for k, v in e.items():
+                if k not in ("panel", "show-panel", "export", "fields"):
+                    cur["options"][k] = v
+    for p in out.values():
+        if not p["export"]:
+            p["show"] = False
     return out
 
 
@@ -364,19 +389,45 @@ def has_panel(etype: str, pid: str) -> bool:
     return bool(p and p["show"])
 
 
-def panel_fields(etype: str, pid: str, visible_only: bool = False) -> list[dict]:
-    """Fields of one panel (standard + overrides). visible_only drops panels
-    that are hidden and fields with "show-field": false."""
+def panel_exports(etype: str, pid: str) -> bool:
+    """True if the actor has panel `pid` (shown or hidden) and it isn't
+    "export": false — i.e. its data goes into the level."""
     p = actor_panels(etype).get(pid)
-    if not p or (visible_only and not p["show"]):
+    return bool(p and p["export"])
+
+
+def panel_option(etype: str, pid: str, key: str, default=None):
+    """A panel-level option (e.g. path "linear-only") or `default`."""
+    p = actor_panels(etype).get(pid)
+    return p["options"].get(key, default) if p else default
+
+
+def _field_exports(f: dict) -> bool:
+    return f.get("export") is not False
+
+
+def panel_fields(etype: str, pid: str, visible_only: bool = False) -> list[dict]:
+    """Fields of one panel (standard + overrides), without "export": false
+    ones. visible_only also drops hidden panels and "show-field": false."""
+    p = actor_panels(etype).get(pid)
+    if not p or not p["export"] or (visible_only and not p["show"]):
         return []
-    return [f for f in p["fields"] if not (visible_only and f.get("show-field") is False)]
+    return [f for f in p["fields"] if _field_exports(f)
+            and not (visible_only and f.get("show-field") is False)]
 
 
 def inherited_fields(etype: str) -> list[dict]:
-    """Every exported custom field for an etype (the "custom-fields" panel,
-    parents first, nearer records overriding by key; hidden ones included).
-    Used by the schema-driven exporter (export/schema_emit.py)."""
+    """Every exported field of every panel an etype has (shown or hidden;
+    parents first, nearer records overriding by key). Used by the
+    schema-driven exporter (export/schema_emit.py) and default lookups."""
+    out = []
+    for pid in actor_panels(etype):
+        out.extend(panel_fields(etype, pid))
+    return out
+
+
+def custom_fields(etype: str) -> list[dict]:
+    """The "custom-fields" panel's exported fields (generic Actor Settings)."""
     return panel_fields(etype, "custom-fields")
 
 
@@ -498,19 +549,36 @@ def nav_unsafe(etype: str) -> bool:
     return not is_nav_safe(etype)
 
 
+def _path_required(etype: str) -> list[str]:
+    req = panel_option(etype, "path", "required", False) if panel_exports(etype, "path") else False
+    if req is True:
+        return ["path"]
+    return [r for r in req if isinstance(r, str)] if isinstance(req, list) else []
+
+
 def needs_path(etype: str) -> bool:
-    a = find_actor(etype) or {}
-    return bool(a.get("needs_path"))
+    """Path panel marked "required" (the actor errors without its main path)."""
+    return "path" in _path_required(etype)
 
 
 def needs_pathb(etype: str) -> bool:
-    a = find_actor(etype) or {}
-    return bool(a.get("needs_pathb"))
+    """Path panel "required" lists "pathb" (swamp-bat)."""
+    return "pathb" in _path_required(etype)
+
+
+def path_linear_only(etype: str) -> bool:
+    """Path panel "linear-only": path-control reader, ignores path-k."""
+    return bool(panel_option(etype, "path", "linear-only", False))
+
+
+def path_names(etype: str) -> list[str]:
+    """Path panel "paths": lump names offered by Add Path (e.g. path, pathb)."""
+    return list(panel_option(etype, "path", "paths", []) or [])
 
 
 def needs_sync(etype: str) -> bool:
-    a = find_actor(etype) or {}
-    return bool(a.get("needs_sync"))
+    """Actor has the "sync" panel (sync lump drives its path timing)."""
+    return panel_exports(etype, "sync")
 
 
 def needs_notice_dist(etype: str) -> bool:
@@ -574,9 +642,8 @@ def uses_navmesh(etype: str) -> bool:
 
 
 def uses_waypoints(etype: str) -> bool:
-    """True if this actor can use waypoints (patrol path or sync-driven path)."""
-    return (not is_nav_safe(etype)
-            or needs_path(etype) or needs_pathb(etype) or needs_sync(etype))
+    """True if this actor shows the "path" panel."""
+    return has_panel(etype, "path")
 
 
 # Membership sets (built once from the DB; mirror the legacy data.py constants).
@@ -585,11 +652,11 @@ def nav_unsafe_types() -> set[str]:
 
 
 def needs_path_types() -> set[str]:
-    return {a["etype"] for a in actors() if a.get("needs_path")}
+    return {a["etype"] for a in actors() if needs_path(a["etype"])}
 
 
 def needs_pathb_types() -> set[str]:
-    return {a["etype"] for a in actors() if a.get("needs_pathb")}
+    return {a["etype"] for a in actors() if needs_pathb(a["etype"])}
 
 
 def is_prop_types() -> set[str]:
@@ -708,10 +775,10 @@ def variant_choices(etype: str) -> list[dict]:
 
 
 def actor_panel(etype: str) -> str | None:
-    """The first shown bespoke panel id (anything but "custom-fields") of an
-    actor, or None. Kept for the hand-written panels' polls."""
+    """The first shown bespoke panel id of an actor (not the shared ones:
+    custom-fields, path, sync), or None. Panels poll with has_panel()."""
     for pid, p in actor_panels(etype).items():
-        if pid != "custom-fields" and p["show"]:
+        if pid not in ("custom-fields", "path", "sync") and p["show"]:
             return pid
     return None
 
@@ -719,7 +786,7 @@ def actor_panel(etype: str) -> str | None:
 def ui_fields(etype: str) -> list[dict]:
     """Fields to render in the generic actor panel: own/inherited fields plus
     trait fields, deduped by key (own wins), excluding output-only const lumps."""
-    own = [f for f in inherited_fields(etype) if not _field_is_output_only(f)]
+    own = [f for f in custom_fields(etype) if not _field_is_output_only(f)]
     seen = {f.get("key") for f in own}
     return own + [f for f in trait_fields(etype)
                   if not _field_is_output_only(f) and f.get("key") not in seen]

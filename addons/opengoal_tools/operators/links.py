@@ -511,7 +511,7 @@ def _add_path_name_items(self, ctx):
     actor = bpy.data.objects.get(self.actor_name)
     have = {actor.og_path_lump} | {p.name for p in actor.og_extra_paths} if actor else set()
     etype = actor.name.split("_", 2)[1] if actor and actor.name.startswith("ACTOR_") else ""
-    wanted = [n for n in ((_db.find_actor(etype) or {}).get("paths") or []) if n not in have]
+    wanted = [n for n in _db.path_names(etype) if n not in have]
     rest = [n for n in STANDARD_PATH_NAMES if n not in have and n not in wanted]
     items = [(n, n, f"{n} (this actor reads it)", i) for i, n in enumerate(wanted)]
     items += [(n, n, n, len(items) + i) for i, n in enumerate(rest)]
@@ -560,8 +560,7 @@ def path_knot_target(actor, path_index):
     knot editor; built = path_modes.build() output for that path."""
     from ..export import path_modes as _pm
     from .. import db as _db
-    lin = bool((_db.find_actor(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "") or {})
-               .get("path_linear_only"))
+    lin = _db.path_linear_only(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "")
     if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
         xp = actor.og_extra_paths[path_index]
         built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin, pingpong=xp.pingpong)

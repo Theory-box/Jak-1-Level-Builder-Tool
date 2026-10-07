@@ -789,11 +789,9 @@ class OG_OT_SpawnPlatform(Operator):
 
         # ---- Set default custom props so UI fields render immediately ------
         if einfo.get("needs_sync"):
-            o["og_sync_period"]   = 4.0
-            o["og_sync_phase"]    = 0.0
-            o["og_sync_ease_out"] = 0.15
-            o["og_sync_ease_in"]  = 0.15
-            o["og_sync_wrap"]     = 0
+            from ..utils import sync_defaults
+            for k, v in sync_defaults(etype).items():
+                o[k] = int(v) if isinstance(v, bool) else v
         if einfo.get("needs_notice_dist"):
             o["og_notice_dist"] = -1.0
 

@@ -238,7 +238,8 @@ class OG_PT_ActorLinks(Panel):
 
 
 class OG_PT_ActorPlatform(Panel):
-    bl_label       = "Platform Settings"
+    """DB "sync" panel (path timing). Was category-driven (all Platforms)."""
+    bl_label       = "Sync (Path Timing)"
     bl_idname      = "OG_PT_actor_platform"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -251,7 +252,7 @@ class OG_PT_ActorPlatform(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_is_platform(parts[1])
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sync")
 
     def draw(self, ctx):
         _draw_platform_settings(self.layout, ctx.active_object, ctx.scene)
@@ -272,7 +273,7 @@ class OG_PT_ActorCrate(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "crate"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "crate")
 
     def draw(self, ctx):
         layout = self.layout
@@ -414,7 +415,7 @@ class OG_PT_ActorEcoDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "eco-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "eco-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -515,7 +516,7 @@ class OG_PT_ActorLauncherDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "launcherdoor"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "launcherdoor")
 
     def draw(self, ctx):
         layout = self.layout
@@ -579,7 +580,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "sun-iris-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sun-iris-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -629,7 +630,7 @@ class OG_PT_ActorCaveElevator(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "caveelevator"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "caveelevator")
 
     def draw(self, ctx):
         layout = self.layout
@@ -667,7 +668,7 @@ class OG_PT_ActorTaskGated(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "task-gated"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "task-gated")
 
     def draw(self, ctx):
         layout = self.layout
@@ -925,7 +926,7 @@ class OG_PT_ActorWaypoints(Panel):
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
         from ..export import path_modes as _pm
-        linear_only = bool((_db.find_actor(etype) or {}).get("path_linear_only"))
+        linear_only = _db.path_linear_only(etype)
         mode_box = layout.box()
         if linear_only:
             mode_box.label(text="Path Mode (this actor only moves in straight lines):", icon="IPO_LINEAR")
@@ -954,15 +955,21 @@ class OG_PT_ActorWaypoints(Panel):
         except Exception:
             pass
 
-        # Validation hints.
-        if einfo.get("needs_path"):
+        # Validation hints. Path panel options: "required" (errors without a
+        # path), "min-points" (e.g. plat-button / sync platforms need 2).
+        min_pts = int(_db.panel_option(etype, "path", "min-points", 1) or 1)
+        if einfo.get("needs_path") or min_pts > 1:
             pt_count = sum(
                 (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
                  else (1 if s.obj and s.obj.type == "EMPTY" else 0))
                 for s in sources
             ) if n_sources else len(legacy_wps)
-            if pt_count < 1:
-                layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
+            if pt_count < min_pts:
+                if einfo.get("needs_path"):
+                    layout.label(text=f"⚠ Needs ≥ {min_pts} waypoint{'s' if min_pts > 1 else ''} or will crash",
+                                 icon="ERROR")
+                else:
+                    layout.label(text=f"Add ≥ {min_pts} waypoints to make it move", icon="INFO")
 
         # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
         self._draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
@@ -976,8 +983,9 @@ class OG_PT_ActorWaypoints(Panel):
         hdr.label(text="Keyframe:")
         hdr.prop(sel, "og_path_keyframe", text="")
         has_b = any(p.name == "pathb" for p in sel.og_extra_paths)
-        _arec = _db.find_actor(etype) or {}
-        multi = bool(_arec.get("multi_path") or len(_arec.get("paths") or []) > 1)
+        # Path panel options: "paths" (lump names Add Path offers) or "multi-path".
+        names_db = _db.path_names(etype)
+        multi = bool(_db.panel_option(etype, "path", "multi-path", False) or len(names_db) > 1)
 
         for i, xp in enumerate(sel.og_extra_paths):
             box = layout.box()
@@ -1036,7 +1044,7 @@ class OG_PT_ActorWaypoints(Panel):
         # Extra paths only for actors the DB marks multi-path ("paths" list
         # or "multi_path": true); existing ones always stay visible.
         if multi:
-            wanted = [n for n in (_arec.get("paths") or [])
+            wanted = [n for n in names_db
                       if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
             add = layout.row()
             op = add.operator("og.add_extra_path",

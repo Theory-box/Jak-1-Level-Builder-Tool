@@ -285,7 +285,7 @@ def collect_actors(scene, depsgraph=None):
         _arec_p = _schema_db.find_actor(etype) or {}
         _ppts, path_knots, _pmode, _pwarn = _pm.build(
             _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
-            linear_only=bool(_arec_p.get("path_linear_only")),
+            linear_only=_schema_db.path_linear_only(etype),
             pingpong=bool(getattr(o, "og_waypoint_pingpong", False)))
         path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
         if _pwarn and path_pts:
@@ -308,14 +308,12 @@ def collect_actors(scene, depsgraph=None):
                 lump["nav-mesh-sphere"] = ["vector4m", [gx, gy, gz, nav_r]]
                 log(f"  [nav-workaround] {o.name}  sphere r={nav_r}m  (no waypoints - will idle)")
 
-        # ── Path lump (needs_path=True) ───────────────────────────────────────
-        # process-drawable enemies that error without a path lump.
-        # Also used by nav-enemies that patrol (snow-bunny, muse etc.).
-        # Waypoints tagged _wp_00, _wp_01 ... drive this lump.
-        # For needs_path enemies with no waypoints we log a warning — the level
-        # will likely crash or error at runtime without at least 1 waypoint.
-        # Platforms handle their own path lump below — skip them here to avoid double-emit
-        if (einfo.get("needs_path") or (_schema_db.nav_unsafe(etype) and path_pts)) and einfo.get("cat") != "Platforms":
+        # ── Path lump (DB "path" panel) ───────────────────────────────────────
+        # Any actor with the path panel exports its waypoints/curves as 'path'
+        # (patrolling nav-enemies, process-drawable enemies, sync platforms,
+        # plat-button ...). "required" actors error at runtime without one.
+        # "export": false on the panel turns the lump off.
+        if _schema_db.panel_exports(etype, "path"):
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")
@@ -333,18 +331,27 @@ def collect_actors(scene, depsgraph=None):
         # Only emitted when the platform has waypoints — without waypoints the
         # engine ignores sync and the platform spawns idle.
         if einfo.get("needs_sync"):
-            period   = float(o.get("og_sync_period",   4.0))
-            phase    = float(o.get("og_sync_phase",    0.0))
-            ease_out = float(o.get("og_sync_ease_out", 0.15))
-            ease_in  = float(o.get("og_sync_ease_in",  0.15))
+            # Values/defaults from the DB "sync" panel; a field with
+            # "export": false is left out (ease -> 2-value form, wrap -> no options).
+            _sf = {f["key"]: f for f in _schema_db.panel_fields(etype, "sync") if f.get("key")}
+            def _sv(k, fallback):
+                if k not in _sf:
+                    return None
+                return float(o.get(k, _schema_db.field_default(_sf[k], etype) if _sf[k].get("default") is not None else fallback))
+            period   = _sv("og_sync_period",   4.0)
+            phase    = _sv("og_sync_phase",    0.0)
+            ease_out = _sv("og_sync_ease_out", 0.15)
+            ease_in  = _sv("og_sync_ease_in",  0.15)
+            period   = 4.0 if period is None else period
+            phase    = 0.0 if phase is None else phase
             if path_pts:
-                if ease_in <= 0.0 or ease_out <= 0.0:
+                if ease_in is None or ease_out is None or ease_in <= 0.0 or ease_out <= 0.0:
                     # 2-value form: duration + offset only. Ease-in/out of 0 crash
                     # the game on load, so omit them to disable easing entirely.
                     lump["sync"] = ["float", period, phase]
                 else:
                     lump["sync"] = ["float", period, phase, ease_out, ease_in]
-                wrap = bool(o.get("og_sync_wrap", False))
+                wrap = "og_sync_wrap" in _sf and bool(o.get("og_sync_wrap", False))
                 if wrap:
                     # fact-options wrap-phase: bit 3 of the options uint64
                     # GOAL: (defenum fact-options :bitfield #t  (wrap-phase 3))
@@ -355,22 +362,6 @@ def collect_actors(scene, depsgraph=None):
             else:
                 log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
-        # ── Platform: path lump (plat-button) ────────────────────────────────
-        # plat-button follows a path when pressed. Requires ≥2 waypoints.
-        # Uses needs_path flag and is a Platform, distinguishing from enemy paths.
-        if einfo.get("needs_path") and einfo.get("cat") == "Platforms":
-            if path_pts:
-                lump["path"] = ["vector4m"] + path_pts
-                log(f"  [plat-path] {o.name}  {len(path_pts)} points")
-            else:
-                log(f"  [WARNING] {o.name} (plat-button) needs ≥2 waypoints or it will not move!")
-
-        # ── Platform: sync path (plat / plat-eco) ────────────────────────────
-        # When a sync platform has waypoints, also emit the path lump so the
-        # engine can evaluate the curve.
-        if einfo.get("needs_sync") and path_pts and "path" not in lump:
-            lump["path"] = ["vector4m"] + path_pts
-            log(f"  [sync-path] {o.name}  {len(path_pts)} points")
 
         # ── Smooth-curve knots (path-k) ──────────────────────────────────────
         # When Path Mode = SMOOTH and a 'path' lump was emitted, also emit the
@@ -516,7 +507,7 @@ def collect_actors(scene, depsgraph=None):
             _xkf = _pm.keyframe_suffix(getattr(_xp, "keyframe", ""))
             _xpts, _xk, _xmode, _xwarn = _pm.build(
                 _pm.gather_from(_xp.sources), _xp.mode,
-                linear_only=bool(_arec_p.get("path_linear_only")), pingpong=_xp.pingpong)
+                linear_only=_schema_db.path_linear_only(etype), pingpong=_xp.pingpong)
             if _xwarn and _xpts:
                 log(f"  [path] {o.name} '{_xn}': {_xwarn}")
             if _xk and getattr(_xp, "knots_manual", False):

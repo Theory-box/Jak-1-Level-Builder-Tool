@@ -12,6 +12,7 @@ from __future__ import annotations
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
+from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
@@ -191,8 +192,8 @@ def _draw_selected_actor(layout, sel, scene):
         nav_r = float(sel.get("og_nav_radius", 6.0))
         box.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
 
-    # ── Platform: sync, path, notice-dist ────────────────────────────────
-    elif _actor_is_platform(etype):
+    # ── Sync (DB "sync" panel) ───────────────────────────────────────────
+    elif _db.has_panel(etype, "sync"):
         _draw_platform_settings(layout, sel, scene)
 
     # ── Prop ─────────────────────────────────────────────────────────────

@@ -4106,10 +4106,79 @@
   // category. "fields" here are each panel's standard fields; an actor's
   // entry overrides them by key ("default", "show-field": false, ...).
   // "custom-fields" takes fully written-out fields (the old "fields" key).
+  // "export": false (panel or field) hides it and stops it being exported.
+  // Other keys on a panel entry are panel options (path: required, linear-only, paths, min-points).
   "PanelTypes": [
+    {"id": "path", "label": "Path", "description": "Waypoints/curves exported as 'path' (+ path-k). Options: \"required\": true or [lump names] (errors without them), \"linear-only\": true (path-control, no path-k), \"paths\": [lump names Add Path offers], \"multi-path\": true, \"min-points\": N.", "fields": []},
+    {
+      "id": "sync", "label": "Sync (Path Timing)",
+      "description": "Path timing lump: period, phase, ease out/in, wrap-phase option. \"export\": false on ease fields writes the 2-value form.",
+      "fields": [
+        {
+          "key": "og_sync_period",
+          "label": "Period (s)",
+          "type": "float",
+          "default": 4.0,
+          "min": 0.0,
+          "lump": {
+            "key": "sync",
+            "type": "float",
+            "slot": 0
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_phase",
+          "label": "Phase (0-1)",
+          "type": "float",
+          "default": 0.0,
+          "lump": {
+            "key": "sync",
+            "type": "float",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_out",
+          "label": "Ease out",
+          "type": "float",
+          "default": 0.15,
+          "lump": {
+            "key": "sync",
+            "type": "float",
+            "slot": 2
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_ease_in",
+          "label": "Ease in",
+          "type": "float",
+          "default": 0.15,
+          "lump": {
+            "key": "sync",
+            "type": "float",
+            "slot": 3
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_sync_wrap",
+          "label": "Wrap phase",
+          "type": "bool",
+          "default": false,
+          "lump_bit": {
+            "key": "options",
+            "type": "uint32",
+            "bit_value": 8
+          },
+          "write_if": "if_true"
+        }
+      ]
+    },
     {"id": "custom-fields", "label": "Actor Settings", "description": "Generic per-actor fields, written out in full in the actor's entry.", "fields": []},
     {"id": "crate", "label": "Crate", "description": "Crate type and contents.", "fields": []},
-    {"id": "platform", "label": "Platform", "description": "Platform settings (fields drawn by the Platform panel).", "fields": []},
     {"id": "launcher", "label": "Launcher", "description": "Launch height and destination.", "fields": []},
     {"id": "eco-door", "label": "Eco Door", "description": "Door state, lock and flags.", "fields": []},
     {"id": "launcherdoor", "label": "Launcher Door", "description": "Launcher door settings.", "fields": []},
@@ -4126,16 +4195,13 @@
       "description": "Root type for all spawnable entities.",
       "links": {
         "need_task": false,
-        "need_path": false,
         "need_nav": false,
         "need_enemy": false,
         "need_vol": false,
         "need_alt": false,
         "need_prev": false,
         "need_next": false,
-        "need_sync": false,
-        "need_eco-info": false,
-        "need_pathb": false
+        "need_eco-info": false
       },
       "lumps": [
         {
@@ -4185,7 +4251,6 @@
       "parent": "process-drawable",
       "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4229,10 +4294,12 @@
   "Actors": [
     {
       "etype": "babak",
-      "path_linear_only": true,
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -4246,7 +4313,6 @@
       "glb": "levels/beach/babak-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4261,10 +4327,12 @@
     },
     {
       "etype": "babak-with-cannon",
-      "path_linear_only": true,
       "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -4278,7 +4346,6 @@
       "glb": "levels/beach/babak-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4293,10 +4360,12 @@
     },
     {
       "etype": "lurkercrab",
-      "path_linear_only": true,
       "label": "Lurker Crab",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The lurker crab is an enemy found at Sentinel Beach. They closely resemble hermit crabs, hiding under their shell until they reach out for an attack.",
       "art_group": "lurkercrab-ag.go",
       "tpage_group": "Beach",
@@ -4310,7 +4379,6 @@
       "glb": "levels/beach/lurkercrab-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4325,10 +4393,12 @@
     },
     {
       "etype": "lurkerpuppy",
-      "path_linear_only": true,
       "label": "Lurker Puppy",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The lurker puppy is a small lurker patrolling the higher regions of Sentinel Beach. Maroon in colour, bearing close resemblance to a small dog.",
       "art_group": "lurkerpuppy-ag.go",
       "tpage_group": "Beach",
@@ -4342,7 +4412,6 @@
       "glb": "levels/beach/lurkerpuppy-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4357,10 +4426,12 @@
     },
     {
       "etype": "hopper",
-      "path_linear_only": true,
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
@@ -4374,7 +4445,6 @@
       "glb": "levels/jungle/hopper-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4389,10 +4459,12 @@
     },
     {
       "etype": "aphid",
-      "path_linear_only": true,
       "label": "Aphid",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
       "art_group": "aphid-lurker-ag.go",
       "tpage_group": "Jungle",
@@ -4406,7 +4478,6 @@
       "glb": "levels/jungleb/aphid-lurker-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4420,10 +4491,12 @@
     },
     {
       "etype": "swamp-rat",
-      "path_linear_only": true,
       "label": "Swamp Rat",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The swamp rat, also known as the rat lurker, is an enemy in The Precursor Legacy. Mutated rats bearing lurker traits, dwelling in the poisonous mud of Boggy Swamp. They spawn from nest-like structures.",
       "art_group": "swamp-rat-ag.go",
       "tpage_group": "Swamp",
@@ -4437,7 +4510,6 @@
       "glb": "levels/swamp/swamp-rat-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4452,10 +4524,12 @@
     },
     {
       "etype": "kermit",
-      "path_linear_only": true,
       "label": "Kermit (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The lurker toad is an enemy in The Precursor Legacy. A large purple frog lurker found hopping around Boggy Swamp, making a very loud croaking noise.",
       "art_group": "kermit-ag.go",
       "tpage_group": "Swamp",
@@ -4469,7 +4543,6 @@
       "glb": "levels/swamp/kermit-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4484,7 +4557,6 @@
     },
     {
       "etype": "snow-bunny",
-      "path_linear_only": true,
       "label": "Snow Bunny Lurker",
       "schema_export": true,
       "category": "Enemies",
@@ -4501,9 +4573,7 @@
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
       "nav_safe": false,
-      "needs_path": true,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4515,6 +4585,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -4544,19 +4615,19 @@
     },
     {
       "etype": "citb-bunny",
-      "path_linear_only": true,
       "label": "Citadel Bunny Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+      ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
       "code": "citb-bunny.o",
       "glb": "levels/citadel/citb-bunny-lod0.glb",
       "nav_safe": false,
-      "needs_path": true,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4577,10 +4648,12 @@
     },
     {
       "etype": "double-lurker",
-      "path_linear_only": true,
       "label": "Double Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
@@ -4596,7 +4669,6 @@
       ],
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4611,10 +4683,12 @@
     },
     {
       "etype": "bonelurker",
-      "path_linear_only": true,
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
@@ -4628,7 +4702,6 @@
       "glb": "levels/misty/bonelurker-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4643,10 +4716,12 @@
     },
     {
       "etype": "muse",
-      "path_linear_only": true,
       "label": "Muse",
       "category": "Interactive Objects",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "art_group": "muse-ag.go",
       "tpage_group": "Misty",
       "tpages": [
@@ -4659,7 +4734,6 @@
       "glb": "levels/misty/muse-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4674,10 +4748,12 @@
     },
     {
       "etype": "baby-spider",
-      "path_linear_only": true,
       "label": "Baby Spider",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
       "tpage_group": "Maincave",
@@ -4691,7 +4767,6 @@
       "glb": "levels/darkcave/baby-spider-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4709,6 +4784,9 @@
       "label": "Spider Egg",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true}
+      ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
       "art_group": "spider-egg-ag.go",
       "tpage_group": "Maincave",
@@ -4722,7 +4800,6 @@
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4748,10 +4825,12 @@
     },
     {
       "etype": "green-eco-lurker",
-      "path_linear_only": true,
       "label": "Green Eco Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true}
+      ],
       "description": "The green eco lurker, also known as the dark eco lurker, is a lurker enemy in The Precursor Legacy. They were created by Gol Acheron and Maia — one of the only lurkers known to be artificially created.",
       "art_group": "green-eco-lurker-ag.go",
       "tpage_group": "Final",
@@ -4766,7 +4845,6 @@
       "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -4832,7 +4910,6 @@
     {
       "etype": "swamp-bat",
       "spawns_lurkers": true,
-      "paths": ["path", "pathb"],
       "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
@@ -4848,11 +4925,8 @@
       ],
       "code": "swamp-bat.o",
       "glb": "levels/swamp/swamp-bat-lod0.glb",
-      "needs_path": true,
-      "needs_pathb": true,
       "need_vol": true,
       "links": {
-        "need_pathb": true,
         "need_enemy": true
       },
       "lumps": [
@@ -4863,6 +4937,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": ["path", "pathb"], "paths": ["path", "pathb"]},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -4893,7 +4968,6 @@
     },
     {
       "etype": "yeti",
-      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Yeti",
@@ -4910,7 +4984,6 @@
       ],
       "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true
       },
@@ -4927,6 +5000,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -4960,6 +5034,9 @@
       "label": "Bully",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
       "tpage_group": "Sunken",
@@ -4971,7 +5048,6 @@
       ],
       "code": "bully.o",
       "glb": "levels/sunken/bully-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_nav": true,
         "need_enemy": true
@@ -4987,7 +5063,6 @@
     },
     {
       "etype": "puffer",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
@@ -5003,7 +5078,6 @@
       ],
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_nav": true,
         "need_enemy": true
@@ -5021,6 +5095,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -5085,6 +5160,9 @@
       "label": "Flying Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
       "tpage_group": "Ogre",
@@ -5096,7 +5174,6 @@
       ],
       "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb",
-      "needs_path": true,
       "lumps": [],
       "link_slots": [
         {
@@ -5172,7 +5249,6 @@
     },
     {
       "etype": "mother-spider",
-      "path_linear_only": true,
       "label": "Mother Spider",
       "schema_export": true,
       "category": "Enemies",
@@ -5188,13 +5264,13 @@
       ],
       "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need_nav": true
       },
       "lumps": [],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -5325,7 +5401,6 @@
       ],
       "code": ["maincave-obs.o", "gnawer.o"],
       "glb": "levels/maincave/gnawer-lod0.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "extra-count",
@@ -5369,6 +5444,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -5473,9 +5549,9 @@
       ],
       "code": "driller-lurker.o",
       "glb": "levels/maincave/driller-lurker-lod0.glb",
-      "needs_path": true,
       "lumps": [],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -5637,6 +5713,9 @@
       "label": "Quicksand Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true}
+      ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
       "tpage_group": "Misty",
@@ -5650,7 +5729,6 @@
       "glb": "levels/misty/quicksandlurker-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -5684,7 +5762,6 @@
       "tpage_group": "Snow",
       "code": "snow-ram.o",
       "glb": "levels/snow/ram-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need_nav": true
@@ -5702,6 +5779,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -5781,16 +5859,17 @@
     },
     {
       "etype": "ram-boss",
-      "path_linear_only": true,
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+      ],
       "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
       "art_group": "ram-boss-ag.go",
       "tpage_group": "Snow",
       "code": "snow-ram-boss.o",
       "glb": "levels/snow/ram-boss-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need_nav": true
@@ -5833,10 +5912,12 @@
     },
     {
       "etype": "ice-cube",
-      "path_linear_only": true,
       "label": "Ice Cube",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+      ],
       "tpage_group": "Snow",
       "tpages": [
         "tpage-710.go",
@@ -5845,7 +5926,6 @@
         "tpage-712.go"
       ],
       "code": "ice-cube.o",
-      "needs_path": true,
       "links": {
         "need_enemy": true
       },
@@ -6068,7 +6148,6 @@
       "code": "plant-boss.o",
       "glb": "levels/jungleb/plant-boss-main-lod0.glb",
       "nav_safe": false,
-      "needs_path": true,
       "links": {
         "need_nav": true,
         "need_enemy": true
@@ -6081,6 +6160,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -6122,10 +6202,12 @@
     },
     {
       "etype": "robotboss",
-      "path_linear_only": true,
       "label": "Precursor Robot Boss",
       "category": "Bosses",
       "parent": "nav-enemy",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+      ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
       "tpages": [
@@ -6137,7 +6219,6 @@
       ],
       "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need-nav": true
@@ -6273,6 +6354,9 @@
       "label": "Fisher",
       "category": "NPCs",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "art_group": "fisher-ag.go",
       "tpages": [
         "tpage-385.go",
@@ -6282,7 +6366,6 @@
       ],
       "code": "fisher.o",
       "glb": "levels/jungle/fisher-lod0.glb",
-      "needs_path": true,
       "lumps": [],
       "color": [
         0.4,
@@ -6416,6 +6499,9 @@
       "label": "Billy",
       "category": "NPCs",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "description": "A lurker frog type found in Boggy Swamp.",
       "art_group": "billy-ag.go",
       "tpages": [
@@ -6426,7 +6512,6 @@
       ],
       "code": "billy.o",
       "glb": "levels/swamp/billy-lod0.glb",
-      "needs_path": true,
       "lumps": [],
       "color": [
         0.5,
@@ -6441,6 +6526,9 @@
       "label": "Pelican",
       "category": "NPCs",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "art_group": "pelican-ag.go",
       "tpages": [
         "tpage-212.go",
@@ -6450,7 +6538,6 @@
       ],
       "code": "pelican.o",
       "glb": "levels/beach/pelican-lod0.glb",
-      "needs_path": true,
       "lumps": [],
       "color": [
         0.9,
@@ -6500,7 +6587,6 @@
       ],
       "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "initial-spline-pos",
@@ -6519,6 +6605,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -6999,21 +7086,13 @@
       "label": "Floating Platform",
       "schema_export": true,
       "panels": [
-        {"panel": "platform", "show-panel": true},
-        {
-          "panel": "custom-fields",
-          "show-panel": false,
-          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}]
-        }
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true}
       ],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-ag.go",
       "glb": "levels/maincave/plat-lod0.glb",
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
@@ -7040,22 +7119,31 @@
       "label": "Eco Platform",
       "schema_export": true,
       "panels": [
-        {"panel": "platform", "show-panel": true},
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
-          "show-panel": false,
-          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}, {"key": "og_notice_dist", "label": "Notice distance (m)", "type": "float", "default": -1.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always"}]
+          "show-panel": true,
+          "fields": [
+            {
+              "key": "og_notice_dist",
+              "label": "Notice distance (m)",
+              "type": "float",
+              "default": -1.0,
+              "lump": {
+                "key": "notice-dist",
+                "type": "meters"
+              },
+              "write_if": "always"
+            }
+          ]
         }
       ],
       "category": "Platforms",
       "parent": "prop",
       "art_group": "plat-eco-ag.go",
       "glb": "levels/jungle/plat-eco-lod0.glb",
-      "needs_sync": true,
       "needs_notice_dist": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
@@ -7090,10 +7178,6 @@
       "parent": "prop",
       "art_group": "plat-citb-ag.go",
       "glb": "levels/citadel/plat-citb-lod0.glb",
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
@@ -7107,6 +7191,8 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7250,12 +7336,12 @@
       "schema_export": true,
       "category": "Platforms",
       "parent": "prop",
+      "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true}
+      ],
       "art_group": "citb-stopbox-ag.go",
       "glb": "levels/citadel/citb-stopbox-lod0.glb",
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
@@ -7284,7 +7370,6 @@
       "parent": "prop",
       "art_group": "citb-exit-plat-ag.go",
       "glb": "levels/citadel/citb-exit-plat-lod0.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "camera-name",
@@ -7298,6 +7383,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7388,7 +7474,6 @@
       "parent": "prop",
       "art_group": "plat-button-ag.go",
       "glb": "levels/jungle/plat-button-geo.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "camera-name",
@@ -7402,6 +7487,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "min-points": 2},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7446,6 +7532,8 @@
       "label": "Snowy Platform (Small Square)",
       "schema_export": true,
       "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7476,10 +7564,6 @@
           ]
         }
       ],
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "category": "Platforms",
       "parent": "prop",
       "art_group": "flutflut-plat-small-ag.go",
@@ -7539,6 +7623,8 @@
       "label": "Snowy Platform (Medium Circle)",
       "schema_export": true,
       "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7569,10 +7655,6 @@
           ]
         }
       ],
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "category": "Platforms",
       "parent": "prop",
       "art_group": "flutflut-plat-med-ag.go",
@@ -7632,6 +7714,8 @@
       "label": "Snowy Platform (Long Capsule)",
       "schema_export": true,
       "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -7662,10 +7746,6 @@
           ]
         }
       ],
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "category": "Platforms",
       "parent": "prop",
       "art_group": "flutflut-plat-large-ag.go",
@@ -7959,12 +8039,8 @@
       "label": "Side-to-Side Plat",
       "schema_export": true,
       "panels": [
-        {"panel": "platform", "show-panel": true},
-        {
-          "panel": "custom-fields",
-          "show-panel": false,
-          "fields": [{"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}, {"key": "og_sync_ease_out", "label": "Ease out", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 2}, "write_if": "always"}, {"key": "og_sync_ease_in", "label": "Ease in", "type": "float", "default": 0.15, "lump": {"key": "sync", "type": "float", "slot": 3}, "write_if": "always"}, {"key": "og_sync_wrap", "label": "Wrap phase", "type": "bool", "default": false, "lump_bit": {"key": "options", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}]
-        }
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true}
       ],
       "category": "Platforms",
       "parent": "prop",
@@ -7977,10 +8053,6 @@
       ],
       "code": "sunken-obs.o",
       "glb": "levels/sunken/side-to-side-plat-lod0.glb",
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "sync",
@@ -8351,7 +8423,6 @@
     },
     {
       "etype": "floating-launcher",
-      "path_linear_only": true,
       "label": "Floating Launcher (Sunken)",
       "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
       "is_launcher": true,
@@ -8360,8 +8431,8 @@
       "parent": "process-drawable",
       "art_group": "floating-launcher-ag.go",
       "glb": "levels/sunkenb/floating-launcher-lod0.glb",
-      "needs_path": true,
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -8587,10 +8658,6 @@
       "art_group": "citb-launcher-ag.go",
       "code": "citadel-obs.o",
       "glb": "levels/citadel/citb-launcher-lod0.glb",
-      "needs_sync": true,
-      "links": {
-        "need_sync": true
-      },
       "lumps": [
         {
           "key": "spring-height",
@@ -8604,6 +8671,8 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "min-points": 2},
+        {"panel": "sync", "show-panel": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -9480,10 +9549,12 @@
     },
     {
       "etype": "balloonlurker",
-      "path_linear_only": true,
       "label": "Balloon Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+      ],
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
       "tpage_group": "Misty",
@@ -9495,7 +9566,6 @@
       ],
       "code": "balloonlurker.o",
       "glb": "levels/misty/balloonlurker-lod0.glb",
-      "needs_path": true,
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -9560,7 +9630,6 @@
     },
     {
       "etype": "junglefish",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Jungle Fish",
       "category": "Enemies",
@@ -9578,7 +9647,6 @@
       "glb": "levels/jungle/junglefish-lod0.glb",
       "nav_safe": false,
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -9590,6 +9658,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -9647,7 +9716,6 @@
     },
     {
       "etype": "cave-trap",
-      "path_linear_only": true,
       "label": "Cave Spider Trap",
       "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
@@ -9661,7 +9729,6 @@
         "tpage-1312.go"
       ],
       "code": "cave-trap.o",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need_nav": true
@@ -9705,6 +9772,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -9767,7 +9835,6 @@
     },
     {
       "etype": "swamp-rat-nest",
-      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Swamp Rat Nest",
@@ -9783,7 +9850,6 @@
       ],
       "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
-      "needs_path": true,
       "links": {
         "need_enemy": true,
         "need_nav": true
@@ -9796,6 +9862,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -9858,7 +9925,6 @@
         "tpage-662.go"
       ],
       "code": "sunken-fish.o",
-      "needs_path": true,
       "links": {
         "need_enemy": true
       },
@@ -9885,6 +9951,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -9916,7 +9983,6 @@
     },
     {
       "etype": "sharkey",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Lurker Shark",
       "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water.",
@@ -9926,7 +9992,6 @@
       "glb": "levels/beach/sharkey-lod0.glb",
       "code": "sharkey.o",
       "links": {
-        "need_path": true,
         "need_nav": true,
         "need_enemy": true
       },
@@ -9958,6 +10023,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": false, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -10019,7 +10085,6 @@
     },
     {
       "etype": "villa-starfish",
-      "path_linear_only": true,
       "spawns_lurkers": true,
       "schema_export": true,
       "label": "Villa Starfish",
@@ -10034,7 +10099,6 @@
         "tpage-1470.go"
       ],
       "code": "village-obs.o",
-      "needs_path": true,
       "links": {
         "need_enemy": true
       },
@@ -10046,6 +10110,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -10661,7 +10726,6 @@
     },
     {
       "etype": "lavaballoon",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
@@ -10677,7 +10741,6 @@
       ],
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/lavaballoon-lod0.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "speed",
@@ -10691,6 +10754,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -10737,7 +10801,6 @@
       ],
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/darkecobarrel-lod0.glb",
-      "needs_path": true,
       "lumps": [
         {
           "key": "speed",
@@ -10751,6 +10814,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -10910,13 +10974,11 @@
     },
     {
       "etype": "caveflamepots",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
       "code": "maincave-obs.o",
-      "needs_path": true,
       "lumps": [
         {
           "key": "shove",
@@ -10935,6 +10997,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -11555,8 +11618,10 @@
       "description": "Will force jak into his sliding state. Requires a physical mesh under. You may need to switch direction on the curve.",
       "category": "Platforms",
       "parent": "process",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "code": "target-tube.o",
-      "needs_path": true,
       "extra_art_groups": ["eichar-tube+0-ag.go"],
       "lumps": [],
       "color": [
@@ -12276,7 +12341,6 @@
     },
     {
       "etype": "shover",
-      "path_linear_only": true,
       "schema_export": true,
       "label": "Shover",
       "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",
@@ -12291,7 +12355,6 @@
         "tpage-662.go"
       ],
       "code": "shover.o",
-      "needs_path": true,
       "lumps": [
         {
           "key": "shove",
@@ -12315,6 +12378,7 @@
         }
       ],
       "panels": [
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
           "show-panel": true,
@@ -12938,10 +13002,12 @@
       "label": "Snow Ball (Snowy)",
       "category": "Obstacles",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "path", "show-panel": true, "required": true}
+      ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
       "code": "snow-ball.o",
-      "needs_path": true,
       "color": [
         0.3,
         0.0,
