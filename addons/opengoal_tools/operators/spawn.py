@@ -206,13 +206,13 @@ class OG_OT_SpawnEntity(Operator):
             except Exception: pass
         info  = ENTITY_DEFS.get(etype, {})
         shape = info.get("shape", "SPHERE")
-        color = info.get("color", (1.0,0.5,0.1,1.0))
+        color, size = _db.actor_display(etype, getattr(props, "actor_color_mode", "CATEGORY"))
         n     = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         bpy.ops.object.empty_add(type=shape, location=ctx.scene.cursor.location)
         o = ctx.active_object
         o.name = f"ACTOR_{etype}_{n}"
         o.show_name = True
-        o.empty_display_size = 1.0
+        o.empty_display_size = size
         o.color = color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant
@@ -1100,7 +1100,33 @@ override mesh."""
         return {"FINISHED"}
 
 
+class OG_OT_RecolorActors(Operator):
+    """Re-apply the database viewport color (and empty size, unless a model
+    preview sized it) to every actor empty in the active level"""
+    bl_idname  = "og.recolor_actors"
+    bl_label   = "Recolor Actors"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        mode = getattr(ctx.scene.og_props, "actor_color_mode", "CATEGORY")
+        n = 0
+        for o in _level_objects(ctx.scene):
+            if o.type != "EMPTY" or not o.name.startswith("ACTOR_") or "_wp_" in o.name or "_wpb_" in o.name:
+                continue
+            etype = o.name.split("_", 2)[1] if o.name.count("_") >= 1 else ""
+            if not _db.find_actor(etype):
+                continue
+            color, size = _db.actor_display(etype, mode)
+            o.color = color
+            if not any(c.get("og_preview_mesh") for c in o.children):
+                o.empty_display_size = size
+            n += 1
+        self.report({"INFO"}, f"Recolored {n} actor(s)")
+        return {"FINISHED"}
+
+
 CLASSES = (
+    OG_OT_RecolorActors,
     OG_OT_SpawnPlayer,
     OG_OT_SpawnCheckpoint,
     OG_OT_SpawnLoadBoundary,

@@ -37,6 +37,9 @@ class OG_PT_Spawn(Panel):
         row = layout.row(align=True)
         row.label(text="", icon="SORTALPHA")
         row.prop(props, "spawn_sort_mode", text="")
+        row.separator()
+        row.prop(props, "actor_color_mode", text="", icon="COLOR")
+        row.operator("og.recolor_actors", text="", icon="FILE_REFRESH")
 
         # ── 15-tile category grid (multi-select) ────────────────────────
         # Click a tile to solo it (hide other categories), shift+click to

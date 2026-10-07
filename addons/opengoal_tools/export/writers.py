@@ -802,6 +802,40 @@ def _make_continues(name, spawns, vis_nick=None):
             f"             :lev1 #f\n"
             f"             :disp1 #f))")
 
+def level_bsphere(spawns, scene=None):
+    """Level-info bsphere as (cx, cy, cz, radius) in game metres, or None.
+
+    With a scene: centre/radius from the level's whole extent (geometry +
+    actors + spawns, level_bounds.level_extent), grown to cover every spawn.
+    Without one (or an empty scene): centre = mean spawn position (Y + 2 m),
+    radius = farthest spawn. Both add 64 m padding so the engine considers
+    the level "nearby" well before the player reaches it. None when there is
+    nothing at all (caller falls back to a ~40 km sphere)."""
+    ext = None
+    if scene is not None:
+        try:
+            from ..level_bounds import level_extent
+            ext = level_extent(scene)
+        except Exception:
+            ext = None
+    spawns = spawns or []
+    if ext is not None:
+        (x0, y0, z0), (x1, y1, z1) = ext
+        # Blender (x, y, z) -> game (x, z, -y)
+        cx, cy, cz = (x0 + x1) / 2, (z0 + z1) / 2, -(y0 + y1) / 2
+        r = math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2 + (z1 - z0) ** 2) / 2
+    elif spawns:
+        cx = sum(s["x"] for s in spawns) / len(spawns)
+        cy = sum(s["y"] for s in spawns) / len(spawns) + 2.0
+        cz = sum(s["z"] for s in spawns) / len(spawns)
+        r = 0.0
+    else:
+        return None
+    for s in spawns:
+        r = max(r, math.sqrt((s["x"]-cx)**2 + (s["y"]-cy)**2 + (s["z"]-cz)**2))
+    return cx, cy, cz, r + 64.0
+
+
 def patch_level_info(name, spawns, scene=None):
     p = _level_info()
     if not p.exists(): log(f"WARNING: {p} not found"); return
@@ -834,27 +868,13 @@ def patch_level_info(name, spawns, scene=None):
     _mood_func = MOOD_FUNC_OVERRIDES.get(_mood, _mood)
     _sky_val   = "#t" if _sky_bool else "#f"
 
-    # ── Auto-compute bsphere from spawn positions ────────────────────────────
-    # Centre = mean of all spawn XZ positions, Y = mean spawn Y + 2m.
-    # Radius = max distance from centre to any spawn + 64m padding so the
-    # engine considers the level "nearby" well before the player reaches it.
-    # Fallback when no spawns: a very large sphere (40km radius) that always passes.
-    if spawns:
-        xs  = [s["x"] for s in spawns]
-        ys  = [s["y"] for s in spawns]
-        zs  = [s["z"] for s in spawns]
-        cx  = sum(xs) / len(xs)
-        cy  = sum(ys) / len(ys) + 2.0
-        cz  = sum(zs) / len(zs)
-        r   = max(
-            math.sqrt((s["x"]-cx)**2 + (s["y"]-cy)**2 + (s["z"]-cz)**2)
-            for s in spawns
-        ) + 64.0
-        # Convert to game units (4096 per metre) for the sphere :w value
-        bsphere_w = round(r * 4096.0, 1)
+    # ── bsphere: level extent (geometry + actors + spawns), see level_bsphere ─
+    _bs = level_bsphere(spawns, scene)
+    if _bs is not None:
+        cx, cy, cz, r = _bs
         bsphere_str = (f"(new 'static 'sphere"
                        f" :x {round(cx*4096.0, 1)} :y {round(cy*4096.0, 1)} :z {round(cz*4096.0, 1)}"
-                       f" :w {bsphere_w})")
+                       f" :w {round(r * 4096.0, 1)})")
     else:
         bsphere_str = "(new 'static 'sphere :w 167772160000.0)"  # ~40km radius
 

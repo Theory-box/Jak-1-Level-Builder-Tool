@@ -59,6 +59,8 @@
     {
       "id": "Enemies",
       "label": "Enemies",
+      "color": [1.0, 0.2, 0.15, 1.0],
+      "empty_size": 1.0,
       "collection_path": [
         "Spawnables",
         "Enemies"
@@ -67,6 +69,8 @@
     {
       "id": "Bosses",
       "label": "Bosses",
+      "color": [0.75, 0.0, 0.25, 1.0],
+      "empty_size": 3.0,
       "collection_path": [
         "Spawnables",
         "Enemies"
@@ -75,6 +79,8 @@
     {
       "id": "NPCs",
       "label": "NPCs",
+      "color": [0.4, 0.7, 1.0, 1.0],
+      "empty_size": 1.0,
       "collection_path": [
         "Spawnables",
         "NPCs"
@@ -83,6 +89,8 @@
     {
       "id": "Pickups",
       "label": "Pickups",
+      "color": [1.0, 0.85, 0.1, 1.0],
+      "empty_size": 0.5,
       "collection_path": [
         "Spawnables",
         "Pickups"
@@ -91,6 +99,8 @@
     {
       "id": "Platforms",
       "label": "Platforms",
+      "color": [0.45, 0.55, 0.85, 1.0],
+      "empty_size": 1.5,
       "collection_path": [
         "Spawnables",
         "Platforms"
@@ -99,6 +109,8 @@
     {
       "id": "Props",
       "label": "Props",
+      "color": [0.6, 0.6, 0.6, 1.0],
+      "empty_size": 1.0,
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -107,6 +119,8 @@
     {
       "id": "Objects",
       "label": "Objects",
+      "color": [0.6, 0.6, 0.6, 1.0],
+      "empty_size": 1.0,
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -115,6 +129,8 @@
     {
       "id": "Debug",
       "label": "Debug",
+      "color": [0.85, 0.85, 0.85, 1.0],
+      "empty_size": 0.5,
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -123,8 +139,50 @@
     {
       "id": "Hidden",
       "label": "Hidden",
+      "color": [0.3, 0.3, 0.3, 1.0],
+      "empty_size": 1.0,
       "collection_path": null,
       "note": "Not shown in the spawn picker — use for parent types or deprecated entries."
+    },
+    {
+      "id": "Obstacles",
+      "label": "Obstacles",
+      "color": [1.0, 0.45, 0.0, 1.0],
+      "empty_size": 1.0,
+      "collection_path": [
+        "Spawnables",
+        "Props & Objects"
+      ]
+    },
+    {
+      "id": "Interactive Objects",
+      "label": "Interactive Objects",
+      "color": [0.7, 0.35, 0.9, 1.0],
+      "empty_size": 1.0,
+      "collection_path": [
+        "Spawnables",
+        "Props & Objects"
+      ]
+    },
+    {
+      "id": "Buttons and Doors",
+      "label": "Buttons and Doors",
+      "color": [0.2, 0.8, 0.8, 1.0],
+      "empty_size": 1.0,
+      "collection_path": [
+        "Spawnables",
+        "Props & Objects"
+      ]
+    },
+    {
+      "id": "Visuals",
+      "label": "Visuals",
+      "color": [0.3, 0.8, 0.4, 1.0],
+      "empty_size": 1.0,
+      "collection_path": [
+        "Spawnables",
+        "Props & Objects"
+      ]
     }
   ],
 

@@ -304,6 +304,34 @@ def categories() -> list[dict]:
     return DB["Categories"]
 
 
+def category(cat_id: str) -> dict:
+    """Category record by id ({} when the category isn't listed)."""
+    for c in DB.get("Categories", []):
+        if c.get("id") == cat_id:
+            return c
+    return {}
+
+
+_FALLBACK_COLOR = (1.0, 0.5, 0.1, 1.0)
+
+
+def actor_display(etype: str, color_mode: str = "CATEGORY") -> tuple[tuple, float]:
+    """(viewport color, empty display size) for an actor empty.
+
+    color_mode "CATEGORY": the category's color (the actor's own when the
+    category has none). "ACTOR": the actor's own color (category fallback).
+    Size: actor "empty_size", else category "empty_size", else 1.0."""
+    a = find_actor(etype) or {}
+    cat = category(a.get("category", ""))
+    own, by_cat = a.get("color"), cat.get("color")
+    first, second = (by_cat, own) if color_mode == "CATEGORY" else (own, by_cat)
+    color = tuple(first or second or _FALLBACK_COLOR)
+    if len(color) == 3:
+        color = color + (1.0,)
+    size = float(a.get("empty_size") or cat.get("empty_size") or 1.0)
+    return color, size
+
+
 def levels() -> list[dict]:
     return DB["Levels"]
 

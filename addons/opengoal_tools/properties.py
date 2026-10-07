@@ -547,6 +547,15 @@ class OGProperties(PropertyGroup):
         ],
         default="ALPHA",
     )
+    actor_color_mode: EnumProperty(
+        name="Actor Colors",
+        description="Viewport color for newly spawned actor empties (Recolor applies it to existing ones)",
+        items=[
+            ("CATEGORY", "By Category", "One color per database category (Enemies, Pickups, ...)"),
+            ("ACTOR",    "Per Actor",   "Each actor's own color from the database"),
+        ],
+        default="CATEGORY",
+    )
 
     # UIList backing — populated once at addon register from SPAWN_INDEX.
     spawn_list_items:    CollectionProperty(type=OGSpawnListRow)

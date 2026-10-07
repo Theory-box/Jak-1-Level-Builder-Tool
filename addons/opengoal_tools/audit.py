@@ -415,6 +415,25 @@ def check_load_boundaries(scene):
     return issues
 
 
+def check_vanilla_load_boundaries(scene):
+    """Vanilla Jak 1 load boundaries still run in a custom level. One that
+    crosses the level can load/unload/display vanilla levels (e.g. Sandover
+    near the world origin) and swap the custom level out mid-play."""
+    from .level_bounds import level_extent, vanilla_load_boundaries, boundary_hits_extent, describe_boundary
+    ext = level_extent(scene)
+    if ext is None:
+        return []
+    hits = [b for b in vanilla_load_boundaries() if boundary_hits_extent(b, ext)]
+    if not hits:
+        return []
+    shown = "; ".join(describe_boundary(b) for b in hits[:3])
+    more = f" (+{len(hits) - 3} more)" if len(hits) > 3 else ""
+    return [_issue("WARNING",
+        f"Level crosses {len(hits)} vanilla load boundar{'y' if len(hits) == 1 else 'ies'}: "
+        f"{shown}{more}. Crossing one in game can unload or hide this level — "
+        "move the level away from vanilla areas (e.g. several km from the origin).")]
+
+
 _REGISTERED_CHECKS = [
     check_tpage_budget,
     check_navmesh_links,
@@ -426,6 +445,7 @@ _REGISTERED_CHECKS = [
     check_camera_targets,
     check_doors,
     check_load_boundaries,
+    check_vanilla_load_boundaries,
     check_entity_defs_audit_blocks,
     check_scene_summary,   # always last
 ]
