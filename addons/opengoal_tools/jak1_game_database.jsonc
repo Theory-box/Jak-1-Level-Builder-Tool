@@ -4970,10 +4970,11 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
-      "art_group": "spider-egg-ag.go",
+      "art_group": ["spider-egg-ag.go", "baby-spider-ag.go"],
       "tpage_group": "Maincave",
       "tpages": [
         "tpage-1313.go",
@@ -4981,7 +4982,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": "spider-egg.o",
+      "code": ["baby-spider.o", "spider-egg.o"],
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "lumps": [],
       "color": [
@@ -5561,7 +5562,8 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "color": [
         0.6,
@@ -5949,9 +5951,9 @@
       "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
-      "art_group": "ram-ag.go",
+      "art_group": ["ram-ag.go", "ram-boss-ag.go"],
       "tpage_group": "Snow",
-      "code": "snow-ram.o",
+      "code": ["snow-ram-h.o", "snow-ram-boss.o", "snow-ram.o"],
       "glb": "levels/snow/ram-lod0.glb",
       "lumps": [
         {
@@ -6040,7 +6042,8 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "color": [
         0.7,
@@ -6063,7 +6066,7 @@
       "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
       "art_group": "ram-boss-ag.go",
       "tpage_group": "Snow",
-      "code": "snow-ram-boss.o",
+      "code": ["snow-ram-h.o", "snow-ram-boss.o"],
       "glb": "levels/snow/ram-boss-lod0.glb",
       "color": [
         0.7,
@@ -6331,14 +6334,14 @@
       "category": "Bosses",
       "parent": "process-drawable",
       "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
-      "art_group": "plant-boss-ag.go",
+      "art_group": ["plant-boss-ag.go", "aphid-lurker-ag.go"],
       "tpages": [
         "tpage-485.go",
         "tpage-510.go",
         "tpage-507.go",
         "tpage-966.go"
       ],
-      "code": "plant-boss.o",
+      "code": ["aphid.o", "plant-boss.o"],
       "glb": "levels/jungleb/plant-boss-main-lod0.glb",
       "lumps": [
         {
@@ -6380,7 +6383,8 @@
           ]
         },
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "color": [
         0.1,
@@ -6398,7 +6402,8 @@
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {"panel": "activation", "show-panel": true},
-        {"panel": "visibility", "show-panel": true}
+        {"panel": "visibility", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
