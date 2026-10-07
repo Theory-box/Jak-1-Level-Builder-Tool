@@ -4860,6 +4860,7 @@
     {
       "etype": "swamp-bat",
       "spawns_lurkers": true,
+      "paths": ["path", "pathb"],
       "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",

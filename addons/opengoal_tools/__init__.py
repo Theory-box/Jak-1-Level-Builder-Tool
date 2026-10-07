@@ -101,7 +101,7 @@ from .properties import (
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
-    OGWaypointSource,
+    OGWaypointSource, OGExtraPath,
     _cp_lev0_items, _cp_lev1_items, CP_DISP_ITEMS,
     _lb_level_items, LB_CMD_ITEMS, LB_DISP_ITEMS,
 )
@@ -141,6 +141,7 @@ classes = (
     OGSpawnListRow,
     OGSpawnFavorite,
     OGWaypointSource,
+    OGExtraPath,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
@@ -253,28 +254,19 @@ def register():
     # Path mode — see export/path_modes.py. Item numbers are fixed so files
     # saved before the expanded list keep their value: 0 = Linear, 1 = the old
     # "Smooth", which was the clamped B-spline (now "Smooth Clamped").
-    from .export.path_modes import MODE_LABELS as _PM_LABELS
+    from .export.path_modes import MODE_ITEMS as _PM_ITEMS
     bpy.types.Object.og_path_mode = bpy.props.EnumProperty(
         name="Path Mode",
         description="How the path's points are turned into the 'path' (and 'path-k' curve) lumps",
-        items=[
-            ("AUTO", _PM_LABELS["AUTO"],
-             "Pick from the path: waypoints = Linear; Poly curve = Linear (Looped if cyclic); "
-             "NURBS = Smooth / Smooth Clamped (Endpoint), Looped if cyclic; Bezier = Bezier (Looped if cyclic)", 2),
-            ("LINEAR", _PM_LABELS["LINEAR"], "Straight segments through every point (no path-k)", 0),
-            ("LINEAR_LOOP", _PM_LABELS["LINEAR_LOOP"], "Linear, plus the first point again at the end", 3),
-            ("SMOOTH", _PM_LABELS["SMOOTH"],
-             "Uniform cubic B-spline — smooth, doesn't reach the first/last points. Needs 4+ points", 4),
-            ("SMOOTH_LOOP", _PM_LABELS["SMOOTH_LOOP"], "Smooth closed loop (first 3 points repeated)", 5),
-            ("SMOOTH_CLAMPED", _PM_LABELS["SMOOTH_CLAMPED"],
-             "Cubic B-spline that starts and ends exactly on the end points. Needs 4+ points", 1),
-            ("SMOOTH_CLAMPED_LOOP", _PM_LABELS["SMOOTH_CLAMPED_LOOP"], "Smooth Clamped, plus the first point again", 6),
-            ("BEZIER", _PM_LABELS["BEZIER"],
-             "One Bezier curve: passes through every anchor, handles shape each segment, sharp corners allowed", 7),
-            ("BEZIER_LOOP", _PM_LABELS["BEZIER_LOOP"], "Bezier with a closing segment back to the first anchor", 8),
-        ],
+        items=_PM_ITEMS,
         default="AUTO",
     )
+    # Main path's lump name ("path" for nearly everything; some actors start
+    # at "patha") and the extra path lumps (pathb, patha..pathh, pathspawn).
+    bpy.types.Object.og_path_lump = bpy.props.StringProperty(
+        name="Lump", default="path",
+        description="Lump name the main path exports to (knots go to <name>-k). Normally 'path'")
+    bpy.types.Object.og_extra_paths = bpy.props.CollectionProperty(type=OGExtraPath)
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
     # Each ACTOR_ empty can reference a Blender text block to inject into obs.gc.
@@ -439,7 +431,7 @@ def unregister():
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
-              "og_path_mode"):
+              "og_path_mode", "og_path_lump", "og_extra_paths"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")

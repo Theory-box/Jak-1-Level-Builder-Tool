@@ -774,6 +774,26 @@ class OGWaypointSource(bpy.types.PropertyGroup):
 
 
 
+def _extra_path_mode_items():
+    from .export.path_modes import MODE_ITEMS
+    return MODE_ITEMS
+
+
+class OGExtraPath(bpy.types.PropertyGroup):
+    """An additional path lump on an actor (e.g. swamp-bat 'pathb',
+    battlecontroller 'patha'..'pathh'). Same sources + modes as the main path;
+    exported as <name> (+ <name>-k for curve modes).
+    Stored as og_extra_paths CollectionProperty on the object."""
+    name: StringProperty(name="Lump", default="pathb",
+                         description="Lump name this path exports to (knots go to <name>-k)")
+    mode: EnumProperty(name="Path Mode", items=_extra_path_mode_items(), default="AUTO")
+    pingpong: BoolProperty(name="Ping-pong", default=False,
+                           description="Linear only: walk forward then back (A B C D C B ...)")
+    sources: CollectionProperty(type=OGWaypointSource)
+    sources_index: IntProperty(default=0)
+    expanded: BoolProperty(default=True)
+
+
 # --- OG_OT_AddLumpRow + OG_OT_RemoveLumpRow ---
 class OG_OT_AddLumpRow(bpy.types.Operator):
     bl_idname  = "og.add_lump_row"

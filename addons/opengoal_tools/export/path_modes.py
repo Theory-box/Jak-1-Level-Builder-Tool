@@ -48,6 +48,32 @@ MODE_LABELS = {
 }
 
 
+# EnumProperty items for every path-mode prop (main path + extra paths). The
+# numbers are fixed: 0 = Linear and 1 = the old "Smooth" (clamped) keep files
+# saved before the expanded list on the same setting.
+MODE_ITEMS = [
+    ("AUTO", MODE_LABELS["AUTO"],
+     "Pick from the path: waypoints = Linear; Poly curve = Linear (Looped if cyclic); "
+     "NURBS = Smooth / Smooth Clamped (Endpoint), Looped if cyclic; Bezier = Bezier (Looped if cyclic)", 2),
+    ("LINEAR", MODE_LABELS["LINEAR"], "Straight segments through every point (no path-k)", 0),
+    ("LINEAR_LOOP", MODE_LABELS["LINEAR_LOOP"], "Linear, plus the first point again at the end", 3),
+    ("SMOOTH", MODE_LABELS["SMOOTH"],
+     "Uniform cubic B-spline — smooth, doesn't reach the first/last points. Needs 4+ points", 4),
+    ("SMOOTH_LOOP", MODE_LABELS["SMOOTH_LOOP"], "Smooth closed loop (first 3 points repeated)", 5),
+    ("SMOOTH_CLAMPED", MODE_LABELS["SMOOTH_CLAMPED"],
+     "Cubic B-spline that starts and ends exactly on the end points. Needs 4+ points", 1),
+    ("SMOOTH_CLAMPED_LOOP", MODE_LABELS["SMOOTH_CLAMPED_LOOP"], "Smooth Clamped, plus the first point again", 6),
+    ("BEZIER", MODE_LABELS["BEZIER"],
+     "One Bezier curve: passes through every anchor, handles shape each segment, sharp corners allowed", 7),
+    ("BEZIER_LOOP", MODE_LABELS["BEZIER_LOOP"], "Bezier with a closing segment back to the first anchor", 8),
+]
+
+# Path lump names the engine reads (battlecontroller: path + patha..pathh +
+# pathspawn; swamp-bat: path + pathb). Knots are always "<name>-k".
+STANDARD_PATH_NAMES = ["path", "patha", "pathb", "pathc", "pathd", "pathe", "pathf",
+                       "pathg", "pathh", "pathspawn"]
+
+
 # ── Knot vectors ────────────────────────────────────────────────────────────
 
 def knots_clamped(n: int) -> list[float]:
@@ -181,12 +207,29 @@ def straight_bezier(points: list) -> tuple[list, list[float]]:
 # ── Blender side ────────────────────────────────────────────────────────────
 
 def gather_sources(obj) -> list[dict]:
-    """Read an object's og_waypoint_sources into build() sources, in Blender
-    world space. Falls back to legacy <name>_wp_NN empties."""
+    """Read an object's main path (og_waypoint_sources) into build() sources,
+    in Blender world space. Falls back to legacy <name>_wp_NN empties."""
     import bpy
-    out = []
     sources = getattr(obj, "og_waypoint_sources", None)
     if sources and len(sources) > 0:
+        return gather_from(sources)
+    out = []
+    prefix = obj.name + "_wp_"
+    # Legacy main-path empties are exactly <name>_wp_NN (extra paths use
+    # <name>_wp_<lump>_NN and must not leak in here).
+    for o in sorted((o for o in bpy.data.objects if o.name.startswith(prefix) and o.type == "EMPTY"
+                     and o.name[len(prefix):].isdigit()),
+                    key=lambda o: o.name):
+        out.append({"kind": "point", "co": tuple(o.matrix_world.translation)})
+    return out
+
+
+def gather_from(sources) -> list[dict]:
+    """Read a collection of OGWaypointSource entries (main path or an extra
+    path) into build() sources."""
+    import bpy
+    out = []
+    if sources:
         for src in sources:
             o = src.obj
             if o is None or o.name not in bpy.data.objects:
@@ -207,9 +250,4 @@ def gather_sources(obj) -> list[dict]:
                         out.append({"kind": "curve", "type": sp.type, "cyclic": sp.use_cyclic_u,
                                     "endpoint": sp.use_endpoint_u,
                                     "points": [tuple(M @ mathutils.Vector(p.co[:3])) for p in sp.points]})
-    else:
-        prefix = obj.name + "_wp_"
-        for o in sorted((o for o in bpy.data.objects if o.name.startswith(prefix) and o.type == "EMPTY"),
-                        key=lambda o: o.name):
-            out.append({"kind": "point", "co": tuple(o.matrix_world.translation)})
     return out

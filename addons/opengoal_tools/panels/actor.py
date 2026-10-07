@@ -905,29 +905,80 @@ class OG_PT_ActorWaypoints(Panel):
             if pt_count < 1:
                 layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
 
-        # Path B — swamp-bat's secondary patrol. Keeps the legacy UI for now;
-        # only swamp-bat uses this so it's low-volume.
-        if einfo.get("needs_pathb"):
-            layout.separator(factor=0.5)
-            prefixb = sel.name + "_wpb_"
-            wpsb = sorted(
-                [o for o in _level_objects(scene) if o.name.startswith(prefixb) and o.type == "EMPTY"],
-                key=lambda o: o.name
-            )
-            layout.label(text=f"Path B  ({len(wpsb)} points)", icon="ANIM")
-            if wpsb:
-                col2 = layout.column(align=True)
-                for wp in wpsb:
-                    row = col2.row(align=True)
-                    row.label(text=wp.name, icon="EMPTY_AXIS")
-                    op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = wp.name
-                    op = row.operator("og.delete_waypoint",  text="", icon="X");        op.wp_name  = wp.name
-            row2 = layout.row(align=True)
-            op2b = row2.operator("og.add_waypoint", text="Spawn Path B Waypoint", icon="PLUS")
-            op2b.enemy_name = sel.name; op2b.pathb_mode = True
-            row2.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-            if len(wpsb) < 1:
-                layout.label(text="⚠ swamp-bat crashes without Path B", icon="ERROR")
+        # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
+        self._draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
+
+    def _draw_extra_paths(self, layout, sel, scene, etype, einfo, linear_only):
+        from ..export import path_modes as _pm
+        layout.separator(factor=0.5)
+        hdr = layout.row(align=True)
+        hdr.label(text="Main path lump:")
+        hdr.prop(sel, "og_path_lump", text="")
+
+        # Legacy swamp-bat Path B empties -> offer the one-click convert.
+        legacy_b = [o for o in bpy.data.objects
+                    if o.name.startswith(sel.name + "_wpb_") and o.type == "EMPTY"]
+        has_b = any(p.name == "pathb" for p in sel.og_extra_paths)
+        if legacy_b and not has_b:
+            box = layout.box()
+            box.label(text=f"{len(legacy_b)} old Path B waypoint(s) found", icon="INFO")
+            box.operator("og.convert_legacy_pathb", text="Convert to path 'pathb'",
+                         icon="FILE_REFRESH").actor_name = sel.name
+
+        for i, xp in enumerate(sel.og_extra_paths):
+            box = layout.box()
+            row = box.row(align=True)
+            row.prop(xp, "expanded", text="", emboss=False,
+                     icon="TRIA_DOWN" if xp.expanded else "TRIA_RIGHT")
+            row.prop(xp, "name", text="")
+            n_src = len(xp.sources)
+            row.label(text=f"{n_src} source{'s' if n_src != 1 else ''}")
+            op = row.operator("og.remove_extra_path", text="", icon="X")
+            op.actor_name = sel.name; op.path_index = i
+            if not xp.expanded:
+                continue
+            lrow = box.row()
+            lrow.template_list("OG_UL_WaypointSources", f"xp{i}", xp, "sources", xp, "sources_index", rows=3)
+            side = lrow.column(align=True)
+            side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM").path_index = i
+            side.operator("og.waypoint_source_remove", text="", icon="X").path_index = i
+            side.separator()
+            op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
+            op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
+            arow = box.row(align=True)
+            op = arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+            op.enemy_name = sel.name; op.path_index = i
+            op = arow.operator("og.waypoint_source_link_curve", text="Link Curve", icon="CURVE_DATA")
+            op.actor_name = sel.name; op.path_index = i
+            mrow = box.row(align=True)
+            if linear_only:
+                for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
+                    mrow.prop_enum(xp, "mode", m)
+            else:
+                mrow.prop(xp, "mode", text="")
+            mrow.prop(xp, "pingpong", text="", icon="ARROW_LEFTRIGHT", toggle=True)
+            try:
+                pts, knots, eff, warn = _pm.build(_pm.gather_from(xp.sources), xp.mode,
+                                                  linear_only=linear_only, pingpong=xp.pingpong)
+                info = box.column(); info.scale_y = 0.8
+                lab = _pm.MODE_LABELS.get(eff, eff)
+                if xp.mode == "AUTO":
+                    lab = f"Automatic → {lab}"
+                info.label(text=f"{lab}: {len(pts)} points" + (f", {len(knots)} knots ({xp.name}-k)" if knots else ""),
+                           icon="IPO_BEZIER" if knots else "IPO_LINEAR")
+                if warn:
+                    w = info.row(); w.alert = True; w.label(text=warn, icon="ERROR")
+            except Exception:
+                pass
+
+        wanted = [n for n in ((_db.find_actor(etype) or {}).get("paths") or [])
+                  if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
+        add = layout.row()
+        op = add.operator("og.add_extra_path",
+                          text=f"Add Path ({wanted[0]})" if wanted else "Add Path", icon="ADD")
+        op.actor_name = sel.name
+        if einfo.get("needs_pathb") and not has_b and not legacy_b:
+            layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
 
     def _discover_legacy_wps(self, actor_obj, scene):
         """Return the list of legacy <actor>_wp_NN empty objects in name order.
@@ -935,7 +986,8 @@ class OG_PT_ActorWaypoints(Panel):
         prefix = actor_obj.name + "_wp_"
         return sorted(
             [o for o in _level_objects(scene)
-             if o.name.startswith(prefix) and o.type == "EMPTY"],
+             if o.name.startswith(prefix) and o.type == "EMPTY"
+             and o.name[len(prefix):].isdigit()],     # not extra-path empties
             key=lambda o: o.name
         )
 

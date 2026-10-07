@@ -173,6 +173,8 @@ class OG_OT_AddWaypoint(Operator):
     enemy_name: bpy.props.StringProperty()
     pathb_mode: bpy.props.BoolProperty(default=False,
         description="Add to secondary path (pathb) — swamp-bat only")
+    path_index: bpy.props.IntProperty(default=-1,
+        description="-1 = the main path, otherwise which extra path (og_extra_paths) to add to")
 
     def execute(self, ctx):
         if not self.enemy_name:
@@ -181,7 +183,15 @@ class OG_OT_AddWaypoint(Operator):
 
         # Find next available index for primary (_wp_) or secondary (_wpb_) path
         # Scope to level objects so multi-level .blends don't cross-count
-        suffix = "_wpb_" if self.pathb_mode else "_wp_"
+        actor_obj = bpy.data.objects.get(self.enemy_name)
+        xpath = None
+        if self.path_index >= 0 and actor_obj is not None \
+                and self.path_index < len(getattr(actor_obj, "og_extra_paths", [])):
+            xpath = actor_obj.og_extra_paths[self.path_index]
+        if xpath is not None:
+            suffix = f"_wp_{xpath.name.strip() or 'path'}_"
+        else:
+            suffix = "_wpb_" if self.pathb_mode else "_wp_"
         prefix = self.enemy_name + suffix
         existing = {o.name for o in _level_objects(ctx.scene) if o.name.startswith(prefix)}
         idx = 0
@@ -191,7 +201,6 @@ class OG_OT_AddWaypoint(Operator):
         wp_name = f"{prefix}{idx:02d}"
 
         # Create empty — at actor position or 3D cursor depending on user preference
-        actor_obj = bpy.data.objects.get(self.enemy_name)
         use_actor_pos = ctx.scene.og_props.waypoint_spawn_at_actor and actor_obj is not None
         spawn_loc = actor_obj.location.copy() if use_actor_pos else ctx.scene.cursor.location.copy()
 
@@ -232,7 +241,11 @@ class OG_OT_AddWaypoint(Operator):
         # source list, so the new UI stays in sync with manual spawns.
         # Skip for Path B (swamp-bat) — it stays on the legacy name-grep
         # system for now.
-        if not self.pathb_mode and actor_obj is not None:
+        if xpath is not None:
+            src = xpath.sources.add()
+            src.obj = empty
+            xpath.sources_index = len(xpath.sources) - 1
+        elif not self.pathb_mode and actor_obj is not None:
             try:
                 # If the actor has legacy _wp_NN empties but the collection
                 # is empty, auto-migrate them first. Without this step the
@@ -245,7 +258,8 @@ class OG_OT_AddWaypoint(Operator):
                     legacy = sorted(
                         [o for o in _level_objects(ctx.scene)
                          if o.name.startswith(prefix) and o.type == "EMPTY"
-                         and o.name != empty.name],
+                         and o.name != empty.name
+                         and o.name[len(prefix):].isdigit()],
                         key=lambda o: o.name
                     )
                     for lwp in legacy:
@@ -285,16 +299,27 @@ class OG_OT_DeleteWaypoint(Operator):
 # ───────────────────────────────────────────────────────────────────────
 
 def _get_actor_for_waypoint_ops(ctx):
-    """Return the ACTOR_ empty whose waypoint list we're editing, or None.
-    Used by the source-list operators below — they all need the same
-    actor-object lookup."""
+    """Return the ACTOR_ / CAMERA_ object whose path lists we're editing, or
+    None. Used by the source-list operators below."""
     sel = ctx.active_object
     if sel is None:
         return None
-    # Must be an ACTOR_ empty (not a waypoint itself)
-    if not sel.name.startswith("ACTOR_") or "_wp_" in sel.name or "_wpb_" in sel.name:
+    if not (sel.name.startswith("ACTOR_") or sel.name.startswith("CAMERA_")):
+        return None
+    if "_wp_" in sel.name or "_wpb_" in sel.name:
         return None
     return sel
+
+
+def _path_list(actor, path_index):
+    """(sources collection, owner, index attribute) for the main path
+    (path_index -1) or an extra path."""
+    if path_index is not None and path_index >= 0:
+        xps = getattr(actor, "og_extra_paths", None)
+        if xps is None or path_index >= len(xps):
+            return None, None, None
+        return xps[path_index].sources, xps[path_index], "sources_index"
+    return actor.og_waypoint_sources, actor, "og_waypoint_sources_index"
 
 
 class OG_OT_WaypointSourceRemove(Operator):
@@ -307,21 +332,23 @@ class OG_OT_WaypointSourceRemove(Operator):
     bl_label   = "Remove Waypoint Source"
     bl_options = {"REGISTER", "UNDO"}
 
+    path_index: bpy.props.IntProperty(default=-1)
+
     @classmethod
     def poll(cls, ctx):
-        actor = _get_actor_for_waypoint_ops(ctx)
-        if actor is None:
-            return False
-        return 0 <= actor.og_waypoint_sources_index < len(actor.og_waypoint_sources)
+        return _get_actor_for_waypoint_ops(ctx) is not None
 
     def execute(self, ctx):
         actor = _get_actor_for_waypoint_ops(ctx)
-        idx = actor.og_waypoint_sources_index
-        if not (0 <= idx < len(actor.og_waypoint_sources)):
+        coll, owner, attr = _path_list(actor, self.path_index)
+        if coll is None:
             return {"CANCELLED"}
-        src_obj = actor.og_waypoint_sources[idx].obj
-        actor.og_waypoint_sources.remove(idx)
-        actor.og_waypoint_sources_index = max(0, min(idx, len(actor.og_waypoint_sources) - 1))
+        idx = getattr(owner, attr)
+        if not (0 <= idx < len(coll)):
+            return {"CANCELLED"}
+        src_obj = coll[idx].obj
+        coll.remove(idx)
+        setattr(owner, attr, max(0, min(idx, len(coll) - 1)))
 
         # Delete the underlying object IF it's an addon-created waypoint
         # empty (matches the ACTOR_*_wp_NN convention). Curves and other
@@ -350,26 +377,26 @@ class OG_OT_WaypointSourceMove(Operator):
     direction: bpy.props.EnumProperty(
         items=[("UP", "Up", ""), ("DOWN", "Down", "")],
     )
+    path_index: bpy.props.IntProperty(default=-1)
 
     @classmethod
     def poll(cls, ctx):
-        actor = _get_actor_for_waypoint_ops(ctx)
-        if actor is None:
-            return False
-        return len(actor.og_waypoint_sources) > 1
+        return _get_actor_for_waypoint_ops(ctx) is not None
 
     def execute(self, ctx):
         actor = _get_actor_for_waypoint_ops(ctx)
-        sources = actor.og_waypoint_sources
-        idx = actor.og_waypoint_sources_index
+        sources, owner, attr = _path_list(actor, self.path_index)
+        if sources is None:
+            return {"CANCELLED"}
+        idx = getattr(owner, attr)
         if not (0 <= idx < len(sources)):
             return {"CANCELLED"}
         if self.direction == "UP" and idx > 0:
             sources.move(idx, idx - 1)
-            actor.og_waypoint_sources_index = idx - 1
+            setattr(owner, attr, idx - 1)
         elif self.direction == "DOWN" and idx < len(sources) - 1:
             sources.move(idx, idx + 1)
-            actor.og_waypoint_sources_index = idx + 1
+            setattr(owner, attr, idx + 1)
         return {"FINISHED"}
 
 
@@ -381,20 +408,22 @@ class OG_OT_WaypointSourceFrame(Operator):
     bl_label   = "Frame Waypoint Source"
     bl_options = {"INTERNAL"}
 
+    path_index: bpy.props.IntProperty(default=-1)
+
     @classmethod
     def poll(cls, ctx):
-        actor = _get_actor_for_waypoint_ops(ctx)
-        if actor is None:
-            return False
-        idx = actor.og_waypoint_sources_index
-        sources = actor.og_waypoint_sources
-        return (0 <= idx < len(sources)
-                and sources[idx].obj is not None
-                and sources[idx].obj.name in ctx.scene.objects)
+        return _get_actor_for_waypoint_ops(ctx) is not None
 
     def execute(self, ctx):
         actor = _get_actor_for_waypoint_ops(ctx)
-        src_obj = actor.og_waypoint_sources[actor.og_waypoint_sources_index].obj
+        sources, owner, attr = _path_list(actor, self.path_index)
+        if sources is None:
+            return {"CANCELLED"}
+        idx = getattr(owner, attr)
+        if not (0 <= idx < len(sources)) or sources[idx].obj is None \
+                or sources[idx].obj.name not in ctx.scene.objects:
+            return {"CANCELLED"}
+        src_obj = sources[idx].obj
         # Save the actor as active so it gets re-selected after the frame op
         actor_name = actor.name
         # Select only the source object, frame it, then restore actor selection
@@ -436,6 +465,7 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
     bl_options     = {"REGISTER", "UNDO"}
 
     actor_name: bpy.props.StringProperty()
+    path_index: bpy.props.IntProperty(default=-1)
     curve_name: bpy.props.EnumProperty(
         name="Curve",
         description="Which curve to link",
@@ -465,10 +495,122 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
             self.report({"ERROR"}, f"'{self.curve_name}' is not a curve")
             return {"CANCELLED"}
         # Append a row pointing to the curve, make it the active row.
-        src = actor.og_waypoint_sources.add()
+        coll, owner, attr = _path_list(actor, self.path_index)
+        if coll is None:
+            self.report({"ERROR"}, "That path no longer exists")
+            return {"CANCELLED"}
+        src = coll.add()
         src.obj = curve
-        actor.og_waypoint_sources_index = len(actor.og_waypoint_sources) - 1
+        setattr(owner, attr, len(coll) - 1)
         self.report({"INFO"}, f"Linked curve '{curve.name}' to {actor.name}")
+        return {"FINISHED"}
+
+
+def _add_path_name_items(self, ctx):
+    """Names for a new extra path: the ones this actor's DB entry lists that
+    it doesn't have yet first, then the standard engine names, then Custom."""
+    from .. import db as _db
+    from ..export.path_modes import STANDARD_PATH_NAMES
+    actor = bpy.data.objects.get(self.actor_name)
+    have = {actor.og_path_lump} | {p.name for p in actor.og_extra_paths} if actor else set()
+    etype = actor.name.split("_", 2)[1] if actor and actor.name.startswith("ACTOR_") else ""
+    wanted = [n for n in ((_db.find_actor(etype) or {}).get("paths") or []) if n not in have]
+    rest = [n for n in STANDARD_PATH_NAMES if n not in have and n not in wanted]
+    items = [(n, n, f"{n} (this actor reads it)", i) for i, n in enumerate(wanted)]
+    items += [(n, n, n, len(items) + i) for i, n in enumerate(rest)]
+    items.append(("__custom__", "Custom…", "Type a lump name below", len(items)))
+    return items
+
+
+class OG_OT_AddExtraPath(Operator):
+    """Add another path lump to this object (swamp-bat pathb, battlecontroller
+    patha..pathh, pathspawn, or any custom name). Each path has its own
+    waypoints / curves and mode, and exports to <name> (+ <name>-k)."""
+    bl_idname  = "og.add_extra_path"
+    bl_label   = "Add Path"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    path_name: bpy.props.EnumProperty(name="Lump", items=_add_path_name_items)
+    custom_name: bpy.props.StringProperty(name="Custom name", default="")
+
+    def invoke(self, ctx, event):
+        return ctx.window_manager.invoke_props_dialog(self, width=280)
+
+    def draw(self, ctx):
+        col = self.layout.column()
+        col.prop(self, "path_name")
+        if self.path_name == "__custom__":
+            col.prop(self, "custom_name")
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        name = (self.custom_name if self.path_name == "__custom__" else self.path_name).strip()
+        if not name:
+            self.report({"ERROR"}, "Enter a lump name"); return {"CANCELLED"}
+        if name == actor.og_path_lump or any(p.name == name for p in actor.og_extra_paths):
+            self.report({"ERROR"}, f"'{name}' already exists on this object"); return {"CANCELLED"}
+        p = actor.og_extra_paths.add()
+        p.name = name
+        self.report({"INFO"}, f"Added path '{name}'")
+        return {"FINISHED"}
+
+
+class OG_OT_RemoveExtraPath(Operator):
+    """Remove an extra path. Its addon-made waypoint empties are deleted;
+    linked curves are kept."""
+    bl_idname  = "og.remove_extra_path"
+    bl_label   = "Remove Path"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    path_index: bpy.props.IntProperty()
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None or not (0 <= self.path_index < len(actor.og_extra_paths)):
+            return {"CANCELLED"}
+        p = actor.og_extra_paths[self.path_index]
+        doomed = {s.obj for s in p.sources
+                  if s.obj is not None and s.obj.type == "EMPTY" and s.obj.name.startswith(actor.name + "_wp_")}
+        # plus this path's own spawned empties that were dropped from the list
+        if p.name.strip():
+            own = f"{actor.name}_wp_{p.name.strip()}_"
+            doomed |= {o for o in bpy.data.objects if o.type == "EMPTY" and o.name.startswith(own)}
+        for o in doomed:
+            try:
+                bpy.data.objects.remove(o, do_unlink=True)
+            except ReferenceError:
+                pass
+        actor.og_extra_paths.remove(self.path_index)
+        return {"FINISHED"}
+
+
+class OG_OT_ConvertLegacyPathB(Operator):
+    """Move legacy <actor>_wpb_NN empties (old swamp-bat Path B) into an
+    extra path named 'pathb' so it gets the normal path list and modes."""
+    bl_idname  = "og.convert_legacy_pathb"
+    bl_label   = "Convert Path B"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        prefix = actor.name + "_wpb_"
+        # same lookup as the exporter's legacy pathb block
+        legacy = sorted((o for o in bpy.data.objects
+                         if o.name.startswith(prefix) and o.type == "EMPTY"), key=lambda o: o.name)
+        p = next((x for x in actor.og_extra_paths if x.name == "pathb"), None)
+        if p is None:
+            p = actor.og_extra_paths.add(); p.name = "pathb"
+        for o in legacy:
+            s = p.sources.add(); s.obj = o
+        self.report({"INFO"}, f"Moved {len(legacy)} Path B waypoint(s) into 'pathb'")
         return {"FINISHED"}
 
 
@@ -699,6 +841,9 @@ CLASSES = (
     OG_OT_WaypointSourceMove,
     OG_OT_WaypointSourceFrame,
     OG_OT_WaypointSourceLinkCurve,
+    OG_OT_AddExtraPath,
+    OG_OT_RemoveExtraPath,
+    OG_OT_ConvertLegacyPathB,
     OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,

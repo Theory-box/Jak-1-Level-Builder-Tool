@@ -322,7 +322,10 @@ def collect_actors(scene, depsgraph=None):
         # ── Second path lump (needs_pathb=True — swamp-bat only) ─────────────
         # swamp-bat reads 'pathb' for its second patrol route for bat slaves.
         # Tag secondary waypoints as ACTOR_swamp-bat_<uid>_wpb_00 etc.
-        if einfo.get("needs_pathb"):
+        # Legacy only: once the object has an extra path named 'pathb' (Path
+        # panel > Convert Path B), that path exports it instead.
+        _has_xpathb = any(p.name.strip() == "pathb" for p in getattr(o, "og_extra_paths", []))
+        if einfo.get("needs_pathb") and not _has_xpathb:
             wpb_prefix = o.name + "_wpb_"
             wpb_objects = sorted(
                 [sc_obj for sc_obj in bpy.data.objects
@@ -498,6 +501,36 @@ def collect_actors(scene, depsgraph=None):
                 if _planes:
                     lump["vol"] = ["vector-vol"] + _planes
                     log(f"  [need_vol] {o.name} <- {_volm.name} ({len(_planes)} planes)")
+
+        # ── Extra paths (og_extra_paths: pathb, patha..pathh, pathspawn ...) ──
+        # Same sources + modes as the main path; each exports to <name> and,
+        # for curve modes, <name>-k (path-h.gc reads knots as "<name>-k").
+        for _xp in getattr(o, "og_extra_paths", []):
+            _xn = _xp.name.strip()
+            if not _xn or _xn in _protected_keys:
+                continue
+            _xpts, _xk, _xmode, _xwarn = _pm.build(
+                _pm.gather_from(_xp.sources), _xp.mode,
+                linear_only=bool(_arec_p.get("path_linear_only")), pingpong=_xp.pingpong)
+            if _xwarn and _xpts:
+                log(f"  [path] {o.name} '{_xn}': {_xwarn}")
+            if _xpts:
+                lump[_xn] = ["vector4m"] + [_to_game_coords(mathutils.Vector(p)) for p in _xpts]
+                lump.pop(_xn + "-k", None)
+                if _xk:
+                    lump[_xn + "-k"] = ["float"] + _xk
+                log(f"  [{_xn}] {o.name}  {_pm.MODE_LABELS.get(_xmode, _xmode)}  {len(_xpts)} points"
+                    + (f"  {len(_xk)} knots" if _xk else ""))
+            else:
+                log(f"  [WARNING] {o.name} path '{_xn}' has no waypoints — not exported")
+
+        # Main path under another lump name (some actors start at 'patha').
+        _main_name = (getattr(o, "og_path_lump", "path") or "path").strip()
+        if _main_name and _main_name != "path" and "path" in lump and _main_name not in _protected_keys:
+            lump[_main_name] = lump.pop("path")
+            if "path-k" in lump:
+                lump[_main_name + "-k"] = lump.pop("path-k")
+            log(f"  [path] {o.name} main path exported as '{_main_name}'")
 
         # Variant art-group/code override (e.g. per-bridge art group). Falls back
         # to the actor's own art group/code when the variant doesn't specify one.
