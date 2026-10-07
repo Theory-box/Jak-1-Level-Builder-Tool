@@ -334,6 +334,23 @@ def _record_panels(rec: dict) -> list[dict]:
         out.append(p)
     if rec.get("needs_sync"):
         out.append({"panel": "sync", "show-panel": True})
+    # old link / nav / volume / launcher / water flags
+    if rec.get("link_slots"):
+        out.append({"panel": "actor-link", "show-panel": True, "slots": rec["link_slots"]})
+    is_nav_parent = rec.get("etype") == "nav-enemy"     # the Parents entry
+    if rec.get("requires_navmesh") or rec.get("nav_safe") is False or is_nav_parent:
+        nm = {"panel": "nav-mesh", "show-panel": True}
+        if rec.get("nav_safe") is False:
+            nm["fallback-sphere"] = True
+        out.append(nm)
+    if is_nav_parent:
+        out.append({"panel": "aggro-trigger", "show-panel": True})
+    if rec.get("need_vol"):
+        out.append({"panel": "volume", "show-panel": True})
+    if rec.get("is_launcher"):
+        out.append({"panel": "launcher", "show-panel": True})
+    if rec.get("is_water"):
+        out.append({"panel": "water", "show-panel": True})
     return out
 
 
@@ -540,8 +557,9 @@ def ai_type(etype: str) -> str:
 
 
 def is_nav_safe(etype: str) -> bool:
-    a = find_actor(etype) or {}
-    return bool(a.get("nav_safe", True))
+    """False when the nav-mesh panel asks for the "fallback-sphere" workaround
+    (nav-enemies that idle without a real navmesh get nav-mesh-sphere)."""
+    return not panel_option(etype, "nav-mesh", "fallback-sphere", False)
 
 
 def nav_unsafe(etype: str) -> bool:
@@ -593,8 +611,8 @@ def is_prop(etype: str) -> bool:
 
 
 def requires_navmesh_flag(etype: str) -> bool:
-    a = find_actor(etype) or {}
-    return bool(a.get("requires_navmesh"))
+    """Actor has the nav-mesh panel (from its parent or its own entry)."""
+    return panel_exports(etype, "nav-mesh")
 
 
 def is_enemy(etype: str) -> bool:
@@ -610,9 +628,8 @@ def is_platform(etype: str) -> bool:
 
 def is_launcher(etype: str) -> bool:
     """launcher / springbox — read spring-height (and launcher reads alt-vector).
-    DB flag `is_launcher: true`."""
-    a = find_actor(etype) or {}
-    return bool(a.get("is_launcher"))
+    DB "launcher" panel."""
+    return has_panel(etype, "launcher")
 
 
 def spawns_lurkers(etype: str) -> bool:
@@ -623,22 +640,32 @@ def spawns_lurkers(etype: str) -> bool:
 
 def is_water(etype: str) -> bool:
     """Actor carries water attributes (water-height + attack-event). DB flag
-    `is_water: true`."""
-    a = find_actor(etype) or {}
-    return bool(a.get("is_water"))
+    "water" panel (its standard fields are the water attributes)."""
+    return panel_exports(etype, "water")
 
 
 def needs_vol(etype: str) -> bool:
     """Actor gets its `vol` lump from a linked VOL_ mesh (convex, via
     _vol_planes) — the shared volume mechanism used by cameras/checkpoints.
-    DB flag `need_vol: true`."""
-    a = find_actor(etype) or {}
-    return bool(a.get("need_vol"))
+    DB "volume" panel."""
+    return panel_exports(etype, "volume")
 
 
 def uses_navmesh(etype: str) -> bool:
-    """nav-enemy subclasses, plus actors flagged requires_navmesh."""
-    return ai_type(etype) == "nav-enemy" or requires_navmesh_flag(etype)
+    """Actor has the "nav-mesh" panel: on the nav-enemy parent, plus any actor
+    that lists it itself (orbit-plat, square-platform, sunkenfisha)."""
+    return panel_exports(etype, "nav-mesh")
+
+
+def supports_aggro_trigger(etype: str) -> bool:
+    """"aggro-trigger" panel: nav-enemies handle 'cue-chase / 'cue-patrol /
+    'go-wait-for-cue (nav-enemy.gc). On the nav-enemy parent."""
+    return has_panel(etype, "aggro-trigger")
+
+
+def link_slots(etype: str) -> list[dict]:
+    """The "actor-link" panel's "slots" (lump_key, slot, label, accepts, required)."""
+    return list(panel_option(etype, "actor-link", "slots", []) or []) if panel_exports(etype, "actor-link") else []
 
 
 def uses_waypoints(etype: str) -> bool:
@@ -648,7 +675,7 @@ def uses_waypoints(etype: str) -> bool:
 
 # Membership sets (built once from the DB; mirror the legacy data.py constants).
 def nav_unsafe_types() -> set[str]:
-    return {a["etype"] for a in actors() if not a.get("nav_safe", True)}
+    return {a["etype"] for a in actors() if not is_nav_safe(a["etype"])}
 
 
 def needs_path_types() -> set[str]:
@@ -664,7 +691,7 @@ def is_prop_types() -> set[str]:
 
 
 def launcher_types() -> set[str]:
-    return {a["etype"] for a in actors() if a.get("is_launcher")}
+    return {a["etype"] for a in actors() if is_launcher(a["etype"])}
 
 
 def spawner_types() -> set[str]:
@@ -774,11 +801,15 @@ def variant_choices(etype: str) -> list[dict]:
     return _resolve_choices(f) if f else []
 
 
+_SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
+                  "aggro-trigger", "volume", "water")
+
+
 def actor_panel(etype: str) -> str | None:
-    """The first shown bespoke panel id of an actor (not the shared ones:
-    custom-fields, path, sync), or None. Panels poll with has_panel()."""
+    """The first shown bespoke panel id of an actor (not the shared ones in
+    _SHARED_PANELS), or None. Panels poll with has_panel()."""
     for pid, p in actor_panels(etype).items():
-        if pid not in ("custom-fields", "path", "sync") and p["show"]:
+        if pid not in _SHARED_PANELS and p["show"]:
             return pid
     return None
 

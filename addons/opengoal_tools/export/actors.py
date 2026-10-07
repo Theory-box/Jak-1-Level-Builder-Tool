@@ -387,6 +387,18 @@ def collect_actors(scene, depsgraph=None):
                 _schema_db.trait_fields(etype),
                 etype=etype).items():
             lump[_tk] = _tv
+        # Shared panels' fields (sync, water, ... — anything but custom-fields)
+        # export for every actor that has the panel, like traits; schema_export
+        # actors already got them from the schema block below.
+        if not _schema_db.schema_export_enabled(etype):
+            for _pid in _schema_db.actor_panels(etype):
+                if _pid == "custom-fields":
+                    continue
+                for _tk, _tv in emit_schema_lumps(
+                        lambda k, d=None: o.get(k, d),
+                        _schema_db.panel_fields(etype, _pid),
+                        etype=etype).items():
+                    lump[_tk] = _tv
 
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,

@@ -4177,6 +4177,68 @@
         }
       ]
     },
+    {"id": "actor-link", "label": "Actor Links", "description": "Links to other actors (alt-actor, next-actor ...). Option \"slots\": [{lump_key, slot, label, accepts, required}].", "fields": []},
+    {"id": "nav-mesh", "label": "Nav-mesh", "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked.", "fields": []},
+    {"id": "aggro-trigger", "label": "Trigger Behaviour", "description": "Aggro trigger volumes (cue-chase / cue-patrol / wait-for-cue). On the nav-enemy parent.", "fields": []},
+    {"id": "volume", "label": "Volume", "description": "vol lump from a linked VOL_ mesh.", "fields": []},
+    {
+      "id": "water", "label": "Water Volume",
+      "description": "Water attributes; the volume comes from a linked VOL_ mesh.",
+      "fields": [
+        {
+          "key": "og_water_surface",
+          "label": "Water surface Y (m)",
+          "type": "float",
+          "default": 0.0,
+          "note": "World Y of the water surface. Wade/swim are depths below this.",
+          "lump": {
+            "key": "water-height",
+            "type": "water-height",
+            "components": [
+              "og_water_surface",
+              "og_water_wade",
+              "og_water_swim"
+            ],
+            "flags": "(water-flags wt02 wt03 wt05 wt22)"
+          }
+        },
+        {
+          "key": "og_water_wade",
+          "label": "Wade depth (m)",
+          "type": "float",
+          "default": 0.5,
+          "min": 0.0
+        },
+        {
+          "key": "og_water_swim",
+          "label": "Swim depth (m)",
+          "type": "float",
+          "default": 1.0,
+          "min": 0.0
+        },
+        {
+          "key": "og_water_attack",
+          "label": "Attack event",
+          "type": "enum",
+          "default": "drown",
+          "choices": [
+            {
+              "value": "drown",
+              "label": "Drown"
+            },
+            {
+              "value": "endlessfall",
+              "label": "Endless fall"
+            }
+          ],
+          "lump": {
+            "key": "attack-event",
+            "type": "symbol_literal"
+          },
+          "write_if": "always"
+        }
+      ]
+    },
     {"id": "custom-fields", "label": "Actor Settings", "description": "Generic per-actor fields, written out in full in the actor's entry.", "fields": []},
     {"id": "crate", "label": "Crate", "description": "Crate type and contents.", "fields": []},
     {"id": "launcher", "label": "Launcher", "description": "Launch height and destination.", "fields": []},
@@ -4193,16 +4255,6 @@
       "etype": "process-drawable",
       "parent": null,
       "description": "Root type for all spawnable entities.",
-      "links": {
-        "need_task": false,
-        "need_nav": false,
-        "need_enemy": false,
-        "need_vol": false,
-        "need_alt": false,
-        "need_prev": false,
-        "need_next": false,
-        "need_eco-info": false
-      },
       "lumps": [
         {
           "key": "vis-dist",
@@ -4249,16 +4301,11 @@
     {
       "etype": "nav-enemy",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "nav-mesh", "show-panel": true},
+        {"panel": "aggro-trigger", "show-panel": true}
+      ],
       "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
-      "link_desc": {
-        "desc_path": "REQUIRED. Path indicates the patrol line.",
-        "desc_nav": "REQUIRED. Nav-mesh defines where the enemy is able to walk.",
-        "desc_enemy": "Controls the AI of the enemy."
-      },
       "lumps": [
         {
           "key": "nav-mesh-sphere",
@@ -4276,16 +4323,12 @@
       "etype": "prop",
       "parent": "process-drawable",
       "description": "Decorative only. No AI, no combat, idle animation only.",
-      "links": {},
       "lumps": []
     },
     {
       "etype": "eco-collectable",
       "parent": "process-drawable",
       "description": "Pickups (orbs, eco, scout flies, fuel cells). Picked up on contact.",
-      "links": {
-        "need_eco-info": true
-      },
       "lumps": []
     }
   ],
@@ -4298,7 +4341,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
@@ -4311,11 +4355,6 @@
       ],
       "code": "babak.o",
       "glb": "levels/beach/babak-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         1.0,
@@ -4331,7 +4370,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
@@ -4344,11 +4384,6 @@
       ],
       "code": "babak-with-cannon.o",
       "glb": "levels/beach/babak-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         1.0,
@@ -4364,7 +4399,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The lurker crab is an enemy found at Sentinel Beach. They closely resemble hermit crabs, hiding under their shell until they reach out for an attack.",
       "art_group": "lurkercrab-ag.go",
@@ -4377,11 +4413,6 @@
       ],
       "code": "lurkercrab.o",
       "glb": "levels/beach/lurkercrab-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.8,
@@ -4397,7 +4428,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The lurker puppy is a small lurker patrolling the higher regions of Sentinel Beach. Maroon in colour, bearing close resemblance to a small dog.",
       "art_group": "lurkerpuppy-ag.go",
@@ -4410,11 +4442,6 @@
       ],
       "code": "lurkerpuppy.o",
       "glb": "levels/beach/lurkerpuppy-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.9,
@@ -4430,7 +4457,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
@@ -4443,11 +4471,6 @@
       ],
       "code": "hopper.o",
       "glb": "levels/jungle/hopper-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         1.0,
@@ -4463,7 +4486,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
       "art_group": "aphid-lurker-ag.go",
@@ -4476,11 +4500,6 @@
       ],
       "code": "aphid.o",
       "glb": "levels/jungleb/aphid-lurker-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "color": [
         1.0,
         0.2,
@@ -4495,7 +4514,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The swamp rat, also known as the rat lurker, is an enemy in The Precursor Legacy. Mutated rats bearing lurker traits, dwelling in the poisonous mud of Boggy Swamp. They spawn from nest-like structures.",
       "art_group": "swamp-rat-ag.go",
@@ -4508,11 +4528,6 @@
       ],
       "code": "swamp-rat.o",
       "glb": "levels/swamp/swamp-rat-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.5,
@@ -4528,7 +4543,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The lurker toad is an enemy in The Precursor Legacy. A large purple frog lurker found hopping around Boggy Swamp, making a very loud croaking noise.",
       "art_group": "kermit-ag.go",
@@ -4541,11 +4557,6 @@
       ],
       "code": "kermit.o",
       "glb": "levels/swamp/kermit-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.2,
@@ -4572,11 +4583,6 @@
       ],
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "mode",
@@ -4603,7 +4609,8 @@
               "write_if": "if_true"
             }
           ]
-        }
+        },
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "color": [
         0.9,
@@ -4619,18 +4626,14 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
       "code": "citb-bunny.o",
       "glb": "levels/citadel/citb-bunny-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "mode",
@@ -4652,7 +4655,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
@@ -4667,11 +4671,6 @@
       "glb": [
         "levels/sunken/double-lurker-lod0.glb"
       ],
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.7,
@@ -4687,7 +4686,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
@@ -4700,11 +4700,6 @@
       ],
       "code": "bonelurker.o",
       "glb": "levels/misty/bonelurker-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.8,
@@ -4720,7 +4715,8 @@
       "category": "Interactive Objects",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "art_group": "muse-ag.go",
       "tpage_group": "Misty",
@@ -4732,11 +4728,6 @@
       ],
       "code": "muse.o",
       "glb": "levels/misty/muse-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.9,
@@ -4752,7 +4743,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
@@ -4765,11 +4757,6 @@
       ],
       "code": "baby-spider.o",
       "glb": "levels/darkcave/baby-spider-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.5,
@@ -4785,7 +4772,23 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true}
+        {"panel": "path", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Notify actor (sent 'notify 'die when the egg is destroyed)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
       "art_group": "spider-egg-ag.go",
@@ -4798,22 +4801,6 @@
       ],
       "code": "spider-egg.o",
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Notify actor (sent 'notify 'die when the egg is destroyed)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [],
       "color": [
         0.5,
@@ -4829,7 +4816,8 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "linear-only": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "description": "The green eco lurker, also known as the dark eco lurker, is a lurker enemy in The Precursor Legacy. They were created by Gol Acheron and Maia — one of the only lurkers known to be artificially created.",
       "art_group": "green-eco-lurker-ag.go",
@@ -4843,11 +4831,6 @@
       ],
       "code": "green-eco-lurker.o",
       "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.2,
@@ -4925,10 +4908,6 @@
       ],
       "code": "swamp-bat.o",
       "glb": "levels/swamp/swamp-bat-lod0.glb",
-      "need_vol": true,
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "num-lurkers",
@@ -4956,7 +4935,8 @@
               "write_if": "if_nonneg"
             }
           ]
-        }
+        },
+        {"panel": "volume", "show-panel": true}
       ],
       "color": [
         0.4,
@@ -4984,9 +4964,6 @@
       ],
       "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "num-lurkers",
@@ -5048,10 +5025,6 @@
       ],
       "code": "bully.o",
       "glb": "levels/sunken/bully-lod0.glb",
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.6,
@@ -5078,10 +5051,6 @@
       ],
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "distance",
@@ -5149,17 +5118,21 @@
               "write_if": "always"
             }
           ]
-        }
-      ],
-      "link_slots": [
+        },
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Buddy alt actor",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Buddy alt actor",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -5176,7 +5149,40 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true}
+        {"panel": "path", "show-panel": true, "required": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "plunger-lurker at the end of the path",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous flying lurker in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next flying lurker in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
@@ -5190,35 +5196,6 @@
       "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "plunger-lurker at the end of the path",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous flying lurker in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next flying lurker in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.5,
         0.2,
@@ -5232,6 +5209,23 @@
       "label": "Plunger Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "flying-lurker to activate the plunger",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
       "tpages": [
@@ -5243,17 +5237,6 @@
       "code": ["ogre-obs.o", "flying-lurker.o"],
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "flying-lurker to activate the plunger",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.8,
         0.3,
@@ -5279,10 +5262,6 @@
       ],
       "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
       "lumps": [],
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
@@ -5438,26 +5417,6 @@
           "description": "Rotation offset applied on spawn."
         }
       ],
-      "link_slots": [
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous gnawer in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next gnawer in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "panels": [
         {"panel": "path", "show-panel": true, "required": true},
         {
@@ -5535,6 +5494,30 @@
                 "slot": 2,
                 "write_if": "if_not_default"
               }
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous gnawer in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next gnawer in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
             }
           ]
         }
@@ -5648,9 +5631,6 @@
       ],
       "code": "dark-crystal.o",
       "glb": "levels/darkcave/dark-crystal-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "mode",
@@ -5711,9 +5691,6 @@
       ],
       "code": "maincave-obs.o",
       "glb": "levels/robocave/cavecrusher-lod0.glb",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.6,
@@ -5729,7 +5706,23 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "path", "show-panel": true}
+        {"panel": "path", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "water-actor",
+              "slot": 0,
+              "label": "Mud surface entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
@@ -5742,22 +5735,6 @@
       ],
       "code": "quicksandlurker.o",
       "glb": "levels/misty/quicksandlurker-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
-      "link_slots": [
-        {
-          "lump_key": "water-actor",
-          "slot": 0,
-          "label": "Mud surface entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [],
       "color": [
         0.9,
@@ -5777,10 +5754,6 @@
       "tpage_group": "Snow",
       "code": "snow-ram.o",
       "glb": "levels/snow/ram-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
       "lumps": [
         {
           "key": "extra-id",
@@ -5824,44 +5797,48 @@
               "write_if": "if_true"
             }
           ]
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "1st Ram part of the task, including this one",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         },
         {
-          "lump_key": "alt-actor",
-          "slot": 1,
-          "label": "2nd Ram part of the task, including this one",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 2,
-          "label": "3rd Ram part of the task, including this one",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "First Enemy in the list before Ram boss jump down",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "1st Ram part of the task, including this one",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "2nd Ram part of the task, including this one",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "3rd Ram part of the task, including this one",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First Enemy in the list before Ram boss jump down",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -5885,10 +5862,6 @@
       "tpage_group": "Snow",
       "code": "snow-ram-boss.o",
       "glb": "levels/snow/ram-boss-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
       "color": [
         0.7,
         0.4,
@@ -5912,9 +5885,6 @@
         "tpage-1353.go"
       ],
       "code": "rolling-lightning-mole.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.7,
@@ -5941,9 +5911,6 @@
         "tpage-712.go"
       ],
       "code": "ice-cube.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "mode",
@@ -6080,44 +6047,6 @@
       "code": "ogreboss.o",
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Ogre Drawbridge (ogre-bridge) for the fight",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "target-actor",
-          "slot": 0,
-          "label": "Klaww Platform Isle (ogre-isles) for the fight",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "trigger-actor",
-          "slot": 0,
-          "label": "Klaww Steps (ogre-bridge) to spawn after the fight",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "water-actor",
-          "slot": 0,
-          "label": "Lava actor",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -6134,6 +6063,48 @@
                 "slot": 0,
                 "write_if": "always"
               }
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Ogre Drawbridge (ogre-bridge) for the fight",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "target-actor",
+              "slot": 0,
+              "label": "Klaww Platform Isle (ogre-isles) for the fight",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Klaww Steps (ogre-bridge) to spawn after the fight",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "water-actor",
+              "slot": 0,
+              "label": "Lava actor",
+              "accepts": [
+                "any"
+              ],
+              "required": false
             }
           ]
         }
@@ -6162,11 +6133,6 @@
       ],
       "code": "plant-boss.o",
       "glb": "levels/jungleb/plant-boss-main-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "movie-pos",
@@ -6205,7 +6171,8 @@
               }
             }
           ]
-        }
+        },
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "color": [
         0.1,
@@ -6234,10 +6201,6 @@
       ],
       "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need-nav": true
-      },
       "lumps": [],
       "color": [
         0.6,
@@ -6670,26 +6633,30 @@
               "write_if":"if_not_default"
             }
           ]
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous robber in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         },
         {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next robber in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous robber in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next robber in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -7451,26 +7418,30 @@
               "write_if": "if_non_empty"
             }
           ]
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "state-actor",
-          "slot": 0,
-          "label": "Actor to activate the elevator",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         },
         {
-          "lump_key": "trigger-actor",
-          "slot": 0,
-          "label": "Actor that get activated by the elevator",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Actor to activate the elevator",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Actor that get activated by the elevator",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -7577,6 +7548,39 @@
               "write_if":"if_nonzero"
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Button to activate platform in button mode",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous platform in the list or button if first",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next platform in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "category": "Platforms",
@@ -7593,35 +7597,6 @@
           "key": "flags",
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Button to activate platform in button mode",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous platform in the list or button if first",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next platform in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         }
       ],
       "color": [
@@ -7668,6 +7643,39 @@
               "write_if":"if_nonzero"
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Button to activate platform in button mode",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous platform in the list or button if first",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next platform in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "category": "Platforms",
@@ -7684,35 +7692,6 @@
           "key": "flags",
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Button to activate platform in button mode",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous platform in the list or button if first",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next platform in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         }
       ],
       "color": [
@@ -7759,6 +7738,39 @@
               "write_if":"if_nonzero"
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Button to activate platform in button mode",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous platform in the list or button if first",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next platform in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "category": "Platforms",
@@ -7777,35 +7789,6 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Button to activate platform in button mode",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous platform in the list or button if first",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next platform in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.5,
         0.5,
@@ -7820,40 +7803,52 @@
       "label": "Snow Log",
       "category": "Platforms",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Snow Log Button or other to activate",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
       "art_group": "snow-log-ag.go",
       "code": "snow-obs.o",
-      "glb": "levels/snow/snow-log-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow Log Button or other to activate",
-          "accepts": [
-            "any"
-          ],
-          "required": true
-        }
-      ]
+      "glb": "levels/snow/snow-log-lod0.glb"
     },
     {
       "etype": "snow-log-button",
       "label": "Snow Log Button",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Snow Log or other to activate",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
       "art_group": "snow-switch-ag.go",
       "code": "snow-obs.o",
-      "glb": "levels/snow/snow-switch-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Snow Log or other to activate",
-          "accepts": [
-            "any"
-          ],
-          "required": true
-        }
-      ]
+      "glb": "levels/snow/snow-switch-lod0.glb"
     },
     {
       "etype": "snow-spatula",
@@ -8160,17 +8155,21 @@
               "write_if": "if_not_default"
             }
           ]
-        }
-      ],
-      "link_slots": [
+        },
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "wedge-plat-master to rotate around",
-          "accepts": [
-            "wedge-plat-master"
-          ],
-          "required": true
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "wedge-plat-master to rotate around",
+              "accepts": [
+                "wedge-plat-master"
+              ],
+              "required": true
+            }
+          ]
         }
       ],
       "color": [
@@ -8241,17 +8240,21 @@
               "write_if": "if_not_default"
             }
           ]
-        }
-      ],
-      "link_slots": [
+        },
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "wedge-plat-master to rotate around",
-          "accepts": [
-            "wedge-plat-master"
-          ],
-          "required": true
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "wedge-plat-master to rotate around",
+              "accepts": [
+                "wedge-plat-master"
+              ],
+              "required": true
+            }
+          ]
         }
       ],
       "color": [
@@ -8370,40 +8373,46 @@
       "label": "Qbert Platforms",
       "category": "Platforms",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Qbert Master",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous Qbert Platform or Master",
+              "accepts": [
+                "qbert-plat",
+                "qbert-plat-master"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next Qbert Platform",
+              "accepts": [
+                "qbert-plat"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": ["qbert-plat-ag.go", "qbert-plat-on-ag.go"],
       "code": "qbert-plat.o",
       "glb": "levels/sunken/qbert-plat-lod0.glb",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Qbert Master",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous Qbert Platform or Master",
-          "accepts": [
-            "qbert-plat",
-            "qbert-plat-master"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next Qbert Platform",
-          "accepts": [
-            "qbert-plat"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.2,
         0.2,
@@ -8417,29 +8426,35 @@
       "label": "Qbert Platforms Master",
       "category": "Platforms",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Activate these when Qbert minegame is completed",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First Qbert Platform",
+              "accepts": [
+                "qbert-plat"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "qbert-plat-on-ag.go",
       "code": "qbert-plat.o",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Activate these when Qbert minegame is completed",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "First Qbert Platform",
-          "accepts": [
-            "qbert-plat"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.2,
         0.2,
@@ -8452,7 +8467,6 @@
       "etype": "floating-launcher",
       "label": "Floating Launcher (Sunken)",
       "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
-      "is_launcher": true,
       "schema_export": true,
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8535,17 +8549,22 @@
               "write_if": "if_not_default"
             }
           ]
-        }
-      ],
-      "link_slots": [
+        },
+        {"panel": "launcher", "show-panel": true},
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "launcherdoor to open",
-          "accepts": [
-            "launcherdoor"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "launcherdoor to open",
+              "accepts": [
+                "launcherdoor"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "lumps": [
@@ -8571,7 +8590,6 @@
     },
     {
       "etype": "launcher",
-      "is_launcher": true,
       "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
@@ -8919,6 +8937,50 @@
       "label": "Spike",
       "category": "Obstacles",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Other spikes part of the same group",
+              "accepts": [
+                "spike"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Other spikes part of the same group",
+              "accepts": [
+                "spike"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Other spikes part of the same group",
+              "accepts": [
+                "spike"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 3,
+              "label": "Other spikes part of the same group",
+              "accepts": [
+                "spike"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "spike-ag.go",
       "tpages": [
         "tpage-1119.go",
@@ -8929,44 +8991,6 @@
       ],
       "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Other spikes part of the same group",
-          "accepts": [
-            "spike"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 1,
-          "label": "Other spikes part of the same group",
-          "accepts": [
-            "spike"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 2,
-          "label": "Other spikes part of the same group",
-          "accepts": [
-            "spike"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 3,
-          "label": "Other spikes part of the same group",
-          "accepts": [
-            "spike"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.8,
         0.2,
@@ -9091,6 +9115,21 @@
               "write_if": "if_not_default"
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Stop moving when breaking the mirror",
+              "accepts": [
+                "reflector-mirror"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "glb": "levels/jungle/lurkerm-piston-geo.glb",
@@ -9104,17 +9143,6 @@
           "key": "height-info",
           "type": "meters",
           "description": "Change bottom and top height"
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Stop moving when breaking the mirror",
-          "accepts": [
-            "reflector-mirror"
-          ],
-          "required": false
         }
       ],
       "color": [
@@ -9131,22 +9159,28 @@
       "label": "Sail (Tall)",
       "category": "Platforms",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Stop moving when breaking the mirror",
+              "accepts": [
+                "reflector-mirror"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "lurkerm-tall-sail-ag.go",
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
       "lumps": [],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Stop moving when breaking the mirror",
-          "accepts": [
-            "reflector-mirror"
-          ],
-          "required": false
-        }
-      ],
       "color": [
         0.8,
         0.8,
@@ -9594,6 +9628,23 @@
       "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Warp position actor. (Usually the particle effect)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
       "glb": "levels/village1/warp-gate-switch-lod0.glb",
@@ -9602,17 +9653,6 @@
           "key": "alt-actor",
           "type": "structure",
           "description": "warp target."
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Warp position actor. (Usually the particle effect)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         }
       ],
       "color": [
@@ -9629,6 +9669,23 @@
       "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Warp position actor. (Usually the particle effect)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
       "glb": "levels/village1/warp-gate-switch-lod0.glb",
@@ -9637,17 +9694,6 @@
           "key": "alt-actor",
           "type": "structure",
           "description": "warp target."
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Warp position actor. (Usually the particle effect)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
         }
       ],
       "color": [
@@ -9664,7 +9710,40 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "show-panel": true, "required": true, "linear-only": true}
+        {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Cell to activate when all Balloon Lurkers are dead",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous Balloon lurkers if this isn't the first",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next Balloon lurkers if this isn't the last",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
@@ -9677,35 +9756,6 @@
       ],
       "code": "balloonlurker.o",
       "glb": "levels/misty/balloonlurker-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Cell to activate when all Balloon Lurkers are dead",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous Balloon lurkers if this isn't the first",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next Balloon lurkers if this isn't the last",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [],
       "color": [
         0.7,
@@ -9756,11 +9806,6 @@
       ],
       "code": "junglefish.o",
       "glb": "levels/jungle/junglefish-lod0.glb",
-      "nav_safe": false,
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "water-height",
@@ -9787,7 +9832,8 @@
               }
             }
           ]
-        }
+        },
+        {"panel": "nav-mesh", "show-panel": true, "fallback-sphere": true}
       ],
       "color": [
         0.3,
@@ -9813,9 +9859,6 @@
         "tpage-1353.go"
       ],
       "code": "rolling-lightning-mole.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.8,
@@ -9840,48 +9883,6 @@
         "tpage-1312.go"
       ],
       "code": "cave-trap.o",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Spider Egg or vent 0",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 1,
-          "label": "Spider Egg or vent 1",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 2,
-          "label": "Spider Egg or vent 2",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 3,
-          "label": "Spider Egg or vent 3",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "panels": [
         {"panel": "path", "show-panel": true, "required": true, "linear-only": true},
         {
@@ -9899,6 +9900,48 @@
                 "type": "int32"
               },
               "write_if": "always"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Spider Egg or vent 0",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Spider Egg or vent 1",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Spider Egg or vent 2",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 3,
+              "label": "Spider Egg or vent 3",
+              "accepts": [
+                "any"
+              ],
+              "required": false
             }
           ]
         }
@@ -9932,9 +9975,6 @@
         "tpage-1312.go"
       ],
       "code": "cave-trap.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [],
       "color": [
         0.5,
@@ -9961,10 +10001,6 @@
       ],
       "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
-      "links": {
-        "need_enemy": true,
-        "need_nav": true
-      },
       "lumps": [
         {
           "key": "num-lurkers",
@@ -10036,9 +10072,6 @@
         "tpage-662.go"
       ],
       "code": "sunken-fish.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "count",
@@ -10080,7 +10113,8 @@
               "write_if": "if_not_default"
             }
           ]
-        }
+        },
+        {"panel": "nav-mesh", "show-panel": true}
       ],
       "color": [
         0.2,
@@ -10089,8 +10123,7 @@
         1.0
       ],
       "shape": "SPHERE",
-      "art_group": "sunkenfisha-ag.go",
-      "requires_navmesh": true
+      "art_group": "sunkenfisha-ag.go"
     },
     {
       "etype": "sharkey",
@@ -10102,10 +10135,6 @@
       "art_group": "sharkey-ag.go",
       "glb": "levels/beach/sharkey-lod0.glb",
       "code": "sharkey.o",
-      "links": {
-        "need_nav": true,
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "scale",
@@ -10210,9 +10239,6 @@
         "tpage-1470.go"
       ],
       "code": "village-obs.o",
-      "links": {
-        "need_enemy": true
-      },
       "lumps": [
         {
           "key": "num-lurkers",
@@ -10285,18 +10311,24 @@
       "label": "Eco Vent (Blue)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": "collectables.o",
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Blocker entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Blocker entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.2,
@@ -10311,18 +10343,24 @@
       "label": "Eco Vent (Red)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": "collectables.o",
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Blocker entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Blocker entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.2,
@@ -10337,18 +10375,24 @@
       "label": "Eco Vent (Yellow)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": "collectables.o",
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Blocker entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Blocker entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.2,
@@ -10378,18 +10422,24 @@
       "label": "Eco (Yellow)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": "collectables.o",
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Blocker entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Blocker entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         1.0,
@@ -10454,15 +10504,6 @@
       ],
       "code": "orbit-plat.o",
       "glb": "levels/sunken/orbit-plat-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Partner orbit-plat (they rotate around their midpoint)",
-          "accepts": ["orbit-plat"],
-          "required": true
-        }
-      ],
       "lumps": [
         {
           "key": "scale",
@@ -10508,6 +10549,22 @@
               "write_if": "if_not_default"
             }
           ]
+        },
+        {"panel": "nav-mesh", "show-panel": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Partner orbit-plat (they rotate around their midpoint)",
+              "accepts": [
+                "orbit-plat"
+              ],
+              "required": true
+            }
+          ]
         }
       ],
       "color": [
@@ -10517,7 +10574,6 @@
         1.0
       ],
       "shape": "CUBE",
-      "requires_navmesh": true,
       "known_issue": "Orbit-plats are not rotating in-game even when linked bidirectionally to each other and to a nav-mesh. Pair spawns correctly and export runs clean, but stepping on one produces no reaction. Under investigation — possibly a collision-shape issue, a missing process-spawn dependency, or a deeper engine requirement (level actor-group, continue-points, etc.). Workaround: avoid orbit-plats for now; use other platform types."
     },
     {
@@ -10536,35 +10592,6 @@
       ],
       "code": "square-platform.o",
       "glb": "levels/sunken/square-platform-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Water entity (for splash effects)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous platform in the list or button if first",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "Next platform in the list",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [
         {
           "key": "distance",
@@ -10604,6 +10631,40 @@
               "write_if": "always"
             }
           ]
+        },
+        {"panel": "nav-mesh", "show-panel": true},
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Water entity (for splash effects)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous platform in the list or button if first",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next platform in the list",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -10612,8 +10673,7 @@
         0.8,
         1.0
       ],
-      "shape": "CUBE",
-      "requires_navmesh": true
+      "shape": "CUBE"
     },
     {
       "etype": "ropebridge",
@@ -10719,17 +10779,21 @@
               "write_if": "always"
             }
           ]
-        }
-      ],
-      "link_slots": [
+        },
         {
-          "lump_key": "water-actor",
-          "slot": 0,
-          "label": "Water surface entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "water-actor",
+              "slot": 0,
+              "label": "Water surface entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -10771,26 +10835,30 @@
               "write_if": "always"
             }
           ]
-        }
-      ],
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "This actor needs to be dead/removed for platforms to spawn",
-          "accepts": [
-            "any"
-          ],
-          "required": true
         },
         {
-          "lump_key": "water-actor",
-          "slot": 0,
-          "label": "Water surface entity",
-          "accepts": [
-            "any"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "This actor needs to be dead/removed for platforms to spawn",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "water-actor",
+              "slot": 0,
+              "label": "Water surface entity",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -11318,6 +11386,23 @@
       "label": "Klaww Drawbridge",
       "category": "Platforms",
       "parent": "prop",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Ogre bridge end piece",
+              "accepts": [
+                "ogre-bridgeend"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
       "art_group": "ogre-bridge-ag.go",
       "tpage_group": "Ogre",
       "tpages": [
@@ -11328,17 +11413,6 @@
       ],
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridge-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Ogre bridge end piece",
-          "accepts": [
-            "ogre-bridgeend"
-          ],
-          "required": true
-        }
-      ],
       "lumps": [],
       "color": [
         0.5,
@@ -11722,11 +11796,13 @@
     },
     {
       "etype": "water-vol",
-      "is_water": true,
-      "need_vol": true,
       "label": "Water Volume (legacy)",
       "category": "Hidden",
       "parent": "process-drawable",
+      "panels": [
+        {"panel": "volume", "show-panel": true},
+        {"panel": "water", "show-panel": true}
+      ],
       "code": "water-h.o",
       "lumps": [],
       "color": [
@@ -11925,6 +12001,23 @@
       "label": "Miner (Short)",
       "category": "NPCs",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Paired minertall (required)",
+              "accepts": [
+                "minertall"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
       "art_group": "minershort-ag.go",
       "tpage_group": "Village3",
       "tpages": [
@@ -11935,17 +12028,6 @@
       ],
       "code": "miners.o",
       "glb": "levels/village3/minershort-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Paired minertall (required)",
-          "accepts": [
-            "minertall"
-          ],
-          "required": true
-        }
-      ],
       "lumps": [],
       "color": [
         0.6,
@@ -11988,18 +12070,6 @@
       "art_group": "jng-iris-door-ag.go",
       "code": "jungleb-obs.o",
       "glb":"levels/jungleb/jng-iris-door-lod0.glb",
-      "link_slots": [
-        {
-          "lump_key": "state-actor",
-          "slot": 0,
-          "label": "Lock controller (door unlocks when this entity is activated)",
-          "accepts": [
-            "basebutton",
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [
         {
           "key": "scale",
@@ -12065,6 +12135,22 @@
               }
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Lock controller (door unlocks when this entity is activated)",
+              "accepts": [
+                "basebutton",
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -12100,18 +12186,6 @@
       "art_group": "sidedoor-ag.go",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/sidedoor-lod1.glb",
-      "link_slots": [
-        {
-          "lump_key": "state-actor",
-          "slot": 0,
-          "label": "Lock controller (door unlocks when this entity is activated)",
-          "accepts": [
-            "basebutton",
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [
         {
           "key": "scale",
@@ -12181,6 +12255,22 @@
                 "bit_value": 1,
                 "set_if_link": "state-actor"
               }
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Lock controller (door unlocks when this entity is activated)",
+              "accepts": [
+                "basebutton",
+                "any"
+              ],
+              "required": false
             }
           ]
         }
@@ -12450,6 +12540,30 @@
               "write_if": "if_positive"
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First activated actor",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous button in chain",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ],
       "color": [
@@ -12458,27 +12572,7 @@
         0.3,
         1.0
       ],
-      "shape": "CUBE",
-      "link_slots": [
-        {
-          "lump_key": "next-actor",
-          "slot": 0,
-          "label": "First activated actor",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "prev-actor",
-          "slot": 0,
-          "label": "Previous button in chain",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ]
+      "shape": "CUBE"
     },
     {
       "etype": "shover",
@@ -12713,6 +12807,23 @@
       "label": "Accordian (prop)",
       "category": "Visuals",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Task gate entity (optional)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "accordian-ag.go",
       "tpage_group": "Jungle",
       "tpages": [
@@ -12722,17 +12833,6 @@
         "tpage-388.go"
       ],
       "code": "jungle-obs.o",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Task gate entity (optional)",
-          "accepts": [
-            "any"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [
         {
           "key": "height-info",
@@ -13152,6 +13252,23 @@
       "label": "Swamp Tether Rock",
       "category": "Interactive Objects",
       "parent": "process-drawable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Master blimp entity (optional)",
+              "accepts": [
+                "swamp-blimp"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
       "tpages": [
@@ -13162,17 +13279,6 @@
         "tpage-1476.go"
       ],
       "code": "swamp-blimp.o",
-      "link_slots": [
-        {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Master blimp entity (optional)",
-          "accepts": [
-            "swamp-blimp"
-          ],
-          "required": false
-        }
-      ],
       "lumps": [],
       "color": [
         0.5,
@@ -13269,72 +13375,84 @@
       "label": "Helix Button",
       "category": "Hidden",
       "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Helix water controller",
-          "accepts": [
-            "helix-water"
-          ],
-          "required": true
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 1,
-          "label": "Helix slide door",
-          "accepts": [
-            "helix-slide-door"
-          ],
-          "required": true
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Helix water controller",
+              "accepts": [
+                "helix-water"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Helix slide door",
+              "accepts": [
+                "helix-slide-door"
+              ],
+              "required": true
+            }
+          ]
         }
-      ]
+      ],
+      "spawnable": false
     },
     {
       "etype": "helix-water",
       "label": "Helix Water",
       "category": "Hidden",
       "parent": "process-drawable",
-      "spawnable": false,
-      "link_slots": [
+      "panels": [
         {
-          "lump_key": "alt-actor",
-          "slot": 0,
-          "label": "Helix button 0",
-          "accepts": [
-            "helix-button"
-          ],
-          "required": true
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 1,
-          "label": "Helix button 1",
-          "accepts": [
-            "helix-button"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 2,
-          "label": "Helix button 2",
-          "accepts": [
-            "helix-button"
-          ],
-          "required": false
-        },
-        {
-          "lump_key": "alt-actor",
-          "slot": 3,
-          "label": "Helix button 3",
-          "accepts": [
-            "helix-button"
-          ],
-          "required": false
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Helix button 0",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Helix button 1",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Helix button 2",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 3,
+              "label": "Helix button 3",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": false
+            }
+          ]
         }
-      ]
+      ],
+      "spawnable": false
     },
     {
       "etype": "rolling-lightning-mole",
@@ -19059,47 +19177,6 @@
         "default": -1.0,
         "note": "-1 = always active; >=0 = eco required within range.",
         "lump": { "key": "notice-dist", "type": "meters" }
-      }
-    ],
-    "is_water": [
-      {
-        "key": "og_water_surface",
-        "label": "Water surface Y (m)",
-        "type": "float",
-        "default": 0.0,
-        "note": "World Y of the water surface. Wade/swim are depths below this.",
-        "lump": {
-          "key": "water-height",
-          "type": "water-height",
-          "components": ["og_water_surface", "og_water_wade", "og_water_swim"],
-          "flags": "(water-flags wt02 wt03 wt05 wt22)"
-        }
-      },
-      {
-        "key": "og_water_wade",
-        "label": "Wade depth (m)",
-        "type": "float",
-        "default": 0.5,
-        "min": 0.0
-      },
-      {
-        "key": "og_water_swim",
-        "label": "Swim depth (m)",
-        "type": "float",
-        "default": 1.0,
-        "min": 0.0
-      },
-      {
-        "key": "og_water_attack",
-        "label": "Attack event",
-        "type": "enum",
-        "default": "drown",
-        "choices": [
-          { "value": "drown", "label": "Drown" },
-          { "value": "endlessfall", "label": "Endless fall" }
-        ],
-        "lump": { "key": "attack-event", "type": "symbol_literal" },
-        "write_if": "always"
       }
     ]
   },

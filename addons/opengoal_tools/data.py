@@ -43,7 +43,7 @@ def _entity_info_from_actor(a: dict) -> dict:
     if "color" in a:          info["color"] = tuple(a["color"])
     if "shape" in a:          info["shape"] = a["shape"]
     if a.get("is_prop"):      info["is_prop"] = True
-    info["nav_safe"] = a.get("nav_safe", True)
+    info["nav_safe"] = _db.is_nav_safe(a["etype"])          # nav-mesh "fallback-sphere"
     parent = a.get("parent", "prop")
     info["ai_type"] = "prop" if parent == "eco-collectable" else parent
     # Runtime-required flags — read from top-level actor record, NOT from links
@@ -52,7 +52,7 @@ def _entity_info_from_actor(a: dict) -> dict:
     info["needs_pathb"] = _db.needs_pathb(a["etype"])
     info["needs_sync"]  = _db.needs_sync(a["etype"])     # "sync" panel
     info["needs_notice_dist"] = bool(a.get("needs_notice_dist"))
-    info["requires_navmesh"]  = bool(a.get("requires_navmesh"))
+    info["requires_navmesh"]  = _db.uses_navmesh(a["etype"])   # "nav-mesh" panel
     return info
 
 
@@ -557,7 +557,7 @@ def _lump_ref_for_etype(etype):
 # ═══════════════════════════════════════════════════════════════════════════
 ACTOR_LINK_DEFS: dict[str, list] = {}
 for _actor in _db.all_actors_including_orphans():
-    _slots = _actor.get("link_slots")
+    _slots = _db.link_slots(_actor["etype"])        # "actor-link" panel "slots"
     if not _slots:
         continue
     ACTOR_LINK_DEFS[_actor["etype"]] = [

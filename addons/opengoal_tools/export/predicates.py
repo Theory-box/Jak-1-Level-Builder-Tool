@@ -107,7 +107,7 @@ def _actor_supports_aggro_trigger(etype):
     Process-drawable enemies (junglesnake, bully, yeti, mother-spider, etc.)
     do NOT respond to these events — silently doing nothing if sent.
     """
-    return _actor_uses_navmesh(etype)
+    return _db.supports_aggro_trigger(etype)
 
 def _classify_target(target_name):
     """Return one of 'camera', 'checkpoint', 'enemy', 'custom', or '' for an unknown target."""

@@ -489,7 +489,7 @@ class OG_PT_ActorWaterVol(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "water-vol"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "water")
 
     def draw(self, ctx):
         layout = self.layout
@@ -497,6 +497,12 @@ class OG_PT_ActorWaterVol(Panel):
         box = layout.box()
         box.label(text="Water Volume", icon="MOD_OCEAN")
         box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        # The "water" panel's fields (PanelTypes water + actor overrides).
+        from .actor_fields import _draw_field
+        etype = sel.name.split("_", 2)[1]
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        for f in _db.panel_fields(etype, "water", visible_only=True):
+            _draw_field(box, sel, f, info)
         op = box.operator("og.sync_water_from_object",
                           text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
         op.actor_name = sel.name
