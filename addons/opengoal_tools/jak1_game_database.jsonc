@@ -3472,7 +3472,7 @@
       "art_group": "snow-bridge-36-ag.go",
       "offset": [0, 18, 0],
       "extra_art_groups": ["eichar-ice+0-ag.go"],
-      "extra_code": ["target-ice.o"]
+      "code": ["target-ice.o"]
     },
     {
       "id": "vil3-bridge-36",
@@ -4223,9 +4223,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "in_game_cgo": true
-      },
+      "code": "babak.o",
       "glb": "levels/beach/babak-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4257,10 +4255,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "babak-with-cannon.o",
-        "o_only": true
-      },
+      "code": "babak-with-cannon.o",
       "glb": "levels/beach/babak-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4292,10 +4287,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "lurkercrab.o",
-        "o_only": true
-      },
+      "code": "lurkercrab.o",
       "glb": "levels/beach/lurkercrab-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4327,10 +4319,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "lurkerpuppy.o",
-        "o_only": true
-      },
+      "code": "lurkerpuppy.o",
       "glb": "levels/beach/lurkerpuppy-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4362,10 +4351,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "hopper.o",
-        "o_only": true
-      },
+      "code": "hopper.o",
       "glb": "levels/jungle/hopper-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4397,10 +4383,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "aphid.o",
-        "o_only": true
-      },
+      "code": "aphid.o",
       "glb": "levels/jungleb/aphid-lurker-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4431,10 +4414,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-rat.o",
-        "o_only": true
-      },
+      "code": "swamp-rat.o",
       "glb": "levels/swamp/swamp-rat-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4466,10 +4446,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "kermit.o",
-        "o_only": true
-      },
+      "code": "kermit.o",
       "glb": "levels/swamp/kermit-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4502,10 +4479,7 @@
         "tpage-711.go",
         "tpage-712.go"
       ],
-      "code": {
-        "o": "snow-bunny.o",
-        "o_only": true
-      },
+      "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
       "nav_safe": false,
       "needs_path": true,
@@ -4552,10 +4526,7 @@
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
-      "code": {
-        "o": "citb-bunny.o",
-        "o_only": true
-      },
+      "code": "citb-bunny.o",
       "glb": "levels/citadel/citb-bunny-lod0.glb",
       "nav_safe": false,
       "needs_path": true,
@@ -4594,10 +4565,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "double-lurker.o",
-        "o_only": true
-      },
+      "code": "double-lurker.o",
       "glb": [
         "levels/sunken/double-lurker-lod0.glb"
       ],
@@ -4631,10 +4599,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "bonelurker.o",
-        "o_only": true
-      },
+      "code": "bonelurker.o",
       "glb": "levels/misty/bonelurker-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4665,10 +4630,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "muse.o",
-        "o_only": true
-      },
+      "code": "muse.o",
       "glb": "levels/misty/muse-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4700,10 +4662,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "baby-spider.o",
-        "o_only": true
-      },
+      "code": "baby-spider.o",
       "glb": "levels/darkcave/baby-spider-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4734,10 +4693,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "spider-egg.o",
-        "o_only": true
-      },
+      "code": "spider-egg.o",
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4781,10 +4737,7 @@
         "tpage-1418.go",
         "tpage-545.go"
       ],
-      "code": {
-        "o": "green-eco-lurker.o",
-        "o_only": true
-      },
+      "code": "green-eco-lurker.o",
       "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -4815,10 +4768,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "lurkerworm.o",
-        "o_only": true
-      },
+      "code": "lurkerworm.o",
       "glb": "levels/beach/lurkerworm-lod0.glb",
       "lumps": [],
       "color": [
@@ -4843,10 +4793,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "junglesnake.o",
-        "o_only": true
-      },
+      "code": "junglesnake.o",
       "glb": "levels/jungle/junglesnake-lod0.glb",
       "lumps": [],
       "color": [
@@ -4874,10 +4821,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-bat.o",
-        "o_only": true
-      },
+      "code": "swamp-bat.o",
       "glb": "levels/swamp/swamp-bat-lod0.glb",
       "needs_path": true,
       "needs_pathb": true,
@@ -4933,10 +4877,7 @@
         "tpage-711.go",
         "tpage-712.go"
       ],
-      "code": {
-        "o": "yeti.o",
-        "o_only": true
-      },
+      "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
       "needs_path": true,
       "links": {
@@ -4991,10 +4932,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "bully.o",
-        "o_only": true
-      },
+      "code": "bully.o",
       "glb": "levels/sunken/bully-lod0.glb",
       "needs_path": true,
       "links": {
@@ -5026,10 +4964,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "puffer.o",
-        "o_only": true
-      },
+      "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "needs_path": true,
       "links": {
@@ -5116,10 +5051,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "flying-lurker.o",
-        "o_only": true
-      },
+      "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "needs_path": true,
       "lumps": [],
@@ -5173,12 +5105,8 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "flying-lurker.o",
-        "o_only": true
-      },
+      "code": ["ogre-obs.o", "flying-lurker.o"],
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
-      "extra_code": ["ogre-obs.o"],
       "lumps": [],
       "link_slots": [
         {
@@ -5215,11 +5143,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "mother-spider.o",
-        "o_only": true
-      },
-      "extra_code":["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o"],
+      "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "needs_path": true,
       "links": {
@@ -5350,12 +5274,8 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "gnawer.o",
-        "o_only": true
-      },
+      "code": ["maincave-obs.o", "gnawer.o"],
       "glb": "levels/maincave/gnawer-lod0.glb",
-      "extra_code": ["maincave-obs.o"],
       "needs_path": true,
       "lumps": [
         {
@@ -5496,10 +5416,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "driller-lurker.o",
-        "o_only": true
-      },
+      "code": "driller-lurker.o",
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "needs_path": true,
       "lumps": [],
@@ -5577,10 +5494,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "dark-crystal.o",
-        "o_only": true
-      },
+      "code": "dark-crystal.o",
       "glb": "levels/darkcave/dark-crystal-lod0.glb",
       "links": {
         "need_enemy": true
@@ -5637,10 +5551,7 @@
         "tpage-1317.go",
         "tpage-1316.go"
       ],
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "glb": "levels/robocave/cavecrusher-lod0.glb",
       "links": {
         "need_enemy": true
@@ -5668,10 +5579,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "quicksandlurker.o",
-        "o_only": true
-      },
+      "code": "quicksandlurker.o",
       "glb": "levels/misty/quicksandlurker-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -5707,10 +5615,7 @@
       "parent": "nav-enemy",
       "art_group": "ram-ag.go",
       "tpage_group": "Snow",
-      "code": {
-        "o": "snow-ram.o",
-        "o_only": true
-      },
+      "code": "snow-ram.o",
       "glb": "levels/snow/ram-lod0.glb",
       "needs_path": true,
       "links": {
@@ -5810,10 +5715,7 @@
       "description": "The Ram Boss has a shield and red eco is required to break it. If you want to spawn it on top of a Ram, use the Ram actor instead",
       "art_group": "ram-boss-ag.go",
       "tpage_group": "Snow",
-      "code": {
-        "o": "snow-ram-boss.o",
-        "o_only": true
-      },
+      "code": "snow-ram-boss.o",
       "glb": "levels/snow/ram-boss-lod0.glb",
       "needs_path": true,
       "links": {
@@ -5842,10 +5744,7 @@
         "tpage-925.go",
         "tpage-1353.go"
       ],
-      "code": {
-        "o": "rolling-lightning-mole.o",
-        "o_only": true
-      },
+      "code": "rolling-lightning-mole.o",
       "links": {
         "need_enemy": true
       },
@@ -5872,10 +5771,7 @@
         "tpage-711.go",
         "tpage-712.go"
       ],
-      "code": {
-        "o": "ice-cube.o",
-        "o_only": true
-      },
+      "code": "ice-cube.o",
       "needs_path": true,
       "links": {
         "need_enemy": true
@@ -5910,10 +5806,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "village2-obs.o",
-        "o_only": true
-      },
+      "code": "village2-obs.o",
       "glb": "levels/village2/fireboulder-lod0.glb",
       "lumps": [
         {
@@ -5943,10 +5836,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "village-obs.o",
-        "o_only": true
-      },
+      "code": "village-obs.o",
       "glb": "levels/village1/evilplant-lod0.glb",
       "is_prop": true,
       "lumps": [
@@ -5983,10 +5873,7 @@
         "tpage-925.go",
         "tpage-1353.go"
       ],
-      "code": {
-        "o": "rolling-obs.o",
-        "o_only": true
-      },
+      "code": "rolling-obs.o",
       "glb": "levels/rolling/dark-plant-lod0.glb",
       "is_prop": true,
       "lumps": [
@@ -6022,10 +5909,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "ogreboss.o",
-        "o_only": true
-      },
+      "code": "ogreboss.o",
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "lumps": [],
       "link_slots": [
@@ -6102,10 +5986,7 @@
         "tpage-507.go",
         "tpage-966.go"
       ],
-      "code": {
-        "o": "plant-boss.o",
-        "o_only": true
-      },
+      "code": "plant-boss.o",
       "glb": "levels/jungleb/plant-boss-main-lod0.glb",
       "nav_safe": false,
       "needs_path": true,
@@ -6169,11 +6050,7 @@
         "tpage-1418.go",
         "tpage-545.go"
       ],
-      "code": {
-        "o": "robotboss.o",
-        "o_only": true
-      },
-      "extra_code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o"],
+      "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
       "needs_path": true,
       "links": {
@@ -6202,10 +6079,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "yakow.o",
-        "o_only": true
-      },
+      "code": "yakow.o",
       "glb": "levels/village1/yakow-lod0.glb",
       "lumps": [
         {
@@ -6239,10 +6113,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "flutflut.o",
-        "o_only": true
-      },
+      "code": "flutflut.o",
       "glb": "levels/beach/flutflut-lod0.glb",
       "lumps": [
         {
@@ -6277,10 +6148,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "mayor.o",
-        "o_only": true
-      },
+      "code": "mayor.o",
       "glb": "levels/beach/mayor-lod0.glb",
       "lumps": [],
       "color": [
@@ -6304,10 +6172,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "farmer.o",
-        "o_only": true
-      },
+      "code": "farmer.o",
       "glb": "levels/village1/farmer-lod0.glb",
       "lumps": [],
       "color": [
@@ -6330,10 +6195,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "fisher.o",
-        "o_only": true
-      },
+      "code": "fisher.o",
       "glb": "levels/jungle/fisher-lod0.glb",
       "needs_path": true,
       "lumps": [],
@@ -6358,10 +6220,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "explorer.o",
-        "o_only": true
-      },
+      "code": "explorer.o",
       "glb": "levels/village1/explorer-lod0.glb",
       "lumps": [],
       "color": [
@@ -6385,10 +6244,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "geologist.o",
-        "o_only": true
-      },
+      "code": "geologist.o",
       "glb": "levels/village2/geologist-lod0.glb",
       "lumps": [],
       "color": [
@@ -6412,10 +6268,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "warrior.o",
-        "o_only": true
-      },
+      "code": "warrior.o",
       "glb": "levels/village2/warrior-lod0.glb",
       "lumps": [],
       "color": [
@@ -6439,10 +6292,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "gambler.o",
-        "o_only": true
-      },
+      "code": "gambler.o",
       "glb": "levels/village2/gambler-lod0.glb",
       "lumps": [],
       "color": [
@@ -6465,10 +6315,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "sculptor.o",
-        "o_only": true
-      },
+      "code": "sculptor.o",
       "glb": "levels/beach/sculptor-lod0.glb",
       "lumps": [],
       "color": [
@@ -6492,10 +6339,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "billy.o",
-        "o_only": true
-      },
+      "code": "billy.o",
       "glb": "levels/swamp/billy-lod0.glb",
       "needs_path": true,
       "lumps": [],
@@ -6519,10 +6363,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "pelican.o",
-        "o_only": true
-      },
+      "code": "pelican.o",
       "glb": "levels/beach/pelican-lod0.glb",
       "needs_path": true,
       "lumps": [],
@@ -6546,10 +6387,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "seagull.o",
-        "o_only": true
-      },
+      "code": "seagull.o",
       "glb": "levels/beach/seagull-lod0.glb",
       "lumps": [],
       "color": [
@@ -6575,10 +6413,7 @@
         "tpage-925.go",
         "tpage-1353.go"
       ],
-      "code": {
-        "o": "rolling-robber.o",
-        "o_only": true
-      },
+      "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
       "needs_path": true,
       "lumps": [
@@ -6718,9 +6553,7 @@
       ],
       "shape": "SPHERE",
       "vertex_export": false,
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "collectables.o"
     },
     {
       "etype": "money",
@@ -6755,9 +6588,7 @@
         1.0
       ],
       "shape": "PLAIN_AXES",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "collectables.o"
     },
     {
       "etype": "buzzer",
@@ -6786,18 +6617,14 @@
         1.0
       ],
       "shape": "SPHERE",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "collectables.o"
     },
     {
       "etype": "pickup-spawner",
       "label": "Pickup Spawner", 
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
+      "code": "crates.o",
       "schema_export": true,
       "lumps": [
         {
@@ -6903,9 +6730,7 @@
       ],
       "shape": "CUBE",
       "vertex_export": false,
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "crates.o"
     },
     {
       "etype": "orb-cache-top",
@@ -6949,9 +6774,7 @@
       ],
       "shape": "SPHERE",
       "vertex_export": false,
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "orb-cache.o"
     },
     {
       "etype": "powercellalt",
@@ -6966,10 +6789,7 @@
         "tpage-1418.go",
         "tpage-545.go"
       ],
-      "code": {
-        "o": "final-door.o",
-        "o_only": true
-      },
+      "code": "final-door.o",
       "glb": "levels/finalboss/powercellalt-lod0.glb",
       "lumps": [],
       "color": [
@@ -6986,9 +6806,7 @@
       "label": "Eco (Green)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.1,
@@ -7003,9 +6821,7 @@
       "label": "Eco Vent (Green)", 
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "in_game_cgo": true
-      },
+      "code": "collectables.o",
       "schema_export": true,
       "lumps": [
         {
@@ -7078,9 +6894,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "plat.o"
     },
     {
       "etype": "plat-eco",
@@ -7121,9 +6935,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "plat-eco.o"
     },
     {
       "etype": "citb-plat",
@@ -7195,10 +7007,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "citb-rotatebox",
@@ -7215,10 +7024,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "citb-donut",
@@ -7235,10 +7041,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "citb-chain-plat",
@@ -7265,10 +7068,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "silodoor",
@@ -7285,10 +7085,7 @@
         1.0
       ],
       "shape": "SPHERE",
-      "code": {
-        "o": "robotboss-misc.o",
-        "o_only": true
-      }
+      "code": "robotboss-misc.o"
     },
     {
       "etype": "citb-stopbox",
@@ -7321,10 +7118,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "citb-exit-plat",
@@ -7422,10 +7216,7 @@
         1
       ],
       "shape": "SPHERE",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      }
+      "code": "citb-plat.o"
     },
     {
       "etype": "plat-button",
@@ -7479,9 +7270,7 @@
         1
       ],
       "shape": "SPHERE",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "plat-button.o"
     },
     {
       "etype": "flutflut-plat-small",
@@ -7568,10 +7357,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "snow-flutflut-obs.o",
-        "o_only": true
-      }
+      "code": "snow-flutflut-obs.o"
     },
     {
       "etype": "flutflut-plat-med",
@@ -7658,10 +7444,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "snow-flutflut-obs.o",
-        "o_only": true
-      }
+      "code": "snow-flutflut-obs.o"
     },
     {
       "etype": "flutflut-plat-large",
@@ -7748,10 +7531,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "snow-flutflut-obs.o",
-        "o_only": true
-      }
+      "code": "snow-flutflut-obs.o"
     },
     {
       "etype": "snow-log",
@@ -7759,10 +7539,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "snow-log-ag.go",
-      "code": {
-        "o": "snow-obs.o",
-        "o_only": true
-      },
+      "code": "snow-obs.o",
       "glb": "levels/snow/snow-log-lod0.glb",
       "link_slots": [
         {
@@ -7782,10 +7559,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "snow-switch-ag.go",
-      "code": {
-        "o": "snow-obs.o",
-        "o_only": true
-      },
+      "code": "snow-obs.o",
       "glb": "levels/snow/snow-switch-lod0.glb",
       "link_slots": [
         {
@@ -7805,10 +7579,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "snow-spatula-ag.go",
-      "code": {
-        "o": "snow-obs.o",
-        "o_only": true
-      },
+      "code": "snow-obs.o",
       "glb": "levels/snow/snow-spatula-lod0.glb"
     },
     {
@@ -7824,10 +7595,7 @@
         "tpage-507.go",
         "tpage-966.go"
       ],
-      "code": {
-        "o": "plat-flip.o",
-        "o_only": true
-      },
+      "code": "plat-flip.o",
       "glb": "levels/jungleb/plat-flip-geo.glb",
       "lumps": [
         {
@@ -7903,10 +7671,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "wall-plat.o",
-        "o_only": true
-      },
+      "code": "wall-plat.o",
       "glb": "levels/sunken/wall-plat-lod0.glb",
       "fields": [
         {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
@@ -7940,10 +7705,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-obs.o",
-        "o_only": true
-      },
+      "code": "swamp-obs.o",
       "glb": "levels/swamp/balance-plat-lod0.glb",
       "lumps": [
         {
@@ -7982,10 +7744,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-teetertotter.o",
-        "o_only": true
-      },
+      "code": "misty-teetertotter.o",
       "glb": "levels/misty/teetertotter-lod0.glb",
       "lumps": [],
       "color": [
@@ -8011,10 +7770,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "sunken-obs.o",
-        "o_only": true
-      },
+      "code": "sunken-obs.o",
       "glb": "levels/sunken/side-to-side-plat-lod0.glb",
       "needs_sync": true,
       "links": {
@@ -8053,10 +7809,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "wedge-plats.o",
-        "o_only": true
-      },
+      "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
         {
@@ -8131,10 +7884,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "wedge-plats.o",
-        "o_only": true
-      },
+      "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
         {
@@ -8208,10 +7958,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "wedge-plats.o",
-        "o_only": true
-      },
+      "code": "wedge-plats.o",
       "lumps": [
         {
           "key": "rotspeed",
@@ -8262,10 +8009,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-obs.o",
-        "o_only": true
-      },
+      "code": "swamp-obs.o",
       "glb": "levels/swamp/tar-plat-lod0.glb",
       "lumps": [
         {
@@ -8288,10 +8032,7 @@
       "category": "Platforms",
       "parent": "prop",
       "art_group": "mis-bone-platform-ag.go",
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
       "lumps": [],
       "color": [
@@ -8308,10 +8049,7 @@
       "category": "Platforms",
       "parent": "prop",
       "art_group": ["qbert-plat-ag.go", "qbert-plat-on-ag.go"],
-      "code": {
-        "o": "qbert-plat.o",
-        "o_only": true
-      },
+      "code": "qbert-plat.o",
       "glb": "levels/sunken/qbert-plat-lod0.glb",
       "lumps": [],
       "link_slots": [
@@ -8358,10 +8096,7 @@
       "category": "Platforms",
       "parent": "prop",
       "art_group": "qbert-plat-on-ag.go",
-      "code": {
-        "o": "qbert-plat.o",
-        "o_only": true
-      },
+      "code": "qbert-plat.o",
       "lumps": [],
       "link_slots": [
         {
@@ -8505,10 +8240,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "o": "floating-launcher.o",
-        "o_only": true
-      }
+      "code": "floating-launcher.o"
     },
     {
       "etype": "launcher",
@@ -8618,10 +8350,7 @@
       "category": "Platforms",
       "parent": "prop",
       "art_group": "citb-launcher-ag.go",
-      "code": {
-        "o": "citadel-obs.o",
-        "o_only": true
-      },
+      "code": "citadel-obs.o",
       "glb": "levels/citadel/citb-launcher-lod0.glb",
       "needs_sync": true,
       "links": {
@@ -8701,10 +8430,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "villagep-obs.o",
-        "o_only": true
-      },
+      "code": "villagep-obs.o",
       "glb": "levels/citadel/warpgate-lod0.glb",
       "lumps": [],
       "color": [
@@ -8727,10 +8453,7 @@
         "tpage-1305.go",
         "tpage-1304.go"
       ],
-      "code": {
-        "o": "darkcave-obs.o",
-        "o_only": true
-      },
+      "code": "darkcave-obs.o",
       "glb": "levels/darkcave/cavecrystal-lod0.glb",
       "lumps": [
         {
@@ -8759,10 +8482,7 @@
         "tpage-1209.go",
         "tpage-1194.go"
       ],
-      "code": {
-        "o": "miners.o",
-        "o_only": true
-      },
+      "code": "miners.o",
       "lumps": [],
       "color": [
         0.8,
@@ -8781,10 +8501,7 @@
       "art_group": "minecartsteel-ag.go",
       "glb": "levels/village3/minecartsteel-lod0.glb",
       "lumps": [],
-      "code": {
-        "o": "minecart.o",
-        "o_only": true
-      },
+      "code": "minecart.o",
       "fields": [
         {
           "key": "_index",
@@ -8818,10 +8535,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "glb": "levels/ogre/tntbarrel-lod0.glb",
       "is_prop": true,
       "lumps": [],
@@ -8845,10 +8559,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -8873,10 +8584,7 @@
         "tpage-854.go",
         "tpage-1123.go"
       ],
-      "code": {
-        "o": "firecanyon-obs.o",
-        "o_only": true
-      },
+      "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
       "link_slots": [
         {
@@ -8938,10 +8646,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "steam-cap.o",
-        "o_only": true
-      },
+      "code": "steam-cap.o",
       "fields": [
         {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 4.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
         {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
@@ -8970,10 +8675,7 @@
       "parent": "prop",
       "art_group": "lurkerm-piston-ag.go",
       "tpage_group": "Jungle",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "fields": [
         {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 5.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
         {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"},
@@ -9020,10 +8722,7 @@
       "parent": "prop",
       "art_group": "lurkerm-tall-sail-ag.go",
       "tpage_group": "Jungle",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
       "lumps": [],
       "link_slots": [
@@ -9053,10 +8752,7 @@
       "parent": "prop",
       "art_group": "precurbridge-ag.go",
       "tpage_group": "Jungle",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "glb": "levels/jungle/precurbridge-geo.glb",
       "lumps": [],
       "color": [
@@ -9075,10 +8771,7 @@
       "parent": "prop",
       "art_group": "grottopole-ag.go",
       "tpage_group": "Beach",
-      "code": {
-        "o": "beach-obs.o",
-        "o_only": true
-      },
+      "code": "beach-obs.o",
       "fields": [
         {"key": "og_speed", "label": "Speed (m)", "type": "meters", "default": 2.0, "min": 0.0, "lump": {"key": "speed", "type": "meters"}, "write_if": "if_not_default"}, 
         {"key": "og_distance", "label": "Distance per move (m)", "type": "meters", "default": 0.75, "lump": {"key": "distance", "type": "meters"}, "write_if": "if_not_default"}, 
@@ -9122,10 +8815,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "beach-obs.o",
-        "o_only": true
-      },
+      "code": "beach-obs.o",
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
       "lumps": [],
@@ -9150,10 +8840,7 @@
         "tpage-1418.go",
         "tpage-545.go"
       ],
-      "code": {
-        "o": "robotboss-misc.o",
-        "o_only": true
-      },
+      "code": "robotboss-misc.o",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
       "lumps": [],
@@ -9181,9 +8868,7 @@
         1.0
       ],
       "shape": "CUBE",
-      "code": {
-        "in_game_cgo": true
-      }
+      "code": "collectables.o"
     },
     {
       "etype": "swamp-rock",
@@ -9197,10 +8882,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-obs.o",
-        "o_only": true
-      },
+      "code": "swamp-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -9229,10 +8911,7 @@
         "tpage-1209.go",
         "tpage-1194.go"
       ],
-      "code": {
-        "o": "village3-obs.o",
-        "o_only": true
-      },
+      "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
       "is_prop": true,
       "lumps": [],
@@ -9257,10 +8936,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "swamp-blimp.o",
-        "o_only": true
-      },
+      "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -9284,10 +8960,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "swamp-blimp.o",
-        "o_only": true
-      },
+      "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -9306,10 +8979,7 @@
       "parent": "process-drawable",
       "art_group": "swamp-spike-ag.go",
       "glb": "levels/swamp/swamp-spike-lod0.glb",
-      "code": {
-        "o": "swamp-obs.o",
-        "o_only": true
-      },
+      "code": "swamp-obs.o",
       "is_prop": true,
       "fields": [
         {
@@ -9400,10 +9070,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "whirlpool.o",
-        "o_only": true
-      },
+      "code": "whirlpool.o",
       "glb": "levels/sunken/whirlpool-lod0.glb",
       "is_prop": true,
       "lumps": [
@@ -9471,10 +9138,7 @@
       "category": "Buttons and Doors",
       "parent": "prop",
       "art_group": "warp-gate-switch-ag.go",
-      "code": {
-        "o": "villagep-obs.o",
-        "o_only": true
-      },
+      "code": "villagep-obs.o",
       "glb": "levels/village1/warp-gate-switch-lod0.glb",
       "lumps": [
         {
@@ -9509,10 +9173,7 @@
       "category": "Buttons and Doors",
       "parent": "prop",
       "art_group": "warp-gate-switch-ag.go",
-      "code": {
-        "o": "villagep-obs.o",
-        "o_only": true
-      },
+      "code": "villagep-obs.o",
       "glb": "levels/village1/warp-gate-switch-lod0.glb",
       "lumps": [
         {
@@ -9555,10 +9216,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "balloonlurker.o",
-        "o_only": true
-      },
+      "code": "balloonlurker.o",
       "glb": "levels/misty/balloonlurker-lod0.glb",
       "needs_path": true,
       "link_slots": [
@@ -9613,10 +9271,7 @@
         "tpage-388.go"
       ],
       "glb": "levels/jungle/darkvine-lod0.glb",
-      "code": {
-        "o": "darkvine.o",
-        "o_only": true
-      },
+      "code": "darkvine.o",
       "lumps": [],
       "color": [
         0.2,
@@ -9642,10 +9297,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "junglefish.o",
-        "o_only": true
-      },
+      "code": "junglefish.o",
       "glb": "levels/jungle/junglefish-lod0.glb",
       "nav_safe": false,
       "links": {
@@ -9697,10 +9349,7 @@
         "tpage-925.go",
         "tpage-1353.go"
       ],
-      "code": {
-        "o": "rolling-lightning-mole.o",
-        "o_only": true
-      },
+      "code": "rolling-lightning-mole.o",
       "links": {
         "need_enemy": true
       },
@@ -9728,10 +9377,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "cave-trap.o",
-        "o_only": true
-      },
+      "code": "cave-trap.o",
       "needs_path": true,
       "links": {
         "need_enemy": true,
@@ -9817,10 +9463,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "cave-trap.o",
-        "o_only": true
-      },
+      "code": "cave-trap.o",
       "links": {
         "need_enemy": true
       },
@@ -9849,10 +9492,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-rat-nest.o",
-        "o_only": true
-      },
+      "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "needs_path": true,
       "links": {
@@ -9922,10 +9562,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "sunken-fish.o",
-        "o_only": true
-      },
+      "code": "sunken-fish.o",
       "needs_path": true,
       "links": {
         "need_enemy": true
@@ -9986,10 +9623,7 @@
       "parent": "nav-enemy",
       "art_group": "sharkey-ag.go",
       "glb": "levels/beach/sharkey-lod0.glb",
-      "code": {
-        "o": "sharkey.o",
-        "o_only": true
-      },
+      "code": "sharkey.o",
       "links": {
         "need_path": true,
         "need_nav": true,
@@ -10092,10 +9726,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "village-obs.o",
-        "o_only": true
-      },
+      "code": "village-obs.o",
       "needs_path": true,
       "links": {
         "need_enemy": true
@@ -10135,10 +9766,7 @@
       "label": "Eco Pill (Health)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.3,
@@ -10153,10 +9781,7 @@
       "label": "Eco (Blue)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         0.2,
@@ -10171,10 +9796,7 @@
       "label": "Eco Vent (Blue)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -10200,10 +9822,7 @@
       "label": "Eco Vent (Red)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -10229,10 +9848,7 @@
       "label": "Eco Vent (Yellow)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -10258,10 +9874,7 @@
       "label": "Eco (Red)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "lumps": [],
       "color": [
         1.0,
@@ -10276,10 +9889,7 @@
       "label": "Eco (Yellow)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": {
-        "o": "collectables.o",
-        "o_only": true
-      },
+      "code": "collectables.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -10313,10 +9923,7 @@
         "tpage-213.go",
         "tpage-215.go"
       ],
-      "code": {
-        "o": "beach-obs.o",
-        "o_only": true
-      },
+      "code": "beach-obs.o",
       "lumps": [
         {
           "key": "distance",
@@ -10356,10 +9963,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "orbit-plat.o",
-        "o_only": true
-      },
+      "code": "orbit-plat.o",
       "glb": "levels/sunken/orbit-plat-lod0.glb",
       "link_slots": [
         {
@@ -10435,10 +10039,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "square-platform.o",
-        "o_only": true
-      },
+      "code": "square-platform.o",
       "glb": "levels/sunken/square-platform-lod0.glb",
       "link_slots": [
         {
@@ -10526,10 +10127,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "ropebridge.o",
-        "o_only": true
-      },
+      "code": "ropebridge.o",
       "lumps": [
         {
           "key": "art-name",
@@ -10577,10 +10175,7 @@
       "category": "Platforms",
       "parent": "prop",
       "tpages": [],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "lumps": [],
       "fields": [
         {
@@ -10639,10 +10234,7 @@
       "category": "Platforms",
       "parent": "prop",
       "tpages": [],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "lumps": [
         {
           "key": "Variant",
@@ -10697,10 +10289,7 @@
       "category": "Platforms",
       "parent": "prop",
       "tpages": [],
-      "code": {
-        "o": "citadel-obs.o",
-        "o_only": true
-      },
+      "code": "citadel-obs.o",
       "fields": [
         {
           "key": "og_disc_variant",
@@ -10737,10 +10326,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "glb": "levels/lavatube/lavaballoon-lod0.glb",
       "needs_path": true,
       "lumps": [
@@ -10794,10 +10380,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "glb": "levels/lavatube/darkecobarrel-lod0.glb",
       "needs_path": true,
       "lumps": [
@@ -10888,10 +10471,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "glb": "levels/darkcave/caveelevator-lod0.glb",
       // "needs_path": true,
       "lumps": [
@@ -10968,10 +10548,7 @@
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "prop",
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "needs_path": true,
       "lumps": [
         {
@@ -11060,10 +10637,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "glb": "levels/robocave/cavetrapdoor-lod0.glb",
       "lumps": [
         {
@@ -11094,10 +10668,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "fields": [
         {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
         {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"}
@@ -11132,10 +10703,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": {
-        "o": "maincave-obs.o",
-        "o_only": true
-      },
+      "code": "maincave-obs.o",
       "fields": [
         {"key": "og_sync_period", "label": "Period (s)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "sync", "type": "float", "slot": 0}, "write_if": "always"}, 
         {"key": "og_sync_phase", "label": "Phase (0-1)", "type": "float", "default": 0.0, "lump": {"key": "sync", "type": "float", "slot": 1}, "write_if": "always"} 
@@ -11169,10 +10737,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridge-lod0.glb",
       "link_slots": [
         {
@@ -11207,10 +10772,7 @@
         "tpage-884.go",
         "tpage-1117.go"
       ],
-      "code": {
-        "o": "ogre-obs.o",
-        "o_only": true
-      },
+      "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
       "lumps": [],
       "color": [
@@ -11236,10 +10798,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "village2-obs.o",
-        "o_only": true
-      },
+      "code": "village2-obs.o",
       "glb": "levels/village2/pontoonten-lod0.glb",
       "lumps": [
         {
@@ -11285,10 +10844,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "village2-obs.o",
-        "o_only": true
-      },
+      "code": "village2-obs.o",
       "glb": "levels/village2/pontoonfive-lod0.glb",
       "lumps": [],
       "color": [
@@ -11313,10 +10869,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-bridge-lod0.glb",
       "lumps": [
         {
@@ -11361,10 +10914,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
         {
@@ -11431,10 +10981,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
         {
@@ -11501,10 +11048,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
         {
@@ -11564,9 +11108,7 @@
       "label": "Water Volume (legacy)",
       "category": "Hidden",
       "parent": "process-drawable",
-      "code": {
-        "in_game_cgo": true
-      },
+      "code": "water-h.o",
       "lumps": [],
       "fields": [],
       "color": [
@@ -11582,10 +11124,7 @@
       "label": "Swing Pole",
       "category": "Platforms",
       "parent": "process-drawable",
-      "code": {
-        "o": "generic-obs.o",
-        "o_only": true
-      },
+      "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
       "lumps": [],
       "color": [
@@ -11602,10 +11141,7 @@
       "description": "Will force jak into his sliding state. Requires a physical mesh under. You may need to switch direction on the curve.",
       "category": "Platforms",
       "parent": "process",
-      "code": {
-        "o": "target-tube.o",
-        "o_only": true
-      },
+      "code": "target-tube.o",
       "needs_path": true,
       "extra_art_groups": ["eichar-tube+0-ag.go"],
       "lumps": [],
@@ -11631,10 +11167,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "bouncer.o",
-        "o_only": true
-      },
+      "code": "bouncer.o",
       "glb": "levels/jungle/bounceytarp-lod0.glb",
       "lumps": [
         {
@@ -11671,10 +11204,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "spiderwebs-ag.go",
-      "code": {
-        "o": "spiderwebs.o",
-        "o_only": true
-      },
+      "code": "spiderwebs.o",
       "glb": "levels/maincave/spiderwebs-good-lod0.glb",
       "lumps": [
         {
@@ -11720,10 +11250,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "oracle.o",
-        "o_only": true
-      },
+      "code": "oracle.o",
       "glb": "levels/village1/oracle-lod0.glb",
       "lumps": [
         {
@@ -11768,10 +11295,7 @@
         "tpage-1209.go",
         "tpage-1194.go"
       ],
-      "code": {
-        "o": "miners.o",
-        "o_only": true
-      },
+      "code": "miners.o",
       "glb": "levels/village3/minershort-lod0.glb",
       "link_slots": [
         {
@@ -11806,10 +11330,7 @@
         "tpage-1209.go",
         "tpage-1194.go"
       ],
-      "code": {
-        "o": "miners.o",
-        "o_only": true
-      },
+      "code": "miners.o",
       "glb": "levels/village3/minertall-lod0.glb",
       "lumps": [],
       "color": [
@@ -11827,10 +11348,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "jng-iris-door-ag.go",
-      "code": {
-        "o": "jungleb-obs.o",
-        "o_only": true
-      },
+      "code": "jungleb-obs.o",
       "glb":"levels/jungleb/jng-iris-door-lod0.glb",
       "link_slots": [
         {
@@ -11920,10 +11438,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "eggtop-ag.go",
-      "code": {
-        "o": "jungleb-obs.o",
-        "o_only": true
-      },
+      "code": "jungleb-obs.o",
       "glb":"levels/jungleb/eggtop-lod0.glb",
       "color": [
         0.3,
@@ -11940,10 +11455,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "sidedoor-ag.go",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "glb": "levels/jungle/sidedoor-lod1.glb",
       "link_slots": [
         {
@@ -12037,10 +11549,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "maindoor-ag.go",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "glb": "levels/jungle/maindoor-lod1.glb",
       "color": [
         0.4,
@@ -12057,10 +11566,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "rounddoor-ag.go",
-      "code": {
-        "o": "misty-warehouse.o",
-        "o_only": true
-      },
+      "code": "misty-warehouse.o",
       "lumps": [
         {
           "key": "distance",
@@ -12133,10 +11639,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "launcherdoor-ag.go",
-      "code": {
-        "o": "launcherdoor.o",
-        "o_only": true
-      },
+      "code": "launcherdoor.o",
       "lumps": [
         {
           "key": "continue-name",
@@ -12174,10 +11677,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "sun-iris-door-ag.go",
-      "code": {
-        "o": "sun-iris-door.o",
-        "o_only": true
-      },
+      "code": "sun-iris-door.o",
       "lumps": [
         {
           "key": "proximity",
@@ -12241,10 +11741,7 @@
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "generic-button-ag.go",
-      "code": {
-        "o": "basebutton.o",
-        "o_only": true
-      },
+      "code": "basebutton.o",
       "lumps": [
         {
           "key": "timeout",
@@ -12325,10 +11822,7 @@
         "tpage-714.go",
         "tpage-662.go"
       ],
-      "code": {
-        "o": "shover.o",
-        "o_only": true
-      },
+      "code": "shover.o",
       "needs_path": true,
       "lumps": [
         {
@@ -12397,10 +11891,7 @@
         "tpage-629.go",
         "tpage-630.go"
       ],
-      "code": {
-        "o": "swamp-obs.o",
-        "o_only": true
-      },
+      "code": "swamp-obs.o",
       "lumps": [
         {
           "key": "distance",
@@ -12435,10 +11926,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "village2-obs.o",
-        "o_only": true
-      },
+      "code": "village2-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12469,10 +11957,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12516,10 +12001,7 @@
         "tpage-518.go",
         "tpage-520.go"
       ],
-      "code": {
-        "o": "misty-obs.o",
-        "o_only": true
-      },
+      "code": "misty-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12554,10 +12036,7 @@
         "tpage-386.go",
         "tpage-388.go"
       ],
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -12598,10 +12077,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12632,10 +12108,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12666,10 +12139,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12700,10 +12170,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12734,10 +12201,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
         {
@@ -12769,10 +12233,7 @@
         "tpage-1339.go",
         "tpage-1337.go"
       ],
-      "code": {
-        "o": "lavatube-obs.o",
-        "o_only": true
-      },
+      "code": "lavatube-obs.o",
       "color": [
         0.6,
         0.1,
@@ -12795,10 +12256,7 @@
         "tpage-854.go",
         "tpage-1123.go"
       ],
-      "code": {
-        "o": "firecanyon-obs.o",
-        "o_only": true
-      },
+      "code": "firecanyon-obs.o",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -12816,10 +12274,7 @@
       "parent": "process-drawable",
       "art_group": "crate-darkeco-cluster-ag.go",
       "glb": "levels/firecanyon/crate-darkeco-cluster-lod0.glb",
-      "code": {
-        "o": "firecanyon-obs.o",
-        "o_only": true
-      },
+      "code": "firecanyon-obs.o",
       "color": [
         0.3,
         0.0,
@@ -12836,10 +12291,7 @@
       "parent": "process-drawable",
       "art_group": "logtrap-ag.go",
       "glb": "levels/jungle/logtrap-lod0.glb",
-      "code": {
-        "o": "jungle-obs.o",
-        "o_only": true
-      },
+      "code": "jungle-obs.o",
       "color": [
         0.3,
         0.0,
@@ -12856,10 +12308,7 @@
       "parent": "process-drawable",
       "art_group": "pusher-ag.go",
       "glb": "levels/rolling/pusher-lod0.glb",
-      "code": {
-        "o": "rolling-obs.o",
-        "o_only": true
-      },
+      "code": "rolling-obs.o",
       "fields": [
         {
           "key": "og_sync_period",
@@ -12915,10 +12364,7 @@
       "parent": "process-drawable",
       "art_group": "snowpusher-ag.go",
       "glb": "levels/snow/snowpusher-lod0.glb",
-      "code": {
-        "o": "snow-obs.o",
-        "o_only": true
-      },
+      "code": "snow-obs.o",
       "fields": [
         {
           "key": "og_pusher_mode",
@@ -13002,10 +12448,7 @@
       "parent": "process-drawable",
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
-      "code": {
-        "o": "snow-ball.o",
-        "o_only": true
-      },
+      "code": "snow-ball.o",
       "needs_path": true,
       "color": [
         0.3,
@@ -13029,10 +12472,7 @@
         "tpage-921.go",
         "tpage-1476.go"
       ],
-      "code": {
-        "o": "swamp-blimp.o",
-        "o_only": true
-      },
+      "code": "swamp-blimp.o",
       "link_slots": [
         {
           "lump_key": "alt-actor",
@@ -13061,10 +12501,7 @@
       "parent": "process-drawable",
       "art_group": "citb-firehose-ag.go",
       "glb": "levels/citadel/citb-firehose-lod0.glb",
-      "code": {
-        "o": "citb-plat.o",
-        "o_only": true
-      },
+      "code": "citb-plat.o",
       "fields": [
         {
           "key": "og_sync_period",
@@ -13106,10 +12543,7 @@
         "tpage-401.go",
         "tpage-1470.go"
       ],
-      "code": {
-        "o": "fishermans-boat.o",
-        "o_only": true
-      },
+      "code": "fishermans-boat.o",
       "is_prop": true,
       "lumps": [],
       "color": [
@@ -13133,10 +12567,7 @@
         0.8,
         1.0
       ],
-      "shape": "PLAIN_AXES",
-      "code": {
-        "in_game_cgo": true
-      }
+      "shape": "PLAIN_AXES"
     }
   ],
 

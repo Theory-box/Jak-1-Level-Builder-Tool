@@ -188,6 +188,29 @@ def find_actor(etype: str) -> dict | None:
     return None
 
 
+def code_files(rec: dict | None) -> list[str]:
+    """The .o files an actor (or variant) brings into the level DGO, in load
+    order. DB format: "code": "file.o" or "code": ["dep.o", ..., "file.o"].
+    Files listed in Defaults > game_gd_files are skipped at export (always
+    loaded), so vanilla GAME.CGO code is listed like any other.
+    Older override databases still load: {"o": ..., "o_only": ...},
+    {"in_game_cgo": true} (nothing to add) and a separate "extra_code" list
+    (loaded before the actor's own file)."""
+    if not rec:
+        return []
+    c = rec.get("code")
+    if isinstance(c, str):
+        files = [c]
+    elif isinstance(c, list):
+        files = [f for f in c if isinstance(f, str)]
+    elif isinstance(c, dict):
+        files = [] if c.get("in_game_cgo") or not c.get("o") else [c["o"]]
+    else:
+        files = []
+    extra = rec.get("extra_code") or []
+    return [f for f in list(extra) + files if f]
+
+
 def all_actors_including_orphans() -> list[dict]:
     """Every actor-like record including non-spawnable orphans."""
     return DB["Actors"] + DB.get("OrphanEtypes", [])

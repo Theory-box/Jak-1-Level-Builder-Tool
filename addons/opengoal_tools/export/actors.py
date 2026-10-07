@@ -550,9 +550,8 @@ def collect_actors(scene, depsgraph=None):
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
             "art_group": _variant.get("art_group"),   # None -> fall back to ETYPE_AG
-            "code":      _variant.get("code"),
+            "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
-            "extra_code":       _variant.get("extra_code") or [],
         })
 
     # ── Checkpoint trigger actors ─────────────────────────────────────────────

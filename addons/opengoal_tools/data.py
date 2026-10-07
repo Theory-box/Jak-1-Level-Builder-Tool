@@ -405,15 +405,10 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 # ═══════════════════════════════════════════════════════════════════════════
 # ETYPE_CODE + ETYPE_TPAGES (direct pass-through from Actors[].code / .tpages)
 # ═══════════════════════════════════════════════════════════════════════════
-ETYPE_CODE: dict[str, dict] = {
-    a["etype"]: dict(a["code"]) for a in _db.actors() if a.get("code")
-}
-
-# Actor-level extra_code: dependency .o files the actor needs in the level DGO
-# (headers, child-actor code, particle files). Loaded BEFORE the actor's own .o,
-# matching vanilla DGO order (e.g. mother-spider-h.o ... then mother-spider.o).
-ETYPE_EXTRA_CODE: dict[str, list] = {
-    a["etype"]: list(a["extra_code"]) for a in _db.actors() if a.get("extra_code")
+# etype -> .o files for the level DGO, in load order (dependencies first,
+# e.g. mother-spider-h.o ... mother-spider.o). See db.code_files().
+ETYPE_CODE: dict[str, list] = {
+    a["etype"]: _db.code_files(a) for a in _db.actors() if _db.code_files(a)
 }
 
 ETYPE_TPAGES: dict[str, list] = {

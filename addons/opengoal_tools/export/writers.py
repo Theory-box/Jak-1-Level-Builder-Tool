@@ -1072,13 +1072,13 @@ def patch_game_gp(name, code_deps=None, scene=None):
     dgo  = f"{nick.upper()}.DGO"
 
     # goal-src lines for enemy code (de-duplicated)
-    # Skip o_only entries (gc=None) — vanilla game.gp already has their goal-src lines.
+    # Skip entries with no gc (all DB code) — vanilla game.gp already has their goal-src lines.
     extra_goal_src = ""
     if code_deps:
         seen_gc = set()
         for o, gc, dep in code_deps:
             if gc is None:
-                continue  # o_only: .o injected into DGO but no goal-src needed
+                continue  # .o injected into DGO only, no goal-src needed
             if gc not in seen_gc:
                 seen_gc.add(gc)
                 extra_goal_src += f'(goal-src "{gc}" "{dep}")\n'
@@ -1106,13 +1106,6 @@ def patch_game_gp(name, code_deps=None, scene=None):
     # in game.gp across exports which caused duplicate-compile crashes in GOALC.
     txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)[^\n]*\n', '', txt)
     txt = re.sub(r'[^\n]*; og-include ' + re.escape(name) + r'\n', '', txt)
-    # Strip ALL enemy goal-src lines that could have been injected by any previous export.
-    # This catches leftover entries even if the dep changed between exports.
-    # We match any goal-src line whose path matches a known ETYPE_CODE gc file.
-    for _etype_info in ETYPE_CODE.values():
-        _gc = _etype_info.get("gc", "")
-        if _gc:
-            txt = re.sub(r'\(goal-src "' + re.escape(_gc) + r'"[^)]*\)\n', '', txt)
 
     if correct_block in txt:
         log("game.gp already correct"); return
