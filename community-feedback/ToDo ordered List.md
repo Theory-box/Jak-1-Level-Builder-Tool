@@ -690,6 +690,36 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 ---
 
+## Time of day implementation 
+Time of day for custom level has been merged as of https://github.com/open-goal/jak-project/commit/d04ac9d so I've moved this feature under the export settings.
+### Enable and disabling time of day export
+Have an option in baking that's just a toggle to enable time of day export or not. If the option is off then the current behaviour is kept. If the option is turned on then a bunch of new panel will appear.
+### What time of day needs to work
+For time of days to work properly in game, you need to have these color attributes on the visual meshes instead of a single one:
+_SUNRISE
+_MORNING
+_NOON
+_AFTERNOON
+_SUNSET
+_TWILIGHT
+_EVENING
+_GREENSUN
+Once all of those are made and colored, and the mood function used in the custom level allow for time of day, they'll work. If those aren't set, it'll default to the closest time color or to COLOR_0 if none are set
+### Implementation in the addon
+Once time of day is enabled, a new panel will appear that allows you to select a collection of light as well as a world setting (world material) per time of day. That way you can set exactly which light and environement will affect which time of day. 
+
+Next to the collection selection, you can also add a button to create a new collection so it's directly attached and created, named and placed in an overall lighting/time of day collection within the level.
+
+For the world setting/material. We'll have to check attaching a world setting give it an user so it's not deleted when blender is shut down. If it doesn't then we'll have to make sure it's given a fake user. There could also be a button to add a default sun that's rotated and set up to give a default outside look similar to Hub 1 lighting.
+
+There can also be a button for this which automatically create world setting for each of time of day which is named and maybe even has some default setting per time of day for a default outside look.
+
+Each of the time of day can also have an enable/disable setting in case users only need a few specific ones. Disabled time of day can have their menu collapsed too to gain some space in the view.
+
+Once everything is set and an user press "bake" as they would before, the addon is now going to render into each color attribute using the collection that was set for it, disabling the ones for the other time of day. (but not any other lights or collection outside of those so some lights can be set to work on every time of day) and also switch the world setting to the selected one. And repeat that for every time of day that is active.
+
+---
+
 ### Ignore unedited files
 At the moment, every file is rebuilt everytime you click on the export button. The way the compiler work is by checking which files got edited since last time via the file edit time. Which means it'll always have to compile almost the whole game since it's editing files such as `game.gp` or `level-info.gc`.
 If only the level's .json, gd and glb were changed. Which is going to be a vast majority of edits. Then only the level needs to be compiled bringing the compile time down to a few seconds instead.
@@ -764,13 +794,5 @@ Tasks are the system that set missions to specific resolutions. It's also what t
 - add nav-sphere
 - Ability to connect other actors to a nav-mesh so they block pathing (like crates)
 
----
-
-## Time of day implementation 
-(when it's implemented in main project/mod-base)
-- Enable/disable
-- Select a collection per time of day (containing lights)
-- Select a world setting per time of day
-- baking lights when these things are selected should 
 
 ---
