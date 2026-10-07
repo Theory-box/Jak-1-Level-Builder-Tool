@@ -723,6 +723,62 @@ class OG_PT_ActorVisibility(Panel):
 
 
 
+class OG_UL_PathKnots(bpy.types.UIList):
+    """Manual knot list (path-k): index + editable value per row."""
+
+    def draw_item(self, ctx, layout, data, item, icon, active_data,
+                  active_propname, index):
+        row = layout.row(align=True)
+        row.label(text=f"{index}")
+        row.prop(item, "value", text="", emboss=True)
+
+
+def draw_knot_editor(layout, owner, lump_name, actor_name, path_index, auto_knots,
+                     manual_attr, list_attr, index_attr, open_attr):
+    """Collapsed-by-default knot (path-k) box. Automatic unless the user
+    switches to a manual list; presets fill the list, Fit follows point
+    count changes, the export resizes on its own if they differ."""
+    if not auto_knots:
+        return
+    from ..export import path_modes as _pm
+    manual = getattr(owner, manual_attr)
+    coll = getattr(owner, list_attr)
+    box = layout.box()
+    hdr = box.row(align=True)
+    is_open = getattr(owner, open_attr)
+    hdr.prop(owner, open_attr, text="", emboss=False, icon="TRIA_DOWN" if is_open else "TRIA_RIGHT")
+    hdr.label(text=f"Knots ({lump_name}-k): {'Manual' if manual else 'Automatic'} · {len(auto_knots)} values",
+              icon="IPO_BEZIER")
+    if not is_open:
+        if manual and len(coll) != len(auto_knots):
+            w = box.row(); w.alert = True
+            w.label(text=f"Manual list has {len(coll)}, path needs {len(auto_knots)}", icon="ERROR")
+        return
+
+    def _op(row, preset, text, icon="NONE"):
+        op = row.operator("og.path_knots_preset", text=text, icon=icon)
+        op.actor_name = actor_name; op.path_index = path_index; op.preset = preset
+
+    if not manual:
+        _op(box.row(), "AUTO", "Edit Knots Manually", "GREASEPENCIL")
+        return
+    row = box.row(align=True)
+    _op(row, "CLAMPED", "Clamped")
+    _op(row, "UNIFORM", "Uniform")
+    _op(row, "AUTO", "Automatic")
+    box.template_list("OG_UL_PathKnots", f"knots{path_index}", owner, list_attr, owner, index_attr,
+                      rows=4, maxrows=8)
+    _vals, note = _pm.manual_knots(auto_knots, [k.value for k in coll])
+    if len(coll) != len(auto_knots):
+        w = box.row(align=True); w.alert = True
+        w.label(text=f"Points changed: list {len(coll)}, needs {len(auto_knots)}", icon="ERROR")
+        _op(w, "FIT", "Fit")
+    elif note:
+        w = box.row(); w.alert = True
+        w.label(text=note, icon="ERROR")
+    box.prop(owner, manual_attr, text="Manual knots (off = automatic)", toggle=True)
+
+
 class OG_UL_WaypointSources(bpy.types.UIList):
     """List of waypoint source entries for an actor. Each entry points to
     either an EMPTY (legacy _wp_NN style, single point) or a CURVE (each
@@ -776,7 +832,7 @@ def _count_curve_points(curve_obj) -> int:
 
 
 class OG_PT_ActorWaypoints(Panel):
-    bl_label       = "Waypoints"
+    bl_label       = "Path"
     bl_idname      = "OG_PT_actor_waypoints"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -866,20 +922,37 @@ class OG_PT_ActorWaypoints(Panel):
         toggle_row.prop(sel, "og_waypoint_pingpong",
                         text="Ping-pong", toggle=True, icon="ARROW_LEFTRIGHT")
 
-        # Path interpolation mode — linear (default) vs smooth B-spline.
-        # Smooth only changes behavior for curve-control actors (plat,
-        # plat-eco, plat-button); it emits a path-k knot lump at export.
-        mode_row = layout.row(align=True)
-        mode_row.prop(sel, "og_path_mode", text="Path Mode")
-        if getattr(sel, "og_path_mode", "LINEAR") == "SMOOTH":
-            eff_pts = total_pts if n_sources > 0 else len(legacy_wps)
-            box = layout.box()
-            box.label(text="Smooth: cubic B-spline (curve-control platforms)",
-                      icon="IPO_BEZIER")
-            box.label(text="Cuts corners — does not pass through interior waypoints")
-            if eff_pts < 4:
-                box.label(text=f"⚠ Needs ≥4 waypoints (has {eff_pts}); exports linear",
-                          icon="ERROR")
+        # Path mode (export/path_modes.py). Linear-only actors (path-control —
+        # they ignore path-k) only get the straight-line choices.
+        from ..export import path_modes as _pm
+        linear_only = bool((_db.find_actor(etype) or {}).get("path_linear_only"))
+        mode_box = layout.box()
+        if linear_only:
+            mode_box.label(text="Path Mode (this actor only moves in straight lines):", icon="IPO_LINEAR")
+            mrow = mode_box.row(align=True)
+            for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
+                mrow.prop_enum(sel, "og_path_mode", m)
+        else:
+            mode_box.prop(sel, "og_path_mode", text="Path Mode")
+        try:
+            _pts, _knots, _eff, _warn = _pm.build(
+                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only,
+                pingpong=sel.og_waypoint_pingpong)
+            info = mode_box.column(); info.scale_y = 0.8
+            label = _pm.MODE_LABELS.get(_eff, _eff)
+            if sel.og_path_mode == "AUTO":
+                label = f"Automatic → {label}"
+            info.label(text=f"{label}: {len(_pts)} points"
+                            + (f", {len(_knots)} knots (path-k)" if _knots else ""),
+                       icon="IPO_BEZIER" if _knots else "IPO_LINEAR")
+            if _warn:
+                w = info.row(); w.alert = True
+                w.label(text=_warn, icon="ERROR")
+            draw_knot_editor(mode_box, sel, (sel.og_path_lump or "path").strip(), sel.name, -1, _knots,
+                             "og_path_knots_manual", "og_path_knots", "og_path_knots_index",
+                             "og_path_knots_open")
+        except Exception:
+            pass
 
         # Validation hints.
         if einfo.get("needs_path"):
@@ -891,29 +964,86 @@ class OG_PT_ActorWaypoints(Panel):
             if pt_count < 1:
                 layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
 
-        # Path B — swamp-bat's secondary patrol. Keeps the legacy UI for now;
-        # only swamp-bat uses this so it's low-volume.
-        if einfo.get("needs_pathb"):
-            layout.separator(factor=0.5)
-            prefixb = sel.name + "_wpb_"
-            wpsb = sorted(
-                [o for o in _level_objects(scene) if o.name.startswith(prefixb) and o.type == "EMPTY"],
-                key=lambda o: o.name
-            )
-            layout.label(text=f"Path B  ({len(wpsb)} points)", icon="ANIM")
-            if wpsb:
-                col2 = layout.column(align=True)
-                for wp in wpsb:
-                    row = col2.row(align=True)
-                    row.label(text=wp.name, icon="EMPTY_AXIS")
-                    op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = wp.name
-                    op = row.operator("og.delete_waypoint",  text="", icon="X");        op.wp_name  = wp.name
-            row2 = layout.row(align=True)
-            op2b = row2.operator("og.add_waypoint", text="Spawn Path B Waypoint", icon="PLUS")
-            op2b.enemy_name = sel.name; op2b.pathb_mode = True
-            row2.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-            if len(wpsb) < 1:
-                layout.label(text="⚠ swamp-bat crashes without Path B", icon="ERROR")
+        # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
+        self._draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
+
+    def _draw_extra_paths(self, layout, sel, scene, etype, einfo, linear_only):
+        from ..export import path_modes as _pm
+        layout.separator(factor=0.5)
+        hdr = layout.row(align=True)
+        hdr.label(text="Lump:")
+        hdr.prop(sel, "og_path_lump", text="")
+        hdr.label(text="Keyframe:")
+        hdr.prop(sel, "og_path_keyframe", text="")
+        has_b = any(p.name == "pathb" for p in sel.og_extra_paths)
+        _arec = _db.find_actor(etype) or {}
+        multi = bool(_arec.get("multi_path") or len(_arec.get("paths") or []) > 1)
+
+        for i, xp in enumerate(sel.og_extra_paths):
+            box = layout.box()
+            row = box.row(align=True)
+            row.prop(xp, "expanded", text="", emboss=False,
+                     icon="TRIA_DOWN" if xp.expanded else "TRIA_RIGHT")
+            row.prop(xp, "name", text="")
+            row.prop(xp, "keyframe", text="@")
+            n_src = len(xp.sources)
+            row.label(text=f"{n_src} source{'s' if n_src != 1 else ''}")
+            op = row.operator("og.remove_extra_path", text="", icon="X")
+            op.actor_name = sel.name; op.path_index = i
+            if not xp.expanded:
+                continue
+            lrow = box.row()
+            lrow.template_list("OG_UL_WaypointSources", f"xp{i}", xp, "sources", xp, "sources_index", rows=3)
+            side = lrow.column(align=True)
+            side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM").path_index = i
+            side.operator("og.waypoint_source_remove", text="", icon="X").path_index = i
+            side.separator()
+            op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
+            op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
+            arow = box.row(align=True)
+            op = arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+            op.enemy_name = sel.name; op.path_index = i
+            op = arow.operator("og.waypoint_source_link_curve", text="Link Curve", icon="CURVE_DATA")
+            op.actor_name = sel.name; op.path_index = i
+            mrow = box.row(align=True)
+            if linear_only:
+                for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
+                    mrow.prop_enum(xp, "mode", m)
+            else:
+                mrow.prop(xp, "mode", text="")
+            mrow.prop(xp, "pingpong", text="", icon="ARROW_LEFTRIGHT", toggle=True)
+            try:
+                pts, knots, eff, warn = _pm.build(_pm.gather_from(xp.sources), xp.mode,
+                                                  linear_only=linear_only, pingpong=xp.pingpong)
+                info = box.column(); info.scale_y = 0.8
+                lab = _pm.MODE_LABELS.get(eff, eff)
+                if xp.mode == "AUTO":
+                    lab = f"Automatic → {lab}"
+                info.label(text=f"{lab}: {len(pts)} points" + (f", {len(knots)} knots ({xp.name}-k)" if knots else ""),
+                           icon="IPO_BEZIER" if knots else "IPO_LINEAR")
+                if warn:
+                    w = info.row(); w.alert = True; w.label(text=warn, icon="ERROR")
+                draw_knot_editor(box, xp, xp.name.strip() or "path", sel.name, i, knots,
+                                 "knots_manual", "knots", "knots_index", "knots_open")
+            except Exception:
+                pass
+
+        names = [p.name for p in sel.og_extra_paths] + [sel.og_path_lump]
+        dup = sorted({n for n in names if names.count(n) > 1})
+        if dup:
+            w = layout.row(); w.alert = True
+            w.label(text=f"Same name twice ({', '.join(dup)}): only the first exports", icon="ERROR")
+        # Extra paths only for actors the DB marks multi-path ("paths" list
+        # or "multi_path": true); existing ones always stay visible.
+        if multi:
+            wanted = [n for n in (_arec.get("paths") or [])
+                      if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
+            add = layout.row()
+            op = add.operator("og.add_extra_path",
+                              text=f"Add Path ({wanted[0]})" if wanted else "Add Path", icon="ADD")
+            op.actor_name = sel.name
+        if einfo.get("needs_pathb") and not has_b:
+            layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
 
     def _discover_legacy_wps(self, actor_obj, scene):
         """Return the list of legacy <actor>_wp_NN empty objects in name order.
@@ -921,7 +1051,8 @@ class OG_PT_ActorWaypoints(Panel):
         prefix = actor_obj.name + "_wp_"
         return sorted(
             [o for o in _level_objects(scene)
-             if o.name.startswith(prefix) and o.type == "EMPTY"],
+             if o.name.startswith(prefix) and o.type == "EMPTY"
+             and o.name[len(prefix):].isdigit()],     # not extra-path empties
             key=lambda o: o.name
         )
 
@@ -1033,6 +1164,7 @@ class OG_PT_ActorGoalCode(Panel):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_UL_PathKnots,
     OG_UL_WaypointSources,
     OG_PT_ActorActivation,
     OG_PT_ActorTriggerBehaviour,

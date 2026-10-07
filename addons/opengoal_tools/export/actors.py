@@ -277,7 +277,22 @@ def collect_actors(scene, depsgraph=None):
         # point). Falls back to legacy <actor>_wp_NN name-grep for older
         # levels with no collection populated. Applies ping-pong reversal
         # if og_waypoint_pingpong is set.
-        path_pts = _collect_waypoint_points(o)
+        # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
+        # decides the control points and, for curve-control actors, path-k.
+        # Actors flagged path_linear_only in the DB (path-control readers that
+        # ignore path-k) always get the straight-line reading.
+        from . import path_modes as _pm
+        _arec_p = _schema_db.find_actor(etype) or {}
+        _ppts, path_knots, _pmode, _pwarn = _pm.build(
+            _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
+            linear_only=bool(_arec_p.get("path_linear_only")),
+            pingpong=bool(getattr(o, "og_waypoint_pingpong", False)))
+        path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
+        if _pwarn and path_pts:
+            log(f"  [path] {o.name}: {_pwarn}")
+        if path_knots and getattr(o, "og_path_knots_manual", False):
+            path_knots, _kn = _pm.manual_knots(path_knots, [k.value for k in o.og_path_knots])
+            log(f"  [path-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
 
         # ── Nav-enemy workaround (nav_safe=False) ────────────────────────────
         # These extend nav-enemy. Without a real navmesh they idle forever.
@@ -307,25 +322,10 @@ def collect_actors(scene, depsgraph=None):
             elif einfo.get("needs_path"):
                 log(f"  [WARNING] {o.name} needs a path but has no waypoints — will crash/error at runtime!")
 
-        # ── Second path lump (needs_pathb=True — swamp-bat only) ─────────────
-        # swamp-bat reads 'pathb' for its second patrol route for bat slaves.
-        # Tag secondary waypoints as ACTOR_swamp-bat_<uid>_wpb_00 etc.
-        if einfo.get("needs_pathb"):
-            wpb_prefix = o.name + "_wpb_"
-            wpb_objects = sorted(
-                [sc_obj for sc_obj in bpy.data.objects
-                 if sc_obj.name.startswith(wpb_prefix) and sc_obj.type == "EMPTY"],
-                key=lambda sc_obj: sc_obj.name
-            )
-            pathb_pts = []
-            for wp in wpb_objects:
-                wl = wp.location
-                pathb_pts.append([round(wl.x, 4), round(wl.z, 4), round(-wl.y, 4), 1.0])
-            if pathb_pts:
-                lump["pathb"] = ["vector4m"] + pathb_pts
-                log(f"  [pathb] {o.name}  {len(pathb_pts)} points")
-            else:
-                log(f"  [WARNING] {o.name} (swamp-bat) needs 'pathb' waypoints (_wpb_00, _wpb_01 ...) — will error at runtime!")
+        # swamp-bat's second route ('pathb') is an extra path (og_extra_paths).
+        if einfo.get("needs_pathb") and not any(
+                p.name.strip() == "pathb" and len(p.sources) for p in getattr(o, "og_extra_paths", [])):
+            log(f"  [WARNING] {o.name} needs a 'pathb' path (Path panel > Add Path) — will error at runtime!")
 
         # ── Platform: sync lump ───────────────────────────────────────────────
         # plat / plat-eco / side-to-side-plat use a 'sync' res lump to control
@@ -381,21 +381,10 @@ def collect_actors(scene, depsgraph=None):
         # got cverts but no knots"). Emitting it for a plain path-control actor
         # is harmless — only curve-control reads path-k.
         # A cubic needs >= 4 control points; fewer falls back to linear.
-        if getattr(o, "og_path_mode", "LINEAR") == "SMOOTH" and "path" in lump:
-            n_cv = len(path_pts)
-            if n_cv > 256:
-                # Engine clamps cverts to MAX_CURVE_CONTROL_POINTS (256) in
-                # res.gc but would NOT clamp the knots — emitting path-k here
-                # would desync num-cverts vs num-knots. Skip path-k so the
-                # actor stays a safe linear path-control instead.
-                log(f"  [WARNING] {o.name} Path Mode=Smooth has {n_cv} points "
-                    f"(>256 engine limit) — exporting linear (no path-k)")
-            elif n_cv >= 4:
-                lump["path-k"] = ["float"] + _make_path_knots(n_cv)
-                log(f"  [path-k] {o.name}  smooth B-spline  {n_cv} cverts  {n_cv + 4} knots")
-            else:
-                log(f"  [WARNING] {o.name} Path Mode=Smooth needs ≥4 waypoints "
-                    f"(has {n_cv}) — exporting linear (no path-k)")
+        if path_knots and "path" in lump:
+            lump["path-k"] = ["float"] + path_knots
+            log(f"  [path-k] {o.name}  {_pm.MODE_LABELS.get(_pmode, _pmode)}  "
+                f"{len(path_pts)} cverts  {len(path_knots)} knots")
 
         # ── Trait fields ──────────────────────────────────────────────────────
         # Behaviours shared across many actors by predicate: idle-distance +
@@ -497,6 +486,51 @@ def collect_actors(scene, depsgraph=None):
                 if _planes:
                     lump["vol"] = ["vector-vol"] + _planes
                     log(f"  [need_vol] {o.name} <- {_volm.name} ({len(_planes)} planes)")
+
+        # Main path under another lump name (some actors start at 'patha') and
+        # optional keyframe ("vector4m@<kf>"; blank = default res time).
+        _main_name = (getattr(o, "og_path_lump", "path") or "path").strip()
+        if _main_name and _main_name != "path" and "path" in lump and _main_name not in _protected_keys:
+            lump[_main_name] = lump.pop("path")
+            if "path-k" in lump:
+                lump[_main_name + "-k"] = lump.pop("path-k")
+            log(f"  [path] {o.name} main path exported as '{_main_name}'")
+        _main_kf = _pm.keyframe_suffix(getattr(o, "og_path_keyframe", ""))
+        if _main_kf and _main_name in lump:
+            lump[_main_name][0] += _main_kf
+            if _main_name + "-k" in lump:
+                lump[_main_name + "-k"][0] += _main_kf
+
+        # ── Extra paths (og_extra_paths: pathb, patha..pathh, pathspawn ...) ──
+        # Same sources + modes as the main path; each exports to <name> and,
+        # for curve modes, <name>-k (path-h.gc reads knots as "<name>-k").
+        # A .jsonc lump holds one entry per name, so two paths can't share a
+        # name (even with different keyframes) — the first one wins.
+        for _xp in getattr(o, "og_extra_paths", []):
+            _xn = _xp.name.strip()
+            if not _xn or _xn in _protected_keys:
+                continue
+            if _xn in lump:
+                log(f"  [WARNING] {o.name}: path name '{_xn}' used twice — only the first is exported")
+                continue
+            _xkf = _pm.keyframe_suffix(getattr(_xp, "keyframe", ""))
+            _xpts, _xk, _xmode, _xwarn = _pm.build(
+                _pm.gather_from(_xp.sources), _xp.mode,
+                linear_only=bool(_arec_p.get("path_linear_only")), pingpong=_xp.pingpong)
+            if _xwarn and _xpts:
+                log(f"  [path] {o.name} '{_xn}': {_xwarn}")
+            if _xk and getattr(_xp, "knots_manual", False):
+                _xk, _kn = _pm.manual_knots(_xk, [k.value for k in _xp.knots])
+                log(f"  [{_xn}-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
+            if _xpts:
+                lump[_xn] = ["vector4m" + _xkf] + [_to_game_coords(mathutils.Vector(p)) for p in _xpts]
+                lump.pop(_xn + "-k", None)
+                if _xk:
+                    lump[_xn + "-k"] = ["float" + _xkf] + _xk
+                log(f"  [{_xn}] {o.name}  {_pm.MODE_LABELS.get(_xmode, _xmode)}  {len(_xpts)} points"
+                    + (f"  {len(_xk)} knots" if _xk else ""))
+            else:
+                log(f"  [WARNING] {o.name} path '{_xn}' has no waypoints — not exported")
 
         # Variant art-group/code override (e.g. per-bridge art group). Falls back
         # to the actor's own art group/code when the variant doesn't specify one.

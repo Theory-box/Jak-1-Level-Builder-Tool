@@ -220,7 +220,7 @@ def _draw_dynamic_settings(layout, ctx, item):
     # Entity-specific info messages.
     if item.etype is not None:
         if _db.needs_pathb(item.etype):
-            box.label(text="Needs 2 path sets (wp + wpb)", icon="INFO")
+            box.label(text="Needs 2 paths (path + pathb)", icon="INFO")
         elif _db.needs_path(item.etype):
             box.label(text="Needs waypoints to patrol", icon="INFO")
         elif _db.is_prop(item.etype):

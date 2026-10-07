@@ -101,7 +101,7 @@ from .properties import (
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
-    OGWaypointSource,
+    OGWaypointSource, OGKnot, OGExtraPath,
     _cp_lev0_items, _cp_lev1_items, CP_DISP_ITEMS,
     _lb_level_items, LB_CMD_ITEMS, LB_DISP_ITEMS,
 )
@@ -141,6 +141,8 @@ classes = (
     OGSpawnListRow,
     OGSpawnFavorite,
     OGWaypointSource,
+    OGKnot,
+    OGExtraPath,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
@@ -250,29 +252,32 @@ def register():
                     "forward path; the engine's modulo walk handles the rest.",
         default=False,
     )
-    # Path interpolation mode. LINEAR (default) emits only the `path` lump, so
-    # the engine walks the control points in straight segments — current/legacy
-    # behavior, hits every waypoint exactly. SMOOTH additionally emits a
-    # `path-k` knot lump, which makes curve-control actors (plat, plat-eco,
-    # plat-button) load as a true cubic B-spline curve for gliding motion.
-    # Note: a B-spline does NOT pass through interior waypoints — it cuts the
-    # corners, touching only the first and last point. Needs >= 4 waypoints;
-    # with fewer it falls back to linear at export.
+    # Path mode — see export/path_modes.py. Item numbers are fixed so files
+    # saved before the expanded list keep their value: 0 = Linear, 1 = the old
+    # "Smooth", which was the clamped B-spline (now "Smooth Clamped").
+    from .export.path_modes import MODE_ITEMS as _PM_ITEMS
     bpy.types.Object.og_path_mode = bpy.props.EnumProperty(
         name="Path Mode",
-        description="How the actor moves along its waypoints. Linear hits every "
-                    "waypoint with straight segments. Smooth emits a path-k knot "
-                    "vector so curve-control platforms glide as a cubic B-spline "
-                    "(cuts corners; needs at least 4 waypoints)",
-        items=[
-            ("LINEAR", "Linear", "Straight segments through every waypoint "
-                                 "(only the 'path' lump is exported)"),
-            ("SMOOTH", "Smooth", "Cubic B-spline gliding motion via a 'path-k' "
-                                 "knot lump. Cuts corners and skips interior "
-                                 "waypoints. Requires >= 4 waypoints"),
-        ],
-        default="LINEAR",
+        description="How the path's points are turned into the 'path' (and 'path-k' curve) lumps",
+        items=_PM_ITEMS,
+        default="AUTO",
     )
+    # Main path's lump name ("path" for nearly everything; some actors start
+    # at "patha") and the extra path lumps (pathb, patha..pathh, pathspawn).
+    bpy.types.Object.og_path_lump = bpy.props.StringProperty(
+        name="Lump", default="path",
+        description="Lump name the main path exports to (knots go to <name>-k). Normally 'path'")
+    bpy.types.Object.og_path_keyframe = bpy.props.StringProperty(
+        name="Keyframe", default="",
+        description="Main path lump keyframe (e.g. 1). Blank = default; exported as vector4m@<keyframe>")
+    bpy.types.Object.og_extra_paths = bpy.props.CollectionProperty(type=OGExtraPath)
+    # Manual knot list for the main path (path-k); off = automatic.
+    bpy.types.Object.og_path_knots_manual = bpy.props.BoolProperty(
+        name="Manual Knots", default=False,
+        description="Export the knot list below instead of the automatic one")
+    bpy.types.Object.og_path_knots = bpy.props.CollectionProperty(type=OGKnot)
+    bpy.types.Object.og_path_knots_index = bpy.props.IntProperty(default=0)
+    bpy.types.Object.og_path_knots_open = bpy.props.BoolProperty(default=False)
 
     # GOAL code injection — registered after OGGoalCodeRef is in classes tuple.
     # Each ACTOR_ empty can reference a Blender text block to inject into obs.gc.
@@ -437,7 +442,8 @@ def unregister():
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
               "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
-              "og_path_mode"):
+              "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
+              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
     try: delattr(bpy.types.Collection, "og_no_export")

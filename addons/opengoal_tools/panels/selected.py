@@ -205,8 +205,8 @@ def _draw_selected_actor(layout, sel, scene):
     else:
         if einfo.get("needs_pathb"):
             box = layout.box()
-            box.label(text="Needs 2 path sets", icon="INFO")
-            box.label(text="Waypoints: _wp_00... and _wpb_00...")
+            box.label(text="Needs 2 paths: path + pathb", icon="INFO")
+            box.label(text="Path panel > Add Path (pathb)")
         elif einfo.get("needs_path"):
             box = layout.box()
             box.label(text="Needs waypoints to patrol", icon="INFO")
@@ -255,33 +255,8 @@ def _draw_selected_actor(layout, sel, scene):
         if einfo.get("needs_path") and len(wps) < 1:
             box.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
 
-        # Path B (swamp-bat)
-        if einfo.get("needs_pathb"):
-            prefixb = sel.name + "_wpb_"
-            wpsb = sorted(
-                [o for o in _level_objects(scene) if o.name.startswith(prefixb) and o.type == "EMPTY"],
-                key=lambda o: o.name
-            )
-            box2 = layout.box()
-            box2.label(text=f"Path B  ({len(wpsb)} points)", icon="ANIM")
-            if wpsb:
-                col2 = box2.column(align=True)
-                for wp in wpsb:
-                    row = col2.row(align=True)
-                    row.label(text=wp.name, icon="EMPTY_AXIS")
-                    op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
-                    op.obj_name = wp.name
-                    op = row.operator("og.delete_waypoint", text="", icon="X")
-                    op.wp_name = wp.name
-
-            row2 = box2.row(align=True)
-            op2b = row2.operator("og.add_waypoint", text="Spawn Path B Waypoint", icon="PLUS")
-            op2b.enemy_name = sel.name; op2b.pathb_mode = True
-            row2.prop(scene.og_props, "waypoint_spawn_at_actor", text="Spawn at Position", toggle=False)
-
-            if len(wpsb) < 1:
-                box2.label(text="⚠ swamp-bat crashes without Path B", icon="ERROR")
-
+        if einfo.get("needs_pathb") and not any(p.name == "pathb" for p in sel.og_extra_paths):
+            box.label(text="⚠ Also needs a 'pathb' path (Path panel > Add Path)", icon="ERROR")
 
 
 def _draw_continue_settings(layout, sel, scene):
