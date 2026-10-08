@@ -1677,6 +1677,7 @@
     },
     {
       "name": "finalboss",
+      "tpage_group": "Final",
       "tpages": [
         "tpage-1419.go",
         "tpage-1420.go",
@@ -5071,12 +5072,6 @@
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "babak.o",
       "glb": "levels/beach/babak-lod0.glb",
       "lumps": [],
@@ -5090,12 +5085,6 @@
       "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "babak-with-cannon.o",
       "glb": "levels/beach/babak-lod0.glb",
       "lumps": [],
@@ -5109,12 +5098,6 @@
       "description": "The lurker crab is an enemy found at Sentinel Beach. They closely resemble hermit crabs, hiding under their shell until they reach out for an attack.",
       "art_group": "lurkercrab-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "lurkercrab.o",
       "glb": "levels/beach/lurkercrab-lod0.glb",
       "lumps": [],
@@ -5128,12 +5111,6 @@
       "description": "The lurker puppy is a small lurker patrolling the higher regions of Sentinel Beach. Maroon in colour, bearing close resemblance to a small dog.",
       "art_group": "lurkerpuppy-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "lurkerpuppy.o",
       "glb": "levels/beach/lurkerpuppy-lod0.glb",
       "lumps": [],
@@ -5149,12 +5126,6 @@
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "hopper.o",
       "glb": "levels/jungle/hopper-lod0.glb",
       "lumps": [],
@@ -5168,12 +5139,6 @@
       "description": "The aphid lurker is an insectoid lurker enemy in The Precursor Legacy. They spawn from the dark eco plant to defend it during the mission \"Defeat the dark eco plant\" within the Forbidden Temple.",
       "art_group": "aphid-lurker-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "aphid.o",
       "glb": "levels/jungleb/aphid-lurker-lod0.glb",
       "shape": "SPHERE"
@@ -5186,12 +5151,6 @@
       "description": "The swamp rat, also known as the rat lurker, is an enemy in The Precursor Legacy. Mutated rats bearing lurker traits, dwelling in the poisonous mud of Boggy Swamp. They spawn from nest-like structures.",
       "art_group": "swamp-rat-ag.go",
       "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
       "code": "swamp-rat.o",
       "glb": "levels/swamp/swamp-rat-lod0.glb",
       "lumps": [],
@@ -5205,12 +5164,6 @@
       "description": "The lurker toad is an enemy in The Precursor Legacy. A large purple frog lurker found hopping around Boggy Swamp, making a very loud croaking noise.",
       "art_group": "kermit-ag.go",
       "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
       "code": "kermit.o",
       "glb": "levels/swamp/kermit-lod0.glb",
       "lumps": [],
@@ -5225,12 +5178,6 @@
       "description": "The snow bunny is an enemy in The Precursor Legacy, encountered at Snowy Mountain and Gol and Maia's citadel. Small but aggressive cold-weather lurkers.",
       "art_group": "snow-bunny-ag.go",
       "tpage_group": "Snow",
-      "tpages": [
-        "tpage-710.go",
-        "tpage-842.go",
-        "tpage-711.go",
-        "tpage-712.go"
-      ],
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
       "lumps": [
@@ -5292,12 +5239,6 @@
       "description": "The double lurker is a team of enemies in The Precursor Legacy — two blue-tinted lurkers stacked on top of each other, the smaller riding on the larger to provide height and reach.",
       "art_group": ["double-lurker-ag.go", "double-lurker-top-ag.go"],
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "double-lurker.o",
       "glb": [
         "levels/sunken/double-lurker-lod0.glb"
@@ -5315,12 +5256,6 @@
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "bonelurker.o",
       "glb": "levels/misty/bonelurker-lod0.glb",
       "lumps": [],
@@ -5337,12 +5272,6 @@
       ],
       "art_group": "muse-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "muse.o",
       "glb": "levels/misty/muse-lod0.glb",
       "lumps": [],
@@ -5356,12 +5285,6 @@
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "baby-spider.o",
       "glb": "levels/darkcave/baby-spider-lod0.glb",
       "lumps": [],
@@ -5395,12 +5318,6 @@
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
       "art_group": ["spider-egg-ag.go", "baby-spider-ag.go"],
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": ["baby-spider.o", "spider-egg.o"],
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "lumps": [],
@@ -5414,13 +5331,6 @@
       "description": "The green eco lurker, also known as the dark eco lurker, is a lurker enemy in The Precursor Legacy. They were created by Gol Acheron and Maia — one of the only lurkers known to be artificially created.",
       "art_group": "green-eco-lurker-ag.go",
       "tpage_group": "Final",
-      "tpages": [
-        "tpage-1419.go",
-        "tpage-1420.go",
-        "tpage-634.go",
-        "tpage-1418.go",
-        "tpage-545.go"
-      ],
       "code": "green-eco-lurker.o",
       "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
       "lumps": [],
@@ -5438,12 +5348,6 @@
       "description": "The sand worm, also known as the sea serpent lurker, is an enemy in The Precursor Legacy. Lurkers dwelling in sand pits at Sentinel Beach — they burst from the ground to attack.",
       "art_group": "lurkerworm-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "lurkerworm.o",
       "glb": "levels/beach/lurkerworm-lod0.glb",
       "lumps": [],
@@ -5461,12 +5365,6 @@
       "description": "The lurker snake is an enemy in The Precursor Legacy — large brown serpentine lurkers residing in the canopy of Forbidden Jungle. They hang from branches at fixed points, attacking intruders below.",
       "art_group": "junglesnake-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "junglesnake.o",
       "glb": "levels/jungle/junglesnake-lod0.glb",
       "lumps": [],
@@ -5481,12 +5379,6 @@
       "description": "The swamp bat is an enemy in The Precursor Legacy, commonly found flying in swarms near Boggy Swamp. They follow set patrol paths through the air.",
       "art_group": "swamp-bat-ag.go",
       "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
       "code": "swamp-bat.o",
       "glb": "levels/swamp/swamp-bat-lod0.glb",
       "lumps": [
@@ -5525,12 +5417,6 @@
       "description": "The yeti is the glacier variant of the babak lurker, encountered in The Precursor Legacy's colder regions. Larger and tougher than the standard babak.",
       "art_group": "yeti-ag.go",
       "tpage_group": "Snow",
-      "tpages": [
-        "tpage-710.go",
-        "tpage-842.go",
-        "tpage-711.go",
-        "tpage-712.go"
-      ],
       "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
       "lumps": [
@@ -5569,12 +5455,6 @@
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "bully.o",
       "glb": "levels/sunken/bully-lod0.glb",
       "lumps": [],
@@ -5589,12 +5469,6 @@
       "description": "The puffer, also known as a flying lurker, is an enemy in The Precursor Legacy, found in the lost Precursor city. It inflates to deal damage on contact.",
       "art_group": "puffer-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "lumps": [
@@ -5734,12 +5608,6 @@
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
       "tpage_group": "Ogre",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
       "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "lumps": [],
@@ -5770,12 +5638,6 @@
       ],
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
       "code": ["ogre-obs.o", "flying-lurker.o"],
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
       "lumps": [],
@@ -5790,12 +5652,6 @@
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
       "art_group": ["mother-spider-ag.go", "baby-spider-ag.go", "spider-egg-ag.go"],
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "lumps": [],
@@ -5919,12 +5775,6 @@
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
       "art_group": ["gnawer-ag.go", "maincavecam-ag.go"],
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": ["maincave-obs.o", "gnawer.o"],
       "glb": "levels/maincave/gnawer-lod0.glb",
       "lumps": [
@@ -6065,12 +5915,6 @@
       "description": "The driller lurker is an enemy in The Precursor Legacy that mines cave rock with its drill. Found in Spider Cave, drilling away at the Precursor robot excavation site.",
       "art_group": "driller-lurker-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "driller-lurker.o",
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "lumps": [],
@@ -6132,12 +5976,6 @@
       "parent": "process-drawable",
       "art_group": "dark-crystal-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "dark-crystal.o",
       "glb": "levels/darkcave/dark-crystal-lod0.glb",
       "lumps": [
@@ -6185,12 +6023,6 @@
       "parent": "process-drawable",
       "art_group": "cavecrusher-ag.go",
       "tpage_group": "Robocave",
-      "tpages": [
-        "tpage-1318.go",
-        "tpage-1319.go",
-        "tpage-1317.go",
-        "tpage-1316.go"
-      ],
       "code": "maincave-obs.o",
       "glb": "levels/robocave/cavecrusher-lod0.glb",
       "lumps": [],
@@ -6224,12 +6056,6 @@
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "quicksandlurker.o",
       "glb": "levels/misty/quicksandlurker-lod0.glb",
       "lumps": [],
@@ -6365,14 +6191,6 @@
         {"panel": "nav-mesh", "fallback-sphere": false}
       ],
       "tpage_group": "Rolling",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-923.go",
-        "tpage-926.go",
-        "tpage-924.go",
-        "tpage-925.go",
-        "tpage-1353.go"
-      ],
       "code": "rolling-lightning-mole.o",
       "lumps": [],
       "shape": "SPHERE",
@@ -6388,12 +6206,6 @@
         {"panel": "nav-mesh", "fallback-sphere": false}
       ],
       "tpage_group": "Snow",
-      "tpages": [
-        "tpage-710.go",
-        "tpage-842.go",
-        "tpage-711.go",
-        "tpage-712.go"
-      ],
       "code": "ice-cube.o",
       "lumps": [
         {
@@ -6412,13 +6224,6 @@
       "parent": "process-drawable",
       "art_group": "fireboulder-ag.go",
       "tpage_group": "Village2",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
       "code": "village2-obs.o",
       "glb": "levels/village2/fireboulder-lod0.glb",
       "lumps": [
@@ -6436,13 +6241,7 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "evilplant-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
+      "tpage_group": "Village1",
       "code": "village-obs.o",
       "glb": "levels/village1/evilplant-lod0.glb",
       "is_prop": true,
@@ -6466,14 +6265,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "dark-plant-ag.go",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-923.go",
-        "tpage-926.go",
-        "tpage-924.go",
-        "tpage-925.go",
-        "tpage-1353.go"
-      ],
+      "tpage_group": "Rolling",
       "code": "rolling-obs.o",
       "glb": "levels/rolling/dark-plant-lod0.glb",
       "is_prop": true,
@@ -6498,12 +6290,7 @@
       "parent": "process-drawable",
       "description": "Klaww is a large lurker boss in The Precursor Legacy, operating from a volcanic section of Mountain Pass. He terrorized Rock Village by bombarding it with boulders before Jak confronted him.",
       "art_group": "ogreboss-ag.go",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
+      "tpage_group": "Ogre",
       "code": "ogreboss.o",
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "lumps": [],
@@ -6580,12 +6367,7 @@
       "parent": "process-drawable",
       "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
       "art_group": ["plant-boss-ag.go", "aphid-lurker-ag.go"],
-      "tpages": [
-        "tpage-485.go",
-        "tpage-510.go",
-        "tpage-507.go",
-        "tpage-966.go"
-      ],
+      "tpage_group": "Jungleb",
       "code": ["aphid.o", "plant-boss.o"],
       "glb": "levels/jungleb/plant-boss-main-lod0.glb",
       "lumps": [
@@ -6645,13 +6427,7 @@
       ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
-      "tpages": [
-        "tpage-1419.go",
-        "tpage-1420.go",
-        "tpage-634.go",
-        "tpage-1418.go",
-        "tpage-545.go"
-      ],
+      "tpage_group": "Final",
       "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
       "lumps": [],
@@ -6666,13 +6442,7 @@
         {"panel": "nav-mesh"}
       ],
       "art_group": "yakow-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
+      "tpage_group": "Village1",
       "code": "yakow.o",
       "glb": "levels/village1/yakow-lod0.glb",
       "lumps": [
@@ -6695,12 +6465,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "art_group": "flutflut-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "tpage_group": "Swamp",
       "code": "flutflut.o",
       "glb": "levels/beach/flutflut-lod0.glb",
       "lumps": [
@@ -6723,13 +6488,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "mayor-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
+      "tpage_group": "Village1",
       "code": "mayor.o",
       "glb": "levels/beach/mayor-lod0.glb",
       "lumps": [],
@@ -6741,13 +6500,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "farmer-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
+      "tpage_group": "Village1",
       "code": "farmer.o",
       "glb": "levels/village1/farmer-lod0.glb",
       "lumps": [],
@@ -6762,12 +6515,7 @@
         {"panel": "path", "required": true}
       ],
       "art_group": "fisher-ag.go",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
+      "tpage_group": "Jungle",
       "code": "fisher.o",
       "glb": "levels/jungle/fisher-lod0.glb",
       "lumps": [],
@@ -6779,13 +6527,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "explorer-ag.go",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
+      "tpage_group": "Village1",
       "code": "explorer.o",
       "glb": "levels/village1/explorer-lod0.glb",
       "lumps": [],
@@ -6797,13 +6539,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "geologist-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "geologist.o",
       "glb": "levels/village2/geologist-lod0.glb",
       "lumps": [],
@@ -6815,13 +6551,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "warrior-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "warrior.o",
       "glb": "levels/village2/warrior-lod0.glb",
       "lumps": [],
@@ -6833,13 +6563,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "gambler-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "gambler.o",
       "glb": "levels/village2/gambler-lod0.glb",
       "lumps": [],
@@ -6851,12 +6575,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "art_group": "sculptor-ag.go",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
+      "tpage_group": "Beach",
       "code": "sculptor.o",
       "glb": "levels/beach/sculptor-lod0.glb",
       "lumps": [],
@@ -6872,12 +6591,7 @@
       ],
       "description": "A lurker frog type found in Boggy Swamp.",
       "art_group": "billy-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "tpage_group": "Swamp",
       "code": "billy.o",
       "glb": "levels/swamp/billy-lod0.glb",
       "lumps": [],
@@ -6892,12 +6606,7 @@
         {"panel": "path", "required": true}
       ],
       "art_group": "pelican-ag.go",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
+      "tpage_group": "Beach",
       "code": "pelican.o",
       "glb": "levels/beach/pelican-lod0.glb",
       "lumps": [],
@@ -6909,12 +6618,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "art_group": "seagull-ag.go",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
+      "tpage_group": "Beach",
       "code": "seagull.o",
       "glb": "levels/beach/seagull-lod0.glb",
       "lumps": [],
@@ -6927,14 +6631,7 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "art_group": "robber-ag.go",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-923.go",
-        "tpage-926.go",
-        "tpage-924.go",
-        "tpage-925.go",
-        "tpage-1353.go"
-      ],
+      "tpage_group": "Rolling",
       "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
       "lumps": [
@@ -7324,13 +7021,7 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "powercellalt-ag.go",
-      "tpages": [
-        "tpage-1419.go",
-        "tpage-1420.go",
-        "tpage-634.go",
-        "tpage-1418.go",
-        "tpage-545.go"
-      ],
+      "tpage_group": "Final",
       "code": "final-door.o",
       "glb": "levels/finalboss/powercellalt-lod0.glb",
       "lumps": [],
@@ -7917,12 +7608,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "plat-flip-ag.go",
-      "tpages": [
-        "tpage-485.go",
-        "tpage-510.go",
-        "tpage-507.go",
-        "tpage-966.go"
-      ],
+      "tpage_group": "Jungleb",
       "code": "plat-flip.o",
       "glb": "levels/jungleb/plat-flip-geo.glb",
       "lumps": [
@@ -7992,12 +7678,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "wall-plat-ag.go",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "wall-plat.o",
       "glb": "levels/sunken/wall-plat-lod0.glb",
       "panels": [
@@ -8033,12 +7714,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "balance-plat-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "tpage_group": "Swamp",
       "code": "swamp-obs.o",
       "glb": "levels/swamp/balance-plat-lod0.glb",
       "lumps": [
@@ -8066,12 +7742,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "teetertotter-ag.go",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
+      "tpage_group": "Misty",
       "code": "misty-teetertotter.o",
       "glb": "levels/misty/teetertotter-lod0.glb",
       "lumps": [],
@@ -8084,12 +7755,7 @@
       "category": "Platforms",
       "parent": "plat",
       "art_group": "side-to-side-plat-ag.go",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "sunken-obs.o",
       "glb": "levels/sunken/side-to-side-plat-lod0.glb",
       "lumps": [
@@ -8113,12 +7779,7 @@
       "category": "Platforms",
       "parent": "baseplat",
       "art_group": "wedge-plat-ag.go",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
@@ -8190,12 +7851,7 @@
       "category": "Platforms",
       "parent": "wedge-plat",
       "art_group": "wedge-plat-ag.go",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
@@ -8226,12 +7882,7 @@
       "schema_export": true,
       "category": "Platforms",
       "parent": "process",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "lumps": [
         {
@@ -8276,12 +7927,7 @@
       "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "tar-plat-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "tpage_group": "Swamp",
       "code": "swamp-obs.o",
       "glb": "levels/swamp/tar-plat-lod0.glb",
       "lumps": [
@@ -8513,12 +8159,7 @@
       "label": "Launcher",
       "category": "Platforms",
       "parent": "process-drawable",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "lumps": [
         {
           "key": "spring-height",
@@ -8692,13 +8333,7 @@
       "category": "Buttons and Doors",
       "parent": "process-hidden",
       "art_group": "warpgate-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "villagep-obs.o",
       "glb": "levels/citadel/warpgate-lod0.glb",
       "lumps": [],
@@ -8710,12 +8345,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "cavecrystal-ag.go",
-      "tpages": [
-        "tpage-1306.go",
-        "tpage-1307.go",
-        "tpage-1305.go",
-        "tpage-1304.go"
-      ],
+      "tpage_group": "Darkcave",
       "code": "darkcave-obs.o",
       "glb": "levels/darkcave/cavecrystal-lod0.glb",
       "lumps": [
@@ -8733,12 +8363,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
-      "tpages": [
-        "tpage-1208.go",
-        "tpage-1210.go",
-        "tpage-1209.go",
-        "tpage-1194.go"
-      ],
+      "tpage_group": "Village3",
       "code": "miners.o",
       "lumps": [],
       "shape": "SPHERE"
@@ -8779,12 +8404,7 @@
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "tntbarrel-ag.go",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
+      "tpage_group": "Ogre",
       "code": "ogre-obs.o",
       "glb": "levels/ogre/tntbarrel-lod0.glb",
       "is_prop": true,
@@ -8797,12 +8417,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "shortcut-boulder-ag.go",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
+      "tpage_group": "Ogre",
       "code": "ogre-obs.o",
       "is_prop": true,
       "lumps": [],
@@ -8832,13 +8447,7 @@
         }
       ],
       "art_group": "spike-ag.go",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-815.go",
-        "tpage-822.go",
-        "tpage-854.go",
-        "tpage-1123.go"
-      ],
+      "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
       "shape": "SPHERE"
@@ -8851,12 +8460,6 @@
       "parent": "process-drawable",
       "art_group": "steam-cap-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "steam-cap.o",
       "panels": [
         {
@@ -9091,12 +8694,7 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "windmill-one-ag.go",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
+      "tpage_group": "Beach",
       "code": "beach-obs.o",
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
@@ -9109,13 +8707,7 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "ecoclaw-ag.go",
-      "tpages": [
-        "tpage-1419.go",
-        "tpage-1420.go",
-        "tpage-634.go",
-        "tpage-1418.go",
-        "tpage-545.go"
-      ],
+      "tpage_group": "Final",
       "code": "robotboss-misc.o",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
@@ -9140,12 +8732,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "swamp-rock-ag.go",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
+      "tpage_group": "Swamp",
       "code": "swamp-obs.o",
       "is_prop": true,
       "lumps": [
@@ -9163,12 +8750,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "gondola-ag.go",
-      "tpages": [
-        "tpage-1208.go",
-        "tpage-1210.go",
-        "tpage-1209.go",
-        "tpage-1194.go"
-      ],
+      "tpage_group": "Village3",
       "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
       "is_prop": true,
@@ -9181,13 +8763,7 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "swamp-blimp-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
@@ -9199,13 +8775,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "swamp-rope-ag.go",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
+      "tpage_group": "Village2",
       "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
@@ -9263,12 +8833,7 @@
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "whirlpool-ag.go",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
+      "tpage_group": "Sunken",
       "code": "whirlpool.o",
       "glb": "levels/sunken/whirlpool-lod0.glb",
       "is_prop": true,
@@ -9454,12 +9019,6 @@
       "description": "The mine dropper, also known as the lurker balloon, is a vehicle operated by a balloon lurker in The Precursor Legacy. Several were seen flying around the bay near the Lurker ship at Misty Island.",
       "art_group": "balloonlurker-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "balloonlurker.o",
       "glb": "levels/misty/balloonlurker-lod0.glb",
       "lumps": [],
@@ -9476,12 +9035,6 @@
       ],
       "art_group": "darkvine-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "glb": "levels/jungle/darkvine-lod0.glb",
       "code": "darkvine.o",
       "lumps": [],
@@ -9496,12 +9049,6 @@
       "description": "The jungle fish, also known as the fish lurker, is an enemy in The Precursor Legacy. Fish transformed into lurkers by Maia through dark eco sorcery — among the only lurkers known to be artificially created.",
       "art_group": "junglefish-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "junglefish.o",
       "glb": "levels/jungle/junglefish-lod0.glb",
       "lumps": [
@@ -9539,14 +9086,6 @@
       "parent": "process-drawable",
       "art_group": "lightning-mole-ag.go",
       "tpage_group": "Rolling",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-923.go",
-        "tpage-926.go",
-        "tpage-924.go",
-        "tpage-925.go",
-        "tpage-1353.go"
-      ],
       "code": "rolling-lightning-mole.o",
       "lumps": [],
       "shape": "SPHERE"
@@ -9625,12 +9164,6 @@
       "parent": "process-drawable",
       "art_group": "swamp-rat-nest-ag.go",
       "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
       "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "lumps": [
@@ -9692,12 +9225,6 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "sunken-fish.o",
       "lumps": [
         {
@@ -9834,13 +9361,6 @@
       "category": "Visuals",
       "parent": "process-drawable",
       "tpage_group": "Village1",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
       "code": "village-obs.o",
       "lumps": [
         {
@@ -9942,12 +9462,6 @@
       "parent": "process-drawable",
       "art_group": "ecoventrock-ag.go",
       "tpage_group": "Beach",
-      "tpages": [
-        "tpage-212.go",
-        "tpage-214.go",
-        "tpage-213.go",
-        "tpage-215.go"
-      ],
       "code": "beach-obs.o",
       "lumps": [
         {
@@ -9976,12 +9490,6 @@
       "parent": "baseplat",
       "art_group": "orbit-plat-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "orbit-plat.o",
       "glb": "levels/sunken/orbit-plat-lod0.glb",
       "lumps": [
@@ -10046,12 +9554,6 @@
       "parent": "baseplat",
       "art_group": "square-platform-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "square-platform.o",
       "glb": "levels/sunken/square-platform-lod0.glb",
       "lumps": [
@@ -10136,12 +9638,6 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "ropebridge.o",
       "lumps": [
         {
@@ -10188,7 +9684,6 @@
       "label": "Klaww Platform Isles",
       "category": "Platforms",
       "parent": "ogre-isle",
-      "tpages": [],
       "code": "ogre-obs.o",
       "lumps": [],
       "panels": [
@@ -10249,7 +9744,6 @@
       "label": "Klaww Step",
       "category": "Platforms",
       "parent": "ogre-plat",
-      "tpages": [],
       "code": "ogre-obs.o",
       "lumps": [
         {
@@ -10306,7 +9800,6 @@
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "tpages": [],
       "code": "citadel-obs.o",
       "panels": [
         {
@@ -10335,13 +9828,6 @@
       "parent": "process-drawable",
       "art_group": "lavaballoon-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/lavaballoon-lod0.glb",
       "lumps": [
@@ -10388,13 +9874,6 @@
       "parent": "darkecobarrel-base",
       "art_group": "darkecobarrel-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/darkecobarrel-lod0.glb",
       "lumps": [
@@ -10495,12 +9974,6 @@
       "parent": "process-drawable",
       "art_group": "caveelevator-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "maincave-obs.o",
       "glb": "levels/darkcave/caveelevator-lod0.glb",
       // "needs_path": true,
@@ -10658,12 +10131,6 @@
       "parent": "process-drawable",
       "art_group": "cavetrapdoor-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "maincave-obs.o",
       "glb": "levels/robocave/cavetrapdoor-lod0.glb",
       "lumps": [
@@ -10683,12 +10150,6 @@
       "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "maincave-obs.o",
       "panels": [
         {
@@ -10728,12 +10189,6 @@
       "parent": "process-drawable",
       "art_group": "cavespatulatwo-ag.go",
       "tpage_group": "Maincave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "maincave-obs.o",
       "panels": [
         {
@@ -10788,12 +10243,6 @@
       ],
       "art_group": "ogre-bridge-ag.go",
       "tpage_group": "Ogre",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridge-lod0.glb",
       "lumps": [],
@@ -10806,12 +10255,6 @@
       "parent": "process-drawable",
       "art_group": "ogre-bridgeend-ag.go",
       "tpage_group": "Ogre",
-      "tpages": [
-        "tpage-875.go",
-        "tpage-967.go",
-        "tpage-884.go",
-        "tpage-1117.go"
-      ],
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
       "lumps": [],
@@ -10825,13 +10268,6 @@
       "parent": "pontoon",
       "art_group": "pontoonten-ag.go",
       "tpage_group": "Village2",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonten-lod0.glb",
       "lumps": [
@@ -10870,13 +10306,6 @@
       "parent": "pontoon",
       "art_group": "pontoonfive-ag.go",
       "tpage_group": "Village2",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonfive-lod0.glb",
       "lumps": [],
@@ -10890,12 +10319,6 @@
       "parent": "process-drawable",
       "art_group": "mis-bone-bridge-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-bridge-lod0.glb",
       "lumps": [
@@ -10934,12 +10357,6 @@
       "parent": "breakaway",
       "art_group": "breakaway-left-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
@@ -11000,12 +10417,6 @@
       "parent": "breakaway",
       "art_group": "breakaway-mid-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
@@ -11066,12 +10477,6 @@
       "parent": "breakaway",
       "art_group": "breakaway-right-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
@@ -11169,12 +10574,6 @@
       "parent": "process-drawable",
       "art_group": "bounceytarp-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "bouncer.o",
       "glb": "levels/jungle/bounceytarp-lod0.glb",
       "lumps": [
@@ -11258,13 +10657,6 @@
       "parent": "process-taskable",
       "art_group": "oracle-ag.go",
       "tpage_group": "Village1",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
       "code": "oracle.o",
       "glb": "levels/village1/oracle-lod0.glb",
       "lumps": [
@@ -11321,12 +10713,6 @@
       ],
       "art_group": "minershort-ag.go",
       "tpage_group": "Village3",
-      "tpages": [
-        "tpage-1208.go",
-        "tpage-1210.go",
-        "tpage-1209.go",
-        "tpage-1194.go"
-      ],
       "code": "miners.o",
       "glb": "levels/village3/minershort-lod0.glb",
       "lumps": [],
@@ -11339,12 +10725,6 @@
       "parent": "process-taskable",
       "art_group": "minertall-ag.go",
       "tpage_group": "Village3",
-      "tpages": [
-        "tpage-1208.go",
-        "tpage-1210.go",
-        "tpage-1209.go",
-        "tpage-1194.go"
-      ],
       "code": "miners.o",
       "glb": "levels/village3/minertall-lod0.glb",
       "lumps": [],
@@ -11819,12 +11199,6 @@
       "parent": "process-drawable",
       "art_group": "shover-ag.go",
       "tpage_group": "Sunken",
-      "tpages": [
-        "tpage-661.go",
-        "tpage-663.go",
-        "tpage-714.go",
-        "tpage-662.go"
-      ],
       "code": "shover.o",
       "lumps": [
         {
@@ -11892,12 +11266,6 @@
       ],
       "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",
-      "tpages": [
-        "tpage-358.go",
-        "tpage-659.go",
-        "tpage-629.go",
-        "tpage-630.go"
-      ],
       "code": "swamp-obs.o",
       "lumps": [
         {
@@ -11920,13 +11288,6 @@
       "parent": "process-drawable",
       "art_group": "ceilingflag-ag.go",
       "tpage_group": "Village2",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
       "code": "village2-obs.o",
       "is_prop": true,
       "lumps": [
@@ -11946,12 +11307,6 @@
       "parent": "process-drawable",
       "art_group": "windturbine-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "is_prop": true,
       "lumps": [
@@ -11989,12 +11344,6 @@
       "parent": "process-drawable",
       "art_group": "boatpaddle-ag.go",
       "tpage_group": "Misty",
-      "tpages": [
-        "tpage-516.go",
-        "tpage-521.go",
-        "tpage-518.go",
-        "tpage-520.go"
-      ],
       "code": "misty-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12034,12 +11383,6 @@
       ],
       "art_group": "accordian-ag.go",
       "tpage_group": "Jungle",
-      "tpages": [
-        "tpage-385.go",
-        "tpage-531.go",
-        "tpage-386.go",
-        "tpage-388.go"
-      ],
       "code": "jungle-obs.o",
       "lumps": [
         {
@@ -12057,13 +11400,6 @@
       "parent": "process-drawable",
       "art_group": "lavafall-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12082,13 +11418,6 @@
       "parent": "process-drawable",
       "art_group": "lavafallsewera-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12107,13 +11436,6 @@
       "parent": "process-drawable",
       "art_group": "lavafallsewerb-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12132,13 +11454,6 @@
       "parent": "process-drawable",
       "art_group": "lavabase-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12157,13 +11472,6 @@
       "parent": "process-drawable",
       "art_group": "lavayellowtarp-ag.go",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "is_prop": true,
       "lumps": [
@@ -12183,13 +11491,6 @@
       "art_group": "chainmine-ag.go",
       "glb": "levels/lavatube/chainmine-lod0.glb",
       "tpage_group": "Lavatube",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-1338.go",
-        "tpage-1340.go",
-        "tpage-1339.go",
-        "tpage-1337.go"
-      ],
       "code": "lavatube-obs.o",
       "shape": "SPHERE"
     },
@@ -12200,13 +11501,6 @@
       "parent": "process-drawable",
       "art_group": "balloon-ag.go",
       "tpage_group": "Firecanyon",
-      "tpages": [
-        "tpage-1119.go",
-        "tpage-815.go",
-        "tpage-822.go",
-        "tpage-854.go",
-        "tpage-1123.go"
-      ],
       "code": "firecanyon-obs.o",
       "is_prop": true,
       "lumps": [],
@@ -12389,13 +11683,6 @@
       ],
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
-      "tpages": [
-        "tpage-919.go",
-        "tpage-922.go",
-        "tpage-920.go",
-        "tpage-921.go",
-        "tpage-1476.go"
-      ],
       "code": "swamp-blimp.o",
       "lumps": [],
       "shape": "SPHERE"
@@ -12434,13 +11721,6 @@
       "parent": "rigid-body-platform",
       "art_group": "fishermans-boat-ag.go",
       "tpage_group": "Village1",
-      "tpages": [
-        "tpage-398.go",
-        "tpage-400.go",
-        "tpage-399.go",
-        "tpage-401.go",
-        "tpage-1470.go"
-      ],
       "code": "fishermans-boat.o",
       "is_prop": true,
       "lumps": [],

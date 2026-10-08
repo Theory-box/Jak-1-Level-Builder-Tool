@@ -292,8 +292,9 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
         Returns (flt_flags, flt_neworder):
           flt_flags[i]    — bitflag_filter_item if item i should be shown
           flt_neworder[i] — new display position for original index i
-        Search text matches against label + tpage_group, so typing 'beach'
-        finds all Beach-tpage items even though their labels don't contain it.
+        Search text matches against label + tpage_group + etype, so typing
+        'beach' finds all Beach-tpage items even though their labels don't
+        contain it, and 'babak' finds "Lurker Monkey".
         """
         items = getattr(data, propname)
         props = ctx.scene.og_props
@@ -326,6 +327,11 @@ class OG_UL_SpawnableItems(bpy.types.UIList):
                 searchable = sp.label.lower()
                 if sp.tpage_group:
                     searchable += " " + sp.tpage_group.lower()
+                # etype too (not shown): "ram-boss" / "ram boss" find it even
+                # when the label reads differently
+                et = (getattr(sp, "etype", None) or "").lower()
+                if et:
+                    searchable += "\n" + et + "\n" + et.replace("-", " ")
                 if filter_text not in searchable:
                     flt_flags.append(0)
                     continue

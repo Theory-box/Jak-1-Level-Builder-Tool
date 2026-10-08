@@ -402,7 +402,7 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ETYPE_CODE + ETYPE_TPAGES (direct pass-through from Actors[].code / .tpages)
+# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; tpages from the tpage_group's level)
 # ═══════════════════════════════════════════════════════════════════════════
 # etype -> .o files for the level DGO, in load order (dependencies first,
 # e.g. mother-spider-h.o ... mother-spider.o). See db.code_files().
@@ -411,7 +411,7 @@ ETYPE_CODE: dict[str, list] = {
 }
 
 ETYPE_TPAGES: dict[str, list] = {
-    a["etype"]: list(a["tpages"]) for a in _db.actors() if a.get("tpages")
+    a["etype"]: _db.actor_tpages(a["etype"]) for a in _db.actors() if _db.actor_tpages(a["etype"])
 }
 
 

@@ -575,6 +575,26 @@ def categories() -> list[dict]:
     return DB["Categories"]
 
 
+def tpage_group_level(group: str) -> dict:
+    """The Levels entry a tpage_group names: the one whose "tpage_group"
+    matches (finalboss = "Final"), else the one named group.lower()."""
+    if not group:
+        return {}
+    for lv in DB.get("Levels", []):
+        if lv.get("tpage_group") == group:
+            return lv
+    return level(group.lower()) or {}
+
+
+def actor_tpages(etype: str) -> list:
+    """Tpage .go files an actor needs: its own "tpages" when listed (an
+    override), else the tpages of its tpage_group's level."""
+    a = find_actor(etype) or {}
+    if "tpages" in a:
+        return list(a["tpages"] or [])
+    return list(tpage_group_level(a.get("tpage_group", "")).get("tpages", []) or [])
+
+
 def category(cat_id: str) -> dict:
     """Category record by id ({} when the category isn't listed)."""
     for c in DB.get("Categories", []):
