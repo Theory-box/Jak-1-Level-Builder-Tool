@@ -146,6 +146,8 @@ class OG_PT_ActorNavBehaviour(Panel):
             sub.label(text="No trigger volumes linked", icon="INFO")
         op = layout.operator("og.spawn_aggro_trigger", text="Add Aggro Trigger", icon="ADD")
         op.target_name = sel.name
+        from .selected import _draw_vol_link_add
+        _draw_vol_link_add(layout, sel)
 
 
 
@@ -182,12 +184,13 @@ class OG_PT_ActorNavMesh(Panel):
                 pass
         else:
             layout.label(text="No mesh linked", icon="ERROR")
-            sel_meshes = [o for o in bpy.context.selected_objects if o.type == "MESH"]
-            if sel_meshes:
-                layout.label(text=f"Will link to: {sel_meshes[0].name}", icon="INFO")
-                layout.operator("og.link_navmesh", text="Link NavMesh", icon="LINKED")
-            else:
-                layout.label(text="Shift-select a mesh to link", icon="INFO")
+        # Same pattern as the other links: selected meshes, then search.
+        from .selected import _draw_link_search
+        for m in [o for o in bpy.context.selected_objects
+                  if o.type == "MESH" and o is not nm_obj and not o.name.startswith(("VOL_", "CPVOL_"))][:6]:
+            op = layout.row().operator("og.link_navmesh_to", text=f"Link → {m.name}", icon="LINKED")
+            op.actor_name = sel.name; op.target_name = m.name
+        _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
         nav_r = float(sel.get("og_nav_radius", 6.0))
         layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
         if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
@@ -906,9 +909,10 @@ class OG_UL_WaypointSources(bpy.types.UIList):
             row.label(text=obj.name, icon="QUESTION")
 
 
-def _draw_curve_links(layout, sel, coll, path_index=-1):
-    """Same pattern as actor links: one Link button per shift-selected curve
-    not yet in this path, then a search button over every curve."""
+def _draw_path_add(layout, sel, scene, coll, path_index=-1):
+    """Ways to add to a path, same pattern as actor links: one Link button
+    per shift-selected curve not yet in it, a search over every curve, then
+    Spawn Waypoint with its at-actor-position toggle on one line."""
     from .selected import _draw_link_search
     have = {s.obj.name for s in coll if s.obj}
     for c in [o for o in bpy.context.selected_objects if o.type == "CURVE" and o.name not in have][:6]:
@@ -916,6 +920,10 @@ def _draw_curve_links(layout, sel, coll, path_index=-1):
         op.actor_name = sel.name; op.path_index = path_index; op.target_name = c.name
     _draw_link_search(layout, "Search curve…", "og.waypoint_source_link_curve",
                       actor_name=sel.name, path_index=path_index)
+    row = layout.row(align=True)
+    op = row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+    op.enemy_name = sel.name; op.path_index = path_index
+    row.prop(scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
 
 
 def _count_curve_points(curve_obj) -> int:
@@ -967,9 +975,6 @@ class OG_PT_ActorWaypoints(Panel):
                  else (1 if s.obj and s.obj.type == "EMPTY" else 0))
                 for s in sources
             )
-            if sel.og_waypoint_pingpong and total_pts > 2:
-                # forward + reverse minus endpoints
-                total_pts += total_pts - 2
             header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
         else:
             n_legacy = len(legacy_wps)
@@ -1006,17 +1011,8 @@ class OG_PT_ActorWaypoints(Panel):
         sidebar.operator("og.waypoint_source_move",
                          text="", icon="TRIA_DOWN").direction = "DOWN"
 
-        # Spawn an empty waypoint, or link a curve (selected / searched).
-        op = layout.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
-        op.enemy_name = sel.name
-        _draw_curve_links(layout, sel, sources)
-
-        # Spawn-at-position toggle + ping-pong toggle on a second row.
-        toggle_row = layout.row(align=True)
-        toggle_row.prop(scene.og_props, "waypoint_spawn_at_actor",
-                        text="Spawn at Actor Position", toggle=True)
-        toggle_row.prop(sel, "og_waypoint_pingpong",
-                        text="Ping-pong", toggle=True, icon="ARROW_LEFTRIGHT")
+        # Link a curve (selected / searched), or spawn an empty waypoint.
+        _draw_path_add(layout, sel, scene, sources)
 
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
@@ -1032,8 +1028,7 @@ class OG_PT_ActorWaypoints(Panel):
             mode_box.prop(sel, "og_path_mode", text="Path Mode")
         try:
             _pts, _knots, _eff, _warn = _pm.build(
-                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only,
-                pingpong=sel.og_waypoint_pingpong)
+                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only)
             info = mode_box.column(); info.scale_y = 0.8
             label = _pm.MODE_LABELS.get(_eff, _eff)
             if sel.og_path_mode == "AUTO":
@@ -1103,19 +1098,16 @@ class OG_PT_ActorWaypoints(Panel):
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
-            op = box.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
-            op.enemy_name = sel.name; op.path_index = i
-            _draw_curve_links(box, sel, xp.sources, i)
+            _draw_path_add(box, sel, scene, xp.sources, i)
             mrow = box.row(align=True)
             if linear_only:
                 for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
                     mrow.prop_enum(xp, "mode", m)
             else:
                 mrow.prop(xp, "mode", text="")
-            mrow.prop(xp, "pingpong", text="", icon="ARROW_LEFTRIGHT", toggle=True)
             try:
                 pts, knots, eff, warn = _pm.build(_pm.gather_from(xp.sources), xp.mode,
-                                                  linear_only=linear_only, pingpong=xp.pingpong)
+                                                  linear_only=linear_only)
                 info = box.column(); info.scale_y = 0.8
                 lab = _pm.MODE_LABELS.get(eff, eff)
                 if xp.mode == "AUTO":

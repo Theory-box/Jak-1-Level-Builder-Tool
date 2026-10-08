@@ -72,11 +72,6 @@ from .volumes import (
 #
 # If the collection is empty, fall back to the legacy `<actor>_wp_NN` empty
 # name-grep so pre-existing levels still export correctly.
-#
-# Ping-pong toggle: when set, the forward path is followed by the reverse
-# minus endpoints — a 4-point path [A,B,C,D] becomes [A,B,C,D,C,B], which
-# the engine's modulo walk renders as A→B→C→D→C→B→A→B→... with no point
-# duplicated at the turn.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -129,8 +124,7 @@ def _collect_waypoint_points(actor_obj):
 
     Reads og_waypoint_sources if populated; otherwise falls back to the
     legacy name-grep so older levels with manually-placed _wp_NN empties
-    continue to export without migration. Applies the ping-pong toggle
-    at the end if set.
+    continue to export without migration.
     """
     points = []
     sources = getattr(actor_obj, "og_waypoint_sources", None)
@@ -155,11 +149,6 @@ def _collect_waypoint_points(actor_obj):
         )
         for wp in wp_objects:
             points.append(_to_game_coords(wp.matrix_world.translation))
-
-    # Ping-pong: append the reverse path minus endpoints so the loop is
-    # seamless (no duplicated point at A or at the turn).
-    if getattr(actor_obj, "og_waypoint_pingpong", False) and len(points) > 2:
-        points = points + list(reversed(points))[1:-1]
 
     return points
 
@@ -275,8 +264,7 @@ def collect_actors(scene, depsgraph=None):
         # collection (Phase 4 of waypoint-link-source) — each source is an
         # empty (single point) or a curve (one point per spline control
         # point). Falls back to legacy <actor>_wp_NN name-grep for older
-        # levels with no collection populated. Applies ping-pong reversal
-        # if og_waypoint_pingpong is set.
+        # levels with no collection populated.
         # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
         # decides the control points and, for curve-control actors, path-k.
         # Actors flagged path_linear_only in the DB (path-control readers that
@@ -285,8 +273,7 @@ def collect_actors(scene, depsgraph=None):
         _arec_p = _schema_db.find_actor(etype) or {}
         _ppts, path_knots, _pmode, _pwarn = _pm.build(
             _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
-            linear_only=_schema_db.path_linear_only(etype),
-            pingpong=bool(getattr(o, "og_waypoint_pingpong", False)))
+            linear_only=_schema_db.path_linear_only(etype))
         path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
         if _pwarn and path_pts:
             log(f"  [path] {o.name}: {_pwarn}")
@@ -515,7 +502,7 @@ def collect_actors(scene, depsgraph=None):
             _xkf = _pm.keyframe_suffix(getattr(_xp, "keyframe", ""))
             _xpts, _xk, _xmode, _xwarn = _pm.build(
                 _pm.gather_from(_xp.sources), _xp.mode,
-                linear_only=_schema_db.path_linear_only(etype), pingpong=_xp.pingpong)
+                linear_only=_schema_db.path_linear_only(etype))
             if _xwarn and _xpts:
                 log(f"  [path] {o.name} '{_xn}': {_xwarn}")
             if _xk and getattr(_xp, "knots_manual", False):

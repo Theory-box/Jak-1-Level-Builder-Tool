@@ -805,8 +805,6 @@ class OGExtraPath(bpy.types.PropertyGroup):
     name: StringProperty(name="Lump", default="pathb",
                          description="Lump name this path exports to (knots go to <name>-k)")
     mode: EnumProperty(name="Path Mode", items=_extra_path_mode_items(), default="AUTO")
-    pingpong: BoolProperty(name="Ping-pong", default=False,
-                           description="Linear only: walk forward then back (A B C D C B ...)")
     keyframe: StringProperty(name="Keyframe", default="",
                              description="Lump keyframe (e.g. 1). Blank = default; exported as vector4m@<keyframe>")
     sources: CollectionProperty(type=OGWaypointSource)

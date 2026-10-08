@@ -192,8 +192,7 @@ def _anchors(sources):
     return pts
 
 
-def build(sources: list[dict], mode: str, linear_only: bool = False,
-          pingpong: bool = False):
+def build(sources: list[dict], mode: str, linear_only: bool = False):
     """-> (points, knots_or_None, effective_mode, warning_or_None)
 
     sources: [{"kind": "point", "co": (x,y,z)}
@@ -234,8 +233,6 @@ def build(sources: list[dict], mode: str, linear_only: bool = False,
     if mode in ("LINEAR", "LINEAR_LOOP"):
         if mode == "LINEAR_LOOP" and len(pts) > 1:
             pts = pts + [pts[0]]
-        elif pingpong and len(pts) > 2:
-            pts = pts + list(reversed(pts))[1:-1]
         return pts, None, mode, warn
 
     loop_extra = {"SMOOTH_LOOP": 3, "SMOOTH_CLAMPED_LOOP": 1}.get(mode, 0)

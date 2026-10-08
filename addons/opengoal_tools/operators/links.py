@@ -123,18 +123,70 @@ class OG_OT_LinkNavMesh(Operator):
             self.report({"ERROR"}, "No enemy actor in selection — select the enemy empty too")
             return {"CANCELLED"}
 
-        nm = meshes[0]
-
-        # Tag mesh as navmesh, prefix name if needed, route into NavMeshes sub-collection
-        nm["og_navmesh"] = True
-        if not nm.name.startswith("NAVMESH_"):
-            nm.name = "NAVMESH_" + nm.name
-        _link_object_to_sub_collection(ctx.scene, nm, *_COL_PATH_NAVMESHES)
-
-        for enemy in enemies:
-            enemy["og_navmesh_link"] = nm.name
-
+        nm = _link_navmesh(ctx.scene, meshes[0], enemies)
         self.report({"INFO"}, f"Linked {len(enemies)} actor(s) to {nm.name}")
+        return {"FINISHED"}
+
+
+def _link_navmesh(scene, nm, actors):
+    """Tag the mesh as a navmesh (NAVMESH_ prefix, NavMeshes collection) and
+    point each actor's og_navmesh_link at it. Returns the mesh."""
+    nm["og_navmesh"] = True
+    if not nm.name.startswith("NAVMESH_"):
+        nm.name = "NAVMESH_" + nm.name
+    _link_object_to_sub_collection(scene, nm, *_COL_PATH_NAVMESHES)
+    for a in actors:
+        a["og_navmesh_link"] = nm.name
+    return nm
+
+
+def _is_navmesh(o):
+    return o.type == "MESH" and (o.get("og_navmesh") or o.name.startswith("NAVMESH_"))
+
+
+def _navmesh_items(self, ctx):
+    """Search list: tagged navmeshes first, then every other mesh (marked —
+    linking one tags it as a navmesh). Trigger volumes are left out."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    actor = scene.objects.get(self.actor_name)
+    cur = actor.get("og_navmesh_link", "") if actor else ""
+    meshes = [o for o in scene.objects if o.type == "MESH" and not o.name.startswith(("VOL_", "CPVOL_"))]
+    meshes.sort(key=lambda o: (not _is_navmesh(o), o.name))
+    items = [(o.name, o.name + ("" if _is_navmesh(o) else "  (not a navmesh yet)") + ("  (linked)" if o.name == cur else ""),
+              f"Link nav-mesh {o.name}", "MOD_TRIANGULATE" if _is_navmesh(o) else "MESH_DATA", i)
+             for i, o in enumerate(meshes)]
+    if not items:
+        items = [("__none__", "(no meshes in scene)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_LinkNavMeshTo(Operator):
+    """Link this actor to a navmesh: the shift-selected mesh, or one
+    searched by name"""
+    bl_idname   = "og.link_navmesh_to"
+    bl_label    = "Link NavMesh"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "mesh"
+
+    actor_name:  bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty(description="Link this mesh directly instead of searching")
+    mesh:        bpy.props.EnumProperty(name="NavMesh", items=_navmesh_items)
+
+    def invoke(self, ctx, event):
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        nm = ctx.scene.objects.get(self.target_name or self.mesh)
+        if actor is None or nm is None or nm.type != "MESH":
+            self.report({"ERROR"}, "Actor or mesh not found")
+            return {"CANCELLED"}
+        _link_navmesh(ctx.scene, nm, [actor])
+        self.report({"INFO"}, f"Linked {actor.name} to {nm.name}")
         return {"FINISHED"}
 
 class OG_OT_UnlinkNavMesh(Operator):
@@ -577,10 +629,9 @@ def path_knot_target(actor, path_index):
     lin = _db.path_linear_only(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "")
     if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
         xp = actor.og_extra_paths[path_index]
-        built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin, pingpong=xp.pingpong)
+        built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin)
         return xp, "knots_manual", "knots", "knots_index", built
-    built = _pm.build(_pm.gather_sources(actor), actor.og_path_mode, linear_only=lin,
-                      pingpong=bool(getattr(actor, "og_waypoint_pingpong", False)))
+    built = _pm.build(_pm.gather_sources(actor), actor.og_path_mode, linear_only=lin)
     return actor, "og_path_knots_manual", "og_path_knots", "og_path_knots_index", built
 
 
@@ -852,6 +903,52 @@ class OG_OT_AddLinkFromSelection(Operator):
         self.report({"INFO"}, f"Linked {vol.name} → {self.target_name}")
         return {"FINISHED"}
 
+def _vol_search_items(self, ctx):
+    """Search list for volume links. search_for "target": everything the
+    volume can link to (cameras, checkpoints, nav-enemies ...); "volume":
+    every VOL_ mesh, for linking one to the target. Linked ones marked."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    if self.search_for == "volume":
+        cands = sorted((o for o in scene.objects if o.type == "MESH" and o.name.startswith("VOL_")), key=lambda o: o.name)
+        linked = {o.name for o in cands if _vol_has_link_to(o, self.target_name)}
+        icon = "MESH_CUBE"
+    else:
+        vol = scene.objects.get(self.vol_name)
+        cands = sorted((o for o in scene.objects if o is not vol and _is_linkable(o)), key=lambda o: o.name)
+        linked = {o.name for o in cands if vol and _vol_has_link_to(vol, o.name)}
+        icon = "LINKED"
+    items = [(o.name, o.name + ("  (linked)" if o.name in linked else ""), f"Link {o.name}", icon, i)
+             for i, o in enumerate(cands)]
+    if not items:
+        items = [("__none__", "(nothing to link)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_VolLinkSearch(Operator):
+    """Search by name and link a trigger volume: a target for this volume,
+    or a volume for this target"""
+    bl_idname   = "og.vol_link_search"
+    bl_label    = "Search"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+
+    vol_name:    bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty()
+    search_for:  bpy.props.EnumProperty(items=[("target", "Target", ""), ("volume", "Volume", "")])
+    pick:        bpy.props.EnumProperty(name="Link", items=_vol_search_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        if self.pick in ("", "__none__"):
+            return {"CANCELLED"}
+        vol, tgt = (self.pick, self.target_name) if self.search_for == "volume" else (self.vol_name, self.pick)
+        return bpy.ops.og.add_link_from_selection(vol_name=vol, target_name=tgt)
+
+
 class OG_OT_ClearActorLink(Operator):
     """Remove an entity link slot from an ACTOR_ empty."""
     bl_idname   = "og.clear_actor_link"
@@ -883,6 +980,8 @@ CLASSES = (
     OG_OT_MarkNavMesh,
     OG_OT_UnmarkNavMesh,
     OG_OT_LinkNavMesh,
+    OG_OT_LinkNavMeshTo,
+    OG_OT_VolLinkSearch,
     OG_OT_UnlinkNavMesh,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,

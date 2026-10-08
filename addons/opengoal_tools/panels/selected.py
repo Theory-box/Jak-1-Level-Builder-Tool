@@ -159,6 +159,7 @@ def _draw_selected_actor(layout, sel, scene):
             sub.label(text="No trigger volumes linked", icon="INFO")
         op = box.operator("og.spawn_aggro_trigger", text="Add Aggro Trigger", icon="ADD")
         op.target_name = sel.name
+        _draw_vol_link_add(box, sel)
 
     # ── Nav-enemy: navmesh management ────────────────────────────────────
     if _actor_uses_navmesh(etype):
@@ -342,6 +343,7 @@ def _draw_selected_checkpoint(layout, sel, scene):
         layout.label(text=f"⚠ No trigger volume (fallback r={r:.1f}m)", icon="ERROR")
         op = layout.operator("og.spawn_volume_autolink", text="Add Trigger Volume", icon="MESH_CUBE")
         op.target_name = sel.name
+        _draw_vol_link_add(layout, sel)
 
     _draw_continue_settings(layout, sel, scene)
 
@@ -472,15 +474,13 @@ def _draw_selected_volume(layout, sel, scene):
             op.vol_name = sel.name
             op.target_name = tname
 
-    # Add-link button: enabled when exactly one other linkable object selected
-    sel_targets = [o for o in bpy.context.selected_objects
-                   if _is_linkable(o) and o != sel]
-    if len(sel_targets) == 1:
-        op = box.operator("og.add_link_from_selection", text=f"Link → {sel_targets[0].name}", icon="LINKED")
+    # Same pattern as the other links: shift-selected targets, then search.
+    for t in [o for o in bpy.context.selected_objects
+              if _is_linkable(o) and o != sel and not _vol_has_link_to(sel, o.name)][:6]:
+        op = box.row().operator("og.add_link_from_selection", text=f"Link → {t.name}", icon="LINKED")
         op.vol_name = sel.name
-        op.target_name = sel_targets[0].name
-    else:
-        box.label(text="Shift-select a target then click Link →", icon="INFO")
+        op.target_name = t.name
+    _draw_link_search(box, "Search target…", "og.vol_link_search", vol_name=sel.name, search_for="target")
 
     if n > 0:
         layout.operator("og.unlink_volume", text="Clear All Links", icon="X")
@@ -663,6 +663,7 @@ def _draw_selected_camera(layout, sel, scene):
         vbox.label(text="No trigger volume — camera never activates", icon="ERROR")
     op = vbox.operator("og.spawn_volume_autolink", text="Add Volume", icon="ADD")
     op.target_name = sel.name
+    _draw_vol_link_add(vbox, sel)
 
 
 
@@ -959,6 +960,17 @@ def _draw_actor_links(layout, obj, scene, etype):
 def _link_target_etype(o):
     parts = o.name.split("_", 2)
     return parts[1] if len(parts) >= 3 else ""
+
+
+def _draw_vol_link_add(layout, target):
+    """Target side of volume links (cameras, checkpoints, aggro triggers):
+    Link buttons for shift-selected VOL_ meshes, then a volume search."""
+    for v in [o for o in bpy.context.selected_objects
+              if o.type == "MESH" and o.name.startswith("VOL_") and not _vol_has_link_to(o, target.name)][:6]:
+        op = layout.row().operator("og.add_link_from_selection", text=f"Link → {v.name}", icon="MESH_CUBE")
+        op.vol_name = v.name; op.target_name = target.name
+    _draw_link_search(layout, "Search volume…", "og.vol_link_search",
+                      target_name=target.name, search_for="volume")
 
 
 def _draw_link_search(box, text, op_id, **props):

@@ -274,13 +274,6 @@ def register():
     bpy.types.Object.og_waypoint_sources       = bpy.props.CollectionProperty(type=OGWaypointSource)
     bpy.types.Object.og_waypoint_sources_index = bpy.props.IntProperty(
         name="Active Waypoint Source", default=0)
-    bpy.types.Object.og_waypoint_pingpong      = bpy.props.BoolProperty(
-        name="Ping-pong",
-        description="Walk the path forward, then backward — A→B→C→B→A→B→... "
-                    "Implemented by emitting the reversed points after the "
-                    "forward path; the engine's modulo walk handles the rest.",
-        default=False,
-    )
     # Path mode — see export/path_modes.py. Item numbers are fixed so files
     # saved before the expanded list keep their value: 0 = Linear, 1 = the old
     # "Smooth", which was the clamped B-spline (now "Smooth Clamped").
@@ -479,7 +472,7 @@ def unregister():
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
-              "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
+              "og_waypoint_sources","og_waypoint_sources_index",
               "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
               "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)
