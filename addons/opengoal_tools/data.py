@@ -40,7 +40,6 @@ def _entity_info_from_actor(a: dict) -> dict:
     if a.get("extra_art_groups"): info["extras_ag"] = list(a["extra_art_groups"])
     if a.get("tpage_group"):  info["tpage_group"] = a["tpage_group"]
     if a.get("glb"):          info["glb"] = a["glb"]
-    if "color" in a:          info["color"] = tuple(a["color"])
     if "shape" in a:          info["shape"] = a["shape"]
     if a.get("is_prop"):      info["is_prop"] = True
     info["nav_safe"] = _db.is_nav_safe(a["etype"])          # nav-mesh "fallback-sphere"

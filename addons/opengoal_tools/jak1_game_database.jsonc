@@ -59,6 +59,7 @@
     {
       "id": "Enemies",
       "label": "Enemies",
+      "color": [1.0, 0.2, 0.15, 1.0],
       "collection_path": [
         "Spawnables",
         "Enemies"
@@ -67,6 +68,7 @@
     {
       "id": "Bosses",
       "label": "Bosses",
+      "color": [0.75, 0.0, 0.25, 1.0],
       "collection_path": [
         "Spawnables",
         "Enemies"
@@ -75,6 +77,7 @@
     {
       "id": "NPCs",
       "label": "NPCs",
+      "color": [0.4, 0.7, 1.0, 1.0],
       "collection_path": [
         "Spawnables",
         "NPCs"
@@ -83,6 +86,7 @@
     {
       "id": "Pickups",
       "label": "Pickups",
+      "color": [1.0, 0.85, 0.1, 1.0],
       "collection_path": [
         "Spawnables",
         "Pickups"
@@ -91,6 +95,7 @@
     {
       "id": "Platforms",
       "label": "Platforms",
+      "color": [0.45, 0.55, 0.85, 1.0],
       "collection_path": [
         "Spawnables",
         "Platforms"
@@ -99,6 +104,7 @@
     {
       "id": "Props",
       "label": "Props",
+      "color": [0.6, 0.6, 0.6, 1.0],
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -107,6 +113,7 @@
     {
       "id": "Objects",
       "label": "Objects",
+      "color": [0.6, 0.6, 0.6, 1.0],
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -115,6 +122,7 @@
     {
       "id": "Debug",
       "label": "Debug",
+      "color": [0.8, 0.8, 0.8, 1.0],
       "collection_path": [
         "Spawnables",
         "Props & Objects"
@@ -123,9 +131,14 @@
     {
       "id": "Hidden",
       "label": "Hidden",
+      "color": [0.5, 0.5, 0.5, 1.0],
       "collection_path": null,
       "note": "Not shown in the spawn picker — use for parent types or deprecated entries."
-    }
+    },
+    {"id": "Obstacles", "label": "Obstacles", "color": [0.6, 0.1, 0.8, 1.0]},
+    {"id": "Interactive Objects", "label": "Interactive Objects", "color": [0.2, 0.8, 0.6, 1.0]},
+    {"id": "Buttons and Doors", "label": "Buttons and Doors", "color": [0.2, 0.7, 0.8, 1.0]},
+    {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]}
   ],
 
   // ── Defaults ────────────────────────────────────────────────────
@@ -4881,6 +4894,7 @@
     {
       "etype": "vent",
       "parent": "process-drawable",
+      "empty_size": 2.0,
       "description": "Game type (deftype vent (process-drawable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable.",
       "panels": [
         {
@@ -5066,12 +5080,6 @@
       "code": "babak.o",
       "glb": "levels/beach/babak-lod0.glb",
       "lumps": [],
-      "color": [
-        1.0,
-        0.1,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5091,12 +5099,6 @@
       "code": "babak-with-cannon.o",
       "glb": "levels/beach/babak-lod0.glb",
       "lumps": [],
-      "color": [
-        1.0,
-        0.1,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5116,12 +5118,6 @@
       "code": "lurkercrab.o",
       "glb": "levels/beach/lurkercrab-lod0.glb",
       "lumps": [],
-      "color": [
-        0.8,
-        0.4,
-        0.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5141,12 +5137,6 @@
       "code": "lurkerpuppy.o",
       "glb": "levels/beach/lurkerpuppy-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.5,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5168,12 +5158,6 @@
       "code": "hopper.o",
       "glb": "levels/jungle/hopper-lod0.glb",
       "lumps": [],
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5192,12 +5176,6 @@
       ],
       "code": "aphid.o",
       "glb": "levels/jungleb/aphid-lurker-lod0.glb",
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5217,12 +5195,6 @@
       "code": "swamp-rat.o",
       "glb": "levels/swamp/swamp-rat-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.35,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5242,12 +5214,6 @@
       "code": "kermit.o",
       "glb": "levels/swamp/kermit-lod0.glb",
       "lumps": [],
-      "color": [
-        0.2,
-        0.7,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5294,12 +5260,6 @@
           ]
         }
       ],
-      "color": [
-        0.9,
-        0.9,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5322,12 +5282,6 @@
           "description": "Variant selector — controls snow-bunny behaviour variant."
         }
       ],
-      "color": [
-        0.9,
-        0.9,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5349,12 +5303,6 @@
         "levels/sunken/double-lurker-lod0.glb"
       ],
       "lumps": [],
-      "color": [
-        0.7,
-        0.15,
-        0.15,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5376,12 +5324,6 @@
       "code": "bonelurker.o",
       "glb": "levels/misty/bonelurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.8,
-        0.7,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5404,12 +5346,6 @@
       "code": "muse.o",
       "glb": "levels/misty/muse-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.6,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5429,12 +5365,6 @@
       "code": "baby-spider.o",
       "glb": "levels/darkcave/baby-spider-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5474,12 +5404,6 @@
       "code": ["baby-spider.o", "spider-egg.o"],
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5500,12 +5424,6 @@
       "code": "green-eco-lurker.o",
       "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.2,
-        0.8,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5529,12 +5447,6 @@
       "code": "lurkerworm.o",
       "glb": "levels/beach/lurkerworm-lod0.glb",
       "lumps": [],
-      "color": [
-        0.3,
-        0.6,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5558,12 +5470,6 @@
       "code": "junglesnake.o",
       "glb": "levels/jungle/junglesnake-lod0.glb",
       "lumps": [],
-      "color": [
-        0.2,
-        0.6,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5608,12 +5514,6 @@
           ]
         }
       ],
-      "color": [
-        0.4,
-        0.2,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5652,12 +5552,6 @@
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
-      "color": [
-        0.9,
-        0.95,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5684,12 +5578,6 @@
       "code": "bully.o",
       "glb": "levels/sunken/bully-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.6,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5799,12 +5687,6 @@
           ]
         }
       ],
-      "color": [
-        0.3,
-        0.4,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5861,12 +5743,6 @@
       "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.2,
-        0.8,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -5903,12 +5779,6 @@
       "code": ["ogre-obs.o", "flying-lurker.o"],
       "glb": "levels/ogre/plunger-lurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.8,
-        0.3,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6037,12 +5907,6 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
-      ],
-      "color": [
-        0.6,
-        0.2,
-        0.1,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -6190,12 +6054,6 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
-      "color": [
-        0.6,
-        0.3,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6264,12 +6122,6 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6324,12 +6176,6 @@
           ]
         }
       ],
-      "color": [
-        0.4,
-        0.0,
-        0.6,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6348,12 +6194,6 @@
       "code": "maincave-obs.o",
       "glb": "levels/robocave/cavecrusher-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.6,
-        0.6,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -6393,12 +6233,6 @@
       "code": "quicksandlurker.o",
       "glb": "levels/misty/quicksandlurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.8,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6499,12 +6333,6 @@
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
-      "color": [
-        0.7,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6523,12 +6351,6 @@
       "tpage_group": "Snow",
       "code": ["snow-ram-h.o", "snow-ram-boss.o"],
       "glb": "levels/snow/ram-boss-lod0.glb",
-      "color": [
-        0.7,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6553,12 +6375,6 @@
       ],
       "code": "rolling-lightning-mole.o",
       "lumps": [],
-      "color": [
-        0.7,
-        0.7,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE",
       "art_group": "lightning-mole-ag.go"
     },
@@ -6586,12 +6402,6 @@
           "description": "Variant selector. Default -1 (standard). 0 = alternate behaviour."
         }
       ],
-      "color": [
-        0.7,
-        0.9,
-        1.0,
-        1.0
-      ],
       "shape": "CUBE",
       "art_group": "ice-cube-ag.go"
     },
@@ -6617,12 +6427,6 @@
           "type": "uint32",
           "description": "boulder hover when this task is complete"
         }
-      ],
-      "color": [
-        1.0,
-        0.4,
-        0.0,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -6654,12 +6458,6 @@
           "description": "Child lurker count."
         }
       ],
-      "color": [
-        0.2,
-        0.5,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6690,12 +6488,6 @@
           "type": "float",
           "description": "Min animation frame."
         }
-      ],
-      "color": [
-        0.3,
-        0.1,
-        0.5,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -6778,12 +6570,6 @@
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "fact-options", "fields": [{"key": "og_fop_fade", "show-field": true, "highlight": true}]}
       ],
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6844,12 +6630,6 @@
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh", "fallback-sphere": true}
       ],
-      "color": [
-        0.1,
-        0.7,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6875,12 +6655,6 @@
       "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.6,
-        0.8,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6913,12 +6687,6 @@
           "description": "Water surface to wade at."
         }
       ],
-      "color": [
-        0.9,
-        0.8,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6947,12 +6715,6 @@
           "description": "Rotation offset applied on spawn."
         }
       ],
-      "color": [
-        0.4,
-        0.7,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6971,12 +6733,6 @@
       "code": "mayor.o",
       "glb": "levels/beach/mayor-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.7,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -6995,12 +6751,6 @@
       "code": "farmer.o",
       "glb": "levels/village1/farmer-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7021,12 +6771,6 @@
       "code": "fisher.o",
       "glb": "levels/jungle/fisher-lod0.glb",
       "lumps": [],
-      "color": [
-        0.4,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7045,12 +6789,6 @@
       "code": "explorer.o",
       "glb": "levels/village1/explorer-lod0.glb",
       "lumps": [],
-      "color": [
-        0.7,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7069,12 +6807,6 @@
       "code": "geologist.o",
       "glb": "levels/village2/geologist-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7093,12 +6825,6 @@
       "code": "warrior.o",
       "glb": "levels/village2/warrior-lod0.glb",
       "lumps": [],
-      "color": [
-        0.7,
-        0.3,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7117,12 +6843,6 @@
       "code": "gambler.o",
       "glb": "levels/village2/gambler-lod0.glb",
       "lumps": [],
-      "color": [
-        0.3,
-        0.7,
-        0.4,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7140,12 +6860,6 @@
       "code": "sculptor.o",
       "glb": "levels/beach/sculptor-lod0.glb",
       "lumps": [],
-      "color": [
-        0.7,
-        0.6,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7167,12 +6881,6 @@
       "code": "billy.o",
       "glb": "levels/swamp/billy-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.7,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7193,12 +6901,6 @@
       "code": "pelican.o",
       "glb": "levels/beach/pelican-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.9,
-        0.7,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7216,12 +6918,6 @@
       "code": "seagull.o",
       "glb": "levels/beach/seagull-lod0.glb",
       "lumps": [],
-      "color": [
-        0.9,
-        0.9,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7324,12 +7020,6 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
-      "color": [
-        0.3,
-        0.3,
-        0.7,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7366,12 +7056,6 @@
           ]
         },
         {"panel": "fact-options", "fields": [{"key": "og_fop_skip_jump_anim", "show-field": true, "highlight": true}]}
-      ],
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
       ],
       "shape": "SPHERE",
       "vertex_export": false,
@@ -7412,12 +7096,6 @@
           ]
         }
       ],
-      "color": [
-        0.8,
-        0.8,
-        0.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES",
       "code": "collectables.o"
     },
@@ -7450,12 +7128,6 @@
           ]
         }
       ],
-      "color": [
-        0.9,
-        0.9,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE",
       "code": "collectables.o"
     },
@@ -7464,6 +7136,7 @@
       "label": "Pickup Spawner", 
       "category": "Pickups",
       "parent": "crate",
+      "empty_size": 1.5,
       "code": "crates.o",
       "schema_export": true,
       "lumps": [
@@ -7489,12 +7162,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.1,
-        0.9,
-        0.2,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -7604,12 +7271,6 @@
           ]
         }
       ],
-      "color": [
-        0.8,
-        0.5,
-        0.1,
-        1.0
-      ],
       "shape": "CUBE",
       "vertex_export": false,
       "code": "crates.o"
@@ -7653,12 +7314,6 @@
           ]
         }
       ],
-      "color": [
-        0.9,
-        0.7,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE",
       "vertex_export": false,
       "code": "orb-cache.o"
@@ -7679,12 +7334,6 @@
       "code": "final-door.o",
       "glb": "levels/finalboss/powercellalt-lod0.glb",
       "lumps": [],
-      "color": [
-        1.0,
-        0.85,
-        0.0,
-        1.0
-      ],
       "shape": "ARROWS",
       "vertex_export": false
     },
@@ -7695,12 +7344,6 @@
       "parent": "eco-collectable",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.1,
-        0.9,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7746,12 +7389,6 @@
         },
         {"panel": "actor-link", "export": false}
       ],
-      "color": [
-        0.1,
-        0.9,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -7778,12 +7415,6 @@
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
         }
-      ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
       ],
       "shape": "CUBE",
       "code": "plat.o"
@@ -7816,12 +7447,6 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "color": [
-        0.3,
-        0.7,
-        0.9,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "plat-eco.o"
     },
@@ -7848,12 +7473,6 @@
       "panels": [
         {"panel": "scale", "always": true}
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "citb-plat.o"
     },
@@ -7865,12 +7484,6 @@
       "parent": "citb-base-plat",
       "art_group": "citb-rotatebox-ag.go",
       "glb": "levels/citadel/citb-rotatebox-lod0.glb",
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "citb-plat.o"
     },
@@ -7882,12 +7495,6 @@
       "parent": "citb-base-plat",
       "art_group": "citb-donut-ag.go",
       "glb": "levels/citadel/citb-donut-lod0.glb",
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "citb-plat.o"
     },
@@ -7918,12 +7525,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "citb-plat.o"
     },
@@ -7935,12 +7536,6 @@
       "parent": "process-drawable",
       "art_group": "silodoor-ag.go",
       "glb": "levels/finalboss/silodoor-lod0.glb",
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "SPHERE",
       "code": "robotboss-misc.o"
     },
@@ -7963,12 +7558,6 @@
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
         }
-      ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
       ],
       "shape": "CUBE",
       "code": "citb-plat.o"
@@ -8047,12 +7636,6 @@
         },
         {"panel": "path", "min-points": 1}
       ],
-      "color": [
-        0.6,
-        0.6,
-        0.7,
-        1
-      ],
       "shape": "SPHERE",
       "code": "citb-plat.o"
     },
@@ -8105,12 +7688,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.6,
-        0.6,
-        0.7,
-        1
       ],
       "shape": "SPHERE",
       "code": "plat-button.o"
@@ -8165,12 +7742,6 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
     },
@@ -8224,12 +7795,6 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
     },
@@ -8282,12 +7847,6 @@
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
         }
-      ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
       ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
@@ -8424,12 +7983,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8472,12 +8025,6 @@
           "description": "Z-offset tuning for wall alignment. Default 0."
         }
       ],
-      "color": [
-        0.4,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "CONE"
     },
     {
@@ -8511,12 +8058,6 @@
           "description": "Previous warp target."
         }
       ],
-      "color": [
-        0.5,
-        0.6,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8534,12 +8075,6 @@
       "code": "misty-teetertotter.o",
       "glb": "levels/misty/teetertotter-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.4,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8568,12 +8103,6 @@
           "type": "uint32",
           "description": "Behaviour flags (bitfield)."
         }
-      ],
-      "color": [
-        0.4,
-        0.5,
-        0.8,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -8652,12 +8181,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8694,12 +8217,6 @@
       ],
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_distance", "default": 17.0}]}
-      ],
-      "color": [
-        0.5,
-        0.5,
-        0.7,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -8751,12 +8268,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -8780,12 +8291,6 @@
           "description": "Uniform scale multiplier. Default 1.0."
         }
       ],
-      "color": [
-        0.2,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8797,12 +8302,6 @@
       "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
       "lumps": [],
-      "color": [
-        0.2,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8849,12 +8348,6 @@
       "code": "qbert-plat.o",
       "glb": "levels/sunken/qbert-plat-lod0.glb",
       "lumps": [],
-      "color": [
-        0.2,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -8890,12 +8383,6 @@
       "art_group": "qbert-plat-on-ag.go",
       "code": "qbert-plat.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -9017,12 +8504,6 @@
           "description": "Behaviour flags (bitfield)."
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "SINGLE_ARROW",
       "code": "floating-launcher.o"
     },
@@ -9128,12 +8609,6 @@
           "show-panel": false
         }
       ],
-      "color": [
-        0.9,
-        0.6,
-        0.1,
-        1.0
-      ],
       "shape": "SINGLE_ARROW"
     },
     {
@@ -9209,12 +8684,6 @@
           ]
         }
       ],
-      "color": [
-        0.9,
-        0.6,
-        0.1,
-        1.0
-      ],
       "shape": "SINGLE_ARROW"
     },
     {
@@ -9233,12 +8702,6 @@
       "code": "villagep-obs.o",
       "glb": "levels/citadel/warpgate-lod0.glb",
       "lumps": [],
-      "color": [
-        0.3,
-        0.8,
-        0.9,
-        1.0
-      ],
       "shape": "CIRCLE"
     },
     {
@@ -9262,12 +8725,6 @@
           "description": "Seconds before crystal deactivates. Default 8.0s."
         }
       ],
-      "color": [
-        0.7,
-        0.4,
-        0.9,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9284,12 +8741,6 @@
       ],
       "code": "miners.o",
       "lumps": [],
-      "color": [
-        0.8,
-        0.2,
-        0.8,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9320,12 +8771,6 @@
           ]
         }
       ],
-      "color": [
-        0.8,
-        0.8,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9344,12 +8789,6 @@
       "glb": "levels/ogre/tntbarrel-lod0.glb",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        1.0,
-        0.4,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9367,12 +8806,6 @@
       "code": "ogre-obs.o",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.4,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9408,12 +8841,6 @@
       ],
       "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "color": [
-        0.8,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9454,12 +8881,6 @@
           "type": "float",
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
         }
-      ],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -9550,12 +8971,6 @@
           "description": "Change bottom and top height"
         }
       ],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9585,12 +9000,6 @@
       "code": "jungle-obs.o",
       "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
       "lumps": [],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9604,12 +9013,6 @@
       "code": "jungle-obs.o",
       "glb": "levels/jungle/precurbridge-geo.glb",
       "lumps": [],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9680,12 +9083,6 @@
           "description": "Max number of moves"
         }
       ],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9704,12 +9101,6 @@
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.7,
-        0.7,
-        0.5,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9729,12 +9120,6 @@
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.2,
-        0.8,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9746,12 +9131,6 @@
       "glb": "levels/beach/ecovalve-geo.glb",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.3,
-        0.7,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE",
       "code": "collectables.o"
     },
@@ -9776,12 +9155,6 @@
           "description": "Uniform scale. Default 1.0."
         }
       ],
-      "color": [
-        0.4,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9800,12 +9173,6 @@
       "glb": "levels/village3/gondola-lod0.glb",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9824,12 +9191,6 @@
       "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -9848,12 +9209,6 @@
       "code": "swamp-blimp.o",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -9898,12 +9253,6 @@
           "type": "float",
           "description": "Scale modifier."
         }
-      ],
-      "color": [
-        0.7,
-        0.3,
-        0.2,
-        1.0
       ],
       "shape": "CONE"
     },
@@ -9979,12 +9328,6 @@
           ]
         }
       ],
-      "color": [
-        0.2,
-        0.4,
-        0.8,
-        1.0
-      ],
       "shape": "CIRCLE"
     },
     {
@@ -10018,12 +9361,6 @@
           "type": "structure",
           "description": "warp target."
         }
-      ],
-      "color": [
-        0.2,
-        0.7,
-        0.8,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -10059,12 +9396,6 @@
           "type": "structure",
           "description": "warp target."
         }
-      ],
-      "color": [
-        0.2,
-        0.7,
-        0.8,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -10132,12 +9463,6 @@
       "code": "balloonlurker.o",
       "glb": "levels/misty/balloonlurker-lod0.glb",
       "lumps": [],
-      "color": [
-        0.7,
-        0.5,
-        0.8,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10160,12 +9485,6 @@
       "glb": "levels/jungle/darkvine-lod0.glb",
       "code": "darkvine.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.5,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10211,12 +9530,6 @@
           ]
         }
       ],
-      "color": [
-        0.3,
-        0.6,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10236,12 +9549,6 @@
       ],
       "code": "rolling-lightning-mole.o",
       "lumps": [],
-      "color": [
-        0.8,
-        0.8,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10287,12 +9594,6 @@
           "description": "Patrol path for spawned spiders. Required — export at least 2 waypoints."
         }
       ],
-      "color": [
-        0.5,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10314,12 +9615,6 @@
       ],
       "code": "cave-trap.o",
       "lumps": [],
-      "color": [
-        0.5,
-        0.3,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10388,12 +9683,6 @@
         },
         {"panel": "nav-mesh"}
       ],
-      "color": [
-        0.4,
-        0.3,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10452,12 +9741,6 @@
           ]
         },
         {"panel": "nav-mesh"}
-      ],
-      "color": [
-        0.2,
-        0.5,
-        0.7,
-        1.0
       ],
       "shape": "SPHERE",
       "art_group": "sunkenfisha-ag.go"
@@ -10542,12 +9825,6 @@
         {"panel": "nav-mesh", "fallback-sphere": false},
         {"panel": "scale", "uniform": true}
       ],
-      "color": [
-        0.6,
-        0.3,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10576,12 +9853,6 @@
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
-      "color": [
-        1.0,
-        0.6,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE",
       "art_group": "villa-starfish-ag.go"
     },
@@ -10592,12 +9863,6 @@
       "parent": "eco-collectable",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.3,
-        0.9,
-        0.3,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -10607,12 +9872,6 @@
       "parent": "eco",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10622,12 +9881,6 @@
       "parent": "vent",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10637,12 +9890,6 @@
       "parent": "vent",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10652,12 +9899,6 @@
       "parent": "vent",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10667,12 +9908,6 @@
       "parent": "eco",
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10698,12 +9933,6 @@
       ],
       "code": "collectables.o",
       "lumps": [],
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -10736,12 +9965,6 @@
           "type": "float",
           "description": "Rotation speed."
         }
-      ],
-      "color": [
-        0.3,
-        0.7,
-        0.3,
-        1.0
       ],
       "shape": "PLAIN_AXES"
     },
@@ -10811,12 +10034,6 @@
           ]
         },
         {"panel": "scale", "uniform": true}
-      ],
-      "color": [
-        0.4,
-        0.6,
-        0.9,
-        1.0
       ],
       "shape": "CUBE",
       "known_issue": "Orbit-plats are not rotating in-game even when linked bidirectionally to each other and to a nav-mesh. Pair spawns correctly and export runs clean, but stepping on one produces no reaction. Under investigation — possibly a collision-shape issue, a missing process-spawn dependency, or a deeper engine requirement (level actor-group, continue-points, etc.). Workaround: avoid orbit-plats for now; use other platform types."
@@ -10910,12 +10127,6 @@
           ]
         }
       ],
-      "color": [
-        0.4,
-        0.6,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -10968,12 +10179,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.6,
-        0.4,
-        0.2,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -11036,12 +10241,6 @@
           ]
         }
       ],
-      "color": [
-        0.6,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11099,12 +10298,6 @@
           ]
         }
       ],
-      "color": [
-        0.6,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11131,12 +10324,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.6,
-        0.4,
-        0.2,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -11190,12 +10377,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        1.0,
-        0.5,
-        0.1,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -11302,12 +10483,6 @@
           ]
         }
       ],
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11393,12 +10568,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11480,12 +10649,6 @@
           ]
         }
       ],
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11509,12 +10672,6 @@
           "type": "float",
           "description": "How long before the trap door activates (seconds)."
         }
-      ],
-      "color": [
-        0.4,
-        0.3,
-        0.2,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -11561,12 +10718,6 @@
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
         }
       ],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11612,12 +10763,6 @@
           "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
         }
       ],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11652,12 +10797,6 @@
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridge-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11676,12 +10815,6 @@
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11728,12 +10861,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11753,12 +10880,6 @@
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonfive-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11802,12 +10923,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.7,
-        0.6,
-        0.4,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -11875,12 +10990,6 @@
           ]
         }
       ],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -11946,12 +11055,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -12019,12 +11122,6 @@
           ]
         }
       ],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12038,12 +11135,6 @@
       ],
       "code": "water-h.o",
       "lumps": [],
-      "color": [
-        0.2,
-        0.4,
-        0.9,
-        0.6
-      ],
       "shape": "CUBE"
     },
     {
@@ -12054,12 +11145,6 @@
       "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
       "lumps": [],
-      "color": [
-        0.8,
-        0.6,
-        0.2,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -12074,12 +11159,6 @@
       "code": "target-tube.o",
       "extra_art_groups": ["eichar-tube+0-ag.go"],
       "lumps": [],
-      "color": [
-        0.8,
-        0.6,
-        0.2,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -12128,12 +11207,6 @@
           ]
         }
       ],
-      "color": [
-        0.9,
-        0.7,
-        0.1,
-        1.0
-      ],
       "shape": "SINGLE_ARROW"
     },
     {
@@ -12174,12 +11247,6 @@
             }
           ]
         }
-      ],
-      "color": [
-        0.9,
-        0.7,
-        0.1,
-        1.0
       ],
       "shape": "SINGLE_ARROW"
     },
@@ -12229,12 +11296,6 @@
           "show-panel": false
         }
       ],
-      "color": [
-        0.9,
-        0.8,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -12269,12 +11330,6 @@
       "code": "miners.o",
       "glb": "levels/village3/minershort-lod0.glb",
       "lumps": [],
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -12293,12 +11348,6 @@
       "code": "miners.o",
       "glb": "levels/village3/minertall-lod0.glb",
       "lumps": [],
-      "color": [
-        0.5,
-        0.45,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -12391,12 +11440,6 @@
           ]
         }
       ],
-      "color": [
-        0.3,
-        0.6,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12408,12 +11451,6 @@
       "art_group": "eggtop-ag.go",
       "code": "jungleb-obs.o",
       "glb":"levels/jungleb/eggtop-lod0.glb",
-      "color": [
-        0.3,
-        0.6,
-        0.8,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12512,12 +11549,6 @@
           ]
         }
       ],
-      "color": [
-        0.4,
-        0.6,
-        0.4,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12528,12 +11559,6 @@
       "art_group": "maindoor-ag.go",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/maindoor-lod1.glb",
-      "color": [
-        0.4,
-        0.6,
-        0.4,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12606,12 +11631,6 @@
           "show-panel": false
         }
       ],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12649,12 +11668,6 @@
           ],
           "show-panel": false
         }
-      ],
-      "color": [
-        0.4,
-        0.5,
-        0.7,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -12720,12 +11733,6 @@
           ],
           "show-panel": false
         }
-      ],
-      "color": [
-        0.6,
-        0.5,
-        0.2,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -12801,12 +11808,6 @@
           ]
         }
       ],
-      "color": [
-        0.7,
-        0.3,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12877,12 +11878,6 @@
           ]
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.7,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12916,12 +11911,6 @@
           "description": "Scale modifier."
         }
       ],
-      "color": [
-        0.4,
-        0.5,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -12946,12 +11935,6 @@
           "type": "enum-uint32",
           "description": "Linked game task (already in fields on oracle/pontoon pattern)."
         }
-      ],
-      "color": [
-        0.8,
-        0.6,
-        0.2,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -12997,12 +11980,6 @@
           ]
         }
       ],
-      "color": [
-        0.6,
-        0.6,
-        0.7,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13031,12 +12008,6 @@
           "type": "uint32",
           "description": "Particle variant."
         }
-      ],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -13077,12 +12048,6 @@
           "description": "Height parameters: 2 floats."
         }
       ],
-      "color": [
-        0.5,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13107,12 +12072,6 @@
           "type": "float",
           "description": "Animation delay."
         }
-      ],
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -13139,12 +12098,6 @@
           "description": "Animation delay."
         }
       ],
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13169,12 +12122,6 @@
           "type": "float",
           "description": "Animation delay."
         }
-      ],
-      "color": [
-        1.0,
-        0.35,
-        0.0,
-        1.0
       ],
       "shape": "CUBE"
     },
@@ -13201,12 +12148,6 @@
           "description": "Animation delay."
         }
       ],
-      "color": [
-        0.9,
-        0.2,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13232,12 +12173,6 @@
           "description": "Animation delay."
         }
       ],
-      "color": [
-        0.9,
-        0.8,
-        0.1,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13256,12 +12191,6 @@
         "tpage-1337.go"
       ],
       "code": "lavatube-obs.o",
-      "color": [
-        0.6,
-        0.1,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13281,12 +12210,6 @@
       "code": "firecanyon-obs.o",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.9,
-        0.4,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13297,12 +12220,6 @@
       "art_group": "crate-darkeco-cluster-ag.go",
       "glb": "levels/firecanyon/crate-darkeco-cluster-lod0.glb",
       "code": "firecanyon-obs.o",
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13314,12 +12231,6 @@
       "art_group": "logtrap-ag.go",
       "glb": "levels/jungle/logtrap-lod0.glb",
       "code": "jungle-obs.o",
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13362,12 +12273,6 @@
           ],
           "description": "Push cycle: period, phase, and pauses while extended / retracted."
         }
-      ],
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
       ],
       "shape": "SPHERE"
     },
@@ -13445,12 +12350,6 @@
           ]
         }
       ],
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13465,12 +12364,6 @@
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
       "code": "snow-ball.o",
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13505,12 +12398,6 @@
       ],
       "code": "swamp-blimp.o",
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -13538,12 +12425,6 @@
           "description": "Fire cycle timing: period and phase."
         }
       ],
-      "color": [
-        0.3,
-        0.0,
-        0.5,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13563,12 +12444,6 @@
       "code": "fishermans-boat.o",
       "is_prop": true,
       "lumps": [],
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -13578,12 +12453,6 @@
       "parent": "process-drawable",
       "art_group": "test-actor-ag.go",
       "lumps": [],
-      "color": [
-        0.8,
-        0.8,
-        0.8,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     }
   ],
@@ -18857,12 +17726,6 @@
       "category": "Props",
       "art_group": "evilplant-ag.go",
       "glb": "levels/village1/evilplant-lod0.glb",
-      "color": [
-        0.2,
-        0.5,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -18871,12 +17734,6 @@
       "category": "Props",
       "art_group": "dark-plant-ag.go",
       "glb": "levels/rolling/dark-plant-lod0.glb",
-      "color": [
-        0.3,
-        0.1,
-        0.5,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -18885,12 +17742,6 @@
       "category": "Pickups",
       "art_group": "money-ag.go",
       "glb": "levels/common/money-lod0.glb",
-      "color": [
-        0.8,
-        0.8,
-        0.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -18899,60 +17750,30 @@
       "category": "Pickups",
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
-      "color": [
-        0.9,
-        0.9,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
       "etype": "ventyellow",
       "label": "Yellow Eco Vent",
       "category": "Pickups",
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "eco-red",
       "label": "Red Eco Vent",
       "category": "Pickups",
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "eco-blue",
       "label": "Blue Eco Vent",
       "category": "Pickups",
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "eco-green",
       "label": "Green Eco Vent",
       "category": "Pickups",
-      "color": [
-        0.1,
-        0.9,
-        0.2,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -18961,12 +17782,6 @@
       "category": "Objects",
       "art_group": "tntbarrel-ag.go",
       "glb": "levels/ogre/tntbarrel-lod0.glb",
-      "color": [
-        1.0,
-        0.4,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -18974,12 +17789,6 @@
       "label": "Shortcut Boulder",
       "category": "Objects",
       "art_group": "shortcut-boulder-ag.go",
-      "color": [
-        0.6,
-        0.5,
-        0.4,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -18988,12 +17797,6 @@
       "category": "Objects",
       "art_group": "spike-ag.go",
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "color": [
-        0.8,
-        0.2,
-        0.2,
-        1.0
-      ],
       "shape": "CONE"
     },
     {
@@ -19002,12 +17805,6 @@
       "category": "Objects",
       "art_group": "windmill-one-ag.go",
       "glb": "levels/beach/windmill-one-lod0.glb",
-      "color": [
-        0.7,
-        0.7,
-        0.5,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19016,12 +17813,6 @@
       "category": "Objects",
       "art_group": "ecoclaw-ag.go",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
-      "color": [
-        0.2,
-        0.8,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19030,12 +17821,6 @@
       "category": "Objects",
       "art_group": "ecovalve-ag.go",
       "glb": "levels/beach/ecovalve-geo.glb",
-      "color": [
-        0.3,
-        0.7,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19043,12 +17828,6 @@
       "label": "Swamp Rock",
       "category": "Objects",
       "art_group": "swamp-rock-ag.go",
-      "color": [
-        0.4,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19057,12 +17836,6 @@
       "category": "Objects",
       "art_group": "gondola-ag.go",
       "glb": "levels/village3/gondola-lod0.glb",
-      "color": [
-        0.5,
-        0.4,
-        0.3,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19070,12 +17843,6 @@
       "label": "Swamp Blimp",
       "category": "Objects",
       "art_group": "swamp-blimp-ag.go",
-      "color": [
-        0.6,
-        0.5,
-        0.3,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19083,12 +17850,6 @@
       "label": "Swamp Rope",
       "category": "Objects",
       "art_group": "swamp-rope-ag.go",
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19096,12 +17857,6 @@
       "label": "Swamp Spike",
       "category": "Objects",
       "art_group": "swamp-spike-ag.go",
-      "color": [
-        0.7,
-        0.3,
-        0.2,
-        1.0
-      ],
       "shape": "CONE"
     },
     {
@@ -19110,12 +17865,6 @@
       "category": "Objects",
       "art_group": "whirlpool-ag.go",
       "glb": "levels/sunken/whirlpool-lod0.glb",
-      "color": [
-        0.2,
-        0.4,
-        0.8,
-        1.0
-      ],
       "shape": "CIRCLE"
     },
     {
@@ -19123,60 +17872,30 @@
       "label": "Eco Pill (Health)",
       "category": "Pickups",
       "art_group": "eco-pill-ag.go",
-      "color": [
-        0.3,
-        0.9,
-        0.3,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "ecovent",
       "label": "Blue Eco Vent",
       "category": "Pickups",
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
       "etype": "ventblue",
       "label": "Blue Eco Vent (alt)",
       "category": "Pickups",
-      "color": [
-        0.2,
-        0.4,
-        1.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "ventred",
       "label": "Red Eco Vent",
       "category": "Pickups",
-      "color": [
-        1.0,
-        0.2,
-        0.1,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
       "etype": "ventyellow",
       "label": "Yellow Eco Vent",
       "category": "Pickups",
-      "color": [
-        1.0,
-        0.9,
-        0.0,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -19184,12 +17903,6 @@
       "label": "Eco Vent (Rock)",
       "category": "Pickups",
       "art_group": "ecoventrock-ag.go",
-      "color": [
-        0.3,
-        0.7,
-        0.3,
-        1.0
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -19197,12 +17910,6 @@
       "label": "Ceiling Flag",
       "category": "Objects",
       "art_group": "ceilingflag-ag.go",
-      "color": [
-        0.8,
-        0.6,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19210,12 +17917,6 @@
       "label": "Wind Turbine",
       "category": "Objects",
       "art_group": "windturbine-ag.go",
-      "color": [
-        0.6,
-        0.6,
-        0.7,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19223,12 +17924,6 @@
       "label": "Boat Paddle",
       "category": "Objects",
       "art_group": "boatpaddle-ag.go",
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19236,12 +17931,6 @@
       "label": "Lava Fall",
       "category": "Objects",
       "art_group": "lavafall-ag.go",
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19249,12 +17938,6 @@
       "label": "Lava Fall Sewer A",
       "category": "Objects",
       "art_group": "lavafallsewera-ag.go",
-      "color": [
-        1.0,
-        0.3,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19262,12 +17945,6 @@
       "label": "Lava Fall Sewer B",
       "category": "Objects",
       "art_group": "lavafallsewerb-ag.go",
-      "color": [
-        1.0,
-        0.35,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19275,12 +17952,6 @@
       "label": "Lava Base",
       "category": "Objects",
       "art_group": "lavabase-ag.go",
-      "color": [
-        0.9,
-        0.2,
-        0.0,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19288,12 +17959,6 @@
       "label": "Lava Yellow Tarp",
       "category": "Objects",
       "art_group": "lavayellowtarp-ag.go",
-      "color": [
-        0.9,
-        0.8,
-        0.1,
-        1.0
-      ],
       "shape": "CUBE"
     },
     {
@@ -19301,12 +17966,6 @@
       "label": "Balloon Obstacle",
       "category": "Objects",
       "art_group": "balloon-ag.go",
-      "color": [
-        0.9,
-        0.4,
-        0.1,
-        1.0
-      ],
       "shape": "SPHERE"
     },
     {
@@ -19314,12 +17973,6 @@
       "label": "Fisherman's Boat",
       "category": "Objects",
       "art_group": "fishermans-boat-ag.go",
-      "color": [
-        0.5,
-        0.4,
-        0.2,
-        1.0
-      ],
       "shape": "CUBE"
     }
   ],

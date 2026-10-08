@@ -206,14 +206,13 @@ class OG_OT_SpawnEntity(Operator):
             except Exception: pass
         info  = ENTITY_DEFS.get(etype, {})
         shape = info.get("shape", "SPHERE")
-        color = info.get("color", (1.0,0.5,0.1,1.0))
         n     = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         bpy.ops.object.empty_add(type=shape, location=ctx.scene.cursor.location)
         o = ctx.active_object
         o.name = f"ACTOR_{etype}_{n}"
         o.show_name = True
-        o.empty_display_size = 1.0
-        o.color = color
+        o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
+        o.color = _db.actor_color(etype)                       # category color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant
         # actor: crate types, bridge variants, ...).
@@ -784,8 +783,8 @@ class OG_OT_SpawnPlatform(Operator):
         o = ctx.active_object
         o.name               = f"ACTOR_{etype}_{uid}"
         o.show_name          = True
-        o.empty_display_size = 0.5
-        o.color              = einfo.get("color", (0.5, 0.5, 0.8, 1.0))
+        o.empty_display_size = _db.empty_size(etype) or 0.5
+        o.color              = _db.actor_color(etype)
         if hasattr(o, "show_in_front"):
             o.show_in_front = True
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNABLE_PLATFORMS)

@@ -575,6 +575,40 @@ def categories() -> list[dict]:
     return DB["Categories"]
 
 
+def category(cat_id: str) -> dict:
+    """Category record by id ({} when the category isn't listed)."""
+    for c in DB.get("Categories", []):
+        if c.get("id") == cat_id:
+            return c
+    return {}
+
+
+_FALLBACK_COLOR = (1.0, 0.5, 0.1, 1.0)
+
+
+def category_color(cat_id: str) -> tuple:
+    """Viewport color (RGBA) of a category. Colors are per category only."""
+    c = tuple(category(cat_id).get("color") or _FALLBACK_COLOR)
+    return c + (1.0,) if len(c) == 3 else c
+
+
+def actor_color(etype: str) -> tuple:
+    """Viewport color for an actor: its category's color (set on the empty
+    and on its preview mesh)."""
+    return category_color((find_actor(etype) or {}).get("category", ""))
+
+
+def empty_size(etype: str):
+    """DB empty display size in meters, or None when unset: the actor's
+    "empty_size", else the nearest parent's, else its category's. When set
+    it wins over fitting the empty to the preview mesh."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        if rec.get("empty_size") is not None:
+            return float(rec["empty_size"])
+    v = category((find_actor(etype) or {}).get("category", "")).get("empty_size")
+    return float(v) if v is not None else None
+
+
 def levels() -> list[dict]:
     return DB["Levels"]
 
