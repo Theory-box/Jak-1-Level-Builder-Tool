@@ -110,6 +110,67 @@ class OG_OT_SetActorLink(Operator):
             self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}
 
+def _natural_key(name):
+    """Outliner-style order: 'plat_2' before 'plat_10'."""
+    import re as _re
+    return [int(t) if t.isdigit() else t.lower() for t in _re.split(r"(\d+)", name)]
+
+
+def _selected_actor_empties(ctx, exclude=None):
+    return sorted((o for o in ctx.selected_objects
+                   if o is not exclude and o.type == "EMPTY" and o.name.startswith("ACTOR_")
+                   and "_wp_" not in o.name and "_wpb_" not in o.name),
+                  key=lambda o: _natural_key(o.name))
+
+
+class OG_OT_LinkAddSelected(Operator):
+    """Add every shift-selected actor to an allow-multiple link slot, in
+    outliner (name) order. Already-linked ones are skipped"""
+    bl_idname  = "og.link_add_selected"
+    bl_label   = "Add All Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    source_name: bpy.props.StringProperty()
+    lump_key:    bpy.props.StringProperty()
+    slot_index:  bpy.props.IntProperty(default=0)
+
+    def execute(self, ctx):
+        from ..data import _actor_add_multi_link
+        obj = ctx.scene.objects.get(self.source_name)
+        if not obj:
+            return {"CANCELLED"}
+        added = [t.name for t in _selected_actor_empties(ctx, exclude=obj)
+                 if _actor_add_multi_link(obj, self.lump_key, self.slot_index, t.name)]
+        self.report({"INFO"}, f"Added {len(added)} actor(s) to {self.lump_key}")
+        return {"FINISHED"} if added else {"CANCELLED"}
+
+
+class OG_OT_LinkChainSelected(Operator):
+    """Chain the selected actors (this one included) in outliner (name)
+    order: each one's next-actor -> the following one, prev-actor -> the
+    one before. Only sets the slots an actor type actually has"""
+    bl_idname  = "og.link_chain_selected"
+    bl_label   = "Chain Selected (prev / next)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        chain = _selected_actor_empties(ctx)
+        if len(chain) < 2:
+            self.report({"WARNING"}, "Select 2 or more actors to chain")
+            return {"CANCELLED"}
+        n = 0
+        for i, o in enumerate(chain):
+            et = o.name.split("_", 2)[1]
+            keys = {(s["lump_key"], s.get("slot", 0)) for s in _db.link_slots(et)}
+            if i + 1 < len(chain) and ("next-actor", 0) in keys:
+                _actor_set_link(o, "next-actor", 0, chain[i + 1].name); n += 1
+            if i > 0 and ("prev-actor", 0) in keys:
+                _actor_set_link(o, "prev-actor", 0, chain[i - 1].name); n += 1
+        self.report({"INFO"}, f"Chained {len(chain)} actors ({n} links): "
+                              f"{chain[0].name} → … → {chain[-1].name}")
+        return {"FINISHED"}
+
+
 class OG_OT_ToggleDoorFlag(Operator):
     """Toggle an eco-door behaviour flag."""
     bl_idname  = "og.toggle_door_flag"
@@ -367,6 +428,8 @@ class OG_OT_SetVersionField(bpy.types.Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SetActorLink,
+    OG_OT_LinkAddSelected,
+    OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,
     OG_OT_SetDoorCP,
     OG_OT_ClearDoorCP,

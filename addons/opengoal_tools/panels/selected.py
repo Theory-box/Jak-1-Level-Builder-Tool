@@ -946,6 +946,11 @@ def _draw_actor_links(layout, obj, scene, etype):
 
         box = layout.box()
         box.label(text=lkey, icon="LINKED")
+        # prev/next: one click links the whole selection in outliner order
+        if lkey in ("prev-actor", "next-actor") and len(sel_actors) >= 1:
+            row = box.row()
+            row.operator("og.link_chain_selected",
+                         text=f"Chain {len(sel_actors) + 1} selected by name (prev / next)", icon="LINK_BLEND")
 
         for (sidx, label, accepted, required) in key_slots:
             _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors)
@@ -1007,6 +1012,10 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
             r2 = box.row(); r2.enabled = False
             r2.label(text=("Required — none linked" if required else "Optional — none linked"),
                      icon="ERROR" if required else "DOT")
+        left = [o for o in sel_actors if o.name not in {e.target_name for e in ents}]
+        if len(left) >= 2:
+            op = box.operator("og.link_add_selected", text=f"Add all {len(left)} selected (name order)", icon="ADD")
+            op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
         _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=True,
                            skip={e.target_name for e in ents})
         return
