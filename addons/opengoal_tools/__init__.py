@@ -160,6 +160,17 @@ def _migrate_legacy_props(*_args):
             for new, old in leg.items():
                 if old in o.keys() and new not in o.keys():
                     o[new] = o[old]
+            # old per-axis / uniform scale fields -> the empty's own scale
+            # (game axes x, y(up), z -> Blender x, z, y), once, if unscaled
+            if o.type == "EMPTY" and tuple(round(v, 4) for v in o.scale) == (1.0, 1.0, 1.0):
+                if any(k in o.keys() for k in ("og_scale_x", "og_scale_y", "og_scale_z")):
+                    gx, gy, gz = (float(o.get(k, 1.0)) for k in ("og_scale_x", "og_scale_y", "og_scale_z"))
+                    o.scale = (gx, gz, gy)
+                    for k in ("og_scale_x", "og_scale_y", "og_scale_z", "og_scale_w"):
+                        if k in o.keys(): del o[k]
+                for k in ("og_orbit_scale", "og_shark_scale"):
+                    if k in o.keys():
+                        v = float(o[k]); o.scale = (v, v, v); del o[k]
     except Exception:
         pass
 

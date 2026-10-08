@@ -468,6 +468,21 @@ def options_enum_lump(value):
     return ["enum-int32", "(fact-options " + " ".join(names) + ")"]
 
 
+def scale_lump(etype: str, scale_xyz):
+    """'scale' lump for an actor from its Blender scale (x, y, z), or None.
+    Game axes: (x, z, y) — Blender Z is up. Written when the "scale" panel is
+    exported and the scale isn't 1, or always with the panel's "always"
+    option. 4 floats [x, y, z, 1]: vector readers (citb-plat) use all of them,
+    float readers (eco-door, orbit-plat, sharkey) the first."""
+    if not panel_exports(etype, "scale"):
+        return None
+    sx, sy, sz = (round(float(v), 4) for v in scale_xyz)
+    default = all(abs(v - 1.0) < 1e-4 for v in (sx, sy, sz))
+    if default and not panel_option(etype, "scale", "always", False):
+        return None
+    return ["float", sx, sz, sy, 1.0]
+
+
 def has_panel(etype: str, pid: str) -> bool:
     """True if the actor (or its parent chain) shows panel `pid`."""
     p = actor_panels(etype).get(pid)
@@ -887,7 +902,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist", "fact-options")
+                  "spawner", "notice-dist", "fact-options", "scale")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:

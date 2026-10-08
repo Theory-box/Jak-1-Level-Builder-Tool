@@ -4561,6 +4561,12 @@
         }
       ]
     },
+    {
+      "id": "scale",
+      "label": "Scale",
+      "description": "The actor empty's Blender scale, exported as 'scale' [x, y, z, 1] (game axes) whenever it isn't 1. Options: \"always\": true writes it even at 1 (citb-plat crashes without it); \"uniform\": true for actors that read one float (eco-door, orbit-plat, sharkey: X is used). On the process-drawable root, so any actor exports its scale (e.g. for a process-drawable scale hack); vanilla code reads it in citb-plat, eco-door, orbit-plat, sharkey.",
+      "fields": []
+    },
     {"id": "custom-fields", "label": "Actor Settings", "description": "Generic per-actor fields, written out in full in the actor's entry.", "fields": []},
     {"id": "crate", "label": "Crate", "description": "Crate type and contents.", "fields": []},
     {"id": "launcher", "label": "Launcher", "description": "Launch height and destination.", "fields": []},
@@ -4577,7 +4583,14 @@
       "etype": "process-drawable",
       "parent": null,
       "panels": [
-        {"panel": "fact-options", "show-panel": true}
+        {
+          "panel": "fact-options",
+          "show-panel": true
+        },
+        {
+          "panel": "scale",
+          "show-panel": true
+        }
       ],
       "description": "Root type for all spawnable entities.",
       "lumps": [
@@ -4895,7 +4908,13 @@
     {
       "etype": "eco-door",
       "parent": "process-drawable",
-      "description": "Game type (deftype eco-door (process-drawable)) in engine\\common-obs\\baseplat.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype eco-door (process-drawable)) in engine\\common-obs\\baseplat.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "scale",
+          "uniform": true
+        }
+      ]
     },
     {
       "etype": "pusher-base",
@@ -7696,64 +7715,7 @@
         }
       ],
       "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_scale_x",
-              "label": "Scale X",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 0
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_y",
-              "label": "Scale Y",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 1
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_z",
-              "label": "Scale Z",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 2
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_w",
-              "label": "Scale W (keep at 1.0)",
-              "type": "float",
-              "default": 1.0,
-              "min": 1.0,
-              "max": 1.0,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 3
-              },
-              "write_if": "always"
-            }
-          ]
-        }
+        {"panel": "scale", "always": true}
       ],
       "color": [
         0.5,
@@ -9777,64 +9739,7 @@
           ],
           "description": "Spike cycle timing: period and phase."
         },
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_scale_x",
-              "label": "Scale X",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 0
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_y",
-              "label": "Scale Y",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 1
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_z",
-              "label": "Scale Z",
-              "type": "float",
-              "default": 1.0,
-              "min": 0.01,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 2
-              },
-              "write_if": "always"
-            },
-            {
-              "key": "og_scale_w",
-              "label": "Scale W (keep at 1.0)",
-              "type": "float",
-              "default": 1.0,
-              "min": 1.0,
-              "max": 1.0,
-              "lump": {
-                "key": "scale",
-                "type": "float",
-                "slot": 3
-              },
-              "write_if": "always"
-            }
-          ]
-        }
+        {"panel": "scale", "always": true}
       ],
       "lumps": [
         {
@@ -10471,17 +10376,6 @@
           "panel": "custom-fields",
           "fields": [
             {
-              "key": "og_shark_scale",
-              "label": "Scale",
-              "type": "float",
-              "default": 1.0,
-              "lump": {
-                "key": "scale",
-                "type": "float"
-              },
-              "write_if": "if_not_default"
-            },
-            {
               "key": "og_shark_delay",
               "label": "Delay (s)",
               "type": "float",
@@ -10516,7 +10410,8 @@
             }
           ]
         },
-        {"panel": "nav-mesh", "fallback-sphere": false}
+        {"panel": "nav-mesh", "fallback-sphere": false},
+        {"panel": "scale", "uniform": true}
       ],
       "color": [
         0.6,
@@ -10759,17 +10654,6 @@
           "panel": "custom-fields",
           "fields": [
             {
-              "key": "og_orbit_scale",
-              "label": "Orbit scale",
-              "type": "float",
-              "default": 1.0,
-              "lump": {
-                "key": "scale",
-                "type": "float"
-              },
-              "write_if": "if_not_default"
-            },
-            {
               "key": "og_orbit_timeout",
               "label": "Orbit timeout (s)",
               "type": "float",
@@ -10796,7 +10680,8 @@
               "required": true
             }
           ]
-        }
+        },
+        {"panel": "scale", "uniform": true}
       ],
       "color": [
         0.4,
@@ -12868,7 +12753,8 @@
       "parent": "swamp-spike",
       "panels": [
         {"panel": "sync", "export": false},
-        {"panel": "custom-fields", "export": false}
+        {"panel": "custom-fields", "export": false},
+        {"panel": "scale", "always": false}
       ],
       "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",

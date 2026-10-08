@@ -728,6 +728,42 @@ def _draw_panel_fields(layout, sel, pid):
         _draw_field(layout, sel, f, info)
 
 
+class OG_PT_ActorScale(Panel):
+    """DB "scale" panel: shows what the empty's Blender scale exports as."""
+    bl_label       = "Scale"
+    bl_idname      = "OG_PT_actor_scale"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.panel_exports(parts[1], "scale")
+
+    def draw(self, ctx):
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        layout = self.layout
+        layout.prop(sel, "scale", text="")
+        lump = _db.scale_lump(etype, sel.matrix_world.to_scale())
+        col = layout.column(); col.scale_y = 0.85
+        if lump:
+            col.label(text=f"Exports scale [{lump[1]:g}, {lump[2]:g}, {lump[3]:g}, 1]", icon="CHECKMARK")
+        else:
+            col.label(text="Scale 1: not exported", icon="DOT")
+        if _db.panel_option(etype, "scale", "always", False):
+            col.label(text="Always exported for this actor", icon="INFO")
+        s = sel.matrix_world.to_scale()
+        if _db.panel_option(etype, "scale", "uniform", False) and (abs(s.x - s.y) > 1e-4 or abs(s.x - s.z) > 1e-4):
+            w = col.row(); w.alert = True
+            w.label(text="This actor reads one value: only X is used", icon="ERROR")
+
+
 class OG_PT_ActorFactOptions(Panel):
     """DB "fact-options" panel: the 'options' lump bits the actor's code reads
     (fact-h.gc). Options marked "highlight" for this actor come first."""
@@ -1229,6 +1265,7 @@ class OG_PT_ActorGoalCode(Panel):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_PT_ActorScale,
     OG_PT_ActorFactOptions,
     OG_UL_PathKnots,
     OG_UL_WaypointSources,

@@ -538,6 +538,12 @@ def collect_actors(scene, depsgraph=None):
         # keep using the DB actor's etype via _db_etype.
         if "options" in lump and "options" not in _protected_keys:
             lump["options"] = _schema_db.options_enum_lump(lump["options"])
+        # Scale panel: the empty's Blender scale -> 'scale' lump.
+        if "scale" not in _protected_keys:
+            _sc = _schema_db.scale_lump(etype, o.matrix_world.to_scale())
+            if _sc:
+                lump["scale"] = _sc
+                log(f"  [scale] {o.name}  {_sc[1:4]}")
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _variant.get("etype") or etype,
