@@ -540,6 +540,8 @@ class OGProperties(PropertyGroup):
     cat_favorites:       BoolProperty(default=False, name="Favorites",
                                       description="Show only favorited items in the picker list")
 
+    show_all_fact_options: BoolProperty(name="All options", default=False,
+        description="Show every fact-option, also the ones this actor's code isn't known to read")
     spawn_sort_mode: EnumProperty(
         name="Sort",
         description="How to order the spawnable objects list",

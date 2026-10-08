@@ -438,6 +438,36 @@ def prop_getter(obj):
     return get
 
 
+def fact_option_names() -> dict:
+    """{bit value: fact-options name} from the fact-options PanelType
+    (field key og_fop_has_power_cell -> has-power-cell)."""
+    out = {}
+    for f in panel_type("fact-options").get("fields", []):
+        lb = f.get("lump_bit") or {}
+        if lb.get("key") == "options" and f.get("key", "").startswith("og_fop_"):
+            out[int(lb["bit_value"])] = f.get("enum") or f["key"][len("og_fop_"):].replace("_", "-")
+    return out
+
+
+def options_enum_lump(value):
+    """["uint32", N] options bits -> ["enum-int32", "(fact-options a b)"], the
+    readable form build_level accepts (see test-zone.jsonc). Unknown bits keep
+    the number form."""
+    try:
+        n = int(value[1]) if isinstance(value, list) and len(value) == 2 else None
+    except (TypeError, ValueError):
+        n = None
+    if n is None or n <= 0:
+        return value
+    names, rest = [], n
+    for bit, name in sorted(fact_option_names().items()):
+        if rest & bit:
+            names.append(name); rest &= ~bit
+    if rest or not names:
+        return value
+    return ["enum-int32", "(fact-options " + " ".join(names) + ")"]
+
+
 def has_panel(etype: str, pid: str) -> bool:
     """True if the actor (or its parent chain) shows panel `pid`."""
     p = actor_panels(etype).get(pid)

@@ -536,6 +536,8 @@ def collect_actors(scene, depsgraph=None):
         # A variant may also switch the exported etype (e.g. OgreStepVariants:
         # ogre-step -> ogre-step-a). The DB lookups (code, tpages, art groups)
         # keep using the DB actor's etype via _db_etype.
+        if "options" in lump and "options" not in _protected_keys:
+            lump["options"] = _schema_db.options_enum_lump(lump["options"])
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _variant.get("etype") or etype,
@@ -665,6 +667,8 @@ def collect_actors(scene, depsgraph=None):
                     etype=etype,
                     choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
                 lump_v[_lk] = _lv
+            if "options" in lump_v:
+                lump_v["options"] = _schema_db.options_enum_lump(lump_v["options"])
             out.append({
                 "trans":     [gx_v, gy_v, gz_v],
                 "etype":     etype,

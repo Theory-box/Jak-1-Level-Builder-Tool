@@ -745,7 +745,7 @@ class OG_PT_ActorFactOptions(Panel):
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
         return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and bool(_db.panel_fields(parts[1], "fact-options", visible_only=True)))
+                and _db.panel_exports(parts[1], "fact-options"))
 
     def draw(self, ctx):
         from .actor_fields import _draw_field
@@ -766,6 +766,19 @@ class OG_PT_ActorFactOptions(Panel):
                 col.label(text="Other options")
             for f in rest:
                 _draw_field(col, sel, f, info)
+        # Everything else stays reachable, collapsed (actors can use options
+        # in less obvious ways, e.g. through the pickups they spawn).
+        shown = {f.get("key") for f in flds}
+        hidden = [f for f in _db.panel_fields(etype, "fact-options") if f.get("key") not in shown]
+        if hidden:
+            props = ctx.scene.og_props
+            box = self.layout.box()
+            box.prop(props, "show_all_fact_options",
+                     icon="TRIA_DOWN" if props.show_all_fact_options else "TRIA_RIGHT", emboss=False,
+                     text=f"All options ({len(hidden)} more)")
+            if props.show_all_fact_options:
+                for f in hidden:
+                    _draw_field(box, sel, f, info)
 
 
 class OG_UL_PathKnots(bpy.types.UIList):

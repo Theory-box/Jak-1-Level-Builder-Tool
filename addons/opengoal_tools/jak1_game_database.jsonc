@@ -4576,6 +4576,9 @@
     {
       "etype": "process-drawable",
       "parent": null,
+      "panels": [
+        {"panel": "fact-options", "show-panel": true}
+      ],
       "description": "Root type for all spawnable entities.",
       "lumps": [
         {
