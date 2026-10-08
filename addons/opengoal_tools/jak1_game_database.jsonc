@@ -4180,8 +4180,34 @@
     {
       "id": "nav-mesh",
       "label": "Nav-mesh",
-      "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked.",
-      "fields": []
+      "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked. Fields (drawn under the link): nearest-y-threshold (nav-control, navigate-h.gc) and nav-max-users (read from the actor that owns the nav-mesh).",
+      "fields": [
+        {
+          "key": "og_nav_y_threshold",
+          "label": "Nav-mesh snap height (m)",
+          "type": "float",
+          "default": -1.0,
+          "note": "How far above / below the nav-mesh the actor can be and still find its place on it. -1 = the actor's own default (10 m for most enemies). sharkey, muse, mother-spider, cave-trap and yakow set their own after spawning.",
+          "lump": {
+            "key": "nearest-y-threshold",
+            "type": "meters"
+          },
+          "write_if": "if_nonneg"
+        },
+        {
+          "key": "og_nav_max_users",
+          "label": "Max nav-mesh users",
+          "type": "int",
+          "default": 32,
+          "min": 1,
+          "note": "How many actors can use this actor's nav-mesh at once (actors linking it with nav-mesh-actor, spawned enemies). Engine default 32.",
+          "lump": {
+            "key": "nav-max-users",
+            "type": "int32"
+          },
+          "write_if": "if_not_default"
+        }
+      ]
     },
     {"id": "aggro-trigger", "label": "Trigger Behaviour", "description": "Aggro trigger volumes (cue-chase / cue-patrol / wait-for-cue). On the nav-enemy parent.", "fields": []},
     {"id": "volume", "label": "Volume", "description": "vol lump from a linked VOL_ mesh.", "fields": []},
@@ -4268,6 +4294,20 @@
           "note": "Jak is only noticed / chased while he is lower than the enemy's height + this. Engine default 1000 (no limit).",
           "lump": {
             "key": "notice-top",
+            "type": "meters"
+          },
+          "write_if": "if_not_default",
+          "show-field": false,
+          "export": false
+        },
+        {
+          "key": "og_notice_bottom",
+          "label": "Notice depth (m)",
+          "type": "float",
+          "default": 1000.0,
+          "note": "Below-the-enemy counterpart of Notice height. The engine reads it but no vanilla code uses it yet (only custom code would). Engine default 1000.",
+          "lump": {
+            "key": "notice-bottom",
             "type": "meters"
           },
           "write_if": "if_not_default",
@@ -4750,7 +4790,7 @@
         },
         {
           "panel": "activation",
-          "fields": [{"key": "og_notice_top", "show-field": true, "export": true}]
+          "fields": [{"key": "og_notice_top", "show-field": true, "export": true}, {"key": "og_notice_bottom", "show-field": true, "export": true}]
         },
         {
           "panel": "fact-options",
@@ -5012,6 +5052,8 @@
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "schema_export": true,
+      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -5112,6 +5154,8 @@
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "schema_export": true,
+      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
@@ -5318,6 +5362,8 @@
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "schema_export": true,
+      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
@@ -5600,6 +5646,7 @@
         }
       ],
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
@@ -5738,7 +5785,7 @@
             }
           ]
         },
-        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}]},
+        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}, {"key": "og_notice_bottom", "show-field": true, "export": true}]},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"},
         {
@@ -6465,7 +6512,9 @@
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
+      "schema_export": true,
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
         {"panel": "path", "required": true},
         {"panel": "nav-mesh", "fallback-sphere": false}
       ],
@@ -10213,23 +10262,6 @@
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_nav-max-users",
-              "label": "Max Spawned Enemies (default 50)",
-              "type": "int",
-              "default": 50,
-              "min": 0,
-              "lump": {
-                "key": "nav-max-users",
-                "type": "int32"
-              },
-              "write_if": "always"
-            }
-          ]
-        },
-        {
           "panel": "actor-link",
           "slots": [
             {
@@ -10246,7 +10278,7 @@
         },
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"}
+        {"panel": "nav-mesh", "fields": [{"key": "og_nav_max_users", "label": "Max spawned spiders", "default": 50, "write_if": "always"}]}
       ],
       "lumps": [
         {

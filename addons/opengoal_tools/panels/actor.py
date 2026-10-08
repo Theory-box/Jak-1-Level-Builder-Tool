@@ -190,6 +190,9 @@ class OG_PT_ActorNavMesh(Panel):
                 layout.label(text="Shift-select a mesh to link", icon="INFO")
         nav_r = float(sel.get("og_nav_radius", 6.0))
         layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
+        if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
+            layout.separator()
+            _draw_panel_fields(layout, sel, "nav-mesh")
 
 
 
