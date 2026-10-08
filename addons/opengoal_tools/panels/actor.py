@@ -101,9 +101,10 @@ _GAME_TASKS_COMMON = [
 ]
 
 
-class OG_PT_ActorActivation(Panel):
-    bl_label       = "Activation"
-    bl_idname      = "OG_PT_actor_activation"
+class OG_PT_ActorNavBehaviour(Panel):
+    """Activation fields ("activation" panel) + aggro trigger volumes."""
+    bl_label       = "Nav Behaviour"
+    bl_idname      = "OG_PT_actor_nav_behaviour"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -115,32 +116,18 @@ class OG_PT_ActorActivation(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "activation")
-
-    def draw(self, ctx):
-        _draw_panel_fields(self.layout, ctx.active_object, "activation")
-
-
-
-class OG_PT_ActorTriggerBehaviour(Panel):
-    bl_label       = "Trigger Behaviour"
-    bl_idname      = "OG_PT_actor_trigger_behaviour"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_actor_fields"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_supports_aggro_trigger(parts[1])
+        return (len(parts) >= 3 and parts[0] == "ACTOR"
+                and (_db.has_panel(parts[1], "activation") or _actor_supports_aggro_trigger(parts[1])))
 
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
+        etype  = sel.name.split("_", 2)[1]
+        if _db.has_panel(etype, "activation"):
+            _draw_panel_fields(layout, sel, "activation")
+        if not _actor_supports_aggro_trigger(etype):
+            return
+        layout.label(text="Trigger Behaviour", icon="MESH_CUBE")
         scene  = ctx.scene
         linked_vols = _vols_linking_to(scene, sel.name)
         if linked_vols:
@@ -1266,26 +1253,57 @@ class OG_PT_ActorGoalCode(Panel):
 
 
 
+# ─── Actor Settings sub-panel order ────────────────────────────────────────
+# Top: what is specific to the actor; going down: more general, the bottom
+# being general and less used (Kuitar). Custom fields are drawn by the parent
+# panel itself, so they always come first. Any sub-panel not listed here
+# counts as actor-specific and goes above Sync — new bespoke panels need no
+# entry; only add a new *general* panel to this list.
+_GENERAL_PANEL_ORDER = (
+    "OG_PT_actor_platform",        # Sync
+    "OG_PT_actor_waypoints",       # Path
+    "OG_PT_actor_navmesh",
+    "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
+    "OG_PT_actor_fact_options",    # Options
+    "OG_PT_actor_links",           # Entity Links
+    "OG_PT_actor_visibility",
+    "OG_PT_actor_scale",
+)
+
+
+def _actor_panel_rank(cls) -> int:
+    idn = getattr(cls, "bl_idname", "")
+    if idn in _GENERAL_PANEL_ORDER:
+        return 100 + _GENERAL_PANEL_ORDER.index(idn)
+    return 10   # actor-specific
+
+
 # ─── Classes to register ───────────────────────────────────────────────────
-CLASSES = (
-    OG_PT_ActorScale,
-    OG_PT_ActorFactOptions,
-    OG_UL_PathKnots,
-    OG_UL_WaypointSources,
-    OG_PT_ActorActivation,
-    OG_PT_ActorTriggerBehaviour,
+_ACTOR_SUBPANELS = (
+    OG_PT_ActorNavBehaviour,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,
     OG_PT_ActorPlatform,
-    OG_PT_ActorCrate,
     OG_PT_ActorLauncher,
-    OG_PT_ActorEcoDoor,
+    OG_PT_ActorCrate,
     OG_PT_ActorWaterVol,
+    OG_PT_ActorEcoDoor,
     OG_PT_ActorLauncherDoor,
     OG_PT_ActorSunIrisDoor,
     OG_PT_ActorCaveElevator,
     OG_PT_ActorTaskGated,
     OG_PT_ActorVisibility,
     OG_PT_ActorWaypoints,
+    OG_PT_ActorScale,
+    OG_PT_ActorFactOptions,
+)
+for _c in _ACTOR_SUBPANELS:
+    _c.bl_order = _actor_panel_rank(_c)
+
+# Sub-panels show in registration order, so register them sorted by rank.
+CLASSES = (
+    OG_UL_PathKnots,
+    OG_UL_WaypointSources,
+    *sorted(_ACTOR_SUBPANELS, key=_actor_panel_rank),   # stable: ties keep listed order
     OG_PT_ActorGoalCode,
 )
