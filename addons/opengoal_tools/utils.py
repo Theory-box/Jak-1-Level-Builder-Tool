@@ -117,6 +117,46 @@ def _draw_platform_settings(layout, sel, scene):
         box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
 
 
+def apply_db_drivers(obj, etype: str) -> int:
+    """Add the DB field drivers (db.field_drivers) to an actor empty: each one
+    drives obj.<driven> from a scripted expression of one variable "var".
+    "var": "self" reads the field's own custom prop, another field key reads
+    that prop, anything with '[' or '.' is used as a data path on the object.
+    Returns how many drivers were added."""
+    n = 0
+    for f, d in _db.field_drivers(etype):
+        driven = d.get("driven")
+        if not driven:
+            continue
+        idx = int(d.get("index", -1))
+        src = d.get("var", "self")
+        if src == "self":
+            src = f["key"]
+        path = src if ("[" in src or "." in src) else f'["{src}"]'
+        if path.startswith('["'):
+            k = path[2:-2]
+            if k not in obj.keys():
+                obj[k] = _db.field_default(f, etype) if k == f["key"] else 0.0
+        try:
+            obj.driver_remove(driven, idx)
+        except TypeError:
+            pass
+        fc = obj.driver_add(driven, idx) if idx >= 0 else obj.driver_add(driven)
+        drv = fc.driver
+        drv.type = "SCRIPTED"
+        for v in list(drv.variables):
+            drv.variables.remove(v)
+        var = drv.variables.new()
+        var.name = "var"
+        var.type = "SINGLE_PROP"
+        var.targets[0].id_type = "OBJECT"
+        var.targets[0].id = obj
+        var.targets[0].data_path = path
+        drv.expression = d.get("expression", "var")
+        n += 1
+    return n
+
+
 def sync_defaults(etype: str) -> dict:
     """{prop key: default} for the actor's "sync" panel fields."""
     return {f["key"]: _db.field_default(f, etype)

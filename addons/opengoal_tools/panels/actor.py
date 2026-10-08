@@ -749,7 +749,10 @@ class OG_PT_ActorScale(Panel):
         sel = ctx.active_object
         etype = sel.name.split("_", 2)[1]
         layout = self.layout
-        layout.prop(sel, "scale", text="")
+        # top-down so several axes can be dragged/edited together
+        col = layout.column(align=True)
+        for i, ax in enumerate("XYZ"):
+            col.prop(sel, "scale", index=i, text=ax)
         lump = _db.scale_lump(etype, sel.matrix_world.to_scale())
         col = layout.column(); col.scale_y = 0.85
         if lump:

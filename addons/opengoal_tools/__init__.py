@@ -149,6 +149,7 @@ classes = (
     *_PANELS_CLASSES,
 )
 
+# COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
 @bpy.app.handlers.persistent
 def _migrate_legacy_props(*_args):
     """Copy props saved under an old key (DB field "legacy_key", e.g.

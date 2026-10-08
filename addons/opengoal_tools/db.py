@@ -188,6 +188,7 @@ def find_actor(etype: str) -> dict | None:
     return None
 
 
+# COMPAT: accepts the old dict / extra_code formats (docs/backward-compat.md)
 def code_files(rec: dict | None) -> list[str]:
     """The .o files an actor (or variant) brings into the level DGO, in load
     order. DB format: "code": "file.o" or "code": ["dep.o", ..., "file.o"].
@@ -315,6 +316,7 @@ def panel_type(pid: str) -> dict:
     return {}
 
 
+# COMPAT: everything after the "panels" check reads pre-panel DB keys (docs/backward-compat.md)
 def _record_panels(rec: dict) -> list[dict]:
     """A record's panels list. Older override databases (separate "fields" and
     "panel" keys) are read as the equivalent panels list."""
@@ -413,6 +415,7 @@ def actor_panels(etype: str) -> dict:
     return out
 
 
+# COMPAT: old prop names via "legacy_key" (docs/backward-compat.md)
 def legacy_keys() -> dict:
     """{field key: older prop key} from PanelTypes fields' "legacy_key" —
     props saved under the old name (e.g. og_sync_wrap -> og_fop_wrap_phase)
@@ -481,6 +484,16 @@ def scale_lump(etype: str, scale_xyz):
     if default and not panel_option(etype, "scale", "always", False):
         return None
     return ["float", sx, sz, sy, 1.0]
+
+
+def field_drivers(etype: str) -> list[tuple[dict, dict]]:
+    """[(field, driver)] for every exported field of the actor's panels that
+    has a "driver" block:
+      "driver": {"var": "self" | <field key> | <data path>,
+                 "expression": "40 if var < 0 else var",
+                 "driven": "empty_display_size", "index": -1}
+    The driver is added to the actor's empty when it's spawned."""
+    return [(f, f["driver"]) for f in inherited_fields(etype) if isinstance(f.get("driver"), dict)]
 
 
 def has_panel(etype: str, pid: str) -> bool:
@@ -817,6 +830,7 @@ _TRAIT_PREDICATES = {
 }
 
 
+# COMPAT: TraitFields is empty in the bundled DB (docs/backward-compat.md)
 def trait_fields(etype: str) -> list[dict]:
     """Fields contributed by every behavioural predicate this actor matches
     (DB `TraitFields` section). Returns [] for actors matching nothing."""

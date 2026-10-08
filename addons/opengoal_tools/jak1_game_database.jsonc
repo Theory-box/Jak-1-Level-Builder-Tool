@@ -8790,7 +8790,12 @@
                 "key": "spring-height",
                 "type": "meters"
               },
-              "write_if": "if_nonneg"
+              "write_if": "if_nonneg",
+              "driver": {
+                "var": "self",
+                "expression": "40 if var < 0 else var",
+                "driven": "empty_display_size"
+              }
             },
             {
               "key": "og_launcher_dest",
@@ -8887,7 +8892,7 @@
         0.8,
         1.0
       ],
-      "shape": "CUBE",
+      "shape": "SINGLE_ARROW",
       "code": "floating-launcher.o"
     },
     {
@@ -8933,7 +8938,12 @@
                 "key": "spring-height",
                 "type": "meters"
               },
-              "write_if": "if_nonneg"
+              "write_if": "if_nonneg",
+              "driver": {
+                "var": "self",
+                "expression": "40 if var < 0 else var",
+                "driven": "empty_display_size"
+              }
             },
             {
               "key": "og_launcher_dest",
@@ -9030,7 +9040,12 @@
                 "key": "spring-height",
                 "type": "meters"
               },
-              "write_if": "if_nonneg"
+              "write_if": "if_nonneg",
+              "driver": {
+                "var": "self",
+                "expression": "40 if var < 0 else var",
+                "driven": "empty_display_size"
+              }
             },
             {
               "key": "og_launcher_mode",
@@ -9069,7 +9084,7 @@
         0.1,
         1.0
       ],
-      "shape": "SPHERE"
+      "shape": "SINGLE_ARROW"
     },
     {
       "etype": "warpgate",
@@ -11989,7 +12004,12 @@
                 "key": "spring-height",
                 "type": "meters"
               },
-              "write_if": "if_nonneg"
+              "write_if": "if_nonneg",
+              "driver": {
+                "var": "self",
+                "expression": "40 if var < 0 else var",
+                "driven": "empty_display_size"
+              }
             }
           ]
         }
@@ -12000,7 +12020,7 @@
         0.1,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "SINGLE_ARROW"
     },
     {
       "etype": "spiderwebs",
@@ -12031,7 +12051,12 @@
                 "key": "spring-height",
                 "type": "meters"
               },
-              "write_if": "if_nonneg"
+              "write_if": "if_nonneg",
+              "driver": {
+                "var": "self",
+                "expression": "40 if var < 0 else var",
+                "driven": "empty_display_size"
+              }
             }
           ]
         }
@@ -12042,7 +12067,7 @@
         0.1,
         1.0
       ],
-      "shape": "CUBE"
+      "shape": "SINGLE_ARROW"
     },
     {
       "etype": "oracle",

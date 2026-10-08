@@ -254,6 +254,9 @@ class OG_OT_SpawnEntity(Operator):
                 _dv = _db.field_default(_f, etype)
                 if _dv is not None:
                     o[_k] = _dv
+        # DB field drivers (e.g. launcher spring height -> arrow length)
+        from ..utils import apply_db_drivers
+        apply_db_drivers(o, etype)
 
         # ---- Model preview ------------------------------------------------
         _prefs = bpy.context.preferences.addons.get("opengoal_tools")

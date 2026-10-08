@@ -15,6 +15,7 @@ def _load_fields():
             raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.S)
             raw = re.sub(r'(?m)//.*$', '', raw)
             db = json.loads(raw)
+            # COMPAT: older DBs with "fields" (docs/backward-compat.md)
             def _fields(a):  # custom-fields panel (older DBs: "fields")
                 for p in a.get("panels", []):
                     if p.get("panel") == "custom-fields":
