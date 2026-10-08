@@ -16,7 +16,7 @@ from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
-    LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
+    ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
@@ -478,27 +478,6 @@ class OG_OT_UseLumpRef(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def _draw_lump_ref_section(layout, title, entries, icon="DOT"):
-    """Draw a collapsible read-only reference section."""
-    if not entries:
-        return
-    box = layout.box()
-    box.label(text=title, icon=icon)
-    col = box.column(align=True)
-    for key, ltype, desc in entries:
-        row = col.row(align=True)
-        row.label(text=key, icon="KEYFRAME")
-        sub = row.row(align=True)
-        sub.enabled = False
-        sub.label(text=ltype)
-        op = row.operator("og.use_lump_ref", text="", icon="ADD")
-        op.lump_key   = key
-        op.lump_ltype = ltype
-        # Description as a greyed-out label on the next line
-        desc_row = col.row()
-        desc_row.enabled = False
-        desc_row.label(text=f"  {desc}")
-        col.separator(factor=0.3)
 
 class OG_OT_AssignVertexExport(bpy.types.Operator):
     bl_idname      = "og.assign_vertex_export"

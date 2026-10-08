@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # data.py — OpenGOAL Level Tools
-# COMPATIBILITY LAYER. All legacy symbols (ENTITY_DEFS, LUMP_REFERENCE,
+# COMPATIBILITY LAYER. All legacy symbols (ENTITY_DEFS, 
 # LEVEL_BANKS, ALL_SFX_ITEMS, etc.) are now derived at import time from
 # db.py, which reads jak1_game_database.jsonc.
 #
@@ -521,36 +521,11 @@ ALL_SFX_ITEMS = [
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LUMP_REFERENCE + UNIVERSAL_LUMPS
+# Lump reference (read from the actor's panels / fields / links — db.lump_reference)
 # ═══════════════════════════════════════════════════════════════════════════
-def _tuples_from_lumps(lumps_list) -> list:
-    return [(l["key"], l["type"], l.get("description", "")) for l in lumps_list]
-
-
-LUMP_REFERENCE: dict[str, list] = {}
-for _actor in _db.actors():
-    _et = _actor["etype"]
-    LUMP_REFERENCE[_et] = _tuples_from_lumps(_actor.get("lumps", []))
-
-_nav_enemy_parent = _db.find_parent("nav-enemy")
-LUMP_REFERENCE["_enemy"] = (
-    _tuples_from_lumps(_nav_enemy_parent.get("lumps", [])) if _nav_enemy_parent else []
-)
-
-_pd_parent = _db.find_parent("process-drawable")
-UNIVERSAL_LUMPS: list = (
-    _tuples_from_lumps(_pd_parent.get("lumps", [])) if _pd_parent else []
-)
-
-
 def _lump_ref_for_etype(etype):
-    """Return (universal_lumps, actor_lumps) for a given etype."""
-    # Lumps documented on every record of the parent chain (root first,
-    # process-drawable's are the universal ones), then the actor's own.
-    chain = [p for p in reversed(_db.parent_chain(etype)) if p.get("etype") != "process-drawable"]
-    actor_entries = [t for p in chain for t in _tuples_from_lumps(p.get("lumps", []))]
-    actor_entries += list(LUMP_REFERENCE.get(etype, []))
-    return UNIVERSAL_LUMPS, actor_entries
+    """[{key, type, row_type, desc, source}] — see db.lump_reference."""
+    return _db.lump_reference(etype)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -685,6 +660,12 @@ LUMP_TYPE_ITEMS = [
 _LUMP_HARDCODED_KEYS = frozenset(_db.hardcoded_lump_keys())
 
 
+class RawLump(str):
+    """A "plain-text" custom lump value: the text after "key": in the .jsonc,
+    written exactly as typed (export/writers.py splices it in after
+    json.dumps). Validated as JSON when parsed."""
+
+
 def _parse_lump_row(key, ltype, value_str):
     """Parse an OGLumpRow into a JSONC lump value, or return None on error."""
     s = value_str.strip()
@@ -694,7 +675,21 @@ def _parse_lump_row(key, ltype, value_str):
         return None, "empty key"
 
     try:
-        if ltype in ("symbol", "string", "type", "enum-int32", "enum-uint32",
+        if ltype == "plain-text":
+            # Written to the .jsonc exactly as typed; must be valid JSON on
+            # its own or the whole level file breaks.
+            import json as _json
+            try:
+                _json.loads(s)
+            except ValueError as e:
+                return None, f"not valid JSON — would break the level file ({e})"
+            return RawLump(s), None
+
+        if ltype == "string":
+            # space-separated, one string per value (like the number types)
+            return ["string"] + s.split(), None
+
+        if ltype in ("symbol", "type", "enum-int32", "enum-uint32",
                      "cell-info"):
             return [ltype, s], None
 

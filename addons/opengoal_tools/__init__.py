@@ -28,7 +28,7 @@ from .data import (
     ETYPE_CODE,
     ETYPE_EXTRAS_AG,
     LEVEL_BANKS,
-    LUMP_REFERENCE,
+    
     LUMP_TYPE_ITEMS,
     NPC_ENUM_ITEMS,
     PICKUP_ENUM_ITEMS,

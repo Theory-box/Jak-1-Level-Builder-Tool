@@ -4065,12 +4065,17 @@
     {
       "id": "string",
       "label": "string",
-      "description": "Plain string value"
+      "description": "String array — space-separate multiple values e.g. 'string-1 string-2'"
     },
     {
       "id": "type",
       "label": "type",
       "description": "GOAL type reference e.g. 'process-drawable'"
+    },
+    {
+      "id": "plain-text",
+      "label": "plain-text",
+      "description": "Written to the .jsonc exactly as typed, e.g. '[\"my-type\", \"value-1\", 2.5]'. Must be valid JSON (checked) or the level file breaks"
     }
   ],
 
@@ -4724,46 +4729,12 @@
       ],
       "description": "Root type for all drawn entities.",
       "lumps": [
-        {
-          "key": "vis-dist",
-          "type": "meters",
-          "description": "Distance at which entity stays active/visible. Enemies default 200m."
-        },
-        {
-          "key": "idle-distance",
-          "type": "meters",
-          "description": "Player must be closer than this to wake the enemy. Default 80m."
-        },
-        {
-          "key": "shadow-mask",
-          "type": "uint32",
-          "description": "Which shadow layers render for this entity. e.g. 255 = all."
-        },
-        {
-          "key": "light-index",
-          "type": "uint32",
-          "description": "Index into the level's light array. Controls entity illumination."
-        },
-        {
-          "key": "lod-dist",
-          "type": "meters",
-          "description": "Distance threshold for LOD switching. Array of floats per LOD level."
-        },
-        {
-          "key": "texture-bucket",
-          "type": "int32",
-          "description": "Texture bucket for draw calls. Default 1."
-        },
-        {
-          "key": "options",
-          "type": "enum-uint32",
-          "description": "fact-options bitfield e.g. '(fact-options has-power-cell)'."
-        },
-        {
-          "key": "visvol",
-          "type": "vector4m",
-          "description": "Visibility bounding box \u2014 two vector4m entries (min corner, max corner)."
-        }
+        {"key": "idle-distance", "type": "meters", "description": "Player must be closer than this to wake the enemy. Default 80m."},
+        {"key": "shadow-mask", "type": "uint32", "description": "Which shadow layers render for this entity. e.g. 255 = all."},
+        {"key": "light-index", "type": "uint32", "description": "Index into the level's light array. Controls entity illumination."},
+        {"key": "lod-dist", "type": "meters", "description": "Distance threshold for LOD switching. Array of floats per LOD level."},
+        {"key": "texture-bucket", "type": "int32", "description": "Texture bucket for draw calls. Default 1."},
+        {"key": "visvol", "type": "vector4m", "description": "Visibility bounding box — two vector4m entries (min corner, max corner)."}
       ]
     },
     {
@@ -4815,19 +4786,7 @@
           ]
         }
       ],
-      "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path.",
-      "lumps": [
-        {
-          "key": "nav-mesh-sphere",
-          "type": "vector4m",
-          "description": "Fallback nav sphere: 'x y z radius_m'. Auto-injected for nav-unsafe enemies."
-        },
-        {
-          "key": "nav-max-users",
-          "type": "int32",
-          "description": "Max nav-control users sharing this navmesh. Default 32."
-        }
-      ]
+      "description": "Enemy that uses nav-mesh pathfinding. Requires a navmesh + a patrol path."
     },
     {
       "etype": "eco-collectable",
@@ -5162,13 +5121,6 @@
       "tpage_group": "Snow",
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
-      "lumps": [
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Variant selector — controls snow-bunny behaviour variant."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true},
         {
@@ -5202,14 +5154,7 @@
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
       "code": "citb-bunny.o",
-      "glb": "levels/citadel/citb-bunny-lod0.glb",
-      "lumps": [
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Variant selector — controls snow-bunny behaviour variant."
-        }
-      ]
+      "glb": "levels/citadel/citb-bunny-lod0.glb"
     },
     {
       "etype": "double-lurker",
@@ -5345,13 +5290,6 @@
       "tpage_group": "Swamp",
       "code": "swamp-bat.o",
       "glb": "levels/swamp/swamp-bat-lod0.glb",
-      "lumps": [
-        {
-          "key": "num-lurkers",
-          "type": "int32",
-          "description": "Number of bat slaves spawned. Range 2–8, default 6."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": ["path", "pathb"], "paths": ["path", "pathb"]},
         {"panel": "volume"},
@@ -5383,16 +5321,7 @@
       "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
       "lumps": [
-        {
-          "key": "num-lurkers",
-          "type": "int32",
-          "description": "Number of yeti children. Default = path vertex count."
-        },
-        {
-          "key": "notice-dist",
-          "type": "meters",
-          "description": "Distance at which yeti notices player. Default 50m."
-        }
+        {"key": "notice-dist", "type": "meters", "description": "Distance at which yeti notices player. Default 50m."}
       ],
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
@@ -5431,18 +5360,6 @@
       "tpage_group": "Sunken",
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "float",
-          "description": "Min/max notice distance in internal units: 'min max'. e.g. '40960 81920' = 10–20m."
-        },
-        {
-          "key": "options",
-          "type": "enum-uint32",
-          "description": "Use '(fact-options instant-collect)' for instant-kill puffer."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {
@@ -5731,26 +5648,7 @@
       "code": ["maincave-obs.o", "gnawer.o"],
       "glb": "levels/maincave/gnawer-lod0.glb",
       "lumps": [
-        {
-          "key": "extra-count",
-          "type": "int32",
-          "description": "Two values: gnawer spawn counts."
-        },
-        {
-          "key": "gnawer",
-          "type": "int32",
-          "description": "Bitmask controlling gnawer behaviour variants."
-        },
-        {
-          "key": "trans-offset",
-          "type": "float",
-          "description": "Position offset from base trans: 'dx dy dz' internal units."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Rotation offset applied on spawn."
-        }
+        {"key": "trans-offset", "type": "float", "description": "Position offset from base trans: 'dx dy dz' internal units."}
       ],
       "panels": [
         {"panel": "path", "required": true},
@@ -5929,21 +5827,8 @@
       "code": "dark-crystal.o",
       "glb": "levels/darkcave/dark-crystal-lod0.glb",
       "lumps": [
-        {
-          "key": "mode",
-          "type": "int32",
-          "description": "1 = underwater variant. Default 0."
-        },
-        {
-          "key": "extra-id",
-          "type": "int32",
-          "description": "Crystal identifier/number."
-        },
-        {
-          "key": "extra-radius",
-          "type": "float",
-          "description": "Collision/activation radius override."
-        }
+        {"key": "extra-id", "type": "int32", "description": "Crystal identifier/number."},
+        {"key": "extra-radius", "type": "float", "description": "Collision/activation radius override."}
       ],
       "panels": [
         {
@@ -6017,18 +5902,6 @@
       "tpage_group": "Snow",
       "code": ["snow-ram-h.o", "snow-ram-boss.o", "snow-ram.o"],
       "glb": "levels/snow/ram-lod0.glb",
-      "lumps": [
-        {
-          "key": "extra-id",
-          "type": "int32",
-          "description": "Ram identifier — which ram this is in the sequence (0-based)."
-        },
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "1 = boss-fight mode. Default 0 (normal patrol mode)."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true},
         {
@@ -6544,23 +6417,6 @@
       "tpage_group": "Rolling",
       "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
-      "lumps": [
-        {
-          "key": "initial-spline-pos",
-          "type": "float",
-          "description": "Starting position along the spline path (0.0–1.0)."
-        },
-        {
-          "key": "water-height",
-          "type": "float",
-          "description": "Y-coordinate of water surface in raw units."
-        },
-        {
-          "key": "timeout",
-          "type": "float",
-          "description": "Seconds before robber slow down. Default 10.0s."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true},
         {
@@ -6742,13 +6598,6 @@
       "empty_size": 1.5,
       "code": "crates.o",
       "schema_export": true,
-      "lumps": [
-        {
-          "key": "eco-info",
-          "type": "eco-info",
-          "description": "Pickup contents: '(pickup-type X) amount'."
-        }
-      ],
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_crate_pickup", "default": "eco-blue"}], "show-panel": true},
         {"panel": "crate", "export": false},
@@ -6775,18 +6624,6 @@
       "parent": "process-drawable",
       "art_group": "crate-ag.go",
       "glb": "levels/common/crate-wood-lod0.glb",
-      "lumps": [
-        {
-          "key": "crate-type",
-          "type": "string",
-          "description": "Crate variant: steel / wood / metal / darkeco / iron."
-        },
-        {
-          "key": "eco-info",
-          "type": "eco-info",
-          "description": "Pickup contents: '(pickup-type money) amount'."
-        }
-      ],
       "panels": [
         {"panel": "crate"},
         {
@@ -6886,16 +6723,7 @@
       "art_group": "orb-cache-top-ag.go",
       "glb": "levels/beach/orb-cache-top-lod0.glb",
       "lumps": [
-        {
-          "key": "orb-cache-count",
-          "type": "int32",
-          "description": "Number of orbs the cache releases when activated."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "panels": [
         {
@@ -6945,13 +6773,6 @@
       "parent": "vent",
       "code": "collectables.o",
       "schema_export": true,
-      "lumps": [
-        {
-          "key": "eco-info",
-          "type": "eco-info",
-          "description": "Pickup contents: '(pickup-type X) amount'."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -6996,16 +6817,7 @@
       "art_group": "plat-ag.go",
       "glb": "levels/maincave/plat-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "plat.o"
@@ -7022,21 +6834,7 @@
       "art_group": "plat-eco-ag.go",
       "glb": "levels/jungle/plat-eco-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'."
-        },
-        {
-          "key": "notice-dist",
-          "type": "meters",
-          "description": "Blue eco activation range. -1 = always active."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "plat-eco.o"
@@ -7050,16 +6848,7 @@
       "art_group": "plat-citb-ag.go",
       "glb": "levels/citadel/plat-citb-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "panels": [
         {"panel": "scale", "always": true}
@@ -7138,16 +6927,7 @@
       "art_group": "citb-stopbox-ag.go",
       "glb": "levels/citadel/citb-stopbox-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "citb-plat.o"
@@ -7159,18 +6939,6 @@
       "parent": "plat-button",
       "art_group": "citb-exit-plat-ag.go",
       "glb": "levels/citadel/citb-exit-plat-lod0.glb",
-      "lumps": [
-        {
-          "key": "camera-name",
-          "type": "string",
-          "description": "Name of camera to activate when button pressed."
-        },
-        {
-          "key": "bidirectional",
-          "type": "uint32",
-          "description": "Set to '1' to allow platform to return."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -7236,16 +7004,7 @@
       "art_group": "plat-button-ag.go",
       "glb": "levels/jungle/plat-button-geo.glb",
       "lumps": [
-        {
-          "key": "camera-name",
-          "type": "string",
-          "description": "Name of camera to activate when button pressed."
-        },
-        {
-          "key": "bidirectional",
-          "type": "uint32",
-          "description": "Set to '1' to allow platform to return."
-        }
+        {"key": "camera-name", "type": "string", "description": "Name of camera to activate when button pressed."}
       ],
       "panels": [
         {"panel": "path", "required": true, "min-points": 2},
@@ -7319,16 +7078,7 @@
       "art_group": "flutflut-plat-small-ag.go",
       "glb": "levels/snow/flutflut-plat-small-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
@@ -7372,16 +7122,7 @@
       "art_group": "flutflut-plat-med-ag.go",
       "glb": "levels/snow/flutflut-plat-med-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
@@ -7425,16 +7166,7 @@
       "art_group": "flutflut-plat-large-ag.go",
       "glb": "levels/snow/flutflut-plat-large-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o"
@@ -7508,18 +7240,6 @@
       "tpage_group": "Jungleb",
       "code": "plat-flip.o",
       "glb": "levels/jungleb/plat-flip-geo.glb",
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Two floats: 'before_down_sec before_up_sec'. e.g. '2.0 3.0'."
-        },
-        {
-          "key": "sync-percent",
-          "type": "float",
-          "description": "Phase offset as fraction of cycle (0.0–1.0)."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -7615,21 +7335,7 @@
       "code": "swamp-obs.o",
       "glb": "levels/swamp/balance-plat-lod0.glb",
       "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Vertical travel range. Default ~5m."
-        },
-        {
-          "key": "next-actor",
-          "type": "structure",
-          "description": "Next warp target."
-        },
-        {
-          "key": "prev-actor",
-          "type": "structure",
-          "description": "Previous warp target."
-        }
+        {"key": "distance", "type": "meters", "description": "Vertical travel range. Default ~5m."}
       ],
       "shape": "CUBE"
     },
@@ -7655,16 +7361,7 @@
       "code": "sunken-obs.o",
       "glb": "levels/sunken/side-to-side-plat-lod0.glb",
       "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "shape": "CUBE"
     },
@@ -7679,21 +7376,7 @@
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
-        {
-          "key": "rotspeed",
-          "type": "degrees",
-          "description": "Rotation speed in degrees/sec."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Initial rotation offset."
-        },
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
-        }
+        {"key": "rotspeed", "type": "degrees", "description": "Rotation speed in degrees/sec."}
       ],
       "panels": [
         {
@@ -7751,21 +7434,7 @@
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
       "lumps": [
-        {
-          "key": "rotspeed",
-          "type": "degrees",
-          "description": "Rotation speed in degrees/sec."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Initial rotation offset."
-        },
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
-        }
+        {"key": "rotspeed", "type": "degrees", "description": "Rotation speed in degrees/sec."}
       ],
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_distance", "default": 17.0}]}
@@ -7781,21 +7450,8 @@
       "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "lumps": [
-        {
-          "key": "rotspeed",
-          "type": "degrees",
-          "description": "Rotation speed in degrees/sec."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Initial rotation offset."
-        },
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."
-        }
+        {"key": "rotoffset", "type": "degrees", "description": "Initial rotation offset."},
+        {"key": "distance", "type": "meters", "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."}
       ],
       "panels": [
         {
@@ -8054,21 +7710,7 @@
       "parent": "process-drawable",
       "tpage_group": "Sunken",
       "lumps": [
-        {
-          "key": "spring-height",
-          "type": "meters",
-          "description": "Launch height. Default ~40m."
-        },
-        {
-          "key": "trigger-height",
-          "type": "meters",
-          "description": "Height above launcher base where Jak gets launched."
-        },
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
-        }
+        {"key": "trigger-height", "type": "meters", "description": "Height above launcher base where Jak gets launched."}
       ],
       "panels": [
         {"panel": "launcher"},
@@ -8155,18 +7797,6 @@
       "art_group": "citb-launcher-ag.go",
       "code": "citadel-obs.o",
       "glb": "levels/citadel/citb-launcher-lod0.glb",
-      "lumps": [
-        {
-          "key": "spring-height",
-          "type": "meters",
-          "description": "Launch height. Default ~40m."
-        },
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Camera mode: 1 = cam-launcher-longfall, 2 = no camera, else cam-launcher-shortfall."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -8362,13 +7992,6 @@
         }
       ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        }
-      ],
       "shape": "CUBE"
     },
     {
@@ -8446,18 +8069,6 @@
         }
       ],
       "glb": "levels/jungle/lurkerm-piston-geo.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '5.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "height-info",
-          "type": "meters",
-          "description": "Change bottom and top height"
-        }
-      ],
       "shape": "CUBE"
     },
     {
@@ -8551,23 +8162,6 @@
         }
       ],
       "glb": "levels/beach/grottopole-lod1.glb",
-      "lumps": [
-        {
-          "key": "speed", 
-          "type": "meters",
-          "description": "Speed when moving"
-        },
-        {
-          "key": "distance", 
-          "type": "meters",
-          "description": "Distance per move"
-        },
-        {
-          "key": "num-positions", 
-          "type": "uint32",
-          "description": "Max number of moves"
-        }
-      ],
       "shape": "CUBE"
     },
     {
@@ -8711,13 +8305,6 @@
       "code": "whirlpool.o",
       "glb": "levels/sunken/whirlpool-lod0.glb",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "speed",
-          "type": "float",
-          "description": "Two floats: 'base_speed_units random_range'. Controls spin rate."
-        }
-      ],
       "panels": [
         {
           "panel": "sync",
@@ -8793,14 +8380,7 @@
       ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
-      "glb": "levels/village1/warp-gate-switch-lod0.glb",
-      "lumps": [
-        {
-          "key": "alt-actor",
-          "type": "structure",
-          "description": "warp target."
-        }
-      ]
+      "glb": "levels/village1/warp-gate-switch-lod0.glb"
     },
     {
       "etype": "warp-gate-switch",
@@ -8827,14 +8407,7 @@
       ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
-      "glb": "levels/village1/warp-gate-switch-lod0.glb",
-      "lumps": [
-        {
-          "key": "alt-actor",
-          "type": "structure",
-          "description": "warp target."
-        }
-      ]
+      "glb": "levels/village1/warp-gate-switch-lod0.glb"
     },
     {
       "etype": "balloonlurker",
@@ -8919,13 +8492,6 @@
       "tpage_group": "Jungle",
       "code": "junglefish.o",
       "glb": "levels/jungle/junglefish-lod0.glb",
-      "lumps": [
-        {
-          "key": "water-height",
-          "type": "float",
-          "description": "Y-coordinate of water surface in raw game units (not meters). Fish positions itself 1m below. Required."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -8990,13 +8556,6 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh", "fields": [{"key": "og_nav_max_users", "label": "Max spawned spiders", "default": 50, "write_if": "always"}]}
-      ],
-      "lumps": [
-        {
-          "key": "path",
-          "type": "vector3m",
-          "description": "Patrol path for spawned spiders. Required — export at least 2 waypoints."
-        }
       ]
     },
     {
@@ -9028,13 +8587,6 @@
       "tpage_group": "Swamp",
       "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
-      "lumps": [
-        {
-          "key": "num-lurkers",
-          "type": "uint32",
-          "description": "Max rats active at once. Range 1-4. Default 3. Needs 'path' waypoints set."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {
@@ -9088,26 +8640,9 @@
       "tpage_group": "Sunken",
       "code": "sunken-fish.o",
       "lumps": [
-        {
-          "key": "count",
-          "type": "uint32",
-          "description": "Number of fish in the school (spawns count-1 extra children). Default 1."
-        },
-        {
-          "key": "speed",
-          "type": "float",
-          "description": "Speed range in game units/frame: 'lo hi'. Defaults: '8192 26624' (2–6.5 m/s)."
-        },
-        {
-          "key": "path-max-offset",
-          "type": "float",
-          "description": "Max wander from path: 'x_units y_units'. Defaults: '16384 28672' (4m, 7m)."
-        },
-        {
-          "key": "path-trans-offset",
-          "type": "float",
-          "description": "Offset the entire path: 'x y z' in raw game units. Default 0 0 0."
-        }
+        {"key": "speed", "type": "float", "description": "Speed range in game units/frame: 'lo hi'. Defaults: '8192 26624' (2–6.5 m/s)."},
+        {"key": "path-max-offset", "type": "float", "description": "Max wander from path: 'x_units y_units'. Defaults: '16384 28672' (4m, 7m)."},
+        {"key": "path-trans-offset", "type": "float", "description": "Offset the entire path: 'x y z' in raw game units. Default 0 0 0."}
       ],
       "panels": [
         {"panel": "path", "required": true},
@@ -9143,31 +8678,7 @@
       "glb": "levels/beach/sharkey-lod0.glb",
       "code": "sharkey.o",
       "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale multiplier. Affects size and collision. Default 1.0."
-        },
-        {
-          "key": "water-height",
-          "type": "float",
-          "description": "Y-coordinate of water surface in raw game units. Required (defaults to 0)."
-        },
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Seconds before shark re-engages after losing player. Default 1.0."
-        },
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Player trigger radius — how far away shark can spawn. Default 30m."
-        },
-        {
-          "key": "speed",
-          "type": "meters",
-          "description": "Chase speed in meters/sec. Default ~12m/s."
-        }
+        {"key": "water-height", "type": "float", "description": "Y-coordinate of water surface in raw game units. Required (defaults to 0)."}
       ],
       "panels": [
         {"panel": "path", "show-panel": false},
@@ -9221,13 +8732,6 @@
       "parent": "process-drawable",
       "tpage_group": "Village1",
       "code": "village-obs.o",
-      "lumps": [
-        {
-          "key": "num-lurkers",
-          "type": "uint32",
-          "description": "Number of starfish children. Range 1–8. Default 3. Needs path waypoints."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
@@ -9338,21 +8842,7 @@
       "code": "orbit-plat.o",
       "glb": "levels/sunken/orbit-plat-lod0.glb",
       "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale of the platform mesh. Default 1.0."
-        },
-        {
-          "key": "timeout",
-          "type": "float",
-          "description": "Seconds to wait before starting orbit. Default 10.0."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
+        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
       ],
       "panels": [
         {
@@ -9401,13 +8891,6 @@
       "tpage_group": "Sunken",
       "code": "square-platform.o",
       "glb": "levels/sunken/square-platform-lod0.glb",
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "float",
-          "description": "Travel range: 'down_units up_units'. Defaults '-8192 16384' (-2m down, +4m up). Raw units."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9485,21 +8968,8 @@
       "tpage_group": "Jungle",
       "code": "ropebridge.o",
       "lumps": [
-        {
-          "key": "art-name",
-          "type": "string",
-          "description": "Bridge variant. Values: ropebridge-32, ropebridge-36, ropebridge-52, ropebridge-70, snow-bridge-36, vil3-bridge-36. Default: ropebridge-32."
-        },
-        {
-          "key": "campoints-offset",
-          "type": "float",
-          "description": "Camera-points offset along the bridge."
-        },
-        {
-          "key": "spline-offset",
-          "type": "float",
-          "description": "Spline curve offset."
-        }
+        {"key": "campoints-offset", "type": "float", "description": "Camera-points offset along the bridge."},
+        {"key": "spline-offset", "type": "float", "description": "Spline curve offset."}
       ],
       "panels": [
         {
@@ -9674,16 +9144,7 @@
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/lavaballoon-lod0.glb",
       "lumps": [
-        {
-          "key": "speed",
-          "type": "meters",
-          "description": "Movement speed along path. Default ~3m/s."
-        },
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Cycle delay."
-        }
+        {"key": "delay", "type": "float", "description": "Cycle delay."}
       ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
@@ -9718,18 +9179,6 @@
       "tpage_group": "Lavatube",
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/darkecobarrel-lod0.glb",
-      "lumps": [
-        {
-          "key": "speed",
-          "type": "meters",
-          "description": "Movement speed along path. Default ~15m/s."
-        },
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Optional: array of spawn delay times in seconds. Replaces the 4 hardcoded defaults when set."
-        }
-      ],
       "panels": [
         {"panel": "path", "required": true},
         {
@@ -9820,21 +9269,7 @@
       "glb": "levels/darkcave/caveelevator-lod0.glb",
       // "needs_path": true,
       "lumps": [
-        {
-          "key": "trans-offset",
-          "type": "float",
-          "description": "Position offset applied after placement: 'x y z' raw units. Default 0 0 0."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Y-axis rotation offset in degrees. Default 0."
-        },
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Elevator mode variant selector. Default 0, Static 1, Extra floor 2."
-        }
+        {"key": "trans-offset", "type": "float", "description": "Position offset applied after placement: 'x y z' raw units. Default 0 0 0."}
       ],
       "panels": [
         {
@@ -9893,21 +9328,7 @@
       "parent": "process-drawable",
       "code": "maincave-obs.o",
       "lumps": [
-        {
-          "key": "shove",
-          "type": "meters",
-          "description": "Upward launch force when player touches flame. Default 2m."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Y-axis rotation for flame direction. Default 0."
-        },
-        {
-          "key": "cycle-speed",
-          "type": "float",
-          "description": "Three floats: 'period_sec phase_fraction pause_sec'. Defaults: '4.0 0.0 2.0'. Phase offsets multiple pots."
-        }
+        {"key": "rotoffset", "type": "degrees", "description": "Y-axis rotation for flame direction. Default 0."}
       ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
@@ -10014,13 +9435,6 @@
         }
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
-        }
-      ],
       "shape": "CUBE"
     },
     {
@@ -10053,13 +9467,6 @@
         }
       ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '10.0 0.0 0.15 0.15'."
-        }
-      ],
       "shape": "CUBE"
     },
     {
@@ -10110,13 +9517,6 @@
       "tpage_group": "Village2",
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonten-lod0.glb",
-      "lumps": [
-        {
-          "key": "alt-task",
-          "type": "uint32",
-          "description": "Second task ID gate — if this task is complete, pontoon sinks. Default 0 (unused). Main task from entity perm."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -10160,13 +9560,6 @@
       "tpage_group": "Misty",
       "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-bridge-lod0.glb",
-      "lumps": [
-        {
-          "key": "animation-select",
-          "type": "uint32",
-          "description": "Selects bone bridge variant and particle group. Values: 1, 2, 3, 7. Default 0 (no particles)."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -10199,21 +9592,8 @@
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
-        },
-        {
-          "key": "animation-select",
-          "type": "uint32",
-          "description": "Animation variant."
-        },
-        {
-          "key": "particle-select",
-          "type": "uint32",
-          "description": "Particle variant."
-        }
+        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
+        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
       ],
       "panels": [
         {
@@ -10259,21 +9639,8 @@
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
-        },
-        {
-          "key": "animation-select",
-          "type": "uint32",
-          "description": "Animation variant."
-        },
-        {
-          "key": "particle-select",
-          "type": "uint32",
-          "description": "Particle variant."
-        }
+        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
+        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
       ],
       "panels": [
         {
@@ -10319,21 +9686,8 @@
       "code": "misty-obs.o",
       "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Two floats controlling fall height offsets: 'h1 h2'. Default 0 0."
-        },
-        {
-          "key": "animation-select",
-          "type": "uint32",
-          "description": "Animation variant."
-        },
-        {
-          "key": "particle-select",
-          "type": "uint32",
-          "description": "Particle variant."
-        }
+        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
+        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
       ],
       "panels": [
         {
@@ -10412,13 +9766,6 @@
       "tpage_group": "Jungle",
       "code": "bouncer.o",
       "glb": "levels/jungle/bounceytarp-lod0.glb",
-      "lumps": [
-        {
-          "key": "spring-height",
-          "type": "meters",
-          "description": "Launch height in meters. Default ~11m."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -10453,13 +9800,6 @@
       "art_group": "spiderwebs-ag.go",
       "code": "spiderwebs.o",
       "glb": "levels/maincave/spiderwebs-good-lod0.glb",
-      "lumps": [
-        {
-          "key": "spring-height",
-          "type": "meters",
-          "description": "Launch height in meters. Default 11m."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -10495,13 +9835,6 @@
       "tpage_group": "Village1",
       "code": "oracle.o",
       "glb": "levels/village1/oracle-lod0.glb",
-      "lumps": [
-        {
-          "key": "alt-task",
-          "type": "uint32",
-          "description": "Second orb task ID (game-task enum value). For two-orb oracle. Default 0 (one orb only). First task from entity perm."
-        }
-      ],
       "panels": [
         {"panel": "task-gated"},
         {
@@ -10570,18 +9903,6 @@
       "art_group": "jng-iris-door-ag.go",
       "code": "jungleb-obs.o",
       "glb":"levels/jungleb/jng-iris-door-lod0.glb",
-      "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale. Default 1.0."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -10673,21 +9994,7 @@
       "code": "jungle-obs.o",
       "glb": "levels/jungle/sidedoor-lod1.glb",
       "lumps": [
-        {
-          "key": "scale",
-          "type": "float",
-          "description": "Uniform scale. Default 1.0."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags bitfield. auto-close=4, one-way=8. Managed by Door Settings panel."
-        },
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Height parameters: 2 floats."
-        }
+        {"key": "height-info", "type": "float", "description": "Height parameters: 2 floats."}
       ],
       "panels": [
         {"panel": "eco-door"},
@@ -10852,13 +10159,6 @@
       "parent": "process-drawable",
       "art_group": "launcherdoor-ag.go",
       "code": "launcherdoor.o",
-      "lumps": [
-        {
-          "key": "continue-name",
-          "type": "string",
-          "description": "Level continue point name set when door is passed through. e.g. \"village1-hut\"."
-        }
-      ],
       "panels": [
         {"panel": "launcherdoor"},
         {
@@ -10891,26 +10191,8 @@
       "art_group": "sun-iris-door-ag.go",
       "code": "sun-iris-door.o",
       "lumps": [
-        {
-          "key": "proximity",
-          "type": "uint32",
-          "description": "Set to 1 to open by proximity (Jak walks near). Default 0 = event-triggered only."
-        },
-        {
-          "key": "timeout",
-          "type": "float",
-          "description": "Seconds before door auto-closes after opening. 0 = stay open. Default 0."
-        },
-        {
-          "key": "scale-factor",
-          "type": "float",
-          "description": "Uniform scale multiplier. Default 1.0."
-        },
-        {
-          "key": "trans-offset",
-          "type": "float",
-          "description": "Open-position offset (3 floats X Y Z meters)."
-        }
+        {"key": "scale-factor", "type": "float", "description": "Uniform scale multiplier. Default 1.0."},
+        {"key": "trans-offset", "type": "float", "description": "Open-position offset (3 floats X Y Z meters)."}
       ],
       "panels": [
         {"panel": "sun-iris-door"},
@@ -10956,26 +10238,7 @@
       "art_group": "generic-button-ag.go",
       "code": "basebutton.o",
       "lumps": [
-        {
-          "key": "timeout",
-          "type": "float",
-          "description": "Seconds before button resets after being pressed. 0 = stays pressed. Default 0."
-        },
-        {
-          "key": "extra-id",
-          "type": "uint32",
-          "description": "Optional stable identifier for state tracking."
-        },
-        {
-          "key": "next-actor",
-          "type": "structure",
-          "description": "Next button in a chain (for grouped buttons)."
-        },
-        {
-          "key": "prev-actor",
-          "type": "structure",
-          "description": "Previous button in a chain (for grouped buttons)."
-        }
+        {"key": "extra-id", "type": "uint32", "description": "Optional stable identifier for state tracking."}
       ],
       "panels": [
         {
@@ -11032,26 +10295,8 @@
       "tpage_group": "Sunken",
       "code": "shover.o",
       "lumps": [
-        {
-          "key": "shove",
-          "type": "meters",
-          "description": "Upward launch force when platform hits player. Default 3m."
-        },
-        {
-          "key": "collision-mesh-id",
-          "type": "uint32",
-          "description": "Collision mesh index. Default 0."
-        },
-        {
-          "key": "trans-offset",
-          "type": "float",
-          "description": "Position offset: 'x y z' raw units. Default 0 0 0."
-        },
-        {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Y-axis rotation. Default 0."
-        }
+        {"key": "collision-mesh-id", "type": "uint32", "description": "Collision mesh index. Default 0."},
+        {"key": "trans-offset", "type": "float", "description": "Position offset: 'x y z' raw units. Default 0 0 0."}
       ],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
@@ -11139,13 +10384,6 @@
       "tpage_group": "Misty",
       "code": "misty-obs.o",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "particle-select",
-          "type": "uint32",
-          "description": "Set to 1 to enable particle effects. Default 0 (off)."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",

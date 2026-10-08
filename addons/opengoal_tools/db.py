@@ -267,17 +267,78 @@ def inherited_links(etype: str) -> dict:
     return result
 
 
-def inherited_lumps(etype: str) -> list[dict]:
-    """Return the combined lump reference list for an etype: parent lumps
-    (root-first) then the actor's own lumps.  Matches the old
-    _lump_ref_for_etype() semantics."""
-    out: list[dict] = []
-    for p in reversed(parent_chain(etype)):  # root-first
-        out.extend(p.get("lumps", []))
+# Field / panel lump types -> the custom lump row type the "+" button picks
+# (LumpTypes ids). Anything else becomes plain-text.
+_REF_ROW_TYPE = {
+    "meters": "meters", "degrees": "degrees", "float": "float",
+    "int": "int32", "int32": "int32", "uint32": "uint32", "mode": "int32", "bool": "int32",
+    "enum-int32": "enum-int32", "enum-uint32": "enum-uint32", "enum": "enum-uint32",
+    "symbol": "symbol", "symbol_literal": "symbol", "string": "string", "type": "type",
+    "vector": "vector", "vector4m": "vector4m", "vector3m": "vector3m", "vector-vol": "vector-vol",
+    "movie-pos": "movie-pos", "water-height": "water-height", "eco-info": "eco-info",
+    "cell-info": "cell-info", "buzzer-info": "buzzer-info",
+}
+
+
+def lump_reference(etype: str) -> list[dict]:
+    """Every lump the actor can export, read from its panels / fields / link
+    slots (parents included), plus "lumps" entries the DB documents with no
+    panel yet. [{key, type, row_type, desc, source}] — source is the record
+    (the actor or a parent etype) the lump comes from; one entry per key."""
     actor = find_actor(etype)
-    if actor:
-        out.extend(actor.get("lumps", []))
-    return out
+    chain = list(reversed(parent_chain(etype))) + ([actor] if actor else [])
+    panel_src, field_src, slot_src = {}, {}, {}
+    for rec in chain:
+        for e in _record_panels(rec):
+            pid = e.get("panel")
+            if not pid:
+                continue
+            panel_src.setdefault(pid, rec["etype"])
+            for f in e.get("fields") or []:
+                if f.get("key"):
+                    field_src[(pid, f["key"])] = rec["etype"]
+            for s in e.get("slots") or []:
+                slot_src[s.get("lump_key")] = rec["etype"]
+    out: dict = {}
+
+    def add(key, ltype, desc, src):
+        if key and key not in out:
+            out[key] = {"key": key, "type": ltype, "row_type": _REF_ROW_TYPE.get(ltype, "plain-text"),
+                        "desc": desc, "source": src}
+
+    # Panels / fields with "export": false are still listed (the actor reads
+    # the lump; the addon just doesn't write it), marked as such.
+    for pid, p in actor_panels(etype).items():
+        psrc = panel_src.get(pid, etype)
+        off = "" if p["export"] else "  (not exported by default)"
+        if pid == "path":
+            for n in ["path"] + list(p["options"].get("paths", []) or []):
+                add(n, "vector4m", f"Path panel: waypoints / curve ({n})" + off, psrc)
+                add(n + "-k", "float", f"Path panel: curve knots for {n}" + off, psrc)
+        elif pid == "nav-mesh":
+            add("nav-mesh-sphere", "vector4m", "Nav-mesh panel: static nav sphere(s) 'x y z radius'"
+                + (" — exported as the fallback when no navmesh is linked" if p["options"].get("fallback-sphere") else "") + off, psrc)
+        elif pid == "volume":
+            add("vol", "vector-vol", "Volume panel: planes of the linked VOL_ mesh" + off, psrc)
+        elif pid == "scale":
+            add("scale", "float", "Scale panel: the empty's scale" + off, psrc)
+        elif pid == "fact-options":
+            add("options", "enum-uint32", "Options panel: fact-options bits" + off, psrc)
+        for f in p["fields"]:
+            lp = f.get("lump") if isinstance(f.get("lump"), dict) else f.get("lump_bit")
+            if isinstance(lp, dict) and lp.get("key"):
+                label = f.get("label", f.get("key", ""))
+                foff = off or ("  (not exported by default)" if f.get("export") is False else "")
+                add(lp["key"], lp.get("type") or f.get("type", ""),
+                    f"{(panel_type(pid) or {}).get('label', pid)}: {label}" + (f" — {f['note']}" if f.get("note") else "") + foff,
+                    field_src.get((pid, f.get("key")), psrc))
+    for s in link_slots(etype):
+        add(s["lump_key"], "string", f"Entity link: {s.get('label', '')}", slot_src.get(s["lump_key"], etype))
+    # documented lumps no panel produces yet (nearest record first)
+    for rec in reversed(chain):
+        for l in rec.get("lumps") or []:
+            add(l.get("key"), l.get("type", ""), l.get("description", ""), rec["etype"])
+    return list(out.values())
 
 
 def inherited_link_descriptions(etype: str) -> dict:

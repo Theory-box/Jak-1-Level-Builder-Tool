@@ -17,7 +17,7 @@ from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
-    LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
+    ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
@@ -1174,13 +1174,14 @@ class OG_PT_SelectedLumps(Panel):
 
 
 def _draw_lump_ref_section(layout, title, entries, icon="DOT"):
-    """Draw a collapsible read-only reference section."""
+    """Draw a read-only reference section (entries from db.lump_reference)."""
     if not entries:
         return
     box = layout.box()
     box.label(text=title, icon=icon)
     col = box.column(align=True)
-    for key, ltype, desc in entries:
+    for e in entries:
+        key, ltype, desc = e["key"], e["type"], e["desc"]
         row = col.row(align=True)
         row.label(text=key, icon="KEYFRAME")
         sub = row.row(align=True)
@@ -1188,7 +1189,7 @@ def _draw_lump_ref_section(layout, title, entries, icon="DOT"):
         sub.label(text=ltype)
         op = row.operator("og.use_lump_ref", text="", icon="ADD")
         op.lump_key   = key
-        op.lump_ltype = ltype
+        op.lump_ltype = e["row_type"]
         # Description as a greyed-out label on the next line
         desc_row = col.row()
         desc_row.enabled = False
@@ -1224,19 +1225,24 @@ class OG_PT_SelectedLumpReference(Panel):
         einfo = ENTITY_DEFS.get(etype, {})
         label = einfo.get("label", etype)
 
-        universal, actor_specific = _lump_ref_for_etype(etype)
+        entries = _lump_ref_for_etype(etype)
 
         layout.label(text=f"Available lumps for: {label}", icon="INFO")
-        layout.label(text="Click + to add a pre-filled row to Custom Lumps")
+        layout.label(text="Read from its panels and parents · + adds a Custom Lumps row")
         layout.separator(factor=0.4)
 
-        if actor_specific:
-            _draw_lump_ref_section(layout, f"Specific to {label}", actor_specific, icon="OBJECT_DATA")
-        else:
-            sub = layout.row()
-            sub.enabled = False
-            sub.label(text=f"No additional lumps documented for {label}", icon="INFO")
-        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
+        # one section per record the lumps come from: this actor, then its
+        # parents nearest-first
+        order = [etype] + [p.get("etype") for p in _db.parent_chain(etype)]
+        for src in order + sorted({e["source"] for e in entries} - set(order)):
+            group = [e for e in entries if e["source"] == src]
+            if src == etype:
+                _draw_lump_ref_section(layout, f"{label} (this actor)", group, icon="OBJECT_DATA")
+            else:
+                _draw_lump_ref_section(layout, f"From parent: {src}", group, icon="OUTLINER_OB_EMPTY")
+        if not entries:
+            sub = layout.row(); sub.enabled = False
+            sub.label(text=f"No lumps known for {label}", icon="INFO")
 
 
 
