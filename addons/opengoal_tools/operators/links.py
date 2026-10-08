@@ -443,26 +443,40 @@ class OG_OT_WaypointSourceFrame(Operator):
         return {"FINISHED"}
 
 
+# Search-popup enum items must stay referenced while the popup is open
+# (Blender keeps only pointers to the strings).
+_SEARCH_ITEMS: list = []
+
+
 def _curve_items_in_scene(self, ctx):
-    """EnumProperty items callback: every CURVE object in the file.
-    Used by OG_OT_WaypointSourceLinkCurve's picker popup."""
-    items = [(o.name, o.name, "") for o in bpy.data.objects if o.type == "CURVE"]
+    """EnumProperty items callback: every CURVE object in the scene, the
+    ones already in this path marked. Used by the Link Curve search popup."""
+    actor = bpy.data.objects.get(self.actor_name)
+    coll = _path_list(actor, self.path_index)[0] if actor else None
+    have = {s.obj.name for s in coll if s.obj} if coll is not None else set()
+    scene = ctx.scene if ctx else bpy.context.scene
+    items = [(o.name, o.name + ("  (already in this path)" if o.name in have else ""), f"Link curve {o.name}", "CURVE_DATA", i)
+             for i, o in enumerate(sorted((o for o in scene.objects if o.type == "CURVE"), key=lambda o: o.name))]
     if not items:
-        items = [("__none__", "(no curves in scene)", "Add a curve via Add > Curve > Bezier first")]
-    return items
+        items = [("__none__", "(no curves in scene)", "Add a curve via Add > Curve > Bezier first", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
 
 
 class OG_OT_WaypointSourceLinkCurve(Operator):
-    """Pick an existing curve in the scene and append it to this actor's
-    waypoint list. At export time, each spline control point becomes one
+    """Append a curve to this actor's path: the shift-selected one, or one
+    searched by name. At export, each spline control point becomes one
     waypoint in the actor's path, in spline order."""
     bl_idname      = "og.waypoint_source_link_curve"
     bl_label       = "Link Curve"
-    bl_description = "Pick an existing curve. Each control point becomes a waypoint at export"
+    bl_description = "Link a curve to this path (search by name). Each control point becomes a waypoint at export"
     bl_options     = {"REGISTER", "UNDO"}
+    bl_property    = "curve_name"
 
     actor_name: bpy.props.StringProperty()
     path_index: bpy.props.IntProperty(default=-1)
+    target_name: bpy.props.StringProperty(
+        description="Link this curve directly (shift-selected) instead of searching")
     curve_name: bpy.props.EnumProperty(
         name="Curve",
         description="Which curve to link",
@@ -473,23 +487,23 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
         if not self.actor_name:
             self.report({"ERROR"}, "No actor specified")
             return {"CANCELLED"}
-        return ctx.window_manager.invoke_props_dialog(self, width=320)
-
-    def draw(self, ctx):
-        col = self.layout.column()
-        col.prop(self, "curve_name", text="Curve")
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
 
     def execute(self, ctx):
         actor = bpy.data.objects.get(self.actor_name)
         if actor is None:
             self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
             return {"CANCELLED"}
-        if self.curve_name in ("", "__none__"):
+        name = self.target_name or self.curve_name
+        if name in ("", "__none__"):
             self.report({"ERROR"}, "No curve selected — add a curve to the scene first")
             return {"CANCELLED"}
-        curve = bpy.data.objects.get(self.curve_name)
+        curve = bpy.data.objects.get(name)
         if curve is None or curve.type != "CURVE":
-            self.report({"ERROR"}, f"'{self.curve_name}' is not a curve")
+            self.report({"ERROR"}, f"'{name}' is not a curve")
             return {"CANCELLED"}
         # Append a row pointing to the curve, make it the active row.
         coll, owner, attr = _path_list(actor, self.path_index)

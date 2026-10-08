@@ -110,6 +110,62 @@ class OG_OT_SetActorLink(Operator):
             self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}
 
+# Search-popup enum items must stay referenced while the popup is open.
+_SEARCH_ITEMS: list = []
+
+
+def _link_target_items(self, ctx):
+    """Every actor in the scene but the source, for the link search popup:
+    types the slot accepts first, others marked "(unexpected type)"."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    src = scene.objects.get(self.source_name)
+    src_et = self.source_name.split("_", 2)[1] if self.source_name.count("_") >= 2 else ""
+    acc = _db.link_slot(src_et, self.lump_key, self.slot_index).get("accepts")
+    from ..data import _actor_multi_links
+    have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
+            if src and self.append else set())
+    rows = []
+    for o in scene.objects:
+        if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
+                or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
+            continue
+        ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
+        rows.append((not ok, _natural_key(o.name), o.name, ok))
+    rows.sort()
+    items = [(n, n + ("" if ok else "  (unexpected type)") + ("  (linked)" if n in have else ""),
+              f"Link {n}", "LINKED" if ok else "ERROR", i)
+             for i, (_bad, _k, n, ok) in enumerate(rows)]
+    if not items:
+        items = [("__none__", "(no other actors)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_LinkActorSearch(Operator):
+    """Search an actor by name and link it to this slot"""
+    bl_idname   = "og.link_actor_search"
+    bl_label    = "Search Actor"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "target"
+
+    source_name:  bpy.props.StringProperty()
+    lump_key:     bpy.props.StringProperty()
+    slot_index:   bpy.props.IntProperty(default=0)
+    append:       bpy.props.BoolProperty(default=False)
+    target:       bpy.props.EnumProperty(name="Actor", items=_link_target_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        if self.target in ("", "__none__"):
+            return {"CANCELLED"}
+        return bpy.ops.og.set_actor_link(source_name=self.source_name, lump_key=self.lump_key,
+                                         slot_index=self.slot_index, target_name=self.target,
+                                         append=self.append)
+
+
 def _natural_key(name):
     """Outliner-style order: 'plat_2' before 'plat_10'."""
     import re as _re
@@ -428,6 +484,7 @@ class OG_OT_SetVersionField(bpy.types.Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SetActorLink,
+    OG_OT_LinkActorSearch,
     OG_OT_LinkAddSelected,
     OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,

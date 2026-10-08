@@ -906,6 +906,18 @@ class OG_UL_WaypointSources(bpy.types.UIList):
             row.label(text=obj.name, icon="QUESTION")
 
 
+def _draw_curve_links(layout, sel, coll, path_index=-1):
+    """Same pattern as actor links: one Link button per shift-selected curve
+    not yet in this path, then a search button over every curve."""
+    from .selected import _draw_link_search
+    have = {s.obj.name for s in coll if s.obj}
+    for c in [o for o in bpy.context.selected_objects if o.type == "CURVE" and o.name not in have][:6]:
+        op = layout.row().operator("og.waypoint_source_link_curve", text=f"Link → {c.name}", icon="CURVE_DATA")
+        op.actor_name = sel.name; op.path_index = path_index; op.target_name = c.name
+    _draw_link_search(layout, "Search curve…", "og.waypoint_source_link_curve",
+                      actor_name=sel.name, path_index=path_index)
+
+
 def _count_curve_points(curve_obj) -> int:
     """Total spline-point count across every spline in a curve.
     Bezier splines use bezier_points; poly/NURBS use points."""
@@ -994,13 +1006,10 @@ class OG_PT_ActorWaypoints(Panel):
         sidebar.operator("og.waypoint_source_move",
                          text="", icon="TRIA_DOWN").direction = "DOWN"
 
-        # Action row — spawn empty (legacy-compatible) + link curve.
-        action_row = layout.row(align=True)
-        op = action_row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+        # Spawn an empty waypoint, or link a curve (selected / searched).
+        op = layout.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
         op.enemy_name = sel.name
-        op = action_row.operator("og.waypoint_source_link_curve",
-                                 text="Link Curve", icon="CURVE_DATA")
-        op.actor_name = sel.name
+        _draw_curve_links(layout, sel, sources)
 
         # Spawn-at-position toggle + ping-pong toggle on a second row.
         toggle_row = layout.row(align=True)
@@ -1094,11 +1103,9 @@ class OG_PT_ActorWaypoints(Panel):
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
-            arow = box.row(align=True)
-            op = arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+            op = box.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
             op.enemy_name = sel.name; op.path_index = i
-            op = arow.operator("og.waypoint_source_link_curve", text="Link Curve", icon="CURVE_DATA")
-            op.actor_name = sel.name; op.path_index = i
+            _draw_curve_links(box, sel, xp.sources, i)
             mrow = box.row(align=True)
             if linear_only:
                 for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):

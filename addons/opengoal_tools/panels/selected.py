@@ -961,13 +961,22 @@ def _link_target_etype(o):
     return parts[1] if len(parts) >= 3 else ""
 
 
+def _draw_link_search(box, text, op_id, **props):
+    """The "Search…" button every link UI ends with (actor slots, path
+    curves): opens a searchable list of every candidate in the scene."""
+    op = box.row().operator(op_id, text=text, icon="VIEWZOOM")
+    for k, v in props.items():
+        setattr(op, k, v)
+
+
 def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=()):
-    """One Link button per shift-selected actor. Types outside "accepts"
-    (or their parent types) still link, flagged with a warning."""
+    """One Link button per shift-selected actor, then a search button for
+    picking any actor by name. Types outside "accepts" (or their parent
+    types) still link, flagged with a warning."""
     cands = [o for o in sel_actors if o.name not in skip]
+    search = dict(source_name=obj.name, lump_key=lkey, slot_index=sidx, append=append)
     if not cands:
-        hint = box.row(); hint.enabled = False
-        hint.label(text="Shift-select target(s) then click Link →", icon="INFO")
+        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", **search)
         return
     for tgt in cands[:6]:
         ok = _db.link_accepts(accepted, _link_target_etype(tgt))
@@ -984,6 +993,7 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
         hint.label(text=f"  Expected: {', '.join(accepted)} — others may not work", icon="INFO")
     if len(cands) > 6:
         box.label(text=f"... and {len(cands) - 6} more selected")
+    _draw_link_search(box, "Search actor…", "og.link_actor_search", **search)
 
 
 def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors):
