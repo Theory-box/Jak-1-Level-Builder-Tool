@@ -4691,7 +4691,6 @@
   "Parents": [
     {
       "etype": "process",
-      "parent": null,
       "panels": [
         {
           "panel": "actor-link",
@@ -4704,8 +4703,7 @@
           ]
         }
       ],
-      "description": "Root of every actor with an entity: generic actor links (entity-actor lookups work for any of them).",
-      "lumps": []
+      "description": "Root of every actor with an entity: generic actor links (entity-actor lookups work for any of them)."
     },
     {
       "etype": "process-drawable",
@@ -4834,8 +4832,7 @@
     {
       "etype": "eco-collectable",
       "parent": "collectable",
-      "description": "Pickups (orbs, eco, scout flies, fuel cells). Picked up on contact.",
-      "lumps": []
+      "description": "Pickups (orbs, eco, scout flies, fuel cells). Picked up on contact."
     },
     {
       "etype": "fleeing-nav-enemy",
@@ -5073,9 +5070,7 @@
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
       "code": "babak.o",
-      "glb": "levels/beach/babak-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/babak-lod0.glb"
     },
     {
       "etype": "babak-with-cannon",
@@ -5086,9 +5081,7 @@
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
       "code": "babak-with-cannon.o",
-      "glb": "levels/beach/babak-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/babak-lod0.glb"
     },
     {
       "etype": "lurkercrab",
@@ -5099,9 +5092,7 @@
       "art_group": "lurkercrab-ag.go",
       "tpage_group": "Beach",
       "code": "lurkercrab.o",
-      "glb": "levels/beach/lurkercrab-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/lurkercrab-lod0.glb"
     },
     {
       "etype": "lurkerpuppy",
@@ -5112,9 +5103,7 @@
       "art_group": "lurkerpuppy-ag.go",
       "tpage_group": "Beach",
       "code": "lurkerpuppy.o",
-      "glb": "levels/beach/lurkerpuppy-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/lurkerpuppy-lod0.glb"
     },
     {
       "etype": "hopper",
@@ -5127,9 +5116,7 @@
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
       "code": "hopper.o",
-      "glb": "levels/jungle/hopper-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/jungle/hopper-lod0.glb"
     },
     {
       "etype": "aphid",
@@ -5140,8 +5127,7 @@
       "art_group": "aphid-lurker-ag.go",
       "tpage_group": "Jungle",
       "code": "aphid.o",
-      "glb": "levels/jungleb/aphid-lurker-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/jungleb/aphid-lurker-lod0.glb"
     },
     {
       "etype": "swamp-rat",
@@ -5152,9 +5138,7 @@
       "art_group": "swamp-rat-ag.go",
       "tpage_group": "Swamp",
       "code": "swamp-rat.o",
-      "glb": "levels/swamp/swamp-rat-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/swamp/swamp-rat-lod0.glb"
     },
     {
       "etype": "kermit",
@@ -5165,9 +5149,7 @@
       "art_group": "kermit-ag.go",
       "tpage_group": "Swamp",
       "code": "kermit.o",
-      "glb": "levels/swamp/kermit-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/swamp/kermit-lod0.glb"
     },
     {
       "etype": "snow-bunny",
@@ -5206,8 +5188,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "citb-bunny",
@@ -5228,8 +5209,7 @@
           "type": "uint32",
           "description": "Variant selector — controls snow-bunny behaviour variant."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "double-lurker",
@@ -5242,9 +5222,7 @@
       "code": "double-lurker.o",
       "glb": [
         "levels/sunken/double-lurker-lod0.glb"
-      ],
-      "lumps": [],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "bonelurker",
@@ -5257,9 +5235,7 @@
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
       "code": "bonelurker.o",
-      "glb": "levels/misty/bonelurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/misty/bonelurker-lod0.glb"
     },
     {
       "etype": "muse",
@@ -5273,9 +5249,7 @@
       "art_group": "muse-ag.go",
       "tpage_group": "Misty",
       "code": "muse.o",
-      "glb": "levels/misty/muse-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/misty/muse-lod0.glb"
     },
     {
       "etype": "baby-spider",
@@ -5286,9 +5260,7 @@
       "art_group": "baby-spider-ag.go",
       "tpage_group": "Maincave",
       "code": "baby-spider.o",
-      "glb": "levels/darkcave/baby-spider-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/darkcave/baby-spider-lod0.glb"
     },
     {
       "etype": "spider-egg",
@@ -5319,9 +5291,7 @@
       "art_group": ["spider-egg-ag.go", "baby-spider-ag.go"],
       "tpage_group": "Maincave",
       "code": ["baby-spider.o", "spider-egg.o"],
-      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/robocave/spider-egg-unbroken-lod0.glb"
     },
     {
       "etype": "green-eco-lurker",
@@ -5332,9 +5302,7 @@
       "art_group": "green-eco-lurker-ag.go",
       "tpage_group": "Final",
       "code": "green-eco-lurker.o",
-      "glb": "levels/finalboss/green-eco-lurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/finalboss/green-eco-lurker-lod0.glb"
     },
     {
       "etype": "lurkerworm",
@@ -5349,9 +5317,7 @@
       "art_group": "lurkerworm-ag.go",
       "tpage_group": "Beach",
       "code": "lurkerworm.o",
-      "glb": "levels/beach/lurkerworm-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/lurkerworm-lod0.glb"
     },
     {
       "etype": "junglesnake",
@@ -5366,9 +5332,7 @@
       "art_group": "junglesnake-ag.go",
       "tpage_group": "Jungle",
       "code": "junglesnake.o",
-      "glb": "levels/jungle/junglesnake-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/jungle/junglesnake-lod0.glb"
     },
     {
       "etype": "swamp-bat",
@@ -5405,8 +5369,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "yeti",
@@ -5437,8 +5400,7 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "bully",
@@ -5456,9 +5418,7 @@
       "art_group": "bully-ag.go",
       "tpage_group": "Sunken",
       "code": "bully.o",
-      "glb": "levels/sunken/bully-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/sunken/bully-lod0.glb"
     },
     {
       "etype": "puffer",
@@ -5560,8 +5520,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "flying-lurker",
@@ -5609,9 +5568,7 @@
       "art_group": "flying-lurker-ag.go",
       "tpage_group": "Ogre",
       "code": "flying-lurker.o",
-      "glb": "levels/ogre/flying-lurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/ogre/flying-lurker-lod0.glb"
     },
     {
       "etype": "plunger-lurker",
@@ -5639,9 +5596,7 @@
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
       "code": ["ogre-obs.o", "flying-lurker.o"],
-      "glb": "levels/ogre/plunger-lurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/ogre/plunger-lurker-lod0.glb"
     },
     {
       "etype": "mother-spider",
@@ -5654,7 +5609,6 @@
       "tpage_group": "Maincave",
       "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
-      "lumps": [],
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {
@@ -5763,8 +5717,7 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "gnawer",
@@ -5903,8 +5856,7 @@
         },
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "driller-lurker",
@@ -5917,7 +5869,6 @@
       "tpage_group": "Maincave",
       "code": "driller-lurker.o",
       "glb": "levels/maincave/driller-lurker-lod0.glb",
-      "lumps": [],
       "panels": [
         {"panel": "path", "required": true},
         {
@@ -5965,8 +5916,7 @@
         },
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "dark-crystal",
@@ -6013,8 +5963,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "cavecrusher",
@@ -6025,7 +5974,6 @@
       "tpage_group": "Robocave",
       "code": "maincave-obs.o",
       "glb": "levels/robocave/cavecrusher-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -6057,9 +6005,7 @@
       "art_group": "quicksandlurker-ag.go",
       "tpage_group": "Misty",
       "code": "quicksandlurker.o",
-      "glb": "levels/misty/quicksandlurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/misty/quicksandlurker-lod0.glb"
     },
     {
       "etype": "ram",
@@ -6158,8 +6104,7 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "ram-boss",
@@ -6176,8 +6121,7 @@
       "art_group": "ram-boss-ag.go",
       "tpage_group": "Snow",
       "code": ["snow-ram-h.o", "snow-ram-boss.o"],
-      "glb": "levels/snow/ram-boss-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/snow/ram-boss-lod0.glb"
     },
     {
       "etype": "lightning-mole",
@@ -6192,8 +6136,6 @@
       ],
       "tpage_group": "Rolling",
       "code": "rolling-lightning-mole.o",
-      "lumps": [],
-      "shape": "SPHERE",
       "art_group": "lightning-mole-ag.go"
     },
     {
@@ -6232,8 +6174,7 @@
           "type": "uint32",
           "description": "boulder hover when this task is complete"
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "evilplant",
@@ -6256,8 +6197,7 @@
           "type": "int32",
           "description": "Child lurker count."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "dark-plant",
@@ -6280,8 +6220,7 @@
           "type": "float",
           "description": "Min animation frame."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "ogreboss",
@@ -6293,7 +6232,6 @@
       "tpage_group": "Ogre",
       "code": "ogreboss.o",
       "glb": "levels/ogre/ogreboss-lod0.glb",
-      "lumps": [],
       "panels": [
         {
           "panel": "custom-fields",
@@ -6356,8 +6294,7 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "fact-options", "fields": [{"key": "og_fop_fade", "show-field": true, "highlight": true}]}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "plant-boss",
@@ -6411,8 +6348,7 @@
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh", "fallback-sphere": true}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "robotboss",
@@ -6429,9 +6365,7 @@
       "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
       "tpage_group": "Final",
       "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
-      "glb": "levels/finalboss/robotboss-basic-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/finalboss/robotboss-basic-lod0.glb"
     },
     {
       "etype": "yakow",
@@ -6456,8 +6390,7 @@
           "type": "water-height",
           "description": "Water surface to wade at."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "flutflut",
@@ -6479,8 +6412,7 @@
           "type": "degrees",
           "description": "Rotation offset applied on spawn."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "mayor",
@@ -6490,9 +6422,7 @@
       "art_group": "mayor-ag.go",
       "tpage_group": "Village1",
       "code": "mayor.o",
-      "glb": "levels/beach/mayor-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/mayor-lod0.glb"
     },
     {
       "etype": "farmer",
@@ -6502,9 +6432,7 @@
       "art_group": "farmer-ag.go",
       "tpage_group": "Village1",
       "code": "farmer.o",
-      "glb": "levels/village1/farmer-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village1/farmer-lod0.glb"
     },
     {
       "etype": "fisher",
@@ -6517,9 +6445,7 @@
       "art_group": "fisher-ag.go",
       "tpage_group": "Jungle",
       "code": "fisher.o",
-      "glb": "levels/jungle/fisher-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/jungle/fisher-lod0.glb"
     },
     {
       "etype": "explorer",
@@ -6529,9 +6455,7 @@
       "art_group": "explorer-ag.go",
       "tpage_group": "Village1",
       "code": "explorer.o",
-      "glb": "levels/village1/explorer-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village1/explorer-lod0.glb"
     },
     {
       "etype": "geologist",
@@ -6541,9 +6465,7 @@
       "art_group": "geologist-ag.go",
       "tpage_group": "Village2",
       "code": "geologist.o",
-      "glb": "levels/village2/geologist-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village2/geologist-lod0.glb"
     },
     {
       "etype": "warrior",
@@ -6553,9 +6475,7 @@
       "art_group": "warrior-ag.go",
       "tpage_group": "Village2",
       "code": "warrior.o",
-      "glb": "levels/village2/warrior-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village2/warrior-lod0.glb"
     },
     {
       "etype": "gambler",
@@ -6565,9 +6485,7 @@
       "art_group": "gambler-ag.go",
       "tpage_group": "Village2",
       "code": "gambler.o",
-      "glb": "levels/village2/gambler-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village2/gambler-lod0.glb"
     },
     {
       "etype": "sculptor",
@@ -6577,9 +6495,7 @@
       "art_group": "sculptor-ag.go",
       "tpage_group": "Beach",
       "code": "sculptor.o",
-      "glb": "levels/beach/sculptor-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/sculptor-lod0.glb"
     },
     {
       "etype": "billy",
@@ -6593,9 +6509,7 @@
       "art_group": "billy-ag.go",
       "tpage_group": "Swamp",
       "code": "billy.o",
-      "glb": "levels/swamp/billy-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/swamp/billy-lod0.glb"
     },
     {
       "etype": "pelican",
@@ -6608,9 +6522,7 @@
       "art_group": "pelican-ag.go",
       "tpage_group": "Beach",
       "code": "pelican.o",
-      "glb": "levels/beach/pelican-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/pelican-lod0.glb"
     },
     {
       "etype": "seagull",
@@ -6620,9 +6532,7 @@
       "art_group": "seagull-ag.go",
       "tpage_group": "Beach",
       "code": "seagull.o",
-      "glb": "levels/beach/seagull-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/beach/seagull-lod0.glb"
     },
     {
       "etype": "robber",
@@ -6716,8 +6626,7 @@
         },
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "fuel-cell",
@@ -6754,7 +6663,6 @@
         },
         {"panel": "fact-options", "fields": [{"key": "og_fop_skip_jump_anim", "show-field": true, "highlight": true}]}
       ],
-      "shape": "SPHERE",
       "vertex_export": false,
       "code": "collectables.o"
     },
@@ -6804,7 +6712,6 @@
       "parent": "eco-collectable",
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
-      "lumps": [],
       "panels": [
         {
           "panel": "custom-fields",
@@ -6825,7 +6732,6 @@
           ]
         }
       ],
-      "shape": "SPHERE",
       "code": "collectables.o"
     },
     {
@@ -6859,8 +6765,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "crate",
@@ -7011,7 +6916,6 @@
           ]
         }
       ],
-      "shape": "SPHERE",
       "vertex_export": false,
       "code": "orb-cache.o"
     },
@@ -7024,7 +6928,6 @@
       "tpage_group": "Final",
       "code": "final-door.o",
       "glb": "levels/finalboss/powercellalt-lod0.glb",
-      "lumps": [],
       "shape": "ARROWS",
       "vertex_export": false
     },
@@ -7033,9 +6936,7 @@
       "label": "Eco (Green)",
       "category": "Pickups",
       "parent": "eco-collectable",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "ecovent",
@@ -7079,8 +6980,7 @@
           ]
         },
         {"panel": "actor-link", "export": false}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "plat",
@@ -7227,7 +7127,6 @@
       "parent": "process-drawable",
       "art_group": "silodoor-ag.go",
       "glb": "levels/finalboss/silodoor-lod0.glb",
-      "shape": "SPHERE",
       "code": "robotboss-misc.o"
     },
     {
@@ -7327,7 +7226,6 @@
         },
         {"panel": "path", "min-points": 1}
       ],
-      "shape": "SPHERE",
       "code": "citb-plat.o"
     },
     {
@@ -7380,7 +7278,6 @@
           ]
         }
       ],
-      "shape": "SPHERE",
       "code": "plat-button.o"
     },
     {
@@ -7745,7 +7642,6 @@
       "tpage_group": "Misty",
       "code": "misty-teetertotter.o",
       "glb": "levels/misty/teetertotter-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -7947,7 +7843,6 @@
       "art_group": "mis-bone-platform-ag.go",
       "code": "misty-obs.o",
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -7993,7 +7888,6 @@
       "art_group": ["qbert-plat-ag.go", "qbert-plat-on-ag.go"],
       "code": "qbert-plat.o",
       "glb": "levels/sunken/qbert-plat-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8028,7 +7922,6 @@
       ],
       "art_group": "qbert-plat-on-ag.go",
       "code": "qbert-plat.o",
-      "lumps": [],
       "shape": "PLAIN_AXES"
     },
     {
@@ -8336,7 +8229,6 @@
       "tpage_group": "Village2",
       "code": "villagep-obs.o",
       "glb": "levels/citadel/warpgate-lod0.glb",
-      "lumps": [],
       "shape": "CIRCLE"
     },
     {
@@ -8354,8 +8246,7 @@
           "type": "float",
           "description": "Seconds before crystal deactivates. Default 8.0s."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "cavegem",
@@ -8364,9 +8255,7 @@
       "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
       "tpage_group": "Village3",
-      "code": "miners.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "miners.o"
     },
     {
       "etype": "minecartsteel",
@@ -8376,7 +8265,6 @@
       "parent": "process-drawable",
       "art_group": "minecartsteel-ag.go",
       "glb": "levels/village3/minecartsteel-lod0.glb",
-      "lumps": [],
       "code": "minecart.o",
       "panels": [
         {
@@ -8408,7 +8296,6 @@
       "code": "ogre-obs.o",
       "glb": "levels/ogre/tntbarrel-lod0.glb",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8419,9 +8306,7 @@
       "art_group": "shortcut-boulder-ag.go",
       "tpage_group": "Ogre",
       "code": "ogre-obs.o",
-      "is_prop": true,
-      "lumps": [],
-      "shape": "SPHERE"
+      "is_prop": true
     },
     {
       "etype": "spike",
@@ -8449,8 +8334,7 @@
       "art_group": "spike-ag.go",
       "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
-      "glb": "levels/firecanyon/spike-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/firecanyon/spike-lod0.glb"
     },
     {
       "etype": "steam-cap",
@@ -8602,7 +8486,6 @@
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/lurkerm-tall-sail-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8615,7 +8498,6 @@
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/precurbridge-geo.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8698,7 +8580,6 @@
       "code": "beach-obs.o",
       "glb": "levels/beach/windmill-one-lod0.glb",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8711,7 +8592,6 @@
       "code": "robotboss-misc.o",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8722,7 +8602,6 @@
       "art_group": "ecovalve-ag.go",
       "glb": "levels/beach/ecovalve-geo.glb",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE",
       "code": "collectables.o"
     },
@@ -8741,8 +8620,7 @@
           "type": "float",
           "description": "Uniform scale. Default 1.0."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "gondola",
@@ -8754,7 +8632,6 @@
       "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8765,9 +8642,7 @@
       "art_group": "swamp-blimp-ag.go",
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
-      "is_prop": true,
-      "lumps": [],
-      "shape": "SPHERE"
+      "is_prop": true
     },
     {
       "etype": "swamp-rope",
@@ -8778,7 +8653,6 @@
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -8926,8 +8800,7 @@
           "type": "structure",
           "description": "warp target."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "warp-gate-switch",
@@ -8961,8 +8834,7 @@
           "type": "structure",
           "description": "warp target."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "balloonlurker",
@@ -9020,9 +8892,7 @@
       "art_group": "balloonlurker-ag.go",
       "tpage_group": "Misty",
       "code": "balloonlurker.o",
-      "glb": "levels/misty/balloonlurker-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/misty/balloonlurker-lod0.glb"
     },
     {
       "etype": "darkvine",
@@ -9036,9 +8906,7 @@
       "art_group": "darkvine-ag.go",
       "tpage_group": "Jungle",
       "glb": "levels/jungle/darkvine-lod0.glb",
-      "code": "darkvine.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "darkvine.o"
     },
     {
       "etype": "junglefish",
@@ -9076,8 +8944,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "peeper",
@@ -9086,9 +8953,7 @@
       "parent": "process-drawable",
       "art_group": "lightning-mole-ag.go",
       "tpage_group": "Rolling",
-      "code": "rolling-lightning-mole.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "rolling-lightning-mole.o"
     },
     {
       "etype": "cave-trap",
@@ -9132,8 +8997,7 @@
           "type": "vector3m",
           "description": "Patrol path for spawned spiders. Required — export at least 2 waypoints."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "spider-vent",
@@ -9152,9 +9016,7 @@
         "tpage-1314.go",
         "tpage-1312.go"
       ],
-      "code": "cave-trap.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "cave-trap.o"
     },
     {
       "etype": "swamp-rat-nest",
@@ -9215,8 +9077,7 @@
           ]
         },
         {"panel": "nav-mesh"}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "sunkenfisha",
@@ -9269,7 +9130,6 @@
         },
         {"panel": "nav-mesh"}
       ],
-      "shape": "SPHERE",
       "art_group": "sunkenfisha-ag.go"
     },
     {
@@ -9351,8 +9211,7 @@
         },
         {"panel": "nav-mesh", "fallback-sphere": false},
         {"panel": "scale", "uniform": true}
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "villa-starfish",
@@ -9373,7 +9232,6 @@
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
-      "shape": "SPHERE",
       "art_group": "villa-starfish-ag.go"
     },
     {
@@ -9382,7 +9240,6 @@
       "category": "Pickups",
       "parent": "eco-collectable",
       "code": "collectables.o",
-      "lumps": [],
       "shape": "PLAIN_AXES"
     },
     {
@@ -9390,45 +9247,35 @@
       "label": "Eco (Blue)",
       "category": "Pickups",
       "parent": "eco",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "ventblue",
       "label": "Eco Vent (Blue)",
       "category": "Pickups",
       "parent": "vent",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "ventred",
       "label": "Eco Vent (Red)",
       "category": "Pickups",
       "parent": "vent",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "ventyellow",
       "label": "Eco Vent (Yellow)",
       "category": "Pickups",
       "parent": "vent",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "eco-red",
       "label": "Eco (Red)",
       "category": "Pickups",
       "parent": "eco",
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "eco-yellow",
@@ -9451,9 +9298,7 @@
           ]
         }
       ],
-      "code": "collectables.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "collectables.o"
     },
     {
       "etype": "ecoventrock",
@@ -9685,7 +9530,6 @@
       "category": "Platforms",
       "parent": "ogre-isle",
       "code": "ogre-obs.o",
-      "lumps": [],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9817,8 +9661,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "lavaballoon",
@@ -9863,8 +9706,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "darkecobarrel",
@@ -10245,7 +10087,6 @@
       "tpage_group": "Ogre",
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridge-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -10257,7 +10098,6 @@
       "tpage_group": "Ogre",
       "code": "ogre-obs.o",
       "glb": "levels/ogre/ogre-bridgeend-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -10308,7 +10148,6 @@
       "tpage_group": "Village2",
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonfive-lod0.glb",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -10539,7 +10378,6 @@
         {"panel": "water"}
       ],
       "code": "water-h.o",
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -10549,7 +10387,6 @@
       "parent": "process",
       "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
-      "lumps": [],
       "shape": "PLAIN_AXES"
     },
     {
@@ -10563,7 +10400,6 @@
       ],
       "code": "target-tube.o",
       "extra_art_groups": ["eichar-tube+0-ag.go"],
-      "lumps": [],
       "shape": "PLAIN_AXES"
     },
     {
@@ -10687,8 +10523,7 @@
           ],
           "show-panel": false
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "minershort",
@@ -10714,9 +10549,7 @@
       "art_group": "minershort-ag.go",
       "tpage_group": "Village3",
       "code": "miners.o",
-      "glb": "levels/village3/minershort-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village3/minershort-lod0.glb"
     },
     {
       "etype": "minertall",
@@ -10726,9 +10559,7 @@
       "art_group": "minertall-ag.go",
       "tpage_group": "Village3",
       "code": "miners.o",
-      "glb": "levels/village3/minertall-lod0.glb",
-      "lumps": [],
-      "shape": "SPHERE"
+      "glb": "levels/village3/minertall-lod0.glb"
     },
     {
       "etype": "jng-iris-door",
@@ -11296,8 +11127,7 @@
           "type": "enum-uint32",
           "description": "Linked game task (already in fields on oracle/pontoon pattern)."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "windturbine",
@@ -11334,8 +11164,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "boatpaddle",
@@ -11357,8 +11186,7 @@
           "type": "uint32",
           "description": "Particle variant."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "accordian",
@@ -11491,8 +11319,7 @@
       "art_group": "chainmine-ag.go",
       "glb": "levels/lavatube/chainmine-lod0.glb",
       "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
-      "shape": "SPHERE"
+      "code": "lavatube-obs.o"
     },
     {
       "etype": "balloon",
@@ -11502,9 +11329,7 @@
       "art_group": "balloon-ag.go",
       "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
-      "is_prop": true,
-      "lumps": [],
-      "shape": "SPHERE"
+      "is_prop": true
     },
     {
       "etype": "crate-darkeco-cluster",
@@ -11524,8 +11349,7 @@
       "parent": "process-drawable",
       "art_group": "logtrap-ag.go",
       "glb": "levels/jungle/logtrap-lod0.glb",
-      "code": "jungle-obs.o",
-      "shape": "SPHERE"
+      "code": "jungle-obs.o"
     },
     {
       "etype": "pusher",
@@ -11567,8 +11391,7 @@
           ],
           "description": "Push cycle: period, phase, and pauses while extended / retracted."
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "snowpusher",
@@ -11643,8 +11466,7 @@
             }
           ]
         }
-      ],
-      "shape": "SPHERE"
+      ]
     },
     {
       "etype": "snow-ball",
@@ -11657,8 +11479,7 @@
       ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
-      "code": "snow-ball.o",
-      "shape": "SPHERE"
+      "code": "snow-ball.o"
     },
     {
       "etype": "swamp-tetherrock",
@@ -11683,9 +11504,7 @@
       ],
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
-      "code": "swamp-blimp.o",
-      "lumps": [],
-      "shape": "SPHERE"
+      "code": "swamp-blimp.o"
     },
     {
       "etype": "citb-firehose",
@@ -11723,7 +11542,6 @@
       "tpage_group": "Village1",
       "code": "fishermans-boat.o",
       "is_prop": true,
-      "lumps": [],
       "shape": "CUBE"
     },
     {
@@ -11732,7 +11550,6 @@
       "category": "Debug",
       "parent": "process-drawable",
       "art_group": "test-actor-ag.go",
-      "lumps": [],
       "shape": "PLAIN_AXES"
     }
   ],
@@ -17005,16 +16822,14 @@
       "label": "Evil Plant (Prop)",
       "category": "Props",
       "art_group": "evilplant-ag.go",
-      "glb": "levels/village1/evilplant-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/village1/evilplant-lod0.glb"
     },
     {
       "etype": "dark-plant",
       "label": "Dark Plant (Prop)",
       "category": "Props",
       "art_group": "dark-plant-ag.go",
-      "glb": "levels/rolling/dark-plant-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/rolling/dark-plant-lod0.glb"
     },
     {
       "etype": "money",
@@ -17029,8 +16844,7 @@
       "label": "Scout Fly",
       "category": "Pickups",
       "art_group": "buzzer-ag.go",
-      "glb": "levels/common/buzzer-lod0.glb",
-      "shape": "SPHERE"
+      "glb": "levels/common/buzzer-lod0.glb"
     },
     {
       "etype": "ventyellow",
@@ -17068,8 +16882,7 @@
       "etype": "shortcut-boulder",
       "label": "Shortcut Boulder",
       "category": "Objects",
-      "art_group": "shortcut-boulder-ag.go",
-      "shape": "SPHERE"
+      "art_group": "shortcut-boulder-ag.go"
     },
     {
       "etype": "spike",
@@ -17107,8 +16920,7 @@
       "etype": "swamp-rock",
       "label": "Swamp Rock",
       "category": "Objects",
-      "art_group": "swamp-rock-ag.go",
-      "shape": "SPHERE"
+      "art_group": "swamp-rock-ag.go"
     },
     {
       "etype": "gondola",
@@ -17122,8 +16934,7 @@
       "etype": "swamp-blimp",
       "label": "Swamp Blimp",
       "category": "Objects",
-      "art_group": "swamp-blimp-ag.go",
-      "shape": "SPHERE"
+      "art_group": "swamp-blimp-ag.go"
     },
     {
       "etype": "swamp-rope",
@@ -17157,8 +16968,7 @@
     {
       "etype": "ecovent",
       "label": "Blue Eco Vent",
-      "category": "Pickups",
-      "shape": "SPHERE"
+      "category": "Pickups"
     },
     {
       "etype": "ventblue",
@@ -17189,22 +16999,19 @@
       "etype": "ceilingflag",
       "label": "Ceiling Flag",
       "category": "Objects",
-      "art_group": "ceilingflag-ag.go",
-      "shape": "SPHERE"
+      "art_group": "ceilingflag-ag.go"
     },
     {
       "etype": "windturbine",
       "label": "Wind Turbine",
       "category": "Objects",
-      "art_group": "windturbine-ag.go",
-      "shape": "SPHERE"
+      "art_group": "windturbine-ag.go"
     },
     {
       "etype": "boatpaddle",
       "label": "Boat Paddle",
       "category": "Objects",
-      "art_group": "boatpaddle-ag.go",
-      "shape": "SPHERE"
+      "art_group": "boatpaddle-ag.go"
     },
     {
       "etype": "lavafall",
@@ -17245,8 +17052,7 @@
       "etype": "balloon",
       "label": "Balloon Obstacle",
       "category": "Objects",
-      "art_group": "balloon-ag.go",
-      "shape": "SPHERE"
+      "art_group": "balloon-ag.go"
     },
     {
       "etype": "fishermans-boat",

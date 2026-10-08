@@ -778,7 +778,7 @@ class OG_OT_SpawnPlatform(Operator):
         n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         uid = f"{n:04d}"
 
-        bpy.ops.object.empty_add(type=einfo.get("shape", "CUBE"),
+        bpy.ops.object.empty_add(type=einfo.get("shape", "SPHERE"),
                                  location=ctx.scene.cursor.location)
         o = ctx.active_object
         o.name               = f"ACTOR_{etype}_{uid}"

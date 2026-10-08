@@ -40,7 +40,7 @@ def _entity_info_from_actor(a: dict) -> dict:
     if a.get("extra_art_groups"): info["extras_ag"] = list(a["extra_art_groups"])
     if a.get("tpage_group"):  info["tpage_group"] = a["tpage_group"]
     if a.get("glb"):          info["glb"] = a["glb"]
-    if "shape" in a:          info["shape"] = a["shape"]
+    info["shape"] = a.get("shape", "SPHERE")               # empty display type; SPHERE unless set
     if a.get("is_prop"):      info["is_prop"] = True
     info["nav_safe"] = _db.is_nav_safe(a["etype"])          # nav-mesh "fallback-sphere"
     parent = a.get("parent", "prop")
@@ -534,12 +534,12 @@ for _actor in _db.actors():
 
 _nav_enemy_parent = _db.find_parent("nav-enemy")
 LUMP_REFERENCE["_enemy"] = (
-    _tuples_from_lumps(_nav_enemy_parent["lumps"]) if _nav_enemy_parent else []
+    _tuples_from_lumps(_nav_enemy_parent.get("lumps", [])) if _nav_enemy_parent else []
 )
 
 _pd_parent = _db.find_parent("process-drawable")
 UNIVERSAL_LUMPS: list = (
-    _tuples_from_lumps(_pd_parent["lumps"]) if _pd_parent else []
+    _tuples_from_lumps(_pd_parent.get("lumps", [])) if _pd_parent else []
 )
 
 
