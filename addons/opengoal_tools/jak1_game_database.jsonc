@@ -4112,8 +4112,13 @@
     {
       "id": "path",
       "label": "Path",
-      "description": "Waypoints/curves exported as 'path' (+ path-k). Options: \"required\": true or [lump names] (errors without them), \"linear-only\": true (path-control, no path-k), \"paths\": [lump names Add Path offers], \"multi-path\": true, \"min-points\": N.",
-      "fields": []
+      "description": "Waypoints/curves exported as 'path' (+ path-k). Options: \"required\": true or [lump names] (errors without them), \"linear-only\": true (path-control, no path-k), \"paths\": [lump names Add Path offers], \"multi-path\": true, \"min-points\": N. Brings the path-actor link slot (path-h.gc reads every path lump from that actor instead).",
+      "fields": [],
+      "options": {
+        "slots": [
+          {"lump_key": "path-actor", "slot": 0, "label": "Use the path of (instead of this actor's own; offset it with Sync)", "accepts": ["any"], "required": false}
+        ]
+      }
     },
     {
       "id": "sync",
@@ -4242,7 +4247,7 @@
     {
       "id": "activation",
       "label": "Activation",
-      "description": "fact-info-enemy idle distance: the player must be closer than this to wake the actor.",
+      "description": "fact-info-enemy lumps (engine/game/fact-h.gc): idle distance, camera when attacked, notice height. Drawn in the Nav Behaviour panel. notice-top is only read by nav-enemy and puffer, so it is hidden unless a parent/actor turns it on.",
       "fields": [
         {
           "key": "og_idle_distance",
@@ -4254,24 +4259,75 @@
             "key": "idle-distance",
             "type": "meters"
           }
+        },
+        {
+          "key": "og_notice_top",
+          "label": "Notice height (m)",
+          "type": "float",
+          "default": 1000.0,
+          "note": "Jak is only noticed / chased while he is lower than the enemy's height + this. Engine default 1000 (no limit).",
+          "lump": {
+            "key": "notice-top",
+            "type": "meters"
+          },
+          "write_if": "if_not_default",
+          "show-field": false,
+          "export": false
+        },
+        {
+          "key": "og_cam_notice_dist",
+          "label": "Attack camera range (m)",
+          "type": "float",
+          "default": -1.0,
+          "note": "When this enemy attacks Jak within this range, Jak looks at it and the camera uses the height / distance below. -1 = off (engine default).",
+          "lump": {
+            "key": "cam-notice-dist",
+            "type": "meters"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_cam_vert",
+          "label": "Attack camera height (m)",
+          "type": "float",
+          "default": 0.0,
+          "note": "While attacked (within the range above) the camera rises to at least this height. 0 = no change.",
+          "lump": {
+            "key": "cam-vert",
+            "type": "meters"
+          },
+          "write_if": "if_nonzero"
+        },
+        {
+          "key": "og_cam_horz",
+          "label": "Attack camera distance (m)",
+          "type": "float",
+          "default": 0.0,
+          "note": "While attacked (within the range above) the camera pulls back to at least this distance. 0 = no change.",
+          "lump": {
+            "key": "cam-horz",
+            "type": "meters"
+          },
+          "write_if": "if_nonzero"
         }
       ]
     },
     {
       "id": "visibility",
       "label": "Visibility",
-      "description": "fact-info-enemy vis distance: keeps the process active/visible at range.",
+      "description": "vis-dist: draw distance of the last LOD (process-drawable setup-lods!, any actor with a skeleton whose last LOD has no distance). On the process-drawable parent; enemies keep their old 200 m default.",
       "fields": [
         {
           "key": "og_vis_dist",
           "label": "Vis distance (m)",
           "type": "float",
-          "default": 200.0,
-          "note": "Keeps the enemy's process active/visible at range. Default 200.",
+          "default": -1.0,
+          "note": "The actor stops drawing beyond this distance. -1 = engine default (no limit).",
           "lump": {
             "key": "vis-dist",
             "type": "meters"
-          }
+          },
+          "write_if": "if_nonneg"
         }
       ]
     },
@@ -4580,8 +4636,26 @@
   // ── Parents ─────────────────────────────────────────────────────
   "Parents": [
     {
-      "etype": "process-drawable",
+      "etype": "process",
       "parent": null,
+      "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {"lump_key": "alt-actor", "slot": 0, "allow-multiple": true, "label": "Alt actors (only read by actors that use them, or by another actor that looks them up)", "accepts": ["any"], "required": false},
+            {"lump_key": "prev-actor", "slot": 0, "label": "Previous actor in a chain (e.g. the lurkers the ram boss waits on)", "accepts": ["any"], "required": false},
+            {"lump_key": "next-actor", "slot": 0, "label": "Next actor in a chain", "accepts": ["any"], "required": false},
+            {"lump_key": "nav-mesh-actor", "slot": 0, "label": "Use the nav-mesh of (nav-mesh users avoid actors that have one; exported after it)", "accepts": ["any"], "required": false}
+          ]
+        }
+      ],
+      "description": "Root of every actor with an entity: generic actor links (entity-actor lookups work for any of them).",
+      "lumps": []
+    },
+    {
+      "etype": "process-drawable",
+      "parent": "process",
       "panels": [
         {
           "panel": "fact-options",
@@ -4590,9 +4664,13 @@
         {
           "panel": "scale",
           "show-panel": true
+        },
+        {
+          "panel": "visibility",
+          "show-panel": true
         }
       ],
-      "description": "Root type for all spawnable entities.",
+      "description": "Root type for all drawn entities.",
       "lumps": [
         {
           "key": "vis-dist",
@@ -4668,7 +4746,11 @@
         },
         {
           "panel": "visibility",
-          "show-panel": true
+          "fields": [{"key": "og_vis_dist", "default": 200.0}]
+        },
+        {
+          "panel": "activation",
+          "fields": [{"key": "og_notice_top", "show-field": true, "export": true}]
         },
         {
           "panel": "fact-options",
@@ -5331,7 +5413,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh", "fallback-sphere": true}
       ],
       "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
@@ -5387,7 +5469,7 @@
       "parent": "process-drawable",
       "panels": [
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "description": "The sand worm, also known as the sea serpent lurker, is an enemy in The Precursor Legacy. Lurkers dwelling in sand pits at Sentinel Beach — they burst from the ground to attack.",
       "art_group": "lurkerworm-ag.go",
@@ -5416,7 +5498,7 @@
       "parent": "process-drawable",
       "panels": [
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "description": "The lurker snake is an enemy in The Precursor Legacy — large brown serpentine lurkers residing in the canopy of Forbidden Jungle. They hang from branches at fixed points, attacking intruders below.",
       "art_group": "junglesnake-ag.go",
@@ -5466,7 +5548,7 @@
         {"panel": "path", "required": ["path", "pathb"], "paths": ["path", "pathb"]},
         {"panel": "volume"},
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {
           "panel": "spawner",
           "fields": [
@@ -5520,7 +5602,7 @@
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
       ],
       "color": [
@@ -5540,7 +5622,7 @@
       "panels": [
         {"panel": "path", "required": true},
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
@@ -5656,8 +5738,8 @@
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}]},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"},
         {
           "panel": "fact-options",
@@ -5718,7 +5800,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
       "art_group": "flying-lurker-ag.go",
@@ -5761,7 +5843,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "art_group": "plunger-lurker-ag.go",
       "tpage_group": "Ogre",
@@ -5906,7 +5988,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
       "color": [
@@ -6059,7 +6141,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "color": [
         0.6,
@@ -6133,7 +6215,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "color": [
         0.5,
@@ -6250,7 +6332,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
@@ -6367,7 +6449,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
       "color": [
@@ -6644,7 +6726,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "fact-options", "fields": [{"key": "og_fop_fade", "show-field": true, "highlight": true}]}
       ],
       "color": [
@@ -6710,7 +6792,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh", "fallback-sphere": true}
       ],
       "color": [
@@ -6729,7 +6811,7 @@
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
       "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
@@ -7191,7 +7273,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "color": [
         0.3,
@@ -9977,7 +10059,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {
           "panel": "fact-options",
           "fields": [
@@ -10016,7 +10098,7 @@
       "parent": "process-drawable",
       "panels": [
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "art_group": "darkvine-ag.go",
       "tpage_group": "Jungle",
@@ -10163,7 +10245,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {"panel": "nav-mesh"}
       ],
       "lumps": [
@@ -10189,7 +10271,7 @@
       "parent": "process-drawable",
       "panels": [
         {"panel": "activation"},
-        {"panel": "visibility"}
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "tpage_group": "Robocave",
       "tpages": [
@@ -10260,7 +10342,7 @@
           ]
         },
         {"panel": "activation"},
-        {"panel": "visibility"},
+        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
         {
           "panel": "spawner",
           "fields": [

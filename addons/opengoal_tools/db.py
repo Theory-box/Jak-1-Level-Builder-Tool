@@ -385,6 +385,15 @@ def _merge_fields(base: list, over: list) -> list:
     return out
 
 
+def _merge_slots(base, over) -> list:
+    """Link slots merged by lump: a record that lists any slot for a lump
+    replaces the inherited slots of that lump (so an actor can give
+    alt-actor its own label / slots), and its slots come first."""
+    over = [dict(s) for s in (over or [])]
+    mine = {s.get("lump_key") for s in over}
+    return over + [dict(s) for s in (base or []) if s.get("lump_key") not in mine]
+
+
 def actor_panels(etype: str) -> dict:
     """Resolved panels for an etype, in first-seen order:
     {panel_id: {"show": bool, "fields": [...]}}."""
@@ -407,7 +416,9 @@ def actor_panels(etype: str) -> dict:
                 cur["export"] = bool(e["export"])
             cur["fields"] = _merge_fields(cur["fields"], e.get("fields"))
             for k, v in e.items():
-                if k not in ("panel", "show-panel", "export", "fields"):
+                if k == "slots":
+                    cur["options"]["slots"] = _merge_slots(cur["options"].get("slots"), v)
+                elif k not in ("panel", "show-panel", "export", "fields"):
                     cur["options"][k] = v
     for p in out.values():
         if not p["export"]:
@@ -776,8 +787,18 @@ def link_slot(etype: str, lump_key: str, slot: int) -> dict:
 
 
 def link_slots(etype: str) -> list[dict]:
-    """The "actor-link" panel's "slots" (lump_key, slot, label, accepts, required)."""
-    return list(panel_option(etype, "actor-link", "slots", []) or []) if panel_exports(etype, "actor-link") else []
+    """Link slots (lump_key, slot, label, accepts, required): the "actor-link"
+    panel's "slots", then those other panels bring (the path panel's
+    path-actor), each lump once. None when actor-link doesn't export."""
+    if not panel_exports(etype, "actor-link"):
+        return []
+    out = list(panel_option(etype, "actor-link", "slots", []) or [])
+    for pid in actor_panels(etype):
+        if pid != "actor-link":
+            have = {s.get("lump_key") for s in out}
+            out += [dict(s) for s in panel_option(etype, pid, "slots", []) or []
+                    if s.get("lump_key") not in have]
+    return out
 
 
 def uses_waypoints(etype: str) -> bool:

@@ -104,7 +104,15 @@ def check_navmesh_links(scene):
         if not et or not _db.nav_unsafe(et):
             continue
         nm_name = o.get("og_navmesh_link", "")
-        if not nm_name:
+        src = _actor_get_link(o, "nav-mesh-actor", 0)
+        if not nm_name and src:
+            # nav-mesh copied from another actor: that one needs a navmesh
+            t = objects.get(src.target_name)
+            if t is None or not (t.get("og_navmesh_link", "") or _actor_get_link(t, "nav-mesh-actor", 0)):
+                issues.append(_issue("ERROR",
+                    f"'{o.name}' ({et}) uses the nav-mesh of '{src.target_name}', "
+                    "which has no navmesh link.", o.name))
+        elif not nm_name:
             issues.append(_issue("ERROR",
                 f"Nav-enemy '{o.name}' ({et}) has no navmesh link. "
                 "It will freeze or crash in-game without one.", o.name))
@@ -124,6 +132,8 @@ def check_missing_paths(scene):
     for o in _actor_objs(scene):
         et = _etype(o)
         if not et or not _db.needs_path(et):
+            continue
+        if _actor_get_link(o, "path-actor", 0):   # every path lump read from that actor
             continue
         info      = ENTITY_DEFS.get(et, {})
         wp_prefix = o.name + "_wp_"

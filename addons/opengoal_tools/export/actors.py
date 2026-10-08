@@ -317,11 +317,13 @@ def collect_actors(scene, depsgraph=None):
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")
+            elif _actor_get_link(o, "path-actor", 0):
+                log(f"  [path] {o.name}  uses the path of {_actor_get_link(o, 'path-actor', 0).target_name}")
             elif einfo.get("needs_path"):
                 log(f"  [WARNING] {o.name} needs a path but has no waypoints — will crash/error at runtime!")
 
         # swamp-bat's second route ('pathb') is an extra path (og_extra_paths).
-        if einfo.get("needs_pathb") and not any(
+        if einfo.get("needs_pathb") and not _actor_get_link(o, "path-actor", 0) and not any(
                 p.name.strip() == "pathb" and len(p.sources) for p in getattr(o, "og_extra_paths", [])):
             log(f"  [WARNING] {o.name} needs a 'pathb' path (Path panel > Add Path) — will error at runtime!")
 
