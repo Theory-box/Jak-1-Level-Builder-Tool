@@ -14,14 +14,14 @@ from bpy.types import Operator
 from ..data import (
     ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
     _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
     _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    UNIVERSAL_LUMPS, _is_custom_type,
+    _is_custom_type,
 )
 from ..collections import (
     _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
@@ -60,6 +60,7 @@ from ..utils import (
     _draw_wiki_preview,
 )
 from .. import model_preview as _mp
+from .. import db as _db
 import re as _re
 
 
@@ -79,8 +80,11 @@ class OG_OT_SetActorLink(Operator):
     lump_key:     bpy.props.StringProperty()
     slot_index:   bpy.props.IntProperty(default=0)
     target_name:  bpy.props.StringProperty()
+    append:       bpy.props.BoolProperty(default=False,
+        description="Add to an allow-multiple slot instead of replacing it")
 
     def execute(self, ctx):
+        from ..data import _actor_add_multi_link
         obj = ctx.scene.objects.get(self.source_name)
         if not obj:
             self.report({"ERROR"}, f"Source '{self.source_name}' not found")
@@ -89,9 +93,139 @@ class OG_OT_SetActorLink(Operator):
         if not target:
             self.report({"ERROR"}, f"Target '{self.target_name}' not found")
             return {"CANCELLED"}
-        _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
-        self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}[{self.slot_index}]] → {self.target_name}")
+        if self.append:
+            if not _actor_add_multi_link(obj, self.lump_key, self.slot_index, self.target_name):
+                self.report({"INFO"}, f"{self.target_name} is already linked")
+                return {"CANCELLED"}
+        else:
+            _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
+        # Unexpected types are allowed, with a warning (they may not work in game).
+        src_et = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
+        tgt_et = target.name.split("_", 2)[1] if target.name.count("_") >= 2 else ""
+        slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
+        if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
+            self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
+                                     f"{', '.join(slot.get('accepts') or [])} — it may not work in game")
+        else:
+            self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}
+
+# Search-popup enum items must stay referenced while the popup is open.
+_SEARCH_ITEMS: list = []
+
+
+def _link_target_items(self, ctx):
+    """Every actor in the scene but the source, for the link search popup:
+    types the slot accepts first, others marked "(unexpected type)"."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    src = scene.objects.get(self.source_name)
+    src_et = self.source_name.split("_", 2)[1] if self.source_name.count("_") >= 2 else ""
+    acc = _db.link_slot(src_et, self.lump_key, self.slot_index).get("accepts")
+    from ..data import _actor_multi_links
+    have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
+            if src and self.append else set())
+    rows = []
+    for o in scene.objects:
+        if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
+                or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
+            continue
+        ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
+        rows.append((not ok, _natural_key(o.name), o.name, ok))
+    rows.sort()
+    items = [(n, n + ("" if ok else "  (unexpected type)") + ("  (linked)" if n in have else ""),
+              f"Link {n}", "LINKED" if ok else "ERROR", i)
+             for i, (_bad, _k, n, ok) in enumerate(rows)]
+    if not items:
+        items = [("__none__", "(no other actors)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_LinkActorSearch(Operator):
+    """Search an actor by name and link it to this slot"""
+    bl_idname   = "og.link_actor_search"
+    bl_label    = "Search Actor"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "target"
+
+    source_name:  bpy.props.StringProperty()
+    lump_key:     bpy.props.StringProperty()
+    slot_index:   bpy.props.IntProperty(default=0)
+    append:       bpy.props.BoolProperty(default=False)
+    target:       bpy.props.EnumProperty(name="Actor", items=_link_target_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        if self.target in ("", "__none__"):
+            return {"CANCELLED"}
+        return bpy.ops.og.set_actor_link(source_name=self.source_name, lump_key=self.lump_key,
+                                         slot_index=self.slot_index, target_name=self.target,
+                                         append=self.append)
+
+
+def _natural_key(name):
+    """Outliner-style order: 'plat_2' before 'plat_10'."""
+    import re as _re
+    return [int(t) if t.isdigit() else t.lower() for t in _re.split(r"(\d+)", name)]
+
+
+def _selected_actor_empties(ctx, exclude=None):
+    return sorted((o for o in ctx.selected_objects
+                   if o is not exclude and o.type == "EMPTY" and o.name.startswith("ACTOR_")
+                   and "_wp_" not in o.name and "_wpb_" not in o.name),
+                  key=lambda o: _natural_key(o.name))
+
+
+class OG_OT_LinkAddSelected(Operator):
+    """Add every shift-selected actor to an allow-multiple link slot, in
+    outliner (name) order. Already-linked ones are skipped"""
+    bl_idname  = "og.link_add_selected"
+    bl_label   = "Add All Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    source_name: bpy.props.StringProperty()
+    lump_key:    bpy.props.StringProperty()
+    slot_index:  bpy.props.IntProperty(default=0)
+
+    def execute(self, ctx):
+        from ..data import _actor_add_multi_link
+        obj = ctx.scene.objects.get(self.source_name)
+        if not obj:
+            return {"CANCELLED"}
+        added = [t.name for t in _selected_actor_empties(ctx, exclude=obj)
+                 if _actor_add_multi_link(obj, self.lump_key, self.slot_index, t.name)]
+        self.report({"INFO"}, f"Added {len(added)} actor(s) to {self.lump_key}")
+        return {"FINISHED"} if added else {"CANCELLED"}
+
+
+class OG_OT_LinkChainSelected(Operator):
+    """Chain the selected actors (this one included) in outliner (name)
+    order: each one's next-actor -> the following one, prev-actor -> the
+    one before. Only sets the slots an actor type actually has"""
+    bl_idname  = "og.link_chain_selected"
+    bl_label   = "Chain Selected (prev / next)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        chain = _selected_actor_empties(ctx)
+        if len(chain) < 2:
+            self.report({"WARNING"}, "Select 2 or more actors to chain")
+            return {"CANCELLED"}
+        n = 0
+        for i, o in enumerate(chain):
+            et = o.name.split("_", 2)[1]
+            keys = {(s["lump_key"], s.get("slot", 0)) for s in _db.link_slots(et)}
+            if i + 1 < len(chain) and ("next-actor", 0) in keys:
+                _actor_set_link(o, "next-actor", 0, chain[i + 1].name); n += 1
+            if i > 0 and ("prev-actor", 0) in keys:
+                _actor_set_link(o, "prev-actor", 0, chain[i - 1].name); n += 1
+        self.report({"INFO"}, f"Chained {len(chain)} actors ({n} links): "
+                              f"{chain[0].name} → … → {chain[-1].name}")
+        return {"FINISHED"}
+
 
 class OG_OT_ToggleDoorFlag(Operator):
     """Toggle an eco-door behaviour flag."""
@@ -326,11 +460,10 @@ class OG_OT_SetPlatformDefaults(Operator):
         o = ctx.active_object
         if not o:
             return {"CANCELLED"}
-        o["og_sync_period"]   = 4.0
-        o["og_sync_phase"]    = 0.0
-        o["og_sync_ease_out"] = 0.15
-        o["og_sync_ease_in"]  = 0.15
-        o["og_sync_wrap"]     = 0
+        from ..utils import sync_defaults
+        etype = o.name.split("_", 2)[1] if o.name.count("_") >= 2 else ""
+        for k, v in sync_defaults(etype).items():
+            o[k] = int(v) if isinstance(v, bool) else v
         return {"FINISHED"}
 
 class OG_OT_SetVersionField(bpy.types.Operator):
@@ -351,6 +484,9 @@ class OG_OT_SetVersionField(bpy.types.Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_SetActorLink,
+    OG_OT_LinkActorSearch,
+    OG_OT_LinkAddSelected,
+    OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,
     OG_OT_SetDoorCP,
     OG_OT_ClearDoorCP,

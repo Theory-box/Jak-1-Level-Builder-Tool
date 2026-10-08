@@ -241,6 +241,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         dup.display_type  = "TEXTURED"
         dup.hide_select   = True
         _fit_empty_to_mesh(actor_empty, dup)
+        _apply_db_display(etype, actor_empty, [dup])
         return True
 
     if not glb_rel:
@@ -252,6 +253,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     else:
         glb_rels = list(glb_rel)
 
+    meshes = []
     for rel in glb_rels:
         glb_path  = _glb_path(rel)
         mesh_name = Path(rel).stem  # e.g. "babak-lod0-mg"
@@ -287,8 +289,23 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
             _fit_empty_to_mesh(actor_empty, mesh_obj)
 
         attached = True
+        meshes.append(mesh_obj)
 
+    _apply_db_display(etype, actor_empty, meshes)
     return attached
+
+
+def _apply_db_display(etype, actor_empty, meshes):
+    """DB display settings after a preview is attached: an "empty_size" set
+    in the DB wins over the mesh fit, and the preview meshes get the
+    category color (visible with Viewport Shading > Color: Object)."""
+    from . import db as _db
+    size = _db.empty_size(etype)
+    if size is not None:
+        actor_empty.empty_display_size = size
+    color = _db.actor_color(etype)
+    for m in meshes:
+        m.color = color
 
 
 _WAYPOINT_PREVIEW_PROP = "og_waypoint_preview_mesh"

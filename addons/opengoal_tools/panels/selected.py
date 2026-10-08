@@ -12,11 +12,12 @@ from __future__ import annotations
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
+from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
-    LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
+    ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
@@ -123,13 +124,12 @@ def _draw_selected_actor(layout, sel, scene):
     # Per-instance override of the engine's 80m default. Below this distance
     # the enemy wakes up and starts noticing the player. Lower = stays asleep
     # longer. Reads og_idle_distance, emitted as 'idle-distance lump at build.
-    if _actor_is_enemy(etype):
+    if _db.has_panel(etype, "activation"):
         box = layout.box()
         box.label(text="Activation", icon="RADIOBUT_ON")
-        _prop_row(box, sel, "og_idle_distance", "Idle Distance (m):", 80.0)
-        sub = box.row()
-        sub.enabled = False
-        sub.label(text="Player must be closer than this to wake the enemy", icon="INFO")
+        from .actor_fields import _draw_field
+        for f in _db.panel_fields(etype, "activation", visible_only=True):
+            _draw_field(box, sel, f, {"etype": etype})
 
     # ── Nav-enemy: Trigger Behaviour (aggro / patrol / wait-for-cue) ─────
     # Lists every volume that links to this enemy. Each link has its own
@@ -159,6 +159,7 @@ def _draw_selected_actor(layout, sel, scene):
             sub.label(text="No trigger volumes linked", icon="INFO")
         op = box.operator("og.spawn_aggro_trigger", text="Add Aggro Trigger", icon="ADD")
         op.target_name = sel.name
+        _draw_vol_link_add(box, sel)
 
     # ── Nav-enemy: navmesh management ────────────────────────────────────
     if _actor_uses_navmesh(etype):
@@ -191,8 +192,8 @@ def _draw_selected_actor(layout, sel, scene):
         nav_r = float(sel.get("og_nav_radius", 6.0))
         box.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
 
-    # ── Platform: sync, path, notice-dist ────────────────────────────────
-    elif _actor_is_platform(etype):
+    # ── Sync (DB "sync" panel) ───────────────────────────────────────────
+    elif _db.has_panel(etype, "sync"):
         _draw_platform_settings(layout, sel, scene)
 
     # ── Prop ─────────────────────────────────────────────────────────────
@@ -342,6 +343,7 @@ def _draw_selected_checkpoint(layout, sel, scene):
         layout.label(text=f"⚠ No trigger volume (fallback r={r:.1f}m)", icon="ERROR")
         op = layout.operator("og.spawn_volume_autolink", text="Add Trigger Volume", icon="MESH_CUBE")
         op.target_name = sel.name
+        _draw_vol_link_add(layout, sel)
 
     _draw_continue_settings(layout, sel, scene)
 
@@ -472,15 +474,13 @@ def _draw_selected_volume(layout, sel, scene):
             op.vol_name = sel.name
             op.target_name = tname
 
-    # Add-link button: enabled when exactly one other linkable object selected
-    sel_targets = [o for o in bpy.context.selected_objects
-                   if _is_linkable(o) and o != sel]
-    if len(sel_targets) == 1:
-        op = box.operator("og.add_link_from_selection", text=f"Link → {sel_targets[0].name}", icon="LINKED")
+    # Same pattern as the other links: shift-selected targets, then search.
+    for t in [o for o in bpy.context.selected_objects
+              if _is_linkable(o) and o != sel and not _vol_has_link_to(sel, o.name)][:6]:
+        op = box.row().operator("og.add_link_from_selection", text=f"Link → {t.name}", icon="LINKED")
         op.vol_name = sel.name
-        op.target_name = sel_targets[0].name
-    else:
-        box.label(text="Shift-select a target then click Link →", icon="INFO")
+        op.target_name = t.name
+    _draw_link_search(box, "Search target…", "og.vol_link_search", vol_name=sel.name, search_for="target")
 
     if n > 0:
         layout.operator("og.unlink_volume", text="Clear All Links", icon="X")
@@ -663,6 +663,7 @@ def _draw_selected_camera(layout, sel, scene):
         vbox.label(text="No trigger volume — camera never activates", icon="ERROR")
     op = vbox.operator("og.spawn_volume_autolink", text="Add Volume", icon="ADD")
     op.target_name = sel.name
+    _draw_vol_link_add(vbox, sel)
 
 
 
@@ -946,70 +947,125 @@ def _draw_actor_links(layout, obj, scene, etype):
 
         box = layout.box()
         box.label(text=lkey, icon="LINKED")
+        # prev/next: one click links the whole selection in outliner order
+        if lkey in ("prev-actor", "next-actor") and len(sel_actors) >= 1:
+            row = box.row()
+            row.operator("og.link_chain_selected",
+                         text=f"Chain {len(sel_actors) + 1} selected by name (prev / next)", icon="LINK_BLEND")
 
         for (sidx, label, accepted, required) in key_slots:
-            entry = _actor_get_link(obj, lkey, sidx)
-            current_name = entry.target_name if entry else ""
-            current_obj  = scene.objects.get(current_name) if current_name else None
+            _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors)
 
-            row = box.row(align=True)
 
-            # Slot label
-            req_mark = " *" if required else ""
-            row.label(text=f"[{sidx}] {label}{req_mark}")
+def _link_target_etype(o):
+    parts = o.name.split("_", 2)
+    return parts[1] if len(parts) >= 3 else ""
 
-            if current_obj:
-                # Linked — show name, jump-to, clear buttons
-                row2 = box.row(align=True)
-                row2.label(text=current_name, icon="CHECKMARK")
-                op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
-                op.obj_name = current_name
-                op = row2.operator("og.clear_actor_link", text="", icon="X")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
-            elif current_name:
-                # Name stored but object missing from scene
-                row2 = box.row(align=True)
-                row2.alert = True
-                row2.label(text=f"⚠ missing: {current_name}", icon="ERROR")
-                op = row2.operator("og.clear_actor_link", text="", icon="X")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
+
+def _draw_vol_link_add(layout, target):
+    """Target side of volume links (cameras, checkpoints, aggro triggers):
+    Link buttons for shift-selected VOL_ meshes, then a volume search."""
+    for v in [o for o in bpy.context.selected_objects
+              if o.type == "MESH" and o.name.startswith("VOL_") and not _vol_has_link_to(o, target.name)][:6]:
+        op = layout.row().operator("og.add_link_from_selection", text=f"Link → {v.name}", icon="MESH_CUBE")
+        op.vol_name = v.name; op.target_name = target.name
+    _draw_link_search(layout, "Search volume…", "og.vol_link_search",
+                      target_name=target.name, search_for="volume")
+
+
+def _draw_link_search(box, text, op_id, **props):
+    """The "Search…" button every link UI ends with (actor slots, path
+    curves): opens a searchable list of every candidate in the scene."""
+    op = box.row().operator(op_id, text=text, icon="VIEWZOOM")
+    for k, v in props.items():
+        setattr(op, k, v)
+
+
+def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=()):
+    """One Link button per shift-selected actor, then a search button for
+    picking any actor by name. Types outside "accepts" (or their parent
+    types) still link, flagged with a warning."""
+    cands = [o for o in sel_actors if o.name not in skip]
+    search = dict(source_name=obj.name, lump_key=lkey, slot_index=sidx, append=append)
+    if not cands:
+        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", **search)
+        return
+    for tgt in cands[:6]:
+        ok = _db.link_accepts(accepted, _link_target_etype(tgt))
+        row = box.row()
+        if not ok:
+            row.alert = True
+        op = row.operator("og.set_actor_link",
+                          text=(f"{'Add' if append else 'Link'} → {tgt.name}" + ("" if ok else "  (unexpected type)")),
+                          icon="LINKED" if ok else "ERROR")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+        op.target_name = tgt.name; op.append = append
+    if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
+        hint = box.row(); hint.enabled = False
+        hint.label(text=f"  Expected: {', '.join(accepted)} — others may not work", icon="INFO")
+    if len(cands) > 6:
+        box.label(text=f"... and {len(cands) - 6} more selected")
+    _draw_link_search(box, "Search actor…", "og.link_actor_search", **search)
+
+
+def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors):
+    from ..data import _actor_multi_links
+    multi = bool(_db.link_slot(etype, lkey, sidx).get("allow-multiple"))
+    row = box.row(align=True)
+    req_mark = " *" if required else ""
+    row.label(text=f"[{sidx}{'+' if multi else ''}] {label}{req_mark}")
+
+    if multi:
+        ents = _actor_multi_links(obj, lkey, sidx)
+        for e in ents:
+            r2 = box.row(align=True)
+            tgt = scene.objects.get(e.target_name)
+            if tgt is None:
+                r2.alert = True
+                r2.label(text=f"⚠ missing: {e.target_name}", icon="ERROR")
             else:
-                # Not set
-                row2 = box.row(align=True)
-                row2.enabled = False
-                req_text = "Required — not set" if required else "Optional — not set"
-                row2.label(text=req_text, icon="ERROR" if required else "DOT")
+                ok = _db.link_accepts(accepted, _link_target_etype(tgt))
+                r2.label(text=e.target_name + ("" if ok else "  (unexpected type)"),
+                         icon="CHECKMARK" if ok else "ERROR")
+                op = r2.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = e.target_name
+            op = r2.operator("og.clear_actor_link", text="", icon="X")
+            op.source_name = obj.name; op.lump_key = lkey; op.slot_index = e.slot_index; op.first_slot = sidx
+        if not ents:
+            r2 = box.row(); r2.enabled = False
+            r2.label(text=("Required — none linked" if required else "Optional — none linked"),
+                     icon="ERROR" if required else "DOT")
+        left = [o for o in sel_actors if o.name not in {e.target_name for e in ents}]
+        if len(left) >= 2:
+            op = box.operator("og.link_add_selected", text=f"Add all {len(left)} selected (name order)", icon="ADD")
+            op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+        _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=True,
+                           skip={e.target_name for e in ents})
+        return
 
-            # Link button: visible when one compatible actor is shift-selected
-            compatible = [
-                o for o in sel_actors
-                if accepted == ["any"] or
-                   (len(o.name.split("_", 2)) >= 3 and o.name.split("_", 2)[1] in accepted)
-            ]
-            if len(compatible) == 1:
-                tgt = compatible[0]
-                op = box.operator("og.set_actor_link",
-                                  text=f"Link → {tgt.name}", icon="LINKED")
-                op.source_name = obj.name
-                op.lump_key    = lkey
-                op.slot_index  = sidx
-                op.target_name = tgt.name
-            elif len(sel_actors) > 0 and len(compatible) == 0:
-                hint = box.row()
-                hint.enabled = False
-                hint.label(text=f"Selected actor not valid for this slot", icon="INFO")
-                hint2 = box.row()
-                hint2.enabled = False
-                hint2.label(text=f"  Accepted: {', '.join(accepted)}")
-            else:
-                hint = box.row()
-                hint.enabled = False
-                hint.label(text="Shift-select target then click Link →", icon="INFO")
-
+    entry = _actor_get_link(obj, lkey, sidx)
+    current_name = entry.target_name if entry else ""
+    current_obj  = scene.objects.get(current_name) if current_name else None
+    if current_obj:
+        row2 = box.row(align=True)
+        ok = _db.link_accepts(accepted, _link_target_etype(current_obj))
+        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "ERROR")
+        op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        op.obj_name = current_name
+        op = row2.operator("og.clear_actor_link", text="", icon="X")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+    elif current_name:
+        row2 = box.row(align=True)
+        row2.alert = True
+        row2.label(text=f"⚠ missing: {current_name}", icon="ERROR")
+        op = row2.operator("og.clear_actor_link", text="", icon="X")
+        op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+    else:
+        row2 = box.row(align=True)
+        row2.enabled = False
+        req_text = "Required — not set" if required else "Optional — not set"
+        row2.label(text=req_text, icon="ERROR" if required else "DOT")
+    _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=False,
+                       skip={current_name} if current_obj else ())
 
 
 class OG_PT_SpawnSettings(Panel):
@@ -1118,13 +1174,14 @@ class OG_PT_SelectedLumps(Panel):
 
 
 def _draw_lump_ref_section(layout, title, entries, icon="DOT"):
-    """Draw a collapsible read-only reference section."""
+    """Draw a read-only reference section (entries from db.lump_reference)."""
     if not entries:
         return
     box = layout.box()
     box.label(text=title, icon=icon)
     col = box.column(align=True)
-    for key, ltype, desc in entries:
+    for e in entries:
+        key, ltype, desc = e["key"], e["type"], e["desc"]
         row = col.row(align=True)
         row.label(text=key, icon="KEYFRAME")
         sub = row.row(align=True)
@@ -1132,7 +1189,7 @@ def _draw_lump_ref_section(layout, title, entries, icon="DOT"):
         sub.label(text=ltype)
         op = row.operator("og.use_lump_ref", text="", icon="ADD")
         op.lump_key   = key
-        op.lump_ltype = ltype
+        op.lump_ltype = e["row_type"]
         # Description as a greyed-out label on the next line
         desc_row = col.row()
         desc_row.enabled = False
@@ -1168,19 +1225,24 @@ class OG_PT_SelectedLumpReference(Panel):
         einfo = ENTITY_DEFS.get(etype, {})
         label = einfo.get("label", etype)
 
-        universal, actor_specific = _lump_ref_for_etype(etype)
+        entries = _lump_ref_for_etype(etype)
 
         layout.label(text=f"Available lumps for: {label}", icon="INFO")
-        layout.label(text="Click + to add a pre-filled row to Custom Lumps")
+        layout.label(text="Read from its panels and parents · + adds a Custom Lumps row")
         layout.separator(factor=0.4)
 
-        if actor_specific:
-            _draw_lump_ref_section(layout, f"Specific to {label}", actor_specific, icon="OBJECT_DATA")
-        else:
-            sub = layout.row()
-            sub.enabled = False
-            sub.label(text=f"No additional lumps documented for {label}", icon="INFO")
-        _draw_lump_ref_section(layout, "Universal (all actors)", universal, icon="WORLD")
+        # one section per record the lumps come from: this actor, then its
+        # parents nearest-first
+        order = [etype] + [p.get("etype") for p in _db.parent_chain(etype)]
+        for src in order + sorted({e["source"] for e in entries} - set(order)):
+            group = [e for e in entries if e["source"] == src]
+            if src == etype:
+                _draw_lump_ref_section(layout, f"{label} (this actor)", group, icon="OBJECT_DATA")
+            else:
+                _draw_lump_ref_section(layout, f"From parent: {src}", group, icon="OUTLINER_OB_EMPTY")
+        if not entries:
+            sub = layout.row(); sub.enabled = False
+            sub.label(text=f"No lumps known for {label}", icon="INFO")
 
 
 

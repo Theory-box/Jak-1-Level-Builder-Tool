@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # data.py — OpenGOAL Level Tools
-# COMPATIBILITY LAYER. All legacy symbols (ENTITY_DEFS, LUMP_REFERENCE,
+# COMPATIBILITY LAYER. All legacy symbols (ENTITY_DEFS, 
 # LEVEL_BANKS, ALL_SFX_ITEMS, etc.) are now derived at import time from
 # db.py, which reads jak1_game_database.jsonc.
 #
@@ -40,19 +40,18 @@ def _entity_info_from_actor(a: dict) -> dict:
     if a.get("extra_art_groups"): info["extras_ag"] = list(a["extra_art_groups"])
     if a.get("tpage_group"):  info["tpage_group"] = a["tpage_group"]
     if a.get("glb"):          info["glb"] = a["glb"]
-    if "color" in a:          info["color"] = tuple(a["color"])
-    if "shape" in a:          info["shape"] = a["shape"]
+    info["shape"] = a.get("shape", "SPHERE")               # empty display type; SPHERE unless set
     if a.get("is_prop"):      info["is_prop"] = True
-    info["nav_safe"] = a.get("nav_safe", True)
+    info["nav_safe"] = _db.is_nav_safe(a["etype"])          # nav-mesh "fallback-sphere"
     parent = a.get("parent", "prop")
     info["ai_type"] = "prop" if parent == "eco-collectable" else parent
     # Runtime-required flags — read from top-level actor record, NOT from links
     # (links are UI-availability; top-level is the old-schema runtime flag).
-    info["needs_path"]  = bool(a.get("needs_path"))
-    info["needs_pathb"] = bool(a.get("needs_pathb"))
-    info["needs_sync"]  = bool(a.get("needs_sync"))
+    info["needs_path"]  = _db.needs_path(a["etype"])     # path panel "required"
+    info["needs_pathb"] = _db.needs_pathb(a["etype"])
+    info["needs_sync"]  = _db.needs_sync(a["etype"])     # "sync" panel
     info["needs_notice_dist"] = bool(a.get("needs_notice_dist"))
-    info["requires_navmesh"]  = bool(a.get("requires_navmesh"))
+    info["requires_navmesh"]  = _db.uses_navmesh(a["etype"])   # "nav-mesh" panel
     return info
 
 
@@ -403,21 +402,16 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ETYPE_CODE + ETYPE_TPAGES (direct pass-through from Actors[].code / .tpages)
+# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; tpages from the tpage_group's level)
 # ═══════════════════════════════════════════════════════════════════════════
-ETYPE_CODE: dict[str, dict] = {
-    a["etype"]: dict(a["code"]) for a in _db.actors() if a.get("code")
-}
-
-# Actor-level extra_code: dependency .o files the actor needs in the level DGO
-# (headers, child-actor code, particle files). Loaded BEFORE the actor's own .o,
-# matching vanilla DGO order (e.g. mother-spider-h.o ... then mother-spider.o).
-ETYPE_EXTRA_CODE: dict[str, list] = {
-    a["etype"]: list(a["extra_code"]) for a in _db.actors() if a.get("extra_code")
+# etype -> .o files for the level DGO, in load order (dependencies first,
+# e.g. mother-spider-h.o ... mother-spider.o). See db.code_files().
+ETYPE_CODE: dict[str, list] = {
+    a["etype"]: _db.code_files(a) for a in _db.actors() if _db.code_files(a)
 }
 
 ETYPE_TPAGES: dict[str, list] = {
-    a["etype"]: list(a["tpages"]) for a in _db.actors() if a.get("tpages")
+    a["etype"]: _db.actor_tpages(a["etype"]) for a in _db.actors() if _db.actor_tpages(a["etype"])
 }
 
 
@@ -527,34 +521,11 @@ ALL_SFX_ITEMS = [
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LUMP_REFERENCE + UNIVERSAL_LUMPS
+# Lump reference (read from the actor's panels / fields / links — db.lump_reference)
 # ═══════════════════════════════════════════════════════════════════════════
-def _tuples_from_lumps(lumps_list) -> list:
-    return [(l["key"], l["type"], l.get("description", "")) for l in lumps_list]
-
-
-LUMP_REFERENCE: dict[str, list] = {}
-for _actor in _db.actors():
-    _et = _actor["etype"]
-    LUMP_REFERENCE[_et] = _tuples_from_lumps(_actor.get("lumps", []))
-
-_nav_enemy_parent = _db.find_parent("nav-enemy")
-LUMP_REFERENCE["_enemy"] = (
-    _tuples_from_lumps(_nav_enemy_parent["lumps"]) if _nav_enemy_parent else []
-)
-
-_pd_parent = _db.find_parent("process-drawable")
-UNIVERSAL_LUMPS: list = (
-    _tuples_from_lumps(_pd_parent["lumps"]) if _pd_parent else []
-)
-
-
 def _lump_ref_for_etype(etype):
-    """Return (universal_lumps, actor_lumps) for a given etype."""
-    actor_entries = list(LUMP_REFERENCE.get(etype, []))
-    if _db.is_enemy(etype):
-        actor_entries = list(LUMP_REFERENCE.get("_enemy", [])) + actor_entries
-    return UNIVERSAL_LUMPS, actor_entries
+    """[{key, type, row_type, desc, source}] — see db.lump_reference."""
+    return _db.lump_reference(etype)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -562,7 +533,7 @@ def _lump_ref_for_etype(etype):
 # ═══════════════════════════════════════════════════════════════════════════
 ACTOR_LINK_DEFS: dict[str, list] = {}
 for _actor in _db.all_actors_including_orphans():
-    _slots = _actor.get("link_slots")
+    _slots = _db.link_slots(_actor["etype"])        # "actor-link" panel "slots"
     if not _slots:
         continue
     ACTOR_LINK_DEFS[_actor["etype"]] = [
@@ -618,6 +589,32 @@ def _actor_remove_link(obj, lump_key, slot_index):
     return False
 
 
+def _actor_multi_links(obj, lump_key, first_slot):
+    """Entries of an "allow-multiple" slot: lump_key entries with slot_index
+    >= first_slot, in order."""
+    return sorted((e for e in (_actor_links(obj) or []) if e.lump_key == lump_key and e.slot_index >= first_slot),
+                  key=lambda e: e.slot_index)
+
+
+def _actor_add_multi_link(obj, lump_key, first_slot, target_name):
+    """Append target to an "allow-multiple" slot (next free index). Returns
+    False if it's already linked there."""
+    ents = _actor_multi_links(obj, lump_key, first_slot)
+    if any(e.target_name == target_name for e in ents):
+        return False
+    nxt = (ents[-1].slot_index + 1) if ents else first_slot
+    _actor_set_link(obj, lump_key, nxt, target_name)
+    return True
+
+
+def _actor_remove_multi_link(obj, lump_key, first_slot, slot_index):
+    """Remove one entry of an "allow-multiple" slot and close the gap so the
+    exported list stays in order."""
+    _actor_remove_link(obj, lump_key, slot_index)
+    for i, e in enumerate(_actor_multi_links(obj, lump_key, first_slot)):
+        e.slot_index = first_slot + i
+
+
 def _build_actor_link_lumps(obj, etype):
     """Build dict of lump_key → ["string", name0, name1, ...] for all set links."""
     slots = _actor_link_slots(etype)
@@ -663,6 +660,12 @@ LUMP_TYPE_ITEMS = [
 _LUMP_HARDCODED_KEYS = frozenset(_db.hardcoded_lump_keys())
 
 
+class RawLump(str):
+    """A "plain-text" custom lump value: the text after "key": in the .jsonc,
+    written exactly as typed (export/writers.py splices it in after
+    json.dumps). Validated as JSON when parsed."""
+
+
 def _parse_lump_row(key, ltype, value_str):
     """Parse an OGLumpRow into a JSONC lump value, or return None on error."""
     s = value_str.strip()
@@ -672,7 +675,21 @@ def _parse_lump_row(key, ltype, value_str):
         return None, "empty key"
 
     try:
-        if ltype in ("symbol", "string", "type", "enum-int32", "enum-uint32",
+        if ltype == "plain-text":
+            # Written to the .jsonc exactly as typed; must be valid JSON on
+            # its own or the whole level file breaks.
+            import json as _json
+            try:
+                _json.loads(s)
+            except ValueError as e:
+                return None, f"not valid JSON — would break the level file ({e})"
+            return RawLump(s), None
+
+        if ltype == "string":
+            # space-separated, one string per value (like the number types)
+            return ["string"] + s.split(), None
+
+        if ltype in ("symbol", "type", "enum-int32", "enum-uint32",
                      "cell-info"):
             return [ltype, s], None
 

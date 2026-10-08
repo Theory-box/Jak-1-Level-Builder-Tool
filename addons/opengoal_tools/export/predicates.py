@@ -12,7 +12,7 @@ from pathlib import Path
 from .. import db as _db
 from ..data import (
     ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    needed_tpages, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
@@ -66,7 +66,28 @@ def _canonical_actor_objects(scene, objects=None):
             continue
         actors.append(o)
     actors.sort(key=lambda o: o.name)
-    return actors
+    return _nav_mesh_actor_order(actors)
+
+
+def _nav_mesh_actor_order(actors):
+    """Move actors with a nav-mesh-actor link after the actor they copy the
+    nav-mesh from: the injected navmesh is set on that actor's birth!, and
+    actors are born in level order. Stable: everything else keeps name order."""
+    by_name = {o.name: o for o in actors}
+
+    def src(o):
+        for e in getattr(o, "og_actor_links", None) or []:
+            if e.lump_key == "nav-mesh-actor" and e.slot_index == 0 and e.target_name in by_name:
+                return by_name[e.target_name]
+        return None
+
+    depth = {}
+    def d(o, seen=()):
+        if o.name not in depth:
+            s = src(o)
+            depth[o.name] = 0 if s is None or s.name in seen else d(s, seen + (o.name,)) + 1
+        return depth[o.name]
+    return sorted(actors, key=d)
 
 def _actor_uses_waypoints(etype):
     """True if this entity type can use waypoints (path lump or nav patrol)."""
@@ -107,7 +128,7 @@ def _actor_supports_aggro_trigger(etype):
     Process-drawable enemies (junglesnake, bully, yeti, mother-spider, etc.)
     do NOT respond to these events — silently doing nothing if sent.
     """
-    return _actor_uses_navmesh(etype)
+    return _db.supports_aggro_trigger(etype)
 
 def _classify_target(target_name):
     """Return one of 'camera', 'checkpoint', 'enemy', 'custom', or '' for an unknown target."""

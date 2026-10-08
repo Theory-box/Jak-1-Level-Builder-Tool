@@ -10,7 +10,7 @@ from . import db as _db
 from .data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
-    LUMP_REFERENCE, LUMP_TYPE_ITEMS,
+    LUMP_TYPE_ITEMS,
     _actor_has_links, _actor_link_slots, _lump_ref_for_etype, _is_custom_type,
 )
 from .collections import (
@@ -75,71 +75,92 @@ def _vol_for_target(scene, target_name):
 
 
 def _draw_platform_settings(layout, sel, scene):
-    """Draw per-platform settings for the active platform actor."""
+    """DB "sync" panel: path timing for sync-driven actors (plat, plat-eco,
+    citb-plat ...). Fields, labels and defaults come from the panel's fields
+    (PanelTypes "sync" + the actor's overrides); "show-field": false /
+    "export": false fields are left out."""
     etype = sel.name.split("_", 2)[1]
-    einfo = ENTITY_DEFS.get(etype, {})
-
-    layout.label(text=einfo.get("label", etype), icon="CUBE")
-
-    # ── Sync controls (plat, plat-eco, side-to-side-plat) ────────────────────
-    if einfo.get("needs_sync"):
-        box = layout.box()
-        box.label(text="Sync (Path Timing)", icon="TIME")
-
-        wp_prefix = sel.name + "_wp_"
-        wp_count  = sum(1 for o in _level_objects(scene)
-                        if o.name.startswith(wp_prefix) and o.type == "EMPTY")
-
-        if wp_count < 2:
+    if not _db.has_panel(etype, "sync"):
+        return
+    from .export import path_modes as _pm
+    from .panels.actor_fields import _draw_field     # runtime import (no cycle)
+    box = layout.box()
+    # What sync does on this actor: its own "description", else the default.
+    desc = _db.panel_option(etype, "sync", "description") or _db.panel_type("sync").get("description", "")
+    if desc:
+        dcol = box.column(align=True); dcol.scale_y = 0.8
+        line = ""
+        for w in desc.split():
+            if len(line) + len(w) + 1 > 44:
+                dcol.label(text=line); line = w
+            else:
+                line = f"{line} {w}".strip()
+        if line:
+            dcol.label(text=line)
+    path_driven = _db.has_panel(etype, "path")
+    n_pts = 0
+    if path_driven:
+        try:
+            n_pts = len(_pm.build(_pm.gather_sources(sel), "LINEAR")[0])
+        except Exception:
+            n_pts = 0
+        if n_pts < 2:
             box.label(text="⚠ Add ≥2 waypoints to enable movement", icon="INFO")
         else:
-            box.label(text=f"✓ {wp_count} waypoints — platform will move", icon="CHECKMARK")
+            box.label(text=f"✓ {n_pts} points — will move", icon="CHECKMARK")
+    col = box.column(align=True)
+    info = {"etype": etype, **(_db.find_actor(etype) or {})}
+    for f in _db.panel_fields(etype, "sync", visible_only=True):
+        _draw_field(col, sel, f, info)
+    box.operator("og.set_platform_defaults", text="Reset to Defaults", icon="LOOP_BACK")
+    if path_driven and n_pts >= 2:
+        box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
 
-        col = box.column(align=True)
 
-        # Period / Phase / Ease — use _prop_row (safe: no writes in draw)
-        _prop_row(col, sel, "og_sync_period",   "Period (s):",  4.0)
-        _prop_row(col, sel, "og_sync_phase",    "Phase (0–1):", 0.0)
-        _prop_row(col, sel, "og_sync_ease_out", "Ease Out:",    0.15)
-        _prop_row(col, sel, "og_sync_ease_in",  "Ease In:",     0.15)
+def apply_db_drivers(obj, etype: str) -> int:
+    """Add the DB field drivers (db.field_drivers) to an actor empty: each one
+    drives obj.<driven> from a scripted expression of one variable "var".
+    "var": "self" reads the field's own custom prop, another field key reads
+    that prop, anything with '[' or '.' is used as a data path on the object.
+    Returns how many drivers were added."""
+    n = 0
+    for f, d in _db.field_drivers(etype):
+        driven = d.get("driven")
+        if not driven:
+            continue
+        idx = int(d.get("index", -1))
+        src = d.get("var", "self")
+        if src == "self":
+            src = f["key"]
+        path = src if ("[" in src or "." in src) else f'["{src}"]'
+        if path.startswith('["'):
+            k = path[2:-2]
+            if k not in obj.keys():
+                obj[k] = _db.field_default(f, etype) if k == f["key"] else 0.0
+        try:
+            obj.driver_remove(driven, idx)
+        except TypeError:
+            pass
+        fc = obj.driver_add(driven, idx) if idx >= 0 else obj.driver_add(driven)
+        drv = fc.driver
+        drv.type = "SCRIPTED"
+        for v in list(drv.variables):
+            drv.variables.remove(v)
+        var = drv.variables.new()
+        var.name = "var"
+        var.type = "SINGLE_PROP"
+        var.targets[0].id_type = "OBJECT"
+        var.targets[0].id = obj
+        var.targets[0].data_path = path
+        drv.expression = d.get("expression", "var")
+        n += 1
+    return n
 
-        # Wrap phase toggle
-        wrap = bool(sel.get("og_sync_wrap", 0))
-        row = box.row()
-        icon = "CHECKBOX_HLT" if wrap else "CHECKBOX_DEHLT"
-        label = "Loop (wrap-phase) ✓" if wrap else "Loop (wrap-phase)"
-        row.operator("og.toggle_platform_wrap", text=label, icon=icon)
 
-        box.operator("og.set_platform_defaults", text="Reset to Defaults", icon="LOOP_BACK")
-
-        if wp_count >= 2:
-            box.label(text="Tip: phase staggers multiple platforms", icon="INFO")
-
-    # ── plat-button path info ─────────────────────────────────────────────────
-    if einfo.get("needs_path") and not einfo.get("needs_sync"):
-        box = layout.box()
-        box.label(text="Path (Button Travel)", icon="ANIM")
-        wp_prefix = sel.name + "_wp_"
-        wp_count  = sum(1 for o in _level_objects(scene)
-                        if o.name.startswith(wp_prefix) and o.type == "EMPTY")
-        if wp_count < 2:
-            box.label(text="⚠ Needs ≥2 waypoints (start + end)", icon="ERROR")
-        else:
-            box.label(text=f"✓ {wp_count} waypoints", icon="CHECKMARK")
-        box.label(text="Use Waypoints panel to add points ↓", icon="INFO")
-
-    # ── notice-dist (plat-eco) ────────────────────────────────────────────────
-    if einfo.get("needs_notice_dist"):
-        box = layout.box()
-        box.label(text="Eco Notice Distance", icon="RADIOBUT_ON")
-        notice = float(sel.get("og_notice_dist", -1.0))
-        _prop_row(box, sel, "og_notice_dist", "Distance (m, -1=always):", -1.0)
-        toggle_row = box.row()
-        if notice >= 0:
-            op = toggle_row.operator("og.nudge_float_prop", text="Set Always Active", icon="RADIOBUT_ON")
-            op.prop_name = "og_notice_dist"; op.delta = -999.0; op.val_min = -1.0
-        else:
-            toggle_row.label(text="Moves without eco — set value above to limit range", icon="INFO")
+def sync_defaults(etype: str) -> dict:
+    """{prop key: default} for the actor's "sync" panel fields."""
+    return {f["key"]: _db.field_default(f, etype)
+            for f in _db.panel_fields(etype, "sync") if f.get("key")}
 
 
 # ===========================================================================
@@ -245,8 +266,8 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
                         box2.label(text="Shift-select a mesh to link", icon="INFO")
     elif einfo.get("needs_pathb"):
         box = layout.box()
-        box.label(text="Needs 2 path sets", icon="INFO")
-        box.label(text="Waypoints: _wp_00... and _wpb_00...")
+        box.label(text="Needs 2 paths: path + pathb", icon="INFO")
+        box.label(text="Path panel > Add Path (pathb)")
     elif einfo.get("needs_path"):
         box = layout.box()
         box.label(text="Needs waypoints to patrol", icon="INFO")

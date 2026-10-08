@@ -246,8 +246,8 @@ def _draw_field(layout, obj, field, actor_info=None):
 # The generic panel
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Which actors use a bespoke panel vs the generic field panel is now a DB flag
-# (`"panel": "<id>"`), read via db.actor_panel(). No hardcoded etype lists.
+# Which panels an actor shows comes from its DB "panels" list (and its
+# parents'), read via db.has_panel() / db.actor_panel(). No etype lists.
 
 
 class OG_PT_ActorFields(Panel):
@@ -279,22 +279,27 @@ class OG_PT_ActorFields(Panel):
         sel = ctx.active_object
         parts = sel.name.split("_", 2)
         etype = parts[1]
-        # Actors with a bespoke panel (DB "panel" flag) show their fields there;
-        # this container just parents the sub-panels for them.
-        if _db.actor_panel(etype):
-            return
+        # The generic field list is the "custom-fields" panel; actors with a
+        # bespoke panel keep it hidden ("show-panel": false) and this container
+        # just parents their sub-panels.
         actor = _db.find_actor(etype)
         if not actor:
             self.layout.label(text=f"No DB entry for {etype!r}", icon="ERROR")
             return
-        fields = _db.ui_fields(etype)
-        if not fields:
-            return  # container only — child sub-panels provide the settings
         # Include etype on actor_info dict so per-etype defaults work for
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}
-        for field in fields:
-            _draw_field(self.layout, sel, field, actor_info)
+        if _db.has_panel(etype, "custom-fields"):
+            for field in _db.ui_fields(etype):
+                if field.get("show-field") is False:   # DB: hidden but still exported
+                    continue
+                _draw_field(self.layout, sel, field, actor_info)
+        # Small DB panels with no hand-written Blender panel ("draw": "generic").
+        for pid, pt in _db.generic_panels(etype):
+            box = self.layout.box()
+            box.label(text=pt.get("label", pid))
+            for field in _db.panel_fields(etype, pid, visible_only=True):
+                _draw_field(box, sel, field, actor_info)
 
 
 # Exported registry for __init__.py

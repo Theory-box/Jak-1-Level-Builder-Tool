@@ -11,7 +11,7 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    needed_tpages, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
@@ -72,11 +72,6 @@ from .volumes import (
 #
 # If the collection is empty, fall back to the legacy `<actor>_wp_NN` empty
 # name-grep so pre-existing levels still export correctly.
-#
-# Ping-pong toggle: when set, the forward path is followed by the reverse
-# minus endpoints — a 4-point path [A,B,C,D] becomes [A,B,C,D,C,B], which
-# the engine's modulo walk renders as A→B→C→D→C→B→A→B→... with no point
-# duplicated at the turn.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -129,8 +124,7 @@ def _collect_waypoint_points(actor_obj):
 
     Reads og_waypoint_sources if populated; otherwise falls back to the
     legacy name-grep so older levels with manually-placed _wp_NN empties
-    continue to export without migration. Applies the ping-pong toggle
-    at the end if set.
+    continue to export without migration.
     """
     points = []
     sources = getattr(actor_obj, "og_waypoint_sources", None)
@@ -155,11 +149,6 @@ def _collect_waypoint_points(actor_obj):
         )
         for wp in wp_objects:
             points.append(_to_game_coords(wp.matrix_world.translation))
-
-    # Ping-pong: append the reverse path minus endpoints so the loop is
-    # seamless (no duplicated point at A or at the turn).
-    if getattr(actor_obj, "og_waypoint_pingpong", False) and len(points) > 2:
-        points = points + list(reversed(points))[1:-1]
 
     return points
 
@@ -275,8 +264,7 @@ def collect_actors(scene, depsgraph=None):
         # collection (Phase 4 of waypoint-link-source) — each source is an
         # empty (single point) or a curve (one point per spline control
         # point). Falls back to legacy <actor>_wp_NN name-grep for older
-        # levels with no collection populated. Applies ping-pong reversal
-        # if og_waypoint_pingpong is set.
+        # levels with no collection populated.
         # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
         # decides the control points and, for curve-control actors, path-k.
         # Actors flagged path_linear_only in the DB (path-control readers that
@@ -285,8 +273,7 @@ def collect_actors(scene, depsgraph=None):
         _arec_p = _schema_db.find_actor(etype) or {}
         _ppts, path_knots, _pmode, _pwarn = _pm.build(
             _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
-            linear_only=bool(_arec_p.get("path_linear_only")),
-            pingpong=bool(getattr(o, "og_waypoint_pingpong", False)))
+            linear_only=_schema_db.path_linear_only(etype))
         path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
         if _pwarn and path_pts:
             log(f"  [path] {o.name}: {_pwarn}")
@@ -308,22 +295,22 @@ def collect_actors(scene, depsgraph=None):
                 lump["nav-mesh-sphere"] = ["vector4m", [gx, gy, gz, nav_r]]
                 log(f"  [nav-workaround] {o.name}  sphere r={nav_r}m  (no waypoints - will idle)")
 
-        # ── Path lump (needs_path=True) ───────────────────────────────────────
-        # process-drawable enemies that error without a path lump.
-        # Also used by nav-enemies that patrol (snow-bunny, muse etc.).
-        # Waypoints tagged _wp_00, _wp_01 ... drive this lump.
-        # For needs_path enemies with no waypoints we log a warning — the level
-        # will likely crash or error at runtime without at least 1 waypoint.
-        # Platforms handle their own path lump below — skip them here to avoid double-emit
-        if (einfo.get("needs_path") or (_schema_db.nav_unsafe(etype) and path_pts)) and einfo.get("cat") != "Platforms":
+        # ── Path lump (DB "path" panel) ───────────────────────────────────────
+        # Any actor with the path panel exports its waypoints/curves as 'path'
+        # (patrolling nav-enemies, process-drawable enemies, sync platforms,
+        # plat-button ...). "required" actors error at runtime without one.
+        # "export": false on the panel turns the lump off.
+        if _schema_db.panel_exports(etype, "path"):
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")
+            elif _actor_get_link(o, "path-actor", 0):
+                log(f"  [path] {o.name}  uses the path of {_actor_get_link(o, 'path-actor', 0).target_name}")
             elif einfo.get("needs_path"):
                 log(f"  [WARNING] {o.name} needs a path but has no waypoints — will crash/error at runtime!")
 
         # swamp-bat's second route ('pathb') is an extra path (og_extra_paths).
-        if einfo.get("needs_pathb") and not any(
+        if einfo.get("needs_pathb") and not _actor_get_link(o, "path-actor", 0) and not any(
                 p.name.strip() == "pathb" and len(p.sources) for p in getattr(o, "og_extra_paths", [])):
             log(f"  [WARNING] {o.name} needs a 'pathb' path (Path panel > Add Path) — will error at runtime!")
 
@@ -333,44 +320,31 @@ def collect_actors(scene, depsgraph=None):
         # Only emitted when the platform has waypoints — without waypoints the
         # engine ignores sync and the platform spawns idle.
         if einfo.get("needs_sync"):
-            period   = float(o.get("og_sync_period",   4.0))
-            phase    = float(o.get("og_sync_phase",    0.0))
-            ease_out = float(o.get("og_sync_ease_out", 0.15))
-            ease_in  = float(o.get("og_sync_ease_in",  0.15))
+            # Values/defaults from the DB "sync" panel; a field with
+            # "export": false is left out (ease -> 2-value form, wrap -> no options).
+            _sf = {f["key"]: f for f in _schema_db.panel_fields(etype, "sync") if f.get("key")}
+            def _sv(k, fallback):
+                if k not in _sf:
+                    return None
+                return float(o.get(k, _schema_db.field_default(_sf[k], etype) if _sf[k].get("default") is not None else fallback))
+            period   = _sv("og_sync_period",   4.0)
+            phase    = _sv("og_sync_phase",    0.0)
+            ease_out = _sv("og_sync_ease_out", 0.15)
+            ease_in  = _sv("og_sync_ease_in",  0.15)
+            period   = 4.0 if period is None else period
+            phase    = 0.0 if phase is None else phase
             if path_pts:
-                if ease_in <= 0.0 or ease_out <= 0.0:
+                if ease_in is None or ease_out is None or ease_in <= 0.0 or ease_out <= 0.0:
                     # 2-value form: duration + offset only. Ease-in/out of 0 crash
                     # the game on load, so omit them to disable easing entirely.
                     lump["sync"] = ["float", period, phase]
                 else:
                     lump["sync"] = ["float", period, phase, ease_out, ease_in]
-                wrap = bool(o.get("og_sync_wrap", False))
-                if wrap:
-                    # fact-options wrap-phase: bit 3 of the options uint64
-                    # GOAL: (defenum fact-options :bitfield #t  (wrap-phase 3))
-                    # value = 1 << 3 = 8
-                    # Read via: (res-lump-value ent 'options fact-options)
-                    lump["options"] = ["uint32", 8]
-                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}  wrap={wrap}")
-            else:
+                # wrap-phase lives in the fact-options panel now ('options' lump)
+                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}")
+            elif _schema_db.has_panel(etype, "path"):
                 log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
-        # ── Platform: path lump (plat-button) ────────────────────────────────
-        # plat-button follows a path when pressed. Requires ≥2 waypoints.
-        # Uses needs_path flag and is a Platform, distinguishing from enemy paths.
-        if einfo.get("needs_path") and einfo.get("cat") == "Platforms":
-            if path_pts:
-                lump["path"] = ["vector4m"] + path_pts
-                log(f"  [plat-path] {o.name}  {len(path_pts)} points")
-            else:
-                log(f"  [WARNING] {o.name} (plat-button) needs ≥2 waypoints or it will not move!")
-
-        # ── Platform: sync path (plat / plat-eco) ────────────────────────────
-        # When a sync platform has waypoints, also emit the path lump so the
-        # engine can evaluate the curve.
-        if einfo.get("needs_sync") and path_pts and "path" not in lump:
-            lump["path"] = ["vector4m"] + path_pts
-            log(f"  [sync-path] {o.name}  {len(path_pts)} points")
 
         # ── Smooth-curve knots (path-k) ──────────────────────────────────────
         # When Path Mode = SMOOTH and a 'path' lump was emitted, also emit the
@@ -392,10 +366,22 @@ def collect_actors(scene, depsgraph=None):
         # (needs_notice_dist). Driven by the DB's TraitFields section and applied
         # to every matching actor, regardless of schema_export.
         for _tk, _tv in emit_schema_lumps(
-                lambda k, d=None: o.get(k, d),
+                _schema_db.prop_getter(o),
                 _schema_db.trait_fields(etype),
                 etype=etype).items():
             lump[_tk] = _tv
+        # Shared panels' fields (sync, water, ... — anything but custom-fields)
+        # export for every actor that has the panel, like traits; schema_export
+        # actors already got them from the schema block below.
+        if not _schema_db.schema_export_enabled(etype):
+            for _pid in _schema_db.actor_panels(etype):
+                if _pid == "custom-fields":
+                    continue
+                for _tk, _tv in emit_schema_lumps(
+                        _schema_db.prop_getter(o),
+                        _schema_db.panel_fields(etype, _pid),
+                        etype=etype).items():
+                    lump[_tk] = _tv
 
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
@@ -464,7 +450,7 @@ def collect_actors(scene, depsgraph=None):
         _arec = _schema_db.find_actor(etype)
         if _schema_db.schema_export_enabled(etype):
             for _lk, _lv in emit_schema_lumps(
-                    lambda k, d=None: o.get(k, d),
+                    _schema_db.prop_getter(o),
                     _schema_db.inherited_fields(etype),
                     etype=etype,
                     choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
@@ -516,7 +502,7 @@ def collect_actors(scene, depsgraph=None):
             _xkf = _pm.keyframe_suffix(getattr(_xp, "keyframe", ""))
             _xpts, _xk, _xmode, _xwarn = _pm.build(
                 _pm.gather_from(_xp.sources), _xp.mode,
-                linear_only=bool(_arec_p.get("path_linear_only")), pingpong=_xp.pingpong)
+                linear_only=_schema_db.path_linear_only(etype))
             if _xwarn and _xpts:
                 log(f"  [path] {o.name} '{_xn}': {_xwarn}")
             if _xk and getattr(_xp, "knots_manual", False):
@@ -534,11 +520,19 @@ def collect_actors(scene, depsgraph=None):
 
         # Variant art-group/code override (e.g. per-bridge art group). Falls back
         # to the actor's own art group/code when the variant doesn't specify one.
-        _variant = _schema_db.actor_variant(etype, lambda k, d=None: o.get(k, d))
+        _variant = _schema_db.actor_variant(etype, _schema_db.prop_getter(o))
 
         # A variant may also switch the exported etype (e.g. OgreStepVariants:
         # ogre-step -> ogre-step-a). The DB lookups (code, tpages, art groups)
         # keep using the DB actor's etype via _db_etype.
+        if "options" in lump and "options" not in _protected_keys:
+            lump["options"] = _schema_db.options_enum_lump(lump["options"])
+        # Scale panel: the empty's Blender scale -> 'scale' lump.
+        if "scale" not in _protected_keys:
+            _sc = _schema_db.scale_lump(etype, o.matrix_world.to_scale())
+            if _sc:
+                lump["scale"] = _sc
+                log(f"  [scale] {o.name}  {_sc[1:4]}")
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _variant.get("etype") or etype,
@@ -550,9 +544,8 @@ def collect_actors(scene, depsgraph=None):
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
             "art_group": _variant.get("art_group"),   # None -> fall back to ETYPE_AG
-            "code":      _variant.get("code"),
+            "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
-            "extra_code":       _variant.get("extra_code") or [],
         })
 
     # ── Checkpoint trigger actors ─────────────────────────────────────────────
@@ -664,11 +657,13 @@ def collect_actors(scene, depsgraph=None):
             ve_counter += 1
             lump_v = {"name": f"{etype}-{uid}"}
             for _lk, _lv in emit_schema_lumps(
-                    lambda k, d=None: o.get(k, d),
+                    _schema_db.prop_getter(o),
                     _schema_db.inherited_fields(etype),
                     etype=etype,
                     choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
                 lump_v[_lk] = _lv
+            if "options" in lump_v:
+                lump_v["options"] = _schema_db.options_enum_lump(lump_v["options"])
             out.append({
                 "trans":     [gx_v, gy_v, gz_v],
                 "etype":     etype,

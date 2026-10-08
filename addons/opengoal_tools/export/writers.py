@@ -11,7 +11,7 @@ from .. import boundary_viz as _bviz
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    needed_tpages, ACTOR_LINK_DEFS,
     MOOD_FUNC_OVERRIDES,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
@@ -575,6 +575,32 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
 _INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code")
 
 
+def _dumps_with_raw_lumps(data):
+    """json.dumps, but "plain-text" custom lumps (data.RawLump) are written
+    exactly as typed: each is swapped for a placeholder string, then the
+    placeholder (with its quotes) is replaced by the raw text."""
+    from ..data import RawLump
+    raws = []
+    for a in data.get("actors", []):
+        lump = a.get("lump") if isinstance(a, dict) else None
+        if not isinstance(lump, dict) or not any(isinstance(v, RawLump) for v in lump.values()):
+            continue
+        lump = a["lump"] = dict(lump)        # don't touch the caller's actor dicts
+        for k, v in list(lump.items()):
+            if isinstance(v, RawLump):
+                raws.append(str(v))
+                lump[k] = f"__OG_RAW_LUMP_{len(raws) - 1}__"
+    text = json.dumps(data, indent=2)
+    for i, raw in enumerate(raws):
+        text = text.replace(f'"__OG_RAW_LUMP_{i}__"', raw, 1)
+    if raws:
+        try:
+            json.loads(text)
+        except ValueError as e:
+            log(f"  [WARNING] plain-text custom lump(s) make the .jsonc invalid: {e}")
+    return text
+
+
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
@@ -646,7 +672,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         **({"cameras": cameras} if cameras else {}),
     }
     p = d / f"{name}.jsonc"
-    new_text = f"// OpenGOAL custom level: {name}\n" + json.dumps(data, indent=2)
+    new_text = f"// OpenGOAL custom level: {name}\n" + _dumps_with_raw_lumps(data)
     if p.exists() and p.read_text() == new_text:
         log(f"Skipped {p} (unchanged)")
     else:
@@ -1072,13 +1098,13 @@ def patch_game_gp(name, code_deps=None, scene=None):
     dgo  = f"{nick.upper()}.DGO"
 
     # goal-src lines for enemy code (de-duplicated)
-    # Skip o_only entries (gc=None) — vanilla game.gp already has their goal-src lines.
+    # Skip entries with no gc (all DB code) — vanilla game.gp already has their goal-src lines.
     extra_goal_src = ""
     if code_deps:
         seen_gc = set()
         for o, gc, dep in code_deps:
             if gc is None:
-                continue  # o_only: .o injected into DGO but no goal-src needed
+                continue  # .o injected into DGO only, no goal-src needed
             if gc not in seen_gc:
                 seen_gc.add(gc)
                 extra_goal_src += f'(goal-src "{gc}" "{dep}")\n'
@@ -1106,13 +1132,6 @@ def patch_game_gp(name, code_deps=None, scene=None):
     # in game.gp across exports which caused duplicate-compile crashes in GOALC.
     txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)[^\n]*\n', '', txt)
     txt = re.sub(r'[^\n]*; og-include ' + re.escape(name) + r'\n', '', txt)
-    # Strip ALL enemy goal-src lines that could have been injected by any previous export.
-    # This catches leftover entries even if the dep changed between exports.
-    # We match any goal-src line whose path matches a known ETYPE_CODE gc file.
-    for _etype_info in ETYPE_CODE.values():
-        _gc = _etype_info.get("gc", "")
-        if _gc:
-            txt = re.sub(r'\(goal-src "' + re.escape(_gc) + r'"[^)]*\)\n', '', txt)
 
     if correct_block in txt:
         log("game.gp already correct"); return

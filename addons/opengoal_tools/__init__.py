@@ -28,7 +28,7 @@ from .data import (
     ETYPE_CODE,
     ETYPE_EXTRAS_AG,
     LEVEL_BANKS,
-    LUMP_REFERENCE,
+    
     LUMP_TYPE_ITEMS,
     NPC_ENUM_ITEMS,
     PICKUP_ENUM_ITEMS,
@@ -149,6 +149,33 @@ classes = (
     *_PANELS_CLASSES,
 )
 
+# COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
+@bpy.app.handlers.persistent
+def _migrate_legacy_props(*_args):
+    """Copy props saved under an old key (DB field "legacy_key", e.g.
+    og_sync_wrap -> og_fop_wrap_phase) to the new key, once, on file load."""
+    try:
+        from . import db as _dbm
+        leg = _dbm.legacy_keys()
+        for o in bpy.data.objects:
+            for new, old in leg.items():
+                if old in o.keys() and new not in o.keys():
+                    o[new] = o[old]
+            # old per-axis / uniform scale fields -> the empty's own scale
+            # (game axes x, y(up), z -> Blender x, z, y), once, if unscaled
+            if o.type == "EMPTY" and tuple(round(v, 4) for v in o.scale) == (1.0, 1.0, 1.0):
+                if any(k in o.keys() for k in ("og_scale_x", "og_scale_y", "og_scale_z")):
+                    gx, gy, gz = (float(o.get(k, 1.0)) for k in ("og_scale_x", "og_scale_y", "og_scale_z"))
+                    o.scale = (gx, gz, gy)
+                    for k in ("og_scale_x", "og_scale_y", "og_scale_z", "og_scale_w"):
+                        if k in o.keys(): del o[k]
+                for k in ("og_orbit_scale", "og_shark_scale"):
+                    if k in o.keys():
+                        v = float(o[k]); o.scale = (v, v, v); del o[k]
+    except Exception:
+        pass
+
+
 def register():
     _load_previews()
     _mp.register_handler()
@@ -247,13 +274,6 @@ def register():
     bpy.types.Object.og_waypoint_sources       = bpy.props.CollectionProperty(type=OGWaypointSource)
     bpy.types.Object.og_waypoint_sources_index = bpy.props.IntProperty(
         name="Active Waypoint Source", default=0)
-    bpy.types.Object.og_waypoint_pingpong      = bpy.props.BoolProperty(
-        name="Ping-pong",
-        description="Walk the path forward, then backward — A→B→C→B→A→B→... "
-                    "Implemented by emitting the reversed points after the "
-                    "forward path; the engine's modulo walk handles the rest.",
-        default=False,
-    )
     # Path mode — see export/path_modes.py. Item numbers are fixed so files
     # saved before the expanded list keep their value: 0 = Linear, 1 = the old
     # "Smooth", which was the clamped B-spline (now "Smooth Clamped").
@@ -396,6 +416,8 @@ def register():
     _spawn_register_handlers()
     from .panels.tools import register_db_handlers
     register_db_handlers()
+    if _migrate_legacy_props not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_migrate_legacy_props)
 
     def _deferred_populate_spawn_lists():
         try:
@@ -413,6 +435,8 @@ def register():
 def unregister():
     from .panels.tools import unregister_db_handlers
     unregister_db_handlers()
+    if _migrate_legacy_props in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_migrate_legacy_props)
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
@@ -448,7 +472,7 @@ def unregister():
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
-              "og_waypoint_sources","og_waypoint_sources_index","og_waypoint_pingpong",
+              "og_waypoint_sources","og_waypoint_sources_index",
               "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
               "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)

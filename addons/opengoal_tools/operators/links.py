@@ -14,14 +14,14 @@ from bpy.types import Operator
 from ..data import (
     ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
     _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
     _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    UNIVERSAL_LUMPS, _is_custom_type,
+    _is_custom_type,
 )
 from ..collections import (
     _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
@@ -123,18 +123,73 @@ class OG_OT_LinkNavMesh(Operator):
             self.report({"ERROR"}, "No enemy actor in selection — select the enemy empty too")
             return {"CANCELLED"}
 
-        nm = meshes[0]
-
-        # Tag mesh as navmesh, prefix name if needed, route into NavMeshes sub-collection
-        nm["og_navmesh"] = True
-        if not nm.name.startswith("NAVMESH_"):
-            nm.name = "NAVMESH_" + nm.name
-        _link_object_to_sub_collection(ctx.scene, nm, *_COL_PATH_NAVMESHES)
-
-        for enemy in enemies:
-            enemy["og_navmesh_link"] = nm.name
-
+        nm = _link_navmesh(ctx.scene, meshes[0], enemies)
         self.report({"INFO"}, f"Linked {len(enemies)} actor(s) to {nm.name}")
+        return {"FINISHED"}
+
+
+def _link_navmesh(scene, nm, actors):
+    """Tag the mesh as a navmesh (NAVMESH_ prefix, NavMeshes collection) and
+    point each actor's og_navmesh_link at it. Returns the mesh."""
+    nm["og_navmesh"] = True
+    if not nm.name.startswith("NAVMESH_"):
+        nm.name = "NAVMESH_" + nm.name
+    _link_object_to_sub_collection(scene, nm, *_COL_PATH_NAVMESHES)
+    for a in actors:
+        a["og_navmesh_link"] = nm.name
+    return nm
+
+
+def _is_navmesh(o):
+    return o.type == "MESH" and (o.get("og_navmesh") or o.name.startswith("NAVMESH_"))
+
+
+def _navmesh_items(self, ctx):
+    """Search list: tagged navmeshes first, then every other mesh (marked —
+    linking one tags it as a navmesh). Trigger volumes are left out."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    actor = scene.objects.get(self.actor_name)
+    cur = actor.get("og_navmesh_link", "") if actor else ""
+    meshes = [o for o in scene.objects if o.type == "MESH" and not o.name.startswith(("VOL_", "CPVOL_"))]
+    meshes.sort(key=lambda o: (not _is_navmesh(o), o.name))
+    items = [(o.name, o.name + ("" if _is_navmesh(o) else "  (not a navmesh yet)") + ("  (linked)" if o.name == cur else ""),
+              f"Link nav-mesh {o.name}", "MOD_TRIANGULATE" if _is_navmesh(o) else "MESH_DATA", i)
+             for i, o in enumerate(meshes)]
+    if not items:
+        items = [("__none__", "(no meshes in scene)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_LinkNavMeshTo(Operator):
+    """Link this actor to a navmesh: the shift-selected mesh, or one
+    searched by name"""
+    bl_idname   = "og.link_navmesh_to"
+    bl_label    = "Link NavMesh"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "mesh"
+
+    actor_name:  bpy.props.StringProperty()
+    # SKIP_SAVE: Blender would otherwise reuse the last direct pick on the
+    # Search button and link it without opening the list.
+    target_name: bpy.props.StringProperty(description="Link this mesh directly instead of searching",
+                                          options={"SKIP_SAVE"})
+    mesh:        bpy.props.EnumProperty(name="NavMesh", items=_navmesh_items)
+
+    def invoke(self, ctx, event):
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        nm = ctx.scene.objects.get(self.target_name or self.mesh)
+        if actor is None or nm is None or nm.type != "MESH":
+            self.report({"ERROR"}, "Actor or mesh not found")
+            return {"CANCELLED"}
+        _link_navmesh(ctx.scene, nm, [actor])
+        self.report({"INFO"}, f"Linked {actor.name} to {nm.name}")
         return {"FINISHED"}
 
 class OG_OT_UnlinkNavMesh(Operator):
@@ -443,26 +498,43 @@ class OG_OT_WaypointSourceFrame(Operator):
         return {"FINISHED"}
 
 
+# Search-popup enum items must stay referenced while the popup is open
+# (Blender keeps only pointers to the strings).
+_SEARCH_ITEMS: list = []
+
+
 def _curve_items_in_scene(self, ctx):
-    """EnumProperty items callback: every CURVE object in the file.
-    Used by OG_OT_WaypointSourceLinkCurve's picker popup."""
-    items = [(o.name, o.name, "") for o in bpy.data.objects if o.type == "CURVE"]
+    """EnumProperty items callback: every CURVE object in the scene, the
+    ones already in this path marked. Used by the Link Curve search popup."""
+    actor = bpy.data.objects.get(self.actor_name)
+    coll = _path_list(actor, self.path_index)[0] if actor else None
+    have = {s.obj.name for s in coll if s.obj} if coll is not None else set()
+    scene = ctx.scene if ctx else bpy.context.scene
+    items = [(o.name, o.name + ("  (already in this path)" if o.name in have else ""), f"Link curve {o.name}", "CURVE_DATA", i)
+             for i, o in enumerate(sorted((o for o in scene.objects if o.type == "CURVE"), key=lambda o: o.name))]
     if not items:
-        items = [("__none__", "(no curves in scene)", "Add a curve via Add > Curve > Bezier first")]
-    return items
+        items = [("__none__", "(no curves in scene)", "Add a curve via Add > Curve > Bezier first", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
 
 
 class OG_OT_WaypointSourceLinkCurve(Operator):
-    """Pick an existing curve in the scene and append it to this actor's
-    waypoint list. At export time, each spline control point becomes one
+    """Append a curve to this actor's path: the shift-selected one, or one
+    searched by name. At export, each spline control point becomes one
     waypoint in the actor's path, in spline order."""
     bl_idname      = "og.waypoint_source_link_curve"
     bl_label       = "Link Curve"
-    bl_description = "Pick an existing curve. Each control point becomes a waypoint at export"
+    bl_description = "Link a curve to this path (search by name). Each control point becomes a waypoint at export"
     bl_options     = {"REGISTER", "UNDO"}
+    bl_property    = "curve_name"
 
     actor_name: bpy.props.StringProperty()
     path_index: bpy.props.IntProperty(default=-1)
+    # SKIP_SAVE: otherwise Blender reuses the last direct pick when the
+    # Search button is clicked, linking that curve instead of searching.
+    target_name: bpy.props.StringProperty(
+        description="Link this curve directly (shift-selected) instead of searching",
+        options={"SKIP_SAVE"})
     curve_name: bpy.props.EnumProperty(
         name="Curve",
         description="Which curve to link",
@@ -473,23 +545,23 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
         if not self.actor_name:
             self.report({"ERROR"}, "No actor specified")
             return {"CANCELLED"}
-        return ctx.window_manager.invoke_props_dialog(self, width=320)
-
-    def draw(self, ctx):
-        col = self.layout.column()
-        col.prop(self, "curve_name", text="Curve")
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
 
     def execute(self, ctx):
         actor = bpy.data.objects.get(self.actor_name)
         if actor is None:
             self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
             return {"CANCELLED"}
-        if self.curve_name in ("", "__none__"):
+        name = self.target_name or self.curve_name
+        if name in ("", "__none__"):
             self.report({"ERROR"}, "No curve selected — add a curve to the scene first")
             return {"CANCELLED"}
-        curve = bpy.data.objects.get(self.curve_name)
+        curve = bpy.data.objects.get(name)
         if curve is None or curve.type != "CURVE":
-            self.report({"ERROR"}, f"'{self.curve_name}' is not a curve")
+            self.report({"ERROR"}, f"'{name}' is not a curve")
             return {"CANCELLED"}
         # Append a row pointing to the curve, make it the active row.
         coll, owner, attr = _path_list(actor, self.path_index)
@@ -511,7 +583,7 @@ def _add_path_name_items(self, ctx):
     actor = bpy.data.objects.get(self.actor_name)
     have = {actor.og_path_lump} | {p.name for p in actor.og_extra_paths} if actor else set()
     etype = actor.name.split("_", 2)[1] if actor and actor.name.startswith("ACTOR_") else ""
-    wanted = [n for n in ((_db.find_actor(etype) or {}).get("paths") or []) if n not in have]
+    wanted = [n for n in _db.path_names(etype) if n not in have]
     rest = [n for n in STANDARD_PATH_NAMES if n not in have and n not in wanted]
     items = [(n, n, f"{n} (this actor reads it)", i) for i, n in enumerate(wanted)]
     items += [(n, n, n, len(items) + i) for i, n in enumerate(rest)]
@@ -560,14 +632,12 @@ def path_knot_target(actor, path_index):
     knot editor; built = path_modes.build() output for that path."""
     from ..export import path_modes as _pm
     from .. import db as _db
-    lin = bool((_db.find_actor(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "") or {})
-               .get("path_linear_only"))
+    lin = _db.path_linear_only(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "")
     if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
         xp = actor.og_extra_paths[path_index]
-        built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin, pingpong=xp.pingpong)
+        built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin)
         return xp, "knots_manual", "knots", "knots_index", built
-    built = _pm.build(_pm.gather_sources(actor), actor.og_path_mode, linear_only=lin,
-                      pingpong=bool(getattr(actor, "og_waypoint_pingpong", False)))
+    built = _pm.build(_pm.gather_sources(actor), actor.og_path_mode, linear_only=lin)
     return actor, "og_path_knots_manual", "og_path_knots", "og_path_knots_index", built
 
 
@@ -839,6 +909,53 @@ class OG_OT_AddLinkFromSelection(Operator):
         self.report({"INFO"}, f"Linked {vol.name} → {self.target_name}")
         return {"FINISHED"}
 
+def _vol_search_items(self, ctx):
+    """Search list for volume links. search_for "target": everything the
+    volume can link to (cameras, checkpoints, nav-enemies ...); "volume":
+    every VOL_ mesh, for linking one to the target. Linked ones marked."""
+    scene = ctx.scene if ctx else bpy.context.scene
+    if self.search_for == "volume":
+        cands = sorted((o for o in scene.objects if o.type == "MESH" and o.name.startswith("VOL_")), key=lambda o: o.name)
+        linked = {o.name for o in cands if _vol_has_link_to(o, self.target_name)}
+        icon = "MESH_CUBE"
+    else:
+        vol = scene.objects.get(self.vol_name)
+        cands = sorted((o for o in scene.objects if o is not vol and _is_linkable(o)), key=lambda o: o.name)
+        linked = {o.name for o in cands if vol and _vol_has_link_to(vol, o.name)}
+        icon = "LINKED"
+    items = [(o.name, o.name + ("  (linked)" if o.name in linked else ""), f"Link {o.name}", icon, i)
+             for i, o in enumerate(cands)]
+    if not items:
+        items = [("__none__", "(nothing to link)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_VolLinkSearch(Operator):
+    """Search by name and link a trigger volume: a target for this volume,
+    or a volume for this target"""
+    bl_idname   = "og.vol_link_search"
+    bl_label    = "Search"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+
+    vol_name:    bpy.props.StringProperty(options={"SKIP_SAVE"})
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    search_for:  bpy.props.EnumProperty(items=[("target", "Target", ""), ("volume", "Volume", "")],
+                                        options={"SKIP_SAVE"})
+    pick:        bpy.props.EnumProperty(name="Link", items=_vol_search_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        if self.pick in ("", "__none__"):
+            return {"CANCELLED"}
+        vol, tgt = (self.pick, self.target_name) if self.search_for == "volume" else (self.vol_name, self.pick)
+        return bpy.ops.og.add_link_from_selection(vol_name=vol, target_name=tgt)
+
+
 class OG_OT_ClearActorLink(Operator):
     """Remove an entity link slot from an ACTOR_ empty."""
     bl_idname   = "og.clear_actor_link"
@@ -848,13 +965,19 @@ class OG_OT_ClearActorLink(Operator):
     source_name: bpy.props.StringProperty()
     lump_key:    bpy.props.StringProperty()
     slot_index:  bpy.props.IntProperty(default=0)
+    first_slot:  bpy.props.IntProperty(default=-1,
+        description="allow-multiple slot start: re-pack the list after removing")
 
     def execute(self, ctx):
         obj = ctx.scene.objects.get(self.source_name)
         if not obj:
             self.report({"ERROR"}, f"Source '{self.source_name}' not found")
             return {"CANCELLED"}
-        _actor_remove_link(obj, self.lump_key, self.slot_index)
+        if self.first_slot >= 0:
+            from ..data import _actor_remove_multi_link
+            _actor_remove_multi_link(obj, self.lump_key, self.first_slot, self.slot_index)
+        else:
+            _actor_remove_link(obj, self.lump_key, self.slot_index)
         self.report({"INFO"}, f"Cleared {self.source_name} [{self.lump_key}[{self.slot_index}]]")
         return {"FINISHED"}
 
@@ -864,6 +987,8 @@ CLASSES = (
     OG_OT_MarkNavMesh,
     OG_OT_UnmarkNavMesh,
     OG_OT_LinkNavMesh,
+    OG_OT_LinkNavMeshTo,
+    OG_OT_VolLinkSearch,
     OG_OT_UnlinkNavMesh,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,

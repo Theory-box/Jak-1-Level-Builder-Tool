@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
+from .. import db as _db
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, ETYPE_EXTRA_CODE, VERTEX_EXPORT_TYPES,
+    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, VERTEX_EXPORT_TYPES,
     GAME_GD_FILES,
-    needed_tpages, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    needed_tpages, ACTOR_LINK_DEFS,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link,
     _actor_remove_link, _build_actor_link_lumps,
@@ -106,35 +107,20 @@ def needed_extras_ags(actors):
     return r
 
 def needed_code(actors):
-    """Return list of (o_file, gc_path, dep) for enemy types not in GAME.CGO.
+    """Return [(o_file, None, None)] — the .o files the placed actors need in
+    the level DGO, in load order, without duplicates or game.gd files.
 
-    o_only=True entries: inject .o into custom DGO only — vanilla game.gp already
-    has the goal-src line so we must not duplicate it (causes 'duplicate defstep').
-
-    Returns list of (o_file, gc_path_or_None, dep_or_None).
-    write_gd() uses o_file for DGO injection.
-    patch_game_gp() skips entries where gc_path is None.
+    Every file comes from the actor's DB "code" (db.code_files) plus its
+    variant's "code" (e.g. snow bridge -> target-ice.o). Vanilla game.gp
+    already compiles all of them, so none needs a goal-src line (a level's
+    own code goes through Level > Settings > Always Include > goal_src).
+    The (o, gc, dep) tuple shape is kept for write_gd / patch_game_gp.
     """
     seen, r = set(), []
     for a in actors:
         etype = a.get("_db_etype") or a["etype"]
-        # Actor-level dependency code first (DGO-only, goal-src already in game.gp).
-        for o in ETYPE_EXTRA_CODE.get(etype, []):
-            if o and o not in seen and not _in_game_gd(o):
-                seen.add(o)
-                r.append((o, None, None))
-        info = ETYPE_CODE.get(etype)
-        if info and not info.get("in_game_cgo"):
-            o = info["o"]
-            if o not in seen and not _in_game_gd(o):
-                seen.add(o)
-                if info.get("o_only"):
-                    r.append((o, None, None))
-                else:
-                    r.append((o, info["gc"], info.get("dep", "process-drawable")))
-        # Variant extra code (e.g. snow bridge -> target-ice.o). DGO-only:
-        # goal-src is already in game.gp, so inject the .o with no gc line.
-        for o in a.get("extra_code", []):
+        variant_code = _db.code_files({"code": a.get("code")}) + list(a.get("extra_code") or [])
+        for o in list(ETYPE_CODE.get(etype, [])) + variant_code:
             if o and o not in seen and not _in_game_gd(o):
                 seen.add(o)
                 r.append((o, None, None))

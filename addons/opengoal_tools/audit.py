@@ -104,7 +104,15 @@ def check_navmesh_links(scene):
         if not et or not _db.nav_unsafe(et):
             continue
         nm_name = o.get("og_navmesh_link", "")
-        if not nm_name:
+        src = _actor_get_link(o, "nav-mesh-actor", 0)
+        if not nm_name and src:
+            # nav-mesh copied from another actor: that one needs a navmesh
+            t = objects.get(src.target_name)
+            if t is None or not (t.get("og_navmesh_link", "") or _actor_get_link(t, "nav-mesh-actor", 0)):
+                issues.append(_issue("ERROR",
+                    f"'{o.name}' ({et}) uses the nav-mesh of '{src.target_name}', "
+                    "which has no navmesh link.", o.name))
+        elif not nm_name:
             issues.append(_issue("ERROR",
                 f"Nav-enemy '{o.name}' ({et}) has no navmesh link. "
                 "It will freeze or crash in-game without one.", o.name))
@@ -124,6 +132,8 @@ def check_missing_paths(scene):
     for o in _actor_objs(scene):
         et = _etype(o)
         if not et or not _db.needs_path(et):
+            continue
+        if _actor_get_link(o, "path-actor", 0):   # every path lump read from that actor
             continue
         info      = ENTITY_DEFS.get(et, {})
         wp_prefix = o.name + "_wp_"
@@ -163,13 +173,26 @@ def check_actor_links(scene):
                     issues.append(_issue("WARNING",
                         f"'{o.name}' ({et}): required link slot '{lump_key}' is unset.",
                         o.name))
+        slots = list(_actor_link_slots(et))
         for lk in getattr(o, "og_actor_links", []):
             if not lk.target_name.strip():
                 continue
-            if objects.get(lk.target_name) is None:
+            tgt = objects.get(lk.target_name)
+            if tgt is None:
                 issues.append(_issue("ERROR",
                     f"'{o.name}' ({et}): link '{lk.lump_key}' points to "
                     f"'{lk.target_name}' which does not exist.", o.name))
+                continue
+            # the slot this entry belongs to (allow-multiple slots cover later indices)
+            cand = [s for s in slots if s[0] == lk.lump_key and s[1] <= lk.slot_index]
+            if not cand:
+                continue
+            accepts = max(cand, key=lambda s: s[1])[3]
+            t_et = _etype(tgt) or ""
+            if t_et and not _db.link_accepts(accepts, t_et):
+                issues.append(_issue("WARNING",
+                    f"'{o.name}' ({et}): link '{lk.lump_key}' → '{lk.target_name}' ({t_et}) is not an "
+                    f"expected type ({', '.join(accepts)}). It may not work in game.", o.name))
     return issues
 
 

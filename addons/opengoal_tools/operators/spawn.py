@@ -15,14 +15,14 @@ from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, LUMP_REFERENCE, ACTOR_LINK_DEFS,
+    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
     ETYPE_AG, ETYPE_CODE,
     needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
     _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
     _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    UNIVERSAL_LUMPS, _is_custom_type,
+    _is_custom_type,
 )
 from ..collections import (
     _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
@@ -206,14 +206,13 @@ class OG_OT_SpawnEntity(Operator):
             except Exception: pass
         info  = ENTITY_DEFS.get(etype, {})
         shape = info.get("shape", "SPHERE")
-        color = info.get("color", (1.0,0.5,0.1,1.0))
         n     = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         bpy.ops.object.empty_add(type=shape, location=ctx.scene.cursor.location)
         o = ctx.active_object
         o.name = f"ACTOR_{etype}_{n}"
         o.show_name = True
-        o.empty_display_size = 1.0
-        o.color = color
+        o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
+        o.color = _db.actor_color(etype)                       # category color
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant
         # actor: crate types, bridge variants, ...).
@@ -246,14 +245,17 @@ class OG_OT_SpawnEntity(Operator):
             self.report({"INFO"}, f"Added {o.name}")
 
         # ---- Seed default custom props from the DB so UI fields render ------
-        # One loop over the actor's schema (own + trait fields) replaces the old
-        # per-actor default assignments. Won't overwrite props already set above.
-        for _f in _db.ui_fields(etype):
+        # One loop over every exported field of the actor's panels (custom,
+        # sync, activation, spawner ...). Won't overwrite props already set above.
+        for _f in [f for f in _db.inherited_fields(etype) if not _db._field_is_output_only(f)]:
             _k = _f.get("key")
             if _k and _k not in o:
                 _dv = _db.field_default(_f, etype)
                 if _dv is not None:
                     o[_k] = _dv
+        # DB field drivers (e.g. launcher spring height -> arrow length)
+        from ..utils import apply_db_drivers
+        apply_db_drivers(o, etype)
 
         # ---- Model preview ------------------------------------------------
         _prefs = bpy.context.preferences.addons.get("opengoal_tools")
@@ -776,24 +778,22 @@ class OG_OT_SpawnPlatform(Operator):
         n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         uid = f"{n:04d}"
 
-        bpy.ops.object.empty_add(type=einfo.get("shape", "CUBE"),
+        bpy.ops.object.empty_add(type=einfo.get("shape", "SPHERE"),
                                  location=ctx.scene.cursor.location)
         o = ctx.active_object
         o.name               = f"ACTOR_{etype}_{uid}"
         o.show_name          = True
-        o.empty_display_size = 0.5
-        o.color              = einfo.get("color", (0.5, 0.5, 0.8, 1.0))
+        o.empty_display_size = _db.empty_size(etype) or 0.5
+        o.color              = _db.actor_color(etype)
         if hasattr(o, "show_in_front"):
             o.show_in_front = True
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNABLE_PLATFORMS)
 
         # ---- Set default custom props so UI fields render immediately ------
         if einfo.get("needs_sync"):
-            o["og_sync_period"]   = 4.0
-            o["og_sync_phase"]    = 0.0
-            o["og_sync_ease_out"] = 0.15
-            o["og_sync_ease_in"]  = 0.15
-            o["og_sync_wrap"]     = 0
+            from ..utils import sync_defaults
+            for k, v in sync_defaults(etype).items():
+                o[k] = int(v) if isinstance(v, bool) else v
         if einfo.get("needs_notice_dist"):
             o["og_notice_dist"] = -1.0
 

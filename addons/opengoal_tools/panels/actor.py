@@ -17,7 +17,7 @@ from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
     PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
-    LUMP_REFERENCE, ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
+    ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
     _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
     _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
@@ -101,9 +101,10 @@ _GAME_TASKS_COMMON = [
 ]
 
 
-class OG_PT_ActorActivation(Panel):
-    bl_label       = "Activation"
-    bl_idname      = "OG_PT_actor_activation"
+class OG_PT_ActorNavBehaviour(Panel):
+    """Activation fields ("activation" panel) + aggro trigger volumes."""
+    bl_label       = "Nav Behaviour"
+    bl_idname      = "OG_PT_actor_nav_behaviour"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -115,36 +116,18 @@ class OG_PT_ActorActivation(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_is_enemy(parts[1])
+        return (len(parts) >= 3 and parts[0] == "ACTOR"
+                and (_db.has_panel(parts[1], "activation") or _actor_supports_aggro_trigger(parts[1])))
 
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-        _prop_row(layout, sel, "og_idle_distance", "Idle Distance (m):", 80.0)
-        sub = layout.row(); sub.enabled = False
-        sub.label(text="Player must be closer than this to wake the enemy", icon="INFO")
-
-
-
-class OG_PT_ActorTriggerBehaviour(Panel):
-    bl_label       = "Trigger Behaviour"
-    bl_idname      = "OG_PT_actor_trigger_behaviour"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_actor_fields"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_supports_aggro_trigger(parts[1])
-
-    def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
+        etype  = sel.name.split("_", 2)[1]
+        if _db.has_panel(etype, "activation"):
+            _draw_panel_fields(layout, sel, "activation")
+        if not _actor_supports_aggro_trigger(etype):
+            return
+        layout.label(text="Trigger Behaviour", icon="MESH_CUBE")
         scene  = ctx.scene
         linked_vols = _vols_linking_to(scene, sel.name)
         if linked_vols:
@@ -163,6 +146,8 @@ class OG_PT_ActorTriggerBehaviour(Panel):
             sub.label(text="No trigger volumes linked", icon="INFO")
         op = layout.operator("og.spawn_aggro_trigger", text="Add Aggro Trigger", icon="ADD")
         op.target_name = sel.name
+        from .selected import _draw_vol_link_add
+        _draw_vol_link_add(layout, sel)
 
 
 
@@ -199,14 +184,18 @@ class OG_PT_ActorNavMesh(Panel):
                 pass
         else:
             layout.label(text="No mesh linked", icon="ERROR")
-            sel_meshes = [o for o in bpy.context.selected_objects if o.type == "MESH"]
-            if sel_meshes:
-                layout.label(text=f"Will link to: {sel_meshes[0].name}", icon="INFO")
-                layout.operator("og.link_navmesh", text="Link NavMesh", icon="LINKED")
-            else:
-                layout.label(text="Shift-select a mesh to link", icon="INFO")
+        # Same pattern as the other links: selected meshes, then search.
+        from .selected import _draw_link_search
+        for m in [o for o in bpy.context.selected_objects
+                  if o.type == "MESH" and o is not nm_obj and not o.name.startswith(("VOL_", "CPVOL_"))][:6]:
+            op = layout.row().operator("og.link_navmesh_to", text=f"Link → {m.name}", icon="LINKED")
+            op.actor_name = sel.name; op.target_name = m.name
+        _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
         nav_r = float(sel.get("og_nav_radius", 6.0))
         layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
+        if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
+            layout.separator()
+            _draw_panel_fields(layout, sel, "nav-mesh")
 
 
 
@@ -238,7 +227,8 @@ class OG_PT_ActorLinks(Panel):
 
 
 class OG_PT_ActorPlatform(Panel):
-    bl_label       = "Platform Settings"
+    """DB "sync" panel. Was category-driven (all Platforms)."""
+    bl_label       = "Sync"
     bl_idname      = "OG_PT_actor_platform"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -251,7 +241,7 @@ class OG_PT_ActorPlatform(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_is_platform(parts[1])
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sync")
 
     def draw(self, ctx):
         _draw_platform_settings(self.layout, ctx.active_object, ctx.scene)
@@ -272,7 +262,7 @@ class OG_PT_ActorCrate(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "crate"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "crate")
 
     def draw(self, ctx):
         layout = self.layout
@@ -414,7 +404,7 @@ class OG_PT_ActorEcoDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "eco-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "eco-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -488,7 +478,7 @@ class OG_PT_ActorWaterVol(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and parts[1] == "water-vol"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "water")
 
     def draw(self, ctx):
         layout = self.layout
@@ -496,6 +486,12 @@ class OG_PT_ActorWaterVol(Panel):
         box = layout.box()
         box.label(text="Water Volume", icon="MOD_OCEAN")
         box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        # The "water" panel's fields (PanelTypes water + actor overrides).
+        from .actor_fields import _draw_field
+        etype = sel.name.split("_", 2)[1]
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        for f in _db.panel_fields(etype, "water", visible_only=True):
+            _draw_field(box, sel, f, info)
         op = box.operator("og.sync_water_from_object",
                           text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
         op.actor_name = sel.name
@@ -515,7 +511,7 @@ class OG_PT_ActorLauncherDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "launcherdoor"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "launcherdoor")
 
     def draw(self, ctx):
         layout = self.layout
@@ -579,7 +575,7 @@ class OG_PT_ActorSunIrisDoor(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "sun-iris-door"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sun-iris-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -629,7 +625,7 @@ class OG_PT_ActorCaveElevator(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "caveelevator"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "caveelevator")
 
     def draw(self, ctx):
         layout = self.layout
@@ -667,7 +663,7 @@ class OG_PT_ActorTaskGated(Panel):
         sel = ctx.active_object
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.actor_panel(parts[1]) == "task-gated"
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "task-gated")
 
     def draw(self, ctx):
         layout = self.layout
@@ -709,18 +705,112 @@ class OG_PT_ActorVisibility(Panel):
         if not sel or "_wp_" in sel.name: return False
         parts = sel.name.split("_", 2)
         if len(parts) < 3 or parts[0] != "ACTOR": return False
-        return _actor_is_enemy(parts[1])
+        return _db.has_panel(parts[1], "visibility")
 
     def draw(self, ctx):
+        _draw_panel_fields(self.layout, ctx.active_object, "visibility")
+
+
+
+def _draw_panel_fields(layout, sel, pid):
+    """Draw one DB panel's visible fields (labels/defaults/notes from the DB)."""
+    from .actor_fields import _draw_field
+    etype = sel.name.split("_", 2)[1]
+    info = {"etype": etype, **(_db.find_actor(etype) or {})}
+    for f in _db.panel_fields(etype, pid, visible_only=True):
+        _draw_field(layout, sel, f, info)
+
+
+class OG_PT_ActorScale(Panel):
+    """DB "scale" panel: shows what the empty's Blender scale exports as."""
+    bl_label       = "Scale"
+    bl_idname      = "OG_PT_actor_scale"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.panel_exports(parts[1], "scale")
+
+    def draw(self, ctx):
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
         layout = self.layout
-        sel    = ctx.active_object
+        # top-down so several axes can be dragged/edited together
+        col = layout.column(align=True)
+        for i, ax in enumerate("XYZ"):
+            col.prop(sel, "scale", index=i, text=ax)
+        lump = _db.scale_lump(etype, sel.matrix_world.to_scale())
+        col = layout.column(); col.scale_y = 0.85
+        if lump:
+            col.label(text=f"Exports scale [{lump[1]:g}, {lump[2]:g}, {lump[3]:g}, 1]", icon="CHECKMARK")
+        else:
+            col.label(text="Scale 1: not exported", icon="DOT")
+        if _db.panel_option(etype, "scale", "always", False):
+            col.label(text="Always exported for this actor", icon="INFO")
+        s = sel.matrix_world.to_scale()
+        if _db.panel_option(etype, "scale", "uniform", False) and (abs(s.x - s.y) > 1e-4 or abs(s.x - s.z) > 1e-4):
+            w = col.row(); w.alert = True
+            w.label(text="This actor reads one value: only X is used", icon="ERROR")
 
-        box = layout.box()
-        box.label(text="Vis Distance", icon="HIDE_OFF")
-        _prop_row(box, sel, "og_vis_dist", "Distance (m):", 200.0)
-        sub = box.row(); sub.enabled = False
-        sub.label(text="Default 200m. Reduce for distant background enemies.", icon="INFO")
 
+class OG_PT_ActorFactOptions(Panel):
+    """DB "fact-options" panel: the 'options' lump bits the actor's code reads
+    (fact-h.gc). Options marked "highlight" for this actor come first."""
+    bl_label       = "Options"
+    bl_idname      = "OG_PT_actor_fact_options"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return (len(parts) >= 3 and parts[0] == "ACTOR"
+                and _db.panel_exports(parts[1], "fact-options"))
+
+    def draw(self, ctx):
+        from .actor_fields import _draw_field
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        flds = _db.panel_fields(etype, "fact-options", visible_only=True)
+        top = [f for f in flds if f.get("highlight")]
+        rest = [f for f in flds if not f.get("highlight")]
+        if top:
+            box = self.layout.box()
+            box.label(text="For this actor", icon="SOLO_ON")
+            for f in top:
+                _draw_field(box, sel, f, info)
+        if rest:
+            col = self.layout.column()
+            if top:
+                col.label(text="Other options")
+            for f in rest:
+                _draw_field(col, sel, f, info)
+        # Everything else stays reachable, collapsed (actors can use options
+        # in less obvious ways, e.g. through the pickups they spawn).
+        shown = {f.get("key") for f in flds}
+        hidden = [f for f in _db.panel_fields(etype, "fact-options") if f.get("key") not in shown]
+        if hidden:
+            props = ctx.scene.og_props
+            box = self.layout.box()
+            box.prop(props, "show_all_fact_options",
+                     icon="TRIA_DOWN" if props.show_all_fact_options else "TRIA_RIGHT", emboss=False,
+                     text=f"All options ({len(hidden)} more)")
+            if props.show_all_fact_options:
+                for f in hidden:
+                    _draw_field(box, sel, f, info)
 
 
 class OG_UL_PathKnots(bpy.types.UIList):
@@ -819,6 +909,23 @@ class OG_UL_WaypointSources(bpy.types.UIList):
             row.label(text=obj.name, icon="QUESTION")
 
 
+def _draw_path_add(layout, sel, scene, coll, path_index=-1):
+    """Ways to add to a path, same pattern as actor links: one Link button
+    per shift-selected curve not yet in it, a search over every curve, then
+    Spawn Waypoint with its at-actor-position toggle on one line."""
+    from .selected import _draw_link_search
+    have = {s.obj.name for s in coll if s.obj}
+    for c in [o for o in bpy.context.selected_objects if o.type == "CURVE" and o.name not in have][:6]:
+        op = layout.row().operator("og.waypoint_source_link_curve", text=f"Link → {c.name}", icon="CURVE_DATA")
+        op.actor_name = sel.name; op.path_index = path_index; op.target_name = c.name
+    _draw_link_search(layout, "Search curve…", "og.waypoint_source_link_curve",
+                      actor_name=sel.name, path_index=path_index)
+    row = layout.row(align=True)
+    op = row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
+    op.enemy_name = sel.name; op.path_index = path_index
+    row.prop(scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+
+
 def _count_curve_points(curve_obj) -> int:
     """Total spline-point count across every spline in a curve.
     Bezier splines use bezier_points; poly/NURBS use points."""
@@ -868,9 +975,6 @@ class OG_PT_ActorWaypoints(Panel):
                  else (1 if s.obj and s.obj.type == "EMPTY" else 0))
                 for s in sources
             )
-            if sel.og_waypoint_pingpong and total_pts > 2:
-                # forward + reverse minus endpoints
-                total_pts += total_pts - 2
             header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
         else:
             n_legacy = len(legacy_wps)
@@ -907,25 +1011,13 @@ class OG_PT_ActorWaypoints(Panel):
         sidebar.operator("og.waypoint_source_move",
                          text="", icon="TRIA_DOWN").direction = "DOWN"
 
-        # Action row — spawn empty (legacy-compatible) + link curve.
-        action_row = layout.row(align=True)
-        op = action_row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
-        op.enemy_name = sel.name
-        op = action_row.operator("og.waypoint_source_link_curve",
-                                 text="Link Curve", icon="CURVE_DATA")
-        op.actor_name = sel.name
-
-        # Spawn-at-position toggle + ping-pong toggle on a second row.
-        toggle_row = layout.row(align=True)
-        toggle_row.prop(scene.og_props, "waypoint_spawn_at_actor",
-                        text="Spawn at Actor Position", toggle=True)
-        toggle_row.prop(sel, "og_waypoint_pingpong",
-                        text="Ping-pong", toggle=True, icon="ARROW_LEFTRIGHT")
+        # Link a curve (selected / searched), or spawn an empty waypoint.
+        _draw_path_add(layout, sel, scene, sources)
 
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
         from ..export import path_modes as _pm
-        linear_only = bool((_db.find_actor(etype) or {}).get("path_linear_only"))
+        linear_only = _db.path_linear_only(etype)
         mode_box = layout.box()
         if linear_only:
             mode_box.label(text="Path Mode (this actor only moves in straight lines):", icon="IPO_LINEAR")
@@ -936,8 +1028,7 @@ class OG_PT_ActorWaypoints(Panel):
             mode_box.prop(sel, "og_path_mode", text="Path Mode")
         try:
             _pts, _knots, _eff, _warn = _pm.build(
-                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only,
-                pingpong=sel.og_waypoint_pingpong)
+                _pm.gather_sources(sel), sel.og_path_mode, linear_only=linear_only)
             info = mode_box.column(); info.scale_y = 0.8
             label = _pm.MODE_LABELS.get(_eff, _eff)
             if sel.og_path_mode == "AUTO":
@@ -954,15 +1045,21 @@ class OG_PT_ActorWaypoints(Panel):
         except Exception:
             pass
 
-        # Validation hints.
-        if einfo.get("needs_path"):
+        # Validation hints. Path panel options: "required" (errors without a
+        # path), "min-points" (e.g. plat-button / sync platforms need 2).
+        min_pts = int(_db.panel_option(etype, "path", "min-points", 1) or 1)
+        if einfo.get("needs_path") or min_pts > 1:
             pt_count = sum(
                 (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
                  else (1 if s.obj and s.obj.type == "EMPTY" else 0))
                 for s in sources
             ) if n_sources else len(legacy_wps)
-            if pt_count < 1:
-                layout.label(text="⚠ Needs ≥ 1 waypoint or will crash", icon="ERROR")
+            if pt_count < min_pts:
+                if einfo.get("needs_path"):
+                    layout.label(text=f"⚠ Needs ≥ {min_pts} waypoint{'s' if min_pts > 1 else ''} or will crash",
+                                 icon="ERROR")
+                else:
+                    layout.label(text=f"Add ≥ {min_pts} waypoints to make it move", icon="INFO")
 
         # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
         self._draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
@@ -976,8 +1073,9 @@ class OG_PT_ActorWaypoints(Panel):
         hdr.label(text="Keyframe:")
         hdr.prop(sel, "og_path_keyframe", text="")
         has_b = any(p.name == "pathb" for p in sel.og_extra_paths)
-        _arec = _db.find_actor(etype) or {}
-        multi = bool(_arec.get("multi_path") or len(_arec.get("paths") or []) > 1)
+        # Path panel options: "paths" (lump names Add Path offers) or "multi-path".
+        names_db = _db.path_names(etype)
+        multi = bool(_db.panel_option(etype, "path", "multi-path", False) or len(names_db) > 1)
 
         for i, xp in enumerate(sel.og_extra_paths):
             box = layout.box()
@@ -1000,21 +1098,16 @@ class OG_PT_ActorWaypoints(Panel):
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
-            arow = box.row(align=True)
-            op = arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
-            op.enemy_name = sel.name; op.path_index = i
-            op = arow.operator("og.waypoint_source_link_curve", text="Link Curve", icon="CURVE_DATA")
-            op.actor_name = sel.name; op.path_index = i
+            _draw_path_add(box, sel, scene, xp.sources, i)
             mrow = box.row(align=True)
             if linear_only:
                 for m in ("AUTO", "LINEAR", "LINEAR_LOOP"):
                     mrow.prop_enum(xp, "mode", m)
             else:
                 mrow.prop(xp, "mode", text="")
-            mrow.prop(xp, "pingpong", text="", icon="ARROW_LEFTRIGHT", toggle=True)
             try:
                 pts, knots, eff, warn = _pm.build(_pm.gather_from(xp.sources), xp.mode,
-                                                  linear_only=linear_only, pingpong=xp.pingpong)
+                                                  linear_only=linear_only)
                 info = box.column(); info.scale_y = 0.8
                 lab = _pm.MODE_LABELS.get(eff, eff)
                 if xp.mode == "AUTO":
@@ -1036,7 +1129,7 @@ class OG_PT_ActorWaypoints(Panel):
         # Extra paths only for actors the DB marks multi-path ("paths" list
         # or "multi_path": true); existing ones always stay visible.
         if multi:
-            wanted = [n for n in (_arec.get("paths") or [])
+            wanted = [n for n in names_db
                       if n != sel.og_path_lump and not any(p.name == n for p in sel.og_extra_paths)]
             add = layout.row()
             op = add.operator("og.add_extra_path",
@@ -1162,24 +1255,57 @@ class OG_PT_ActorGoalCode(Panel):
 
 
 
+# ─── Actor Settings sub-panel order ────────────────────────────────────────
+# Top: what is specific to the actor; going down: more general, the bottom
+# being general and less used (Kuitar). Custom fields are drawn by the parent
+# panel itself, so they always come first. Any sub-panel not listed here
+# counts as actor-specific and goes above Sync — new bespoke panels need no
+# entry; only add a new *general* panel to this list.
+_GENERAL_PANEL_ORDER = (
+    "OG_PT_actor_platform",        # Sync
+    "OG_PT_actor_waypoints",       # Path
+    "OG_PT_actor_navmesh",
+    "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
+    "OG_PT_actor_fact_options",    # Options
+    "OG_PT_actor_links",           # Entity Links
+    "OG_PT_actor_visibility",
+    "OG_PT_actor_scale",
+)
+
+
+def _actor_panel_rank(cls) -> int:
+    idn = getattr(cls, "bl_idname", "")
+    if idn in _GENERAL_PANEL_ORDER:
+        return 100 + _GENERAL_PANEL_ORDER.index(idn)
+    return 10   # actor-specific
+
+
 # ─── Classes to register ───────────────────────────────────────────────────
-CLASSES = (
-    OG_UL_PathKnots,
-    OG_UL_WaypointSources,
-    OG_PT_ActorActivation,
-    OG_PT_ActorTriggerBehaviour,
+_ACTOR_SUBPANELS = (
+    OG_PT_ActorNavBehaviour,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,
     OG_PT_ActorPlatform,
-    OG_PT_ActorCrate,
     OG_PT_ActorLauncher,
-    OG_PT_ActorEcoDoor,
+    OG_PT_ActorCrate,
     OG_PT_ActorWaterVol,
+    OG_PT_ActorEcoDoor,
     OG_PT_ActorLauncherDoor,
     OG_PT_ActorSunIrisDoor,
     OG_PT_ActorCaveElevator,
     OG_PT_ActorTaskGated,
     OG_PT_ActorVisibility,
     OG_PT_ActorWaypoints,
+    OG_PT_ActorScale,
+    OG_PT_ActorFactOptions,
+)
+for _c in _ACTOR_SUBPANELS:
+    _c.bl_order = _actor_panel_rank(_c)
+
+# Sub-panels show in registration order, so register them sorted by rank.
+CLASSES = (
+    OG_UL_PathKnots,
+    OG_UL_WaypointSources,
+    *sorted(_ACTOR_SUBPANELS, key=_actor_panel_rank),   # stable: ties keep listed order
     OG_PT_ActorGoalCode,
 )
