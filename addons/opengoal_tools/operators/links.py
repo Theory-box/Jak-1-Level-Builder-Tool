@@ -170,7 +170,10 @@ class OG_OT_LinkNavMeshTo(Operator):
     bl_property = "mesh"
 
     actor_name:  bpy.props.StringProperty()
-    target_name: bpy.props.StringProperty(description="Link this mesh directly instead of searching")
+    # SKIP_SAVE: Blender would otherwise reuse the last direct pick on the
+    # Search button and link it without opening the list.
+    target_name: bpy.props.StringProperty(description="Link this mesh directly instead of searching",
+                                          options={"SKIP_SAVE"})
     mesh:        bpy.props.EnumProperty(name="NavMesh", items=_navmesh_items)
 
     def invoke(self, ctx, event):
@@ -527,8 +530,11 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
 
     actor_name: bpy.props.StringProperty()
     path_index: bpy.props.IntProperty(default=-1)
+    # SKIP_SAVE: otherwise Blender reuses the last direct pick when the
+    # Search button is clicked, linking that curve instead of searching.
     target_name: bpy.props.StringProperty(
-        description="Link this curve directly (shift-selected) instead of searching")
+        description="Link this curve directly (shift-selected) instead of searching",
+        options={"SKIP_SAVE"})
     curve_name: bpy.props.EnumProperty(
         name="Curve",
         description="Which curve to link",
@@ -933,9 +939,10 @@ class OG_OT_VolLinkSearch(Operator):
     bl_options  = {"REGISTER", "UNDO"}
     bl_property = "pick"
 
-    vol_name:    bpy.props.StringProperty()
-    target_name: bpy.props.StringProperty()
-    search_for:  bpy.props.EnumProperty(items=[("target", "Target", ""), ("volume", "Volume", "")])
+    vol_name:    bpy.props.StringProperty(options={"SKIP_SAVE"})
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    search_for:  bpy.props.EnumProperty(items=[("target", "Target", ""), ("volume", "Volume", "")],
+                                        options={"SKIP_SAVE"})
     pick:        bpy.props.EnumProperty(name="Link", items=_vol_search_items)
 
     def invoke(self, ctx, event):
