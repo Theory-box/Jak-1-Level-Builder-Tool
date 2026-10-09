@@ -10045,54 +10045,8 @@
       "shape": "CUBE"
     },
     {
-      "etype": "breakaway-left",
-      "label": "Breakaway Plat (L)",
-      "category": "Platforms",
-      "parent": "breakaway",
-      "art_group": "breakaway-left-ag.go",
-      "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
-      "glb": "levels/misty/breakaway-left-lod0.glb",
-      "lumps": [
-        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
-        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
-      ],
-      "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_breakaway_h1",
-              "label": "Height 1",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 0,
-                "pairs_with": "og_breakaway_h2"
-              },
-              "write_if": "if_any_nonzero"
-            },
-            {
-              "key": "og_breakaway_h2",
-              "label": "Height 2",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 1
-              }
-            }
-          ]
-        }
-      ],
-      "shape": "CUBE"
-    },
-    {
       "etype": "breakaway-mid",
-      "label": "Breakaway Plat (M)",
+      "label": "Breakaway Plat",
       "category": "Platforms",
       "parent": "breakaway",
       "art_group": "breakaway-mid-ag.go",
@@ -10108,51 +10062,19 @@
           "panel": "custom-fields",
           "fields": [
             {
-              "key": "og_breakaway_h1",
-              "label": "Height 1",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 0,
-                "pairs_with": "og_breakaway_h2"
-              },
-              "write_if": "if_any_nonzero"
+              "key": "og_breakaway_variant",
+              "label": "Breakaway Variant",
+              "type": "enum",
+              "default": "breakaway-mid",
+              "choices": [
+                {"id": "breakaway-left", "etype": "breakaway-left", "label": "Left", "glb": "levels/misty/breakaway-left-lod0.glb", "art_group": "breakaway-left-ag.go", "value": "breakaway-left"},
+                {"id": "breakaway-mid", "etype": "breakaway-mid", "label": "Middle", "glb": "levels/misty/breakaway-mid-lod0.glb", "art_group": "breakaway-mid-ag.go", "value": "breakaway-mid"},
+                {"id": "breakaway-right", "etype": "breakaway-right", "label": "Right", "glb": "levels/misty/breakaway-right-lod0.glb", "art_group": "breakaway-right-ag.go", "value": "breakaway-right"}
+              ],
+              "variant": true,
+              "lump": {},
+              "write_if": "always"
             },
-            {
-              "key": "og_breakaway_h2",
-              "label": "Height 2",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 1
-              }
-            }
-          ]
-        }
-      ],
-      "shape": "CUBE"
-    },
-    {
-      "etype": "breakaway-right",
-      "label": "Breakaway Plat (R)",
-      "category": "Platforms",
-      "parent": "breakaway",
-      "art_group": "breakaway-right-ag.go",
-      "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
-      "glb": "levels/misty/breakaway-right-lod0.glb",
-      "lumps": [
-        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
-        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
-      ],
-      "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
             {
               "key": "og_breakaway_h1",
               "label": "Height 1",
