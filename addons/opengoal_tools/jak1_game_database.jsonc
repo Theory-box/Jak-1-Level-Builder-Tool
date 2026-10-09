@@ -4866,7 +4866,7 @@
               "accepts": [
                 "any"
               ],
-              "label": "Blocker entity",
+              "label": "Blocker (the vent opens once this actor is complete)",
               "lump_key": "alt-actor",
               "required": false,
               "slot": 0
@@ -4879,12 +4879,14 @@
             {
               "key": "og_fop_vent_blocked",
               "show-field": true,
-              "highlight": true
+              "highlight": true,
+              "note": "Starts closed. Opens when its Blocker is complete (a Blocker turns this on by itself). No Blocker and no valve: stays closed."
             },
             {
               "key": "og_fop_vent_valve",
               "show-field": true,
-              "highlight": true
+              "highlight": true,
+              "note": "With Vent blocked: shows the valve and opens when the vanilla eco-top task of its colour is done (blue: jungle-eggtop, red: red-eggtop, yellow: snow-eggtop)."
             }
           ]
         }
@@ -7006,7 +7008,12 @@
               "label": "Pickup",
               "type": "enum",
               "default": "eco-green",
-              "choices": "CratePickups",
+              "choices": [
+                {"id": "eco-green", "label": "Green Eco", "engine_string": "(pickup-type eco-green)"},
+                {"id": "eco-blue", "label": "Blue Eco", "engine_string": "(pickup-type eco-blue)"},
+                {"id": "eco-red", "label": "Red Eco", "engine_string": "(pickup-type eco-red)"},
+                {"id": "eco-yellow", "label": "Yellow Eco", "engine_string": "(pickup-type eco-yellow)"}
+              ],
               "lump": {
                 "key": "eco-info",
                 "type": "eco-info-picker",
@@ -7018,13 +7025,13 @@
               "key": "og_crate_pickup_amount",
               "label": "Amount",
               "type": "int",
-              "default": 1,
+              "default": 5,
               "min": 1,
-              "max": 99
+              "max": 99,
+              "note": "Eco given per touch. The other vents give 5."
             }
           ]
-        },
-        {"panel": "actor-link", "export": false}
+        }
       ]
     },
     {
