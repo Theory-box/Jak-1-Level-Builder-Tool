@@ -3671,130 +3671,122 @@
 
   // ── GameTasks ───────────────────────────────────────────────────
   "GameTasks": [
-    {
-      "id": "none",
-      "label": "None"
-    },
-    {
-      "id": "jungle-eggtop",
-      "label": "Jungle: Egg Top"
-    },
-    {
-      "id": "jungle-lurkercage",
-      "label": "Jungle: Lurker Cage"
-    },
-    {
-      "id": "jungle-plant",
-      "label": "Jungle: Plant Boss"
-    },
-    {
-      "id": "village1-yakow",
-      "label": "Village: Yakow"
-    },
-    {
-      "id": "village1-mayor-money",
-      "label": "Village: Mayor Orbs"
-    },
-    {
-      "id": "village1-uncle-money",
-      "label": "Village: Uncle Orbs"
-    },
-    {
-      "id": "village1-oracle-money1",
-      "label": "Village: Oracle 1"
-    },
-    {
-      "id": "village1-oracle-money2",
-      "label": "Village: Oracle 2"
-    },
-    {
-      "id": "beach-ecorocks",
-      "label": "Beach: Eco Rocks"
-    },
-    {
-      "id": "beach-volcanoes",
-      "label": "Beach: Volcanoes"
-    },
-    {
-      "id": "beach-cannon",
-      "label": "Beach: Cannon"
-    },
-    {
-      "id": "beach-buzzer",
-      "label": "Beach: Scout Flies"
-    },
-    {
-      "id": "misty-muse",
-      "label": "Misty: Muse"
-    },
-    {
-      "id": "misty-cannon",
-      "label": "Misty: Cannon"
-    },
-    {
-      "id": "misty-bike",
-      "label": "Misty: Bike"
-    },
-    {
-      "id": "misty-buzzer",
-      "label": "Misty: Scout Flies"
-    },
-    {
-      "id": "swamp-billy",
-      "label": "Swamp: Billy"
-    },
-    {
-      "id": "swamp-flutflut",
-      "label": "Swamp: Flut Flut"
-    },
-    {
-      "id": "swamp-buzzer",
-      "label": "Swamp: Scout Flies"
-    },
-    {
-      "id": "sunken-platforms",
-      "label": "Sunken: Platforms"
-    },
-    {
-      "id": "sunken-pipe",
-      "label": "Sunken: Pipe"
-    },
-    {
-      "id": "snow-zorbing",
-      "label": "Snow: Zorbing"
-    },
-    {
-      "id": "snow-fort",
-      "label": "Snow: Fort"
-    },
-    {
-      "id": "snow-buzzer",
-      "label": "Snow: Scout Flies"
-    },
-    {
-      "id": "firecanyon-buzzer",
-      "label": "Fire Canyon: Scout Flies"
-    },
-    {
-      "id": "ogre-boss",
-      "label": "Ogre: Boss"
-    },
-    {
-      "id": "ogre-buzzer",
-      "label": "Ogre: Scout Flies"
-    },
-    {
-      "id": "maincave-gnawers",
-      "label": "Maincave: Gnawers"
-    },
-    {
-      "id": "maincave-darkecobarrel",
-      "label": "Maincave: Dark Eco Barrel"
-    },
-    {
-      "id": "robocave-robot",
-      "label": "Robocave: Robot"
-    }
+    {"id": "none", "value": 0, "label": "None"},
+    {"id": "complete", "value": 1, "label": "Complete"},
+    {"id": "jungle-eggtop", "value": 2, "label": "Jungle: Egg Top"},
+    {"id": "jungle-lurkerm", "value": 3, "label": "Jungle: Lurkerm"},
+    {"id": "jungle-tower", "value": 4, "label": "Jungle: Tower"},
+    {"id": "jungle-fishgame", "value": 5, "label": "Jungle: Fishgame"},
+    {"id": "jungle-plant", "value": 6, "label": "Jungle: Plant Boss"},
+    {"id": "jungle-buzzer", "value": 7, "label": "Jungle: Buzzer"},
+    {"id": "jungle-canyon-end", "value": 8, "label": "Jungle: Canyon end"},
+    {"id": "jungle-temple-door", "value": 9, "label": "Jungle: Temple door"},
+    {"id": "village1-yakow", "value": 10, "label": "Village: Yakow"},
+    {"id": "village1-mayor-money", "value": 11, "label": "Village: Mayor Orbs"},
+    {"id": "village1-uncle-money", "value": 12, "label": "Village: Uncle Orbs"},
+    {"id": "village1-oracle-money1", "value": 13, "label": "Village: Oracle 1"},
+    {"id": "village1-oracle-money2", "value": 14, "label": "Village: Oracle 2"},
+    {"id": "beach-ecorocks", "value": 15, "label": "Beach: Eco Rocks"},
+    {"id": "beach-pelican", "value": 16, "label": "Beach: Pelican"},
+    {"id": "beach-flutflut", "value": 17, "label": "Beach: Flutflut"},
+    {"id": "beach-seagull", "value": 18, "label": "Beach: Seagull"},
+    {"id": "beach-cannon", "value": 19, "label": "Beach: Cannon"},
+    {"id": "beach-buzzer", "value": 20, "label": "Beach: Scout Flies"},
+    {"id": "beach-gimmie", "value": 21, "label": "Beach: Gimmie"},
+    {"id": "beach-sentinel", "value": 22, "label": "Beach: Sentinel"},
+    {"id": "misty-muse", "value": 23, "label": "Misty: Muse"},
+    {"id": "misty-boat", "value": 24, "label": "Misty: Boat"},
+    {"id": "misty-warehouse", "value": 25, "label": "Misty: Warehouse"},
+    {"id": "misty-cannon", "value": 26, "label": "Misty: Cannon"},
+    {"id": "misty-bike", "value": 27, "label": "Misty: Bike"},
+    {"id": "misty-buzzer", "value": 28, "label": "Misty: Scout Flies"},
+    {"id": "misty-bike-jump", "value": 29, "label": "Misty: Bike jump"},
+    {"id": "misty-eco-challenge", "value": 30, "label": "Misty: Eco challenge"},
+    {"id": "village2-gambler-money", "value": 31, "label": "Village 2: Gambler money"},
+    {"id": "village2-geologist-money", "value": 32, "label": "Village 2: Geologist money"},
+    {"id": "village2-warrior-money", "value": 33, "label": "Village 2: Warrior money"},
+    {"id": "village2-oracle-money1", "value": 34, "label": "Village 2: Oracle money1"},
+    {"id": "village2-oracle-money2", "value": 35, "label": "Village 2: Oracle money2"},
+    {"id": "swamp-billy", "value": 36, "label": "Swamp: Billy"},
+    {"id": "swamp-flutflut", "value": 37, "label": "Swamp: Flut Flut"},
+    {"id": "swamp-battle", "value": 38, "label": "Swamp: Battle"},
+    {"id": "swamp-tether-1", "value": 39, "label": "Swamp: Tether 1"},
+    {"id": "swamp-tether-2", "value": 40, "label": "Swamp: Tether 2"},
+    {"id": "swamp-tether-3", "value": 41, "label": "Swamp: Tether 3"},
+    {"id": "swamp-tether-4", "value": 42, "label": "Swamp: Tether 4"},
+    {"id": "swamp-buzzer", "value": 43, "label": "Swamp: Scout Flies"},
+    {"id": "sunken-platforms", "value": 44, "label": "Sunken: Platforms"},
+    {"id": "sunken-pipe", "value": 45, "label": "Sunken: Pipe"},
+    {"id": "sunken-slide", "value": 46, "label": "Sunken: Slide"},
+    {"id": "sunken-room", "value": 47, "label": "Sunken: Room"},
+    {"id": "sunken-sharks", "value": 48, "label": "Sunken: Sharks"},
+    {"id": "sunken-buzzer", "value": 49, "label": "Sunken: Buzzer"},
+    {"id": "sunken-top-of-helix", "value": 50, "label": "Sunken: Top of helix"},
+    {"id": "sunken-spinning-room", "value": 51, "label": "Sunken: Spinning room"},
+    {"id": "rolling-race", "value": 52, "label": "Rolling: Race"},
+    {"id": "rolling-robbers", "value": 53, "label": "Rolling: Robbers"},
+    {"id": "rolling-moles", "value": 54, "label": "Rolling: Moles"},
+    {"id": "rolling-plants", "value": 55, "label": "Rolling: Plants"},
+    {"id": "rolling-lake", "value": 56, "label": "Rolling: Lake"},
+    {"id": "rolling-buzzer", "value": 57, "label": "Rolling: Buzzer"},
+    {"id": "rolling-ring-chase-1", "value": 58, "label": "Rolling: Ring chase 1"},
+    {"id": "rolling-ring-chase-2", "value": 59, "label": "Rolling: Ring chase 2"},
+    {"id": "snow-eggtop", "value": 60, "label": "Snow: Eggtop"},
+    {"id": "snow-ram", "value": 61, "label": "Snow: Ram"},
+    {"id": "snow-fort", "value": 62, "label": "Snow: Fort"},
+    {"id": "snow-ball", "value": 63, "label": "Snow: Ball"},
+    {"id": "snow-bunnies", "value": 64, "label": "Snow: Bunnies"},
+    {"id": "snow-buzzer", "value": 65, "label": "Snow: Scout Flies"},
+    {"id": "snow-bumpers", "value": 66, "label": "Snow: Bumpers"},
+    {"id": "snow-cage", "value": 67, "label": "Snow: Cage"},
+    {"id": "firecanyon-buzzer", "value": 68, "label": "Fire Canyon: Scout Flies"},
+    {"id": "firecanyon-end", "value": 69, "label": "Fire Canyon: End"},
+    {"id": "citadel-sage-green", "value": 70, "label": "Citadel: Sage green"},
+    {"id": "citadel-sage-blue", "value": 71, "label": "Citadel: Sage blue"},
+    {"id": "citadel-sage-red", "value": 72, "label": "Citadel: Sage red"},
+    {"id": "citadel-sage-yellow", "value": 73, "label": "Citadel: Sage yellow"},
+    {"id": "village3-extra1", "value": 74, "label": "Village 3: Extra1"},
+    {"id": "village1-buzzer", "value": 75, "label": "Village 1: Buzzer"},
+    {"id": "village2-buzzer", "value": 76, "label": "Village 2: Buzzer"},
+    {"id": "village3-buzzer", "value": 77, "label": "Village 3: Buzzer"},
+    {"id": "cave-gnawers", "value": 78, "label": "Cave: Gnawers"},
+    {"id": "cave-dark-crystals", "value": 79, "label": "Cave: Dark crystals"},
+    {"id": "cave-dark-climb", "value": 80, "label": "Cave: Dark climb"},
+    {"id": "cave-robot-climb", "value": 81, "label": "Cave: Robot climb"},
+    {"id": "cave-swing-poles", "value": 82, "label": "Cave: Swing poles"},
+    {"id": "cave-spider-tunnel", "value": 83, "label": "Cave: Spider tunnel"},
+    {"id": "cave-platforms", "value": 84, "label": "Cave: Platforms"},
+    {"id": "cave-buzzer", "value": 85, "label": "Cave: Buzzer"},
+    {"id": "ogre-boss", "value": 86, "label": "Ogre: Boss"},
+    {"id": "ogre-end", "value": 87, "label": "Ogre: End"},
+    {"id": "ogre-buzzer", "value": 88, "label": "Ogre: Scout Flies"},
+    {"id": "lavatube-end", "value": 89, "label": "Lava Tube: End"},
+    {"id": "lavatube-buzzer", "value": 90, "label": "Lava Tube: Buzzer"},
+    {"id": "citadel-buzzer", "value": 91, "label": "Citadel: Buzzer"},
+    {"id": "training-gimmie", "value": 92, "label": "Training: Gimmie"},
+    {"id": "training-door", "value": 93, "label": "Training: Door"},
+    {"id": "training-climb", "value": 94, "label": "Training: Climb"},
+    {"id": "training-buzzer", "value": 95, "label": "Training: Buzzer"},
+    {"id": "village3-miner-money1", "value": 96, "label": "Village 3: Miner money1"},
+    {"id": "village3-miner-money2", "value": 97, "label": "Village 3: Miner money2"},
+    {"id": "village3-miner-money3", "value": 98, "label": "Village 3: Miner money3"},
+    {"id": "village3-miner-money4", "value": 99, "label": "Village 3: Miner money4"},
+    {"id": "village3-oracle-money1", "value": 100, "label": "Village 3: Oracle money1"},
+    {"id": "village3-oracle-money2", "value": 101, "label": "Village 3: Oracle money2"},
+    {"id": "firecanyon-assistant", "value": 102, "label": "Fire Canyon: Assistant"},
+    {"id": "village2-levitator", "value": 103, "label": "Village 2: Levitator"},
+    {"id": "swamp-arm", "value": 104, "label": "Swamp: Arm"},
+    {"id": "village3-button", "value": 105, "label": "Village 3: Button"},
+    {"id": "red-eggtop", "value": 106, "label": "Red: Eggtop"},
+    {"id": "lavatube-balls", "value": 107, "label": "Lava Tube: Balls"},
+    {"id": "lavatube-start", "value": 108, "label": "Lava Tube: Start"},
+    {"id": "intro", "value": 109, "label": "Intro"},
+    {"id": "ogre-secret", "value": 110, "label": "Ogre: Secret"},
+    {"id": "village4-button", "value": 111, "label": "Village 4: Button"},
+    {"id": "finalboss-movies", "value": 112, "label": "Final Boss: Movies"},
+    {"id": "plunger-lurker-hit", "value": 113, "label": "Plunger: Lurker hit"},
+    {"id": "leaving-misty", "value": 114, "label": "Leaving: Misty"},
+    {"id": "assistant-village3", "value": 115, "label": "Assistant: Village3"}
   ],
 
   // ── GameTasks_notes ─────────────────────────────────────────────

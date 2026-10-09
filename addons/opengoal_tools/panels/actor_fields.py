@@ -80,7 +80,7 @@ def _resolve_choices(choices_spec):
       * list of plain strings              → normalised into dicts
       * "CrateTypes"                       → db.crate_types()
       * "CratePickups"                     → db.crate_pickups()
-      * "GameTasks"                        → db.game_tasks() plus a "none" entry up top
+      * "GameTasks"                        → db.game_tasks() (the game-task enum, none first)
       * "SoundBanks"                       → db.sound_banks()
       * "BankSFX"                          → flattened bank/sfx list
       * anything else → []
@@ -99,10 +99,8 @@ def _resolve_choices(choices_spec):
             return [{"value": t["id"], "label": t["label"]} for t in _db.crate_types()]
         if choices_spec == "CratePickups":
             return [{"value": p["id"], "label": p["label"]} for p in _db.crate_pickups()]
-        if choices_spec == "GameTasks":
-            items = [{"value": "none", "label": "None"}]
-            items += [{"value": t["id"], "label": t["label"]} for t in _db.game_tasks()]
-            return items
+        if choices_spec == "GameTasks":   # already starts with none
+            return [{"value": t["id"], "label": t["label"]} for t in _db.game_tasks()]
         if choices_spec == "SoundBanks":
             return [{"value": b["id"], "label": b["label"]} for b in _db.sound_banks()]
         if choices_spec == "BankSFX":
@@ -215,8 +213,10 @@ class OG_OT_PickTask(Operator):
     bl_property = "task"
 
     def _items(self, context):
-        items = [("none", "None", "No task"), ("custom", "Custom…", "Type a custom task name")]
-        items += [(t["id"], f"{t['label']}  ({t['id']})", t["id"]) for t in _db.game_tasks()]
+        # the DB list (game-task-h.gc) already starts with none
+        items = [("custom", "Custom…", "Type a custom task name")]
+        items += [(t["id"], t["label"] if t["id"] == "none" else f"{t['label']}  ({t['id']})", t["id"])
+                  for t in _db.game_tasks()]
         _TASK_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
         return _TASK_ITEMS
 
