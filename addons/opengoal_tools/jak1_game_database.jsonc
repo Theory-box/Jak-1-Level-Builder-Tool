@@ -4755,6 +4755,14 @@
               "default": 10.0,
               "min": -600.0,
               "note": "Seconds per full turn; negative = turns the other way. Game default 10."
+            },
+            {
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
             }
           ]
         }
@@ -4975,12 +4983,64 @@
     {
       "etype": "pontoon",
       "parent": "rigid-body-platform",
-      "description": "Game type (deftype pontoon (rigid-body-platform)) in levels\\village2\\village2-obs.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype pontoon (rigid-body-platform)) in levels\\village2\\village2-obs.gc. Parent record only, not spawnable. Pontoons float at ocean height (Y = 0 without an ocean); water links are ignored.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Set: hidden and not solid until this task is complete."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_alt_task",
+              "label": "Removed once this task is complete",
+              "type": "task",
+              "default": "none",
+              "lump": {
+                "key": "alt-task",
+                "type": "enum-uint32",
+                "format": "(game-task {value})"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "breakaway",
       "parent": "process-drawable",
-      "description": "Game type (deftype breakaway (process-drawable)) in levels\\misty\\misty-obs.gc. Parent record only, not spawnable."
+      "description": "Game type (deftype breakaway (process-drawable)) in levels\\misty\\misty-obs.gc. Parent record only, not spawnable.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Breaks together with (next)",
+              "accepts": [
+                "breakaway-left",
+                "breakaway-mid",
+                "breakaway-right"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Breaks together with (previous)",
+              "accepts": [
+                "breakaway-left",
+                "breakaway-mid",
+                "breakaway-right"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "eco-door",
@@ -7049,17 +7109,28 @@
       "etype": "plat",
       "label": "Floating Platform",
       "panels": [
-        {"panel": "path", "min-points": 2},
-        {"panel": "sync"},
-        {"panel": "fact-options", "fields": [{"key": "og_fop_wrap_phase", "show-field": true, "highlight": true}]}
+        {
+          "panel": "path",
+          "min-points": 2
+        },
+        {
+          "panel": "sync"
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_wrap_phase",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
       ],
       "category": "Platforms",
       "parent": "baseplat",
       "art_group": "plat-ag.go",
       "glb": "levels/maincave/plat-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "shape": "CUBE",
       "code": "plat.o"
     },
@@ -7067,15 +7138,43 @@
       "etype": "plat-eco",
       "label": "Eco Platform",
       "panels": [
-        {"panel": "notice-dist", "fields": [{"key": "og_notice_dist", "write_if": "always"}]}
+        {
+          "panel": "notice-dist",
+          "fields": [
+            {
+              "key": "og_notice_dist",
+              "write_if": "always"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next eco platform (woken together when Jak brings blue eco)",
+              "accepts": [
+                "plat-eco"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous eco platform",
+              "accepts": [
+                "plat-eco"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "category": "Platforms",
       "parent": "plat",
       "art_group": "plat-eco-ag.go",
       "glb": "levels/jungle/plat-eco-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "shape": "CUBE",
       "code": "plat-eco.o"
     },
@@ -7086,11 +7185,53 @@
       "parent": "plat",
       "art_group": "plat-citb-ag.go",
       "glb": "levels/citadel/plat-citb-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "panels": [
-        {"panel": "scale", "always": true}
+        {
+          "panel": "scale",
+          "always": true
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_trans_offset_x",
+              "label": "Path offset X (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "note": "Added to the path position every frame (game axes)."
+            },
+            {
+              "key": "og_trans_offset_y",
+              "label": "Path offset up (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero"
+            },
+            {
+              "key": "og_trans_offset_z",
+              "label": "Path offset Z (m, = -Blender Y)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 2
+              },
+              "write_if": "if_any_nonzero"
+            }
+          ]
+        }
       ],
       "shape": "CUBE",
       "code": "citb-plat.o"
@@ -7130,7 +7271,7 @@
               "key": "og_height_info",
               "label": "Height when active (m)",
               "type": "float",
-              "default": 4.0,
+              "default": 1.0,
               "min": 0.0,
               "lump": {
                 "key": "height-info",
@@ -7151,7 +7292,8 @@
       "parent": "process-drawable",
       "art_group": "silodoor-ag.go",
       "glb": "levels/finalboss/silodoor-lod0.glb",
-      "code": "robotboss-misc.o"
+      "code": "robotboss-misc.o",
+      "description": "Final boss silo door. Opens only when it receives 'open <fraction> (sent by the robot boss in vanilla, or by your own actor); otherwise a static closed door. 'hide hides it until the finalboss-movies task advances."
     },
     {
       "etype": "citb-stopbox",
@@ -7160,11 +7302,33 @@
       "parent": "plat",
       "art_group": "citb-stopbox-ag.go",
       "glb": "levels/citadel/citb-stopbox-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "shape": "CUBE",
-      "code": "citb-plat.o"
+      "code": "citb-plat.o",
+      "panels": [
+        {
+          "panel": "sync",
+          "fields": [
+            {
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
+            }
+          ],
+          "description": "Period and phase only (the stop box ignores eases; it always wraps)."
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_wrap_phase",
+              "show-field": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "citb-exit-plat",
@@ -7178,28 +7342,9 @@
           "panel": "custom-fields",
           "fields": [
             {
-              "key": "og_continue_name",
-              "label": "Continue point name (checkpoints)",
-              "type": "string",
-              "default": "",
-              "lump": {
-                "key": "continue-name",
-                "type": "string",
-                "bare": true
-              },
-              "write_if": "if_non_empty"
-            },
-            {
-              "key": "og_camera_name",
-              "label": "Camera name to use while elevator move",
-              "type": "string",
-              "default": "",
-              "lump": {
-                "key": "camera-name",
-                "type": "string",
-                "bare": true
-              },
-              "write_if": "if_non_empty"
+              "key": "og_bidirectional",
+              "show-field": false,
+              "export": false
             }
           ]
         },
@@ -7209,24 +7354,18 @@
             {
               "lump_key": "state-actor",
               "slot": 0,
-              "label": "Actor to activate the elevator",
+              "label": "Actor whose completion raises the platform (required: crashes without it)",
               "accepts": [
                 "any"
               ],
-              "required": false
-            },
-            {
-              "lump_key": "trigger-actor",
-              "slot": 0,
-              "label": "Actor that get activated by the elevator",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "required": true
             }
           ]
         },
-        {"panel": "path", "min-points": 1}
+        {
+          "panel": "path",
+          "min-points": 1
+        }
       ],
       "code": "citb-plat.o"
     },
@@ -7237,11 +7376,12 @@
       "parent": "process-drawable",
       "art_group": "plat-button-ag.go",
       "glb": "levels/jungle/plat-button-geo.glb",
-      "lumps": [
-        {"key": "camera-name", "type": "string", "description": "Name of camera to activate when button pressed."}
-      ],
       "panels": [
-        {"panel": "path", "required": true, "min-points": 2},
+        {
+          "panel": "path",
+          "required": true,
+          "min-points": 2
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -7267,6 +7407,55 @@
                 "type": "uint32"
               },
               "write_if": "if_not_default"
+            },
+            {
+              "key": "og_camera_name",
+              "label": "Camera to use while it moves",
+              "type": "string",
+              "default": "",
+              "lump": {
+                "key": "camera-name",
+                "type": "string",
+                "bare": true
+              },
+              "write_if": "if_non_empty"
+            },
+            {
+              "key": "og_trans_offset_x",
+              "label": "Path offset X (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "note": "Added to the path: it starts at path point 1 plus this offset (game axes)."
+            },
+            {
+              "key": "og_trans_offset_y",
+              "label": "Path offset up (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero"
+            },
+            {
+              "key": "og_trans_offset_z",
+              "label": "Path offset Z (m, = -Blender Y)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "trans-offset",
+                "type": "vector3m",
+                "slot": 2
+              },
+              "write_if": "if_any_nonzero"
             }
           ]
         }
@@ -7277,6 +7466,10 @@
       "etype": "flutflut-plat",
       "label": "Snowy Platform (Flut Flut)",
       "panels": [
+        {
+          "panel": "game-task",
+          "description": "Task this platform is tied to (button mode: complete = already raised)."
+        },
         {
           "panel": "actor-link",
           "show-panel": true,
@@ -7364,26 +7557,29 @@
               "choices": [
                 {
                   "id": "0",
+                  "value": "0",
                   "label": "Default platform behaviour",
-                  "value": "0"
+                  "lump_value": 0
                 },
                 {
                   "id": "1",
+                  "value": "1",
                   "label": "Button activated (Static)",
-                  "value": "1"
+                  "lump_value": 1
                 },
                 {
                   "id": "2",
+                  "value": "2",
                   "label": "Button activated (Use Path)",
-                  "value": "2"
+                  "lump_value": 2
                 }
               ],
-              "default": 0,
+              "default": "0",
               "lump": {
                 "key": "mode",
                 "type": "int32"
               },
-              "write_if": "if_nonzero"
+              "write_if": "if_not_default"
             },
             {
               "key": "og_extra-id",
@@ -7395,19 +7591,23 @@
                 "type": "int32"
               },
               "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_rotoffset",
+              "label": "Rotation offset (deg)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero"
             }
           ]
         }
       ],
       "category": "Platforms",
       "parent": "plat",
-      "lumps": [
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
-        }
-      ],
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o",
       "description": "Flut flut platform. Variant: small / medium / large (each its own type and model)."
@@ -7469,7 +7669,28 @@
       "parent": "baseplat",
       "art_group": "snow-spatula-ag.go",
       "code": "snow-obs.o",
-      "glb": "levels/snow/snow-spatula-lod0.glb"
+      "glb": "levels/snow/snow-spatula-lod0.glb",
+      "panels": [
+        {
+          "panel": "sync",
+          "show-panel": true,
+          "description": "Swings 90 degrees around Y from its placed rotation and back: period and phase.",
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 5.0
+            },
+            {
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "plat-flip",
@@ -7499,7 +7720,7 @@
             },
             {
               "key": "og_flip_delay_down",
-              "label": "Delay \u2014 down (s)",
+              "label": "Delay — down (s)",
               "type": "float",
               "default": 2.0,
               "min": 0.0,
@@ -7512,9 +7733,9 @@
             },
             {
               "key": "og_flip_delay_up",
-              "label": "Delay \u2014 up (s)",
+              "label": "Delay — up (s)",
               "type": "float",
-              "default": 2.0,
+              "default": 0.2,
               "min": 0.0,
               "lump": {
                 "key": "delay",
@@ -7542,6 +7763,10 @@
           "panel": "sync",
           "fields": [
             {
+              "key": "og_sync_period",
+              "default": 5.0
+            },
+            {
               "key": "og_sync_ease_out",
               "label": "Period Extended (0-.5)",
               "default": 0.375
@@ -7553,13 +7778,23 @@
             }
           ],
           "description": "Extend / retract cycle: period, phase, and how long it stays extended / retracted."
-        }
-      ],
-      "lumps": [
+        },
         {
-          "key": "tunemeters",
-          "type": "meters",
-          "description": "Z-offset tuning for wall alignment. Default 0."
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_tunemeters",
+              "label": "Extra push out (m)",
+              "type": "float",
+              "default": 0.0,
+              "note": "Added to its 0.4 m outward offset along its local Z.",
+              "lump": {
+                "key": "tunemeters",
+                "type": "meters"
+              },
+              "write_if": "if_nonzero"
+            }
+          ]
         }
       ],
       "shape": "CONE"
@@ -7571,12 +7806,54 @@
       "parent": "process-drawable",
       "art_group": "balance-plat-ag.go",
       "tpage_group": "Swamp",
-      "code": ["battlecontroller.o", "swamp-obs.o"],
-      "glb": "levels/swamp/balance-plat-lod0.glb",
-      "lumps": [
-        {"key": "distance", "type": "meters", "description": "Vertical travel range. Default ~5m."}
+      "code": [
+        "battlecontroller.o",
+        "swamp-obs.o"
       ],
-      "shape": "CUBE"
+      "glb": "levels/swamp/balance-plat-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_distance",
+              "label": "Travel range (m)",
+              "type": "float",
+              "default": 5.0,
+              "min": 0.0,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next balance platform (rises when this one is ridden)",
+              "accepts": [
+                "balance-plat"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous balance platform",
+              "accepts": [
+                "balance-plat"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "teetertotter",
@@ -7598,9 +7875,6 @@
       "tpage_group": "Sunken",
       "code": "sunken-obs.o",
       "glb": "levels/sunken/side-to-side-plat-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "shape": "CUBE"
     },
     {
@@ -7612,9 +7886,6 @@
       "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
-      "lumps": [
-        {"key": "rotspeed", "type": "degrees", "description": "Rotation speed in degrees/sec."}
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -7665,15 +7936,23 @@
       "label": "Wedge Platform Outer",
       "category": "Platforms",
       "parent": "wedge-plat",
-      "art_group": "wedge-plat-ag.go",
+      "art_group": [
+        "wedge-plat-ag.go",
+        "wedge-plat-outer-ag.go"
+      ],
       "tpage_group": "Sunken",
       "code": "wedge-plats.o",
       "glb": "levels/sunken/wedge-plat-lod0.glb",
-      "lumps": [
-        {"key": "rotspeed", "type": "degrees", "description": "Rotation speed in degrees/sec."}
-      ],
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_distance", "default": 17.0}]}
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_distance",
+              "default": 17.0
+            }
+          ]
+        }
       ],
       "shape": "CUBE"
     },
@@ -7684,24 +7963,21 @@
       "parent": "process",
       "tpage_group": "Sunken",
       "code": "wedge-plats.o",
-      "lumps": [
-        {"key": "rotoffset", "type": "degrees", "description": "Initial rotation offset."},
-        {"key": "distance", "type": "meters", "description": "Travel distance from origin. Default ~9m or ~17m depending on variant."}
-      ],
       "panels": [
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_rotspeed",
-              "label": "Rotation Speed (degrees)",
+              "label": "Rotation speed (degrees/s)",
               "type": "degrees",
               "default": 15.0,
               "lump": {
                 "key": "rotspeed",
                 "type": "degrees"
               },
-              "write_if": "always"
+              "write_if": "always",
+              "note": "0 = no rotation. The wedge platforms linked to it turn around it."
             }
           ]
         }
@@ -7715,16 +7991,13 @@
       "parent": "rigid-body-platform",
       "art_group": "tar-plat-ag.go",
       "tpage_group": "Swamp",
-      "code": ["battlecontroller.o", "swamp-obs.o"],
-      "glb": "levels/swamp/tar-plat-lod0.glb",
-      "lumps": [
-        {
-          "key": "scale-factor",
-          "type": "float",
-          "description": "Uniform scale multiplier. Default 1.0."
-        }
+      "code": [
+        "battlecontroller.o",
+        "swamp-obs.o"
       ],
-      "shape": "CUBE"
+      "glb": "levels/swamp/tar-plat-lod0.glb",
+      "shape": "CUBE",
+      "description": "Floats at its placed height (bobs when ridden)."
     },
     {
       "etype": "bone-platform",
@@ -7732,9 +8005,13 @@
       "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "mis-bone-platform-ag.go",
-      "code": ["battlecontroller.o", "misty-obs.o"],
+      "code": [
+        "battlecontroller.o",
+        "misty-obs.o"
+      ],
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Floats at ocean height (Y = 0 when the level has no ocean). The entity named bone-platform-5 is scaled to 0.8 by the game."
     },
     {
       "etype": "qbert-plat",
@@ -7748,11 +8025,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Qbert Master",
+              "label": "Qbert master (required)",
               "accepts": [
-                "any"
+                "qbert-plat-master"
               ],
-              "required": false
+              "required": true
             },
             {
               "lump_key": "prev-actor",
@@ -7776,7 +8053,10 @@
           ]
         }
       ],
-      "art_group": ["qbert-plat-ag.go", "qbert-plat-on-ag.go"],
+      "art_group": [
+        "qbert-plat-ag.go",
+        "qbert-plat-on-ag.go"
+      ],
       "code": "qbert-plat.o",
       "glb": "levels/sunken/qbert-plat-lod0.glb",
       "shape": "CUBE"
@@ -7793,16 +8073,25 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Activate these when Qbert minegame is completed",
+              "label": "Door (triggered when solved; required)",
               "accepts": [
                 "any"
               ],
-              "required": false
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Door platform (triggered when solved; required)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
             },
             {
               "lump_key": "next-actor",
               "slot": 0,
-              "label": "First Qbert Platform",
+              "label": "First Qbert platform",
               "accepts": [
                 "qbert-plat"
               ],
@@ -7811,20 +8100,28 @@
           ]
         }
       ],
-      "art_group": "qbert-plat-on-ag.go",
-      "code": "qbert-plat.o",
-      "shape": "PLAIN_AXES"
+      "art_group": "sunkencam-ag.go",
+      "code": [
+        "sunken-obs.o",
+        "qbert-plat.o"
+      ],
+      "shape": "PLAIN_AXES",
+      "description": "Qbert puzzle master: every qbert-plat in its next/prev chain must be lit. Waits for both door links to be running actors (otherwise the puzzle never starts). Uses the game task sunken-platforms (hard-coded): if it's complete the puzzle starts solved. Plays the sunken camera when solved."
     },
     {
       "etype": "floating-launcher",
       "label": "Floating Launcher (Sunken)",
-      "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
+      "description": "Starts at the last path point; when triggered it moves to the first point in 1 s and becomes a launcher there. Its own position is ignored.",
       "category": "Platforms",
       "parent": "baseplat",
       "art_group": "floating-launcher-ag.go",
       "glb": "levels/sunkenb/floating-launcher-lod0.glb",
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -7842,7 +8139,8 @@
                 "var": "self",
                 "expression": "40 if var < 0 else var",
                 "driven": "empty_display_size"
-              }
+              },
+              "show-field": false
             },
             {
               "key": "og_launcher_dest",
@@ -7854,83 +8152,48 @@
                 "type": "vector",
                 "pairs_with": "og_launcher_fly_time"
               },
-              "note": "xyz of alt-vector is the resolved location of the destination object.",
-              "write_if": "if_object_found"
+              "note": "Exported as the destination's world position.",
+              "write_if": "if_object_found",
+              "show-field": false
             },
             {
               "key": "og_launcher_fly_time",
               "label": "Fly time (s)",
               "type": "float",
               "default": -1.0,
-              "note": "w component of alt-vector = fly_time_seconds \u00d7 300 (engine frames)."
-            },
-            {
-              "key": "og_launcher_mode",
-              "label": "Camera on launch",
-              "type": "enum",
-              "default": "shortfall",
-              "choices": [
-                {
-                  "value": "shortfall",
-                  "label": "Short fall (default)",
-                  "lump_value": 0
-                },
-                {
-                  "value": "longfall",
-                  "label": "Long fall",
-                  "lump_value": 1
-                },
-                {
-                  "value": "none",
-                  "label": "No camera",
-                  "lump_value": 2
-                }
-              ],
-              "lump": {
-                "key": "mode",
-                "type": "uint32"
-              },
-              "write_if": "if_not_default"
+              "note": "Seconds to reach the destination (-1 = game default).",
+              "show-field": false
             },
             {
               "key": "og_trigger_height",
-              "label": "Trigger height Coordinate (m)",
+              "label": "Trigger height (world Y, m)",
               "type": "float",
-              "default": 20.0,
+              "default": 0.0,
               "lump": {
                 "key": "trigger-height",
                 "type": "meters"
               },
-              "write_if": "if_not_default"
+              "write_if": "always",
+              "note": "Absolute height: Jak triggers it standing on ground above this, within 20 m horizontally."
             }
           ]
         },
-        {"panel": "launcher"},
+        {
+          "panel": "launcher"
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "launcherdoor to open",
+              "label": "Actor spawned when the launcher lowers (e.g. a launcherdoor)",
               "accepts": [
-                "launcherdoor"
+                "any"
               ],
               "required": false
             }
           ]
-        }
-      ],
-      "lumps": [
-        {
-          "key": "sync",
-          "type": "float",
-          "description": "Path timing: 'period_sec phase [ease_out ease_in]'. e.g. '4.0 0.0 0.15 0.15'."
-        },
-        {
-          "key": "flags",
-          "type": "uint32",
-          "description": "Behaviour flags (bitfield)."
         }
       ],
       "shape": "SINGLE_ARROW",
@@ -7942,11 +8205,10 @@
       "category": "Platforms",
       "parent": "process-drawable",
       "tpage_group": "Sunken",
-      "lumps": [
-        {"key": "trigger-height", "type": "meters", "description": "Height above launcher base where Jak gets launched."}
-      ],
       "panels": [
-        {"panel": "launcher"},
+        {
+          "panel": "launcher"
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -7976,7 +8238,7 @@
                 "type": "vector",
                 "pairs_with": "og_launcher_fly_time"
               },
-              "note": "xyz of alt-vector is the resolved location of the destination object.",
+              "note": "Exported as the destination's world position.",
               "write_if": "if_object_found"
             },
             {
@@ -7984,7 +8246,7 @@
               "label": "Fly time (s)",
               "type": "float",
               "default": -1.0,
-              "note": "w component of alt-vector = fly_time_seconds \u00d7 300 (engine frames)."
+              "note": "Seconds to reach the destination (-1 = game default)."
             },
             {
               "key": "og_launcher_mode",
@@ -8225,6 +8487,10 @@
           "panel": "sync",
           "fields": [
             {
+              "key": "og_sync_period",
+              "default": 6.0
+            },
+            {
               "key": "og_sync_ease_out",
               "export": false
             },
@@ -8234,6 +8500,40 @@
             }
           ],
           "description": "Steam cycle timing: period and phase."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_steam_rise",
+              "label": "Start rising at (0-1 of the cycle)",
+              "type": "float",
+              "default": 0.4,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "percent",
+                "type": "float",
+                "slot": 0
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_steam_fall",
+              "label": "Start falling at (0-1 of the cycle)",
+              "type": "float",
+              "default": 0.9,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "percent",
+                "type": "float",
+                "slot": 1
+              },
+              "write_if": "always",
+              "note": "It always rises 10 m."
+            }
+          ]
         }
       ],
       "glb": "levels/sunken/steam-cap-lod0.glb",
@@ -8286,7 +8586,7 @@
               "key": "og_height_top",
               "label": "Top Height (m)",
               "type": "float",
-              "default": 4.0,
+              "default": 5.0,
               "min": 0.0,
               "lump": {
                 "key": "height-info",
@@ -8294,20 +8594,6 @@
                 "slot": 1
               },
               "write_if": "if_not_default"
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Stop moving when breaking the mirror",
-              "accepts": [
-                "reflector-mirror"
-              ],
-              "required": false
             }
           ]
         }
@@ -8320,22 +8606,7 @@
       "label": "Sail (Tall)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Stop moving when breaking the mirror",
-              "accepts": [
-                "reflector-mirror"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
+      "panels": [],
       "art_group": "lurkerm-tall-sail-ag.go",
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
@@ -8351,7 +8622,8 @@
       "tpage_group": "Jungle",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/precurbridge-geo.glb",
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Precursor bridge that assembles when Jak comes near with blue eco. Its activation point is hard-coded to its spot in vanilla Jungle, so in a custom level it stays idle unless something sends it 'go. Usable as a static prop. Saved as complete: starts assembled."
     },
     {
       "etype": "grottopole",
@@ -8367,9 +8639,9 @@
           "fields": [
             {
               "key": "og_speed",
-              "label": "Speed (m)",
+              "label": "Speed (m/s)",
               "type": "meters",
-              "default": 2.0,
+              "default": 20.0,
               "min": 0.0,
               "lump": {
                 "key": "speed",
@@ -9035,13 +9307,13 @@
       "label": "Orbit Platform",
       "category": "Platforms",
       "parent": "baseplat",
-      "art_group": "orbit-plat-ag.go",
+      "art_group": [
+        "orbit-plat-ag.go",
+        "orbit-plat-bottom-ag.go"
+      ],
       "tpage_group": "Sunken",
       "code": "orbit-plat.o",
       "glb": "levels/sunken/orbit-plat-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9059,7 +9331,9 @@
             }
           ]
         },
-        {"panel": "nav-mesh"},
+        {
+          "panel": "nav-mesh"
+        },
         {
           "panel": "actor-link",
           "slots": [
@@ -9074,10 +9348,13 @@
             }
           ]
         },
-        {"panel": "scale", "uniform": true}
+        {
+          "panel": "scale",
+          "uniform": true
+        }
       ],
       "shape": "CUBE",
-      "known_issue": "Orbit-plats are not rotating in-game even when linked bidirectionally to each other and to a nav-mesh. Pair spawns correctly and export runs clean, but stepping on one produces no reaction. Under investigation — possibly a collision-shape issue, a missing process-spawn dependency, or a deeper engine requirement (level actor-group, continue-points, etc.). Workaround: avoid orbit-plats for now; use other platform types."
+      "description": "Link two orbit-plats to each other. Standing on one makes the OTHER circle around it (10 m/s), only where its nav mesh allows, so give both a nav mesh covering the circle each one sweeps around its partner. They reset after the timeout once Jak is away."
     },
     {
       "etype": "square-platform",
@@ -9120,14 +9397,13 @@
             }
           ]
         },
-        {"panel": "nav-mesh"},
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Water entity (for splash effects)",
+              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to no splashes)",
               "accepts": [
                 "any"
               ],
@@ -9136,25 +9412,172 @@
             {
               "lump_key": "prev-actor",
               "slot": 0,
-              "label": "Previous platform in the list or button if first",
+              "label": "Previous platform (or the master, if first)",
               "accepts": [
-                "any"
+                "square-platform",
+                "square-platform-master"
               ],
               "required": false
             },
             {
               "lump_key": "next-actor",
               "slot": 0,
-              "label": "Next platform in the list",
+              "label": "Next platform",
               "accepts": [
-                "any"
+                "square-platform"
               ],
               "required": false
             }
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Starts lowered at its down travel. Only moves when a square-platform-master in the same next/prev chain is triggered by a square-platform-button."
+    },
+    {
+      "etype": "square-platform-master",
+      "label": "Square Platform Master",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": "square-platform.o",
+      "shape": "PLAIN_AXES",
+      "description": "Raises the square-platforms in its next/prev chain one after another (0.3 s apart) when a square-platform-button linked to it is pressed, then lowers them after the timeout.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_sq_timeout",
+              "label": "Time raised (s)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.5,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First square platform",
+              "accepts": [
+                "square-platform"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "square-platform-button",
+      "label": "Square Platform Button",
+      "category": "Platforms",
+      "parent": "basebutton",
+      "art_group": "generic-button-ag.go",
+      "code": "square-platform.o",
+      "shape": "CUBE",
+      "description": "Button that starts its square-platform-master (link it in Alt actors).",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Square platform master to start",
+              "accepts": [
+                "square-platform-master"
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_sq_button_cam",
+              "label": "Camera / order",
+              "type": "enum",
+              "default": "none",
+              "variant": true,
+              "choices": [
+                {
+                  "id": "none",
+                  "value": "none",
+                  "label": "No camera, normal order"
+                },
+                {
+                  "id": "0",
+                  "value": "0",
+                  "label": "Sunken camera 0, normal order",
+                  "lump_value": 0,
+                  "code": [
+                    "sunken-obs.o"
+                  ],
+                  "art_group": [
+                    "generic-button-ag.go",
+                    "sunkencam-ag.go"
+                  ]
+                },
+                {
+                  "id": "1",
+                  "value": "1",
+                  "label": "Sunken camera 1, reverse order",
+                  "lump_value": 1,
+                  "code": [
+                    "sunken-obs.o"
+                  ],
+                  "art_group": [
+                    "generic-button-ag.go",
+                    "sunkencam-ag.go"
+                  ]
+                },
+                {
+                  "id": "2",
+                  "value": "2",
+                  "label": "Sunken camera 2, normal order",
+                  "lump_value": 2,
+                  "code": [
+                    "sunken-obs.o"
+                  ],
+                  "art_group": [
+                    "generic-button-ag.go",
+                    "sunkencam-ag.go"
+                  ]
+                },
+                {
+                  "id": "3",
+                  "value": "3",
+                  "label": "Sunken camera 3, reverse order",
+                  "lump_value": 3,
+                  "code": [
+                    "sunken-obs.o"
+                  ],
+                  "art_group": [
+                    "generic-button-ag.go",
+                    "sunkencam-ag.go"
+                  ]
+                }
+              ],
+              "lump": {
+                "key": "extra-id",
+                "type": "uint32"
+              },
+              "write_if": "if_not_default",
+              "note": "Cameras bundle sunken-obs.o and sunkencam-ag.go."
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "ropebridge",
@@ -9290,23 +9713,20 @@
               "key": "og_ogre-isle_variant",
               "label": "Klaww Isles Variant",
               "type": "enum",
-              "default": "ogre-isle",
+              "default": "ogre-isle-b",
               "choices": [
-                {
-                  "id": "ogre-isle",
-                  "value": "ogre-isle",
-                  "etype": "ogre-isle",
-                  "label": "Isle A",
-                  "art_group": "ogre-isle-ag.go",
-                  "glb": "levels/ogre/ogre-isle-a-lod0.glb"
-                },
                 {
                   "id": "ogre-isle-b",
                   "value": "ogre-isle-b",
                   "etype": "ogre-isle-b",
                   "label": "Isle B",
                   "art_group": "ogre-isle-ag.go",
-                  "glb": "levels/ogre/ogre-isle-b-lod0.glb"
+                  "glb": "levels/ogre/ogre-isle-b-lod0.glb",
+                  "offset": [
+                    -2.0,
+                    0.0,
+                    0.0
+                  ]
                 },
                 {
                   "id": "ogre-isle-c",
@@ -9314,7 +9734,12 @@
                   "etype": "ogre-isle-c",
                   "label": "Isle C",
                   "art_group": "ogre-isle-ag.go",
-                  "glb": "levels/ogre/ogre-isle-c-lod0.glb"
+                  "glb": "levels/ogre/ogre-isle-b-lod0.glb",
+                  "offset": [
+                    -2.0,
+                    0.0,
+                    0.0
+                  ]
                 },
                 {
                   "id": "ogre-isle-d",
@@ -9322,7 +9747,12 @@
                   "etype": "ogre-isle-d",
                   "label": "Isle D",
                   "art_group": "ogre-isle-ag.go",
-                  "glb": "levels/ogre/ogre-isle-d-lod0.glb"
+                  "glb": "levels/ogre/ogre-isle-d-lod0.glb",
+                  "offset": [
+                    -2.0,
+                    2.0,
+                    0.0
+                  ]
                 }
               ],
               "variant": true,
@@ -9337,7 +9767,7 @@
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water surface entity",
+              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to float at ocean height)",
               "accepts": [
                 "any"
               ],
@@ -9346,7 +9776,8 @@
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Floats at water height (ocean height without a water link), pulled back toward its placed X/Z. Base ogre-isle has no model, so only B/C/D exist (C uses the B model)."
     },
     {
       "etype": "ogre-step",
@@ -9354,13 +9785,6 @@
       "category": "Platforms",
       "parent": "ogre-plat",
       "code": "ogre-obs.o",
-      "lumps": [
-        {
-          "key": "Variant",
-          "type": "string",
-          "description": "Steps variant. Values: A, B, C, D. Default: A."
-        }
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9416,16 +9840,16 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "This actor needs to be dead/removed for platforms to spawn",
+              "label": "Active from the start once this actor is complete (vanilla: Klaww / ogreboss)",
               "accepts": [
                 "any"
               ],
-              "required": true
+              "required": false
             },
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water surface entity",
+              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to float at ocean height)",
               "accepts": [
                 "any"
               ],
@@ -9434,14 +9858,19 @@
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Hidden 7 m below its placement until active; then rises and floats at water height while Jak is within 150 m."
     },
     {
       "etype": "citb-disc",
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9490,7 +9919,33 @@
               "write_if": "always"
             }
           ]
+        },
+        {
+          "panel": "sync",
+          "show-panel": true,
+          "description": "One full turn per period (seconds); a negative period turns the other way. Phase offsets the start.",
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 10.0,
+              "min": -600.0,
+              "note": "Seconds per full turn; negative = turns the other way. Game default 10."
+            },
+            {
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
+            }
+          ]
         }
+      ],
+      "rotation_lock": [
+        "x",
+        "y",
+        "z"
       ]
     },
     {
@@ -9727,19 +10182,17 @@
     },
     {
       "etype": "caveelevator",
-      // "panel": "caveelevator",
       "label": "Cave Elevator",
-      "description": "The cave elevator has multiple modes. However, the movement is based on animation so it can't be edited",
+      "description": "Moves along a baked animation (the path can't be edited). Cycling modes use the Sync period; the one-way mode starts when Jak touches it.",
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "caveelevator-ag.go",
       "tpage_group": "Maincave",
-      "code": ["cavecrystal-light.o", "maincave-obs.o"],
-      "glb": "levels/darkcave/caveelevator-lod0.glb",
-      // "needs_path": true,
-      "lumps": [
-        {"key": "trans-offset", "type": "float", "description": "Position offset applied after placement: 'x y z' raw units. Default 0 0 0."}
+      "code": [
+        "cavecrystal-light.o",
+        "maincave-obs.o"
       ],
+      "glb": "levels/darkcave/caveelevator-lod0.glb",
       "panels": [
         {
           "panel": "custom-fields",
@@ -9752,17 +10205,17 @@
               "choices": [
                 {
                   "value": "2floor",
-                  "label": "2 Floors (0 and 12m)",
+                  "label": "2 floors, cycling (0 and 12 m)",
                   "lump_value": 0
                 },
                 {
                   "value": "down",
-                  "label": "2 Floors on step (0 and -58.4m)",
+                  "label": "One way down when touched (0 and -58.4 m), back after 3 s",
                   "lump_value": 1
                 },
                 {
                   "value": "3floor",
-                  "label": "3 Floors (0, 12 and 24m)",
+                  "label": "3 floors, cycling (0, 12 and 24 m)",
                   "lump_value": 2
                 }
               ],
@@ -9771,18 +10224,25 @@
                 "type": "uint32"
               },
               "write_if": "always"
+            }
+          ]
+        },
+        {
+          "panel": "sync",
+          "show-panel": true,
+          "description": "Cycling modes only: period and phase of the ride.",
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 10.0
             },
             {
-              "key": "og_elevator_rot",
-              "label": "Rotation offset (\u00b0)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "rotoffset",
-                "type": "degrees"
-              },
-              "write_if": "if_nonzero",
-              "note": "NOTE: engine actually reads 'trans-offset' (3 floats X Y Z, see levels/maincave/maincave-obs.gc). Our addon currently writes 'rotoffset' which the engine ignores. To fix, we'd need to: (1) change this field to vector3, (2) update the property-setter + export pipeline, (3) migrate any existing scenes. Tracked for a future bug-fix commit."
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
             }
           ]
         }
@@ -9862,25 +10322,43 @@
       "parent": "process-drawable",
       "art_group": "cavetrapdoor-ag.go",
       "tpage_group": "Maincave",
-      "code": ["cavecrystal-light.o", "maincave-obs.o"],
-      "glb": "levels/robocave/cavetrapdoor-lod0.glb",
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "How long before the trap door activates (seconds)."
-        }
+      "code": [
+        "cavecrystal-light.o",
+        "maincave-obs.o"
       ],
-      "shape": "CUBE"
+      "glb": "levels/robocave/cavetrapdoor-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_trapdoor_delay",
+              "label": "Delay before it drops (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "lump": {
+                "key": "delay",
+                "type": "float"
+              },
+              "write_if": "if_positive"
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "cavespatula",
       "label": "Cave Spatula Plat",
-      "category": "Platforms",
+      "category": "Hidden",
       "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
-      "code": ["cavecrystal-light.o", "maincave-obs.o"],
+      "code": [
+        "cavecrystal-light.o",
+        "maincave-obs.o"
+      ],
       "panels": [
         {
           "panel": "sync",
@@ -9902,7 +10380,8 @@
         }
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Only works in a level named darkcave: elsewhere its art group (cavespatula) doesn't exist and it goes into an art error. Hidden from the spawn list."
     },
     {
       "etype": "cavespatulatwo",
@@ -9911,7 +10390,10 @@
       "parent": "process-drawable",
       "art_group": "cavespatulatwo-ag.go",
       "tpage_group": "Maincave",
-      "code": ["cavecrystal-light.o", "maincave-obs.o"],
+      "code": [
+        "cavecrystal-light.o",
+        "maincave-obs.o"
+      ],
       "panels": [
         {
           "panel": "sync",
@@ -9929,7 +10411,7 @@
               "export": false
             }
           ],
-          "description": "Rotation timing: period and phase."
+          "description": "Spins around Y: period and phase (placed rotation is ignored; the period must be positive)."
         }
       ],
       "glb": "levels/robocave/cavespatulatwo-lod0.glb",
@@ -9947,11 +10429,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Ogre bridge end piece",
+              "label": "Klaww (ogreboss): told when Jak arrives with blue eco",
               "accepts": [
-                "ogre-bridgeend"
+                "ogreboss"
               ],
-              "required": true
+              "required": false
             }
           ]
         }
@@ -9982,25 +10464,7 @@
       "tpage_group": "Village2",
       "code": "village2-obs.o",
       "glb": "levels/village2/pontoonten-lod0.glb",
-      "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_alt_task",
-              "label": "Linked Task",
-              "type": "task",
-              "default": "none",
-              "lump": {
-                "key": "alt-task",
-                "type": "enum-uint32",
-                "format": "(game-task {value})"
-              },
-              "write_if": "if_not_none"
-            }
-          ]
-        }
-      ],
+      "panels": [],
       "shape": "CUBE"
     },
     {
@@ -10021,7 +10485,10 @@
       "parent": "process-drawable",
       "art_group": "mis-bone-bridge-ag.go",
       "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
+      "code": [
+        "battlecontroller.o",
+        "misty-obs.o"
+      ],
       "glb": "levels/misty/mis-bone-bridge-lod0.glb",
       "panels": [
         {
@@ -10029,20 +10496,42 @@
           "fields": [
             {
               "key": "og_bone_bridge_anim",
-              "label": "Animation index",
-              "type": "int",
-              "default": 0,
-              "min": 0,
+              "label": "Fall animation",
+              "type": "enum",
+              "default": "1",
               "lump": {
                 "key": "animation-select",
                 "type": "uint32"
               },
-              "write_if": "if_nonzero"
+              "write_if": "if_not_default",
+              "choices": [
+                {
+                  "value": "1",
+                  "label": "Fall 1",
+                  "lump_value": 1
+                },
+                {
+                  "value": "2",
+                  "label": "Fall 2",
+                  "lump_value": 2
+                },
+                {
+                  "value": "3",
+                  "label": "Fall 3",
+                  "lump_value": 3
+                },
+                {
+                  "value": "7",
+                  "label": "Fall 7",
+                  "lump_value": 7
+                }
+              ]
             }
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Breaks after 3 hits (or one with red eco), only from its local +Z side. Daxter's hint sksp0435 plays within 8 m. Saved as complete: starts fallen."
     },
     {
       "etype": "breakaway-mid",
@@ -10051,12 +10540,11 @@
       "parent": "breakaway",
       "art_group": "breakaway-mid-ag.go",
       "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
-      "glb": "levels/misty/breakaway-mid-lod0.glb",
-      "lumps": [
-        {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
-        {"key": "particle-select", "type": "uint32", "description": "Particle variant."}
+      "code": [
+        "battlecontroller.o",
+        "misty-obs.o"
       ],
+      "glb": "levels/misty/breakaway-mid-lod0.glb",
       "panels": [
         {
           "panel": "custom-fields",
@@ -10067,37 +10555,34 @@
               "type": "enum",
               "default": "breakaway-mid",
               "choices": [
-                {"id": "breakaway-left", "etype": "breakaway-left", "label": "Left", "glb": "levels/misty/breakaway-left-lod0.glb", "art_group": "breakaway-left-ag.go", "value": "breakaway-left"},
-                {"id": "breakaway-mid", "etype": "breakaway-mid", "label": "Middle", "glb": "levels/misty/breakaway-mid-lod0.glb", "art_group": "breakaway-mid-ag.go", "value": "breakaway-mid"},
-                {"id": "breakaway-right", "etype": "breakaway-right", "label": "Right", "glb": "levels/misty/breakaway-right-lod0.glb", "art_group": "breakaway-right-ag.go", "value": "breakaway-right"}
+                {
+                  "id": "breakaway-left",
+                  "etype": "breakaway-left",
+                  "label": "Left",
+                  "glb": "levels/misty/breakaway-left-lod0.glb",
+                  "art_group": "breakaway-left-ag.go",
+                  "value": "breakaway-left"
+                },
+                {
+                  "id": "breakaway-mid",
+                  "etype": "breakaway-mid",
+                  "label": "Middle",
+                  "glb": "levels/misty/breakaway-mid-lod0.glb",
+                  "art_group": "breakaway-mid-ag.go",
+                  "value": "breakaway-mid"
+                },
+                {
+                  "id": "breakaway-right",
+                  "etype": "breakaway-right",
+                  "label": "Right",
+                  "glb": "levels/misty/breakaway-right-lod0.glb",
+                  "art_group": "breakaway-right-ag.go",
+                  "value": "breakaway-right"
+                }
               ],
               "variant": true,
               "lump": {},
               "write_if": "always"
-            },
-            {
-              "key": "og_breakaway_h1",
-              "label": "Height 1",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 0,
-                "pairs_with": "og_breakaway_h2"
-              },
-              "write_if": "if_any_nonzero"
-            },
-            {
-              "key": "og_breakaway_h2",
-              "label": "Height 2",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "height-info",
-                "type": "float",
-                "slot": 1
-              }
             }
           ]
         }
@@ -10122,12 +10607,22 @@
       "description": "Invisible pole Jak can swing on (the pole itself is level geometry). Spawns turned 90° on X (the game reads the pole direction from its local Y); turn it around Z to aim it. The arrows are one side of the pole (2 m).",
       "category": "Platforms",
       "parent": "process",
-      "rotation_offset": [90.0, 0.0, 0.0],
-      "rotation_lock": ["x", "y"],
+      "rotation_offset": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "rotation_lock": [
+        "x",
+        "y"
+      ],
       "empty_size": 2.0,
       "code": "generic-obs.o",
-      "extra_art_groups": ["eichar-pole+0-ag.go"],
-      "shape": "ARROWS"
+      "extra_art_groups": [
+        "eichar-pole+0-ag.go"
+      ],
+      "shape": "ARROWS",
+      "axis_not_vertical": "y"
     },
     {
       "etype": "slide-control",
@@ -10167,9 +10662,10 @@
               "write_if": "if_nonneg",
               "driver": {
                 "var": "self",
-                "expression": "40 if var < 0 else var",
+                "expression": "11 if var < 0 else var",
                 "driven": "empty_display_size"
-              }
+              },
+              "note": "-1 = game default (11 m)."
             }
           ]
         }
@@ -10200,14 +10696,16 @@
               "write_if": "if_nonneg",
               "driver": {
                 "var": "self",
-                "expression": "40 if var < 0 else var",
+                "expression": "11 if var < 0 else var",
                 "driven": "empty_display_size"
-              }
+              },
+              "note": "-1 = game default (11 m)."
             }
           ]
         }
       ],
-      "shape": "SINGLE_ARROW"
+      "shape": "SINGLE_ARROW",
+      "tpage_group": "Maincave"
     },
     {
       "etype": "oracle",
