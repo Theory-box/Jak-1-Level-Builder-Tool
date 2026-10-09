@@ -665,6 +665,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - citb-robotboss
   - citb-hose
   - citb-coil
+  - citb-arm-shoulder-a (a/b variant)
   - ecoclaw
 - NPCs
   - sage
