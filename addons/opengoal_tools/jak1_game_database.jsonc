@@ -4748,7 +4748,7 @@
     },
     {
       "etype": "nav-enemy",
-      "parent": "process-drawable",
+      "parent": "process-drawable",      "rotation_lock": ["x", "y"],
       "panels": [
         {"panel": "game-task", "description": "Power cell carriers (Options > Has power cell): the task of the cell it drops."},
         {"panel": "movie-pos", "description": "Power cell carriers (Options > Has power cell): Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
@@ -9748,13 +9748,15 @@
     {
       "etype": "swingpole",
       "label": "Swing Pole",
-      "description": "Invisible pole Jak can swing on (the pole itself is level geometry). Turn the empty around Z to aim it; the export adds the 90° X rotation the game needs.",
+      "description": "Invisible pole Jak can swing on (the pole itself is level geometry). Spawns turned 90° on X (the game reads the pole direction from its local Y); turn it around Z to aim it. The arrows are one side of the pole (2 m).",
       "category": "Platforms",
       "parent": "process",
       "rotation_offset": [90.0, 0.0, 0.0],
+      "rotation_lock": ["x", "y"],
+      "empty_size": 2.0,
       "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
-      "shape": "PLAIN_AXES"
+      "shape": "ARROWS"
     },
     {
       "etype": "slide-control",

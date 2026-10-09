@@ -213,6 +213,12 @@ class OG_OT_SpawnEntity(Operator):
         o.show_name = True
         o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
         o.color = _db.actor_color(etype)                       # category color
+        # DB rotation: the starting offset first, then the axis locks
+        _rot = _db.rotation_offset(etype)
+        if _rot:
+            import math as _m
+            o.rotation_euler = [_m.radians(a) for a in _rot]
+        o.lock_rotation = _db.rotation_lock(etype)
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant
         # actor: crate types, bridge variants, ...).

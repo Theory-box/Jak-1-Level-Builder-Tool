@@ -300,16 +300,12 @@ def _apply_db_display(etype, actor_empty, meshes):
     in the DB wins over the mesh fit, and the preview meshes get the
     category color (visible with Viewport Shading > Color: Object)."""
     from . import db as _db
-    import math
     size = _db.empty_size(etype)
     if size is not None:
         actor_empty.empty_display_size = size
     color = _db.actor_color(etype)
-    rot = _db.rotation_offset(etype)   # the game draws it with this extra rotation too
     for m in meshes:
         m.color = color
-        if rot:
-            m.rotation_euler = [math.radians(a) for a in rot]
 
 
 _WAYPOINT_PREVIEW_PROP = "og_waypoint_preview_mesh"

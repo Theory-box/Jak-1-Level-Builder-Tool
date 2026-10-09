@@ -683,14 +683,25 @@ def actor_color(etype: str) -> tuple:
 
 def rotation_offset(etype: str):
     """DB "rotation_offset" [x, y, z] in degrees (the actor's own, else the
-    nearest parent's), or None. Applied on top of the empty's rotation in the
-    actor's local space at export (and to its preview mesh): swingpole needs
-    90° on X because the game reads the pole direction from its local Y."""
+    nearest parent's), or None: the empty's starting rotation when spawned
+    (export takes the empty's rotation as it is). swingpole: 90° on X, the
+    game reads the pole direction from its local Y."""
     for rec in [find_actor(etype) or {}] + parent_chain(etype):
         v = rec.get("rotation_offset")
         if v:
             return tuple(float(x) for x in v)
     return None
+
+
+def rotation_lock(etype: str) -> tuple:
+    """DB "rotation_lock" (e.g. ["x", "y"]: only turns around Z) — the
+    actor's own, else the nearest parent's. Set as Blender's rotation locks
+    on spawn, after the offset; users can unlock them."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        v = rec.get("rotation_lock")
+        if v is not None:
+            return tuple(a in [x.lower() for x in v] for a in "xyz")
+    return (False, False, False)
 
 
 def empty_size(etype: str):
