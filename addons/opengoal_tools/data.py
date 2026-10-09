@@ -402,7 +402,7 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; tpages from the tpage_group's level)
+# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; explicit DB tpages, see db.actor_tpages)
 # ═══════════════════════════════════════════════════════════════════════════
 # etype -> .o files for the level DGO, in load order (dependencies first,
 # e.g. mother-spider-h.o ... mother-spider.o). See db.code_files().

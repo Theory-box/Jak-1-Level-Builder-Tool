@@ -23,7 +23,6 @@
 from . import db as _db
 from .data import (
     ENTITY_DEFS,
-    GLOBAL_TPAGE_GROUPS,
     ACTOR_LINK_DEFS,
     _actor_link_slots,
     _actor_get_link,
@@ -65,31 +64,6 @@ def _camera_objs(scene):
 
 def _issue(severity, message, obj_name=None):
     return {"severity": severity, "message": message, "obj_name": obj_name}
-
-
-# ---------------------------------------------------------------------------
-# Check 1 — Tpage budget
-# ---------------------------------------------------------------------------
-
-def check_tpage_budget(scene):
-    issues = []
-    groups = set()
-    for o in _actor_objs(scene):
-        et   = _etype(o)
-        info = ENTITY_DEFS.get(et, {}) if et else {}
-        grp  = info.get("tpage_group")
-        if grp and grp not in GLOBAL_TPAGE_GROUPS:
-            groups.add(grp)
-    if len(groups) > 2:
-        issues.append(_issue("WARNING",
-            f"Tpage budget: {len(groups)} non-global groups in use "
-            f"({', '.join(sorted(groups))}). Jak 1 can load at most 2 "
-            "non-global tpage groups per level — extra groups will fail to stream art."))
-    elif len(groups) == 2:
-        issues.append(_issue("INFO",
-            f"Tpage groups: 2 non-global groups in use ({', '.join(sorted(groups))}). "
-            "This is the maximum — adding more non-global actor types may break art loading."))
-    return issues
 
 
 # ---------------------------------------------------------------------------
@@ -402,24 +376,6 @@ def check_scene_summary(scene):
         f"{len(vols)} volume(s), {len(cameras)} camera(s), "
         f"{len(checkpts)} checkpoint(s), {len(spawns)} spawn(s)."))
 
-    groups = {}
-    for o in actors:
-        et   = _etype(o)
-        info = ENTITY_DEFS.get(et, {}) if et else {}
-        grp  = info.get("tpage_group")
-        if grp:
-            groups[grp] = groups.get(grp, 0) + 1
-    if groups:
-        non_global = {k: v for k, v in groups.items() if k not in GLOBAL_TPAGE_GROUPS}
-        always     = {k: v for k, v in groups.items() if k in GLOBAL_TPAGE_GROUPS}
-        parts = []
-        if non_global:
-            parts.append("non-global: " + ", ".join(f"{k}×{v}" for k, v in sorted(non_global.items())))
-        if always:
-            parts.append("always-resident: " + ", ".join(f"{k}×{v}" for k, v in sorted(always.items())))
-        if parts:
-            issues.append(_issue("INFO", "Tpage groups — " + "; ".join(parts)))
-
     return issues
 
 
@@ -473,7 +429,6 @@ def check_battlecontrollers(scene):
 
 
 _REGISTERED_CHECKS = [
-    check_tpage_budget,
     check_navmesh_links,
     check_missing_paths,
     check_battlecontrollers,

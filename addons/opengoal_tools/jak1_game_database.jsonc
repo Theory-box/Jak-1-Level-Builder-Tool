@@ -8733,12 +8733,6 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "tpage_group": "Robocave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "cave-trap.o",
       "panels": [
         {"panel": "path", "required": true, "linear-only": true},
@@ -8773,12 +8767,6 @@
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
       ],
       "tpage_group": "Robocave",
-      "tpages": [
-        "tpage-1313.go",
-        "tpage-1315.go",
-        "tpage-1314.go",
-        "tpage-1312.go"
-      ],
       "code": "cave-trap.o"
     },
     {

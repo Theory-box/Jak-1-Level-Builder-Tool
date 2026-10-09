@@ -629,24 +629,16 @@ def categories() -> list[dict]:
     return DB["Categories"]
 
 
-def tpage_group_level(group: str) -> dict:
-    """The Levels entry a tpage_group names: the one whose "tpage_group"
-    matches (finalboss = "Final"), else the one named group.lower()."""
-    if not group:
-        return {}
-    for lv in DB.get("Levels", []):
-        if lv.get("tpage_group") == group:
-            return lv
-    return level(group.lower()) or {}
-
-
 def actor_tpages(etype: str) -> list:
-    """Tpage .go files an actor needs: its own "tpages" when listed (an
-    override), else the tpages of its tpage_group's level."""
-    a = find_actor(etype) or {}
-    if "tpages" in a:
-        return list(a["tpages"] or [])
-    return list(tpage_group_level(a.get("tpage_group", "")).get("tpages", []) or [])
+    """Tpage .go files an actor needs in its level's DGO: the "tpages" its
+    DB entry (or the nearest parent) lists, else none. On PC the actor
+    models take their textures from the level's FR3 and particles use the
+    always-loaded "effects" tpage, so a tpage is only listed where an actor
+    was checked in game and needs one (they fill the level heap on load)."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        if "tpages" in rec:
+            return list(rec["tpages"] or [])
+    return []
 
 
 def category(cat_id: str) -> dict:
