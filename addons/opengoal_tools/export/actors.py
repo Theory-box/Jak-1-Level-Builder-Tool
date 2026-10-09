@@ -323,36 +323,13 @@ def collect_actors(scene, depsgraph=None):
                 p.name.strip() == "pathb" and len(p.sources) for p in getattr(o, "og_extra_paths", [])):
             log(f"  [WARNING] {o.name} needs a 'pathb' path (Path panel > Add Path) — will error at runtime!")
 
-        # ── Platform: sync lump ───────────────────────────────────────────────
-        # plat / plat-eco / side-to-side-plat use a 'sync' res lump to control
-        # path timing.  Format: [period_s, phase, ease_out, ease_in]
-        # Only emitted when the platform has waypoints — without waypoints the
-        # engine ignores sync and the platform spawns idle.
-        if einfo.get("needs_sync"):
-            # Values/defaults from the DB "sync" panel; a field with
-            # "export": false is left out (ease -> 2-value form, wrap -> no options).
-            _sf = {f["key"]: f for f in _schema_db.panel_fields(etype, "sync") if f.get("key")}
-            def _sv(k, fallback):
-                if k not in _sf:
-                    return None
-                return float(o.get(k, _schema_db.field_default(_sf[k], etype) if _sf[k].get("default") is not None else fallback))
-            period   = _sv("og_sync_period",   4.0)
-            phase    = _sv("og_sync_phase",    0.0)
-            ease_out = _sv("og_sync_ease_out", 0.15)
-            ease_in  = _sv("og_sync_ease_in",  0.15)
-            period   = 4.0 if period is None else period
-            phase    = 0.0 if phase is None else phase
-            if path_pts:
-                if ease_in is None or ease_out is None or ease_in <= 0.0 or ease_out <= 0.0:
-                    # 2-value form: duration + offset only. Ease-in/out of 0 crash
-                    # the game on load, so omit them to disable easing entirely.
-                    lump["sync"] = ["float", period, phase]
-                else:
-                    lump["sync"] = ["float", period, phase, ease_out, ease_in]
-                # wrap-phase lives in the fact-options panel now ('options' lump)
-                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}")
-            elif _schema_db.has_panel(etype, "path"):
-                log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
+        # ── Sync ──────────────────────────────────────────────────────────────
+        # The 'sync' lump comes from the sync panel's fields (schema block
+        # below): [period, phase, ease out, ease in]. Eases of 0 are valid and
+        # mean no easing (sync-info.gc clamps in to >= 0.001); leaving them out
+        # instead makes the game use the actor's default eases (0.15).
+        if einfo.get("needs_sync") and not path_pts and _schema_db.has_panel(etype, "path"):
+            log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
 
         # ── Smooth-curve knots (path-k) ──────────────────────────────────────
