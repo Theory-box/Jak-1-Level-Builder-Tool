@@ -476,6 +476,10 @@ class OG_PT_ActorCrate(Panel):
             warn = box.box()
             warn.alert = True
             warn.label(text="Scout Fly needs Iron/Steel!", icon="ERROR")
+        elif ct == "iron" and pickup != "buzzer":
+            warn = box.box()
+            warn.alert = True
+            warn.label(text="Iron only holds a scout fly (the game makes it wood)", icon="ERROR")
 
         # ── Contents ─────────────────────────────────────────────────────
         box2 = layout.box()
@@ -493,6 +497,8 @@ class OG_PT_ActorCrate(Panel):
             _prop_row(box2, sel, "og_crate_pickup_amount", "Amount (1–5):", 1)
         elif pickup == "buzzer":
             box2.label(text="Amount: 1  (fixed)", icon="INFO")
+        if sel.get("og_fop_fade"):
+            _prop_row(box2, sel, "og_crate_fade_time", "Fade time (s):", 0.0)
 
 
 

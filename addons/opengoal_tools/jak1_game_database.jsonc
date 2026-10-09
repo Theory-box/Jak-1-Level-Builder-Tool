@@ -6761,6 +6761,24 @@
               "note": ""
             }
           ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {"lump_key": "alt-actor", "slot": 0, "label": "Blocker (with Vent blocked: spawns once this actor is complete)", "accepts": ["any"], "required": false}
+          ]
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {"key": "og_fop_vent_blocked", "show-field": true, "highlight": true,
+             "note": "Waits for its Blocker to be complete before spawning. Off: spawns right away."},
+            {"key": "og_fop_touch", "show-field": false},
+            {"key": "og_fop_normal_attack", "show-field": false},
+            {"key": "og_fop_strong_attack", "show-field": false},
+            {"key": "og_fop_indestructible", "show-field": false},
+            {"key": "og_fop_require_zoomer", "show-field": false}
+          ]
         }
       ]
     },
@@ -6920,15 +6938,33 @@
             },
             {
               "key": "og_fop_can_collect",
-              "show-field": true
+              "show-field": true,
+              "note": "Its pickups are collected by themselves when they land."
             },
             {
               "key": "og_fop_instant_collect",
-              "show-field": true
+              "show-field": true,
+              "note": "Its pickups are collected right away, without flying out."
             },
             {
-              "key": "og_fop_vent_blocked",
-              "show-field": true
+              "key": "og_fop_fade",
+              "show-field": true,
+              "note": "Dropped blue / red / yellow eco disappears after the fade time (other pickups always fade after 15 s)."
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_crate_fade_time",
+              "label": "Fade time (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "visible_if": {"og_fop_fade": true},
+              "lump": {"key": "timeout", "type": "float"},
+              "write_if": "if_positive"
             }
           ]
         }
