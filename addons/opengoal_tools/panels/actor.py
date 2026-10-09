@@ -62,45 +62,6 @@ from ..audit import run_audit
 from .selected import _draw_actor_links
 
 
-# ─── Task list used by OG_PT_ActorTaskGated (oracle/pontoon) ────────────────
-# Populated from jak1_game_database.jsonc's GameTasks. This was a latent
-# bug in the original panels.py — the name was referenced but never defined,
-# so the panel would crash on draw. Now wired up explicitly.
-_GAME_TASKS_COMMON = [
-    ("none", "None"),
-    ("jungle-eggtop", "Jungle: Egg Top"),
-    ("jungle-lurkercage", "Jungle: Lurker Cage"),
-    ("jungle-plant", "Jungle: Plant Boss"),
-    ("village1-yakow", "Village: Yakow"),
-    ("village1-mayor-money", "Village: Mayor Orbs"),
-    ("village1-uncle-money", "Village: Uncle Orbs"),
-    ("village1-oracle-money1", "Village: Oracle 1"),
-    ("village1-oracle-money2", "Village: Oracle 2"),
-    ("beach-ecorocks", "Beach: Eco Rocks"),
-    ("beach-volcanoes", "Beach: Volcanoes"),
-    ("beach-cannon", "Beach: Cannon"),
-    ("beach-buzzer", "Beach: Scout Flies"),
-    ("misty-muse", "Misty: Muse"),
-    ("misty-cannon", "Misty: Cannon"),
-    ("misty-bike", "Misty: Bike"),
-    ("misty-buzzer", "Misty: Scout Flies"),
-    ("swamp-billy", "Swamp: Billy"),
-    ("swamp-flutflut", "Swamp: Flut Flut"),
-    ("swamp-buzzer", "Swamp: Scout Flies"),
-    ("sunken-platforms", "Sunken: Platforms"),
-    ("sunken-pipe", "Sunken: Pipe"),
-    ("snow-zorbing", "Snow: Zorbing"),
-    ("snow-fort", "Snow: Fort"),
-    ("snow-buzzer", "Snow: Scout Flies"),
-    ("firecanyon-buzzer", "Fire Canyon: Scout Flies"),
-    ("ogre-boss", "Ogre: Boss"),
-    ("ogre-buzzer", "Ogre: Scout Flies"),
-    ("maincave-gnawers", "Maincave: Gnawers"),
-    ("maincave-darkecobarrel", "Maincave: Dark Eco Barrel"),
-    ("robocave-robot", "Robocave: Robot"),
-]
-
-
 class OG_PT_ActorNavBehaviour(Panel):
     """Activation fields ("activation" panel) + aggro trigger volumes."""
     bl_label       = "Nav Behaviour"
@@ -199,6 +160,35 @@ class OG_PT_ActorNavMesh(Panel):
 
 
 
+class OG_PT_ActorGameTask(Panel):
+    """DB "game-task" panel: the actor's game task (the .jsonc "game_task";
+    cells / scout flies also write it into their eco-info) + fly number."""
+    bl_label       = "Game Task"
+    bl_idname      = "OG_PT_actor_game_task"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "game-task")
+
+    def draw(self, ctx):
+        layout = self.layout
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        note = _db.panel_option(etype, "game-task", "description", "")
+        if note:
+            hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text=note, icon="INFO")
+        _draw_panel_fields(layout, sel, "game-task")
+
+
 class OG_PT_ActorMoviePos(Panel):
     """DB "movie-pos" panel: where a power cell plays its pickup animation
     (cells; actors that give one), or where the cell jumps (last scout fly)."""
@@ -223,7 +213,7 @@ class OG_PT_ActorMoviePos(Panel):
         sel    = ctx.active_object
         etype  = sel.name.split("_", 2)[1]
         note = _db.panel_option(etype, "movie-pos", "description",
-                                "Where the power cell plays its pickup animation (arrow = facing).")
+                                "Where the power cell plays its pickup animation (cone = facing).")
         hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
         hint.label(text=note, icon="INFO")
         ents = list(sel.og_movie_pos)
@@ -233,7 +223,7 @@ class OG_PT_ActorMoviePos(Panel):
                 row.alert = True
                 row.label(text=f"[{i}] missing", icon="ERROR")
             else:
-                row.label(text=f"[{i}] {s.obj.name}", icon="EMPTY_SINGLE_ARROW")
+                row.label(text=f"[{i}] {s.obj.name}", icon="MESH_CONE")
                 op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = s.obj.name
             op = row.operator("og.movie_pos_remove", text="", icon="X")
             op.actor_name = sel.name; op.index = i
@@ -722,7 +712,6 @@ class OG_PT_ActorTaskGated(Panel):
         layout = self.layout
         sel    = ctx.active_object
         etype  = sel.name.split("_", 2)[1]
-        cur    = sel.get("og_alt_task", "none")
 
         box = layout.box()
         if etype == "oracle":
@@ -734,12 +723,11 @@ class OG_PT_ActorTaskGated(Panel):
             sub = box.row(); sub.enabled = False
             sub.label(text="Pontoon sinks when this task is complete", icon="INFO")
 
-        col = box.column(align=True)
-        for (val, label) in _GAME_TASKS_COMMON:
-            row = col.row()
-            icon = "RADIOBUT_ON" if cur == val else "RADIOBUT_OFF"
-            op = row.operator("og.set_alt_task", text=label, icon=icon)
-            op.task_name = val
+        # same searchable task picker as the Game Task panel (+ Custom)
+        from .actor_fields import _draw_task_field
+        field = next((f for f in _db.panel_fields(etype, "custom-fields") if f.get("key") == "og_alt_task"),
+                     {"key": "og_alt_task", "label": "Task", "type": "task", "default": "none"})
+        _draw_task_field(box, sel, field)
 
 
 
@@ -1319,6 +1307,7 @@ _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_waypoints",       # Path
     "OG_PT_actor_navmesh",
     "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
+    "OG_PT_actor_game_task",       # Game Task
     "OG_PT_actor_movie_pos",       # Movie Position (power cell)
     "OG_PT_actor_fact_options",    # Options
     "OG_PT_actor_links",           # Entity Links
@@ -1337,6 +1326,7 @@ def _actor_panel_rank(cls) -> int:
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
     OG_PT_ActorNavBehaviour,
+    OG_PT_ActorGameTask,
     OG_PT_ActorMoviePos,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,

@@ -9,7 +9,7 @@
 #   {
 #     "key":       "og_orbit_scale",
 #     "label":     "Orbit scale",
-#     "type":      "float" | "int" | "bool" | "enum" | "string" | "vector3",
+#     "type":      "float" | "int" | "bool" | "enum" | "string" | "vector3" | "task",
 #     "default":   ...,
 #     "lump":      { "key": "scale", "type": "float" },   (informational)
 #     "write_if":  "always" | "if_true" | "if_nonzero" | ...,
@@ -191,6 +191,55 @@ def _draw_enum_field(layout, obj, field):
         row.label(text=f"… (+{len(choices) - 40} more, edit DB to reduce)")
 
 
+def _draw_task_field(layout, obj, field):
+    """Game task: a searchable picker (None, Custom..., every game task) and a
+    text field for a custom task name when Custom is picked."""
+    key = field["key"]
+    label = field.get("label", key)
+    cur = obj.get(key, field.get("default", "none")) or "none"
+    names = {"none": "None", "custom": "Custom…"}
+    names.update({t["id"]: t["label"] for t in _db.game_tasks()})
+    row = layout.row(align=True)
+    row.label(text=f"{label}:")
+    op = row.operator("og.pick_task", text=names.get(cur, cur), icon="VIEWZOOM")
+    op.prop_key = key
+    if cur == "custom":
+        _prop_row(layout, obj, key + "_custom", "  Custom task:", "")
+
+
+class OG_OT_PickTask(Operator):
+    """Pick a game task (search by name), or Custom to type one"""
+    bl_idname   = "og.pick_task"
+    bl_label    = "Pick Game Task"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "task"
+
+    def _items(self, context):
+        items = [("none", "None", "No task"), ("custom", "Custom…", "Type a custom task name")]
+        items += [(t["id"], f"{t['label']}  ({t['id']})", t["id"]) for t in _db.game_tasks()]
+        _TASK_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        return _TASK_ITEMS
+
+    prop_key: StringProperty(options={"SKIP_SAVE"})
+    task:     bpy.props.EnumProperty(name="Task", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None or not self.prop_key:
+            return {"CANCELLED"}
+        obj[self.prop_key] = self.task
+        if self.task == "custom" and (self.prop_key + "_custom") not in obj:
+            obj[self.prop_key + "_custom"] = ""
+        return {"FINISHED"}
+
+
+_TASK_ITEMS: list = []   # search-popup items must stay referenced
+
+
 def _draw_bool_field(layout, obj, field):
     key = field["key"]
     label = field.get("label", key)
@@ -223,6 +272,8 @@ def _draw_field(layout, obj, field, actor_info=None):
 
     if ftype == "enum":
         _draw_enum_field(layout, obj, field)
+    elif ftype == "task":
+        _draw_task_field(layout, obj, field)
     elif ftype == "bool":
         _draw_bool_field(layout, obj, field)
     elif ftype == "vector3":
@@ -304,6 +355,7 @@ class OG_PT_ActorFields(Panel):
 
 # Exported registry for __init__.py
 CLASSES = (
+    OG_OT_PickTask,
     OG_OT_SetActorEnumField,
     OG_OT_ToggleActorBoolField,
     OG_PT_ActorFields,

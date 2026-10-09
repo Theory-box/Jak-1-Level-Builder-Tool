@@ -155,12 +155,10 @@ def _collect_waypoint_points(actor_obj):
 
 def movie_pos_vector(e):
     """[x, y, z, angle_deg] for a movie-pos empty: game-space position in
-    meters and the facing angle from the arrow's direction (the empty's
-    local +Z; flat along -Y = angle 0, the game's forward)."""
+    meters and the empty's Z rotation as the facing angle."""
     import math
     t = e.matrix_world.translation
-    f = e.matrix_world.to_3x3() @ mathutils.Vector((0.0, 0.0, 1.0))
-    yaw = math.degrees(math.atan2(f.x, -f.y)) if (abs(f.x) + abs(f.y)) > 1e-6 else 0.0
+    yaw = math.degrees(e.matrix_world.to_euler("XYZ").z)
     return [round(t.x, 4), round(t.z, 4), round(-t.y, 4), round(yaw, 3)]
 
 
@@ -418,9 +416,9 @@ def collect_actors(scene, depsgraph=None):
 
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
-            task = str(o.get("og_alt_task", "none"))
-            if task and task != "none":
-                lump["alt-task"] = ["enum-uint32", f"(game-task {task})"]
+            task = _schema_db.task_expression(_schema_db.prop_getter(o), "og_alt_task")
+            if task:
+                lump["alt-task"] = ["enum-uint32", task]
                 log(f"  [{etype}] {o.name}  alt-task={task}")
 
         # ── Entity links (alt-actor, water-actor, state-actor, etc.) ─────────
@@ -481,6 +479,25 @@ def collect_actors(scene, depsgraph=None):
             if _lk not in _protected_keys:
                 lump[_lk] = _lv
                 log(f"  [computed] {o.name}  '{_lk}' = {_lv}")
+
+        # Game Task panel: cells / scout flies (and crates holding one) carry
+        # the task in their eco-info (panel option "eco-info").
+        _gt_task = None
+        if _schema_db.panel_exports(etype, "game-task"):
+            _get = _schema_db.prop_getter(o)
+            _gt_task = _schema_db.task_expression(_get, "og_game_task")
+            _eco = _schema_db.panel_option(etype, "game-task", "eco-info")
+            if _eco == "pickup":       # crate / pickup-spawner: by its contents
+                _eco = {"fuel-cell": "cell-info", "buzzer": "buzzer-info"}.get(str(_get("og_crate_pickup", "")))
+            if _eco and "eco-info" not in _protected_keys:
+                _t = _gt_task or "(game-task none)"
+                if _eco == "cell-info":
+                    lump["eco-info"] = ["cell-info", _t]
+                elif _eco == "buzzer-info":
+                    # fly 1-7 in the UI; the game counts them 0-6
+                    _n = max(1, min(7, int(_get("og_buzzer_index", 1) or 1)))
+                    lump["eco-info"] = ["buzzer-info", _t, _n - 1]
+                log(f"  [game-task] {o.name}  {_t}  eco-info={lump['eco-info']}")
 
         # need_vol: convex `vol` from the VOL_ mesh linked to this actor.
         if _schema_db.needs_vol(etype) and "vol" not in _protected_keys:
@@ -554,7 +571,7 @@ def collect_actors(scene, depsgraph=None):
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _variant.get("etype") or etype,
-            "game_task": "(game-task none)",
+            "game_task": _gt_task or "(game-task none)",
             "quat":      [aqx, aqy, aqz, aqw],
             "vis_id":    0,
             "bsphere":   [gx, gy, gz, bsph_r],

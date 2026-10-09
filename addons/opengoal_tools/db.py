@@ -727,6 +727,19 @@ def game_tasks() -> list[dict]:
     return DB["GameTasks"]
 
 
+def task_expression(get, key: str):
+    """GOAL expression for a "task" field ("(game-task jungle-eggtop)"), or
+    None for no task. "custom" reads <key>_custom: a task name (wrapped in
+    (game-task ...)) or a full expression in parentheses."""
+    v = get(key, "none") or "none"
+    if v == "custom":
+        v = str(get(key + "_custom", "") or "").strip()
+        if not v:
+            return None
+        return v if v.startswith("(") else f"(game-task {v})"
+    return None if v == "none" else f"(game-task {v})"
+
+
 def pat() -> dict:
     return DB["PAT"]
 
@@ -1054,7 +1067,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist", "fact-options", "scale", "movie-pos")
+                  "spawner", "notice-dist", "fact-options", "scale", "movie-pos", "game-task")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:

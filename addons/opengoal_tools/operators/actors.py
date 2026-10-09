@@ -425,20 +425,6 @@ class OG_OT_SetBoneBridgeAnim(Operator):
             o["og_bone_bridge_anim"] = self.anim_val
         return {"FINISHED"}
 
-class OG_OT_SetAltTask(Operator):
-    """Set the alt-task lump on oracle / pontoon actors."""
-    bl_idname  = "og.set_alt_task"
-    bl_label   = "Set Alt Task"
-    bl_options = {"REGISTER", "UNDO"}
-
-    task_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_alt_task"] = self.task_name
-        return {"FINISHED"}
-
 class OG_OT_TogglePlatformWrap(Operator):
     """Toggle wrap-phase (one-way loop vs ping-pong) on the selected platform."""
     bl_idname = "og.toggle_platform_wrap"
@@ -500,7 +486,6 @@ CLASSES = (
     OG_OT_ToggleTurbineParticles,
     OG_OT_SetElevatorMode,
     OG_OT_SetBoneBridgeAnim,
-    OG_OT_SetAltTask,
     OG_OT_TogglePlatformWrap,
     OG_OT_SetPlatformDefaults,
     OG_OT_SetVersionField,

@@ -206,7 +206,7 @@ def _movie_pos_items(self, ctx):
     cands = sorted((o for o in scene.objects if _is_movie_pos_candidate(o)),
                    key=lambda o: (not o.name.startswith("MOVIEPOS_"), o.name))
     items = [(o.name, o.name + ("  (linked)" if o.name in have else ""), f"Use {o.name} as a movie position",
-              "EMPTY_SINGLE_ARROW", i) for i, o in enumerate(cands)]
+              "MESH_CONE", i) for i, o in enumerate(cands)]
     if not items:
         items = [("__none__", "(no empties in scene)", "", "ERROR", 0)]
     _SEARCH_ITEMS[:] = items
@@ -214,9 +214,9 @@ def _movie_pos_items(self, ctx):
 
 
 class OG_OT_MoviePosAdd(Operator):
-    """Spawn an arrow empty as this actor's next movie position (at the 3D
-    cursor, or at the actor with At Actor Position on). The arrow's direction
-    (its Z rotation) is the facing angle"""
+    """Spawn a cone empty as this actor's next movie position (at the 3D
+    cursor, or at the actor with At Actor Position on). Its Z rotation is
+    the facing angle"""
     bl_idname  = "og.movie_pos_add"
     bl_label   = "Add Position"
     bl_options = {"REGISTER", "UNDO"}
@@ -234,13 +234,11 @@ class OG_OT_MoviePosAdd(Operator):
             n += 1
         at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
         e = bpy.data.objects.new(f"{base}_{n:02d}", None)
-        e.empty_display_type = "SINGLE_ARROW"
-        e.empty_display_size = 1.5
+        e.empty_display_type = "CONE"      # the cone shows the facing axis
+        e.empty_display_size = 1.0         # 1 m: smaller gets hard to select
         e.location = actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
-        # arrow lies flat (points along -Y = the game's forward at angle 0);
-        # turning it around Z sets the angle
-        yaw = actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0
-        e.rotation_euler = (math.radians(90.0), 0.0, yaw)
+        # the empty's Z rotation is the angle
+        e.rotation_euler = (0.0, 0.0, actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0)
         e.color = (1.0, 0.85, 0.1, 1.0)
         e["og_movie_pos_for"] = actor.name
         ctx.scene.collection.objects.link(e)

@@ -155,6 +155,14 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             direct[lp["key"]] = ["water-height"] + vals + [lp.get("flags")]
             continue
 
+        # ── Task fields (type "task"): (game-task X) or a custom task ────────
+        if lp and f.get("type") == "task":
+            from .. import db as _tdb
+            expr = _tdb.task_expression(get, f.get("key"))
+            if expr is not None or f.get("write_if") == "always":
+                direct[lp["key"]] = [lp.get("type", "enum-uint32"), expr or "(game-task none)"]
+            continue
+
         # ── Computed encoder: eco-info-picker ────────────────────────────────
         # A pickup enum (choices carry an `engine_string` per id) plus a paired
         # amount field become the 3-element eco-info lump:
