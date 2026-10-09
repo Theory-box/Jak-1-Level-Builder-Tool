@@ -4833,32 +4833,15 @@
           "panel": "fact-options",
           "fields": [
             {
-              "key": "og_fop_fade",
-              "show-field": true
-            },
-            {
-              "key": "og_fop_can_collect",
-              "show-field": true
-            },
-            {
-              "key": "og_fop_respawn",
-              "show-field": true
-            },
-            {
               "key": "og_fop_large",
-              "show-field": true
-            },
-            {
-              "key": "og_fop_instant_collect",
-              "show-field": true
+              "show-field": true,
+              "note": "Pickup radius 2.5 times bigger."
             },
             {
               "key": "og_fop_powerup",
-              "show-field": true
-            },
-            {
-              "key": "og_fop_eco_blocked",
-              "show-field": true
+              "show-field": true,
+              "label": "No power-up animation",
+              "note": "Jak doesn't play the eco power-up animation when he collects it standing still."
             }
           ]
         }
@@ -4928,12 +4911,39 @@
       "description": "Game type (deftype eco (eco-collectable)) in engine\\common-obs\\collectables.gc. Parent record only, not spawnable.",
       "panels": [
         {
+          "panel": "game-task",
+          "description": "Only with Options > Eco blocked: the eco stays hidden until this task is complete."
+        },
+        {
           "panel": "fact-options",
           "fields": [
             {
               "key": "og_fop_eco_blocked",
               "show-field": true,
-              "highlight": true
+              "highlight": true,
+              "note": "Hidden and can't be collected until its game task is complete."
+            },
+            {
+              "key": "og_fop_respawn",
+              "show-field": true,
+              "highlight": true,
+              "note": "Comes back after the respawn time. Without it, eco comes back once Jak's eco of that colour runs out."
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_eco_respawn_time",
+              "label": "Respawn time (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "note": "Seconds before it comes back (with Respawn). 0: once Jak's eco runs out.",
+              "visible_if": {"og_fop_respawn": true},
+              "lump": {"key": "timeout", "type": "float"},
+              "write_if": "if_positive"
             }
           ]
         }
@@ -6975,6 +6985,10 @@
       "label": "Eco (Green)",
       "category": "Pickups",
       "parent": "eco-collectable",
+      "panels": [
+        {"panel": "game-task", "description": "Only with Options > Eco blocked: the eco stays hidden until this task is complete."},
+        {"panel": "fact-options", "fields": [{"key": "og_fop_eco_blocked", "show-field": true, "highlight": true, "note": "Hidden and can't be collected until its game task is complete."}]}
+      ],
       "code": "collectables.o"
     },
     {
@@ -8932,6 +8946,10 @@
       "label": "Eco Pill (Health)",
       "category": "Pickups",
       "parent": "eco-collectable",
+      "panels": [
+        {"panel": "game-task", "description": "Only with Options > Eco blocked: the pill stays hidden until this task is complete."},
+        {"panel": "fact-options", "fields": [{"key": "og_fop_eco_blocked", "show-field": true, "highlight": true, "note": "Hidden and can't be collected until its game task is complete."}]}
+      ],
       "code": "collectables.o",
       "shape": "PLAIN_AXES"
     },
@@ -8975,22 +8993,6 @@
       "label": "Eco (Yellow)",
       "category": "Pickups",
       "parent": "eco",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Blocker entity",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
       "code": "collectables.o"
     },
     {
