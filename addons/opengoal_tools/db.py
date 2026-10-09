@@ -907,6 +907,21 @@ def uses_navmesh(etype: str) -> bool:
     return panel_exports(etype, "nav-mesh")
 
 
+def can_jump(etype: str) -> bool:
+    """Nav-mesh panel "can-jump": true — a nav-enemy whose nav-enemy-info has
+    a jump animation (jump-anim != -1), so it can follow cue-jump-to-point
+    (battlecontroller spawn paths; nav-mesh jumps later). Read even when a
+    pinned override stops the panel exporting."""
+    p = actor_panels(etype).get("nav-mesh")
+    return bool(p and p["options"].get("can-jump"))
+
+
+def jumping_enemies() -> list[str]:
+    """Every nav-enemy (child / sub-child of nav-enemy) tagged can-jump."""
+    return [a["etype"] for a in actors()
+            if can_jump(a["etype"]) and any(p.get("etype") == "nav-enemy" for p in parent_chain(a["etype"]))]
+
+
 def supports_aggro_trigger(etype: str) -> bool:
     """"aggro-trigger" panel: nav-enemies handle 'cue-chase / 'cue-patrol /
     'go-wait-for-cue (nav-enemy.gc). On the nav-enemy parent."""

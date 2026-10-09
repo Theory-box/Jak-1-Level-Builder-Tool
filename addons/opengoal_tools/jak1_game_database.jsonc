@@ -4012,7 +4012,7 @@
     {
       "id": "nav-mesh",
       "label": "Nav-mesh",
-      "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked. Fields (drawn under the link): nearest-y-threshold (nav-control, navigate-h.gc) and nav-max-users (read from the actor that owns the nav-mesh).",
+      "description": "Nav-mesh link. On the nav-enemy parent; other actors can list it too. Option \"fallback-sphere\": true exports nav-mesh-sphere when no navmesh is linked. Option \"can-jump\": true marks nav-enemies with a jump animation (battlecontroller lurkers, nav-mesh jumps). Fields (drawn under the link): nearest-y-threshold (nav-control, navigate-h.gc) and nav-max-users (read from the actor that owns the nav-mesh).",
       "fields": [
         {
           "key": "og_nav_y_threshold",
@@ -4822,7 +4822,8 @@
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
+      "panels": [
+        {"panel": "nav-mesh", "can-jump": true},{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
@@ -4842,6 +4843,7 @@
     },
     {
       "etype": "lurkercrab",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Lurker Crab",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4853,6 +4855,7 @@
     },
     {
       "etype": "lurkerpuppy",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Lurker Puppy",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4867,7 +4870,8 @@
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
+      "panels": [
+        {"panel": "nav-mesh", "can-jump": true},{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
       "tpage_group": "Jungle",
@@ -4887,6 +4891,7 @@
     },
     {
       "etype": "swamp-rat",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Swamp Rat",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4898,6 +4903,7 @@
     },
     {
       "etype": "kermit",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Kermit (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -4918,6 +4924,7 @@
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
       "panels": [
+        {"panel": "nav-mesh", "can-jump": true},
         {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
@@ -4944,6 +4951,7 @@
       "category": "Enemies",
       "parent": "snow-bunny",
       "panels": [
+        {"panel": "nav-mesh", "can-jump": true},
         {"panel": "custom-fields", "export": false}
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
@@ -4970,7 +4978,8 @@
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
+      "panels": [
+        {"panel": "nav-mesh", "can-jump": true},{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
       "tpage_group": "Misty",
@@ -4983,6 +4992,7 @@
       "category": "Interactive Objects",
       "parent": "nav-enemy",
       "panels": [
+        {"panel": "nav-mesh", "can-jump": true},
         {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
         {"panel": "movie-pos", "description": "Where the muse catch cutscene plays (cone = facing). Not set: at Jak."},
         {"panel": "visibility", "export": false},
@@ -4995,6 +5005,7 @@
     },
     {
       "etype": "baby-spider",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Baby Spider",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5037,6 +5048,7 @@
     },
     {
       "etype": "green-eco-lurker",
+      "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Green Eco Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5782,6 +5794,7 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
+        {"panel": "nav-mesh", "can-jump": true},
         {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
         {"panel": "path", "required": true},
         {"panel": "nav-mesh", "fallback-sphere": false}
@@ -5814,6 +5827,7 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
+        {"panel": "nav-mesh", "can-jump": true},
         {"panel": "path", "required": true},
         {"panel": "nav-mesh", "fallback-sphere": false}
       ],

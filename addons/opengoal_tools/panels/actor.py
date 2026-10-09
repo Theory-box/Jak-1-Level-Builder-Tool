@@ -154,6 +154,9 @@ class OG_PT_ActorNavMesh(Panel):
         _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
         nav_r = float(sel.get("og_nav_radius", 6.0))
         layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
+        if _db.can_jump(sel.name.split("_", 2)[1]):
+            r = layout.row(); r.enabled = False
+            r.label(text="Can jump (usable as a battlecontroller lurker)", icon="CHECKMARK")
         if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
             layout.separator()
             _draw_panel_fields(layout, sel, "nav-mesh")
