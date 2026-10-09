@@ -5332,7 +5332,7 @@
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
-      "code": "citb-bunny.o",
+      "code": ["snow-bunny.o", "citb-bunny.o"],
       "glb": "levels/citadel/citb-bunny-lod0.glb"
     },
     {
@@ -5828,7 +5828,7 @@
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
       "art_group": ["gnawer-ag.go", "maincavecam-ag.go"],
       "tpage_group": "Maincave",
-      "code": ["maincave-obs.o", "gnawer.o"],
+      "code": ["cavecrystal-light.o", "maincave-obs.o", "gnawer.o"],
       "glb": "levels/maincave/gnawer-lod0.glb",
       "lumps": [
         {"key": "trans-offset", "type": "float", "description": "Position offset from base trans: 'dx dy dz' internal units."}
@@ -6042,7 +6042,7 @@
       "parent": "process-drawable",
       "art_group": "cavecrusher-ag.go",
       "tpage_group": "Robocave",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "glb": "levels/robocave/cavecrusher-lod0.glb",
       "shape": "CUBE"
     },
@@ -6561,7 +6561,7 @@
       "description": "A lurker frog type found in Boggy Swamp.",
       "art_group": "billy-ag.go",
       "tpage_group": "Swamp",
-      "code": "billy.o",
+      "code": ["swamp-rat.o", "billy.o"],
       "glb": "levels/swamp/billy-lod0.glb"
     },
     {
@@ -7566,7 +7566,7 @@
       "parent": "process-drawable",
       "art_group": "balance-plat-ag.go",
       "tpage_group": "Swamp",
-      "code": "swamp-obs.o",
+      "code": ["battlecontroller.o", "swamp-obs.o"],
       "glb": "levels/swamp/balance-plat-lod0.glb",
       "lumps": [
         {"key": "distance", "type": "meters", "description": "Vertical travel range. Default ~5m."}
@@ -7710,7 +7710,7 @@
       "parent": "rigid-body-platform",
       "art_group": "tar-plat-ag.go",
       "tpage_group": "Swamp",
-      "code": "swamp-obs.o",
+      "code": ["battlecontroller.o", "swamp-obs.o"],
       "glb": "levels/swamp/tar-plat-lod0.glb",
       "lumps": [
         {
@@ -7727,7 +7727,7 @@
       "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "mis-bone-platform-ag.go",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
       "shape": "CUBE"
     },
@@ -8022,7 +8022,7 @@
       "category": "Platforms",
       "parent": "plat",
       "art_group": "citb-launcher-ag.go",
-      "code": "citadel-obs.o",
+      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
       "glb": "levels/citadel/citb-launcher-lod0.glb",
       "panels": [
         {
@@ -8431,7 +8431,7 @@
       "parent": "process-drawable",
       "art_group": "swamp-rock-ag.go",
       "tpage_group": "Swamp",
-      "code": "swamp-obs.o",
+      "code": ["battlecontroller.o", "swamp-obs.o"],
       "is_prop": true,
       "lumps": [
         {
@@ -8481,7 +8481,7 @@
       "parent": "process-drawable",
       "art_group": "swamp-spike-ag.go",
       "glb": "levels/swamp/swamp-spike-lod0.glb",
-      "code": "swamp-obs.o",
+      "code": ["battlecontroller.o", "swamp-obs.o"],
       "is_prop": true,
       "panels": [
         {
@@ -9436,7 +9436,7 @@
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
-      "code": "citadel-obs.o",
+      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
       "panels": [
         {
           "panel": "custom-fields",
@@ -9495,7 +9495,7 @@
       "category": "Platforms",
       "parent": "citb-arm-section",
       "tpage_group": "Citadel",
-      "code": "citadel-obs.o",
+      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
       "rotation_lock": [
         "x",
         "y",
@@ -9559,7 +9559,7 @@
       "category": "Visuals",
       "parent": "citb-arm-section",
       "tpage_group": "Citadel",
-      "code": "citadel-obs.o",
+      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
       "rotation_lock": [
         "x",
         "y",
@@ -9729,7 +9729,7 @@
       "parent": "process-drawable",
       "art_group": "caveelevator-ag.go",
       "tpage_group": "Maincave",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "glb": "levels/darkcave/caveelevator-lod0.glb",
       // "needs_path": true,
       "lumps": [
@@ -9789,7 +9789,7 @@
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "process-drawable",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "lumps": [
         {"key": "rotoffset", "type": "degrees", "description": "Y-axis rotation for flame direction. Default 0."}
       ],
@@ -9857,7 +9857,7 @@
       "parent": "process-drawable",
       "art_group": "cavetrapdoor-ag.go",
       "tpage_group": "Maincave",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "glb": "levels/robocave/cavetrapdoor-lod0.glb",
       "lumps": [
         {
@@ -9875,7 +9875,7 @@
       "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "panels": [
         {
           "panel": "sync",
@@ -9906,7 +9906,7 @@
       "parent": "process-drawable",
       "art_group": "cavespatulatwo-ag.go",
       "tpage_group": "Maincave",
-      "code": "maincave-obs.o",
+      "code": ["cavecrystal-light.o", "maincave-obs.o"],
       "panels": [
         {
           "panel": "sync",
@@ -10016,7 +10016,7 @@
       "parent": "process-drawable",
       "art_group": "mis-bone-bridge-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "glb": "levels/misty/mis-bone-bridge-lod0.glb",
       "panels": [
         {
@@ -10046,7 +10046,7 @@
       "parent": "breakaway",
       "art_group": "breakaway-left-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "glb": "levels/misty/breakaway-left-lod0.glb",
       "lumps": [
         {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
@@ -10092,7 +10092,7 @@
       "parent": "breakaway",
       "art_group": "breakaway-mid-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "glb": "levels/misty/breakaway-mid-lod0.glb",
       "lumps": [
         {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
@@ -10138,7 +10138,7 @@
       "parent": "breakaway",
       "art_group": "breakaway-right-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "glb": "levels/misty/breakaway-right-lod0.glb",
       "lumps": [
         {"key": "animation-select", "type": "uint32", "description": "Animation variant."},
@@ -10794,7 +10794,7 @@
       ],
       "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",
-      "code": "swamp-obs.o",
+      "code": ["battlecontroller.o", "swamp-obs.o"],
       "lumps": [
         {
           "key": "distance",
@@ -10833,7 +10833,7 @@
       "parent": "process-drawable",
       "art_group": "windturbine-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "is_prop": true,
       "panels": [
         {
@@ -10862,7 +10862,7 @@
       "parent": "process-drawable",
       "art_group": "boatpaddle-ag.go",
       "tpage_group": "Misty",
-      "code": "misty-obs.o",
+      "code": ["battlecontroller.o", "misty-obs.o"],
       "is_prop": true,
       "lumps": [
         {
