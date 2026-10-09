@@ -500,6 +500,7 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - Could not select entity type sharkey: bpy_struct: item.attr = val: enum "sharkey" not found in
   - babak-with-canon (babal-with-canon.o beach/babak-lod0.glb babak-ag.go)
     - test with canon
+  - pelican
   - junglefish (junglefish.o jungle/junglefish-lod0.glb junglefish-ag.go)
     - Done
     - Interestingly, junglefish only agro jak if he's walking in shallow water and not while swimming
@@ -609,9 +610,92 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - citb-iris-door
   - citb-button
 - Interactive Objects
+  - scarecrow
+  - reflector-end
+  - fishermans-boat
+  - flutflutegg
+  - mistycannon
+  - harvester
+  - ecoventrock
+  - periscope
+  - reflector-mirror
+  - racer
+  - balloon
+  - racering
+  - gorge-start
+  - dark-plant
+  - blue-eco-charger
+  - exit-chamber
+  - swamp-tetherrock
+  - swamp-rock
+  - flutflut
+  - shortcut-boulder
+  - dark-crystal
+  - cavecrystal
+  - lavaballoon (variant to balloon if there's any differences, if not, ignore)
+  - energybase
+  - energyhub
+  - citb-generator
 - Visuals
+  - evilplant
+  - hutlamp
+  - sagesail
+  - revcycle
+  - revcycleprop
+  - windmill-sail
+  - mayorgeers
+  - bladeassm
+  - accordian
+  - windturbine
+  - boatpaddle
+  - wheel
+  - ceilingflag
+  - villageb-ogreboss
+  - peeper
+  - sunkenfisha
+  - seaweed
+  - swamp-blimp
+  - pistons
+  - lavabase
+  - lavafall
+  - lavafallsewera
+  - lavafallsewerb
+  - lavashortcut
+  - lavayellowtarp
+  - citb-robotboss
+  - citb-hose
+  - citb-coil
+  - ecoclaw
 - NPCs
+  - sage
+  - assistant
+  - mayor
+  - explorer
+  - sculptor
+  - bird-lady
+  - yakow
+  - farmer
+  - oracle
+  - bird-lady-beach
+  - seagullflock
+  - muse
+  - sage-bluehut
+  - flutflut-bluehut
+  - assistant-bluehut
+  - assistant-levitator
+  - geologist
+  - warrior
+  - gambler
+  - lightning-mole
+  - billy
+  - assistant-lavatube-start
+  - yellow-sagecage
+  - blue-sagecage
+  - red-sagecage
+  - sage-finalboss
 - Volumes
+  - water-vol
+  - water-anim
 
 ---
 
