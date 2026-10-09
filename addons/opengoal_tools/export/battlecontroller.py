@@ -113,16 +113,14 @@ def lurkers(o) -> list:
 
 
 def percent_problems(o) -> list[str]:
-    """Warnings for the two per-lurker chances that should add up to 1.0."""
+    """Warnings: the lurker spawn chances should add up to 1.0 (special eco
+    chances are per lurker and don't)."""
     ls = lurkers(o)
     out = []
     if ls:
         s = sum(e.percent for e in ls)
         if abs(s - 1.0) > 0.001:
             out.append(f"Spawn chances add up to {s:.2f}, not 1.0")
-        p = sum(e.pickup_percent for e in ls)
-        if p > 0 and abs(p - 1.0) > 0.001:
-            out.append(f"Special eco chances add up to {p:.2f}, not 1.0")
     if len(getattr(o, "og_bc_lurkers", [])) > MAX_LURKER_TYPES:
         out.append(f"Only the first {MAX_LURKER_TYPES} lurkers are used")
     return out
