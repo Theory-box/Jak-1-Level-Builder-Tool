@@ -351,6 +351,23 @@ def check_entity_defs_audit_blocks(scene):
     return issues
 
 
+def check_axis_not_vertical(scene):
+    """DB "axis_not_vertical": "x"|"y"|"z" (game axis): the actor uses that
+    local axis as a horizontal direction (swingpole: its pole), so it must
+    not point straight up or down."""
+    col = {"x": 0, "y": 2, "z": 1}   # game axis -> Blender local axis (game Y = Blender Z)
+    issues = []
+    for o in _actor_objs(scene):
+        ax = (_db.find_actor(_etype(o)) or {}).get("axis_not_vertical")
+        if ax in col:
+            d = o.matrix_world.to_3x3().col[col[ax]].normalized()
+            if abs(d.z) > 0.98:
+                issues.append(_issue("WARNING",
+                    f"{o.name}: its local {ax.upper()} axis (game) points straight up/down, "
+                    f"so it won't work. Rotate it (swingpole: spawn turns it 90° on X).", o.name))
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -440,6 +457,7 @@ _REGISTERED_CHECKS = [
     check_doors,
     check_load_boundaries,
     check_entity_defs_audit_blocks,
+    check_axis_not_vertical,
     check_scene_summary,   # always last
 ]
 

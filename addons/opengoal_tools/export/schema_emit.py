@@ -15,6 +15,8 @@
 #          (fixed eco-info for pickups; no backing prop).
 #   computed encoder — lump.type "eco-info-picker": pickup enum (choices carry
 #          engine_string) + pairs_with amount field -> ["eco-info", sym, amount].
+#   vector lumps (type vector / vector3m / vector4m): one field per slot,
+#              emitted as ["vector3m", [x, y, z]]
 #   lump_bit:  { key, type, bit_value }   (OR-accumulated uint32 bitfield)
 #   types: float|meters|degrees (->float), int|int32|uint32|mode (->int),
 #          bool, symbol|string|enum-uint32|water-height|... (passthrough),
@@ -36,6 +38,7 @@ from __future__ import annotations
 
 _FLOAT = ("float", "meters", "degrees")
 _INT = ("int", "int32", "uint32", "mode")
+_VECTOR = ("vector", "vector3m", "vector4m")
 
 
 def _num(v):
@@ -279,7 +282,9 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
         mode = g.get("mode")
         if mode == "array":
             n = max(g["slots"]) + 1 if g["slots"] else 0
-            result[key] = [t] + [_coerce(t, g["slots"].get(i, 0)) for i in range(n)]
+            vals = [_coerce("float" if t in _VECTOR else t, g["slots"].get(i, 0)) for i in range(n)]
+            # vector lumps are one nested list: ["vector3m", [x, y, z]]
+            result[key] = [t, vals] if t in _VECTOR else [t] + vals
         elif mode == "bits":
             acc = 0
             for bit, ok in g["bits"]:

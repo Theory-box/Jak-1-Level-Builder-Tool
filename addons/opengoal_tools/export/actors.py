@@ -189,7 +189,7 @@ def _computed_lumps(o, etype):
             dest_name = o.get(f["key"], "")
             dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
             if dest_obj:
-                dl = dest_obj.location
+                dl = dest_obj.matrix_world.translation   # world position (it may be parented)
                 dx = round(dl.x * 4096, 2)
                 dy = round(dl.z * 4096, 2)
                 dz = round(-dl.y * 4096, 2)

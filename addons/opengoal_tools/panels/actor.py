@@ -535,8 +535,19 @@ class OG_PT_ActorLauncher(Panel):
             sub = box.row(); sub.enabled = False
             sub.label(text="Uses art default (~40m). Set above to override.", icon="INFO")
 
-        # ── Springbox has no destination, launcher does ───────────────────────
-        if etype == "launcher":
+        # ── Destination: actors whose DB fields have og_launcher_dest ─────────
+        _keys = {f.get("key") for f in _db.inherited_fields(etype)}
+        if "og_launcher_mode" in _keys:
+            boxm = layout.box()
+            boxm.label(text="Camera on Launch", icon="VIEW_CAMERA")
+            mf = next(f for f in _db.inherited_fields(etype) if f.get("key") == "og_launcher_mode")
+            cur = sel.get("og_launcher_mode", mf.get("default"))
+            colm = boxm.column(align=True)
+            for c in mf.get("choices", []):
+                op = colm.operator("og.set_actor_enum_field", text=c["label"],
+                                   icon="RADIOBUT_ON" if cur == c["value"] else "RADIOBUT_OFF")
+                op.prop_key = "og_launcher_mode"; op.value = c["value"]
+        if "og_launcher_dest" in _keys:
             box2 = layout.box()
             box2.label(text="Launch Destination (optional)", icon="EMPTY_AXIS")
             dest_name = sel.get("og_launcher_dest", "")
