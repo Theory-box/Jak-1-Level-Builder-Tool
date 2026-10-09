@@ -375,6 +375,17 @@ class OG_PT_ActorMoviePos(Panel):
         row = layout.row(align=True)
         op = row.operator("og.movie_pos_add", text="Add Position", icon="PLUS"); op.actor_name = sel.name
         row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+        # movie-mask: victory animations the cell must not pick (8 toggles)
+        mask = [f for f in _db.panel_fields(etype, "movie-pos", visible_only=True) if f.get("group") == "movie-mask"]
+        if mask:
+            layout.separator()
+            layout.label(text="Victory animations not to use (movie-mask):")
+            grid = layout.grid_flow(columns=4, align=True)
+            for i, f in enumerate(mask):
+                on = bool(sel.get(f["key"], f.get("default", False)))
+                op = grid.operator("og.toggle_actor_bool_field", text=str(i + 1),
+                                   icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT", depress=on)
+                op.prop_key = f["key"]
 
 
 class OG_PT_ActorLinks(Panel):

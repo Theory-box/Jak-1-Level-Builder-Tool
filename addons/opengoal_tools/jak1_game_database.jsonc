@@ -4415,8 +4415,17 @@
     {
       "id": "movie-pos",
       "label": "Movie Position",
-      "description": "movie-pos lump (collectables.gc): where a power cell plays its pickup animation, or where the cell from the last scout fly jumps; also read by muse. Cells given by another actor read it from that actor. A list: some actors pick an entry by index (pelican [1], sunken-pipegame [1] [2]). Cone empties in the Movie Position panel; W = their Z rotation (facing angle). Option \"description\": the panel hint.",
-      "fields": []
+      "description": "movie-pos lump (collectables.gc): where a power cell plays its pickup animation, or where the cell from the last scout fly jumps; also read by muse. Cells given by another actor read it from that actor. A list: some actors pick an entry by index (pelican [1], sunken-pipegame [1] [2]). Cone empties in the Movie Position panel; W = their Z rotation (facing angle). movie-mask: victory animations the cell must not pick (bits 0-7; e.g. ones that clip a wall). Option \"description\": the panel hint.",
+      "fields": [
+        {"key": "og_movie_mask_0", "label": "No victory anim 1", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 1}, "write_if": "if_true"},
+        {"key": "og_movie_mask_1", "label": "No victory anim 2", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 2}, "write_if": "if_true"},
+        {"key": "og_movie_mask_2", "label": "No victory anim 3", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 4}, "write_if": "if_true"},
+        {"key": "og_movie_mask_3", "label": "No victory anim 4", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 8}, "write_if": "if_true"},
+        {"key": "og_movie_mask_4", "label": "No victory anim 5", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 16}, "write_if": "if_true"},
+        {"key": "og_movie_mask_5", "label": "No victory anim 6", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 32}, "write_if": "if_true"},
+        {"key": "og_movie_mask_6", "label": "No victory anim 7", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 64}, "write_if": "if_true"},
+        {"key": "og_movie_mask_7", "label": "No victory anim 8", "type": "bool", "default": false, "group": "movie-mask", "lump_bit": {"key": "movie-mask", "type": "uint32", "bit_value": 128}, "write_if": "if_true"}
+      ]
     },
     {
       "id": "fact-options",
@@ -4999,6 +5008,11 @@
       "shape": "CUBE",
       "empty_size": 2.0,
       "panels": [
+        {"panel": "nav-mesh", "fallback-sphere": true},
+        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}, {"key": "og_notice_bottom", "show-field": true, "export": true}]},
+        {"panel": "path", "multi-path": true, "linear-only": true, "paths": ["patha", "pathb", "pathc", "pathd", "pathe", "pathf", "pathg", "pathh", "pathspawn"], "description": "Main path: the lurkers' patrol. Spawn paths patha .. pathh (at least one, max 8): a lurker spawns at the first point and jumps along the rest. pathspawn: one lurker placed on each point at the start."},
+        {"panel": "game-task", "description": "The task of the power cell it spawns at the end (or of the cell that turns this ambush off)."},
+        {"panel": "movie-pos", "description": "Where the power cell it spawns at the end plays its animation (cone = facing)."},
         {"panel": "actor-link", "slots": [{"lump_key": "spawner-blocker-actor", "slot": 0, "label": "Spawn path blockers ([0] blocks patha, [1] pathb ...): once complete, that path stops spawning", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "spawner-trigger-actor", "slot": 0, "label": "Spawn path actors ([0] patha, [1] pathb ...): sent 'spawn when their path spawns", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "kill-actor", "slot": 0, "label": "Turned off while the ambush is on (performance)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "trigger-actor", "slot": 0, "label": "Triggered when the ambush starts (keep doors shut, change the camera ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "fade-actor", "slot": 0, "label": "Faded out when the ambush is over (e.g. stop an eco vent)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "alt-actor", "slot": 0, "label": "Triggered when the ambush is completed (open doors, raise steps ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}]},
         {
           "panel": "battlecontroller"
@@ -6259,24 +6273,8 @@
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "panels": [
         {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "_movie-mask",
-              "label": "Movie Mask",
-              "default": 6,
-              "type": "int",
-              "lump": {
-                "key": "movie-mask",
-                "type": "uint32",
-                "slot": 0,
-                "write_if": "always"
-              }
-            }
-          ]
-        },
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak.",
+         "fields": [{"key": "og_movie_mask_1", "default": true}, {"key": "og_movie_mask_2", "default": true}]},
         {
           "panel": "actor-link",
           "slots": [

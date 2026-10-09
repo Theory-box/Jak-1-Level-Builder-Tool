@@ -441,10 +441,42 @@ def check_load_boundaries(scene):
     return issues
 
 
+_BC_SPAWN_PATHS = ("patha", "pathb", "pathc", "pathd", "pathe", "pathf", "pathg", "pathh")
+
+
+def check_battlecontrollers(scene):
+    """Battlecontroller setup: a spawn path, chances, camera variant needs."""
+    from .export import battlecontroller as _bc
+    issues, citadel = [], []
+    for o in _actor_objs(scene):
+        if _etype(o) != "battlecontroller":
+            continue
+        spawn = [p.name.strip() for p in getattr(o, "og_extra_paths", [])
+                 if p.name.strip() in _BC_SPAWN_PATHS and len(p.sources)]
+        if not spawn:
+            issues.append(_issue("ERROR", f"'{o.name}' needs at least one spawn path (patha .. pathh) — "
+                                          "Path panel > Add Path.", o.name))
+        for w in _bc.percent_problems(o):
+            issues.append(_issue("WARNING", f"'{o.name}': {w}.", o.name))
+        var = _bc.variant(o)
+        if var.get("custom_camera") and not all(_bc.camera(o)):
+            issues.append(_issue("ERROR", f"'{o.name}': the custom camera needs a camera art group and an animation.", o.name))
+        if var.get("needs_citadel_camera"):
+            citadel.append(o)
+            if _bc.citadel_camera_object(o) is None:
+                issues.append(_issue("ERROR", f"'{o.name}': the citadel camera needs a camera position "
+                                              f"({_bc.CITADEL_CAM_NAME}) — the game crashes without it.", o.name))
+    if len(citadel) > 1:
+        issues.append(_issue("WARNING", f"{len(citadel)} citadel-camera battlecontrollers: they all use the one "
+                                        f"'{_bc.CITADEL_CAM_NAME}' position (the first one exported)."))
+    return issues
+
+
 _REGISTERED_CHECKS = [
     check_tpage_budget,
     check_navmesh_links,
     check_missing_paths,
+    check_battlecontrollers,
     check_actor_links,
     check_volumes,
     check_spawn_points,

@@ -577,8 +577,8 @@ def collect_actors(scene, depsgraph=None):
             "extra_art_groups": _variant.get("extra_art_groups") or [],
             **_extra,
         })
-        if _bc_campos is not None:
-            _extra_actors.append(_bc_campos)   # after all actors: AIDs follow the canonical order
+        if _bc_campos is not None and not any(x["lump"]["name"] == _bc_campos["lump"]["name"] for x in _extra_actors):
+            _extra_actors.append(_bc_campos)   # after all actors (AIDs follow the canonical order); one per name
 
     out += _extra_actors
 
