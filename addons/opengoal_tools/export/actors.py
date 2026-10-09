@@ -540,13 +540,14 @@ def collect_actors(scene, depsgraph=None):
                     lump[_lk] = _lv
             for _w in _bc.percent_problems(o):
                 log(f"  [WARNING] {o.name}: {_w}")
-            if _bc.is_custom(o):
-                _out_etype = _bc.custom_type_base(o)        # write_jsonc adds the level prefix
-                _cag, _canim = _bc.camera(o)
-                _out_ag = f"{_cag}-ag.go" if _cag else None
-                if not (_cag and _canim):
-                    log(f"  [WARNING] {o.name}: custom camera needs a camera art group and animation")
-            elif _variant.get("needs_citadel_camera"):
+            _cag, _canim = _bc.camera(o)
+            _gen = _bc.type_base(o, level_objs)
+            if _gen:
+                _out_etype = _gen                           # write_jsonc adds the level prefix
+                _out_ag = f"{_cag}-ag.go"
+            elif _bc.is_custom(o):
+                log(f"  [WARNING] {o.name}: custom camera needs a camera art group and animation")
+            if _variant.get("needs_citadel_camera"):
                 _cam = _bc.citadel_camera_object(o)
                 if _cam is None:
                     log(f"  [WARNING] {o.name}: the citadel camera variant needs a camera position "

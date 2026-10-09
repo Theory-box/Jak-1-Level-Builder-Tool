@@ -2,11 +2,13 @@
 # export/battlecontroller.py — battlecontroller (ambush) export helpers
 #
 # Camera variants (DB battlecontroller "og_bc_variant"):
-#   basic / misty / swamp / citadel  -> vanilla types (battlecontroller,
-#       misty-battlecontroller, swamp-battlecontroller, citb-battlecontroller)
-#   custom -> a per-actor child type written into the level's -obs.gc that
-#       plays the picked camera animation (pov-camera) at the controller, like
-#       the misty / swamp ones do. Type name: <level>-battlecontroller-custom-<uid>.
+#   basic -> the plain battlecontroller (no intro camera).
+#   misty / swamp / citadel / custom -> a battlecontroller child type written
+#       into the level's -obs.gc (no vanilla -obs.o is bundled): it plays the
+#       variant's camera animation (pov-camera) and keeps the vanilla extras
+#       (misty collision hack, swamp/citadel "complete" on death, citadel
+#       hint + 35 m activation). Controllers with the same setup share a type,
+#       named <level>-battlecontroller-<n> (n from 1).
 # The citadel variant reads its camera position from an entity named
 # "citadelcam-1"; it is exported as an inert process-hidden actor at the
 # linked camera-position empty.
@@ -15,13 +17,8 @@ from __future__ import annotations
 
 from .. import db as _db
 
-CUSTOM_PREFIX = "battlecontroller-custom-"
+GEN_PREFIX = "battlecontroller-"     # + n; write_jsonc / write_gc add the level prefix
 CITADEL_CAM_NAME = "citadelcam-1"
-
-
-def _uid(o) -> str:
-    parts = o.name.split("_", 2)
-    return parts[2] if len(parts) >= 3 else "0"
 
 
 def variant(o) -> dict:
@@ -32,20 +29,19 @@ def is_custom(o) -> bool:
     return bool(variant(o).get("custom_camera"))
 
 
-def custom_type_base(o) -> str:
-    """etype before level scoping (write_jsonc / write_gc add the prefix)."""
-    uid = "".join(c if c.isalnum() else "-" for c in _uid(o).lower())
-    return CUSTOM_PREFIX + uid
-
-
 def camera_anims() -> dict:
     """{camera art group: [animations]} (from the game's *cam-ag.go files)."""
     return dict((_db.find_actor("battlecontroller") or {}).get("camera_anims") or {})
 
 
 def camera(o) -> tuple[str, str]:
-    """(art group, animation) picked for a custom-camera controller; the
-    "custom" choice of either reads the typed name."""
+    """(art group, animation) of the controller's intro camera: the variant's
+    fixed one, or the picked one for "custom" (whose "custom" choices read
+    the typed names). ("", "") for the basic variant."""
+    var = variant(o)
+    if not var.get("custom_camera"):
+        cam = var.get("intro_camera") or {}
+        return str(cam.get("art_group", "")), str(cam.get("anim", ""))
     ag = str(o.get("og_bc_cam", "") or "")
     if ag == "custom":
         ag = str(o.get("og_bc_cam_custom", "") or "").strip()
@@ -57,30 +53,46 @@ def camera(o) -> tuple[str, str]:
     return ag, anim
 
 
-def custom_controllers(objects) -> list:
-    """Custom-camera battlecontroller empties among `objects`."""
-    out = []
-    for o in objects:
-        if o.type != "EMPTY" or not o.name.startswith("ACTOR_battlecontroller_"):
-            continue
-        if is_custom(o):
-            out.append(o)
-    return out
+def _spec(o):
+    """What decides the generated type: (variant id, art group, animation),
+    or None for a plain battlecontroller / an unfinished custom camera."""
+    var = variant(o)
+    if not var.get("generated_type"):
+        return None
+    ag, anim = camera(o)
+    return (str(var.get("id", "")), ag, anim) if ag and anim else None
+
+
+def _controllers(objects):
+    return [o for o in objects if o.type == "EMPTY" and o.name.startswith("ACTOR_battlecontroller_")]
+
+
+def generated_types(objects) -> dict:
+    """{spec: type base name} for the controllers among `objects` that need
+    a generated type; equal specs share one, numbered in a stable order."""
+    specs = sorted({sp for sp in map(_spec, _controllers(objects)) if sp})
+    return {sp: f"{GEN_PREFIX}{i}" for i, sp in enumerate(specs, 1)}
+
+
+def type_base(o, objects):
+    """Generated type base name for this controller (None: plain type)."""
+    return generated_types(objects).get(_spec(o))
 
 
 def gc_lines(pfx: str, objects) -> list[str]:
-    """GOAL for every custom-camera controller: a battlecontroller child
-    whose intro plays the picked camera at the controller."""
+    """GOAL for every generated battlecontroller type."""
     lines = []
-    for o in custom_controllers(objects):
-        ag, anim = camera(o)
-        if not ag or not anim:
-            continue
-        t = f"{pfx}-{custom_type_base(o)}"
+    for (vid, ag, anim), base in generated_types(objects).items():
+        t = f"{pfx}-{base}"
         sg = f"*{t}-cam-sg*"
+        cam_at = (f'(-> (entity-by-name "{CITADEL_CAM_NAME}") extra trans)' if vid == "citadel"
+                  else "(-> self root trans)")
+        pre = {"swamp": ["      (suspend)", "      (process-drawable-delay-player (seconds 1))"],
+               "citadel": ['      (level-hint-spawn (text-id citadel-battle) "sksp0383" (the-as entity #f) *entity-pool* (game-task none))',
+                           "      (suspend)"]}.get(vid, [])
         lines += [
             "",
-            f";; {o.name}: battlecontroller with a custom intro camera ({ag} / {anim})",
+            f";; battlecontroller with the {vid} intro camera ({ag} / {anim})",
             f"(deftype {t} (battlecontroller) ())",
             "",
             f"(defskelgroup {sg}",
@@ -94,11 +106,35 @@ def gc_lines(pfx: str, objects) -> list[str]:
             "  :virtual #t",
             "  :code",
             "    (behavior ()",
-            f"      (let ((gp-1 (ppointer->handle (process-spawn pov-camera (-> self root trans) {sg} \"{anim}\" 0 #f '() :to self))))",
-            "        (while (handle->process (the-as handle gp-1))",
-            "          (suspend)))",
-            "      (go-virtual battlecontroller-active)))",
+            *pre,
+            f"      (let ((gp-1 (ppointer->handle (process-spawn pov-camera {cam_at} {sg} \"{anim}\" 0 #f '() :to self))))",
         ]
+        if vid == "citadel":
+            lines += ["        (send-event (handle->process (the-as handle gp-1)) 'mask 2048)",
+                      "        (while (handle->process (the-as handle gp-1))",
+                      "          (logclear! (-> *target* state-flags) (state-flags invulnerable))",
+                      "          (suspend)))"]
+        else:
+            lines += ["        (while (handle->process (the-as handle gp-1))",
+                      "          (suspend)))"]
+        lines.append("      (go-virtual battlecontroller-active)))")
+        if vid in ("swamp", "citadel"):     # the vanilla ones mark the entity complete on death
+            lines += ["",
+                      f"(defstate battlecontroller-die ({t})",
+                      "  :virtual #t",
+                      "  :code",
+                      "    (behavior ()",
+                      "      (process-entity-status! self (entity-perm-status complete) #t)",
+                      "      (call-parent-state-handler code)))"]
+        if vid in ("misty", "citadel"):
+            body = ("  (set! (-> this misty-ambush-collision-hack) #t)" if vid == "misty"
+                    else "  (set! (-> this activate-distance) (meters 35))")
+            lines += ["",
+                      f"(defmethod battlecontroller-method-27 ((this {t}))",
+                      "  (call-parent-method this)",
+                      body,
+                      "  0",
+                      "  (none))"]
     return lines
 
 

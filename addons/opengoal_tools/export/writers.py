@@ -555,14 +555,14 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
             log(f"  [write_gc] injected {len(custom_blocks)} custom GOAL code block(s): "
                 f"{', '.join(n for n, _ in custom_blocks)}")
 
-    # Custom-camera battlecontrollers: their child types (already level-scoped).
+    # Battlecontrollers with an intro camera: their child types (already level-scoped).
     _pfx = _level_type_prefix(name)
     if scene is not None:
         from . import battlecontroller as _bc
         _bcl = _bc.gc_lines(_pfx, _level_objects(scene))
         if _bcl:
-            lines += ["", ";; --- battlecontrollers with a custom intro camera ---"] + _bcl
-            log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} custom-camera battlecontroller type(s)")
+            lines += ["", ";; --- battlecontrollers with an intro camera ---"] + _bcl
+            log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} battlecontroller type(s)")
 
     new_text = "\n".join(lines)
     # Level-scope the addon's trigger type names (and the shared plane-test
@@ -615,9 +615,9 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # Match the per-level type scoping done in write_gc: a trigger actor's etype
     # must point at the level-scoped type name so the engine births the right type.
     _pfx = _level_type_prefix(name)
-    from .battlecontroller import CUSTOM_PREFIX as _BC_CUSTOM
+    from .battlecontroller import GEN_PREFIX as _BC_GEN
     for _a in all_actors:
-        if _a.get("etype") in _TRIGGER_ETYPES or str(_a.get("etype", "")).startswith(_BC_CUSTOM):
+        if _a.get("etype") in _TRIGGER_ETYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
             _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
@@ -744,7 +744,7 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     if inc_o or inc_go:
         log(f"  [include] .gd: +{len(inc_o) + len(inc_go)} file(s)")
     # <name>-obs.o links after the actor code: its generated types (e.g. a
-    # custom battlecontroller) need their parent type already loaded.
+    # generated battlecontroller) need their parent type already loaded.
     files = (
         code_o
         + [f'  "{name}-obs.o"']
@@ -1129,11 +1129,11 @@ def patch_game_gp(name, code_deps=None, scene=None):
     for _gc, _dep in _incl["goal_src"]:
         extra_goal_src += f'(goal-src "{_gc}" "{_dep}") {_tag}\n'
 
-    # a custom-camera battlecontroller type in the -obs needs its parents compiled first
+    # a generated battlecontroller type in the -obs needs its parents compiled first
     _obs_deps = '"process-drawable"'
     if scene is not None:
         from . import battlecontroller as _bc
-        if _bc.custom_controllers(_level_objects(scene)):
+        if _bc.generated_types(_level_objects(scene)):
             _obs_deps += ' "battlecontroller" "pov-camera"'
     correct_block = (
         f'(build-custom-level "{name}")\n'
