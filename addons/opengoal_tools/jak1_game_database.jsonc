@@ -8425,17 +8425,6 @@
       "shape": "CUBE"
     },
     {
-      "etype": "ecovalve",
-      "label": "Eco Valve",
-      "category": "Pickups",
-      "parent": "process-drawable",
-      "art_group": "ecovalve-ag.go",
-      "glb": "levels/beach/ecovalve-geo.glb",
-      "is_prop": true,
-      "shape": "CUBE",
-      "code": "collectables.o"
-    },
-    {
       "etype": "swamp-rock",
       "label": "Swamp Rock",
       "category": "Interactive Objects",
