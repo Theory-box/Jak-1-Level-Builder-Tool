@@ -23,7 +23,6 @@
 //   MusicBanks               — per-bank flava variants
 //   BankSFX                  — SFX names per bank (flat enum derived at addon load)
 //   BankSFX_notes            — derivation rules
-//   CrateTypes               — crate material enum
 //   CratePickups             — valid pickups inside a crate
 //   GameTasks                — common game-task enum for the oracle/pontoon picker
 //   GameTasks_notes          — source + expansion notes
@@ -3406,192 +3405,14 @@
   // ── BankSFX_notes ───────────────────────────────────────────────
   "BankSFX_notes": "The addon builds a flat enum (id, label, desc, index) at load time by iterating BankSFX. Label format: '[<BankTitle>] <sound>'. The 'common' bank is large (~300 sounds); preserve ordering within each bank.",
 
-  // ── CrateTypes ──────────────────────────────────────────────────
-  "CrateTypes": [
-    {
-      "id": "steel",
-      "label": "Steel",
-      "glb": "levels/common/crate-steel-lod0.glb",
-      "defaults": { "og_crate_pickup": "money" }
-    },
-    {
-      "id": "wood",
-      "label": "Wood",
-      "glb": "levels/common/crate-wood-lod0.glb",
-      "defaults": { "og_crate_pickup": "none" }
-    },
-    {
-      "id": "iron",
-      "label": "Iron",
-      "glb": "levels/common/crate-iron-lod0.glb",
-      "defaults": { "og_crate_pickup": "buzzer" }
-    },
-    {
-      "id": "darkeco",
-      "label": "Dark Eco",
-      "glb": "levels/common/crate-darkeco-lod0.glb",
-      "defaults": { "og_crate_pickup": "none" }
-    },
-    {
-      "id": "barrel",
-      "label": "Barrel",
-      "glb": "levels/common/crate-barrel-lod0.glb",
-      "defaults": { "og_crate_pickup": "none" }
-    },
-    {
-      "id": "bucket",
-      "label": "Bucket",
-      "glb": "levels/common/crate-bucket-lod0.glb",
-      "defaults": { "og_crate_pickup": "none" }
-    }
-  ],
 
-  // ── BridgeVariants ──────────────────────────────────────────────
   // Each ropebridge variant: its own model + art group. All use ropebridge.o
   // (already loaded in game.gd). The snow bridge also needs Jak's ice-sliding
   // code + animation bundled (extra_code / extra_art_groups).
-  "BridgeVariants": [
-    {
-      "id": "ropebridge-32",
-      "label": "Rope Bridge 32m (Village1)",
-      "glb": "levels/village1/ropebridge-32-lod0.glb",
-      "art_group": "ropebridge-32-ag.go",
-      "offset": [0, 16, 0]
-    },
-    {
-      "id": "ropebridge-36",
-      "label": "Rope Bridge 36m (Misty)",
-      "glb": "levels/misty/ropebridge-36-lod0.glb",
-      "art_group": "ropebridge-36-ag.go",
-      "offset": [0, 18, 0]
-    },
-    {
-      "id": "ropebridge-52",
-      "label": "Rope Bridge 52m (Jungle)",
-      "glb": "levels/jungle/ropebridge-52-lod0.glb",
-      "art_group": "ropebridge-52-ag.go",
-      "offset": [0, 26, 0]
-    },
-    {
-      "id": "ropebridge-70",
-      "label": "Rope Bridge 70m (Jungle)",
-      "glb": "levels/jungle/ropebridge-70-lod0.glb",
-      "art_group": "ropebridge-70-ag.go",
-      "offset": [0, 35, 0]
-    },
-    {
-      "id": "snow-bridge-36",
-      "label": "Snow Bridge 36m (Snowy)",
-      "glb": "levels/snow/snow-bridge-36-lod0.glb",
-      "art_group": "snow-bridge-36-ag.go",
-      "offset": [0, 18, 0],
-      "extra_art_groups": ["eichar-ice+0-ag.go"],
-      "code": ["target-ice.o"]
-    },
-    {
-      "id": "vil3-bridge-36",
-      "label": "Village3 Bridge 36m",
-      "glb": "levels/village3/vil3-bridge-36-lod0.glb",
-      "art_group": "vil3-bridge-36-ag.go",
-      "offset": [0, 18, 0]
-    }
-  ],
 
-  // ── OgreStepVariants ──────────────────────────────────────────────
-  "OgreStepVariants": [
-    {
-      "id": "ogre-step-a",
-      "etype": "ogre-step-a",
-      "label": "Klaww Step A",
-      "glb": "levels/ogre/ogre-step-a-lod0.glb",
-      "art_group": "ogre-step-ag.go"
-    },
-    {
-      "id": "ogre-step-b",
-      "etype": "ogre-step-b",
-      "label": "Klaww Step B",
-      "glb": "levels/ogre/ogre-step-b-lod0.glb",
-      "art_group": "ogre-step-ag.go"
-    },
-    {
-      "id": "ogre-step-c",
-      "etype": "ogre-step-c",
-      "label": "Klaww Step C",
-      "glb": "levels/ogre/ogre-step-c-lod0.glb",
-      "art_group": "ogre-step-ag.go"
-    },
-    {
-      "id": "ogre-step-d",
-      "etype": "ogre-step-d",
-      "label": "Klaww Step D",
-      "glb": "levels/ogre/ogre-step-b-lod0.glb",
-      "art_group": "ogre-step-ag.go"
-    }
-  ],
 
-    // ── CitbDiscVariants ──────────────────────────────────────────────
-  "CitbDiscVariants": [
-    {
-      "id": "citb-disc-a",
-      "etype": "citb-disc-a",
-      "label": "Disc Platform A (1 quarter)",
-      "glb": "levels/citadel/citb-disc-a-lod0.glb",
-      "art_group": "citb-disc-ag.go"
-    },
-    {
-      "id": "citb-disc-b",
-      "etype": "citb-disc-b",
-      "label": "Disc Platform B (half)",
-      "glb": "levels/citadel/citb-disc-b-lod0.glb",
-      "art_group": "citb-disc-ag.go"
-    },
-    {
-      "id": "citb-disc-c",
-      "etype": "citb-disc-c",
-      "label": "Disc Platform C (3 quarters)",
-      "glb": "levels/citadel/citb-disc-c-lod0.glb",
-      "art_group": "citb-disc-ag.go"
-    },
-    {
-      "id": "citb-disc-d",
-      "etype": "citb-disc-d",
-      "label": "Disc Platform D (full)",
-      "glb": "levels/citadel/citb-disc-d-lod0.glb",
-      "art_group": "citb-disc-ag.go"
-    }
-  ],
 
-  // ── MinecartAnim ──────────────────────────────────────────────
-  "MinecartAnim": [
-    {
-      "id": "0",
-      "label": "Anim 0 (Large oval)"
-    },
-    {
-      "id": "1",
-      "label": "Anim 1 (Figure of 8)"
-    },
-    {
-      "id": "2",
-      "label": "Anim 2 (Small oval)"
-    }
-  ],
 
-  // ── FlutflutPlatMode ──────────────────────────────────────────────
-  "FlutflutPlatMode": [
-    {
-      "id": "0",
-      "label": "Default platform behaviour"
-    },
-    {
-      "id": "1",
-      "label": "Button activated (Static)"
-    },
-    {
-      "id": "2",
-      "label": "Button activated (Use Path)"
-    }
-  ],
 
   // ── CratePickups ────────────────────────────────────────────────
   "CratePickups": [
@@ -4747,6 +4568,26 @@
       ]
     },
     {
+      "etype": "citb-arm-section",
+      "parent": "process-drawable",
+      "description": "Citadel rotating arm pieces (citadel-obs.gc): spin around Y from their sync timing; the empty's rotation is ignored.",
+      "panels": [
+        {
+          "panel": "sync",
+          "show-panel": true,
+          "description": "One full turn per period (seconds); a negative period turns the other way. Phase offsets the start.",
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 10.0,
+              "min": -600.0,
+              "note": "Seconds per full turn; negative = turns the other way. Game default 10."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "etype": "nav-enemy",
       "parent": "process-drawable",      "rotation_lock": ["x", "y"],
       "panels": [
@@ -4909,55 +4750,6 @@
       "description": "Game type (deftype rigid-body-platform (process-drawable)) in engine\\common-obs\\rigid-body.gc. Parent record only, not spawnable."
     },
     {
-      "etype": "flutflut-plat",
-      "parent": "plat",
-      "description": "Game type (deftype flutflut-plat (plat)) in levels\\snow\\snow-flutflut-obs.gc. Parent record only, not spawnable.",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "show-panel": true,
-          "slots": [
-            {
-              "accepts": [
-                "any"
-              ],
-              "label": "Button to activate platform in button mode",
-              "lump_key": "alt-actor",
-              "required": false,
-              "slot": 0
-            },
-            {
-              "accepts": [
-                "any"
-              ],
-              "label": "Previous platform in the list or button if first",
-              "lump_key": "prev-actor",
-              "required": false,
-              "slot": 0
-            },
-            {
-              "accepts": [
-                "any"
-              ],
-              "label": "Next platform in the list",
-              "lump_key": "next-actor",
-              "required": false,
-              "slot": 0
-            }
-          ]
-        },
-        {
-          "panel": "path",
-          "show-panel": true,
-          "min-points": 2
-        },
-        {
-          "panel": "sync",
-          "show-panel": true
-        }
-      ]
-    },
-    {
       "etype": "process-hidden",
       "parent": "process",
       "description": "Game type (deftype process-hidden (process)) in engine\\common-obs\\generic-obs-h.gc. Parent record only, not spawnable."
@@ -4978,11 +4770,6 @@
           ]
         }
       ]
-    },
-    {
-      "etype": "ogre-isle",
-      "parent": "ogre-plat",
-      "description": "Game type (deftype ogre-isle (ogre-plat)) in levels\\ogre\\ogre-obs.gc. Parent record only, not spawnable."
     },
     {
       "etype": "ogre-plat",
@@ -6631,9 +6418,28 @@
       "art_group": "crate-ag.go",
       "glb": "levels/common/crate-wood-lod0.glb",
       "panels": [
-        {"panel": "game-task", "eco-info": "pickup", "fields": [{"key": "og_buzzer_index", "show-field": true, "export": true, "visible_if": {"og_crate_pickup": "buzzer"}}], "description": "When it holds a power cell / scout fly: the task it gives."},
-        {"panel": "movie-pos", "description": "Only when it holds a power cell or scout fly: where the cell plays its animation / where a fly's cell jumps."},
-        {"panel": "crate"},
+        {
+          "panel": "game-task",
+          "eco-info": "pickup",
+          "fields": [
+            {
+              "key": "og_buzzer_index",
+              "show-field": true,
+              "export": true,
+              "visible_if": {
+                "og_crate_pickup": "buzzer"
+              }
+            }
+          ],
+          "description": "When it holds a power cell / scout fly: the task it gives."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Only when it holds a power cell or scout fly: where the cell plays its animation / where a fly's cell jumps."
+        },
+        {
+          "panel": "crate"
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -6642,7 +6448,62 @@
               "label": "Crate Type",
               "type": "enum",
               "default": "steel",
-              "choices": "CrateTypes",
+              "choices": [
+                {
+                  "id": "steel",
+                  "label": "Steel",
+                  "glb": "levels/common/crate-steel-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "money"
+                  },
+                  "value": "steel"
+                },
+                {
+                  "id": "wood",
+                  "label": "Wood",
+                  "glb": "levels/common/crate-wood-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "none"
+                  },
+                  "value": "wood"
+                },
+                {
+                  "id": "iron",
+                  "label": "Iron",
+                  "glb": "levels/common/crate-iron-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "buzzer"
+                  },
+                  "value": "iron"
+                },
+                {
+                  "id": "darkeco",
+                  "label": "Dark Eco",
+                  "glb": "levels/common/crate-darkeco-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "none"
+                  },
+                  "value": "darkeco"
+                },
+                {
+                  "id": "barrel",
+                  "label": "Barrel",
+                  "glb": "levels/common/crate-barrel-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "none"
+                  },
+                  "value": "barrel"
+                },
+                {
+                  "id": "bucket",
+                  "label": "Bucket",
+                  "glb": "levels/common/crate-bucket-lod0.glb",
+                  "defaults": {
+                    "og_crate_pickup": "none"
+                  },
+                  "value": "bucket"
+                }
+              ],
               "variant": true,
               "lump": {
                 "key": "crate-type",
@@ -7049,18 +6910,111 @@
       "code": "plat-button.o"
     },
     {
-      "etype": "flutflut-plat-small",
-      "label": "Snowy Platform (Small Square)",
+      "etype": "flutflut-plat",
+      "label": "Snowy Platform (Flut Flut)",
       "schema_export": true,
       "panels": [
+        {
+          "panel": "actor-link",
+          "show-panel": true,
+          "slots": [
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Button to activate platform in button mode",
+              "lump_key": "alt-actor",
+              "required": false,
+              "slot": 0
+            },
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Previous platform in the list or button if first",
+              "lump_key": "prev-actor",
+              "required": false,
+              "slot": 0
+            },
+            {
+              "accepts": [
+                "any"
+              ],
+              "label": "Next platform in the list",
+              "lump_key": "next-actor",
+              "required": false,
+              "slot": 0
+            }
+          ]
+        },
+        {
+          "panel": "path",
+          "show-panel": true,
+          "min-points": 2
+        },
+        {
+          "panel": "sync",
+          "show-panel": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
+              "key": "og_flutflut_variant",
+              "label": "Platform size",
+              "type": "enum",
+              "default": "flutflut-plat-small",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "flutflut-plat-small",
+                  "value": "flutflut-plat-small",
+                  "etype": "flutflut-plat-small",
+                  "label": "Snowy Platform (Small Square)",
+                  "art_group": "flutflut-plat-small-ag.go",
+                  "glb": "levels/snow/flutflut-plat-small-lod0.glb"
+                },
+                {
+                  "id": "flutflut-plat-med",
+                  "value": "flutflut-plat-med",
+                  "etype": "flutflut-plat-med",
+                  "label": "Snowy Platform (Medium Circle)",
+                  "art_group": "flutflut-plat-med-ag.go",
+                  "glb": "levels/snow/flutflut-plat-med-lod0.glb"
+                },
+                {
+                  "id": "flutflut-plat-large",
+                  "value": "flutflut-plat-large",
+                  "etype": "flutflut-plat-large",
+                  "label": "Snowy Platform (Long Capsule)",
+                  "art_group": "flutflut-plat-large-ag.go",
+                  "glb": "levels/snow/flutflut-plat-large-lod0.glb"
+                }
+              ]
+            },
+            {
               "key": "og_plat-type",
               "label": "Platform mode",
               "type": "enum",
-              "choices": "FlutflutPlatMode",
+              "choices": [
+                {
+                  "id": "0",
+                  "label": "Default platform behaviour",
+                  "value": "0"
+                },
+                {
+                  "id": "1",
+                  "label": "Button activated (Static)",
+                  "value": "1"
+                },
+                {
+                  "id": "2",
+                  "label": "Button activated (Use Path)",
+                  "value": "2"
+                }
+              ],
               "default": 0,
               "lump": {
                 "key": "mode",
@@ -7083,102 +7037,17 @@
         }
       ],
       "category": "Platforms",
-      "parent": "flutflut-plat",
-      "art_group": "flutflut-plat-small-ag.go",
-      "glb": "levels/snow/flutflut-plat-small-lod0.glb",
+      "parent": "plat",
       "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
-      "shape": "CUBE",
-      "code": "snow-flutflut-obs.o"
-    },
-    {
-      "etype": "flutflut-plat-med",
-      "label": "Snowy Platform (Medium Circle)",
-      "schema_export": true,
-      "panels": [
         {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_plat-type",
-              "label": "Platform mode",
-              "type": "enum",
-              "choices": "FlutflutPlatMode",
-              "default": 0,
-              "lump": {
-                "key": "mode",
-                "type": "int32"
-              },
-              "write_if": "if_nonzero"
-            },
-            {
-              "key": "og_extra-id",
-              "label": "Order for button (* 0.15s)",
-              "type": "int",
-              "default": 0,
-              "lump": {
-                "key": "extra-id",
-                "type": "int32"
-              },
-              "write_if": "if_nonzero"
-            }
-          ]
+          "key": "flags",
+          "type": "uint32",
+          "description": "Behaviour flags (bitfield)."
         }
       ],
-      "category": "Platforms",
-      "parent": "flutflut-plat",
-      "art_group": "flutflut-plat-med-ag.go",
-      "glb": "levels/snow/flutflut-plat-med-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "shape": "CUBE",
-      "code": "snow-flutflut-obs.o"
-    },
-    {
-      "etype": "flutflut-plat-large",
-      "label": "Snowy Platform (Long Capsule)",
-      "schema_export": true,
-      "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_plat-type",
-              "label": "Platform mode",
-              "type": "enum",
-              "choices": "FlutflutPlatMode",
-              "default": 0,
-              "lump": {
-                "key": "mode",
-                "type": "int32"
-              },
-              "write_if": "if_nonzero"
-            },
-            {
-              "key": "og_extra-id",
-              "label": "Order of aparition for button mode (order * 0.15s)",
-              "type": "int",
-              "default": 0,
-              "lump": {
-                "key": "extra-id",
-                "type": "int32"
-              },
-              "write_if": "if_nonzero"
-            }
-          ]
-        }
-      ],
-      "category": "Platforms",
-      "parent": "flutflut-plat",
-      "art_group": "flutflut-plat-large-ag.go",
-      "glb": "levels/snow/flutflut-plat-large-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
-      "shape": "CUBE",
-      "code": "snow-flutflut-obs.o"
+      "code": "snow-flutflut-obs.o",
+      "description": "Flut flut platform. Variant: small / medium / large (each its own type and model)."
     },
     {
       "etype": "snow-log",
@@ -7914,7 +7783,23 @@
               "type": "enum",
               "label": "Animation",
               "default": 0,
-              "choices": "MinecartAnim",
+              "choices": [
+                {
+                  "id": "0",
+                  "label": "Anim 0 (Large oval)",
+                  "value": "0"
+                },
+                {
+                  "id": "1",
+                  "label": "Anim 1 (Figure of 8)",
+                  "value": "1"
+                },
+                {
+                  "id": "2",
+                  "label": "Anim 2 (Small oval)",
+                  "value": "2"
+                }
+              ],
               "lump": {
                 "key": "index",
                 "type": "int32"
@@ -8980,8 +8865,16 @@
       "tpage_group": "Jungle",
       "code": "ropebridge.o",
       "lumps": [
-        {"key": "campoints-offset", "type": "float", "description": "Camera-points offset along the bridge."},
-        {"key": "spline-offset", "type": "float", "description": "Spline curve offset."}
+        {
+          "key": "campoints-offset",
+          "type": "float",
+          "description": "Camera-points offset along the bridge."
+        },
+        {
+          "key": "spline-offset",
+          "type": "float",
+          "description": "Spline curve offset."
+        }
       ],
       "panels": [
         {
@@ -8992,7 +8885,86 @@
               "label": "Bridge Variant",
               "type": "enum",
               "default": "ropebridge-32",
-              "choices": "BridgeVariants",
+              "choices": [
+                {
+                  "id": "ropebridge-32",
+                  "label": "Rope Bridge 32m (Village1)",
+                  "glb": "levels/village1/ropebridge-32-lod0.glb",
+                  "art_group": "ropebridge-32-ag.go",
+                  "offset": [
+                    0,
+                    16,
+                    0
+                  ],
+                  "value": "ropebridge-32"
+                },
+                {
+                  "id": "ropebridge-36",
+                  "label": "Rope Bridge 36m (Misty)",
+                  "glb": "levels/misty/ropebridge-36-lod0.glb",
+                  "art_group": "ropebridge-36-ag.go",
+                  "offset": [
+                    0,
+                    18,
+                    0
+                  ],
+                  "value": "ropebridge-36"
+                },
+                {
+                  "id": "ropebridge-52",
+                  "label": "Rope Bridge 52m (Jungle)",
+                  "glb": "levels/jungle/ropebridge-52-lod0.glb",
+                  "art_group": "ropebridge-52-ag.go",
+                  "offset": [
+                    0,
+                    26,
+                    0
+                  ],
+                  "value": "ropebridge-52"
+                },
+                {
+                  "id": "ropebridge-70",
+                  "label": "Rope Bridge 70m (Jungle)",
+                  "glb": "levels/jungle/ropebridge-70-lod0.glb",
+                  "art_group": "ropebridge-70-ag.go",
+                  "offset": [
+                    0,
+                    35,
+                    0
+                  ],
+                  "value": "ropebridge-70"
+                },
+                {
+                  "id": "snow-bridge-36",
+                  "label": "Snow Bridge 36m (Snowy)",
+                  "glb": "levels/snow/snow-bridge-36-lod0.glb",
+                  "art_group": "snow-bridge-36-ag.go",
+                  "offset": [
+                    0,
+                    18,
+                    0
+                  ],
+                  "extra_art_groups": [
+                    "eichar-ice+0-ag.go"
+                  ],
+                  "code": [
+                    "target-ice.o"
+                  ],
+                  "value": "snow-bridge-36"
+                },
+                {
+                  "id": "vil3-bridge-36",
+                  "label": "Village3 Bridge 36m",
+                  "glb": "levels/village3/vil3-bridge-36-lod0.glb",
+                  "art_group": "vil3-bridge-36-ag.go",
+                  "offset": [
+                    0,
+                    18,
+                    0
+                  ],
+                  "value": "vil3-bridge-36"
+                }
+              ],
               "variant": true,
               "lump": {
                 "key": "art-name",
@@ -9006,11 +8978,11 @@
       "shape": "CUBE"
     },
     {
-      "etype": "ogre-isle-b",
+      "etype": "ogre-isle",
       "schema_export": true,
       "label": "Klaww Platform Isles",
       "category": "Platforms",
-      "parent": "ogre-isle",
+      "parent": "ogre-plat",
       "code": "ogre-obs.o",
       "panels": [
         {
@@ -9020,24 +8992,38 @@
               "key": "og_ogre-isle_variant",
               "label": "Klaww Isles Variant",
               "type": "enum",
-              "default": "ogre-isle-b",
+              "default": "ogre-isle",
               "choices": [
                 {
+                  "id": "ogre-isle",
+                  "value": "ogre-isle",
+                  "etype": "ogre-isle",
+                  "label": "Isle A",
+                  "art_group": "ogre-isle-ag.go",
+                  "glb": "levels/ogre/ogre-isle-a-lod0.glb"
+                },
+                {
+                  "id": "ogre-isle-b",
                   "value": "ogre-isle-b",
-                  "label": "Isle B",
                   "etype": "ogre-isle-b",
+                  "label": "Isle B",
+                  "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-b-lod0.glb"
                 },
                 {
+                  "id": "ogre-isle-c",
                   "value": "ogre-isle-c",
-                  "label": "Isle C",
                   "etype": "ogre-isle-c",
+                  "label": "Isle C",
+                  "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-c-lod0.glb"
                 },
                 {
+                  "id": "ogre-isle-d",
                   "value": "ogre-isle-d",
-                  "label": "Isle D",
                   "etype": "ogre-isle-d",
+                  "label": "Isle D",
+                  "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-d-lod0.glb"
                 }
               ],
@@ -9087,7 +9073,40 @@
               "label": "Klaww Steps Variant",
               "type": "enum",
               "default": "ogre-step-a",
-              "choices": "OgreStepVariants",
+              "choices": [
+                {
+                  "id": "ogre-step-a",
+                  "etype": "ogre-step-a",
+                  "label": "Klaww Step A",
+                  "glb": "levels/ogre/ogre-step-a-lod0.glb",
+                  "art_group": "ogre-step-ag.go",
+                  "value": "ogre-step-a"
+                },
+                {
+                  "id": "ogre-step-b",
+                  "etype": "ogre-step-b",
+                  "label": "Klaww Step B",
+                  "glb": "levels/ogre/ogre-step-b-lod0.glb",
+                  "art_group": "ogre-step-ag.go",
+                  "value": "ogre-step-b"
+                },
+                {
+                  "id": "ogre-step-c",
+                  "etype": "ogre-step-c",
+                  "label": "Klaww Step C",
+                  "glb": "levels/ogre/ogre-step-c-lod0.glb",
+                  "art_group": "ogre-step-ag.go",
+                  "value": "ogre-step-c"
+                },
+                {
+                  "id": "ogre-step-d",
+                  "etype": "ogre-step-d",
+                  "label": "Klaww Step D",
+                  "glb": "levels/ogre/ogre-step-b-lod0.glb",
+                  "art_group": "ogre-step-ag.go",
+                  "value": "ogre-step-d"
+                }
+              ],
               "variant": true,
               "lump": {},
               "write_if": "always"
@@ -9136,10 +9155,157 @@
               "label": "Disc Platform Variant",
               "type": "enum",
               "default": "citb-disc-a",
-              "choices": "CitbDiscVariants",
+              "choices": [
+                {
+                  "id": "citb-disc-a",
+                  "etype": "citb-disc-a",
+                  "label": "Disc Platform A (1 quarter)",
+                  "glb": "levels/citadel/citb-disc-a-lod0.glb",
+                  "art_group": "citb-disc-ag.go",
+                  "value": "citb-disc-a"
+                },
+                {
+                  "id": "citb-disc-b",
+                  "etype": "citb-disc-b",
+                  "label": "Disc Platform B (half)",
+                  "glb": "levels/citadel/citb-disc-b-lod0.glb",
+                  "art_group": "citb-disc-ag.go",
+                  "value": "citb-disc-b"
+                },
+                {
+                  "id": "citb-disc-c",
+                  "etype": "citb-disc-c",
+                  "label": "Disc Platform C (3 quarters)",
+                  "glb": "levels/citadel/citb-disc-c-lod0.glb",
+                  "art_group": "citb-disc-ag.go",
+                  "value": "citb-disc-c"
+                },
+                {
+                  "id": "citb-disc-d",
+                  "etype": "citb-disc-d",
+                  "label": "Disc Platform D (full)",
+                  "glb": "levels/citadel/citb-disc-d-lod0.glb",
+                  "art_group": "citb-disc-ag.go",
+                  "value": "citb-disc-d"
+                }
+              ],
               "variant": true,
               "lump": {},
               "write_if": "always"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-arm",
+      "label": "Citadel Arm",
+      "description": "Rotating arm platform Jak can ride (a = shortest .. d = longest). Spins with its sync timing.",
+      "category": "Platforms",
+      "parent": "citb-arm-section",
+      "schema_export": true,
+      "tpage_group": "Citadel",
+      "code": "citadel-obs.o",
+      "rotation_lock": [
+        "x",
+        "y",
+        "z"
+      ],
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_citb-arm_variant",
+              "label": "Piece",
+              "type": "enum",
+              "default": "citb-arm-a",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "citb-arm-a",
+                  "value": "citb-arm-a",
+                  "etype": "citb-arm-a",
+                  "label": "Citadel Arm A",
+                  "art_group": "citb-arm-ag.go",
+                  "glb": "levels/citadel/citb-arm-a-lod0.glb"
+                },
+                {
+                  "id": "citb-arm-b",
+                  "value": "citb-arm-b",
+                  "etype": "citb-arm-b",
+                  "label": "Citadel Arm B",
+                  "art_group": "citb-arm-ag.go",
+                  "glb": "levels/citadel/citb-arm-b-lod0.glb"
+                },
+                {
+                  "id": "citb-arm-c",
+                  "value": "citb-arm-c",
+                  "etype": "citb-arm-c",
+                  "label": "Citadel Arm C",
+                  "art_group": "citb-arm-ag.go",
+                  "glb": "levels/citadel/citb-arm-c-lod0.glb"
+                },
+                {
+                  "id": "citb-arm-d",
+                  "value": "citb-arm-d",
+                  "etype": "citb-arm-d",
+                  "label": "Citadel Arm D",
+                  "art_group": "citb-arm-ag.go",
+                  "glb": "levels/citadel/citb-arm-d-lod0.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-arm-shoulder",
+      "label": "Citadel Arm Shoulder",
+      "description": "Rotating shoulder piece of the citadel arms (no collision). Spins with its sync timing.",
+      "category": "Visuals",
+      "parent": "citb-arm-section",
+      "schema_export": true,
+      "tpage_group": "Citadel",
+      "code": "citadel-obs.o",
+      "rotation_lock": [
+        "x",
+        "y",
+        "z"
+      ],
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_citb-arm-shoulder_variant",
+              "label": "Piece",
+              "type": "enum",
+              "default": "citb-arm-shoulder-a",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "citb-arm-shoulder-a",
+                  "value": "citb-arm-shoulder-a",
+                  "etype": "citb-arm-shoulder-a",
+                  "label": "Citadel Arm Shoulder A",
+                  "art_group": "citb-arm-shoulder-ag.go",
+                  "glb": "levels/citadel/citb-arm-shoulder-a-lod0.glb"
+                },
+                {
+                  "id": "citb-arm-shoulder-b",
+                  "value": "citb-arm-shoulder-b",
+                  "etype": "citb-arm-shoulder-b",
+                  "label": "Citadel Arm Shoulder B",
+                  "art_group": "citb-arm-shoulder-ag.go",
+                  "glb": "levels/citadel/citb-arm-shoulder-b-lod0.glb"
+                }
+              ]
             }
           ]
         }

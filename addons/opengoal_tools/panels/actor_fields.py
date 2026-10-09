@@ -89,14 +89,13 @@ def _resolve_choices(choices_spec):
         out = []
         for c in choices_spec:
             if isinstance(c, dict):
-                out.append(c)
+                # inline variant lists may key entries by "id"
+                out.append(c if "value" in c else {**c, "value": c.get("id")})
             else:
                 out.append({"value": str(c), "label": str(c)})
         return out
 
     if isinstance(choices_spec, str):
-        if choices_spec == "CrateTypes":
-            return [{"value": t["id"], "label": t["label"]} for t in _db.crate_types()]
         if choices_spec == "CratePickups":
             return [{"value": p["id"], "label": p["label"]} for p in _db.crate_pickups()]
         if choices_spec == "GameTasks":   # already starts with none

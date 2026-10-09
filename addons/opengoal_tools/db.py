@@ -739,7 +739,8 @@ def bank_sfx() -> dict[str, list[str]]:
 
 
 def crate_types() -> list[dict]:
-    return DB["CrateTypes"]
+    """The crate's variant choices (defined on the crate actor)."""
+    return variant_choices("crate")
 
 
 def crate_pickups() -> list[dict]:
