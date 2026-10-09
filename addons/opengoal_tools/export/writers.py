@@ -743,9 +743,12 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     inc_go  = [f'  "{f}"' for f in _incl["gd"] if not f.endswith(".o") and f not in _have]
     if inc_o or inc_go:
         log(f"  [include] .gd: +{len(inc_o) + len(inc_go)} file(s)")
+    # <name>-obs.o links after the actor code: its generated types (e.g. a
+    # custom battlecontroller) need their parent type already loaded.
     files = (
-        [f'  "{name}-obs.o"']
-        + code_o + inc_o
+        code_o
+        + [f'  "{name}-obs.o"']
+        + inc_o
         + level_tpages
         + [f'  "{g}"' for g in ags]
         + extras_lines + inc_go
