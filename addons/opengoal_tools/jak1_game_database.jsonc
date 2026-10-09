@@ -6696,33 +6696,6 @@
       "parent": "eco-collectable",
       "art_group": "money-ag.go",
       "glb": "levels/common/money-lod0.glb",
-      "lumps": [
-        {
-          "key": "movie-mask",
-          "type": "uint32",
-          "description": "Hide-during-cutscene bitmask."
-        }
-      ],
-      "panels": [
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "_eco_info_const",
-              "type": "const",
-              "lump": {
-                "key": "eco-info",
-                "type": "const",
-                "const": [
-                  "eco-info",
-                  "(pickup-type money)",
-                  1
-                ]
-              }
-            }
-          ]
-        }
-      ],
       "shape": "PLAIN_AXES",
       "code": "collectables.o"
     },
@@ -6980,11 +6953,7 @@
       "parent": "baseplat",
       "art_group": "orb-cache-top-ag.go",
       "glb": "levels/beach/orb-cache-top-lod0.glb",
-      "lumps": [
-        {"key": "flags", "type": "uint32", "description": "Behaviour flags (bitfield)."}
-      ],
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -6992,8 +6961,9 @@
               "key": "og_orb_count",
               "label": "Orbs inside",
               "type": "int",
-              "default": 10,
+              "default": 20,
               "min": 1,
+              "max": 60,
               "lump": {
                 "key": "orb-cache-count",
                 "type": "int32"
