@@ -9748,8 +9748,10 @@
     {
       "etype": "swingpole",
       "label": "Swing Pole",
+      "description": "Invisible pole Jak can swing on (the pole itself is level geometry). Turn the empty around Z to aim it; the export adds the 90° X rotation the game needs.",
       "category": "Platforms",
       "parent": "process",
+      "rotation_offset": [90.0, 0.0, 0.0],
       "code": "generic-obs.o",
       "extra_art_groups": ["eichar-pole+0-ag.go"],
       "shape": "PLAIN_AXES"

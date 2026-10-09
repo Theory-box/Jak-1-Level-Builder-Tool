@@ -681,6 +681,18 @@ def actor_color(etype: str) -> tuple:
     return category_color((find_actor(etype) or {}).get("category", ""))
 
 
+def rotation_offset(etype: str):
+    """DB "rotation_offset" [x, y, z] in degrees (the actor's own, else the
+    nearest parent's), or None. Applied on top of the empty's rotation in the
+    actor's local space at export (and to its preview mesh): swingpole needs
+    90° on X because the game reads the pole direction from its local Y."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        v = rec.get("rotation_offset")
+        if v:
+            return tuple(float(x) for x in v)
+    return None
+
+
 def empty_size(etype: str):
     """DB empty display size in meters, or None when unset: the actor's
     "empty_size", else the nearest parent's, else its category's. When set

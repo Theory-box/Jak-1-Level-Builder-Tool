@@ -259,6 +259,12 @@ def collect_actors(scene, depsgraph=None):
         # all non-0/180 angles (same fix already applied to the spawn path).
         _R  = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
         _m3 = o.matrix_world.to_3x3()
+        # DB "rotation_offset" (degrees, the empty's local Blender axes), e.g.
+        # swingpole's 90° on X: the game reads the pole direction from its local Y.
+        _rot_off = _schema_db.rotation_offset(etype)
+        if _rot_off:
+            import math as _math
+            _m3 = _m3 @ mathutils.Euler([_math.radians(a) for a in _rot_off], "XYZ").to_matrix()
         _gq = (_R @ _m3 @ _R.transposed()).to_quaternion()
         aqx = round(_gq.x, 6)
         aqy = round(_gq.y, 6)

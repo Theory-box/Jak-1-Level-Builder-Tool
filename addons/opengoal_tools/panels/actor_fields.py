@@ -340,6 +340,11 @@ class OG_PT_ActorFields(Panel):
         # Include etype on actor_info dict so per-etype defaults work for
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}
+        rot = _db.rotation_offset(etype)
+        if rot:
+            r = self.layout.row(); r.enabled = False
+            r.label(text="Exported with an extra rotation: " + "  ".join(
+                f"{ax} {v:g}°" for ax, v in zip("XYZ", rot) if v), icon="ORIENTATION_GIMBAL")
         if _db.has_panel(etype, "custom-fields"):
             for field in _db.ui_fields(etype):
                 if field.get("show-field") is False:   # DB: hidden but still exported
