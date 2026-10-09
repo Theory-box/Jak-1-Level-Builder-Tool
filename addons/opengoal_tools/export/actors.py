@@ -373,24 +373,12 @@ def collect_actors(scene, depsgraph=None):
         # Behaviours shared across many actors by predicate: idle-distance +
         # vis-dist (enemies), num-lurkers (spawners), notice-dist
         # (needs_notice_dist). Driven by the DB's TraitFields section and applied
-        # to every matching actor, regardless of schema_export.
+        # to every matching actor.
         for _tk, _tv in emit_schema_lumps(
                 _schema_db.prop_getter(o),
                 _schema_db.trait_fields(etype),
                 etype=etype).items():
             lump[_tk] = _tv
-        # Shared panels' fields (sync, water, ... — anything but custom-fields)
-        # export for every actor that has the panel, like traits; schema_export
-        # actors already got them from the schema block below.
-        if not _schema_db.schema_export_enabled(etype):
-            for _pid in _schema_db.actor_panels(etype):
-                if _pid == "custom-fields":
-                    continue
-                for _tk, _tv in emit_schema_lumps(
-                        _schema_db.prop_getter(o),
-                        _schema_db.panel_fields(etype, _pid),
-                        etype=etype).items():
-                    lump[_tk] = _tv
 
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
@@ -453,26 +441,20 @@ def collect_actors(scene, depsgraph=None):
             _protected_keys.add(key)
             log(f"  [lump-row] {o.name}  '{key}' = {value}")
 
-        # ── Schema-driven lumps (migrated actors) ────────────────────────────
-        # If this actor is flagged `schema_export` in the DB, its declared
-        # fields[] drive its value lumps directly from the schema — no per-actor
-        # code path and no gates (e.g. `sync` exports regardless of waypoints).
-        # The schema is AUTHORITATIVE over the legacy hardcoded branches (it
-        # overrides them), but yields to computed entity links and to explicit
-        # user custom lump rows (both in _protected_keys). Actors WITHOUT the
-        # flag are untouched. Schema output was validated equal to the hardcoded
-        # output for every migrated actor, so this only changes behaviour where
-        # the legacy path was buggy (e.g. sync dropped for pathless platforms).
+        # ── Schema-driven lumps (every actor) ────────────────────────────────
+        # The fields of all the actor's panels (its own + its parents') drive
+        # its value lumps directly. Authoritative over the legacy hardcoded
+        # branches above, but yields to computed entity links and to explicit
+        # user custom lump rows (both in _protected_keys).
         _arec = _schema_db.find_actor(etype)
-        if _schema_db.schema_export_enabled(etype):
-            for _lk, _lv in emit_schema_lumps(
-                    _schema_db.prop_getter(o),
-                    _schema_db.inherited_fields(etype),
-                    etype=etype,
-                    choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
-                if _lk not in _protected_keys:
-                    lump[_lk] = _lv
-                    log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
+        for _lk, _lv in emit_schema_lumps(
+                _schema_db.prop_getter(o),
+                _schema_db.inherited_fields(etype),
+                etype=etype,
+                choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
+            if _lk not in _protected_keys:
+                lump[_lk] = _lv
+                log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
 
         # Computed lumps needing object/scene/link context (skipped by emitter).
         for _lk, _lv in _computed_lumps(o, etype).items():

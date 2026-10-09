@@ -392,7 +392,9 @@ def count_filtered(scene) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 def populate_spawn_list(scene) -> None:
     """Fill scene.og_props.spawn_list_items from SPAWN_INDEX. Idempotent —
-    skips work if the collection already matches the index size.
+    skips work if the collection already holds exactly the index's ids (the
+    list is saved in the .blend; same size alone isn't enough when actors
+    were swapped in the DB).
 
     Called:
       - At addon register for the current scene
@@ -402,9 +404,8 @@ def populate_spawn_list(scene) -> None:
     if props is None:
         return
     index = get_spawn_index()
-    if len(props.spawn_list_items) == len(index):
-        # Already populated and current — skip
-        return
+    if [r.spawn_id for r in props.spawn_list_items] == list(index.keys()):
+        return   # already current
     props.spawn_list_items.clear()
     for spawn_id in index.keys():
         row = props.spawn_list_items.add()
