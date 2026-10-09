@@ -4430,6 +4430,12 @@
       ]
     },
     {
+      "id": "movie-pos",
+      "label": "Movie Position",
+      "description": "movie-pos lump (collectables.gc): where a power cell plays its pickup animation, or where the cell from the last scout fly jumps; also read by muse. Cells given by another actor read it from that actor. A list: some actors pick an entry by index (pelican [1], sunken-pipegame [1] [2]). Arrow empties in the Movie Position panel; W = facing angle. Option \"description\": the panel hint.",
+      "fields": []
+    },
+    {
       "id": "fact-options",
       "label": "Options",
       "description": "fact-options bits ('options' lump, engine/game/fact-h.gc). Every option is hidden by default; a parent or actor turns on the ones its code reads with \"show-field\": true, and \"highlight\": true lists it first.",
@@ -4741,6 +4747,7 @@
       "etype": "nav-enemy",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "movie-pos", "description": "Power cell carriers (Options > Has power cell): Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {
           "panel": "nav-mesh",
           "show-panel": true
@@ -4800,6 +4807,7 @@
     },
     {
       "etype": "process-taskable",
+      "panels": [{"panel": "movie-pos", "description": "NPCs: Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."}],
       "parent": "process-drawable",
       "description": "Game type (deftype process-taskable (process-drawable)) in engine\\game\\task\\task-control-h.gc. Parent record only, not spawnable."
     },
@@ -5188,6 +5196,7 @@
       "category": "Interactive Objects",
       "parent": "nav-enemy",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the muse catch cutscene plays (arrow = facing). Not set: at Jak."},
         {"panel": "visibility", "export": false},
         {"panel": "activation", "export": false}
       ],
@@ -5338,6 +5347,7 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true},
         {"panel": "activation"},
         {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
@@ -5361,6 +5371,7 @@
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "sync",
@@ -5527,6 +5538,7 @@
       "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
@@ -5651,6 +5663,7 @@
         {"key": "trans-offset", "type": "float", "description": "Position offset from base trans: 'dx dy dz' internal units."}
       ],
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
@@ -5831,6 +5844,7 @@
         {"key": "extra-radius", "type": "float", "description": "Collision/activation radius override."}
       ],
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -5903,6 +5917,7 @@
       "code": ["snow-ram-h.o", "snow-ram-boss.o", "snow-ram.o"],
       "glb": "levels/snow/ram-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
@@ -6106,6 +6121,7 @@
       "code": "ogreboss.o",
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -6188,6 +6204,7 @@
         }
       ],
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
@@ -6246,6 +6263,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "nav-mesh"}
       ],
       "art_group": "yakow-ag.go",
@@ -6267,6 +6285,7 @@
     },
     {
       "etype": "flutflut",
+      "panels": [{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."}],
       "label": "Flut Flut",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -6390,6 +6409,7 @@
       "category": "NPCs",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "movie-pos", "description": "[0] the cell in the nest, [1] the cell it drops when hit (arrow = facing)."},
         {"panel": "path", "required": true}
       ],
       "art_group": "pelican-ag.go",
@@ -6418,6 +6438,7 @@
       "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true},
         {
           "panel": "custom-fields",
@@ -6500,6 +6521,7 @@
         }
       ],
       "panels": [
+        {"panel": "movie-pos", "description": "Where this cell plays its pickup animation (arrow = facing). Not set: where Jak stands."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -6569,6 +6591,7 @@
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell jumps to (and plays its animation) when this is the last scout fly collected."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -6625,6 +6648,7 @@
       "art_group": "crate-ag.go",
       "glb": "levels/common/crate-wood-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Only when it holds a power cell or scout fly: where the cell plays its animation / where a fly's cell jumps."},
         {"panel": "crate"},
         {
           "panel": "custom-fields",
@@ -8588,6 +8612,7 @@
       "code": "swamp-rat-nest.o",
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {"panel": "path", "required": true, "linear-only": true},
         {
           "panel": "custom-fields",
@@ -8806,6 +8831,7 @@
     },
     {
       "etype": "ecoventrock",
+      "panels": [{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."}],
       "label": "Eco Vent (Rock)",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -9976,6 +10002,7 @@
     },
     {
       "etype": "eggtop",
+      "panels": [{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."}],
       "schema_export": true,
       "label": "Egg Top Button (Jungleb)",
       "category": "Buttons and Doors",
@@ -10725,6 +10752,7 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (arrow = facing). Not set: at Jak."},
         {
           "panel": "actor-link",
           "slots": [

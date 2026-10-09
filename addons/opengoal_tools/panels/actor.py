@@ -199,6 +199,59 @@ class OG_PT_ActorNavMesh(Panel):
 
 
 
+class OG_PT_ActorMoviePos(Panel):
+    """DB "movie-pos" panel: where a power cell plays its pickup animation
+    (cells; actors that give one), or where the cell jumps (last scout fly)."""
+    bl_label       = "Movie Position"
+    bl_idname      = "OG_PT_actor_movie_pos"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "movie-pos")
+
+    def draw(self, ctx):
+        from .selected import _draw_link_search
+        layout = self.layout
+        sel    = ctx.active_object
+        etype  = sel.name.split("_", 2)[1]
+        note = _db.panel_option(etype, "movie-pos", "description",
+                                "Where the power cell plays its pickup animation (arrow = facing).")
+        hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
+        hint.label(text=note, icon="INFO")
+        ents = list(sel.og_movie_pos)
+        for i, s in enumerate(ents):
+            row = layout.row(align=True)
+            if s.obj is None or s.obj.name not in ctx.scene.objects:
+                row.alert = True
+                row.label(text=f"[{i}] missing", icon="ERROR")
+            else:
+                row.label(text=f"[{i}] {s.obj.name}", icon="EMPTY_SINGLE_ARROW")
+                op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = s.obj.name
+            op = row.operator("og.movie_pos_remove", text="", icon="X")
+            op.actor_name = sel.name; op.index = i
+        if not ents:
+            r = layout.row(); r.enabled = False
+            r.label(text="Not set — the game uses its default spot", icon="DOT")
+        # same pattern as the other links: selected, search, then spawn
+        have = {s.obj.name for s in ents if s.obj}
+        for e in [o for o in ctx.selected_objects if o.type == "EMPTY" and o is not sel
+                  and not o.name.startswith("ACTOR_") and "_wp_" not in o.name and o.name not in have][:6]:
+            op = layout.row().operator("og.movie_pos_link", text=f"Link → {e.name}", icon="LINKED")
+            op.actor_name = sel.name; op.target_name = e.name
+        _draw_link_search(layout, "Search empty…", "og.movie_pos_link", actor_name=sel.name)
+        row = layout.row(align=True)
+        op = row.operator("og.movie_pos_add", text="Add Position", icon="PLUS"); op.actor_name = sel.name
+        row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+
+
 class OG_PT_ActorLinks(Panel):
     """Entity link slots — actor-to-actor references exported as alt-actor / water-actor etc."""
     bl_label       = "Entity Links"
@@ -1266,6 +1319,7 @@ _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_waypoints",       # Path
     "OG_PT_actor_navmesh",
     "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
+    "OG_PT_actor_movie_pos",       # Movie Position (power cell)
     "OG_PT_actor_fact_options",    # Options
     "OG_PT_actor_links",           # Entity Links
     "OG_PT_actor_visibility",
@@ -1283,6 +1337,7 @@ def _actor_panel_rank(cls) -> int:
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
     OG_PT_ActorNavBehaviour,
+    OG_PT_ActorMoviePos,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,
     OG_PT_ActorPlatform,

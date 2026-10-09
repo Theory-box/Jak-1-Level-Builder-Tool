@@ -324,6 +324,8 @@ def lump_reference(etype: str) -> list[dict]:
             add("scale", "float", "Scale panel: the empty's scale" + off, psrc)
         elif pid == "fact-options":
             add("options", "enum-uint32", "Options panel: fact-options bits" + off, psrc)
+        elif pid == "movie-pos":
+            add("movie-pos", "movie-pos", "Movie Position panel: 'x y z angle' per position" + off, psrc)
         for f in p["fields"]:
             lp = f.get("lump") if isinstance(f.get("lump"), dict) else f.get("lump_bit")
             if isinstance(lp, dict) and lp.get("key"):
@@ -1052,7 +1054,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist", "fact-options", "scale")
+                  "spawner", "notice-dist", "fact-options", "scale", "movie-pos")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:

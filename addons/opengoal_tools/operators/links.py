@@ -192,6 +192,112 @@ class OG_OT_LinkNavMeshTo(Operator):
         self.report({"INFO"}, f"Linked {actor.name} to {nm.name}")
         return {"FINISHED"}
 
+# ─── Movie Position (movie-pos) ─────────────────────────────────────────────
+def _is_movie_pos_candidate(o):
+    """Empties that can be a movie position: any non-actor, non-waypoint empty."""
+    return (o.type == "EMPTY" and not o.name.startswith("ACTOR_")
+            and "_wp_" not in o.name and "_wpb_" not in o.name)
+
+
+def _movie_pos_items(self, ctx):
+    scene = ctx.scene if ctx else bpy.context.scene
+    actor = scene.objects.get(self.actor_name)
+    have = {s.obj.name for s in getattr(actor, "og_movie_pos", []) if s.obj} if actor else set()
+    cands = sorted((o for o in scene.objects if _is_movie_pos_candidate(o)),
+                   key=lambda o: (not o.name.startswith("MOVIEPOS_"), o.name))
+    items = [(o.name, o.name + ("  (linked)" if o.name in have else ""), f"Use {o.name} as a movie position",
+              "EMPTY_SINGLE_ARROW", i) for i, o in enumerate(cands)]
+    if not items:
+        items = [("__none__", "(no empties in scene)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_MoviePosAdd(Operator):
+    """Spawn an arrow empty as this actor's next movie position (at the 3D
+    cursor, or at the actor with At Actor Position on). The arrow's direction
+    (its Z rotation) is the facing angle"""
+    bl_idname  = "og.movie_pos_add"
+    bl_label   = "Add Position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        import math
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None:
+            self.report({"ERROR"}, "Actor not found"); return {"CANCELLED"}
+        base = "MOVIEPOS_" + (actor.name[len("ACTOR_"):] if actor.name.startswith("ACTOR_") else actor.name)
+        n = 0
+        while bpy.data.objects.get(f"{base}_{n:02d}"):
+            n += 1
+        at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
+        e = bpy.data.objects.new(f"{base}_{n:02d}", None)
+        e.empty_display_type = "SINGLE_ARROW"
+        e.empty_display_size = 1.5
+        e.location = actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
+        # arrow lies flat (points along -Y = the game's forward at angle 0);
+        # turning it around Z sets the angle
+        yaw = actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0
+        e.rotation_euler = (math.radians(90.0), 0.0, yaw)
+        e.color = (1.0, 0.85, 0.1, 1.0)
+        e["og_movie_pos_for"] = actor.name
+        ctx.scene.collection.objects.link(e)
+        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        actor.og_movie_pos.add().obj = e
+        self.report({"INFO"}, f"Added movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_MoviePosLink(Operator):
+    """Use an existing empty as a movie position: the shift-selected one, or
+    one searched by name"""
+    bl_idname   = "og.movie_pos_link"
+    bl_label    = "Link Movie Position"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+
+    actor_name:  bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"},
+                                          description="Link this empty directly instead of searching")
+    pick:        bpy.props.EnumProperty(name="Empty", items=_movie_pos_items)
+
+    def invoke(self, ctx, event):
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        e = ctx.scene.objects.get(self.target_name or self.pick)
+        if actor is None or e is None or not _is_movie_pos_candidate(e):
+            self.report({"ERROR"}, "Actor or empty not found"); return {"CANCELLED"}
+        if any(s.obj is e for s in actor.og_movie_pos):
+            self.report({"INFO"}, f"{e.name} is already linked"); return {"CANCELLED"}
+        actor.og_movie_pos.add().obj = e
+        self.report({"INFO"}, f"Linked movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_MoviePosRemove(Operator):
+    """Remove this movie position from the list (the empty stays in the scene)"""
+    bl_idname  = "og.movie_pos_remove"
+    bl_label   = "Remove Movie Position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    index:      bpy.props.IntProperty()
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None or not (0 <= self.index < len(actor.og_movie_pos)):
+            return {"CANCELLED"}
+        actor.og_movie_pos.remove(self.index)
+        return {"FINISHED"}
+
+
 class OG_OT_UnlinkNavMesh(Operator):
     """Remove navmesh link from selected enemy actors.
     Also renames the mesh (strips NAVMESH_ prefix) and moves it to Geometry/Solid."""
@@ -989,6 +1095,9 @@ CLASSES = (
     OG_OT_LinkNavMesh,
     OG_OT_LinkNavMeshTo,
     OG_OT_VolLinkSearch,
+    OG_OT_MoviePosAdd,
+    OG_OT_MoviePosLink,
+    OG_OT_MoviePosRemove,
     OG_OT_UnlinkNavMesh,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,

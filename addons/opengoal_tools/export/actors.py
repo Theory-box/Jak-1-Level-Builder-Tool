@@ -153,6 +153,17 @@ def _collect_waypoint_points(actor_obj):
     return points
 
 
+def movie_pos_vector(e):
+    """[x, y, z, angle_deg] for a movie-pos empty: game-space position in
+    meters and the facing angle from the arrow's direction (the empty's
+    local +Z; flat along -Y = angle 0, the game's forward)."""
+    import math
+    t = e.matrix_world.translation
+    f = e.matrix_world.to_3x3() @ mathutils.Vector((0.0, 0.0, 1.0))
+    yaw = math.degrees(math.atan2(f.x, -f.y)) if (abs(f.x) + abs(f.y)) > 1e-6 else 0.0
+    return [round(t.x, 4), round(t.z, 4), round(-t.y, 4), round(yaw, 3)]
+
+
 def _computed_lumps(o, etype):
     """Lumps computed from Blender object/scene/link state that the pure schema
     emitter can't produce. Declared in the DB, so any actor can opt in by adding
@@ -397,6 +408,13 @@ def collect_actors(scene, depsgraph=None):
             if _volm:
                 _xn, _xx, _yn, _yx, _zn, _zx, _cx, _cy, _cz, _rad = _vol_aabb(_volm)
                 bsph_r = round((((_xx-_xn)/2)**2 + ((_yx-_yn)/2)**2 + ((_zx-_zn)/2)**2) ** 0.5 + 5.0, 2)
+
+        # ── Movie Position panel: 'movie-pos' (one vector per position, in order) ─
+        if _schema_db.panel_exports(etype, "movie-pos"):
+            _mp_list = [s.obj for s in getattr(o, "og_movie_pos", []) if s.obj and s.obj.name in bpy.data.objects]
+            if _mp_list:
+                lump["movie-pos"] = ["movie-pos"] + [movie_pos_vector(e) for e in _mp_list]
+                log(f"  [movie-pos] {o.name}  {len(_mp_list)} position(s)")
 
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
