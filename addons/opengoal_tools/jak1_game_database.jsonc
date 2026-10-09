@@ -6702,7 +6702,7 @@
     {
       "etype": "buzzer",
       "label": "Scout Fly",
-      "category": "Pickups",
+      "category": "Hidden",
       "parent": "eco-collectable",
       "art_group": "buzzer-ag.go",
       "glb": "levels/common/buzzer-lod0.glb",
