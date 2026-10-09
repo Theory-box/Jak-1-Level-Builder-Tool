@@ -163,6 +163,72 @@ class OG_PT_ActorNavMesh(Panel):
 
 
 
+class OG_PT_ActorBattlecontroller(Panel):
+    """Battlecontroller (ambush): intro camera variant + its options."""
+    bl_label       = "Battle Controller"
+    bl_idname      = "OG_PT_actor_battlecontroller"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "battlecontroller")
+
+    def draw(self, ctx):
+        from .actor_fields import _draw_enum_field, _prop_row
+        from ..export import battlecontroller as _bc
+        layout = self.layout
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        box = layout.box()
+        box.label(text="Intro camera", icon="CAMERA_DATA")
+        vf = _db.variant_field(etype)
+        if vf:
+            _draw_enum_field(box, sel, vf)
+        var = _bc.variant(sel)
+        if var.get("custom_camera"):
+            ag, anim = _bc.camera(sel)
+            row = box.row(align=True)
+            row.label(text="Camera:")
+            row.operator("og.bc_pick_camera", text=("Custom…" if sel.get("og_bc_cam") == "custom" else (ag or "Pick…")), icon="VIEWZOOM")
+            if sel.get("og_bc_cam") == "custom":
+                _prop_row(box, sel, "og_bc_cam_custom", "  Art group:", "")
+            row = box.row(align=True)
+            row.label(text="Animation:")
+            row.operator("og.bc_pick_anim", text=("Custom…" if sel.get("og_bc_anim") == "custom" else (anim or "Pick…")), icon="VIEWZOOM")
+            if sel.get("og_bc_anim") == "custom":
+                _prop_row(box, sel, "og_bc_anim_custom", "  Animation:", "")
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Plays at the controller when the ambush starts", icon="INFO")
+            if not (ag and anim):
+                w = box.row(); w.alert = True
+                w.label(text="Pick a camera and an animation", icon="ERROR")
+        elif var.get("needs_citadel_camera"):
+            cam = _bc.citadel_camera_object(sel)
+            row = box.row(align=True)
+            if cam:
+                row.label(text=f"Camera position: {cam.name}", icon="MESH_CONE")
+                op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = cam.name
+            else:
+                row.alert = True
+                row.label(text=f"Needs a camera position ({_bc.CITADEL_CAM_NAME})", icon="ERROR")
+            for e in [o for o in ctx.selected_objects if o.type == "EMPTY" and o is not sel
+                      and not o.name.startswith("ACTOR_") and o is not cam][:4]:
+                op = box.row().operator("og.bc_campos_link", text=f"Link → {e.name}", icon="LINKED")
+                op.actor_name = sel.name; op.target_name = e.name
+            row = box.row(align=True)
+            op = row.operator("og.bc_campos_add", text="Add Camera Position", icon="PLUS"); op.actor_name = sel.name
+            row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Exported as the entity 'citadelcam-1' (one per level)", icon="INFO")
+
+
 class OG_PT_ActorGameTask(Panel):
     """DB "game-task" panel: the actor's game task (the .jsonc "game_task";
     cells / scout flies also write it into their eco-info) + fly number."""
@@ -1328,6 +1394,7 @@ def _actor_panel_rank(cls) -> int:
 
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
+    OG_PT_ActorBattlecontroller,
     OG_PT_ActorNavBehaviour,
     OG_PT_ActorGameTask,
     OG_PT_ActorMoviePos,

@@ -4243,6 +4243,12 @@
       ]
     },
     {
+      "id": "battlecontroller",
+      "label": "Battle Controller",
+      "description": "battlecontroller.gc settings: intro camera (variant), lurkers, spawning, pickups, linked actors. Drawn by the Battle Controller panel.",
+      "fields": []
+    },
+    {
       "id": "game-task",
       "label": "Game Task",
       "description": "The actor's game task (the .jsonc actor \"game_task\"; engine: entity perm task — saved state, the cell it gives). Option \"eco-info\": \"cell-info\" / \"buzzer-info\" / \"pickup\" (crates: by contents) writes the task into eco-info. Option \"description\": the panel hint.",
@@ -4829,6 +4835,187 @@
       "tpage_group": "Beach",
       "code": "babak.o",
       "glb": "levels/beach/babak-lod0.glb"
+    },
+    {
+      "etype": "battlecontroller",
+      "label": "Battle Controller (Ambush)",
+      "description": "Lurker ambush: when Jak comes within 30 m it spawns lurkers along its spawn paths until enough have been beaten. Variant = the intro camera.",
+      "category": "Enemies",
+      "parent": "process-drawable",
+      "code": "battlecontroller.o",
+      "shape": "CUBE",
+      "empty_size": 2.0,
+      "panels": [
+        {
+          "panel": "battlecontroller"
+        },
+        {
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_bc_variant",
+              "label": "Intro camera",
+              "type": "enum",
+              "default": "basic",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "basic",
+                  "value": "basic",
+                  "label": "Basic (no intro camera)",
+                  "etype": "battlecontroller"
+                },
+                {
+                  "id": "misty",
+                  "value": "misty",
+                  "label": "Misty ambush camera",
+                  "etype": "misty-battlecontroller",
+                  "code": [
+                    "misty-obs.o"
+                  ],
+                  "art_group": "mistycam-ag.go"
+                },
+                {
+                  "id": "swamp",
+                  "value": "swamp",
+                  "label": "Swamp ambush camera",
+                  "etype": "swamp-battlecontroller",
+                  "code": [
+                    "swamp-obs.o"
+                  ],
+                  "art_group": "swampcam-ag.go"
+                },
+                {
+                  "id": "citadel",
+                  "value": "citadel",
+                  "label": "Citadel ambush camera",
+                  "etype": "citb-battlecontroller",
+                  "code": [
+                    "citadel-obs.o"
+                  ],
+                  "art_group": "citadelcam-ag.go",
+                  "needs_citadel_camera": true
+                },
+                {
+                  "id": "custom",
+                  "value": "custom",
+                  "label": "Custom camera",
+                  "etype": "battlecontroller",
+                  "custom_camera": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "camera_anims": {
+        "beachcam": [
+          "anim",
+          "ecoventrock-3",
+          "ecoventrock-4",
+          "ecoventrock-5",
+          "ecoventrock-6",
+          "ecoventrock-7"
+        ],
+        "citadelcam": [
+          "citadel-bunnies",
+          "idle",
+          "stair-plats"
+        ],
+        "deathcam": [
+          "idle"
+        ],
+        "finalbosscam": [
+          "idle"
+        ],
+        "junglecam": [
+          "beamcam",
+          "precurbridgecam",
+          "tower1",
+          "tower2",
+          "tower3",
+          "tower4",
+          "tower5"
+        ],
+        "logo-cam": [
+          "idle",
+          "logo-intro-2-pre",
+          "logo-loop-pre"
+        ],
+        "maincavecam": [
+          "dummy"
+        ],
+        "mistycam": [
+          "anim",
+          "balloon-fuel-cell",
+          "cannon-fuel-cell",
+          "lurkerattack"
+        ],
+        "ndi-cam": [
+          "idle"
+        ],
+        "rollingcam": [
+          "anim"
+        ],
+        "snowcam": [
+          "ecovent-activating",
+          "eggtop-activating",
+          "gate",
+          "gearend",
+          "gearstart"
+        ],
+        "sunkencam": [
+          "dive-end",
+          "dive-middle",
+          "dive-start",
+          "end-out-of-water",
+          "exit-chamber-door-open",
+          "helix-door-shuts",
+          "helix-hit-switch",
+          "helix-show-rising-water",
+          "middle-in-water",
+          "pipegame-left",
+          "pipegame-middle",
+          "pipegame-right",
+          "qbert-show-door-close",
+          "qbert-show-door-open",
+          "square-platform-setup1-rise1",
+          "square-platform-setup1-rise2",
+          "square-platform-setup2-rise1",
+          "square-platform-setup2-rise2",
+          "start-door-shut",
+          "start-in-room"
+        ],
+        "swampcam": [
+          "anim",
+          "swamp-ambush"
+        ],
+        "trainingcam": [
+          "ecocam",
+          "ecoventcam",
+          "fuelcellcam",
+          "greenecocam",
+          "orbcam",
+          "precursordoorcam"
+        ],
+        "village-cam": [
+          "firecanyon-alt-cam",
+          "firecanyon-cam",
+          "vi2-button-cam",
+          "vi3-button-cam"
+        ],
+        "village1cam": [
+          "anim"
+        ],
+        "village2cam": [
+          "elevator-at-bottom-going-up",
+          "elevator-at-top-going-down",
+          "elevator-at-top-going-up"
+        ]
+      }
     },
     {
       "etype": "babak-with-cannon",

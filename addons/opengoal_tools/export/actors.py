@@ -229,6 +229,7 @@ def collect_actors(scene, depsgraph=None):
     real navmesh (future work).
     """
     out = []
+    _extra_actors = []   # entities generated for an actor (citadel BC camera position)
     level_objs = _level_objects(scene)
     # Shared volume system: VOL_ meshes link to target actors; any need_vol actor
     # gets its convex `vol` (via _vol_planes) from the VOL_ linked to it — same
@@ -527,9 +528,33 @@ def collect_actors(scene, depsgraph=None):
             if _sc:
                 lump["scale"] = _sc
                 log(f"  [scale] {o.name}  {_sc[1:4]}")
+        # Battlecontroller camera variants (export/battlecontroller.py)
+        _out_etype = _variant.get("etype") or etype
+        _out_ag = _variant.get("art_group")
+        _bc_campos = None
+        if etype == "battlecontroller":
+            from . import battlecontroller as _bc
+            if _bc.is_custom(o):
+                _out_etype = _bc.custom_type_base(o)        # write_jsonc adds the level prefix
+                _cag, _canim = _bc.camera(o)
+                _out_ag = f"{_cag}-ag.go" if _cag else None
+                if not (_cag and _canim):
+                    log(f"  [WARNING] {o.name}: custom camera needs a camera art group and animation")
+            elif _variant.get("needs_citadel_camera"):
+                _cam = _bc.citadel_camera_object(o)
+                if _cam is None:
+                    log(f"  [WARNING] {o.name}: the citadel camera variant needs a camera position "
+                        f"('{_bc.CITADEL_CAM_NAME}') — the game crashes without it")
+                else:
+                    _ct = _cam.matrix_world.translation
+                    _cx, _cy, _cz = round(_ct.x, 4), round(_ct.z, 4), round(-_ct.y, 4)
+                    _bc_campos = {"trans": [_cx, _cy, _cz], "etype": "process-hidden",
+                                  "game_task": "(game-task none)", "quat": [0.0, 0.0, 0.0, 1.0], "vis_id": 0,
+                                  "bsphere": [_cx, _cy, _cz, 10.0], "lump": {"name": _bc.CITADEL_CAM_NAME},
+                                  "_db_etype": "process-hidden"}
         out.append({
             "trans":     [gx, gy, gz],
-            "etype":     _variant.get("etype") or etype,
+            "etype":     _out_etype,
             "game_task": _gt_task or "(game-task none)",
             "quat":      [aqx, aqy, aqz, aqw],
             "vis_id":    0,
@@ -537,10 +562,14 @@ def collect_actors(scene, depsgraph=None):
             "lump":      lump,
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
-            "art_group": _variant.get("art_group"),   # None -> fall back to ETYPE_AG
+            "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
         })
+        if _bc_campos is not None:
+            _extra_actors.append(_bc_campos)   # after all actors: AIDs follow the canonical order
+
+    out += _extra_actors
 
     # ── Checkpoint trigger actors ─────────────────────────────────────────────
     # CHECKPOINT_ empties export as two things:

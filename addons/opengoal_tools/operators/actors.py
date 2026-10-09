@@ -166,6 +166,115 @@ class OG_OT_LinkActorSearch(Operator):
                                          append=self.append)
 
 
+# ─── Battlecontroller: intro camera picks + citadel camera position ─────────
+_BC_ITEMS: list = []   # search-popup items must stay referenced
+
+
+def _bc_camera_items(self, ctx):
+    from ..export.battlecontroller import camera_anims
+    items = [("custom", "Custom…", "Type a camera art group name")]
+    items += [(ag, f"{ag}  ({len(an)} animations)", ag) for ag, an in sorted(camera_anims().items())]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    return _BC_ITEMS
+
+
+def _bc_anim_items(self, ctx):
+    from ..export.battlecontroller import camera_anims
+    o = ctx.active_object if ctx else None
+    ag = str(o.get("og_bc_cam", "") or "") if o else ""
+    items = [("custom", "Custom…", "Type an animation name")]
+    items += [(a, a, f"{ag}-{a}") for a in camera_anims().get(ag, [])]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    return _BC_ITEMS
+
+
+class OG_OT_BCPickCamera(Operator):
+    """Pick the camera art group the intro plays (search by name), or Custom to type one"""
+    bl_idname   = "og.bc_pick_camera"
+    bl_label    = "Pick Camera"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Camera", items=_bc_camera_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        from ..export.battlecontroller import camera_anims
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        o["og_bc_cam"] = self.pick
+        anims = camera_anims().get(self.pick, [])
+        if o.get("og_bc_anim", "") not in anims + ["custom"]:
+            o["og_bc_anim"] = anims[-1] if anims else "custom"
+        return {"FINISHED"}
+
+
+class OG_OT_BCPickAnim(Operator):
+    """Pick the camera animation (search by name), or Custom to type one"""
+    bl_idname   = "og.bc_pick_anim"
+    bl_label    = "Pick Camera Animation"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Animation", items=_bc_anim_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        o["og_bc_anim"] = self.pick
+        return {"FINISHED"}
+
+
+class OG_OT_BCCamposAdd(Operator):
+    """Spawn the camera-position empty the citadel camera plays from (at the
+    3D cursor, or at the controller with At Actor Position on)"""
+    bl_idname  = "og.bc_campos_add"
+    bl_label   = "Add Camera Position"
+    bl_options = {"REGISTER", "UNDO"}
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        from ..collections import _link_object_to_sub_collection, _COL_PATH_WAYPOINTS
+        base = "CAMPOS_" + actor.name[len("ACTOR_"):]
+        name, n = base, 1
+        while bpy.data.objects.get(name):
+            name = f"{base}_{n}"; n += 1
+        e = bpy.data.objects.new(name, None)
+        e.empty_display_type = "CONE"; e.empty_display_size = 1.0
+        e.location = actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor \
+            else ctx.scene.cursor.location.copy()
+        ctx.scene.collection.objects.link(e)
+        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        actor["og_bc_campos"] = e.name
+        return {"FINISHED"}
+
+
+class OG_OT_BCCamposLink(Operator):
+    """Use this empty as the citadel camera position"""
+    bl_idname  = "og.bc_campos_link"
+    bl_label   = "Link Camera Position"
+    bl_options = {"REGISTER", "UNDO"}
+    actor_name:  bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None or self.target_name not in ctx.scene.objects:
+            return {"CANCELLED"}
+        actor["og_bc_campos"] = self.target_name
+        return {"FINISHED"}
+
+
 def _natural_key(name):
     """Outliner-style order: 'plat_2' before 'plat_10'."""
     import re as _re
@@ -471,6 +580,10 @@ class OG_OT_SetVersionField(bpy.types.Operator):
 CLASSES = (
     OG_OT_SetActorLink,
     OG_OT_LinkActorSearch,
+    OG_OT_BCPickCamera,
+    OG_OT_BCPickAnim,
+    OG_OT_BCCamposAdd,
+    OG_OT_BCCamposLink,
     OG_OT_LinkAddSelected,
     OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,
