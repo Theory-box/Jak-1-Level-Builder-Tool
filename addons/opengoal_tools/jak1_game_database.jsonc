@@ -4822,7 +4822,6 @@
       "label": "Babak (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "schema_export": true,
       "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The babak is a type of lurker in The Precursor Legacy, Daxter, and Jak II. They are introduced as enemies, being the most common foot soldiers in Gol Acheron and Maia's army.",
       "art_group": "babak-ag.go",
@@ -4868,7 +4867,6 @@
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "schema_export": true,
       "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "A type of lurker encountered in the Forbidden Jungle during The Precursor Legacy. They are agile, jumping lurkers that patrol the jungle floor.",
       "art_group": "hopper-ag.go",
@@ -4912,7 +4910,6 @@
     {
       "etype": "snow-bunny",
       "label": "Snow Bunny Lurker",
-      "schema_export": true,
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "The snow bunny is an enemy in The Precursor Legacy, encountered at Snowy Mountain and Gol and Maia's citadel. Small but aggressive cold-weather lurkers.",
@@ -4973,7 +4970,6 @@
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "schema_export": true,
       "panels": [{"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]}],
       "description": "The bone armor lurker is an enemy in The Precursor Legacy, only seen on Misty Island. It confronted Jak and Daxter in the opening cutscene, causing Daxter's transformation into an ottsel.",
       "art_group": "bonelurker-ag.go",
@@ -5082,7 +5078,6 @@
     },
     {
       "etype": "swamp-bat",
-      "schema_export": true,
       "label": "Swamp Bat",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -5112,7 +5107,6 @@
     },
     {
       "etype": "yeti",
-      "schema_export": true,
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -5134,7 +5128,6 @@
     },
     {
       "etype": "bully",
-      "schema_export": true,
       "label": "Bully",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -5153,7 +5146,6 @@
     },
     {
       "etype": "puffer",
-      "schema_export": true,
       "label": "Puffer",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -5321,7 +5313,6 @@
     {
       "etype": "mother-spider",
       "label": "Mother Spider",
-      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
@@ -5443,7 +5434,6 @@
     {
       "etype": "gnawer",
       "label": "Gnawer",
-      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The gnawing lurker is a species of lurker encountered at Spider Cave. Found throughout the cave gnawing on wooden support beams — Jak must eliminate them before they bring the cave down.",
@@ -5565,7 +5555,6 @@
     {
       "etype": "driller-lurker",
       "label": "Driller Lurker",
-      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The driller lurker is an enemy in The Precursor Legacy that mines cave rock with its drill. Found in Spider Cave, drilling away at the Precursor robot excavation site.",
@@ -5624,7 +5613,6 @@
     },
     {
       "etype": "dark-crystal",
-      "schema_export": true,
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5703,7 +5691,6 @@
     {
       "etype": "ram",
       "label": "Ram",
-      "schema_export": true,
       "category": "Enemies",
       "parent": "process-drawable",
       "art_group": ["ram-ag.go", "ram-boss-ag.go"],
@@ -5794,7 +5781,6 @@
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
-      "schema_export": true,
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
         {"panel": "path", "required": true},
@@ -5984,7 +5970,6 @@
     },
     {
       "etype": "plant-boss",
-      "schema_export": true,
       "label": "Plant Boss",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -6231,7 +6216,6 @@
     },
     {
       "etype": "robber",
-      "schema_export": true,
       "label": "Robber (Lurker)",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6310,7 +6294,6 @@
     },
     {
       "etype": "fuel-cell",
-      "schema_export": true,
       "label": "Power Cell",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -6333,7 +6316,6 @@
     },
     {
       "etype": "money",
-      "schema_export": true,
       "label": "Orb (Precursor)",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -6371,7 +6353,6 @@
     },
     {
       "etype": "buzzer",
-      "schema_export": true,
       "label": "Scout Fly",
       "category": "Pickups",
       "parent": "eco-collectable",
@@ -6390,7 +6371,6 @@
       "parent": "crate",
       "empty_size": 1.5,
       "code": "crates.o",
-      "schema_export": true,
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_crate_pickup", "default": "eco-blue"}], "show-panel": true},
         {"panel": "crate", "export": false},
@@ -6411,7 +6391,6 @@
     },
     {
       "etype": "crate",
-      "schema_export": true,
       "label": "Crate",
       "category": "Pickups",
       "parent": "process-drawable",
@@ -6585,7 +6564,6 @@
     },
     {
       "etype": "orb-cache-top",
-      "schema_export": true,
       "label": "Orb Cache",
       "category": "Pickups",
       "parent": "baseplat",
@@ -6642,7 +6620,6 @@
       "category": "Pickups",
       "parent": "vent",
       "code": "collectables.o",
-      "schema_export": true,
       "panels": [
         {
           "panel": "custom-fields",
@@ -6676,7 +6653,6 @@
     {
       "etype": "plat",
       "label": "Floating Platform",
-      "schema_export": true,
       "panels": [
         {"panel": "path", "min-points": 2},
         {"panel": "sync"},
@@ -6695,7 +6671,6 @@
     {
       "etype": "plat-eco",
       "label": "Eco Platform",
-      "schema_export": true,
       "panels": [
         {"panel": "notice-dist", "fields": [{"key": "og_notice_dist", "write_if": "always"}]}
       ],
@@ -6712,7 +6687,6 @@
     {
       "etype": "citb-plat",
       "label": "Floating Platform (Citadel)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "plat",
       "art_group": "plat-citb-ag.go",
@@ -6729,7 +6703,6 @@
     {
       "etype": "citb-rotatebox",
       "label": "Rotate Box (Citadel)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "citb-base-plat",
       "art_group": "citb-rotatebox-ag.go",
@@ -6740,7 +6713,6 @@
     {
       "etype": "citb-donut",
       "label": "Spinning Donut (Citadel)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "citb-base-plat",
       "art_group": "citb-donut-ag.go",
@@ -6751,7 +6723,6 @@
     {
       "etype": "citb-chain-plat",
       "label": "Chain Platforms (Citadel)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "citb-chain-plat-ag.go",
@@ -6781,7 +6752,6 @@
     {
       "etype": "silodoor",
       "label": "Silo Door (Final Boss)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "silodoor-ag.go",
@@ -6791,7 +6761,6 @@
     {
       "etype": "citb-stopbox",
       "label": "Stop Box (Citadel)",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "plat",
       "art_group": "citb-stopbox-ag.go",
@@ -6912,7 +6881,6 @@
     {
       "etype": "flutflut-plat",
       "label": "Snowy Platform (Flut Flut)",
-      "schema_export": true,
       "panels": [
         {
           "panel": "actor-link",
@@ -7110,7 +7078,6 @@
     },
     {
       "etype": "plat-flip",
-      "schema_export": true,
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7168,7 +7135,6 @@
     },
     {
       "etype": "wall-plat",
-      "schema_export": true,
       "label": "Wall Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7231,7 +7197,6 @@
     {
       "etype": "side-to-side-plat",
       "label": "Side-to-Side Plat",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "plat",
       "art_group": "side-to-side-plat-ag.go",
@@ -7246,7 +7211,6 @@
     {
       "etype": "wedge-plat",
       "label": "Wedge Platform",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "baseplat",
       "art_group": "wedge-plat-ag.go",
@@ -7304,7 +7268,6 @@
     {
       "etype": "wedge-plat-outer",
       "label": "Wedge Platform Outer",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "wedge-plat",
       "art_group": "wedge-plat-ag.go",
@@ -7322,7 +7285,6 @@
     {
       "etype": "wedge-plat-master",
       "label": "Wedge Platform Master",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "process",
       "tpage_group": "Sunken",
@@ -7462,7 +7424,6 @@
       "etype": "floating-launcher",
       "label": "Floating Launcher (Sunken)",
       "description": "Sunken's floating launcher will move to its destination once the trigger height is reached and is within 20 meters horizontally",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "baseplat",
       "art_group": "floating-launcher-ag.go",
@@ -7582,7 +7543,6 @@
     },
     {
       "etype": "launcher",
-      "schema_export": true,
       "label": "Launcher",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7669,7 +7629,6 @@
       "etype": "citb-launcher",
       "label": "Floating Launcher (citadel)",
       "description": "Citadel's floating launcher will follow paths like other floating platforms",
-      "schema_export": true,
       "category": "Platforms",
       "parent": "plat",
       "art_group": "citb-launcher-ag.go",
@@ -7767,7 +7726,6 @@
     },
     {
       "etype": "minecartsteel",
-      "schema_export": true,
       "label": "Minecarts",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7834,7 +7792,6 @@
     },
     {
       "etype": "spike",
-      "schema_export": true,
       "label": "Spike",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -7862,7 +7819,6 @@
     },
     {
       "etype": "steam-cap",
-      "schema_export": true,
       "label": "Steam Cap",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7890,7 +7846,6 @@
     },
     {
       "etype": "lurkerm-piston",
-      "schema_export": true,
       "label": "Piston",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7967,7 +7922,6 @@
     },
     {
       "etype": "lurkerm-tall-sail",
-      "schema_export": true,
       "label": "Sail (Tall)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -7995,7 +7949,6 @@
     },
     {
       "etype": "precurbridge",
-      "schema_export": true,
       "label": "Precursor Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8007,7 +7960,6 @@
     },
     {
       "etype": "grottopole",
-      "schema_export": true,
       "label": "Grotto Pole",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8145,7 +8097,6 @@
     },
     {
       "etype": "swamp-spike",
-      "schema_export": true,
       "label": "Swamp Spike (Swamp)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -8190,7 +8141,6 @@
     },
     {
       "etype": "whirlpool",
-      "schema_export": true,
       "label": "Whirlpool",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -8253,7 +8203,6 @@
     {
       "etype": "warp-gate",
       "label": "Warp Gate (unused?)",
-      "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "panels": [
@@ -8279,7 +8228,6 @@
     {
       "etype": "warp-gate-switch",
       "label": "Warp Gate Switch",
-      "schema_export": true,
       "category": "Buttons and Doors",
       "parent": "basebutton",
       "panels": [
@@ -8378,7 +8326,6 @@
     },
     {
       "etype": "junglefish",
-      "schema_export": true,
       "label": "Jungle Fish",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -8421,7 +8368,6 @@
       "label": "Cave Spider Trap",
       "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
       "category": "Enemies",
-      "schema_export": true,
       "parent": "process-drawable",
       "tpage_group": "Robocave",
       "tpages": [
@@ -8474,7 +8420,6 @@
     },
     {
       "etype": "swamp-rat-nest",
-      "schema_export": true,
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -8529,7 +8474,6 @@
     },
     {
       "etype": "sunkenfisha",
-      "schema_export": true,
       "label": "Sunken Fish School",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -8565,7 +8509,6 @@
     },
     {
       "etype": "sharkey",
-      "schema_export": true,
       "label": "Lurker Shark",
       "description": "The lurker shark is a large orange shark-like creature inhabiting the oceans in The Precursor Legacy, serving as the game's invisible wall mechanism to prevent the player from moving too far into the water.",
       "category": "Enemies",
@@ -8622,7 +8565,6 @@
     },
     {
       "etype": "villa-starfish",
-      "schema_export": true,
       "label": "Villa Starfish",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -8730,7 +8672,6 @@
     },
     {
       "etype": "orbit-plat",
-      "schema_export": true,
       "label": "Orbit Platform",
       "category": "Platforms",
       "parent": "baseplat",
@@ -8780,7 +8721,6 @@
     },
     {
       "etype": "square-platform",
-      "schema_export": true,
       "label": "Square Platform",
       "category": "Platforms",
       "parent": "baseplat",
@@ -8858,7 +8798,6 @@
     },
     {
       "etype": "ropebridge",
-      "schema_export": true,
       "label": "Rope Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -8979,7 +8918,6 @@
     },
     {
       "etype": "ogre-isle",
-      "schema_export": true,
       "label": "Klaww Platform Isles",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -9052,7 +8990,6 @@
     },
     {
       "etype": "ogre-step",
-      "schema_export": true,
       "label": "Klaww Step",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -9141,7 +9078,6 @@
     },
     {
       "etype": "citb-disc",
-      "schema_export": true,
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -9203,7 +9139,6 @@
       "description": "Rotating arm platform Jak can ride (a = shortest .. d = longest). Spins with its sync timing.",
       "category": "Platforms",
       "parent": "citb-arm-section",
-      "schema_export": true,
       "tpage_group": "Citadel",
       "code": "citadel-obs.o",
       "rotation_lock": [
@@ -9268,7 +9203,6 @@
       "description": "Rotating shoulder piece of the citadel arms (no collision). Spins with its sync timing.",
       "category": "Visuals",
       "parent": "citb-arm-section",
-      "schema_export": true,
       "tpage_group": "Citadel",
       "code": "citadel-obs.o",
       "rotation_lock": [
@@ -9313,7 +9247,6 @@
     },
     {
       "etype": "lavaballoon",
-      "schema_export": true,
       "label": "Lava Balloon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -9349,7 +9282,6 @@
     },
     {
       "etype": "darkecobarrel",
-      "schema_export": true,
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
       "parent": "darkecobarrel-base",
@@ -9436,7 +9368,6 @@
     {
       "etype": "caveelevator",
       // "panel": "caveelevator",
-      "schema_export": true,
       "label": "Cave Elevator",
       "description": "The cave elevator has multiple modes. However, the movement is based on animation so it can't be edited",
       "category": "Platforms",
@@ -9500,7 +9431,6 @@
     },
     {
       "etype": "caveflamepots",
-      "schema_export": true,
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -9585,7 +9515,6 @@
     },
     {
       "etype": "cavespatula",
-      "schema_export": true,
       "label": "Cave Spatula Plat",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -9617,7 +9546,6 @@
     },
     {
       "etype": "cavespatulatwo",
-      "schema_export": true,
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -9687,7 +9615,6 @@
     },
     {
       "etype": "pontoonten",
-      "schema_export": true,
       "label": "Pontoon (Ten)",
       "category": "Platforms",
       "parent": "pontoon",
@@ -9729,7 +9656,6 @@
     },
     {
       "etype": "mis-bone-bridge",
-      "schema_export": true,
       "label": "Bone Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -9760,7 +9686,6 @@
     },
     {
       "etype": "breakaway-left",
-      "schema_export": true,
       "label": "Breakaway Plat (L)",
       "category": "Platforms",
       "parent": "breakaway",
@@ -9807,7 +9732,6 @@
     },
     {
       "etype": "breakaway-mid",
-      "schema_export": true,
       "label": "Breakaway Plat (M)",
       "category": "Platforms",
       "parent": "breakaway",
@@ -9854,7 +9778,6 @@
     },
     {
       "etype": "breakaway-right",
-      "schema_export": true,
       "label": "Breakaway Plat (R)",
       "category": "Platforms",
       "parent": "breakaway",
@@ -9939,7 +9862,6 @@
     },
     {
       "etype": "springbox",
-      "schema_export": true,
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -9974,7 +9896,6 @@
     },
     {
       "etype": "spiderwebs",
-      "schema_export": true,
       "label": "Spider Web (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -10008,7 +9929,6 @@
     },
     {
       "etype": "oracle",
-      "schema_export": true,
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10076,7 +9996,6 @@
     },
     {
       "etype": "jng-iris-door",
-      "schema_export": true,
       "label": "Iris Door (Jungle)",
       "category": "Buttons and Doors",
       "parent": "eco-door",
@@ -10158,7 +10077,6 @@
       "etype": "eggtop",
       "panels": [
         {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."}],
-      "schema_export": true,
       "label": "Egg Top Button (Jungleb)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -10335,7 +10253,6 @@
     },
     {
       "etype": "launcherdoor",
-      "schema_export": true,
       "label": "Launcher Door",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -10366,7 +10283,6 @@
     },
     {
       "etype": "sun-iris-door",
-      "schema_export": true,
       "label": "Iris Door (Sunken)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -10414,7 +10330,6 @@
     },
     {
       "etype": "basebutton",
-      "schema_export": true,
       "label": "Wall Button",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -10469,7 +10384,6 @@
     },
     {
       "etype": "shover",
-      "schema_export": true,
       "label": "Shover",
       "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",
       "category": "Obstacles",
@@ -10559,7 +10473,6 @@
     },
     {
       "etype": "windturbine",
-      "schema_export": true,
       "label": "Wind Turbine",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -10764,7 +10677,6 @@
     },
     {
       "etype": "logtrap",
-      "schema_export": true,
       "label": "Log Trap (jungle)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -10774,7 +10686,6 @@
     },
     {
       "etype": "pusher",
-      "schema_export": true,
       "label": "Pusher (rolling)",
       "category": "Obstacles",
       "parent": "pusher-base",
@@ -10816,7 +10727,6 @@
     },
     {
       "etype": "snowpusher",
-      "schema_export": true,
       "label": "Snow Pusher (snowy)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -10891,7 +10801,6 @@
     },
     {
       "etype": "snow-ball",
-      "schema_export": true,
       "label": "Snow Ball (Snowy)",
       "category": "Obstacles",
       "parent": "process",
@@ -10931,7 +10840,6 @@
     },
     {
       "etype": "citb-firehose",
-      "schema_export": true,
       "label": "Fire Hose (citadel)",
       "category": "Obstacles",
       "parent": "process-drawable",

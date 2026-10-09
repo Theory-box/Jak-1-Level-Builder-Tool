@@ -618,15 +618,6 @@ def custom_fields(etype: str) -> list[dict]:
     return panel_fields(etype, "custom-fields")
 
 
-def schema_export_enabled(etype: str) -> bool:
-    """True if the actor or any ancestor is flagged `schema_export` — so a parent
-    can switch on schema export for a whole family (e.g. enemy defaults)."""
-    actor = find_actor(etype)
-    if actor and actor.get("schema_export"):
-        return True
-    return any(p.get("schema_export") for p in parent_chain(etype))
-
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Section accessors (stable names — prefer these over raw DB['...'])
 # ═══════════════════════════════════════════════════════════════════════════

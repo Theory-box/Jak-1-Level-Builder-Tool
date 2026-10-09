@@ -323,36 +323,13 @@ def collect_actors(scene, depsgraph=None):
                 p.name.strip() == "pathb" and len(p.sources) for p in getattr(o, "og_extra_paths", [])):
             log(f"  [WARNING] {o.name} needs a 'pathb' path (Path panel > Add Path) — will error at runtime!")
 
-        # ── Platform: sync lump ───────────────────────────────────────────────
-        # plat / plat-eco / side-to-side-plat use a 'sync' res lump to control
-        # path timing.  Format: [period_s, phase, ease_out, ease_in]
-        # Only emitted when the platform has waypoints — without waypoints the
-        # engine ignores sync and the platform spawns idle.
-        if einfo.get("needs_sync"):
-            # Values/defaults from the DB "sync" panel; a field with
-            # "export": false is left out (ease -> 2-value form, wrap -> no options).
-            _sf = {f["key"]: f for f in _schema_db.panel_fields(etype, "sync") if f.get("key")}
-            def _sv(k, fallback):
-                if k not in _sf:
-                    return None
-                return float(o.get(k, _schema_db.field_default(_sf[k], etype) if _sf[k].get("default") is not None else fallback))
-            period   = _sv("og_sync_period",   4.0)
-            phase    = _sv("og_sync_phase",    0.0)
-            ease_out = _sv("og_sync_ease_out", 0.15)
-            ease_in  = _sv("og_sync_ease_in",  0.15)
-            period   = 4.0 if period is None else period
-            phase    = 0.0 if phase is None else phase
-            if path_pts:
-                if ease_in is None or ease_out is None or ease_in <= 0.0 or ease_out <= 0.0:
-                    # 2-value form: duration + offset only. Ease-in/out of 0 crash
-                    # the game on load, so omit them to disable easing entirely.
-                    lump["sync"] = ["float", period, phase]
-                else:
-                    lump["sync"] = ["float", period, phase, ease_out, ease_in]
-                # wrap-phase lives in the fact-options panel now ('options' lump)
-                log(f"  [sync] {o.name}  period={period}s  phase={phase}  ease={ease_out}/{ease_in}")
-            elif _schema_db.has_panel(etype, "path"):
-                log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
+        # ── Sync ──────────────────────────────────────────────────────────────
+        # The 'sync' lump comes from the sync panel's fields (schema block
+        # below): [period, phase, ease out, ease in]. Eases of 0 are valid and
+        # mean no easing (sync-info.gc clamps in to >= 0.001); leaving them out
+        # instead makes the game use the actor's default eases (0.15).
+        if einfo.get("needs_sync") and not path_pts and _schema_db.has_panel(etype, "path"):
+            log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 
 
         # ── Smooth-curve knots (path-k) ──────────────────────────────────────
@@ -373,24 +350,12 @@ def collect_actors(scene, depsgraph=None):
         # Behaviours shared across many actors by predicate: idle-distance +
         # vis-dist (enemies), num-lurkers (spawners), notice-dist
         # (needs_notice_dist). Driven by the DB's TraitFields section and applied
-        # to every matching actor, regardless of schema_export.
+        # to every matching actor.
         for _tk, _tv in emit_schema_lumps(
                 _schema_db.prop_getter(o),
                 _schema_db.trait_fields(etype),
                 etype=etype).items():
             lump[_tk] = _tv
-        # Shared panels' fields (sync, water, ... — anything but custom-fields)
-        # export for every actor that has the panel, like traits; schema_export
-        # actors already got them from the schema block below.
-        if not _schema_db.schema_export_enabled(etype):
-            for _pid in _schema_db.actor_panels(etype):
-                if _pid == "custom-fields":
-                    continue
-                for _tk, _tv in emit_schema_lumps(
-                        _schema_db.prop_getter(o),
-                        _schema_db.panel_fields(etype, _pid),
-                        etype=etype).items():
-                    lump[_tk] = _tv
 
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
@@ -453,26 +418,20 @@ def collect_actors(scene, depsgraph=None):
             _protected_keys.add(key)
             log(f"  [lump-row] {o.name}  '{key}' = {value}")
 
-        # ── Schema-driven lumps (migrated actors) ────────────────────────────
-        # If this actor is flagged `schema_export` in the DB, its declared
-        # fields[] drive its value lumps directly from the schema — no per-actor
-        # code path and no gates (e.g. `sync` exports regardless of waypoints).
-        # The schema is AUTHORITATIVE over the legacy hardcoded branches (it
-        # overrides them), but yields to computed entity links and to explicit
-        # user custom lump rows (both in _protected_keys). Actors WITHOUT the
-        # flag are untouched. Schema output was validated equal to the hardcoded
-        # output for every migrated actor, so this only changes behaviour where
-        # the legacy path was buggy (e.g. sync dropped for pathless platforms).
+        # ── Schema-driven lumps (every actor) ────────────────────────────────
+        # The fields of all the actor's panels (its own + its parents') drive
+        # its value lumps directly. Authoritative over the legacy hardcoded
+        # branches above, but yields to computed entity links and to explicit
+        # user custom lump rows (both in _protected_keys).
         _arec = _schema_db.find_actor(etype)
-        if _schema_db.schema_export_enabled(etype):
-            for _lk, _lv in emit_schema_lumps(
-                    _schema_db.prop_getter(o),
-                    _schema_db.inherited_fields(etype),
-                    etype=etype,
-                    choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
-                if _lk not in _protected_keys:
-                    lump[_lk] = _lv
-                    log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
+        for _lk, _lv in emit_schema_lumps(
+                _schema_db.prop_getter(o),
+                _schema_db.inherited_fields(etype),
+                etype=etype,
+                choice_tables={"CratePickups": _schema_db.crate_pickups()}).items():
+            if _lk not in _protected_keys:
+                lump[_lk] = _lv
+                log(f"  [schema] {o.name}  '{_lk}' = {_lv}")
 
         # Computed lumps needing object/scene/link context (skipped by emitter).
         for _lk, _lv in _computed_lumps(o, etype).items():
