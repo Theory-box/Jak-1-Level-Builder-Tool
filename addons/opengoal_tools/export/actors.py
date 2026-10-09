@@ -532,8 +532,14 @@ def collect_actors(scene, depsgraph=None):
         _out_etype = _variant.get("etype") or etype
         _out_ag = _variant.get("art_group")
         _bc_campos = None
+        _extra = {}
         if etype == "battlecontroller":
             from . import battlecontroller as _bc
+            for _lk, _lv in _bc.lumps(o).items():
+                if _lk not in _protected_keys:
+                    lump[_lk] = _lv
+            for _w in _bc.percent_problems(o):
+                log(f"  [WARNING] {o.name}: {_w}")
             if _bc.is_custom(o):
                 _out_etype = _bc.custom_type_base(o)        # write_jsonc adds the level prefix
                 _cag, _canim = _bc.camera(o)
@@ -552,6 +558,10 @@ def collect_actors(scene, depsgraph=None):
                                   "game_task": "(game-task none)", "quat": [0.0, 0.0, 0.0, 1.0], "vis_id": 0,
                                   "bsphere": [_cx, _cy, _cz, 10.0], "lump": {"name": _bc.CITADEL_CAM_NAME},
                                   "_db_etype": "process-hidden"}
+            # the lurkers it spawns need their code / art / textures in the level
+            _lc, _lag, _ltp = _bc.lurker_assets(o)
+            _out_ag = ([_out_ag] if _out_ag else []) + [g for g in _lag if g != _out_ag] or None
+            _extra = {"extra_code": _lc, "extra_tpages": _ltp}
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _out_etype,
@@ -565,6 +575,7 @@ def collect_actors(scene, depsgraph=None):
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
+            **_extra,
         })
         if _bc_campos is not None:
             _extra_actors.append(_bc_campos)   # after all actors: AIDs follow the canonical order

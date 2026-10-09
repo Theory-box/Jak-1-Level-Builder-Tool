@@ -768,6 +768,27 @@ def _waypoint_source_poll(self, obj):
     return obj is not None and obj.type in ("EMPTY", "CURVE")
 
 
+BC_PICKUP_ITEMS = [   # pickup-type enum (fact-h.gc), value = enum index
+    ("none", "None", "", 0), ("eco-yellow", "Yellow Eco", "", 1), ("eco-red", "Red Eco", "", 2),
+    ("eco-blue", "Blue Eco", "", 3), ("eco-green", "Green Eco", "", 4), ("money", "Orb", "", 5),
+    ("fuel-cell", "Power Cell", "", 6), ("eco-pill", "Green Eco Pill", "", 7), ("buzzer", "Scout Fly", "", 8),
+    ("eco-pill-random", "Green Eco Pill (random)", "", 9),
+]
+
+
+class OGBattleLurker(bpy.types.PropertyGroup):
+    """One lurker type of a battlecontroller (slot i of lurker-type /
+    percent / pickup-percent / pickup-type / max-pickup-count)."""
+    etype: StringProperty(name="Lurker")
+    percent: FloatProperty(name="Spawn chance", default=1.0, min=0.0, max=1.0,
+                           description="How likely this lurker is to spawn (all lurkers add up to 1.0)")
+    pickup_percent: FloatProperty(name="Special eco chance", default=0.0, min=0.0, max=1.0,
+                                  description="How likely this lurker drops its special eco instead of the normal drop")
+    pickup_type: EnumProperty(name="Special eco", items=BC_PICKUP_ITEMS, default="eco-blue")
+    max_pickup_count: IntProperty(name="Max special eco", default=0, min=0, max=127,
+                                  description="How many special eco this lurker can drop in total")
+
+
 class OGWaypointSource(bpy.types.PropertyGroup):
     """One entry in an actor's reorderable waypoint list.
 

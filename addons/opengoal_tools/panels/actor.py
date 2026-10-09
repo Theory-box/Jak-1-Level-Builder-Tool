@@ -163,6 +163,16 @@ class OG_PT_ActorNavMesh(Panel):
 
 
 
+def _bc_section(layout, idname, title, icon, closed=False):
+    """A collapsible sub menu (Blender 4.1+ layout panels; a box before)."""
+    if hasattr(layout, "panel"):
+        header, body = layout.panel(idname, default_closed=closed)
+        header.label(text=title, icon=icon)
+        return body
+    box = layout.box(); box.label(text=title, icon=icon)
+    return box
+
+
 class OG_PT_ActorBattlecontroller(Panel):
     """Battlecontroller (ambush): intro camera variant + its options."""
     bl_label       = "Battle Controller"
@@ -181,13 +191,69 @@ class OG_PT_ActorBattlecontroller(Panel):
         return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "battlecontroller")
 
     def draw(self, ctx):
-        from .actor_fields import _draw_enum_field, _prop_row
+        from .actor_fields import _draw_field
+        from .selected import _draw_link_slot
         from ..export import battlecontroller as _bc
         layout = self.layout
         sel = ctx.active_object
         etype = sel.name.split("_", 2)[1]
-        box = layout.box()
-        box.label(text="Intro camera", icon="CAMERA_DATA")
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        fields = _db.panel_fields(etype, "battlecontroller", visible_only=True)
+        by_sec = lambda s: [f for f in fields if f.get("section") == s]
+        sel_actors = [o for o in ctx.selected_objects if o != sel and o.type == "EMPTY"
+                      and o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+
+        def links(box, *keys):
+            for k in keys:
+                s = _db.link_slot(etype, k, 0)
+                if s:
+                    _draw_link_slot(box, sel, ctx.scene, etype, k, 0, s.get("label", k),
+                                    s.get("accepts", ["any"]), s.get("required", False), sel_actors)
+
+        body = _bc_section(layout, "og_bc_camera", "Intro camera", "CAMERA_DATA")
+        if body:
+            self._camera(body, ctx, sel, etype, _bc)
+        body = _bc_section(layout, "og_bc_spawn", "Lurkers spawn", "OUTLINER_OB_ARMATURE")
+        if body:
+            for f in by_sec("spawn"):
+                _draw_field(body, sel, f, info)
+            links(body, "spawner-blocker-actor", "spawner-trigger-actor")
+        body = _bc_section(layout, "og_bc_lurkers", "Lurker info", "COMMUNITY")
+        if body:
+            for i, e in enumerate(sel.og_bc_lurkers):
+                b = body.box()
+                r = b.row(align=True)
+                r.label(text=f"[{i}] {(_db.find_actor(e.etype) or {}).get('label', e.etype)}", icon="GHOST_ENABLED")
+                op = r.operator("og.bc_lurker_remove", text="", icon="X"); op.index = i
+                col = b.column(align=True)
+                col.prop(e, "percent"); col.prop(e, "pickup_percent")
+                col.prop(e, "pickup_type"); col.prop(e, "max_pickup_count")
+                if i >= _bc.MAX_LURKER_TYPES:
+                    w = b.row(); w.alert = True; w.label(text="Not used (max 4 lurker types)", icon="ERROR")
+            r = body.row(align=True)
+            r.operator("og.bc_lurker_add", text="Add Lurker", icon="ADD")
+            if len(sel.og_bc_lurkers) > 1:
+                r.operator("og.bc_lurker_even", text="Split Evenly", icon="ALIGN_JUSTIFY")
+            if not len(sel.og_bc_lurkers):
+                h = body.row(); h.enabled = False
+                h.label(text="None added: the game spawns babaks", icon="INFO")
+            for w in _bc.percent_problems(sel):
+                r = body.row(); r.alert = True; r.label(text=w, icon="ERROR")
+            body.separator()
+            for f in by_sec("lurkers"):
+                _draw_field(body, sel, f, info)
+        body = _bc_section(layout, "og_bc_end", "End pickup", "FUND")
+        if body:
+            for f in by_sec("end"):
+                _draw_field(body, sel, f, info)
+        body = _bc_section(layout, "og_bc_other", "Other options", "PREFERENCES", closed=True)
+        if body:
+            links(body, "kill-actor", "trigger-actor", "fade-actor", "alt-actor")
+            for f in by_sec("other"):
+                _draw_field(body, sel, f, info)
+
+    def _camera(self, box, ctx, sel, etype, _bc):
+        from .actor_fields import _draw_enum_field, _prop_row
         vf = _db.variant_field(etype)
         if vf:
             _draw_enum_field(box, sel, vf)

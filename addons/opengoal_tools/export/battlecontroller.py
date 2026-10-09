@@ -102,6 +102,61 @@ def gc_lines(pfx: str, objects) -> list[str]:
     return lines
 
 
+MAX_LURKER_TYPES = 4            # creature-type-array size
+PICKUP_VALUES = {"none": 0, "eco-yellow": 1, "eco-red": 2, "eco-blue": 3, "eco-green": 4, "money": 5,
+                 "fuel-cell": 6, "eco-pill": 7, "buzzer": 8, "eco-pill-random": 9}
+
+
+def lurkers(o) -> list:
+    """The controller's lurker entries (at most 4 are read by the game)."""
+    return [e for e in getattr(o, "og_bc_lurkers", []) if e.etype][:MAX_LURKER_TYPES]
+
+
+def percent_problems(o) -> list[str]:
+    """Warnings for the two per-lurker chances that should add up to 1.0."""
+    ls = lurkers(o)
+    out = []
+    if ls:
+        s = sum(e.percent for e in ls)
+        if abs(s - 1.0) > 0.001:
+            out.append(f"Spawn chances add up to {s:.2f}, not 1.0")
+        p = sum(e.pickup_percent for e in ls)
+        if p > 0 and abs(p - 1.0) > 0.001:
+            out.append(f"Special eco chances add up to {p:.2f}, not 1.0")
+    if len(getattr(o, "og_bc_lurkers", [])) > MAX_LURKER_TYPES:
+        out.append(f"Only the first {MAX_LURKER_TYPES} lurkers are used")
+    return out
+
+
+def lumps(o) -> dict:
+    """Computed lumps: the slot-aligned lurker arrays and final-pickup."""
+    out = {}
+    ls = lurkers(o)
+    if ls:
+        out["lurker-type"] = ["type"] + [e.etype for e in ls]
+        out["percent"] = ["float"] + [round(e.percent, 4) for e in ls]
+        out["pickup-percent"] = ["float"] + [round(e.pickup_percent, 4) for e in ls]
+        out["pickup-type"] = ["int32"] + [PICKUP_VALUES.get(e.pickup_type, 0) for e in ls]
+        out["max-pickup-count"] = ["int32"] + [int(e.max_pickup_count) for e in ls]
+    end = bool(o.get("og_bc_end_pickup", True))
+    fp = str(o.get("og_bc_final_pickup", "fuel-cell") or "fuel-cell") if end else "none"
+    out["final-pickup"] = ["enum-int32", f"(pickup-type {fp})"]
+    return out
+
+
+def lurker_assets(o) -> tuple[list, list, list]:
+    """(code, art groups, tpages) of the lurker types: the level must bundle
+    them or the controller can't spawn anything."""
+    from ..data import ETYPE_AG
+    code, ags, tps = [], [], []
+    for e in lurkers(o):
+        rec = _db.find_actor(e.etype) or {}
+        code += [c for c in _db.code_files(rec) if c not in code]
+        ags += [g for g in ETYPE_AG.get(e.etype, []) if g not in ags]
+        tps += [t for t in _db.actor_tpages(e.etype) if t not in tps]
+    return code, ags, tps
+
+
 def citadel_camera_object(o):
     """The camera-position empty linked to a citadel-variant controller."""
     import bpy

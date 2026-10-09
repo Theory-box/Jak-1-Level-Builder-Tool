@@ -275,6 +275,71 @@ class OG_OT_BCCamposLink(Operator):
         return {"FINISHED"}
 
 
+def _bc_lurker_items(self, ctx):
+    from .. import db as _d
+    o = ctx.active_object if ctx else None
+    have = {e.etype for e in getattr(o, "og_bc_lurkers", [])} if o else set()
+    items = [(et, (_d.find_actor(et) or {}).get("label", et) + ("  (added)" if et in have else ""), et)
+             for et in sorted(_d.jumping_enemies())]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)] or [("__none__", "(no jumping enemies)", "", 0)]
+    return _BC_ITEMS
+
+
+class OG_OT_BCLurkerAdd(Operator):
+    """Add a lurker type to this battlecontroller (enemies that can jump, max 4)"""
+    bl_idname   = "og.bc_lurker_add"
+    bl_label    = "Add Lurker"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Lurker", items=_bc_lurker_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or self.pick == "__none__":
+            return {"CANCELLED"}
+        if len(o.og_bc_lurkers) >= 4:
+            self.report({"WARNING"}, "A battlecontroller uses at most 4 lurker types"); return {"CANCELLED"}
+        e = o.og_bc_lurkers.add()
+        e.etype = self.pick
+        e.percent = 1.0 if len(o.og_bc_lurkers) == 1 else 0.0
+        return {"FINISHED"}
+
+
+class OG_OT_BCLurkerRemove(Operator):
+    """Remove this lurker type"""
+    bl_idname  = "og.bc_lurker_remove"
+    bl_label   = "Remove Lurker"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or not (0 <= self.index < len(o.og_bc_lurkers)):
+            return {"CANCELLED"}
+        o.og_bc_lurkers.remove(self.index)
+        return {"FINISHED"}
+
+
+class OG_OT_BCLurkerEven(Operator):
+    """Split the spawn chance evenly between the lurkers (adds up to 1.0)"""
+    bl_idname  = "og.bc_lurker_even"
+    bl_label   = "Split Evenly"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        ls = list(getattr(o, "og_bc_lurkers", []))[:4] if o else []
+        for e in ls:
+            e.percent = round(1.0 / len(ls), 4)
+        if ls:   # absorb rounding in the last one
+            ls[-1].percent = round(1.0 - sum(e.percent for e in ls[:-1]), 4)
+        return {"FINISHED"}
+
+
 def _natural_key(name):
     """Outliner-style order: 'plat_2' before 'plat_10'."""
     import re as _re
@@ -584,6 +649,9 @@ CLASSES = (
     OG_OT_BCPickAnim,
     OG_OT_BCCamposAdd,
     OG_OT_BCCamposLink,
+    OG_OT_BCLurkerAdd,
+    OG_OT_BCLurkerRemove,
+    OG_OT_BCLurkerEven,
     OG_OT_LinkAddSelected,
     OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,

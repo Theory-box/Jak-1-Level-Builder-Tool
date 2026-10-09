@@ -580,7 +580,7 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
 
 # Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
 # that are not part of the level format — never written to the .jsonc.
-_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code")
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages")
 
 
 def _dumps_with_raw_lumps(data):

@@ -462,7 +462,8 @@ def needed_tpages(actors):
     """Return de-duplicated ordered list of tpage .go files needed for placed entities."""
     seen, r = set(), []
     for a in actors:
-        for tp in ETYPE_TPAGES.get(a.get("_db_etype") or a["etype"], []):
+        # extra_tpages: tpages of actors this one spawns (battlecontroller lurkers)
+        for tp in list(ETYPE_TPAGES.get(a.get("_db_etype") or a["etype"], [])) + list(a.get("extra_tpages") or []):
             if tp not in seen:
                 seen.add(tp)
                 r.append(tp)

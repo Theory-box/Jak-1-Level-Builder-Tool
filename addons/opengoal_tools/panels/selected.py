@@ -921,7 +921,8 @@ def _draw_actor_links(layout, obj, scene, etype):
     - A 'Link →' button when exactly one compatible ACTOR_ is shift-selected
     - An X (clear) button when a link is set
     """
-    slots = _actor_link_slots(etype)
+    # slots with "show-in" are drawn by that actor's own panel (battlecontroller)
+    slots = [s for s in _actor_link_slots(etype) if not _db.link_slot(etype, s[0], s[1]).get("show-in")]
     if not slots:
         layout.label(text="No entity link slots for this actor type.", icon="INFO")
         return

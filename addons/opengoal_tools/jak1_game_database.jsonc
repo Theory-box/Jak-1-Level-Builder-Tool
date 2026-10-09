@@ -4246,7 +4246,160 @@
       "id": "battlecontroller",
       "label": "Battle Controller",
       "description": "battlecontroller.gc settings: intro camera (variant), lurkers, spawning, pickups, linked actors. Drawn by the Battle Controller panel.",
-      "fields": []
+      "fields": [
+        {
+          "key": "og_bc_alive",
+          "label": "Max alive at once",
+          "type": "int",
+          "default": 12,
+          "min": 1,
+          "max": 127,
+          "section": "spawn",
+          "note": "Stops spawning while this many lurkers are alive (max 127).",
+          "lump": {
+            "key": "num-lurkers",
+            "type": "int32",
+            "slot": 0
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_bc_total",
+          "label": "Total to beat",
+          "type": "int",
+          "default": 35,
+          "min": 1,
+          "max": 32767,
+          "section": "spawn",
+          "note": "Lurkers to beat before it is done (max 32767). Very high (e.g. 1000): the spawn blockers must be destroyed instead.",
+          "lump": {
+            "key": "num-lurkers",
+            "type": "int32",
+            "slot": 1
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_bc_delay",
+          "label": "Time between spawns (s)",
+          "type": "float",
+          "default": 0.1,
+          "min": 0.0,
+          "section": "spawn",
+          "lump": {
+            "key": "delay",
+            "type": "float"
+          },
+          "write_if": "if_not_default"
+        },
+        {
+          "key": "og_bc_drop",
+          "label": "Normal drop",
+          "type": "enum",
+          "default": "eco-pill",
+          "choices": "CratePickups",
+          "section": "lurkers",
+          "note": "Dropped by a lurker that doesn't drop its special eco.",
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_bc_drop_amount"
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_bc_drop_amount",
+          "label": "Normal drop amount",
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 99,
+          "section": "lurkers"
+        },
+        {
+          "key": "og_bc_end_pickup",
+          "label": "Spawn a pickup at the end",
+          "type": "bool",
+          "default": true,
+          "section": "end",
+          "note": "Power cell: spawns where the last lurker died (uses the Game Task). Other pickups: dropped by the last lurker."
+        },
+        {
+          "key": "og_bc_final_pickup",
+          "label": "End pickup",
+          "type": "enum",
+          "default": "fuel-cell",
+          "section": "end",
+          "choices": [
+            {
+              "id": "none",
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "id": "eco-yellow",
+              "value": "eco-yellow",
+              "label": "Yellow Eco"
+            },
+            {
+              "id": "eco-red",
+              "value": "eco-red",
+              "label": "Red Eco"
+            },
+            {
+              "id": "eco-blue",
+              "value": "eco-blue",
+              "label": "Blue Eco"
+            },
+            {
+              "id": "eco-green",
+              "value": "eco-green",
+              "label": "Green Eco"
+            },
+            {
+              "id": "money",
+              "value": "money",
+              "label": "Orb"
+            },
+            {
+              "id": "fuel-cell",
+              "value": "fuel-cell",
+              "label": "Power Cell"
+            },
+            {
+              "id": "eco-pill",
+              "value": "eco-pill",
+              "label": "Green Eco Pill"
+            },
+            {
+              "id": "buzzer",
+              "value": "buzzer",
+              "label": "Scout Fly"
+            },
+            {
+              "id": "eco-pill-random",
+              "value": "eco-pill-random",
+              "label": "Green Eco Pill (random)"
+            }
+          ],
+          "visible_if": {
+            "og_bc_end_pickup": true
+          }
+        },
+        {
+          "key": "og_bc_prespawn",
+          "label": "Spawn lurkers before Jak arrives",
+          "type": "bool",
+          "default": false,
+          "section": "other",
+          "note": "Fills every spawn path as soon as the level loads (mode 1).",
+          "lump": {
+            "key": "mode",
+            "type": "int32"
+          },
+          "write_if": "if_true"
+        }
+      ]
     },
     {
       "id": "game-task",
@@ -4846,6 +4999,7 @@
       "shape": "CUBE",
       "empty_size": 2.0,
       "panels": [
+        {"panel": "actor-link", "slots": [{"lump_key": "spawner-blocker-actor", "slot": 0, "label": "Spawn path blockers ([0] blocks patha, [1] pathb ...): once complete, that path stops spawning", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "spawner-trigger-actor", "slot": 0, "label": "Spawn path actors ([0] patha, [1] pathb ...): sent 'spawn when their path spawns", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "kill-actor", "slot": 0, "label": "Turned off while the ambush is on (performance)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "trigger-actor", "slot": 0, "label": "Triggered when the ambush starts (keep doors shut, change the camera ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "fade-actor", "slot": 0, "label": "Faded out when the ambush is over (e.g. stop an eco vent)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "alt-actor", "slot": 0, "label": "Triggered when the ambush is completed (open doors, raise steps ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}]},
         {
           "panel": "battlecontroller"
         },
