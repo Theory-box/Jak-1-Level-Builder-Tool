@@ -5202,6 +5202,8 @@
     },
     {
       "etype": "lurkercrab",
+      // no initialize-collision: a battlecontroller spawning it crashes
+      "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Lurker Crab",
       "category": "Enemies",
@@ -5262,6 +5264,8 @@
     },
     {
       "etype": "kermit",
+      // no initialize-collision: a battlecontroller spawning it crashes
+      "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Kermit (Lurker)",
       "category": "Enemies",
@@ -5347,6 +5351,8 @@
     },
     {
       "etype": "muse",
+      // no initialize-collision: a battlecontroller spawning it crashes
+      "battlecontroller_lurker": false,
       "label": "Muse",
       "category": "Interactive Objects",
       "parent": "nav-enemy",

@@ -922,6 +922,13 @@ def jumping_enemies() -> list[str]:
             if can_jump(a["etype"]) and any(p.get("etype") == "nav-enemy" for p in parent_chain(a["etype"]))]
 
 
+def battlecontroller_lurkers() -> list[str]:
+    """Jumping enemies a battlecontroller can spawn: all but the ones marked
+    "battlecontroller_lurker": false (no initialize-collision of their own,
+    so nav-enemy-init-by-other crashes on them)."""
+    return [et for et in jumping_enemies() if (find_actor(et) or {}).get("battlecontroller_lurker", True)]
+
+
 def supports_aggro_trigger(etype: str) -> bool:
     """"aggro-trigger" panel: nav-enemies handle 'cue-chase / 'cue-patrol /
     'go-wait-for-cue (nav-enemy.gc). On the nav-enemy parent."""

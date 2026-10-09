@@ -280,7 +280,7 @@ def _bc_lurker_items(self, ctx):
     o = ctx.active_object if ctx else None
     have = {e.etype for e in getattr(o, "og_bc_lurkers", [])} if o else set()
     items = [(et, (_d.find_actor(et) or {}).get("label", et) + ("  (added)" if et in have else ""), et)
-             for et in sorted(_d.jumping_enemies())]
+             for et in sorted(_d.battlecontroller_lurkers())]
     _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)] or [("__none__", "(no jumping enemies)", "", 0)]
     return _BC_ITEMS
 
