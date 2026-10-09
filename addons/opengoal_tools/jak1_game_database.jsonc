@@ -3987,6 +3987,9 @@
           "label": "Ease out",
           "type": "float",
           "default": 0.15,
+          "min": 0.001,
+          "max": 1.0,
+          "note": "Minimum 0.001: at 0 the game divides by zero and the platform stops moving.",
           "lump": {
             "key": "sync",
             "type": "float",
@@ -3999,6 +4002,8 @@
           "label": "Ease in",
           "type": "float",
           "default": 0.15,
+          "min": 0.001,
+          "max": 1.0,
           "lump": {
             "key": "sync",
             "type": "float",

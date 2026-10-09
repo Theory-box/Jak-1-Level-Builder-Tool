@@ -326,9 +326,10 @@ def collect_actors(scene, depsgraph=None):
 
         # ── Sync ──────────────────────────────────────────────────────────────
         # The 'sync' lump comes from the sync panel's fields (schema block
-        # below): [period, phase, ease out, ease in]. Eases of 0 are valid and
-        # mean no easing (sync-info.gc clamps in to >= 0.001); leaving them out
-        # instead makes the game use the actor's default eases (0.15).
+        # below): [period, phase, ease out, ease in]. Both eases have a 0.001
+        # minimum: an ease out of 0 makes sync-info-eased divide by zero
+        # (y-end 0, sync-info.gc setup-params!); the game clamps ease in itself.
+        # Leaving them out makes the game use the actor's default eases (0.15).
         if einfo.get("needs_sync") and not path_pts and _schema_db.has_panel(etype, "path"):
             log(f"  [sync-platform] {o.name}  no waypoints — will spawn idle (add ≥2 waypoints to make it move)")
 

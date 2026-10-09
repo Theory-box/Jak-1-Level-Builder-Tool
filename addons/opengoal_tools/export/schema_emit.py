@@ -214,6 +214,13 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             value, is_lv = _enum_value(f, raw, default)
         else:
             value = raw
+            # A field's min / max also hold at export (values saved before
+            # the limit existed, e.g. a 0 ease out that the game divides by).
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                if f.get("min") is not None:
+                    value = max(value, f["min"])
+                if f.get("max") is not None:
+                    value = min(value, f["max"])
 
         if lb:
             key = lb["key"]
