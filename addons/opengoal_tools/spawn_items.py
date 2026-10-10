@@ -194,9 +194,8 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         spawn_id="special:water_volume",
         label="Water volume",
         category="Volumes",
-        description="Mesh volume that flags areas as water — affects swim/wade "
-                    "behaviour. Scale to cover the water area; surface height "
-                    "is set per-object after spawn.",
+        description="Water actor (swim / wade). Add or link its area in its "
+                    "Volume panel; the surface height is set per object.",
         operator="og.add_water_volume",
         icon="MOD_FLUIDSIM",
     ),

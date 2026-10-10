@@ -131,7 +131,7 @@ def _actor_supports_aggro_trigger(etype):
     return _db.supports_aggro_trigger(etype)
 
 def _classify_target(target_name):
-    """Return one of 'camera', 'checkpoint', 'enemy', 'custom', or '' for an unknown target."""
+    """Return one of 'camera', 'checkpoint', 'volume', 'enemy', 'custom', or '' for an unknown target."""
     if target_name.startswith("CAMERA_"):
         return "camera"
     if target_name.startswith("CHECKPOINT_") and not target_name.endswith("_CAM"):
@@ -139,6 +139,8 @@ def _classify_target(target_name):
     if target_name.startswith("ACTOR_") and "_wp_" not in target_name and "_wpb_" not in target_name:
         parts = target_name.split("_", 2)
         if len(parts) >= 3:
+            if _db.needs_vol(parts[1]):
+                return "volume"   # the actor's own vol (water-vol, swamp-bat ...)
             if _actor_supports_aggro_trigger(parts[1]):
                 return "enemy"
             if _is_custom_type(parts[1]):

@@ -112,6 +112,52 @@ class OG_PT_ActorNavBehaviour(Panel):
 
 
 
+class OG_PT_ActorVolume(Panel):
+    """Volume (DB "volume" panel): the convex VOL_ mesh this actor reads as
+    its own vol (water-vol / water-anim surface area, swamp-bat launch area ...)."""
+    bl_label       = "Volume"
+    bl_idname      = "OG_PT_actor_volume"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.needs_vol(parts[1])
+
+    def draw(self, ctx):
+        from ..export import _vols_linking_to, _vol_has_link_to
+        from .selected import _draw_link_search
+        layout = self.layout
+        sel = ctx.active_object
+        vols = _vols_linking_to(ctx.scene, sel.name)
+        for v in vols:
+            row = layout.row(align=True)
+            row.label(text=f"✓ {v.name}", icon="CHECKMARK")
+            op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = v.name
+            op = row.operator("og.remove_vol_link", text="", icon="X"); op.vol_name = v.name; op.target_name = sel.name
+        if len(vols) > 1:
+            warn = layout.row(); warn.alert = True
+            warn.label(text="Only the first volume is exported", icon="ERROR")
+        if not vols:
+            layout.label(text="No volume linked", icon="INFO")
+        layout.operator("og.add_actor_volume", text="Add Volume", icon="ADD").actor_name = sel.name
+        for m in [o for o in ctx.selected_objects if o.type == "MESH" and o is not sel][:6]:
+            if m.name.startswith("VOL_"):
+                if not _vol_has_link_to(m, sel.name):
+                    op = layout.operator("og.add_link_from_selection", text=f"Link → {m.name}", icon="MESH_CUBE")
+                    op.vol_name = m.name; op.target_name = sel.name
+            else:
+                op = layout.operator("og.mesh_to_volume", text=f"Use {m.name} as volume", icon="MESH_CUBE")
+                op.actor_name = sel.name; op.mesh_name = m.name
+        _draw_link_search(layout, "Search volume…", "og.vol_link_search", target_name=sel.name, search_for="volume")
+
+
 class OG_PT_ActorNavMesh(Panel):
     bl_label       = "NavMesh"
     bl_idname      = "OG_PT_actor_navmesh"
@@ -699,7 +745,7 @@ class OG_PT_ActorWaterVol(Panel):
         sel    = ctx.active_object
         box = layout.box()
         box.label(text="Water Volume", icon="MOD_OCEAN")
-        box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        box.label(text="Its area is the volume linked in the Volume panel.", icon="INFO")
         # The "water" panel's fields (PanelTypes water + actor overrides).
         from .actor_fields import _draw_field
         etype = sel.name.split("_", 2)[1]
@@ -1476,6 +1522,7 @@ class OG_PT_ActorGoalCode(Panel):
 _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_platform",        # Sync
     "OG_PT_actor_waypoints",       # Path
+    "OG_PT_actor_volume",          # Volume
     "OG_PT_actor_navmesh",
     "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
     "OG_PT_actor_game_task",       # Game Task
@@ -1500,6 +1547,7 @@ _ACTOR_SUBPANELS = (
     OG_PT_ActorNavBehaviour,
     OG_PT_ActorGameTask,
     OG_PT_ActorMoviePos,
+    OG_PT_ActorVolume,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,
     OG_PT_ActorPlatform,
