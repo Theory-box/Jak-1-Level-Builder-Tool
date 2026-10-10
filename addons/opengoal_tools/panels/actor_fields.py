@@ -340,10 +340,29 @@ class OG_PT_ActorFields(Panel):
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}
         if _db.has_panel(etype, "custom-fields"):
-            for field in _db.ui_fields(etype):
-                if field.get("show-field") is False:   # DB: hidden but still exported
-                    continue
-                _draw_field(self.layout, sel, field, actor_info)
+            fields = [f for f in _db.ui_fields(etype) if f.get("show-field") is not False]   # DB: hidden but still exported
+            done = set()
+            for field in fields:
+                grp = field.get("group")
+                if not grp:
+                    _draw_field(self.layout, sel, field, actor_info)
+                elif grp not in done:
+                    # "group": fields drawn together in a collapsible sub menu;
+                    # the first one's "group_label" / "group_note" head it.
+                    done.add(grp)
+                    title, note = field.get("group_label", grp), field.get("group_note")
+                    if hasattr(self.layout, "panel"):
+                        header, body = self.layout.panel(f"og_fields_{grp}", default_closed=True)
+                        header.label(text=title)
+                    else:
+                        body = self.layout.box(); body.label(text=title)
+                    if body is None:
+                        continue
+                    if note:
+                        body.label(text=note, icon="INFO")
+                    for f in fields:
+                        if f.get("group") == grp:
+                            _draw_field(body, sel, f, actor_info)
         # Small DB panels with no hand-written Blender panel ("draw": "generic").
         for pid, pt in _db.generic_panels(etype):
             box = self.layout.box()

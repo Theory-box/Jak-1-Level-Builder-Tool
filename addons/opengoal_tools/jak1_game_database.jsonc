@@ -7195,7 +7195,7 @@
           "fields": [
             {
               "key": "og_trans_offset_x",
-              "label": "Path offset X (m)",
+              "label": "X (m)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7204,11 +7204,13 @@
                 "slot": 0
               },
               "write_if": "if_any_nonzero",
-              "note": "Added to the path position every frame (game axes)."
+              "group": "path-offset",
+              "group_label": "Path Offset",
+              "group_note": "Moves the whole path (game axes)."
             },
             {
               "key": "og_trans_offset_y",
-              "label": "Path offset up (m)",
+              "label": "Up (m)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7216,11 +7218,12 @@
                 "type": "vector3m",
                 "slot": 1
               },
-              "write_if": "if_any_nonzero"
+              "write_if": "if_any_nonzero",
+              "group": "path-offset"
             },
             {
               "key": "og_trans_offset_z",
-              "label": "Path offset Z (m, = -Blender Y)",
+              "label": "Z (m, = -Blender Y)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7228,7 +7231,8 @@
                 "type": "vector3m",
                 "slot": 2
               },
-              "write_if": "if_any_nonzero"
+              "write_if": "if_any_nonzero",
+              "group": "path-offset"
             }
           ]
         }
@@ -7422,7 +7426,7 @@
             },
             {
               "key": "og_trans_offset_x",
-              "label": "Path offset X (m)",
+              "label": "X (m)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7431,11 +7435,13 @@
                 "slot": 0
               },
               "write_if": "if_any_nonzero",
-              "note": "Added to the path: it starts at path point 1 plus this offset (game axes)."
+              "group": "path-offset",
+              "group_label": "Path Offset",
+              "group_note": "Moves the whole path (game axes)."
             },
             {
               "key": "og_trans_offset_y",
-              "label": "Path offset up (m)",
+              "label": "Up (m)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7443,11 +7449,12 @@
                 "type": "vector3m",
                 "slot": 1
               },
-              "write_if": "if_any_nonzero"
+              "write_if": "if_any_nonzero",
+              "group": "path-offset"
             },
             {
               "key": "og_trans_offset_z",
-              "label": "Path offset Z (m, = -Blender Y)",
+              "label": "Z (m, = -Blender Y)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -7455,7 +7462,8 @@
                 "type": "vector3m",
                 "slot": 2
               },
-              "write_if": "if_any_nonzero"
+              "write_if": "if_any_nonzero",
+              "group": "path-offset"
             }
           ]
         }
@@ -9403,18 +9411,31 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to no splashes)",
+              "label": "Water for splashes: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty.",
               "accepts": [
-                "any"
+                "water-anim",
+                "dark-eco-pool",
+                "jungle-water",
+                "lavatube-lava",
+                "cave-water",
+                "mud",
+                "ogre-lava",
+                "rolling-water",
+                "sunken-water",
+                "training-water",
+                "villagea-water",
+                "villageb-water",
+                "villagec-lava"
               ],
               "required": false
             },
             {
               "lump_key": "prev-actor",
               "slot": 0,
-              "label": "Previous platform (or the master, if first)",
+              "label": "Previous in the chain (button, master or platform)",
               "accepts": [
                 "square-platform",
+                "square-platform-button",
                 "square-platform-master"
               ],
               "required": false
@@ -9424,7 +9445,8 @@
               "slot": 0,
               "label": "Next platform",
               "accepts": [
-                "square-platform"
+                "square-platform",
+                "square-platform-button"
               ],
               "required": false
             }
@@ -9466,9 +9488,10 @@
             {
               "lump_key": "next-actor",
               "slot": 0,
-              "label": "First square platform",
+              "label": "First in the chain (a button or the first platform)",
               "accepts": [
-                "square-platform"
+                "square-platform",
+                "square-platform-button"
               ],
               "required": true
             }
@@ -9497,6 +9520,27 @@
                 "square-platform-master"
               ],
               "required": true
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous in the chain (the master)",
+              "accepts": [
+                "square-platform-master",
+                "square-platform-button",
+                "square-platform"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next in the chain (first platform)",
+              "accepts": [
+                "square-platform",
+                "square-platform-button"
+              ],
+              "required": false
             }
           ]
         },
@@ -9513,7 +9557,8 @@
                 {
                   "id": "none",
                   "value": "none",
-                  "label": "No camera, normal order"
+                  "label": "No camera, normal order",
+                  "lump_value": 4
                 },
                 {
                   "id": "0",
@@ -9572,12 +9617,13 @@
                 "key": "extra-id",
                 "type": "uint32"
               },
-              "write_if": "if_not_default",
-              "note": "Cameras bundle sunken-obs.o and sunkencam-ag.go."
+              "write_if": "always",
+              "note": "Without an id the game uses the button's place in the chain as the camera, so 'No camera' writes id 4. Cameras bundle sunken-obs.o and sunkencam-ag.go."
             }
           ]
         }
-      ]
+      ],
+      "glb": "levels/sunken/generic-button-lod0.glb"
     },
     {
       "etype": "ropebridge",
@@ -9767,9 +9813,21 @@
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to float at ocean height)",
+              "label": "Water: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty to float at ocean height.",
               "accepts": [
-                "any"
+                "water-anim",
+                "dark-eco-pool",
+                "jungle-water",
+                "lavatube-lava",
+                "cave-water",
+                "mud",
+                "ogre-lava",
+                "rolling-water",
+                "sunken-water",
+                "training-water",
+                "villagea-water",
+                "villageb-water",
+                "villagec-lava"
               ],
               "required": false
             }
@@ -9849,9 +9907,21 @@
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water (a water-anim actor only; none in the addon yet: leave empty to float at ocean height)",
+              "label": "Water: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty to float at ocean height.",
               "accepts": [
-                "any"
+                "water-anim",
+                "dark-eco-pool",
+                "jungle-water",
+                "lavatube-lava",
+                "cave-water",
+                "mud",
+                "ogre-lava",
+                "rolling-water",
+                "sunken-water",
+                "training-water",
+                "villagea-water",
+                "villageb-water",
+                "villagec-lava"
               ],
               "required": false
             }
