@@ -1,0 +1,9 @@
+;; fireboulder that has its hover sound whatever its name. Vanilla only creates
+;; it for the actor named fireboulder-6, and a boulder with a closed task
+;; hovers and updates that sound every frame (village2-obs.gc) -> crash.
+(deftype __TYPE__ (fireboulder) ())
+
+(defmethod initialize-skeleton ((this __TYPE__) (arg0 skeleton-group) (arg1 pair))
+  (if (zero? (-> this sound))
+    (set! (-> this sound) (new 'process 'ambient-sound (static-sound-spec "rock-hover" :fo-max 30) (-> this root trans))))
+  (call-parent-method this arg0 arg1))

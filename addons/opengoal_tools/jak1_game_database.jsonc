@@ -7044,7 +7044,7 @@
       "label": "Klaww (Ogre Boss)",
       "category": "Bosses",
       "parent": "process-drawable",
-      "description": "Klaww is a large lurker boss in The Precursor Legacy, operating from a volcanic section of Mountain Pass. He terrorized Rock Village by bombarding it with boulders before Jak confronted him. Vanilla hard-coding: the intro only starts with Jak above world Y 30 m and below world X 218 m, and it sends Jak to the vanilla 'ogre-start' continue point; it also closes the vanilla ogre-boss task.",
+      "description": "Klaww is a large lurker boss in The Precursor Legacy, operating from a volcanic section of Mountain Pass. He terrorized Rock Village by bombarding it with boulders before Jak confronted him. Exported as a level subtype (subtypes/ogreboss.gc): the intro starts from the distances below, sends Jak to the chosen continue point (if any) and uses this actor's game task. Its death still closes the vanilla ogre-boss task (vanilla state).",
       "art_group": "ogreboss-ag.go",
       "tpage_group": "Ogre",
       "code": [
@@ -7086,29 +7086,29 @@
             {
               "lump_key": "target-actor",
               "slot": 0,
-              "label": "Isle 1 (ogre-isle)",
+              "label": "Isle 1 (ogre-isle; required: the boulders aim at it)",
               "accepts": [
                 "ogre-isle"
               ],
-              "required": false
+              "required": true
             },
             {
               "lump_key": "target-actor",
               "slot": 1,
-              "label": "Isle 2 (ogre-isle)",
+              "label": "Isle 2 (ogre-isle; required: the boulders aim at it)",
               "accepts": [
                 "ogre-isle"
               ],
-              "required": false
+              "required": true
             },
             {
               "lump_key": "target-actor",
               "slot": 2,
-              "label": "Isle 3 (ogre-isle)",
+              "label": "Isle 3 (ogre-isle; required: the boulders aim at it)",
               "accepts": [
                 "ogre-isle"
               ],
-              "required": false
+              "required": true
             },
             {
               "lump_key": "trigger-actor",
@@ -7156,15 +7156,65 @@
               "highlight": true
             }
           ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_ogre_intro_dist",
+              "label": "Intro distance (m)",
+              "type": "float",
+              "default": 180.0,
+              "min": 0.0,
+              "lump": {
+                "key": "intro-distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "Jak within this of Klaww (and in front of him) starts the intro.",
+              "driver": {
+                "var": "self",
+                "expression": "var",
+                "driven": "empty_display_size"
+              }
+            },
+            {
+              "key": "og_ogre_fight_dist",
+              "label": "Fight distance (m)",
+              "type": "float",
+              "default": 150.0,
+              "min": 0.0,
+              "lump": {
+                "key": "fight-distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "After the intro, Jak within this starts the fight."
+            },
+            {
+              "key": "og_ogre_continue",
+              "label": "Continue point after the intro",
+              "type": "string",
+              "default": "",
+              "lump": {
+                "key": "continue-name",
+                "type": "string",
+                "bare": true
+              },
+              "write_if": "if_non_empty",
+              "note": "Optional: a checkpoint name (<level>-<id>). Empty: Jak stays where he is."
+            }
+          ]
         }
-      ]
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "plant-boss",
       "label": "Plant Boss",
       "category": "Bosses",
       "parent": "process-drawable",
-      "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional. Its kill animation (plant-boss-main+0) is bundled. Also writes a reminder on the vanilla jungle-plant task.",
+      "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional. Its kill animation (plant-boss-main+0) is bundled. Also writes a reminder on the vanilla jungle-plant task. Keep its default rotation (locked): its back vines, visibility sphere and collision don't follow the actor's rotation.",
       "art_group": [
         "plant-boss-ag.go",
         "aphid-lurker-ag.go",
@@ -7216,6 +7266,11 @@
             }
           ]
         }
+      ],
+      "rotation_lock": [
+        "x",
+        "y",
+        "z"
       ]
     },
     {
@@ -7314,61 +7369,61 @@
             {
               "lump_key": "alt-actor",
               "slot": 7,
-              "label": "Yellow vent 1 (blocked / unblocked; game crashes without it)",
+              "label": "Yellow eco 1 (given / taken away; game crashes without it)",
               "accepts": [
-                "ventyellow"
+                "eco-yellow"
               ],
               "required": false
             },
             {
               "lump_key": "alt-actor",
               "slot": 8,
-              "label": "Yellow vent 2 (blocked / unblocked; game crashes without it)",
+              "label": "Yellow eco 2 (given / taken away; game crashes without it)",
               "accepts": [
-                "ventyellow"
+                "eco-yellow"
               ],
               "required": false
             },
             {
               "lump_key": "alt-actor",
               "slot": 9,
-              "label": "Yellow vent 3 (blocked / unblocked; game crashes without it)",
+              "label": "Yellow eco 3 (given / taken away; game crashes without it)",
               "accepts": [
-                "ventyellow"
+                "eco-yellow"
               ],
               "required": false
             },
             {
               "lump_key": "alt-actor",
               "slot": 10,
-              "label": "Yellow vent 4 (blocked / unblocked; game crashes without it)",
+              "label": "Yellow eco 4 (given / taken away; game crashes without it)",
               "accepts": [
-                "ventyellow"
+                "eco-yellow"
               ],
               "required": false
             },
             {
               "lump_key": "alt-actor",
               "slot": 11,
-              "label": "Vent shown / hidden in the red stage (game crashes without it)",
+              "label": "Blue vent shown / hidden in the red stage (game crashes without it)",
               "accepts": [
-                "any"
+                "ventblue"
               ],
               "required": false
             },
             {
               "lump_key": "alt-actor",
               "slot": 12,
-              "label": "plat-eco-finalboss (not in the addon yet)",
+              "label": "Final boss eco platform (plat-eco-finalboss)",
               "accepts": [
-                "any"
+                "plat-eco-finalboss"
               ],
               "required": false
             }
           ]
         }
       ],
-      "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos. Needs its alt-actor links (yellow vents and the stage-3 vent, or it writes through empty links), and the light-eco ending needs sage-finalboss, which the addon doesn't support yet. The yellow shot and light eco use absolute heights from vanilla Final Boss.",
+      "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos. Needs its alt-actor links (4 yellow eco and the blue vent, or it writes through empty links), and the light-eco ending needs sage-finalboss, which the addon doesn't support yet. The yellow shot and light eco use absolute heights from vanilla Final Boss.",
       "art_group": [
         "robotboss-ag.go",
         "green-eco-lurker-ag.go",
@@ -9658,7 +9713,20 @@
       "code": "robotboss-misc.o",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Final boss eco claw. Reads nothing itself: the robot boss (its alt-actor slots 1-4) makes it glow and fire its beam."
+    },
+    {
+      "etype": "plat-eco-finalboss",
+      "label": "Eco Platform (Final Boss)",
+      "category": "Platforms",
+      "parent": "plat-eco",
+      "art_group": "plat-eco-finalboss-ag.go",
+      "tpage_group": "Final",
+      "code": "sage-finalboss.o",
+      "glb": "levels/finalboss/plat-eco-finalboss-lod0.glb",
+      "shape": "CUBE",
+      "description": "Final boss eco platform: moves along its path when the robot boss (alt-actor slot 12) sends it 'target."
     },
     {
       "etype": "swamp-rock",

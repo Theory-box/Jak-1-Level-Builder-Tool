@@ -1,0 +1,8 @@
+;; water-anim (basic): a water volume whose ripple height is its flat water height.
+;; Floating / splashing actors call get-ripple-height on their linked water;
+;; water-vol doesn't implement it and the vanilla water-anim needs a "look"
+;; skeleton from a vanilla level. Looks can come later.
+(deftype __TYPE__ (water-vol) ())
+
+(defmethod get-ripple-height ((this __TYPE__) (arg0 vector))
+  (-> this water-height))
