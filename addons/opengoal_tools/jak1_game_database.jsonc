@@ -5271,11 +5271,219 @@
       "label": "Babak with cannon (Lurker)",
       "category": "Enemies",
       "parent": "babak",
-      "description": "The Babak with cannon is a babak which will jump on a nearby cannon to shoot at Jak",
+      "description": "Babak that runs back to its spawn spot and jumps on its linked Misty Cannon to fire at Jak, and jumps off when Jak comes close.",
       "art_group": "babak-ag.go",
       "tpage_group": "Beach",
-      "code": "babak-with-cannon.o",
-      "glb": "levels/beach/babak-lod0.glb"
+      "code": [
+        "mistycannon.o",
+        "babak-with-cannon.o"
+      ],
+      "glb": "levels/beach/babak-lod0.glb",
+      "battlecontroller_lurker": false,
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Cannon to ride (required)",
+              "accepts": [
+                "mistycannon"
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_bwc_distance",
+              "label": "Jump-off distance (m)",
+              "type": "float",
+              "default": 40.0,
+              "lump": {
+                "key": "distance",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "It rides the cannon while Jak is farther than this. Place it a few metres from the cannon, on the nav-mesh."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "mistycannon",
+      "label": "Misty Cannon",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "description": "Lurker cannon. Fires sacks at Jak while a Babak with cannon (its Alt actor = this) rides it; otherwise Jak can use it (circle at the grips). Its own rotation is ignored: the yaw limits are world angles (0 = -Blender Y).",
+      "art_group": [
+        "mistycannon-ag.go",
+        "sack-ag.go"
+      ],
+      "tpage_group": "Misty",
+      "code": "mistycannon.o",
+      "glb": "levels/misty/mistycannon-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Never fire within 30 m of",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_mc_rotmin",
+              "label": "Yaw min (deg, world)",
+              "type": "float",
+              "default": 90.0,
+              "lump": {
+                "key": "rotmin",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_mc_rotmax",
+              "label": "Yaw max (deg, world)",
+              "type": "float",
+              "default": 180.0,
+              "lump": {
+                "key": "rotmax",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default",
+              "note": "Min = max: free 360."
+            },
+            {
+              "key": "og_mc_rotspeed",
+              "label": "Yaw speed (deg/s)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "rotspeed",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_mc_tiltmin",
+              "label": "Tilt min (deg)",
+              "type": "float",
+              "default": -10.0,
+              "lump": {
+                "key": "tiltmin",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_mc_tiltmax",
+              "label": "Tilt max (deg)",
+              "type": "float",
+              "default": 70.0,
+              "lump": {
+                "key": "tiltmax",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_mc_tiltspeed",
+              "label": "Tilt speed (deg/s)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "tiltspeed",
+                "type": "degrees"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_mc_center_radius",
+              "label": "Aim radius (m)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "lump": {
+                "key": "center-radius",
+                "type": "meters"
+              },
+              "write_if": "if_nonzero",
+              "note": "0 = around the cannon, radius = Idle distance (Activation)."
+            },
+            {
+              "key": "og_mc_cx",
+              "label": "X (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "center-point",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "group": "mc-center",
+              "group_label": "Aim Centre",
+              "group_note": "Used when Aim radius > 0 (game axes)."
+            },
+            {
+              "key": "og_mc_cy",
+              "label": "Up (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "center-point",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero",
+              "group": "mc-center"
+            },
+            {
+              "key": "og_mc_cz",
+              "label": "Z (m, = -Blender Y)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "center-point",
+                "type": "meters",
+                "slot": 2
+              },
+              "write_if": "if_any_nonzero",
+              "group": "mc-center"
+            },
+            {
+              "key": "og_mc_water",
+              "label": "Sack water Y (m)",
+              "type": "float",
+              "default": -1000.0,
+              "lump": {
+                "key": "water-height",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "lurkercrab",
@@ -5329,7 +5537,29 @@
     },
     {
       "etype": "swamp-rat",
-      "panels": [{"panel": "nav-mesh", "can-jump": true}],
+      "panels": [
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_water_height",
+              "label": "Water surface Y (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "water-height",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "The rat can't go below this - 0.5 m."
+            }
+          ]
+        }
+      ],
       "label": "Swamp Rat",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5343,7 +5573,7 @@
       "etype": "kermit",
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
-      "panels": [{"panel": "nav-mesh", "can-jump": true}],
+      "panels": [{"panel": "nav-mesh", "can-jump": false}],
       "label": "Kermit (Lurker)",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5364,14 +5594,20 @@
       "code": "snow-bunny.o",
       "glb": "levels/snow/snow-bunny-lod0.glb",
       "panels": [
-        {"panel": "nav-mesh", "can-jump": true},
-        {"panel": "path", "required": true},
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        },
+        {
+          "panel": "path",
+          "required": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_mode",
-              "label": "Retreating Mode",
+              "label": "Lunge instead of retreating",
               "type": "bool",
               "default": false,
               "lump": {
@@ -5379,7 +5615,8 @@
                 "type": "int32"
               },
               "value_if_true": 1,
-              "write_if": "if_true"
+              "write_if": "if_true",
+              "note": "Default: hops back after attacking (5 s). Lunge: keeps attacking (0.1 s)."
             }
           ]
         }
@@ -5391,13 +5628,18 @@
       "category": "Enemies",
       "parent": "snow-bunny",
       "panels": [
-        {"panel": "nav-mesh", "can-jump": true},
-        {"panel": "custom-fields", "export": false}
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        }
       ],
       "description": "The citadel bunny is a varient of the Snow Bunny",
       "art_group": "citb-bunny-ag.go",
       "tpage_group": "Citadel",
-      "code": ["snow-bunny.o", "citb-bunny.o"],
+      "code": [
+        "snow-bunny.o",
+        "citb-bunny.o"
+      ],
       "glb": "levels/citadel/citb-bunny-lod0.glb"
     },
     {
@@ -5447,14 +5689,22 @@
     },
     {
       "etype": "baby-spider",
-      "panels": [{"panel": "nav-mesh", "can-jump": true}],
+      "panels": [
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        }
+      ],
       "label": "Baby Spider",
       "category": "Enemies",
       "parent": "nav-enemy",
       "description": "Small spider lurkers found in Spider Cave. They accompany the Mother Spider and swarm Jak on approach.",
       "art_group": "baby-spider-ag.go",
       "tpage_group": "Maincave",
-      "code": "baby-spider.o",
+      "code": [
+        "cavecrystal-light.o",
+        "baby-spider.o"
+      ],
       "glb": "levels/darkcave/baby-spider-lod0.glb"
     },
     {
@@ -5463,7 +5713,6 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path"},
         {
           "panel": "actor-link",
           "slots": [
@@ -5478,14 +5727,29 @@
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh", "fallback-sphere": true}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        }
       ],
-      "description": "Link to a Cave Spider Trap (cave-trap) to activate the eggs",
-      "art_group": ["spider-egg-ag.go", "baby-spider-ag.go"],
+      "description": "Link it to a Cave Spider Trap (the trap's Alt actors) to hatch baby spiders. Needs ground within 3 m above / 10 m below.",
+      "art_group": "spider-egg-ag.go",
       "tpage_group": "Maincave",
-      "code": ["baby-spider.o", "spider-egg.o"],
+      "code": [
+        "mother-spider-egg.o",
+        "spider-egg.o"
+      ],
       "glb": "levels/robocave/spider-egg-unbroken-lod0.glb"
     },
     {
@@ -5506,13 +5770,26 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ],
       "description": "The sand worm, also known as the sea serpent lurker, is an enemy in The Precursor Legacy. Lurkers dwelling in sand pits at Sentinel Beach — they burst from the ground to attack.",
       "art_group": "lurkerworm-ag.go",
       "tpage_group": "Beach",
-      "code": "lurkerworm.o",
+      "code": [
+        "twister.o",
+        "lurkerworm.o"
+      ],
       "glb": "levels/beach/lurkerworm-lod0.glb"
     },
     {
@@ -5564,20 +5841,72 @@
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
-      "description": "The yeti is the glacier variant of the babak lurker, encountered in The Precursor Legacy's colder regions. Larger and tougher than the standard babak.",
+      "description": "Invisible spawner: yeti slaves appear at random path points (never within 6 m of Jak) and patrol the path, using this actor's nav-mesh and activation settings.",
       "art_group": "yeti-ag.go",
       "tpage_group": "Snow",
       "code": "yeti.o",
       "glb": "levels/snow/yeti-lod0.glb",
-      "lumps": [
-        {"key": "notice-dist", "type": "meters", "description": "Distance at which yeti notices player. Default 50m."}
-      ],
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_nav_speed", "label": "Move speed (x)", "type": "float", "default": 1.0, "min": 0.0, "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.", "lump": {"key": "speed", "type": "float"}, "write_if": "if_not_default"}]},
-        {"panel": "path", "required": true, "linear-only": true},
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_nav_speed",
+              "label": "Move speed (x)",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.0,
+              "note": "Multiplies how fast the enemy moves when it walks / runs on the nav-mesh (fact-info-enemy speed, read by aligned nav-enemies). 1 = normal.",
+              "lump": {
+                "key": "speed",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_notice_dist",
+              "label": "First notice distance (m)",
+              "type": "float",
+              "default": 50.0,
+              "lump": {
+                "key": "notice-dist",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "spawner",
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Yetis (-1 = one per path point)",
+              "min": -1
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        }
       ]
     },
     {
@@ -5586,11 +5915,21 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true},
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        }
       ],
       "description": "The bully, also known as the spinning lurker, is an enemy in The Precursor Legacy. They were only found in pool hubs at the lost Precursor city.",
       "art_group": "bully-ag.go",
@@ -5609,8 +5948,15 @@
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "panels": [
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "sync",
           "fields": [
@@ -5656,6 +6002,17 @@
                 "slot": 1
               },
               "write_if": "always"
+            },
+            {
+              "key": "og_notice_dist",
+              "label": "Notice distance (m)",
+              "type": "float",
+              "default": 14.0,
+              "lump": {
+                "key": "notice-dist",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
             }
           ]
         },
@@ -5665,17 +6022,41 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Buddy alt actor",
+              "label": "Buddy puffer",
               "accepts": [
-                "any"
+                "puffer"
               ],
               "required": false
             }
           ]
         },
-        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}, {"key": "og_notice_bottom", "show-field": true, "export": true}]},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"},
+        {
+          "panel": "activation",
+          "fields": [
+            {
+              "key": "og_notice_top",
+              "show-field": true,
+              "export": true
+            },
+            {
+              "key": "og_notice_bottom",
+              "show-field": true,
+              "export": true
+            }
+          ]
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        },
         {
           "panel": "fact-options",
           "fields": [
@@ -5694,7 +6075,10 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "required": true},
+        {
+          "panel": "path",
+          "required": true
+        },
         {
           "panel": "actor-link",
           "slots": [
@@ -5703,7 +6087,7 @@
               "slot": 0,
               "label": "plunger-lurker at the end of the path",
               "accepts": [
-                "any"
+                "plunger-lurker"
               ],
               "required": false
             },
@@ -5727,11 +6111,24 @@
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ],
       "description": "The pedal-copter lurker, also known as a flying lurker, is an enemy in The Precursor Legacy. Only found in Mountain Pass, they travel in a scouting party to detonate mines in the Pass.",
-      "art_group": "flying-lurker-ag.go",
+      "art_group": [
+        "flying-lurker-ag.go",
+        "ogrecam-ag.go"
+      ],
       "tpage_group": "Ogre",
       "code": "flying-lurker.o",
       "glb": "levels/ogre/flying-lurker-lod0.glb"
@@ -5750,18 +6147,34 @@
               "slot": 0,
               "label": "flying-lurker to activate the plunger",
               "accepts": [
-                "any"
+                "flying-lurker"
               ],
               "required": false
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ],
-      "art_group": "plunger-lurker-ag.go",
+      "art_group": [
+        "plunger-lurker-ag.go",
+        "ogrecam-ag.go"
+      ],
       "tpage_group": "Ogre",
-      "code": ["ogre-obs.o", "flying-lurker.o"],
+      "code": [
+        "ogre-obs.o",
+        "flying-lurker.o"
+      ],
       "glb": "levels/ogre/plunger-lurker-lod0.glb"
     },
     {
@@ -5770,49 +6183,70 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
-      "art_group": ["mother-spider-ag.go", "baby-spider-ag.go", "spider-egg-ag.go"],
+      "art_group": [
+        "mother-spider-ag.go",
+        "baby-spider-ag.go",
+        "spider-egg-ag.go"
+      ],
       "tpage_group": "Maincave",
-      "code": ["mother-spider-h.o", "baby-spider.o", "mother-spider-egg.o", "mother-spider-proj.o", "mother-spider.o"],
+      "code": [
+        "cavecrystal-light.o",
+        "mother-spider-h.o",
+        "baby-spider.o",
+        "mother-spider-egg.o",
+        "mother-spider-proj.o",
+        "mother-spider.o"
+      ],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "panels": [
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "_og_thread-min-trans",
               "type": "float",
-              "label": "Thread Min Trans Y (m * 4096)",
-              "default": 28672.0,
+              "label": "Thread min height (m)",
+              "default": 7.0,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 0
+                "slot": 0,
+                "scale": 4096
               },
               "write_if": "always"
             },
             {
               "key": "_og_anchor-trans",
               "type": "float",
-              "label": "Anchor Trans Y (m * 4096)",
-              "default": 204800.0,
+              "label": "Anchor height (m)",
+              "default": 50.0,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 1
+                "slot": 1,
+                "scale": 4096
               },
               "write_if": "always"
             },
             {
               "key": "_og_max-swing-radius",
               "type": "float",
-              "label": "Max Swing Radius (m * 4096)",
-              "default": 73728.0,
+              "label": "Max swing radius (m)",
+              "default": 18.0,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 2
+                "slot": 2,
+                "scale": 4096
               },
               "write_if": "always"
             },
@@ -5830,59 +6264,73 @@
             },
             {
               "key": "_og_mother-spider_bool",
-              "label": "To check what it does",
+              "label": "Spawn babies on path points at start",
               "type": "bool",
               "default": false,
               "lump": {
-                "key": "extra-count",
+                "key": "mother-spider",
                 "type": "float",
                 "slot": 4
               },
               "value_if_true": 1.0,
-              "value_if_false": 0.0,
               "write_if": "always"
             },
             {
               "key": "_og_max-spit-xz-dist",
               "type": "float",
-              "label": "Max Spit Distance (m * 4096)",
-              "default": 81920.0,
+              "label": "Max spit distance (m)",
+              "default": 20.0,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 5
+                "slot": 5,
+                "scale": 4096
               },
               "write_if": "always"
             },
             {
               "key": "_og_activate-xz-dist",
               "type": "float",
-              "label": "Activate Distance (m * 4096)",
-              "default": 143360.0,
+              "label": "Activate distance (m)",
+              "default": 35.0,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 6
+                "slot": 6,
+                "scale": 4096
               },
               "write_if": "always"
             },
             {
               "key": "_og_deactivate-xz-dist",
               "type": "float",
-              "label": "Deactivate Distance (m * 4096)",
-              "default": 163430.4,
+              "label": "Deactivate distance (m)",
+              "default": 39.9,
               "lump": {
                 "key": "mother-spider",
                 "type": "float",
-                "slot": 7
+                "slot": 7,
+                "scale": 4096
               },
               "write_if": "always"
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        }
       ]
     },
     {
@@ -6014,10 +6462,16 @@
       "description": "The driller lurker is an enemy in The Precursor Legacy that mines cave rock with its drill. Found in Spider Cave, drilling away at the Precursor robot excavation site.",
       "art_group": "driller-lurker-ag.go",
       "tpage_group": "Maincave",
-      "code": "driller-lurker.o",
+      "code": [
+        "cavecrystal-light.o",
+        "driller-lurker.o"
+      ],
       "glb": "levels/maincave/driller-lurker-lod0.glb",
       "panels": [
-        {"panel": "path", "required": true},
+        {
+          "panel": "path",
+          "required": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -6031,19 +6485,22 @@
                 "type": "float",
                 "slot": 0
               },
-              "write_if": "if_not_default"
+              "write_if": "always",
+              "min": 0.0,
+              "max": 1.0
             },
             {
               "key": "og_driller-lurker_rot",
-              "label": "Starting Drilling Rotation",
+              "label": "Drill in place at angle (deg)",
               "type": "float",
-              "default": 0.0,
+              "default": 12345.0,
               "lump": {
                 "key": "driller-lurker",
                 "type": "float",
                 "slot": 2
               },
-              "write_if": "if_not_default"
+              "write_if": "always",
+              "note": "12345 = don't drill: patrol the path instead."
             },
             {
               "key": "og_driller-lurker_dir",
@@ -6057,12 +6514,22 @@
               },
               "value_if_true": -1.0,
               "value_if_false": 1.0,
-              "write_if": "if_not_default"
+              "write_if": "always"
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ]
     },
     {
@@ -6117,24 +6584,39 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path"},
-        {"panel": "nav-mesh", "fallback-sphere": true},
+        {
+          "panel": "path"
+        },
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": true
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Mud surface entity",
+              "label": "Mud surface (a Water Anim; empty = its own height - 0.5 m)",
               "accepts": [
-                "any"
+                "water-anim"
               ],
               "required": false
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ],
       "description": "The quicksand lurker, also known as the fireball lurker, is an enemy in The Precursor Legacy. A small purple lurker indigenous to the mud ponds of Misty Island — it spits dark eco fireballs.",
       "art_group": "quicksandlurker-ag.go",
@@ -6147,28 +6629,69 @@
       "label": "Ram",
       "category": "Enemies",
       "parent": "process-drawable",
-      "art_group": ["ram-ag.go", "ram-boss-ag.go"],
+      "art_group": [
+        "ram-ag.go",
+        "ram-boss-ag.go",
+        "snowcam-ag.go"
+      ],
       "tpage_group": "Snow",
-      "code": ["snow-ram-h.o", "snow-ram-boss.o", "snow-ram.o"],
+      "code": [
+        "snow-ram-h.o",
+        "snow-ram-boss.o",
+        "snow-obs.o",
+        "snow-ram.o"
+      ],
       "glb": "levels/snow/ram-lod0.glb",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_extra-id",
-              "label": "Id for task (1 to max ram)",
-              "type": "int",
-              "default": 0,
-              "min": 0,
+              "label": "Cell cutscene",
+              "type": "enum",
+              "default": "0",
               "lump": {
                 "key": "extra-id",
                 "type": "int32"
               },
-              "write_if": "if_nonzero"
+              "write_if": "if_not_default",
+              "note": "The cell flies to its vanilla Snowy position.",
+              "choices": [
+                {
+                  "value": "0",
+                  "label": "No cell",
+                  "lump_value": 0
+                },
+                {
+                  "value": "1",
+                  "label": "Vanilla ram cell 1",
+                  "lump_value": 1
+                },
+                {
+                  "value": "2",
+                  "label": "Vanilla ram cell 2",
+                  "lump_value": 2
+                },
+                {
+                  "value": "3",
+                  "label": "Vanilla ram cell 3",
+                  "lump_value": 3
+                }
+              ]
             },
             {
               "key": "og_mode",
@@ -6190,34 +6713,17 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "1st Ram part of the task, including this one",
+              "label": "Rams of the task (the cell comes when all are done)",
               "accepts": [
-                "any"
+                "ram"
               ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "2nd Ram part of the task, including this one",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 2,
-              "label": "3rd Ram part of the task, including this one",
-              "accepts": [
-                "any"
-              ],
-              "required": false
+              "required": false,
+              "allow-multiple": true
             },
             {
               "lump_key": "next-actor",
               "slot": 0,
-              "label": "First Enemy in the list before Ram boss jump down",
+              "label": "First enemy to beat before the ram boss jumps down (they chain through their own next-actor)",
               "accepts": [
                 "any"
               ],
@@ -6225,9 +6731,21 @@
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        }
       ]
     },
     {
@@ -6269,21 +6787,43 @@
       "category": "Enemies",
       "parent": "nav-enemy",
       "panels": [
-        {"panel": "nav-mesh", "can-jump": true},
-        {"panel": "path", "required": true},
-        {"panel": "nav-mesh", "fallback-sphere": false}
+        {
+          "panel": "nav-mesh",
+          "can-jump": true
+        },
+        {
+          "panel": "path",
+          "required": true
+        },
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": false
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_ice_spawn_point",
+              "label": "Spawn at path point (-1 = random)",
+              "type": "int",
+              "default": -1,
+              "min": -1,
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            }
+          ]
+        }
       ],
       "tpage_group": "Snow",
       "code": "ice-cube.o",
-      "lumps": [
-        {
-          "key": "mode",
-          "type": "uint32",
-          "description": "Variant selector. Default -1 (standard). 0 = alternate behaviour."
-        }
-      ],
       "shape": "CUBE",
-      "art_group": "ice-cube-ag.go"
+      "art_group": [
+        "ice-cube-ag.go",
+        "ice-cube-break-ag.go"
+      ]
     },
     {
       "etype": "fireboulder",
@@ -6667,9 +7207,18 @@
       "code": "rolling-robber.o",
       "glb": "levels/rolling/robber-lod0.glb",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "path",
+          "required": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -6688,7 +7237,7 @@
               "key": "og_water-height",
               "label": "Water height if robber goes over it (m)",
               "type": "float",
-              "default": -1.0,
+              "default": 0.0,
               "lump": {
                 "key": "water-height",
                 "type": "meters"
@@ -6716,7 +7265,7 @@
               "slot": 0,
               "label": "Previous robber in the list",
               "accepts": [
-                "any"
+                "robber"
               ],
               "required": false
             },
@@ -6725,15 +7274,26 @@
               "slot": 0,
               "label": "Next robber in the list",
               "accepts": [
-                "any"
+                "robber"
               ],
               "required": false
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
-      ]
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
+      ],
+      "description": "Robbers of one task must be linked both ways (A next = B, B prev = A): the cell comes from the last one caught, and a lone robber never gives one. Never link a robber to itself (the game hangs). The cell flies at least 26 m high (vanilla clamp)."
     },
     {
       "etype": "fuel-cell",
@@ -9042,32 +9602,61 @@
     {
       "etype": "cave-trap",
       "label": "Cave Spider Trap",
-      "description": "Cave trap will activate all linked spider eggs and spider vents when entered",
+      "description": "Spawns baby spiders from its linked eggs / vents (max 8 alive) when Jak is within 46 m. The spiders use the trap's own nav-mesh, path (patrol) and activation settings. Also sets the vanilla cave-spider-tunnel task hint.",
       "category": "Enemies",
       "parent": "process-drawable",
       "tpage_group": "Robocave",
-      "code": "cave-trap.o",
+      "code": [
+        "cavecrystal-light.o",
+        "baby-spider.o",
+        "cave-trap.o"
+      ],
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Spider eggs / vents",
+              "label": "Spider eggs / vents (any number)",
               "accepts": [
-                "any"
+                "spider-egg",
+                "spider-vent"
               ],
               "required": false,
               "allow-multiple": true
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh", "fields": [{"key": "og_nav_max_users", "label": "Max spawned spiders", "default": 50, "write_if": "always"}]}
-      ]
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh",
+          "fields": [
+            {
+              "key": "og_nav_max_users",
+              "default": 32,
+              "write_if": "if_not_default"
+            }
+          ]
+        }
+      ],
+      "art_group": "baby-spider-ag.go"
     },
     {
       "etype": "spider-vent",
@@ -9087,13 +9676,22 @@
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
-      "art_group": "swamp-rat-nest-ag.go",
+      "art_group": [
+        "swamp-rat-nest-ag.go",
+        "swamp-rat-ag.go"
+      ],
       "tpage_group": "Swamp",
-      "code": "swamp-rat-nest.o",
+      "code": [
+        "swamp-rat.o",
+        "swamp-rat-nest.o"
+      ],
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "panels": [
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -9101,14 +9699,55 @@
               "key": "og_crate_pickup",
               "label": "Pickup",
               "type": "enum",
-              "default": "eco-blue",
-              "choices": "CratePickups",
+              "default": "eco-pill-random",
+              "choices": [
+                {
+                  "id": "eco-pill-random",
+                  "label": "Green Eco Pills (Random)",
+                  "engine_string": "(pickup-type eco-pill-random)"
+                },
+                {
+                  "id": "none",
+                  "label": "Nothing",
+                  "engine_string": "(pickup-type none)"
+                },
+                {
+                  "id": "money",
+                  "label": "Orbs",
+                  "engine_string": "(pickup-type money)"
+                },
+                {
+                  "id": "eco-pill",
+                  "label": "Green Eco Pills",
+                  "engine_string": "(pickup-type eco-pill)"
+                },
+                {
+                  "id": "eco-green",
+                  "label": "Green Eco",
+                  "engine_string": "(pickup-type eco-green)"
+                },
+                {
+                  "id": "eco-blue",
+                  "label": "Blue Eco",
+                  "engine_string": "(pickup-type eco-blue)"
+                },
+                {
+                  "id": "eco-red",
+                  "label": "Red Eco",
+                  "engine_string": "(pickup-type eco-red)"
+                },
+                {
+                  "id": "eco-yellow",
+                  "label": "Yellow Eco",
+                  "engine_string": "(pickup-type eco-yellow)"
+                }
+              ],
               "lump": {
                 "key": "eco-info",
                 "type": "eco-info-picker",
                 "pairs_with": "og_crate_pickup_amount"
               },
-              "write_if": "if_not_none"
+              "write_if": "if_not_default"
             },
             {
               "key": "og_crate_pickup_amount",
@@ -9117,23 +9756,49 @@
               "default": 1,
               "min": 1,
               "max": 99
+            },
+            {
+              "key": "og_water_height",
+              "label": "Water surface Y (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "water-height",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "Rats can't go below this - 0.5 m."
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
         {
           "panel": "spawner",
           "fields": [
             {
               "key": "og_num_lurkers",
-              "label": "Child count (default 3)",
+              "label": "Rats (1-4; one less when Jak is below half health)",
               "default": 3,
-              "min": 0
+              "min": 1,
+              "max": 4
             }
           ]
         },
-        {"panel": "nav-mesh"}
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": true
+        }
       ]
     },
     {
@@ -9180,11 +9845,13 @@
       "art_group": "sharkey-ag.go",
       "glb": "levels/beach/sharkey-lod0.glb",
       "code": "sharkey.o",
-      "lumps": [
-        {"key": "water-height", "type": "float", "description": "Y-coordinate of water surface in raw game units. Required (defaults to 0)."}
-      ],
       "panels": [
-        {"panel": "path", "show-panel": false},
+        {
+          "panel": "path",
+          "show-panel": true,
+          "linear-only": true,
+          "description": "Optional: it attacks from the path point nearest Jak."
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -9220,11 +9887,29 @@
                 "type": "meters"
               },
               "write_if": "always"
+            },
+            {
+              "key": "og_water_height",
+              "label": "Water surface Y (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "water-height",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "note": "It only notices Jak below this - 0.5 m, and needs a nav-mesh over the water."
             }
           ]
         },
-        {"panel": "nav-mesh", "fallback-sphere": false},
-        {"panel": "scale", "uniform": true}
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": false
+        },
+        {
+          "panel": "scale",
+          "uniform": true
+        }
       ]
     },
     {
