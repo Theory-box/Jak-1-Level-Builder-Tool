@@ -327,7 +327,7 @@ class OG_OT_NavMeshShare(Operator):
     """The other actors on this navmesh use this actor's one instead
     (nav-mesh-actor link), so the navmesh is built once"""
     bl_idname  = "og.navmesh_share"
-    bl_label   = "Share This Actor's NavMesh"
+    bl_label   = "Make Other Connected Actors Use This as Nav-Mesh-Actor"
     bl_options = {"REGISTER", "UNDO"}
 
     actor_name: bpy.props.StringProperty()

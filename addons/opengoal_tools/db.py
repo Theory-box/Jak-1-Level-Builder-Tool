@@ -1050,7 +1050,7 @@ def choices_table(name: str) -> list[dict] | None:
 
 def preview_offset(etype: str, prop_get) -> list:
     """Default preview-mesh offset in Blender metres [x, y, z]. A selected
-    variant's `offset` overrides the actor's `preview_offset` (e.g. each bridge
+    variant's `offset` overrides the actor's own `offset` (e.g. each bridge
     variant shifts its mesh back by half its length so the preview matches where
     the bridge spawns centred in-game). A per-object override is applied by the
     caller on top of this."""
@@ -1058,7 +1058,7 @@ def preview_offset(etype: str, prop_get) -> list:
     if var.get("offset"):
         return list(var["offset"])
     a = find_actor(etype) or {}
-    return list(a.get("preview_offset") or [0.0, 0.0, 0.0])
+    return list(a.get("offset") or [0.0, 0.0, 0.0])
 
 
 def actor_variant(etype: str, prop_get) -> dict:

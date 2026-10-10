@@ -143,7 +143,7 @@ class OG_PT_ActorNavMesh(Panel):
                 warn.alert = True
                 warn.label(text=f"{len(others)} other actor(s) also use this nav-mesh:", icon="ERROR")
                 warn.label(text="it is built once per actor. Share it instead:")
-                layout.operator("og.navmesh_share", text="Others use this actor's nav-mesh",
+                layout.operator("og.navmesh_share", text="Make other connected actors use this as nav-mesh-actor",
                                 icon="LINKED").actor_name = sel.name
             try:
                 nm_obj.data.calc_loop_triangles()
