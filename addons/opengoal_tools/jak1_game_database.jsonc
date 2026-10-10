@@ -6292,15 +6292,18 @@
       "parent": "process-drawable",
       "art_group": "fireboulder-ag.go",
       "tpage_group": "Village2",
-      "code": "village2-obs.o",
+      "code": [
+        "village2-part.o",
+        "village2-obs.o"
+      ],
       "glb": "levels/village2/fireboulder-lod0.glb",
-      "lumps": [
+      "panels": [
         {
-          "key": "alt-task",
-          "type": "uint32",
-          "description": "boulder hover when this task is complete"
+          "panel": "game-task",
+          "description": "Not set: idle, no fire. Set and open: fire particles. Closed: hovers and spins (the hover is meant for the actor named fireboulder-6)."
         }
-      ]
+      ],
+      "description": "The vanilla hover sound and big blocking collision only apply to an actor named fireboulder-6 (it also forces a 90° yaw)."
     },
     {
       "etype": "evilplant",
@@ -8467,7 +8470,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Other spikes of the same group",
+              "label": "Spike group (order matters; an unlinked spike never rises)",
               "accepts": [
                 "spike"
               ],
@@ -8480,7 +8483,8 @@
       "art_group": "spike-ag.go",
       "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
-      "glb": "levels/firecanyon/spike-lod0.glb"
+      "glb": "levels/firecanyon/spike-lod0.glb",
+      "description": "Rises only when Jak rides the zoomer within 55 m. With 2+ links it picks at random whether it or part of its group rises."
     },
     {
       "etype": "steam-cap",
@@ -8766,7 +8770,10 @@
       "parent": "process-drawable",
       "art_group": "swamp-spike-ag.go",
       "glb": "levels/swamp/swamp-spike-lod0.glb",
-      "code": ["battlecontroller.o", "swamp-obs.o"],
+      "code": [
+        "battlecontroller.o",
+        "swamp-obs.o"
+      ],
       "is_prop": true,
       "panels": [
         {
@@ -8785,23 +8792,11 @@
               "export": false
             }
           ],
-          "description": "Spike cycle timing: period and phase."
-        },
-        {"panel": "scale", "always": true}
-      ],
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance."
-        },
-        {
-          "key": "scale-factor",
-          "type": "float",
-          "description": "Scale modifier."
+          "description": "Rises when the cycle passes its half, only with Jak within 50 m: period and phase."
         }
       ],
-      "shape": "CONE"
+      "shape": "CONE",
+      "tpage_group": "Swamp"
     },
     {
       "etype": "whirlpool",
@@ -8837,27 +8832,28 @@
           "fields": [
             {
               "key": "og_whirl_speed",
-              "label": "Base speed (Whirl at <11.12m)",
+              "label": "Base spin (deg/s)",
               "type": "float",
-              "default": 8.0,
+              "default": 180.0,
               "lump": {
                 "key": "speed",
-                "type": "meters",
+                "type": "degrees",
                 "slot": 0
               },
               "write_if": "always"
             },
             {
               "key": "og_whirl_var",
-              "label": "Alternative speed (Whirl at <11.12m)",
+              "label": "Peak spin (deg/s)",
               "type": "float",
-              "default": 35.0,
+              "default": 800.0,
               "lump": {
                 "key": "speed",
-                "type": "meters",
+                "type": "degrees",
                 "slot": 1
               },
-              "write_if": "always"
+              "write_if": "always",
+              "note": "The spin swings between the two over each Sync period. It pulls Jak within 10 m while he touches water."
             }
           ]
         }
@@ -10175,7 +10171,11 @@
       "code": "lavatube-obs.o",
       "glb": "levels/lavatube/darkecobarrel-lod0.glb",
       "panels": [
-        {"panel": "path", "required": true},
+        {
+          "panel": "path",
+          "required": true,
+          "min-points": 2
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -10183,22 +10183,20 @@
               "key": "og_move_speed",
               "label": "Move speed (m/s)",
               "type": "float",
-              "default_per_etype": {
-                "lavaballoon": 3.0,
-                "darkecobarrel": 15.0
-              },
               "lump": {
                 "key": "speed",
                 "type": "meters"
               },
-              "write_if": "always"
+              "write_if": "always",
+              "default": 15.0,
+              "note": "Negative runs the path backwards."
             },
             {
               "key": "og_delay_one",
               "label": "Delay One (m)",
               "type": "float",
               "default": 11.0,
-              "min": 0.0,
+              "min": 0.1,
               "lump": {
                 "key": "delay",
                 "type": "meters",
@@ -10211,7 +10209,7 @@
               "label": "Delay Two (m)",
               "type": "float",
               "default": 22.0,
-              "min": 0.0,
+              "min": 0.1,
               "lump": {
                 "key": "delay",
                 "type": "meters",
@@ -10224,7 +10222,7 @@
               "label": "Delay Three (m)",
               "type": "float",
               "default": 11.0,
-              "min": 0.0,
+              "min": 0.1,
               "lump": {
                 "key": "delay",
                 "type": "meters",
@@ -10237,13 +10235,24 @@
               "label": "Delay Four (m)",
               "type": "float",
               "default": 33.0,
-              "min": 0.0,
+              "min": 0.1,
               "lump": {
                 "key": "delay",
                 "type": "meters",
                 "slot": 3
               },
               "write_if": "always"
+            },
+            {
+              "key": "og_barrel_sync",
+              "label": "Start offset (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "sync",
+                "type": "meters"
+              },
+              "write_if": "if_nonzero"
             }
           ]
         }
@@ -10324,18 +10333,30 @@
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "process-drawable",
-      "code": ["cavecrystal-light.o", "maincave-obs.o"],
+      "code": [
+        "cavecrystal-light.o",
+        "maincave-obs.o"
+      ],
       "lumps": [
-        {"key": "rotoffset", "type": "degrees", "description": "Y-axis rotation for flame direction. Default 0."}
+        {
+          "key": "rotoffset",
+          "type": "degrees",
+          "description": "Y-axis rotation for flame direction. Default 0."
+        }
       ],
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "path",
+          "required": true,
+          "description": "Not used: the game only checks that a path exists (1+ points or a path-actor link).",
+          "min-points": 1
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_flame_shove",
-              "label": "Shove force (m)",
+              "label": "Knock-up height (m)",
               "type": "float",
               "default": 2.0,
               "lump": {
@@ -10354,11 +10375,12 @@
                 "type": "float",
                 "slot": 0
               },
-              "write_if": "always"
+              "write_if": "always",
+              "min": 0.1
             },
             {
               "key": "og_flame_phase",
-              "label": "Cycle phase",
+              "label": "Phase (0-1 of the period)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -10366,7 +10388,9 @@
                 "type": "float",
                 "slot": 1
               },
-              "write_if": "always"
+              "write_if": "always",
+              "min": 0.0,
+              "max": 1.0
             },
             {
               "key": "og_flame_pause",
@@ -10378,7 +10402,9 @@
                 "type": "float",
                 "slot": 2
               },
-              "write_if": "always"
+              "write_if": "always",
+              "min": 0.0,
+              "note": "Must be shorter than the period, or the flames never fire. They burn for period - pause."
             }
           ]
         }
@@ -11235,24 +11261,36 @@
     {
       "etype": "shover",
       "label": "Shover",
-      "description": "The Shover will damage and push jak towars closest path's waypoint. It is invisible so needs some geometry.",
+      "description": "Damages Jak and pushes him toward the nearest path point. It is invisible, so it needs some geometry.",
       "category": "Obstacles",
       "parent": "process-drawable",
       "art_group": "shover-ag.go",
       "tpage_group": "Sunken",
       "code": "shover.o",
       "lumps": [
-        {"key": "collision-mesh-id", "type": "uint32", "description": "Collision mesh index. Default 0."},
-        {"key": "trans-offset", "type": "float", "description": "Position offset: 'x y z' raw units. Default 0 0 0."}
+        {
+          "key": "collision-mesh-id",
+          "type": "uint32",
+          "description": "Collision mesh index. Default 0."
+        },
+        {
+          "key": "trans-offset",
+          "type": "float",
+          "description": "Position offset: 'x y z' raw units. Default 0 0 0."
+        }
       ],
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true
+        },
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_shover_force",
-              "label": "Shove force (m)",
+              "label": "Shove-up height (m)",
               "type": "float",
               "default": 3.0,
               "lump": {
@@ -11263,7 +11301,7 @@
             },
             {
               "key": "og_shover_rot",
-              "label": "Rotation offset (\u00b0)",
+              "label": "Rotation offset (°)",
               "type": "float",
               "default": 0.0,
               "lump": {
@@ -11503,7 +11541,8 @@
       "art_group": "chainmine-ag.go",
       "glb": "levels/lavatube/chainmine-lod0.glb",
       "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o"
+      "code": "lavatube-obs.o",
+      "description": "The origin is the top of the chain; the mine hangs about 18 m below it."
     },
     {
       "etype": "balloon",
@@ -11523,7 +11562,8 @@
       "art_group": "crate-darkeco-cluster-ag.go",
       "glb": "levels/firecanyon/crate-darkeco-cluster-lod0.glb",
       "code": "firecanyon-obs.o",
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "tpage_group": "Firecanyon"
     },
     {
       "etype": "logtrap",
@@ -11532,7 +11572,8 @@
       "parent": "process-drawable",
       "art_group": "logtrap-ag.go",
       "glb": "levels/jungle/logtrap-lod0.glb",
-      "code": "jungle-obs.o"
+      "code": "jungle-obs.o",
+      "tpage_group": "Jungle"
     },
     {
       "etype": "pusher",
@@ -11547,11 +11588,15 @@
           "panel": "sync",
           "fields": [
             {
+              "key": "og_sync_period",
+              "default": 5.0
+            },
+            {
               "key": "og_sync_ease_out",
               "label": "Pause while retracted (0-1)",
-              "default": 0.0,
+              "default": 0.15,
               "min": 0.0,
-              "max": 1.0,
+              "max": 0.5,
               "lump": {
                 "key": "sync",
                 "type": "float",
@@ -11561,9 +11606,9 @@
             {
               "key": "og_sync_ease_in",
               "label": "Pause while extended (0-1)",
-              "default": 0.0,
+              "default": 0.15,
               "min": 0.0,
-              "max": 1.0,
+              "max": 0.5,
               "lump": {
                 "key": "sync",
                 "type": "float",
@@ -11588,11 +11633,15 @@
           "panel": "sync",
           "fields": [
             {
+              "key": "og_sync_period",
+              "default": 5.0
+            },
+            {
               "key": "og_sync_ease_out",
               "label": "Pause while retracted (0-1)",
-              "default": 0.0,
+              "default": 0.15,
               "min": 0.0,
-              "max": 1.0,
+              "max": 0.5,
               "lump": {
                 "key": "sync",
                 "type": "float",
@@ -11602,9 +11651,9 @@
             {
               "key": "og_sync_ease_in",
               "label": "Pause while extended (0-1)",
-              "default": 0.0,
+              "default": 0.15,
               "min": 0.0,
-              "max": 1.0,
+              "max": 0.5,
               "lump": {
                 "key": "sync",
                 "type": "float",
@@ -11619,35 +11668,63 @@
           "fields": [
             {
               "key": "og_pusher_mode",
-              "label": "Collision and sound mode",
+              "label": "Sound set",
               "type": "enum",
-              "default": 0,
+              "default": "0",
               "choices": [
                 {
                   "value": "0",
-                  "label": "Collision ON (default)",
+                  "label": "Sound set 0",
                   "lump_value": 0
                 },
                 {
                   "value": "1",
-                  "label": "Collision OFF",
+                  "label": "Sound set 1",
                   "lump_value": 1
                 },
                 {
                   "value": "2",
-                  "label": "Collision OFF (alternative sound)",
+                  "label": "Sound set 2",
                   "lump_value": 2
                 }
               ],
               "lump": {
                 "key": "mode",
-                "type": "uint32"
+                "type": "int32",
+                "slot": 0
               },
-              "write_if": "if_nonzero"
+              "write_if": "always"
+            },
+            {
+              "key": "og_pusher_mesh",
+              "label": "Collision mesh",
+              "type": "int",
+              "default": 0,
+              "show-field": false,
+              "lump": {
+                "key": "mode",
+                "type": "int32",
+                "slot": 1
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_pusher_max_frame",
+              "label": "Push length (0-1 of the animation)",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "max-frame",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
             }
           ]
         }
-      ]
+      ],
+      "tpage_group": "Snow"
     },
     {
       "etype": "snow-ball",
@@ -11655,11 +11732,39 @@
       "category": "Obstacles",
       "parent": "process",
       "panels": [
-        {"panel": "path", "required": true}
+        {
+          "panel": "path",
+          "required": true
+        }
       ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
-      "code": "snow-ball.o"
+      "code": "snow-ball.o",
+      "tpage_group": "Snow",
+      "description": "Needs two paths keyed at 1.0 and 2.0 and placed above 200 m (it shrinks below that). Not supported by the exporter yet: the .jsonc holds one 'path' per name."
+    },
+    {
+      "etype": "keg-conveyor",
+      "label": "Keg Conveyor (misty)",
+      "category": "Obstacles",
+      "parent": "process-drawable",
+      "art_group": [
+        "keg-conveyor-ag.go",
+        "keg-conveyor-paddle-ag.go",
+        "keg-ag.go"
+      ],
+      "tpage_group": "Misty",
+      "code": "misty-conveyor.o",
+      "glb": "levels/misty/keg-conveyor-lod0.glb",
+      "shape": "CUBE",
+      "description": "Kegs drop onto path point 2, roll to the last point over 16 s, fly off and break. Its rotation comes from the path start; kegs only spawn while Jak is more than 25 m from the paddle.",
+      "panels": [
+        {
+          "panel": "path",
+          "required": true,
+          "min-points": 2
+        }
+      ]
     },
     {
       "etype": "swamp-tetherrock",
@@ -11695,11 +11800,18 @@
       "parent": "process-drawable",
       "art_group": "citb-firehose-ag.go",
       "glb": "levels/citadel/citb-firehose-lod0.glb",
-      "code": "citb-plat.o",
+      "code": [
+        "citadel-part.o",
+        "citb-plat.o"
+      ],
       "panels": [
         {
           "panel": "sync",
           "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 3.0
+            },
             {
               "key": "og_sync_ease_out",
               "export": false
@@ -11712,7 +11824,8 @@
           "description": "Fire cycle timing: period and phase."
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Activates when Jak is within 70 m. Its collision hangs 12-18 m below the origin."
     },
     {
       "etype": "fishermans-boat",
