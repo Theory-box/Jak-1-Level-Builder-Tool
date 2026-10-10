@@ -297,32 +297,54 @@ class OG_OT_MoviePosRemove(Operator):
 
 
 class OG_OT_UnlinkNavMesh(Operator):
-    """Remove navmesh link from selected enemy actors.
-    Also renames the mesh (strips NAVMESH_ prefix) and moves it to Geometry/Solid."""
+    """Remove the navmesh link from this actor (or the selected actors). The
+    mesh stays a navmesh: other actors may still use it."""
     bl_idname = "og.unlink_navmesh"
     bl_label  = "Unlink NavMesh"
-    bl_description = "Remove navmesh link from selected enemy actor(s)"
+    bl_description = "Remove the navmesh link from this actor (the mesh stays a navmesh)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name) if self.actor_name else None
+        objs = [actor] if actor else ctx.selected_objects
         count = 0
-        for o in ctx.selected_objects:
+        for o in objs:
             if "og_navmesh_link" in o:
-                nm_name = o["og_navmesh_link"]
                 del o["og_navmesh_link"]
-                # Clean up the mesh itself if it still exists
-                nm_obj = bpy.data.objects.get(nm_name)
-                if nm_obj and nm_obj.type == "MESH":
-                    # Remove navmesh tag
-                    if "og_navmesh" in nm_obj:
-                        del nm_obj["og_navmesh"]
-                    # Strip NAVMESH_ prefix
-                    if nm_obj.name.startswith("NAVMESH_"):
-                        nm_obj.name = nm_obj.name[len("NAVMESH_"):]
-                    # Move back to Geometry/Solid
-                    _link_object_to_sub_collection(ctx.scene, nm_obj, *_COL_PATH_GEO_SOLID)
                 count += 1
         self.report({"INFO"}, f"Unlinked {count} actor(s)")
         return {"FINISHED"}
+
+
+def navmesh_users(scene, nm_name):
+    """Actors linked to the navmesh named nm_name."""
+    return [o for o in scene.objects if o.get("og_navmesh_link") == nm_name]
+
+
+class OG_OT_NavMeshShare(Operator):
+    """The other actors on this navmesh use this actor's one instead
+    (nav-mesh-actor link), so the navmesh is built once"""
+    bl_idname  = "og.navmesh_share"
+    bl_label   = "Share This Actor's NavMesh"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        from ..data import _actor_set_link
+        actor = bpy.data.objects.get(self.actor_name)
+        nm_name = actor.get("og_navmesh_link", "") if actor else ""
+        if not nm_name:
+            return {"CANCELLED"}
+        others = [o for o in navmesh_users(ctx.scene, nm_name) if o is not actor]
+        for o in others:
+            del o["og_navmesh_link"]
+            _actor_set_link(o, "nav-mesh-actor", 0, actor.name)
+        self.report({"INFO"}, f"{len(others)} actor(s) now use the nav-mesh of {actor.name}")
+        return {"FINISHED"}
+
 
 class OG_OT_AddWaypoint(Operator):
     """Add a waypoint empty linked to the selected enemy. Spawns at the 3D cursor, or at the actor position if Spawn at Position is enabled."""
@@ -1097,6 +1119,7 @@ CLASSES = (
     OG_OT_MoviePosLink,
     OG_OT_MoviePosRemove,
     OG_OT_UnlinkNavMesh,
+    OG_OT_NavMeshShare,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,
     OG_OT_WaypointSourceRemove,

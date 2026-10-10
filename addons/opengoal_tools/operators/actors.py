@@ -124,17 +124,27 @@ def _link_target_items(self, ctx):
     from ..data import _actor_multi_links
     have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
             if src and self.append else set())
+    # nav-mesh-actor / path-actor: actors that have what the link borrows first
+    has, what = {"nav-mesh-actor": (lambda o: bool(o.get("og_navmesh_link")), "navmesh"),
+                 "path-actor": (lambda o: len(getattr(o, "og_waypoint_sources", ())) > 0, "path"),
+                 }.get(self.lump_key, (None, ""))
     rows = []
     for o in scene.objects:
         if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
                 or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
             continue
         ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
-        rows.append((not ok, _natural_key(o.name), o.name, ok))
+        got = has(o) if has else None
+        rows.append((got is False, not ok, _natural_key(o.name), o.name, ok, got))
     rows.sort()
-    items = [(n, n + ("" if ok else "  (unexpected type)") + ("  (linked)" if n in have else ""),
-              f"Link {n}", "LINKED" if ok else "ERROR", i)
-             for i, (_bad, _k, n, ok) in enumerate(rows)]
+
+    def _label(n, ok, got):
+        s = n + ("" if ok else "  (unexpected type)")
+        if got is not None:
+            s += f"  (has a {what} connected)" if got else f"  (no {what} connected)"
+        return s + ("  (linked)" if n in have else "")
+    items = [(n, _label(n, ok, got), f"Link {n}", "LINKED" if ok and got is not False else "ERROR", i)
+             for i, (_g, _bad, _k, n, ok, got) in enumerate(rows)]
     if not items:
         items = [("__none__", "(no other actors)", "", "ERROR", 0)]
     _SEARCH_ITEMS[:] = items

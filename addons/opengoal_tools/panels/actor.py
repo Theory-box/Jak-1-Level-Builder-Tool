@@ -136,7 +136,15 @@ class OG_PT_ActorNavMesh(Panel):
         if nm_obj:
             row = layout.row(align=True)
             row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
-            row.operator("og.unlink_navmesh", text="", icon="X")
+            row.operator("og.unlink_navmesh", text="", icon="X").actor_name = sel.name
+            others = [o for o in ctx.scene.objects if o is not sel and o.get("og_navmesh_link") == nm_obj.name]
+            if others:
+                warn = layout.column(align=True)
+                warn.alert = True
+                warn.label(text=f"{len(others)} other actor(s) also use this nav-mesh:", icon="ERROR")
+                warn.label(text="it is built once per actor. Share it instead:")
+                layout.operator("og.navmesh_share", text="Others use this actor's nav-mesh",
+                                icon="LINKED").actor_name = sel.name
             try:
                 nm_obj.data.calc_loop_triangles()
                 tc = len(nm_obj.data.loop_triangles)
