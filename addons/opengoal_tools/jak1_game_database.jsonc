@@ -6303,7 +6303,7 @@
           "description": "Not set: idle, no fire. Set and open: fire particles. Closed: hovers and spins (the hover is meant for the actor named fireboulder-6)."
         }
       ],
-      "description": "The vanilla hover sound and big blocking collision only apply to an actor named fireboulder-6 (it also forces a 90° yaw)."
+      "description": "Exported as a level subtype that also gives every boulder its hover sound (vanilla only creates it for the actor named fireboulder-6, and a hovering boulder without it crashes). The big blocking collision and forced 90° yaw stay fireboulder-6 only."
     },
     {
       "etype": "evilplant",
@@ -11717,7 +11717,7 @@
     {
       "etype": "snow-ball",
       "label": "Snow Ball (Snowy)",
-      "category": "Obstacles",
+      "category": "Hidden",
       "parent": "process",
       "panels": [
         {
