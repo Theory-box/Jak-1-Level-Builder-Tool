@@ -695,6 +695,13 @@ Going through all categories in this order, if I can't fix some things I'll not 
   - red-sagecage
   - sage-finalboss
 - Volumes
+  - General Volume notes:
+    - Volumes shouid be added as a panel. At the moment there's no panel on water-vol, so if you don't use the connected volume that appear at spawn, you can't connect another volume later.
+    - The panel should be similar to navmesh panel
+    - Give the panel a button to create a default volume as well as being able to connect to an existing volume/turn a selected mesh into a volume
+    - If you select a mesh object, you should have the option to turn it into a volume, same as for navmesh
+    - when spawning water-vol/water-anim or any other actor that needs a volume, don't need to spawn a volume automatically anymore as the volume panel will have an option to do so. No other actor spawn with other things they need, water shouldn't be any different
+    - Place the panel inbetween path and nav in the order
   - water-vol
   - water-anim
 
@@ -758,7 +765,33 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 ---
 
-### Export settings
+## Entity control features
+### Select an actor on spawn
+When spawning an actor, it put it as the active object, which is useful for changing its settings but it doesn't select the actor directly. Which would help in case the user want to move/rotate/scale the actor directly too.
+### Use preview mesh for selection
+Actors can be quite hard to select sometimes because you have to click exactly on the empty shape lines. A much easier way to select objects would be to be able to select the preview mesh. At the moment, they're set to not being selectable as they're a child of the actor so you don't separate them and such.
+There's two ways I think this could work:
+- Either, make it so the addon automatically select the parent instead when you select a preview mesh in the 3d view. (still let you select preview mesh in the outliner if you need to for whatever reason)
+  - This might not be easily doable, especially if you're selecting multiple actors with Shift + click or with border select for example
+  - An advantage of this way would be a switch you can turn on/off if you want to use the feature since it wouldn't change the relation between preview meshes and empties.
+- Or, when an actor has a preview mesh, the actor becomes the preview mesh itself
+  - This has the benefit of avoiding potential issues with selection that come with the other solution
+  - This loses some useful features with empties as actors, such as the driver or the offset
+So ideally, I'd prefer the first approach if all the selection kinks can be smoothed out.
+### Automatically apply some settings on spawn based on selection
+If some specific objects are selected before you spawn an actor, such as paths, volumes ,navmesh or nav-mesh-actor, they'd automatically get added to the actor as you spawn it, here's a few example:
+- Select a curve and a navmesh then spawn a nav-enemy, that actor directly get the nav-mesh and path connected.
+- Select a volume and spawn a water-vol, that volume get linked to that water-vol directly instead of creating a base one
+- Select an actor that already is connected to a navmesh and spawn another navenemy, that new enemy get linked to that selected actor on its nav-mesh-actor
+- Select a curve, spawn a platform that use paths, the platform get the path directly added
+- etc
+Other actor links could also be added to this but it might become a bit more messy so limitting to these 4 ones would already be pretty good.
+
+As this is a feature that would automatically do something for the user, it should be under a toggleable option "automatically connect spawned actor to selection" in the developper tools/setting tab if one is added later.
+
+---
+
+## Export settings
 - Geometry compression for export (Draco)
   - Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
   - Since the addon takes care of the export itself, there should be an option to turn this on as well as have all of the settings you normally have to control the compression
@@ -772,6 +805,16 @@ This would, however, be a huge undertaking and isn't priority at the moment.
   - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
   - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
   - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
+
+---
+
+## Baking options
+- Better handling of emiting materials
+- Limit range of lighting 
+  - Anything under 0.25 brightness will be considered black
+  - Anything above 0.75 brightness will be considered over exposed/look as if it was emiting light
+  - don't fully limit those, maybe a setting for how much you want to "limit" it?
+- Being able to switch between face corner and vertex
 
 ---
 
@@ -846,15 +889,6 @@ Tasks are the system that set missions to specific resolutions. It's also what t
 - to an always loaded file in game.gd
 - As it's the same type that'll be used in all levels
 
----
-
-## Baking options
-- Better handling of emiting materials
-- Limit range of lighting 
-  - Anything under 0.25 brightness will be considered black
-  - Anything above 0.75 brightness will be considered over exposed/look as if it was emiting light
-  - don't fully limit those, maybe a setting for how much you want to "limit" it?
-- Being able to switch between face corner and vertex
 
 ---
 
