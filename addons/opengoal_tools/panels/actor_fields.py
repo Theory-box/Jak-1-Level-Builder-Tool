@@ -52,6 +52,22 @@ class OG_OT_SetActorEnumField(Operator):
         return {"FINISHED"}
 
 
+class OG_OT_SetFieldFromZ(Operator):
+    """Set this field to the active object's height (Blender Z = game height)"""
+    bl_idname = "og.set_field_from_z"
+    bl_label = "Set From Height"
+    bl_options = {"INTERNAL", "UNDO"}
+
+    prop_key: StringProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        obj[self.prop_key] = round(obj.matrix_world.translation.z, 4)
+        return {"FINISHED"}
+
+
 class OG_OT_ToggleActorBoolField(Operator):
     """Toggle a boolean custom property on the active actor."""
     bl_idname = "og.toggle_actor_bool_field"
@@ -287,6 +303,11 @@ def _draw_field(layout, obj, field, actor_info=None):
         # float / int / string — _prop_row handles all three
         _prop_row(layout, obj, field["key"], f"{label}:",
                   default if default is not None else 0)
+        # "from_location": "z" -> button that copies the object's Blender Z
+        # (game height) into the field (e.g. water heights).
+        if field.get("from_location") == "z":
+            op = layout.operator("og.set_field_from_z", text="Set to this actor's height", icon="EMPTY_SINGLE_ARROW")
+            op.prop_key = field["key"]
 
     if field.get("note"):
         _draw_note(layout, field["note"])
@@ -375,6 +396,7 @@ class OG_PT_ActorFields(Panel):
 CLASSES = (
     OG_OT_PickTask,
     OG_OT_SetActorEnumField,
+    OG_OT_SetFieldFromZ,
     OG_OT_ToggleActorBoolField,
     OG_PT_ActorFields,
 )

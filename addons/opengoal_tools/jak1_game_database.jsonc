@@ -5082,15 +5082,125 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "code": "battlecontroller.o",
-      "shape": "CUBE",
-      "empty_size": 2.0,
+      "shape": "SPHERE",
+      "empty_size": 30.0,
       "panels": [
-        {"panel": "nav-mesh", "fallback-sphere": true},
-        {"panel": "activation", "fields": [{"key": "og_notice_top", "show-field": true, "export": true}, {"key": "og_notice_bottom", "show-field": true, "export": true}]},
-        {"panel": "path", "required": true, "multi-path": true, "linear-only": true, "paths": ["patha", "pathb", "pathc", "pathd", "pathe", "pathf", "pathg", "pathh", "pathspawn"], "description": "Main path (required): the lurkers' patrol — the game crashes without it. Spawn paths patha .. pathh (at least one, max 8): a lurker spawns at the first point and jumps along the rest. pathspawn: one lurker placed on each point at the start."},
-        {"panel": "game-task", "description": "The task of the power cell it spawns at the end (or of the cell that turns this ambush off)."},
-        {"panel": "movie-pos", "description": "Where the power cell it spawns at the end plays its animation (cone = facing)."},
-        {"panel": "actor-link", "slots": [{"lump_key": "spawner-blocker-actor", "slot": 0, "label": "Spawn path blockers ([0] blocks patha, [1] pathb ...): once complete, that path stops spawning", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "spawner-trigger-actor", "slot": 0, "label": "Spawn path actors ([0] patha, [1] pathb ...): sent 'spawn when their path spawns", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "kill-actor", "slot": 0, "label": "Turned off while the ambush is on (performance)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "trigger-actor", "slot": 0, "label": "Triggered when the ambush starts (keep doors shut, change the camera ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "fade-actor", "slot": 0, "label": "Faded out when the ambush is over (e.g. stop an eco vent)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}, {"lump_key": "alt-actor", "slot": 0, "label": "Triggered when the ambush is completed (open doors, raise steps ...)", "accepts": ["any"], "required": false, "allow-multiple": true, "show-in": "battlecontroller"}]},
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": true
+        },
+        {
+          "panel": "activation",
+          "fields": [
+            {
+              "key": "og_notice_top",
+              "show-field": true,
+              "export": true
+            },
+            {
+              "key": "og_notice_bottom",
+              "show-field": true,
+              "export": true
+            }
+          ]
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "multi-path": true,
+          "linear-only": true,
+          "paths": [
+            "patha",
+            "pathb",
+            "pathc",
+            "pathd",
+            "pathe",
+            "pathf",
+            "pathg",
+            "pathh",
+            "pathspawn"
+          ],
+          "description": "Main path (required): the lurkers' patrol — the game crashes without it. Spawn paths patha .. pathh (at least one, max 8): a lurker spawns at the first point and jumps along the rest. pathspawn: one lurker placed on each point at the start."
+        },
+        {
+          "panel": "game-task",
+          "description": "The task of the power cell it spawns at the end (or of the cell that turns this ambush off)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell it spawns at the end plays its animation (cone = facing)."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "spawner-blocker-actor",
+              "slot": 0,
+              "label": "Spawn path blockers ([0] blocks patha, [1] pathb ...): once complete, that path stops spawning",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            },
+            {
+              "lump_key": "spawner-trigger-actor",
+              "slot": 0,
+              "label": "Spawn path actors ([0] patha, [1] pathb ...): sent 'spawn when their path spawns",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            },
+            {
+              "lump_key": "kill-actor",
+              "slot": 0,
+              "label": "Turned off while the ambush is on (performance)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            },
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Triggered when the ambush starts (keep doors shut, change the camera ...)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            },
+            {
+              "lump_key": "fade-actor",
+              "slot": 0,
+              "label": "Faded out when the ambush is over (e.g. stop an eco vent)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Triggered when the ambush is completed (open doors, raise steps ...)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true,
+              "show-in": "battlecontroller"
+            }
+          ]
+        },
         {
           "panel": "battlecontroller"
         },
@@ -5555,7 +5665,8 @@
                 "type": "meters"
               },
               "write_if": "if_not_default",
-              "note": "The rat can't go below this - 0.5 m."
+              "note": "The rat can't go below this - 0.5 m.",
+              "from_location": "z"
             }
           ]
         }
@@ -5771,7 +5882,14 @@
       "parent": "process-drawable",
       "panels": [
         {
-          "panel": "activation"
+          "panel": "activation",
+          "fields": [
+            {
+              "key": "og_idle_distance",
+              "show-field": false,
+              "export": false
+            }
+          ]
         },
         {
           "panel": "visibility",
@@ -5798,8 +5916,25 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]}
+        {
+          "panel": "activation",
+          "fields": [
+            {
+              "key": "og_idle_distance",
+              "show-field": false,
+              "export": false
+            }
+          ]
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        }
       ],
       "description": "The lurker snake is an enemy in The Precursor Legacy — large brown serpentine lurkers residing in the canopy of Forbidden Jungle. They hang from branches at fixed points, attacking intruders below.",
       "art_group": "junglesnake-ag.go",
@@ -5872,7 +6007,12 @@
                 "key": "notice-dist",
                 "type": "meters"
               },
-              "write_if": "if_not_default"
+              "write_if": "if_not_default",
+              "driver": {
+                "var": "self",
+                "expression": "var",
+                "driven": "empty_display_size"
+              }
             }
           ]
         },
@@ -5907,7 +6047,8 @@
           "panel": "nav-mesh",
           "can-jump": true
         }
-      ]
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "bully",
@@ -6012,7 +6153,12 @@
                 "key": "notice-dist",
                 "type": "meters"
               },
-              "write_if": "if_not_default"
+              "write_if": "if_not_default",
+              "driver": {
+                "var": "self",
+                "expression": "var",
+                "driven": "empty_display_size"
+              }
             }
           ]
         },
@@ -6067,7 +6213,8 @@
             }
           ]
         }
-      ]
+      ],
+      "shape": "SPHERE"
     },
     {
       "etype": "flying-lurker",
@@ -6112,9 +6259,6 @@
           ]
         },
         {
-          "panel": "activation"
-        },
-        {
           "panel": "visibility",
           "fields": [
             {
@@ -6154,9 +6298,6 @@
           ]
         },
         {
-          "panel": "activation"
-        },
-        {
           "panel": "visibility",
           "fields": [
             {
@@ -6182,7 +6323,7 @@
       "label": "Mother Spider",
       "category": "Enemies",
       "parent": "process-drawable",
-      "description": "The mother spider is the boss-type spider lurker in Spider Cave. Larger than its baby spider offspring, it serves as the primary threat of the cave.",
+      "description": "Place it on the floor under where it should hang: it hangs from Anchor height above the placement and lowers to Thread min height above it once Jak is within Activate distance horizontally and no more than 10 m below that lowest point. Babies spawn on the path points.",
       "art_group": [
         "mother-spider-ag.go",
         "baby-spider-ag.go",
@@ -6649,7 +6790,7 @@
         },
         {
           "panel": "movie-pos",
-          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+          "description": "The cell flies where its cutscene puts it (vanilla Snowy position); grabbing it then moves Jak to this movie position."
         },
         {
           "panel": "path",
@@ -6713,7 +6854,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Rams of the task (the cell comes when all are done)",
+              "label": "Rams of the task (the cell comes when all are done; listing itself is optional)",
               "accepts": [
                 "ram"
               ],
@@ -6746,7 +6887,8 @@
         {
           "panel": "nav-mesh"
         }
-      ]
+      ],
+      "description": "Keep rams apart (own nav-mesh area): a ram boss jumping down while another is on the ground can freeze and become unkillable."
     },
     {
       "etype": "ram-boss",
@@ -6823,7 +6965,8 @@
       "art_group": [
         "ice-cube-ag.go",
         "ice-cube-break-ag.go"
-      ]
+      ],
+      "glb": "levels/snow/ice-cube-lod0.glb"
     },
     {
       "etype": "fireboulder",
@@ -7242,7 +7385,8 @@
                 "key": "water-height",
                 "type": "meters"
               },
-              "write_if": "if_not_default"
+              "write_if": "if_not_default",
+              "from_location": "z"
             },
             {
               "key": "og_timeout",
@@ -9656,7 +9800,9 @@
           ]
         }
       ],
-      "art_group": "baby-spider-ag.go"
+      "art_group": "baby-spider-ag.go",
+      "shape": "SPHERE",
+      "empty_size": 46.0
     },
     {
       "etype": "spider-vent",
@@ -9767,7 +9913,8 @@
                 "type": "meters"
               },
               "write_if": "if_not_default",
-              "note": "Rats can't go below this - 0.5 m."
+              "note": "Rats can't go below this - 0.5 m.",
+              "from_location": "z"
             }
           ]
         },
@@ -9898,7 +10045,8 @@
                 "type": "meters"
               },
               "write_if": "if_not_default",
-              "note": "It only notices Jak below this - 0.5 m, and needs a nav-mesh over the water."
+              "note": "It only notices Jak below this - 0.5 m, and needs a nav-mesh over the water.",
+              "from_location": "z"
             }
           ]
         },
