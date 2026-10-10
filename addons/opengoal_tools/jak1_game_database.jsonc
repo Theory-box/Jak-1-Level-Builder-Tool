@@ -7044,59 +7044,119 @@
       "label": "Klaww (Ogre Boss)",
       "category": "Bosses",
       "parent": "process-drawable",
-      "description": "Klaww is a large lurker boss in The Precursor Legacy, operating from a volcanic section of Mountain Pass. He terrorized Rock Village by bombarding it with boulders before Jak confronted him.",
+      "description": "Klaww is a large lurker boss in The Precursor Legacy, operating from a volcanic section of Mountain Pass. He terrorized Rock Village by bombarding it with boulders before Jak confronted him. Vanilla hard-coding: the intro only starts with Jak above world Y 30 m and below world X 218 m, and it sends Jak to the vanilla 'ogre-start' continue point; it also closes the vanilla ogre-boss task.",
       "art_group": "ogreboss-ag.go",
       "tpage_group": "Ogre",
-      "code": "ogreboss.o",
+      "code": [
+        "ogre-part.o",
+        "ogreboss.o"
+      ],
       "glb": "levels/ogre/ogreboss-lod0.glb",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak.",
-         "fields": [{"key": "og_movie_mask_1", "default": true}, {"key": "og_movie_mask_2", "default": true}]},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak.",
+          "fields": [
+            {
+              "key": "og_movie_mask_1",
+              "default": true
+            },
+            {
+              "key": "og_movie_mask_2",
+              "default": true
+            }
+          ]
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Ogre Drawbridge (ogre-bridge) for the fight",
+              "label": "Drawbridge (ogre-bridge; stage 2 hangs without it)",
               "accepts": [
-                "any"
+                "ogre-bridge"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "target-actor",
+              "slot": 0,
+              "label": "Isle 1 (ogre-isle)",
+              "accepts": [
+                "ogre-isle"
               ],
               "required": false
             },
             {
               "lump_key": "target-actor",
-              "slot": 0,
-              "label": "Klaww Platform Isle (ogre-isles) for the fight",
+              "slot": 1,
+              "label": "Isle 2 (ogre-isle)",
               "accepts": [
-                "any"
+                "ogre-isle"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "target-actor",
+              "slot": 2,
+              "label": "Isle 3 (ogre-isle)",
+              "accepts": [
+                "ogre-isle"
               ],
               "required": false
             },
             {
               "lump_key": "trigger-actor",
               "slot": 0,
-              "label": "Klaww Steps (ogre-bridge) to spawn after the fight",
+              "label": "Steps to raise after the fight (ogre-step; the 3rd one is where the cell appears)",
               "accepts": [
-                "any"
+                "ogre-step"
               ],
-              "required": false
+              "required": false,
+              "allow-multiple": true
             },
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Lava actor",
+              "label": "Lava (gets submerge / emerge)",
               "accepts": [
-                "any"
+                "water-anim"
               ],
               "required": false
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "fact-options", "fields": [{"key": "og_fop_fade", "show-field": true, "highlight": true}]}
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_fade",
+              "show-field": false
+            },
+            {
+              "key": "og_fop_skip_jump_anim",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
       ]
     },
     {
@@ -7104,54 +7164,58 @@
       "label": "Plant Boss",
       "category": "Bosses",
       "parent": "process-drawable",
-      "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional.",
-      "art_group": ["plant-boss-ag.go", "aphid-lurker-ag.go"],
-      "tpage_group": "Jungleb",
-      "code": ["aphid.o", "plant-boss.o"],
-      "glb": "levels/jungleb/plant-boss-main-lod0.glb",
-      "lumps": [
-        {
-          "key": "movie-pos",
-          "type": "movie-pos",
-          "description": "Cutscene landing position: 'x y z rot_deg'."
-        }
+      "description": "The dark eco plant is a boss-level enemy in The Precursor Legacy — a massively mutated dark eco plant in the Forbidden Temple. It is the first boss in the game, though its defeat is entirely optional. Its kill animation (plant-boss-main+0) is bundled. Also writes a reminder on the vanilla jungle-plant task.",
+      "art_group": [
+        "plant-boss-ag.go",
+        "aphid-lurker-ag.go",
+        "plant-boss-main+0-ag.go"
       ],
+      "tpage_group": "Jungleb",
+      "code": [
+        "aphid.o",
+        "plant-boss.o"
+      ],
+      "glb": "levels/jungleb/plant-boss-main-lod0.glb",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "path", "required": true},
         {
-          "panel": "custom-fields",
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "description": "The aphids it spawns patrol this path (and use this actor's nav-mesh)."
+        },
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
           "fields": [
             {
-              "key": "_extra-count-one",
-              "label": "Extra Count one",
-              "default": 0,
-              "type": "int",
-              "lump": {
-                "key": "extra-count",
-                "type": "uint32",
-                "slot": 0,
-                "write_if": "if_not_default"
-              }
-            },
-            {
-              "key": "_extra-count-two",
-              "label": "Extra Count two",
-              "default": 0,
-              "type": "int",
-              "lump": {
-                "key": "extra-count",
-                "type": "uint32",
-                "slot": 1,
-                "write_if": "if_not_default"
-              }
+              "key": "og_vis_dist",
+              "default": 200.0
             }
           ]
         },
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh", "fallback-sphere": true}
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": true
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_skip_jump_anim",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
       ]
     },
     {
@@ -7160,15 +7224,173 @@
       "category": "Bosses",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
-        {"panel": "activation"},
-        {"panel": "visibility", "fields": [{"key": "og_vis_dist", "default": 200.0}]},
-        {"panel": "nav-mesh"}
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true,
+          "description": "The green eco lurkers it spawns walk to random points of this path (and use this actor's nav-mesh)."
+        },
+        {
+          "panel": "activation"
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {
+              "key": "og_vis_dist",
+              "default": 200.0
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Silo door (opened as it loses)",
+              "accepts": [
+                "silodoor"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Eco claw (red glow)",
+              "accepts": [
+                "ecoclaw"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Eco claw (green glow)",
+              "accepts": [
+                "ecoclaw"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 3,
+              "label": "Eco claw (blue glow)",
+              "accepts": [
+                "ecoclaw"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 4,
+              "label": "Eco claw (yellow glow)",
+              "accepts": [
+                "ecoclaw"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 5,
+              "label": "sage-finalboss (cutscene; not in the addon yet: crash at the light eco)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 6,
+              "label": "Dark eco pool (a Water Anim; moved)",
+              "accepts": [
+                "water-anim"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 7,
+              "label": "Yellow vent 1 (blocked / unblocked; game crashes without it)",
+              "accepts": [
+                "ventyellow"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 8,
+              "label": "Yellow vent 2 (blocked / unblocked; game crashes without it)",
+              "accepts": [
+                "ventyellow"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 9,
+              "label": "Yellow vent 3 (blocked / unblocked; game crashes without it)",
+              "accepts": [
+                "ventyellow"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 10,
+              "label": "Yellow vent 4 (blocked / unblocked; game crashes without it)",
+              "accepts": [
+                "ventyellow"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 11,
+              "label": "Vent shown / hidden in the red stage (game crashes without it)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 12,
+              "label": "plat-eco-finalboss (not in the addon yet)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
-      "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos.",
-      "art_group": ["robotboss-ag.go", "green-eco-lurker-ag.go", "darkecobomb-ag.go"],
+      "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos. Needs its alt-actor links (yellow vents and the stage-3 vent, or it writes through empty links), and the light-eco ending needs sage-finalboss, which the addon doesn't support yet. The yellow shot and light eco use absolute heights from vanilla Final Boss.",
+      "art_group": [
+        "robotboss-ag.go",
+        "green-eco-lurker-ag.go",
+        "darkecobomb-ag.go",
+        "light-eco-ag.go",
+        "finalbosscam-ag.go",
+        "redring-ag.go",
+        "greenshot-ag.go",
+        "robotboss-blueeco-ag.go",
+        "robotboss-redeco-ag.go",
+        "robotboss-yelloweco-ag.go"
+      ],
       "tpage_group": "Final",
-      "code": ["robotboss-h.o", "robotboss-part.o", "robotboss-weapon.o", "robotboss-misc.o", "green-eco-lurker.o", "robotboss.o"],
+      "code": [
+        "robotboss-h.o",
+        "robotboss-part.o",
+        "light-eco.o",
+        "robotboss-weapon.o",
+        "robotboss-misc.o",
+        "green-eco-lurker.o",
+        "robotboss.o"
+      ],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb"
     },
     {
