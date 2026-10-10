@@ -7564,13 +7564,13 @@
                 {
                   "id": "1",
                   "value": "1",
-                  "label": "Button activated (Static)",
+                  "label": "Task activated",
                   "lump_value": 1
                 },
                 {
                   "id": "2",
                   "value": "2",
-                  "label": "Button activated (Use Path)",
+                  "label": "Button activated",
                   "lump_value": 2
                 }
               ],
@@ -7784,10 +7784,10 @@
           "fields": [
             {
               "key": "og_tunemeters",
-              "label": "Extra push out (m)",
+              "label": "Outward Offset (m)",
               "type": "float",
               "default": 0.0,
-              "note": "Added to its 0.4 m outward offset along its local Z.",
+              "note": ">0 offset backward. <0 offset forward",
               "lump": {
                 "key": "tunemeters",
                 "type": "meters"
@@ -10512,7 +10512,7 @@
                 },
                 {
                   "value": "2",
-                  "label": "Fall 2",
+                  "label": "Fall 2 (lower)",
                   "lump_value": 2
                 },
                 {
@@ -10522,7 +10522,7 @@
                 },
                 {
                   "value": "7",
-                  "label": "Fall 7",
+                  "label": "Fall 7 (lower)",
                   "lump_value": 7
                 }
               ]
