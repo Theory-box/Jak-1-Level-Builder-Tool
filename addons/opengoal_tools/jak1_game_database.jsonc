@@ -10829,8 +10829,8 @@
                   "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-b-lod0.glb",
                   "offset": [
-                    -2.0,
-                    0.0,
+                    -12.1,
+                    -3.0,
                     0.0
                   ]
                 },
@@ -10842,8 +10842,8 @@
                   "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-b-lod0.glb",
                   "offset": [
-                    -2.0,
-                    0.0,
+                    -12.3,
+                    -3.5,
                     0.0
                   ]
                 },
@@ -10855,8 +10855,8 @@
                   "art_group": "ogre-isle-ag.go",
                   "glb": "levels/ogre/ogre-isle-d-lod0.glb",
                   "offset": [
-                    -2.0,
-                    2.0,
+                    8.7,
+                    1.5,
                     0.0
                   ]
                 }
@@ -10907,7 +10907,12 @@
                   "label": "Klaww Step A",
                   "glb": "levels/ogre/ogre-step-a-lod0.glb",
                   "art_group": "ogre-step-ag.go",
-                  "value": "ogre-step-a"
+                  "value": "ogre-step-a",
+                  "offset": [
+                    -1.9,
+                    -16.9,
+                    0.0
+                  ]
                 },
                 {
                   "id": "ogre-step-b",
@@ -10915,7 +10920,12 @@
                   "label": "Klaww Step B",
                   "glb": "levels/ogre/ogre-step-b-lod0.glb",
                   "art_group": "ogre-step-ag.go",
-                  "value": "ogre-step-b"
+                  "value": "ogre-step-b",
+                  "offset": [
+                    2.6,
+                    -7.25,
+                    0.0
+                  ]
                 },
                 {
                   "id": "ogre-step-c",
@@ -10923,7 +10933,12 @@
                   "label": "Klaww Step C",
                   "glb": "levels/ogre/ogre-step-c-lod0.glb",
                   "art_group": "ogre-step-ag.go",
-                  "value": "ogre-step-c"
+                  "value": "ogre-step-c",
+                  "offset": [
+                    2.2,
+                    4,
+                    0.0
+                  ]
                 },
                 {
                   "id": "ogre-step-d",
@@ -10931,7 +10946,12 @@
                   "label": "Klaww Step D",
                   "glb": "levels/ogre/ogre-step-b-lod0.glb",
                   "art_group": "ogre-step-ag.go",
-                  "value": "ogre-step-d"
+                  "value": "ogre-step-d",
+                  "offset": [
+                    2.6,
+                    -6.9,
+                    0.0
+                  ]
                 }
               ],
               "variant": true,
