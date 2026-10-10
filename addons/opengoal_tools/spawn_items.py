@@ -201,6 +201,17 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         icon="MOD_FLUIDSIM",
     ),
     SpawnItem(
+        spawn_id="special:water_anim",
+        label="Water anim",
+        category="Volumes",
+        description="Water volume that other actors can use as their water "
+                    "surface (ogre isles / steps float on it, square platforms "
+                    "splash in it). Flat surface for now (no animated look).",
+        operator="og.add_water_volume",
+        op_kwargs=(("etype", "water-anim"),),
+        icon="MOD_OCEAN",
+    ),
+    SpawnItem(
         spawn_id="special:music_zone",
         label="Music zone",
         category="Audio",

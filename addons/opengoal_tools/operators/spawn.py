@@ -726,10 +726,14 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
     bl_label   = "Add Water Volume"
     bl_options = {"REGISTER", "UNDO"}
 
+    # "water-anim": same volume, but floating / splashing actors can link it
+    # (export/water.py gives it a surface height).
+    etype: bpy.props.StringProperty(default="water-vol", options={"HIDDEN"})
+
     def execute(self, ctx):
         scene = ctx.scene
         cur   = scene.cursor.location
-        etype = "water-vol"
+        etype = self.etype or "water-vol"
 
         # 1) The water-vol actor empty (like any other actor).
         n = len([o for o in _level_objects(scene) if o.name.startswith(f"ACTOR_{etype}_")])

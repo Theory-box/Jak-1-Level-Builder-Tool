@@ -8022,7 +8022,23 @@
       ],
       "glb": "levels/misty/mis-bone-platform-lod0.glb",
       "shape": "CUBE",
-      "description": "Floats at ocean height (Y = 0 when the level has no ocean). The entity named bone-platform-5 is scaled to 0.8 by the game."
+      "description": "Floats on its linked Water Anim, or at ocean height (Y = 0 when the level has no ocean) without one. The entity named bone-platform-5 is scaled to 0.8 by the game.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "water-actor",
+              "slot": 0,
+              "label": "Water to float on (a Water Anim; empty = ocean height)",
+              "accepts": [
+                "water-anim"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "qbert-plat",
@@ -9407,21 +9423,9 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Water for splashes: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty.",
+              "label": "Water for splashes (a Water Anim; leave empty for none)",
               "accepts": [
-                "water-anim",
-                "dark-eco-pool",
-                "jungle-water",
-                "lavatube-lava",
-                "cave-water",
-                "mud",
-                "ogre-lava",
-                "rolling-water",
-                "sunken-water",
-                "training-water",
-                "villagea-water",
-                "villageb-water",
-                "villagec-lava"
+                "water-anim"
               ],
               "required": false
             },
@@ -9809,21 +9813,9 @@
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty to float at ocean height.",
+              "label": "Water to float on (a Water Anim; empty = ocean height)",
               "accepts": [
-                "water-anim",
-                "dark-eco-pool",
-                "jungle-water",
-                "lavatube-lava",
-                "cave-water",
-                "mud",
-                "ogre-lava",
-                "rolling-water",
-                "sunken-water",
-                "training-water",
-                "villagea-water",
-                "villageb-water",
-                "villagec-lava"
+                "water-anim"
               ],
               "required": false
             }
@@ -9903,21 +9895,9 @@
             {
               "lump_key": "water-actor",
               "slot": 0,
-              "label": "Water: only a water-anim actor (none in the addon yet); a water volume or any other actor breaks it. Leave empty to float at ocean height.",
+              "label": "Water to float on (a Water Anim; empty = ocean height)",
               "accepts": [
-                "water-anim",
-                "dark-eco-pool",
-                "jungle-water",
-                "lavatube-lava",
-                "cave-water",
-                "mud",
-                "ogre-lava",
-                "rolling-water",
-                "sunken-water",
-                "training-water",
-                "villagea-water",
-                "villageb-water",
-                "villagec-lava"
+                "water-anim"
               ],
               "required": false
             }
@@ -10696,6 +10676,14 @@
       ],
       "code": "water-h.o",
       "shape": "CUBE"
+    },
+    {
+      "etype": "water-anim",
+      "label": "Water Anim",
+      "category": "Hidden",
+      "parent": "water-vol",
+      "shape": "CUBE",
+      "description": "Water volume that other actors can link as their water (ogre-isle / ogre-step float on it, square-platform splashes in it). Exported as a level type based on water-vol with a flat surface; no animated look yet."
     },
     {
       "etype": "swingpole",

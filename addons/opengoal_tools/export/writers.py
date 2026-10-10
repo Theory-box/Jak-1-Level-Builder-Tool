@@ -563,6 +563,11 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         if _bcl:
             lines += ["", ";; --- battlecontrollers with an intro camera ---"] + _bcl
             log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} battlecontroller type(s)")
+        from . import water as _water
+        _wl = _water.gc_lines(_pfx, _level_objects(scene))
+        if _wl:
+            lines += ["", ";; --- water-anim ---"] + _wl
+            log("  [write_gc] water-anim type")
 
     new_text = "\n".join(lines)
     # Level-scope the addon's trigger type names (and the shared plane-test
@@ -617,7 +622,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     _pfx = _level_type_prefix(name)
     from .battlecontroller import GEN_PREFIX as _BC_GEN
     for _a in all_actors:
-        if _a.get("etype") in _TRIGGER_ETYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
+        if _a.get("etype") in _TRIGGER_ETYPES + ("water-anim",) or str(_a.get("etype", "")).startswith(_BC_GEN):
             _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
