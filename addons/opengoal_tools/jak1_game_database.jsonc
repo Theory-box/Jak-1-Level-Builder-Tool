@@ -5858,7 +5858,9 @@
       "label": "Muse",
       "category": "Interactive Objects",
       "parent": "nav-enemy",
+      "description": "Runs along its path loop; catching it gives its task's cell (needs a game task). Also writes the vanilla misty-muse reminder.",
       "panels": [
+        {"panel": "path", "required": true, "min-points": 8, "description": "A loop of at least 8 points; the muse starts at point 8."},
         {"panel": "nav-mesh", "can-jump": true},
         {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
         {"panel": "movie-pos", "description": "Where the muse catch cutscene plays (cone = facing). Not set: at Jak."},
@@ -6759,13 +6761,15 @@
       "tpage_group": "Maincave",
       "code": "dark-crystal.o",
       "glb": "levels/darkcave/dark-crystal-lod0.glb",
-      "lumps": [
-        {"key": "extra-id", "type": "int32", "description": "Crystal identifier/number."},
-        {"key": "extra-radius", "type": "float", "description": "Collision/activation radius override."}
-      ],
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -6780,10 +6784,37 @@
               },
               "value_if_true": 1,
               "write_if": "if_true"
+            },
+            {
+              "key": "og_crystal_id",
+              "label": "Crystal number (1-5)",
+              "type": "int",
+              "default": 1,
+              "min": 1,
+              "max": 5,
+              "lump": {
+                "key": "extra-id",
+                "type": "int32"
+              },
+              "write_if": "always",
+              "note": "All 5 numbers are needed (same game task); the last one to explode gives the cell."
+            },
+            {
+              "key": "og_crystal_radius",
+              "label": "Danger radius (m)",
+              "type": "float",
+              "default": 7.0,
+              "min": 0.0,
+              "lump": {
+                "key": "extra-radius",
+                "type": "meters"
+              },
+              "write_if": "if_not_default"
             }
           ]
         }
-      ]
+      ],
+      "description": "Explodes when hit. Its scale is forced to 2. The count is stored in the vanilla cave-dark-crystals reminder."
     },
     {
       "etype": "cavecrusher",
@@ -6990,15 +7021,64 @@
       "category": "Interactive Objects",
       "parent": "fleeing-nav-enemy",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "path", "export": false},
-        {"panel": "visibility", "export": false},
-        {"panel": "activation", "export": false},
-        {"panel": "nav-mesh", "fallback-sphere": false}
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "path",
+          "required": true,
+          "description": "Patrol points: it wanders between them, then flees to its hole when Jak comes near."
+        },
+        {
+          "panel": "visibility",
+          "export": false
+        },
+        {
+          "panel": "activation",
+          "export": false
+        },
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": false
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Peeper at its hole (the mole dives into the hole here)",
+              "accepts": [
+                "peeper"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next mole of the task",
+              "accepts": [
+                "lightning-mole"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous mole",
+              "accepts": [
+                "lightning-mole"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
       "tpage_group": "Rolling",
       "code": "rolling-lightning-mole.o",
-      "art_group": "lightning-mole-ag.go"
+      "art_group": "lightning-mole-ag.go",
+      "description": "Exported as a level subtype (subtypes/lightning-mole.gc): its hole is at the linked peeper and its task's introduction is closed so it shows up. Gives no cell itself (vanilla: the geologist)."
     },
     {
       "etype": "ice-cube",
@@ -7090,26 +7170,31 @@
     },
     {
       "etype": "dark-plant",
-      "label": "Dark Plant (Prop)",
+      "label": "Dark Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "dark-plant-ag.go",
       "tpage_group": "Rolling",
       "code": "rolling-obs.o",
       "glb": "levels/rolling/dark-plant-lod0.glb",
-      "is_prop": true,
-      "lumps": [
+      "panels": [
         {
-          "key": "max-frame",
-          "type": "float",
-          "description": "Max animation frame."
-        },
-        {
-          "key": "min-frame",
-          "type": "float",
-          "description": "Min animation frame."
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Neighbour plants (it regrows while one lives; max 4)",
+              "accepts": [
+                "dark-plant"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Dies when Jak has green eco within 4 m. Starts gone once the vanilla rolling-plants task is done."
     },
     {
       "etype": "ogreboss",
@@ -7550,26 +7635,87 @@
     {
       "etype": "flutflut",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."}],
-      "label": "Flut Flut",
-      "category": "NPCs",
-      "parent": "process-drawable",
-      "art_group": "flutflut-ag.go",
-      "tpage_group": "Swamp",
-      "code": "flutflut.o",
-      "glb": "levels/beach/flutflut-lod0.glb",
-      "lumps": [
         {
-          "key": "index",
-          "type": "uint32",
-          "description": "Flutflut instance index (for task tracking)."
+          "panel": "game-task",
+          "description": "Cell stand mode only."
         },
         {
-          "key": "rotoffset",
-          "type": "degrees",
-          "description": "Rotation offset applied on spawn."
+          "panel": "movie-pos",
+          "description": "Cell stand mode: where its cell pickup plays."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_flut_yaw",
+              "label": "Yaw (deg, world)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_flut_mode",
+              "label": "Mode",
+              "type": "enum",
+              "default": "2",
+              "write_if": "always",
+              "lump": {
+                "key": "index",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "2",
+                  "label": "Always usable",
+                  "lump_value": 2
+                },
+                {
+                  "value": "0",
+                  "label": "Vanilla: after Beach Flut Flut + levitator",
+                  "lump_value": 0
+                },
+                {
+                  "value": "1",
+                  "label": "Vanilla: after Flut Flut + Village3 button",
+                  "lump_value": 1
+                },
+                {
+                  "value": "3",
+                  "label": "Cell stand (usable after its cell is taken)",
+                  "lump_value": 3
+                },
+                {
+                  "value": "4",
+                  "label": "Only while already riding",
+                  "lump_value": 4
+                }
+              ]
+            }
+          ]
         }
-      ]
+      ],
+      "label": "Flut Flut",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "art_group": [
+        "flut-saddle-ag.go",
+        "eichar-flut+0-ag.go",
+        "ef-plane-ag.go"
+      ],
+      "tpage_group": "Swamp",
+      "code": [
+        "blocking-plane.o",
+        "flut-part.o",
+        "flutflut.o",
+        "target-flut.o"
+      ],
+      "glb": "levels/swamp/flut-saddle-lod0.glb",
+      "shape": "CUBE",
+      "description": "Rideable Flut Flut: press circle next to it. Only its Yaw field sets its facing."
     },
     {
       "etype": "mayor",
@@ -9446,13 +9592,51 @@
       "parent": "process-drawable",
       "art_group": "cavecrystal-ag.go",
       "tpage_group": "Darkcave",
-      "code": "darkcave-obs.o",
+      "code": [
+        "cavecrystal-light.o",
+        "darkcave-obs.o"
+      ],
       "glb": "levels/darkcave/cavecrystal-lod0.glb",
-      "lumps": [
+      "panels": [
         {
-          "key": "timeout",
-          "type": "float",
-          "description": "Seconds before crystal deactivates. Default 8.0s."
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_crystal_timeout",
+              "label": "Light time (s)",
+              "type": "float",
+              "default": 8.0,
+              "min": 0.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next crystal (its place in the chain is its id 0-6; the 4th drives the light)",
+              "accepts": [
+                "cavecrystal"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous crystal",
+              "accepts": [
+                "cavecrystal"
+              ],
+              "required": false
+            }
+          ]
         }
       ]
     },
@@ -9463,7 +9647,8 @@
       "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
       "tpage_group": "Village3",
-      "code": "miners.o"
+      "code": "miners.o",
+      "is_prop": true
     },
     {
       "etype": "minecartsteel",
@@ -9529,7 +9714,7 @@
       "art_group": "shortcut-boulder-ag.go",
       "tpage_group": "Ogre",
       "code": "ogre-obs.o",
-      "is_prop": true
+      "description": "Breaks only with a yellow eco shot."
     },
     {
       "etype": "spike",
@@ -9806,15 +9991,31 @@
       "parent": "process-drawable",
       "art_group": "swamp-rock-ag.go",
       "tpage_group": "Swamp",
-      "code": ["battlecontroller.o", "swamp-obs.o"],
-      "is_prop": true,
-      "lumps": [
+      "code": [
+        "battlecontroller.o",
+        "swamp-obs.o"
+      ],
+      "panels": [
         {
-          "key": "scale-factor",
-          "type": "float",
-          "description": "Uniform scale. Default 1.0."
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_rock_size",
+              "label": "Size",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.01,
+              "lump": {
+                "key": "scale-factor",
+                "type": "float"
+              },
+              "write_if": "if_not_default",
+              "note": "The game ignores the Blender scale; this scales model and collision."
+            }
+          ]
         }
-      ]
+      ],
+      "description": "Breaks with a yellow eco shot."
     },
     {
       "etype": "gondola",
@@ -9825,8 +10026,8 @@
       "tpage_group": "Village3",
       "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
-      "is_prop": true,
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Its rotation is forced to identity. Riding it plays the vanilla cable animations and loads vanilla village3 / snow (a vanilla teleport); use is gated on vanilla village3-button."
     },
     {
       "etype": "swamp-blimp",
@@ -9847,7 +10048,8 @@
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
       "is_prop": true,
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Static model when placed: the real ropes are spawned by the swamp blimp, one per link."
     },
     {
       "etype": "swamp-spike",
@@ -10099,7 +10301,8 @@
       "parent": "process-drawable",
       "art_group": "lightning-mole-ag.go",
       "tpage_group": "Rolling",
-      "code": "rolling-lightning-mole.o"
+      "code": "rolling-lightning-mole.o",
+      "description": "Peeks out of the lightning mole's hole; link it as the mole's peeper."
     },
     {
       "etype": "cave-trap",
@@ -10487,30 +10690,59 @@
     },
     {
       "etype": "ecoventrock",
-      "panels": [{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."}],
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "The last rock of a chain gives this task's cell."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell plays its pickup animation."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Harvester to notify when it breaks",
+              "accepts": [
+                "harvester",
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next rock (only the last one gives the cell)",
+              "accepts": [
+                "ecoventrock"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous rock",
+              "accepts": [
+                "ecoventrock"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
       "label": "Eco Vent (Rock)",
       "category": "Interactive Objects",
       "parent": "process-drawable",
-      "art_group": "ecoventrock-ag.go",
+      "art_group": [
+        "ecoventrock-ag.go",
+        "kickrock-ag.go",
+        "beachcam-ag.go"
+      ],
       "tpage_group": "Beach",
       "code": "beach-obs.o",
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance."
-        },
-        {
-          "key": "num-positions",
-          "type": "int32",
-          "description": "Number of positions in the rotation."
-        },
-        {
-          "key": "speed",
-          "type": "float",
-          "description": "Rotation speed."
-        }
-      ],
       "shape": "PLAIN_AXES"
     },
     {
@@ -11312,41 +11544,6 @@
                   "glb": "levels/citadel/citb-arm-shoulder-b-lod0.glb"
                 }
               ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "etype": "lavaballoon",
-      "label": "Lava Balloon",
-      "category": "Interactive Objects",
-      "parent": "process-drawable",
-      "art_group": "lavaballoon-ag.go",
-      "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
-      "glb": "levels/lavatube/lavaballoon-lod0.glb",
-      "lumps": [
-        {"key": "delay", "type": "float", "description": "Cycle delay."}
-      ],
-      "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_move_speed",
-              "label": "Move speed (m/s)",
-              "type": "float",
-              "default_per_etype": {
-                "lavaballoon": 3.0,
-                "darkecobarrel": 15.0
-              },
-              "lump": {
-                "key": "speed",
-                "type": "meters"
-              },
-              "write_if": "always"
             }
           ]
         }
@@ -12989,13 +13186,69 @@
     },
     {
       "etype": "balloon",
-      "label": "Balloon Obstacle",
+      "label": "Balloon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
-      "art_group": "balloon-ag.go",
-      "tpage_group": "Firecanyon",
-      "code": "firecanyon-obs.o",
-      "is_prop": true
+      "panels": [
+        {
+          "panel": "path",
+          "linear-only": true,
+          "description": "Lava Tube only (optional): it bobs along this path."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_balloon_variant",
+              "label": "Style",
+              "type": "enum",
+              "default": "balloon",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "balloon",
+                  "value": "balloon",
+                  "etype": "balloon",
+                  "label": "Fire Canyon",
+                  "code": [
+                    "target-racer-h.o",
+                    "firecanyon-obs.o"
+                  ],
+                  "art_group": "balloon-ag.go",
+                  "glb": "levels/firecanyon/balloon-lod0.glb"
+                },
+                {
+                  "id": "lavaballoon",
+                  "value": "lavaballoon",
+                  "etype": "lavaballoon",
+                  "label": "Lava Tube (can follow a path)",
+                  "code": "lavatube-obs.o",
+                  "art_group": "lavaballoon-ag.go",
+                  "glb": "levels/lavatube/lavaballoon-lod0.glb"
+                }
+              ]
+            },
+            {
+              "key": "og_move_speed",
+              "label": "Move speed (m/s)",
+              "type": "float",
+              "default": 3.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              },
+              "write_if": "if_not_default",
+              "visible_if": {
+                "og_balloon_variant": "lavaballoon"
+              },
+              "note": "Average speed along its path (Lava Tube)."
+            }
+          ]
+        }
+      ],
+      "description": "Floating balloon mine: pops when attacked and knocks Jak back."
     },
     {
       "etype": "crate-darkeco-cluster",
@@ -13215,26 +13468,33 @@
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Master blimp entity (optional)",
+              "label": "Swamp blimp (required: it reads it when broken)",
               "accepts": [
                 "swamp-blimp"
               ],
-              "required": false
+              "required": true
             }
           ]
         }
       ],
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
-      "code": "swamp-blimp.o"
+      "code": "swamp-blimp.o",
+      "description": "Only works with the vanilla swamp-tether-1..4 tasks: when broken it looks up the vanilla 'camera-18x' entities for that task (missing ones crash), and counts breaks in vanilla swamp-tether-1."
     },
     {
       "etype": "citb-firehose",
@@ -13273,13 +13533,544 @@
     {
       "etype": "fishermans-boat",
       "label": "Fisherman's Boat",
-      "category": "Interactive Objects",
+      "category": "Hidden",
       "parent": "rigid-body-platform",
       "art_group": "fishermans-boat-ag.go",
       "tpage_group": "Village1",
       "code": "fishermans-boat.o",
       "is_prop": true,
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Not usable in a custom level: its position is forced to the vanilla Sandover dock and riding it loads vanilla misty / village1 and their continue points."
+    },
+    {
+      "etype": "scarecrow-a",
+      "label": "Training Dummy",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "shape": "CUBE",
+      "description": "Punching dummy: hit it and it wobbles, then breaks apart.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_dummy_variant",
+              "label": "Style",
+              "type": "enum",
+              "default": "scarecrow-a",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "scarecrow-a",
+                  "value": "scarecrow-a",
+                  "etype": "scarecrow-a",
+                  "label": "Short (breaks from any hit)",
+                  "code": "training-obs.o",
+                  "art_group": "scarecrow-a-ag.go",
+                  "glb": "levels/training/scarecrow-a-lod0.glb"
+                },
+                {
+                  "id": "scarecrow-b",
+                  "value": "scarecrow-b",
+                  "etype": "scarecrow-b",
+                  "label": "Tall (breaks when its top is hit in the air)",
+                  "code": "training-obs.o",
+                  "art_group": "scarecrow-b-ag.go",
+                  "glb": "levels/training/scarecrow-b-lod0.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "harvester",
+      "label": "Eco Harvester",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "beach-obs.o",
+      "art_group": "harvester-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/harvester-lod0.glb",
+      "shape": "CUBE",
+      "description": "Deflated harvester; inflates and pumps once its linked actor is complete (an Eco Vent Rock notifies it when it breaks).",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Inflate once this actor is complete",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "periscope",
+      "label": "Periscope (eco beam)",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "jungle-mirrors.o",
+      "art_group": "periscope-ag.go",
+      "tpage_group": "Jungle",
+      "glb": "levels/jungle/periscope-base-lod0.glb",
+      "shape": "CUBE",
+      "description": "Rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece. On target it becomes complete, which powers the next one. A whole chain also advances vanilla jungle-lurkerm.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Beam source (powered once it is complete)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Aim at (its position + its Height)",
+              "accepts": [
+                "periscope",
+                "reflector-end",
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_peri_height",
+              "label": "Height (m)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "meters"
+              },
+              "write_if": "if_nonzero",
+              "note": "Mirror height above the base (vanilla 14.5-44.5 m)."
+            },
+            {
+              "key": "og_peri_turn",
+              "label": "Turn (deg)",
+              "type": "float",
+              "default": 5.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees",
+                "slot": 0
+              },
+              "write_if": "always",
+              "group": "peri-rot",
+              "group_label": "Start View Offset",
+              "group_note": "How far off target the view starts."
+            },
+            {
+              "key": "og_peri_tilt",
+              "label": "Tilt (deg)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees",
+                "slot": 1
+              },
+              "write_if": "always",
+              "group": "peri-rot"
+            },
+            {
+              "key": "og_peri_ex",
+              "label": "X (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "alt-vector",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "group": "peri-end",
+              "group_label": "Beam End (no next actor)",
+              "group_note": "Game axes."
+            },
+            {
+              "key": "og_peri_ey",
+              "label": "Up (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "alt-vector",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero",
+              "group": "peri-end"
+            },
+            {
+              "key": "og_peri_ez",
+              "label": "Z (m, = -Blender Y)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "alt-vector",
+                "type": "meters",
+                "slot": 2
+              },
+              "write_if": "if_any_nonzero",
+              "group": "peri-end"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "reflector-origin",
+      "label": "Eco Beam Origin",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "jungle-mirrors.o",
+      "shape": "PLAIN_AXES",
+      "description": "Draws the eco beam to its blocker until that is complete, then activates the first periscope.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Blocker (the beam starts once it is complete)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First periscope",
+              "accepts": [
+                "periscope"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "reflector-end",
+      "label": "Eco Beam Target",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "shape": "PLAIN_AXES",
+      "description": "Invisible end point for an eco beam: make it the last periscope's next actor.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_refl_height",
+              "label": "Height (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "height-info",
+                "type": "meters"
+              },
+              "write_if": "if_nonzero"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "race-ring",
+      "label": "Race Ring",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "rolling-race-ring.o",
+      "art_group": "race-ring-ag.go",
+      "tpage_group": "Rolling",
+      "glb": "levels/rolling/race-ring-lod0.glb",
+      "shape": "CUBE",
+      "description": "Chain of timed rings: jump through the first to start; each ring must be reached before its time or the chain resets. The last ring gives the task's cell. The ring itself is particles.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "First and last ring: the chase's task. rolling-ring-chase-2 = blue rings."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Last ring: where the cell pickup plays."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next ring (none = last ring)",
+              "accepts": [
+                "race-ring"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous ring",
+              "accepts": [
+                "race-ring"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "First ring of this chase (none = this is the first ring)",
+              "accepts": [
+                "race-ring"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_ring_timeout",
+              "label": "Time to reach (s)",
+              "type": "float",
+              "default": 8.0,
+              "min": 0.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "always",
+              "note": "Not used by the first ring."
+            },
+            {
+              "key": "og_ring_rot",
+              "label": "Extra yaw (deg)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_ring_alt_task",
+              "label": "First ring: active once this task is done",
+              "type": "task",
+              "default": "none",
+              "lump": {
+                "key": "alt-task",
+                "type": "enum-uint32",
+                "format": "(game-task {value})"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "racer",
+      "label": "Zoomer",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "blocking-plane.o",
+        "target-racer-h.o",
+        "racer-part.o",
+        "racer.o",
+        "target-racer.o",
+        "racer-states.o",
+        "collide-reaction-racer.o"
+      ],
+      "art_group": [
+        "racer-ag.go",
+        "eichar-racer+0-ag.go",
+        "ef-plane-ag.go"
+      ],
+      "glb": "levels/rolling/racer-geo.glb",
+      "shape": "CUBE",
+      "description": "Rideable zoomer: press circle next to it. Only its Yaw field sets its facing.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Lock modes only."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Cell stand mode: where its cell pickup plays."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_racer_yaw",
+              "label": "Yaw (deg, world)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotoffset",
+                "type": "degrees"
+              },
+              "write_if": "if_nonzero"
+            },
+            {
+              "key": "og_racer_mode",
+              "label": "Mode",
+              "type": "enum",
+              "default": "0",
+              "write_if": "if_not_default",
+              "lump": {
+                "key": "index",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "0",
+                  "label": "Always usable",
+                  "lump_value": 0
+                },
+                {
+                  "value": "2",
+                  "label": "Locked by its task",
+                  "lump_value": 2
+                },
+                {
+                  "value": "3",
+                  "label": "Cell stand (usable after its cell is taken)",
+                  "lump_value": 3
+                },
+                {
+                  "value": "4",
+                  "label": "Auto-mount, no dismount",
+                  "lump_value": 4
+                },
+                {
+                  "value": "5",
+                  "label": "Needs 72 cells",
+                  "lump_value": 5
+                },
+                {
+                  "value": "6",
+                  "label": "Needs the Rock Village levitator",
+                  "lump_value": 6
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "blue-eco-charger",
+      "label": "Blue Eco Charger",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": "sun-exit-chamber.o",
+      "art_group": [
+        "blue-eco-charger-ag.go",
+        "blue-eco-charger-orb-ag.go"
+      ],
+      "tpage_group": "Sunken",
+      "glb": "levels/sunkenb/blue-eco-charger-lod0.glb",
+      "shape": "CUBE",
+      "description": "Opens (orb spins) when Jak comes within 4 m charged with blue eco; closes 20 s later. Starts stuck open once the vanilla Sunken charger puzzle is solved."
+    },
+    {
+      "etype": "citb-generator",
+      "label": "Citadel Generator",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-generator-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/citb-generator-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hit it to break it: opens its open actors, gives its task's cell, then triggers its linked actors.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Cell given when broken. none: no cell."
+        },
+        {
+          "panel": "movie-pos"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "open-actor",
+              "slot": 0,
+              "label": "Sent 'open when broken",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Sent 'trigger after breaking (after its cell is collected)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            },
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Sent 'trigger 0.5 s after that",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            },
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Starts broken if this actor is complete (default: itself)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "test-actor",

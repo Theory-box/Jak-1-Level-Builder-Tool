@@ -1,0 +1,14 @@
+;; Lightning mole for custom levels. Vanilla dives into a hole at a fixed
+;; Rolling Hills world position (*lightning-mole-hole*, rolling-lightning-mole.gc)
+;; and stays hidden until its task's need-introduction is closed (the geologist
+;; does that in vanilla). This child puts the hole at its linked peeper
+;; (alt-actor 0) and closes need-introduction of its own task when it spawns.
+(deftype __TYPE__ (lightning-mole) ())
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (let ((hole (entity-actor-lookup arg0 'alt-actor 0)))
+    (if hole (set! (-> *lightning-mole-hole* quad) (-> hole extra trans quad))))
+  (if (nonzero? (-> arg0 extra perm task))
+    (close-specific-task! (-> arg0 extra perm task) (task-status need-introduction)))
+  (call-parent-method this arg0)
+  (none))
