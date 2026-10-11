@@ -9435,7 +9435,6 @@
       "label": "Launcher",
       "category": "Platforms",
       "parent": "process-drawable",
-      "tpage_group": "Sunken",
       "panels": [
         {
           "panel": "launcher"

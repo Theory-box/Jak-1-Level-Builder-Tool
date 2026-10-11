@@ -1,160 +1,10 @@
 # Ordered Priority features and fixes
 Features and fixes to work on, have been ordered and can be checked out when they've been dealt with and tested.
+Once a feature is part of a release, it'll get removed from here.
 
 ---
 
-## level .gd and .json clean up
-### game.gd lookup to ignore code/ag
-If a code or art group file is included in the game.gd, it does not need to be included in the level's .gd or in the level's .json. 
-As those files are always loaded and part of the common fr3 too for art groups.
-How I'm imagining it to work.:
-- Have a list of all included files in game.gd stored in the database. (Or check if it already exist, I can't see one myself)
-- Before any art group or code file is added to game.gd or the level's json, compare it with that list.
-- If the files are already part of that list, don't copy them.
-- maybe have an option in the developer tools to turn on/off "ignore game.gd files" to easily switch back to old behaviour if needed 
-  - this option should be ON by default.
-### Extra useless lines in the .json actors
-- There's a few extra fields added on every actors that I'm not sure when they were added but they don't serve any purpose:
-  - "art-group"
-  - "code"
-  - "extra_art_groups": []
-  - "extra_code": []
-- That kind of info shouldn't end up here
-- Here's an example of an actor in the json:
-```json
-{
-  "trans": [
-    -511.08,
-    2.8933,
-    -208.7516
-  ],
-  "etype": "eco-blue",
-  "game_task": "(game-task none)",
-  "quat": [
-    0.0,
-    0.0,
-    0.0,
-    1.0
-  ],
-  "vis_id": 0,
-  "bsphere": [
-    -511.08,
-    2.8933,
-    -208.7516,
-    10.0
-  ],
-  "lump": {
-    "name": "eco-blue-0"
-  },
-  // these next 4 lines shouldn't appear here at all
-  "art_group": null,
-  "code": null,
-  "extra_art_groups": [],
-  "extra_code": []
-},
-```
-
----
-
-## Addon/project settings and fixes
-Some of these could be added in the "Developper tools" or have its own "project settings" panel
-- overwrite folders
-  - Being able to overwrite the folders directly in the blend file
-  - Useful if you're working on multiple projects so you don't have to change inbetween, risk to overwrite files from one project on another
-  - Also useful when you need to update/re-install the addon, the file will already have those selected and you don't need to do it again
-- overwrite database
-  - Being able to directly load a file which overwrite the loaded database
-  - This way people can make changes to it without having to edit the base addon and re-install it
-  - Also makes working on devlopement a lot easier when making changes in the database to test, no need to re-install the addon everytime
-- Fix folder detections
-  - At the moment, when the main folder is set (dev env):
-    - You need to set the data folder manually even tho it's identical to the main folder
-    - You need to set the EXE folder which should always just look like this: BaseFolder\out\build\Release\bin\
-    - The Decompiler folder get set correctly when the data folder is set
-- Fix lag in settings
-  - Maybe due to the dev env issue, the setting menu for the addon become very unresponsive once the main folder is selected
-  - Guessing it might have to do with the fact that it's looking for the folder automatically but can't find them?
-  - But even after selecting them manually it's still very slow
-  - While fixing the previous issue could help with this, not finding the folders automatically shouldn't mean it becomes that slow
-- Quick open has the wrong .gd file name for the level
-  - Same as a previous issue, it's using the automated name instead of the one that was manually set
-  - Might be worth looking around to see if that's not an issue elsewhere in the code
-
----
-
-## Switching to built-in camera entities
-Jak 1 now has built in camera entities. They can be defined in the level's json's in the Camera field. 
-There's an example in test-zone.jsonc, here it is:
-```json
-  // Camera entities you want to use in your level. These are used to dynamically adjust camera settings/modes when Jak enters a volume.
-  // There are a couple of different camera modes, depending on what lumps are present:
-  // - cam-circular: orbits a specified point. requires "pivot" lump.
-  //   - optional lumps: "maxAngle", "focalPull"
-  // - cam-standoff: requires "align" lump.
-  // - cam-string: the default camera mode. used when any of these lumps are present to override the default cam mode behavior:
-  //   - "stringMaxLength", "stringMinLength", "stringMaxHeight", "stringMinHeight"
-  //
-  // Some generic lumps that can be used for all camera modes:
-  // - "fov": set the camera fov (default is 64).
-  // - "interpTime": set the cam blend time when entering the camera entity volume.
-  // - "tiltAdjust": set the camera roll value.
-  //
-  // There's a "flags" lump that takes a cam-slave-options enum value:
-  // "flags": ["enum-uint32", "(cam-slave-options SAME_SIDE COLLIDE)"]
-  //
-  // There's three different volume types (these all have to be defined in keyframe 0, e.g. ["vector-vol@0.0": ...]):
-  // vol: sets camera entity when Jak is inside.
-  // pvol: preferred volume when camera entities overlap.
-  // cutoutvol: disables camera entity when Jak is inside.
-  //
-  // "interesting" is an optional vector lump that can be set to be used as a "point of interest" for the camera to focus on.
-"cameras": [
-  {
-    "trans": [17.26, 9.0, 13.2],
-    "quat": [0, 1, 0, 0],
-    "lump": {
-      "name": "test-cam",
-      "flags": ["enum-uint32", "(cam-slave-options SAME_SIDE)"],
-      "pivot": ["vector3m", [15.0761, 2.6482, 25.548]],
-      "interpTime": ["float", 1.0],
-      "vol": [
-        "vector-vol@0",
-        [-0.09046, 0.025624, 0.99557, 32.528575],
-        [-0.995854, 0.007292, -0.090673, -8.671137],
-        [0.09046, -0.025624, -0.99557, -16.528584],
-        [0.995854, -0.007292, 0.090673, 24.671144],
-        [-0.009584, -0.999645, 0.024858, 0.695884],
-        [0.009584, 0.999645, -0.024858, 15.304117]
-      ]
-    }
-  }
-]
-```
-The current implementation, using a custom actor built for these camera might have more features so it could be kept.
-But if not, or if the features are not that meaningful, we can completely replace them. This can be discussed further.
-
-This will definitely need some custom build panel and since it's very specific to cameras, it can live mostly in the code.
-However, most fields and values should still use the database to be filled up instead of being hard coded.
-There's also a lot of previous functions that can be used such as 
-- The volume code and link UI for vol, pvol and cutoutvol
-- Placing an empty for the pivot point
-- Path/waypoint UI for camera's path
-- Varient/enum selections for the camera modes
-  - Each of those varients can then have the different UI elements they need 
-  - as well as a decent explanation of how that specific camera mode works
-
-But also other completely new fields:
-- "fov" (float, default to -1 which wouldn't include the res-lump, Also indicate default FOV is 64 in the tool tip)
-- "interpTim" (float, how long it takes for the camera to switch to this for smooth transition, in seconds)
-- "tiltAdjust" 
-- "flags" Probably make this a menu that can collapse as there's a few of them that can all individually be turned on/off.
-  - For each turned on, it'll appear in the res-lump as such: `"flags": ["enum-uint32", "(cam-slave-options SAME_SIDE COLLIDE)"]`
-  - See `goal_src\jak1\engine\camera\camera-h.gc` on `cam-slave-options` enum to see the list of all flags.
-  - Probably need a little bit of research to see what each flag do exactly so the tooltip can be helpful
-
----
-
-## Expending paths for more features/control
+## Expending paths for more features/control (merged to main)
 The menu itself should be called Path as that'd be more consistent with how it's used in the game code.
 When adding waypoints, I'm personally not sure if I'm a fan of the preview mesh getting added. Personally I'm moslty only using it with curves which at least don't do that.
 ### Extra Path modes
@@ -238,7 +88,7 @@ Maybe a full remodel of the path/waypoints UI so you have one general paths UI a
 ---
 
 
-## Ways to include code without it coming from an actor
+## Ways to include code without it coming from an actor (merged to main)
 While, ideally, you should never have to add anything extra and everything should be automated. It'll be hard to cover every cases and someone making custom features might be blocked a bit. Having custom code to always include could cover weird edge cases much easier than trying to manually fix every single one of them.
 ### General idea for custom code
 What I'm thinking is having text files in blender you can edit which would either be separated files for each or have one well organised file.
@@ -287,10 +137,10 @@ Same as with the level-info data, if other custom levels aren't affected then th
 
 ---
 
-## Going through actor list to fix preview model/included code.
+## Going through actor list to fix preview model/included code. (in progress)
 This is moslty a step that'll done by users to check on every actor, with the database it should be possible to fix most actor by changing the preview glb path, the added code and art groups needed as well as the fields.
 
-### General changes for entities
+### General changes for entities (merged to main)
 - code and art-groups changes
   - Make it so both the code and AG fields can be used to add multiple entries as some actors need multiple code files as well as mutliple art groups
     - it shouldn't change much in the way it's setup already. It should just allow multiple string entries in a bracket when there's multiple ones.
@@ -421,7 +271,7 @@ This is moslty a step that'll done by users to check on every actor, with the da
   - Even if it was added to the preview mesh, I would still like it removed from the entry of every actor as it clogs the data a lot
   - If anything it should be set per category, so the color coding can quickly show to users what type of actor are placed
 
-### Per categories changes:
+### Per categories changes: (in progress)
 Going through all categories in this order, if I can't fix some things I'll not it here under each category:
 - Pickups
   - `movie-pos` field for flies/cells and crates/pickup-spawner which are holding a fly/cell
@@ -792,19 +642,61 @@ As this is a feature that would automatically do something for the user, it shou
 ---
 
 ## Export settings
-- Geometry compression for export (Draco)
-  - Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
-  - Since the addon takes care of the export itself, there should be an option to turn this on as well as have all of the settings you normally have to control the compression
-- Deactivating selections on a collection shouldn't stop export of this one. 
-  - very useful on geometry while working with actors
-  - I'm guessing at the moment the addon uses "export selected" and manually select everything that's needed for the export which is why things doesn't get exported if the selection is turned off
-  - I'm proposing to change that to use the "collection" export feature. It can even be set only to a main geometry collection. That way the glb export is also cleaner and doesn't have any extra data it doesn't need.
-- Vertex alpha export (need to test in newer blender version if it works different before)
-- Make spawn use mod-base spawn feature if mod-base detected
-  - Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
-  - mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
-  - This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
-  - If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
+### Geometry compression for export (Draco)
+- Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
+- Since the addon takes care of the export itself, there should be an option to turn this on as well as have all of the settings you normally have to control the compression.
+- A way to achieve full export control, without having to create duplication of all these menus would be to use the "collection export" feature of blender, then users could just change the settings there. The addon would just create the export and set everything that's needed. (correct settings for vertex color, custom property export, the right glb name in the right folder, etc)
+- This would also help with the next point in export settings
+### Deactivating selections on a collection shouldn't stop export of this one. 
+- very useful on geometry while working with actors
+- I'm guessing at the moment the addon uses "export selected" and manually select everything that's needed for the export which is why things doesn't get exported if the selection is turned off
+- I'm proposing to change that to use the "collection" export feature. It can even be set only to a main geometry collection. That way the glb export is also cleaner and doesn't have any extra data it doesn't need.
+- Users would just need to make sure they place their geometry in those folders but a warning could be given as well as a button to move geometry in those folders if some is found. But make sure you let users create sub categories inside of that main export geometry folder so they can organise themselves as well.
+### Vertex alpha export 
+- need to test in newer blender version if it works different before:
+  - In the past, to get this to work you had to have the vertex color export set to material
+  - then make sure each material included the vertex color or their vertex color wouldn't be exported
+  - then the alpha channel would also get exported and useable
+  - It's possible newer versions of blender don't work this way so it would be nice to test the last 4 main releases (5.2, 5.1, 5.0, 4.5) as well as 5.3 beta build  as that release in less than a month. For each of those versions you should test:
+    - Exporting vertex color objects with an alpha channel and read the glb file to see if those got exported
+    - Uses all variant of settings for vertex color export
+    - Use different settings on object and material themselves (having the vertex color as part of the material of the actor)
+    - make a table/list of which combination of blender version/export settings and material setting export the alpha channel of vertex color or not
+
+---
+
+## Game and Blender version check for different features
+Some features of blender or in opengoal might vary depending on which one you're using. 
+For blender, there's its version, 5.2, 5.1, 5.0, 4.5, 4.4 or later/earlier.
+For OpenGOAL, there's 3 main ways, which then have their own versions too:
+- jak-project releases:
+  - 0.3.8
+  - 0.3.7
+  - etc
+- jak-project dev environement:
+  - commit names
+- mod-base dev environement:
+  - commit names
+Being able to say when a feature is used by some versions or not would be very useful for multiple reasons. The main releases can use the versions where the two other dev environement, I think it's fair to expect the users to be on the last version and/or have a warning message to tell them to update if a feature requires a specific version.
+
+I'll write down specific to versions ideas here so these should give you a warning or just not allow the feature.
+
+### Make spawn use mod-base spawn feature if mod-base detected
+Available in
+- any mod-base version 
+- not on jak-project dev/releases 
+If the user is using a version that doesn't have this feature, it should just be off with a tooltip telling why.
+If they're using a version with the feature, have the check for it in settings be on. 
+- Current spawn option when starting the game boot the game normally and then teleports you after a few seconds
+- mod-base, a fork of opengoal that's used by most people creating mods, has a file called `mod-settings.gc` in `goal_src\jak1\engine\mods\`
+- This file has `(define *debug-continue-point* "village1-hut")` which can allow you to directly boot debug into any checkpoint you want.
+- If the addon detect that you're using mod-base (can check if mod-settings.gc exists), this value could be changed instead of teleporting you after booting up the game.
+### Time of day version check
+Available in:
+- release 0.3.8 and later
+- jak-project from commit (d04ac9d)
+- mod-base from commit (3a0aadf)
+If the user's version is too old. Keep the menu there but give a warning
 
 ---
 
@@ -882,6 +774,70 @@ Tasks are the system that set missions to specific resolutions. It's also what t
 ## Blender clean up feature
 - Orphan node collections
 - Orphan preview meshes
+
+---
+
+## Warnings for required fields
+There's already a warning inside of a field when something is required but it's not always the most visible thing. Here's some changes I would like to see to help with this.
+### Recolor of warnings
+At the moment, a required field doesn't have a color to indicate itself. The only color is on unexpected types when linking actors.
+
+I would recolor the unexpected types background to an orange instead of red.
+And make the background of the "required" message red to indicate it's more important to fill them in.
+### Warning icons on menus
+On top of the recolor, it would be useful to have a warning icon, with a number, on the panel label itself, and have those also show on the parent panel label.
+That way, it'd be easy to spot where something is missing without having to open every menu and scrolling down.
+Hovering over the warning icon should also give you a popup of which fields are missing.
+
+For example, let's say an actor requires a path, an alt-actor, a prev-actor and a next-actor:
+- Next to the "Entity Links" panel name you'd see a "3 ⚠". Hovering on it would say
+```
+Missing 3 required field: 
+- alt-actor
+- prev-actor
+- next-actor
+```
+- Next to the "Path" panel name you'd see a "1 ⚠". hovering on it would say
+```
+Missing 1 required field: 
+- path
+Click to open to the first panel.
+```
+- Then at the top menu "Actor Settings" panel name you'd see a "4 ⚠". Hovering on it would say
+```
+Missing 4 required fields: 
+- path
+- alt-actor
+- prev-actor
+- next-actor
+Click to open to the first panel.
+```
+
+A nice addition to this would be able to click on it and it'd open and scroll down to the first missing required field.
+### Warning icon next to export and compile button
+To make it even more visible, as warnings can be spread across multiple actors, a good place where the user will have to see it is the "export and compile" button.
+The warning can be shown right next to it and works the same as the per-actor warning, except the popup would indicate the name of the actors too.
+
+For example, next to the export button you could see "5 ⚠". Hovering on it would say
+```
+Actor_name is missing 4 required fields: 
+- path
+- alt-actor
+- prev-actor
+- next-actor
+Another_actor_name is missing 1 required field: 
+- path
+Click to open to the first panel.
+```
+
+---
+
+## Hide unused entity links field under a sub menu
+Same as with fact options, some actor links usages isn't always shown on an actor code itself but can be used by other code instead. It's for this reason I've wanted to keep the entity link panel visible on all actors.
+
+However, that does add a lot of, often useless, pannels to each actor.
+
+To fix this, while still keeping the option there. Those panels that aren't specifically defined by the actor or its parents, could be put in a "other links" menu that's collapsed by default, same as options.
 
 ---
 
