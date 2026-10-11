@@ -5045,11 +5045,83 @@
     {
       "etype": "eco-door",
       "parent": "process-drawable",
-      "description": "Game type (deftype eco-door (process-drawable)) in engine\\common-obs\\baseplat.gc. Parent record only, not spawnable.",
+      "description": "Eco door family (baseplat.gc): opens when Jak is near and has blue eco, or its entity is complete, or it is one-way and Jak is behind it. A state-actor link locks it until that actor is complete; a 'trigger event toggles the lock.",
       "panels": [
         {
           "panel": "scale",
           "uniform": true
+        },
+        {
+          "panel": "eco-door"
+        },
+        {
+          "panel": "custom-fields",
+          "show-panel": false,
+          "fields": [
+            {
+              "key": "og_door_auto_close",
+              "label": "Auto-close",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 4
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_one_way",
+              "label": "One-way",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 8
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_door_lock_once",
+              "label": "Lock once controller is done",
+              "type": "bool",
+              "default": false,
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 2
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "_door_state_lock",
+              "type": "const",
+              "note": "Locked until the linked state-actor is complete; set automatically when a state-actor link exists.",
+              "lump_bit": {
+                "key": "flags",
+                "type": "uint32",
+                "bit_value": 1,
+                "set_if_link": "state-actor"
+              }
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Lock controller (door unlocks when this actor is complete)",
+              "accepts": [
+                "basebutton",
+                "citb-button",
+                "any"
+              ],
+              "required": false
+            }
+          ]
         }
       ]
     },
@@ -9359,14 +9431,13 @@
     },
     {
       "etype": "warpgate",
-      "label": "Warp Gate",
+      "label": "Warp Gate (position marker)",
       "category": "Buttons and Doors",
       "parent": "process-hidden",
-      "art_group": "warpgate-ag.go",
-      "tpage_group": "Village2",
       "code": "villagep-obs.o",
       "glb": "levels/citadel/warpgate-lod0.glb",
-      "shape": "CIRCLE"
+      "shape": "CIRCLE",
+      "description": "Marks itself dead when placed (the vanilla ring is level geometry). Use it as the warp switch's warp spot. The preview mesh is for placement only."
     },
     {
       "etype": "cavecrystal",
@@ -9876,56 +9947,48 @@
       "shape": "CIRCLE"
     },
     {
-      "etype": "warp-gate",
-      "label": "Warp Gate (unused?)",
-      "category": "Buttons and Doors",
-      "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Warp position actor. (Usually the particle effect)",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
-      "art_group": "warp-gate-switch-ag.go",
-      "code": "villagep-obs.o",
-      "glb": "levels/village1/warp-gate-switch-lod0.glb"
-    },
-    {
       "etype": "warp-gate-switch",
       "label": "Warp Gate Switch",
       "category": "Buttons and Doors",
       "parent": "basebutton",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
+        {
+          "panel": "game-task",
+          "description": "Closed when pressed; none / closed = starts pressed. village2-levitator / village3-button / village4-button unlock warp destinations 2 / 3 / 4 everywhere."
+        },
         {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Warp position actor. (Usually the particle effect)",
+              "label": "Warp spot (the gate appears here; gets 'start / 'stop, e.g. a particle spawner)",
               "accepts": [
                 "any"
               ],
-              "required": false
+              "required": true
+            },
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Actors triggered when pressed",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
             }
           ]
         },
-        {"panel": "custom-fields", "export": false}
+        {
+          "panel": "custom-fields",
+          "export": false
+        }
       ],
       "art_group": "warp-gate-switch-ag.go",
       "code": "villagep-obs.o",
-      "glb": "levels/village1/warp-gate-switch-lod0.glb"
+      "glb": "levels/village1/warp-gate-switch-lod0.glb",
+      "description": "Exported as a level subtype (subtypes/warp-gate-switch.gc) so its gate offers the warp menu in a custom level; destinations are the vanilla hubs."
     },
     {
       "etype": "balloonlurker",
@@ -12008,94 +12071,93 @@
     },
     {
       "etype": "jng-iris-door",
-      "label": "Iris Door (Jungle)",
+      "label": "Iris Door",
       "category": "Buttons and Doors",
       "parent": "eco-door",
       "art_group": "jng-iris-door-ag.go",
-      "code": "jungleb-obs.o",
-      "glb":"levels/jungleb/jng-iris-door-lod0.glb",
+      "glb": "levels/jungleb/jng-iris-door-lod0.glb",
       "panels": [
         {
           "panel": "custom-fields",
           "fields": [
             {
-              "key": "og_door_auto_close",
-              "label": "Auto-close",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 4
-              },
-              "write_if": "if_true"
-            },
-            {
-              "key": "og_door_one_way",
-              "label": "One-way",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 8
-              },
-              "write_if": "if_true"
-            },
-            {
-              "key": "og_door_starts_open",
-              "label": "Starts open",
-              "type": "bool",
-              "default": false,
-              "lump": {
-                "key": "perm-status",
-                "type": "uint32"
-              },
-              "value_if_true": 64,
-              "write_if": "if_true"
-            },
-            {
-              "key": "_door_state_lock",
-              "type": "const",
-              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 1,
-                "set_if_link": "state-actor"
-              }
-            }
-          ]
-        },
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "state-actor",
-              "slot": 0,
-              "label": "Lock controller (door unlocks when this entity is activated)",
-              "accepts": [
-                "basebutton",
-                "any"
-              ],
-              "required": false
+              "key": "og_iris_variant",
+              "label": "Style",
+              "type": "enum",
+              "default": "jng-iris-door",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "jng-iris-door",
+                  "value": "jng-iris-door",
+                  "etype": "jng-iris-door",
+                  "label": "Jungle",
+                  "code": "jungleb-obs.o",
+                  "art_group": "jng-iris-door-ag.go",
+                  "glb": "levels/jungleb/jng-iris-door-lod0.glb"
+                },
+                {
+                  "id": "tra-iris-door",
+                  "value": "tra-iris-door",
+                  "etype": "tra-iris-door",
+                  "label": "Training (same model)",
+                  "code": "training-obs.o",
+                  "art_group": "jng-iris-door-ag.go",
+                  "glb": "levels/training/jng-iris-door-lod0.glb"
+                },
+                {
+                  "id": "citb-iris-door",
+                  "value": "citb-iris-door",
+                  "etype": "citb-iris-door",
+                  "label": "Citadel (always auto-closes, no blue eco needed)",
+                  "code": [
+                    "battlecontroller.o",
+                    "citadel-part.o",
+                    "citadel-obs.o"
+                  ],
+                  "art_group": "citb-iris-door-ag.go",
+                  "glb": "levels/citadel/citb-iris-door-lod0.glb"
+                }
+              ]
             }
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Iris door (eco door). Opens at 8 m, closes at 12 m."
     },
     {
       "etype": "eggtop",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},{"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."}],
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where its power cell jumps to when it spawns (unless Skip jump animation) and plays its pickup animation."
+        },
+        {
+          "panel": "fact-options",
+          "fields": [
+            {
+              "key": "og_fop_skip_jump_anim",
+              "show-field": true,
+              "highlight": true
+            }
+          ]
+        }
+      ],
       "label": "Egg Top Button (Jungleb)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
       "art_group": "eggtop-ag.go",
       "code": "jungleb-obs.o",
-      "glb":"levels/jungleb/eggtop-lod0.glb",
-      "shape": "CUBE"
+      "glb": "levels/jungleb/eggtop-lod0.glb",
+      "shape": "CUBE",
+      "description": "Spawns its task's power cell; once collected it closes. Its close sequence looks at vanilla 'ecovent-171' / 'camera-223' (missing names only print an error)."
     },
     {
       "etype": "sidedoor",
@@ -12105,81 +12167,9 @@
       "art_group": "sidedoor-ag.go",
       "code": "jungle-obs.o",
       "glb": "levels/jungle/sidedoor-lod1.glb",
-      "lumps": [
-        {"key": "height-info", "type": "float", "description": "Height parameters: 2 floats."}
-      ],
-      "panels": [
-        {"panel": "eco-door"},
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_door_auto_close",
-              "label": "Auto-close",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 4
-              },
-              "write_if": "if_true"
-            },
-            {
-              "key": "og_door_one_way",
-              "label": "One-way",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 8
-              },
-              "write_if": "if_true"
-            },
-            {
-              "key": "og_door_starts_open",
-              "label": "Starts open",
-              "type": "bool",
-              "default": false,
-              "lump": {
-                "key": "perm-status",
-                "type": "uint32"
-              },
-              "value_if_true": 64,
-              "write_if": "if_true"
-            },
-            {
-              "key": "_door_state_lock",
-              "type": "const",
-              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 1,
-                "set_if_link": "state-actor"
-              }
-            }
-          ],
-          "show-panel": false
-        },
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "state-actor",
-              "slot": 0,
-              "label": "Lock controller (door unlocks when this entity is activated)",
-              "accepts": [
-                "basebutton",
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
-      "shape": "CUBE"
+      "panels": [],
+      "shape": "CUBE",
+      "description": "Eco door. Opens at 5.5 m, closes at 15 m."
     },
     {
       "etype": "maindoor",
@@ -12198,70 +12188,25 @@
       "parent": "eco-door",
       "art_group": "rounddoor-ag.go",
       "code": "misty-warehouse.o",
-      "lumps": [
-        {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance."
-        }
-      ],
       "panels": [
-        {"panel": "eco-door"},
         {
           "panel": "custom-fields",
           "fields": [
             {
               "key": "og_door_auto_close",
-              "label": "Auto-close",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 4
-              },
-              "write_if": "if_true"
+              "show-field": false,
+              "export": false
             },
             {
               "key": "og_door_one_way",
-              "label": "One-way",
-              "type": "bool",
-              "default": false,
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 8
-              },
-              "write_if": "if_true"
-            },
-            {
-              "key": "og_door_starts_open",
-              "label": "Starts open",
-              "type": "bool",
-              "default": false,
-              "lump": {
-                "key": "perm-status",
-                "type": "uint32"
-              },
-              "value_if_true": 64,
-              "write_if": "if_true"
-            },
-            {
-              "key": "_door_state_lock",
-              "type": "const",
-              "note": "ecdf00: door locked until the linked state-actor's task completes; auto-set when a state-actor link exists.",
-              "lump_bit": {
-                "key": "flags",
-                "type": "uint32",
-                "bit_value": 1,
-                "set_if_link": "state-actor"
-              }
+              "show-field": false,
+              "export": false
             }
-          ],
-          "show-panel": false
+          ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Eco door (misty warehouse). Always auto-closes and is one-way (forced by its code). Opens at 17 m."
     },
     {
       "etype": "launcherdoor",
@@ -12271,7 +12216,9 @@
       "art_group": "launcherdoor-ag.go",
       "code": "launcherdoor.o",
       "panels": [
-        {"panel": "launcherdoor"},
+        {
+          "panel": "launcherdoor"
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -12289,6 +12236,21 @@
             }
           ],
           "show-panel": false
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Notified after Jak passes",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
         }
       ],
       "shape": "CUBE"
@@ -12347,9 +12309,6 @@
       "parent": "process-drawable",
       "art_group": "generic-button-ag.go",
       "code": "basebutton.o",
-      "lumps": [
-        {"key": "extra-id", "type": "uint32", "description": "Optional stable identifier for state tracking."}
-      ],
       "panels": [
         {
           "panel": "custom-fields",
@@ -12365,6 +12324,18 @@
                 "type": "float"
               },
               "write_if": "if_positive"
+            },
+            {
+              "key": "og_button_id",
+              "label": "Button id (-1 = chain position)",
+              "type": "int",
+              "default": -1,
+              "min": -1,
+              "lump": {
+                "key": "extra-id",
+                "type": "uint32"
+              },
+              "write_if": "if_nonneg"
             }
           ]
         },
@@ -12372,9 +12343,18 @@
           "panel": "actor-link",
           "slots": [
             {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Notify actor (gets 'trigger when the button is flopped)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
               "lump_key": "next-actor",
               "slot": 0,
-              "label": "First activated actor",
+              "label": "Button chain: next (with no notify actor, 'trigger goes to the whole chain)",
               "accepts": [
                 "any"
               ],
@@ -12383,7 +12363,7 @@
             {
               "lump_key": "prev-actor",
               "slot": 0,
-              "label": "Previous button in chain",
+              "label": "Button chain: previous",
               "accepts": [
                 "any"
               ],
@@ -12392,7 +12372,9 @@
           ]
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "glb": "levels/sunken/generic-button-lod0.glb",
+      "description": "Flop (ground-pound) button. Sends 'trigger to its notify actor: toggles an eco door's lock, opens a sun iris door, lowers a swamp gate ... Stays down unless it has a timeout."
     },
     {
       "etype": "shover",
@@ -12457,26 +12439,351 @@
       "category": "Buttons and Doors",
       "parent": "swamp-spike",
       "panels": [
-        {"panel": "sync", "export": false},
-        {"panel": "custom-fields", "export": false},
-        {"panel": "scale", "always": false}
+        {
+          "panel": "sync",
+          "export": false
+        },
+        {
+          "panel": "custom-fields",
+          "export": false
+        },
+        {
+          "panel": "scale",
+          "always": false
+        }
       ],
       "art_group": "swamp-spike-ag.go",
       "tpage_group": "Swamp",
-      "code": ["battlecontroller.o", "swamp-obs.o"],
-      "lumps": [
+      "code": [
+        "battlecontroller.o",
+        "swamp-obs.o"
+      ],
+      "shape": "CUBE",
+      "description": "Lowers for good when it gets 'trigger (e.g. a button's notify actor)."
+    },
+    {
+      "etype": "gorge-pusher",
+      "label": "Gorge Pusher (rolling)",
+      "category": "Buttons and Doors",
+      "parent": "pusher-base",
+      "code": "rolling-obs.o",
+      "art_group": "pusher-ag.go",
+      "glb": "levels/rolling/pusher-lod0.glb",
+      "shape": "CUBE",
+      "description": "Pusher held at its blocking position until the vanilla rolling-race task is introduced, then at its open position.",
+      "panels": [
         {
-          "key": "distance",
-          "type": "meters",
-          "description": "Travel distance."
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_gp_max",
+              "label": "Blocking position (0-1)",
+              "type": "float",
+              "default": 1.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "max-frame",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            },
+            {
+              "key": "og_gp_min",
+              "label": "Open position (0-1)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "max": 1.0,
+              "lump": {
+                "key": "min-frame",
+                "type": "float"
+              },
+              "write_if": "if_nonzero"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "sunken-pipegame",
+      "label": "Pipe Game (sunken)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "sunken-pipegame.o"
+      ],
+      "art_group": [
+        "generic-button-ag.go",
+        "sunkencam-ag.go"
+      ],
+      "glb": "levels/sunken/generic-button-lod0.glb",
+      "shape": "CUBE",
+      "description": "Spawns 3 buttons at fixed world offsets (-7.5 / 0 / +7.5 m X, +1.25 m Z). Path points 1-6 = jar / far pairs for left, middle, right. Prizes are vanilla: sunken-pipe cell + 2 sunken-buzzer flies.",
+      "panels": [
+        {
+          "panel": "path",
+          "show-panel": true,
+          "required": true,
+          "min-points": 6
         },
         {
-          "key": "scale-factor",
-          "type": "float",
-          "description": "Scale modifier."
+          "panel": "game-task",
+          "description": "Its need-hint is closed when a prize is caught."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Entries [1] [2]: where the two scout flies play their pickup."
         }
+      ]
+    },
+    {
+      "etype": "snow-bumper",
+      "label": "Snow Bumper",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "snow-bumper.o",
+      "art_group": "snow-bumper-ag.go",
+      "glb": "levels/snow/snow-bumper-lod0.glb",
+      "shape": "CUBE",
+      "description": "Shoves Jak within 5 m; stomp it to switch it off. Chain bumpers with next / prev: the last one down gives its task's cell.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next bumper",
+              "accepts": [
+                "snow-bumper"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous bumper",
+              "accepts": [
+                "snow-bumper"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_bump_ry",
+              "label": "Shove yaw (deg, world)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "rotmin",
+                "type": "degrees",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "group": "bump",
+              "group_label": "Shove Direction",
+              "group_note": "World angles; written together."
+            },
+            {
+              "key": "og_bump_spread",
+              "label": "Max deviation (deg)",
+              "type": "float",
+              "default": 180.0,
+              "lump": {
+                "key": "rotmin",
+                "type": "degrees",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero",
+              "group": "bump"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "snow-button",
+      "label": "Flut Flut Button",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "snow-flutflut-obs.o",
+      "art_group": "snow-button-ag.go",
+      "glb": "levels/snow/snow-button-lod0.glb",
+      "shape": "CUBE",
+      "description": "Pressed by Flut Flut only. Raises the flutflut platforms after it in the chain for Timeout seconds.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First platform",
+              "accepts": [
+                "flutflut-plat"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Previous button (released when this one is pressed)",
+              "accepts": [
+                "snow-button"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_sb_timeout",
+              "label": "Timeout (s)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.0,
+              "lump": {
+                "key": "timeout",
+                "type": "float"
+              },
+              "write_if": "if_not_default"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "snow-switch",
+      "label": "Snow Fort Switch",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "snow-obs.o",
+      "art_group": [
+        "snow-switch-ag.go",
+        "snowcam-ag.go"
       ],
-      "shape": "CUBE"
+      "glb": "levels/snow/snow-switch-lod0.glb",
+      "shape": "CUBE",
+      "description": "Holds its task's cell (unless vanilla snow-ball is done); taking it sends 'notice to the linked actors (fort gate). Its camera is at a fixed vanilla position.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Gate to open",
+              "accepts": [
+                "snow-fort-gate",
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "snow-fort-gate",
+      "label": "Snow Fort Gate",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "snow-obs.o",
+      "art_group": "snow-fort-gate-ag.go",
+      "glb": "levels/snow/snow-fort-gate-lod0.glb",
+      "shape": "CUBE",
+      "description": "Opens on 'notice (snow fort switch): slides 34.5 m down and 8 m along world +Z whatever its rotation. Starts open if the vanilla snow-ball task is done."
+    },
+    {
+      "etype": "snow-eggtop",
+      "label": "Eco Top (snow)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "snow-obs.o",
+      "art_group": [
+        "snow-eggtop-ag.go",
+        "snowcam-ag.go"
+      ],
+      "glb": "levels/snow/snow-eggtop-lod0.glb",
+      "shape": "CUBE",
+      "description": "Holds its task's cell; once collected it plays the eggtop camera and completes ('ecovent-278' cue is vanilla).",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "energydoor",
+      "label": "Energy Door (lavatube)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "lavatube-energy.o",
+      "art_group": "energydoor-ag.go",
+      "glb": "levels/lavatube/energydoor-lod0.glb",
+      "shape": "CUBE",
+      "description": "Blocks from its +X side until its task is resolved, an energy hub sends 'open, or the linked door is open. Always passable from -X.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Opens once this task is past need-resolution."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Follow this door's open state",
+              "accepts": [
+                "energydoor"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-button",
+      "label": "Citadel Button",
+      "category": "Buttons and Doors",
+      "parent": "basebutton",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-button-ag.go",
+      "glb": "levels/citadel/citb-button-lod0.glb",
+      "shape": "CUBE",
+      "description": "Flop button like the wall button, but it pops back up after 1 s (hard-coded).",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_button_timeout",
+              "show-field": false,
+              "export": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "ceilingflag",

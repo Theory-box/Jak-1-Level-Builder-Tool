@@ -257,7 +257,9 @@ def check_camera_targets(scene):
 # Check 9 — Door system checks (v1.7.0)
 # ---------------------------------------------------------------------------
 
-_ECO_DOOR_ETYPES = {"eco-door", "jng-iris-door", "sidedoor", "rounddoor"}
+def _is_eco_door(et):
+    """eco-door and its children (DB parent tree, not a list)."""
+    return et == "eco-door" or any(r.get("etype") == "eco-door" for r in _db.parent_chain(et))
 
 def check_doors(scene):
     issues  = []
@@ -268,7 +270,7 @@ def check_doors(scene):
     used_buttons = set()
     for o in actors:
         et = _etype(o)
-        if et not in _ECO_DOOR_ETYPES:
+        if not _is_eco_door(et):
             continue
         link = _actor_get_link(o, "state-actor", 0)
         if link and link.target_name.strip():
@@ -280,7 +282,7 @@ def check_doors(scene):
             continue
 
         # eco-door family: state-actor target should be a basebutton
-        if et in _ECO_DOOR_ETYPES:
+        if _is_eco_door(et):
             link = _actor_get_link(o, "state-actor", 0)
             target_name = link.target_name.strip() if link else ""
             if target_name:
@@ -306,21 +308,22 @@ def check_doors(scene):
                     "The door won't know which checkpoint to activate when opened.",
                     o.name))
             else:
-                try:
-                    cp_obj = objects.get(cp_name)
-                except Exception:
-                    cp_obj = None
-                if cp_obj is None:
+                # checkpoints export as "<level>-<uid>" (CHECKPOINT_<uid>)
+                lvl = str(scene.get("og_level_name", "") or getattr(scene.og_props, "level_name", "")).strip().lower()
+                cps = {o.name[len("CHECKPOINT_"):] for o in objects if o.name.startswith("CHECKPOINT_")}
+                ok = (cp_name in cps or any(cp_name == f"{lvl}-{u}" for u in cps)
+                      or any(cp_name.endswith("-" + u) for u in cps) or objects.get(cp_name) is not None)
+                if not ok:
                     issues.append(_issue("ERROR",
                         f"'{o.name}' (launcherdoor) continue-name '{cp_name}' "
                         "does not exist in the scene.", o.name))
 
         # basebutton: warn if nothing is listening to it
         if et == "basebutton":
-            if o.name not in used_buttons:
+            if o.name not in used_buttons and not _actor_get_link(o, "alt-actor", 0)                     and not _actor_get_link(o, "next-actor", 0) and not _actor_get_link(o, "prev-actor", 0):
                 issues.append(_issue("WARNING",
-                    f"'{o.name}' (basebutton) is not linked to any door via "
-                    "state-actor. The button will animate but open nothing.",
+                    f"'{o.name}' (basebutton) has no notify actor or chain and no door uses it "
+                    "as state-actor. The button will animate but trigger nothing.",
                     o.name))
 
     return issues

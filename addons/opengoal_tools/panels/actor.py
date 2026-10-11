@@ -671,56 +671,32 @@ class OG_PT_ActorEcoDoor(Panel):
         sel    = ctx.active_object
 
         # ── Open condition hint ───────────────────────────────────────────────
-        # (module-level import of _actor_get_link at the top of this file is used)
         has_state_actor = bool(_actor_get_link(sel, "state-actor", 0))
         hint = layout.box()
+        hint.label(text="Opens when Jak is near AND one of:", icon="INFO")
+        col = hint.column(align=True)
+        col.enabled = False
+        col.label(text="• Jak has blue eco")
+        col.label(text="• One-way + Jak behind it")
+        col.label(text="• it was opened before (saved complete)")
         if has_state_actor:
-            hint.label(text="Button-controlled door", icon="LINKED")
-            col = hint.column(align=True)
-            col.enabled = False
-            col.label(text="• Locked until linked button is pressed")
-            col.label(text="• Opens when Jak walks close with blue eco")
-            col.label(text="• Tip: enable One Way to skip blue eco requirement")
+            col.label(text="Locked until the lock controller is complete", icon="LINKED")
         else:
-            hint.label(text="Opens when Jak is nearby AND one of:", icon="INFO")
-            col = hint.column(align=True)
-            col.enabled = False
-            col.label(text="• Jak has blue eco")
-            col.label(text="• Starts Open is enabled")
-            col.label(text="• One-way flag + Jak on exit side")
-            col.label(text="• Link a button via Actor Links → state-actor")
+            col.label(text="Lock it with a state-actor in Entity Links")
 
-        # ── Behaviour flags ───────────────────────────────────────────────────
+        # ── Behaviour flags: the eco-door fields this door shows ─────────────
+        etype = sel.name.split("_", 2)[1]
+        shown = {f["key"]: f for f in _db.inherited_fields(etype)
+                 if f.get("key", "").startswith("og_door_") and f.get("show-field") is not False}
         box = layout.box()
         box.label(text="Door Behaviour", icon="SETTINGS")
-
-        auto_close  = bool(sel.get("og_door_auto_close",  False))
-        one_way     = bool(sel.get("og_door_one_way",     False))
-        starts_open = bool(sel.get("og_door_starts_open", False))
-
-        row = box.row()
-        icon = "CHECKBOX_HLT" if auto_close else "CHECKBOX_DEHLT"
-        row.operator("og.toggle_door_flag", text="Auto Close",   icon=icon).flag = "auto_close"
-
-        row2 = box.row()
-        icon2 = "CHECKBOX_HLT" if one_way else "CHECKBOX_DEHLT"
-        row2.operator("og.toggle_door_flag", text="One Way",     icon=icon2).flag = "one_way"
-
-        row3 = box.row()
-        icon3 = "CHECKBOX_HLT" if starts_open else "CHECKBOX_DEHLT"
-        row3.operator("og.toggle_door_flag", text="Starts Open", icon=icon3).flag = "starts_open"
-
-        sub = box.row(); sub.enabled = False
-        if starts_open:
-            sub.label(text="Door spawns already open (perm-complete set)", icon="CHECKMARK")
-        elif auto_close and one_way:
-            sub.label(text="Closes after Jak passes, one direction only", icon="INFO")
-        elif auto_close:
-            sub.label(text="Closes automatically after Jak passes", icon="INFO")
-        elif one_way:
-            sub.label(text="Can only be opened from one side", icon="INFO")
-        else:
-            sub.label(text="Default: needs blue eco or button link", icon="INFO")
+        for key, f in shown.items():
+            on = bool(sel.get(key, False))
+            box.row().operator("og.toggle_door_flag", text=f.get("label", key),
+                               icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT").flag = key[len("og_door_"):]
+        if _db.find_actor(etype) and _db.find_actor(etype).get("description"):
+            sub = box.row(); sub.enabled = False
+            sub.label(text=_db.find_actor(etype)["description"][:90], icon="INFO")
 
 
 
