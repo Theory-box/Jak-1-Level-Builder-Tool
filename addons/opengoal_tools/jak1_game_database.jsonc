@@ -5860,7 +5860,7 @@
       "parent": "nav-enemy",
       "description": "Runs along its path loop; catching it gives its task's cell (needs a game task). Also writes the vanilla misty-muse reminder.",
       "panels": [
-        {"panel": "path", "required": true, "min-points": 8, "description": "A loop of at least 8 points; the muse starts at point 8."},
+        {"panel": "path", "required": true, "min-points": 11, "description": "A loop of at least 11 points; the muse starts at point 8. Add more points if muse gets stuck"},
         {"panel": "nav-mesh", "can-jump": true},
         {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
         {"panel": "movie-pos", "description": "Where the muse catch cutscene plays (cone = facing). Not set: at Jak."},
@@ -7020,6 +7020,7 @@
       "label": "Lightning Mole",
       "category": "Interactive Objects",
       "parent": "fleeing-nav-enemy",
+      "glb": "levels/rolling/lightning-mole-lod0.glb",
       "panels": [
         {
           "panel": "game-task",
@@ -7195,6 +7196,41 @@
         }
       ],
       "description": "Dies when Jak has green eco within 4 m. Starts gone once the vanilla rolling-plants task is done."
+    },
+    {
+      "etype": "happy-plant",
+      "label": "Happy Plant",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "art_group": "happy-plant-ag.go",
+      "tpage_group": "Rolling",
+      "code": "rolling-obs.o",
+      "glb": "levels/rolling/happy-plant-lod0.glb",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Connect to one dark-plant in the group",
+              "accepts": [
+                "dark-plant"
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing)."
+        },
+        {
+          "panel": "game-task",
+          "description": "Cell given when completed."
+        }
+      ],
+      "description": "Grows and spawn a cell when all the dark-plant have been cleared"
     },
     {
       "etype": "ogreboss",
@@ -7690,7 +7726,7 @@
                 },
                 {
                   "value": "4",
-                  "label": "Only while already riding",
+                  "label": "Only to dismount",
                   "lump_value": 4
                 }
               ]
@@ -12409,6 +12445,7 @@
       "label": "Launcher Door",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
+      "glb": "levels/sunken/launcherdoor-geo.glb",
       "art_group": "launcherdoor-ag.go",
       "code": "launcherdoor.o",
       "panels": [
@@ -12649,6 +12686,7 @@
         }
       ],
       "art_group": "swamp-spike-ag.go",
+      "glb": "levels/swamp/swamp-spike-lod0.glb",
       "tpage_group": "Swamp",
       "code": [
         "battlecontroller.o",

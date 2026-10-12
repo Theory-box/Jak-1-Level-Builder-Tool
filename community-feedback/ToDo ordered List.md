@@ -553,7 +553,26 @@ Going through all categories in this order, if I can't fix some things I'll not 
     - when spawning water-vol/water-anim or any other actor that needs a volume, don't need to spawn a volume automatically anymore as the volume panel will have an option to do so. No other actor spawn with other things they need, water shouldn't be any different
     - Place the panel inbetween path and nav in the order
   - water-vol
+    - Make "Sync Surface from Volume Top" a toggle which automatically adjust the height everytime the volume is edited. Instead of copying it once. You can grey out the water surface field to show that it's being controlled by something else.
+    - water volume can be all of these and those act different for jak. (unless they're only available in water-anim, if that's the case then only add these there)
+      - water (jak can swim and drown in it)
+      - mud (jak is slowed by it)
+      - tar (jak is slowed by it and damaged)
+      - lava (instant kill jak)
+      - dark-eco (instant kill jak)
+      - electric water (from sunken, damages jak)
   - water-anim
+    - variant for the look
+      - changes the etype if needed
+      - load correct file for that etype
+      - load correct art group
+      - load correct glb for preview mesh
+      - automatically switch to the correct type of liquid as explained in water-vol
+    - sunken has water that goes on and off being electric
+      - see how that works exactly and how to set it up when one of those is selected
+    - Each of the look should have the # (level) (water type) in the name to differentiate them
+### Compile rest of of actor changes
+We should keep track of every remaining actor that still need some changes, isn't working or has some other notes to it in a text file on the repo for later check.
 
 ---
 
@@ -615,6 +634,15 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 ---
 
+## Camera fixes
+### Path
+Camera aren't using the path panel. They should, even if it put the panel a different place.
+### Volumes
+Volumes should also use the normal volumes panel. Volumes for camera can also have priority volumes and cutout volumes.
+Same as for multiple paths, those should be flags that you set in the volume panel that allows multiple volumes per menu, if it needs the priority volumes and same for the cutout
+
+---
+
 ## Entity control features
 ### Select an actor on spawn
 When spawning an actor, it put it as the active object, which is useful for changing its settings but it doesn't select the actor directly. Which would help in case the user want to move/rotate/scale the actor directly too.
@@ -638,6 +666,21 @@ If some specific objects are selected before you spawn an actor, such as paths, 
 Other actor links could also be added to this but it might become a bit more messy so limitting to these 4 ones would already be pretty good.
 
 As this is a feature that would automatically do something for the user, it should be under a toggleable option "automatically connect spawned actor to selection" in the developper tools/setting tab if one is added later.
+### Adding actor through Shift + A menu.
+Add an option on the shift + A menu to add an opengoal actor. This would open a search bar to search for actors directly.
+Have it at the bottom of the menu, called "OpenGOAL object"
+### Naming schem breaking on new levels
+- When spawning an actor that already exist on another level. That actor expect to be the first so it'll be given the .001 on its name, duplicating that actor does and name that new one correctly.
+- With checkpoints, you can't have two checkpoint named the same thing for two different levels because they're named `SPAWN_name` or `CHECKPOINT_name` so if you have two checkpoint named `SPAWN_start` then the second one will be `SPAWN_start.001`
+  - Maybe the vis/short name of the level can be included in the object name in blender as such: `SPAWN_lev_start` but then still export it ignoring the short name level
+
+---
+
+## Specific tools/menu for some actors
+### citb-drop-plat
+### racering
+### evilplant
+### Distribute plat along paths
 
 ---
 
@@ -662,6 +705,14 @@ As this is a feature that would automatically do something for the user, it shou
     - Uses all variant of settings for vertex color export
     - Use different settings on object and material themselves (having the vertex color as part of the material of the actor)
     - make a table/list of which combination of blender version/export settings and material setting export the alpha channel of vertex color or not
+### Quick level export
+Might already be what "Quick Geo Rebuild" but if it is, then it can be renamed. What this should export is:
+- level.gd info
+- level's glb
+- level.json (all actors, camera, settings, art-groups, etc)
+But NOT checkpoints/load-boundaries or anything touching other files, not even nav-mesh definition.
+Then rebuild too.
+This isn't as needed if `Ignore unedited files` is added but good to have still.
 
 ---
 
@@ -740,10 +791,34 @@ Once everything is set and an user press "bake" as they would before, the addon 
 
 ---
 
-### Ignore unedited files
+## Ignore unedited files
 At the moment, every file is rebuilt everytime you click on the export button. The way the compiler work is by checking which files got edited since last time via the file edit time. Which means it'll always have to compile almost the whole game since it's editing files such as `game.gp` or `level-info.gc`.
 If only the level's .json, gd and glb were changed. Which is going to be a vast majority of edits. Then only the level needs to be compiled bringing the compile time down to a few seconds instead.
 How I think this solution could work would be to still generate all files but instead of directly modifying the final files, these could be in a buffer or temporary file that is then compared to the final file. If there's any difference, then the file can get replaced with the new edited file. If there's no changes, then it can be ignored.
+
+---
+
+## Checkpoint/spawn
+### Merge spawn and checkpoint
+- There's no reasons to have checkpoint and spawn as two different actors. They both act the same.
+- Instead you could have a name input when spawning checkpoints and if there's no checkpoint yet in the level, have it set as `start` then if there's a start already, `cp#` with the number automatically going up like it already do when spawning checkpoints. This also allow uses to directly change the name
+### Checkpoint settings
+- flags:
+  - instead of a string input, this should be a collapsed menu that has all the continue-flags (check game-info-h.gc and how each work)
+- load-commands:
+  - instead of a single string output, have a list where you can add/remove commands, then each of those commands is string which will then get bundled
+  - example:
+    - if you have these 3 commands like this:
+    - `special "med-res-level-1" #t`
+    - `special "med-res-level-2" #t`
+    - `special "med-res-level-4" #t`
+    - then it'll get exported like this:
+```lisp
+:load-commands
+'((special "med-res-level-1" #t)
+(special "med-res-level-2" #t)
+(special "med-res-level-4" #t))
+```
 
 ---
 
@@ -756,6 +831,9 @@ How I think this solution could work would be to still generate all files but in
 - Ocean (same as mood)
 - sun-fade (float, from 0.0 to 1.0)
 - bsphere (linked to a empty sphere and use it's position + size/scaling for W)
+- tasks task enums that are inside of that level
+- load-command, work the same way as the checkpoint load-commands
+- alt-load-commands
 ### For level's json
 - Automatic_wall_angle (float, -1 = off, any number on + set the angle)
 - Double sided collision (on/off)
@@ -855,6 +933,27 @@ To fix this, while still keeping the option there. Those panels that aren't spec
 - Align or not with the floor
 - Ability to affect multiple actors/object at once
 - Use center or bottom vertex (for meshes)
+### Export selected actors/camera/checkpoint/load-boundary
+Useful to have, a button to export only the selected object definitions. Should be in the dev tools. 
+
+This would be useful for working on older levels that aren't setup with this addon so you can just create new actors and export just the definition to easily import them into older levels. This is also useful if you want to share information to another user so they can see how you setup one particular thing.
+
+Have a setting to select a text file in a folder or just a folder selected.
+If it's a text file, it'll always just edit that file but if it's a folder, it'll create a new text file with a new name for every export
+
+Here's how it could work for each:
+- Actor/camera
+  - Give you the entity as it'll be written in the level's json
+  - Also give you the list of art group and code files that actor would need (.gd and .json)
+  - All within one file
+- checkpoint
+  - give you the definition of the checkpoint as it would appear in level-info.gc
+- load-boundary
+  - give you the definition of the load-boundary as it would appear in load-boundary-data.gc
+
+---
+
+## Second entity pass
 
 ---
 
