@@ -371,6 +371,18 @@ def check_axis_not_vertical(scene):
     return issues
 
 
+def check_sync_period(scene):
+    """A sync period under one frame (1/300 s) divides by zero in the game's
+    sync code (citb-arm, citb-disc ... crash on load)."""
+    issues = []
+    for o in _actor_objs(scene):
+        v = o.get("og_sync_period")
+        if v is not None and _db.has_panel(_etype(o), "sync") and abs(float(v)) < 1.0 / 300.0:
+            issues.append(_issue("ERROR", f"{o.name}: sync period {float(v):g} s crashes the game (divide by zero). "
+                                          f"Use at least 0.01 s (negative turns the other way).", o.name))
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -461,6 +473,7 @@ _REGISTERED_CHECKS = [
     check_load_boundaries,
     check_entity_defs_audit_blocks,
     check_axis_not_vertical,
+    check_sync_period,
     check_scene_summary,   # always last
 ]
 

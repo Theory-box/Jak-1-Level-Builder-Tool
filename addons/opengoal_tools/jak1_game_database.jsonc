@@ -7189,26 +7189,16 @@
     },
     {
       "etype": "evilplant",
-      "label": "Evil Plant (Prop)",
+      "label": "Evil Plant",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": "village-obs.o",
       "art_group": "evilplant-ag.go",
       "tpage_group": "Village1",
-      "code": "village-obs.o",
       "glb": "levels/village1/evilplant-lod0.glb",
+      "shape": "CUBE",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Height parameters: 2 floats."
-        },
-        {
-          "key": "num-lurkers",
-          "type": "int32",
-          "description": "Child lurker count."
-        }
-      ]
+      "description": "Dark eco plant from the Sage's hut. Loops its idle animation. No settings."
     },
     {
       "etype": "dark-plant",
@@ -8368,15 +8358,15 @@
     },
     {
       "etype": "powercellalt",
-      "label": "Power Cell (alt)",
-      "category": "Visuals",
+      "label": "Power Cell (final door)",
+      "category": "Hidden",
       "parent": "process-drawable",
+      "code": "final-door.o",
       "art_group": "powercellalt-ag.go",
       "tpage_group": "Final",
-      "code": "final-door.o",
       "glb": "levels/finalboss/powercellalt-lod0.glb",
       "shape": "ARROWS",
-      "vertex_export": false
+      "description": "Hidden: has no init-from-entity!. It is only spawned by the 100-cell door cutscene (target-final-door), which flies cells from Jak into the door's joints and follows its parent's joints. Placed as an entity it never initialises."
     },
     {
       "etype": "health",
@@ -10093,13 +10083,470 @@
       "label": "Eco Claw",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": [
+        "robotboss-h.o",
+        "robotboss-misc.o"
+      ],
       "art_group": "ecoclaw-ag.go",
       "tpage_group": "Final",
-      "code": "robotboss-misc.o",
       "glb": "levels/finalboss/ecoclaw-lod0.glb",
       "is_prop": true,
       "shape": "CUBE",
-      "description": "Final boss eco claw. Reads nothing itself: the robot boss (its alt-actor slots 1-4) makes it glow and fire its beam."
+      "description": "Final boss eco claw (static). Reads no lumps or links. Only the robot boss drives it: its 'open / 'beam-on events carry particle groups, so a button can't send them. They make it play its open animation and draw an eco beam."
+    },
+    {
+      "etype": "hutlamp",
+      "label": "Hut Lamp",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "art_group": "hutlamp-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/hutlamp-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Hanging lamp that swings gently (about 10 degrees, 3 s cycle, random start). No settings."
+    },
+    {
+      "etype": "sagesail",
+      "label": "Sage's Hut Sail",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "art_group": "sagesail-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/sagesail-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "panels": [
+        {
+          "panel": "sync",
+          "description": "One full turn: period and phase.",
+          "fields": [
+            {
+              "key": "og_sync_period",
+              "default": 10.0
+            },
+            {
+              "key": "og_sync_ease_out",
+              "export": false
+            },
+            {
+              "key": "og_sync_ease_in",
+              "export": false
+            }
+          ]
+        }
+      ],
+      "description": "Large windmill sail from the Sage's hut. Turns steadily around its local forward (Z) axis."
+    },
+    {
+      "etype": "revcycle",
+      "label": "Rev Cycle",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "art_group": "revcycle-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/revcycle-geo.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_revcycle_variant",
+              "label": "Part",
+              "type": "enum",
+              "default": "revcycle",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "revcycle",
+                  "value": "revcycle",
+                  "etype": "revcycle",
+                  "label": "Cycle (body)",
+                  "code": "village-obs.o",
+                  "art_group": "revcycle-ag.go",
+                  "glb": "levels/village1/revcycle-geo.glb"
+                },
+                {
+                  "id": "revcycleprop",
+                  "value": "revcycleprop",
+                  "etype": "revcycleprop",
+                  "label": "Propeller",
+                  "code": "village-obs.o",
+                  "art_group": "revcycleprop-ag.go",
+                  "glb": "levels/village1/revcycleprop-lod0.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "Sage's hut pedal machine: the cycle body or its separate propeller. Loops its animation."
+    },
+    {
+      "etype": "windmill-sail",
+      "label": "Mayor's Windmill Sail",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "art_group": "windmill-sail-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/windmill-sail-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Windmill sail turning around its local X axis: once every 300 s until vanilla jungle-lurkerm is closed, then once every 16 s with wind particles and the mayors-gears sound."
+    },
+    {
+      "etype": "mayorgears",
+      "label": "Mayor's Gears",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village-obs.o",
+      "art_group": "mayorgears-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/mayorgears-geo.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Gear set from the mayor's power machine. Frozen until vanilla jungle-lurkerm is closed, then loops its turning animation."
+    },
+    {
+      "etype": "bladeassm",
+      "label": "Blade Assembly",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "beach-obs.o",
+      "art_group": "bladeassm-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/bladeassm-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Beach wind-blade wheel turning 20 deg/s around its local Z axis. Solid collision that moves with the blades (pushes / carries Jak)."
+    },
+    {
+      "etype": "wheel",
+      "label": "Misty Wheel",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "art_group": "wheel-ag.go",
+      "tpage_group": "Misty",
+      "glb": "levels/misty/wheel-geo.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Has no game code: the engine's viewer fallback draws wheel-ag and loops its animation (as in vanilla Misty). No collision, no settings."
+    },
+    {
+      "etype": "villageb-ogreboss",
+      "label": "Klaww (Village 2 Backdrop)",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village2-obs.o",
+      "art_group": [
+        "ogreboss-village2-ag.go",
+        "fireboulder-ag.go"
+      ],
+      "tpage_group": "Village2",
+      "glb": "levels/village2/ogreboss-village2-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "scale",
+          "export": false,
+          "description": "Ignored: always drawn at 0.65 scale."
+        }
+      ],
+      "description": "Distant Klaww: idles, taunts and throws flaming boulders along baked flight paths (splash / wall-hit effects at fixed points of the throw). Solid. Removed once vanilla village2-levitator is closed."
+    },
+    {
+      "etype": "seaweed",
+      "label": "Seaweed",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "sunken-obs.o",
+      "art_group": "seaweed-ag.go",
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/seaweed-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "description": "Swaying seaweed with a random start frame and speed. No settings."
+    },
+    {
+      "etype": "pistons",
+      "label": "Generator Pistons",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "village3-obs.o",
+      "art_group": "pistons-ag.go",
+      "tpage_group": "Village3",
+      "glb": "levels/village3/pistons-lod0.glb",
+      "shape": "CUBE",
+      "reacts_to": [
+        "update"
+      ],
+      "description": "Volcanic Crater generator pistons. Static until it gets 'update (vanilla: from the gondola); then spins up with sound and stays running, also after a reload."
+    },
+    {
+      "etype": "lavashortcut",
+      "label": "Lava Shortcut",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "lavatube-obs.o",
+      "art_group": "lavashortcut-ag.go",
+      "tpage_group": "Lavatube",
+      "glb": "levels/lavatube/lavashortcut-lod0.glb",
+      "is_prop": true,
+      "shape": "CUBE",
+      "description": "Animated lava from the Lava Tube shortcut. Very large: 105 m bounds centred 34 m below the origin. Loops its idle animation; reads no lumps, links or task."
+    },
+    {
+      "etype": "energybase",
+      "label": "Energy Hub Base",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": "lavatube-energy.o",
+      "art_group": "energybase-ag.go",
+      "tpage_group": "Lavatube",
+      "glb": "levels/lavatube/energybase-lod0.glb",
+      "is_prop": true,
+      "shape": "CUBE",
+      "reacts_to": [
+        "stop"
+      ],
+      "description": "Spinning column under the Lava Tube energy hub. 'stop slows it to a halt (not saved). Starts stopped if the vanilla lavatube-balls task is resolved. While spinning, Jak within 75 m triggers the lavatube-balls hint (sksp0375) once."
+    },
+    {
+      "etype": "energyhub",
+      "label": "Energy Hub",
+      "category": "Hidden",
+      "parent": "process-drawable",
+      "code": "lavatube-energy.o",
+      "art_group": [
+        "energyhub-ag.go",
+        "energyarm-ag.go",
+        "energyball-ag.go"
+      ],
+      "tpage_group": "Lavatube",
+      "glb": "levels/lavatube/energyhub-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: crashed the game in a custom level. Spinning hub (place it on an energybase) that spawns 5 arms, each holding an energy ball; shoot all balls with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and resolves the vanilla lavatube-balls task. Every frame it also holds alt-actor 2's model at 1.25x X/Z scale and fades lava palette 2. Likely crash cause: when fewer than 3 alt-actors are linked, the empty slots are 0 (not #f). Each frame the hub then writes through that 0 pointer.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Base (sent 'stop when all balls are shot)",
+              "accepts": [
+                "energybase",
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Door (sent 'open when all balls are shot)",
+              "accepts": [
+                "energydoor",
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Lava (model held at 1.25x X/Z scale every frame; must be a drawable actor)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "energylava",
+      "label": "Energy Lava",
+      "category": "Hidden",
+      "parent": "process-drawable",
+      "code": "lavatube-energy.o",
+      "tpage_group": "Lavatube",
+      "shape": "CUBE",
+      "description": "Hidden: its skeleton group points at an 'energylava' art group that doesn't exist (not in LAV.DGO, no -ag.go is built), so it only shows an art error. The vanilla hub's lava is lavatube-lava (water-anim)."
+    },
+    {
+      "etype": "citb-robotboss",
+      "label": "Robot Boss (Citadel, shielded)",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-robotboss-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/citb-robotboss-lod0.glb",
+      "shape": "CUBE",
+      "reacts_to": [
+        "shield-off",
+        "shield-on",
+        "die"
+      ],
+      "description": "The giant robot in the Citadel centre, behind its shield; head, guns, arms etc. are 8 extra animated parts from the same art group. It is solid: collision mesh, sphere about 35 m centred 20 m up. Touching it zaps and shoves Jak (2 m up, 3 m back), even with the shield off. Shield on: shield particles, 'robotcage-lp' hum audible to 150 m, palette-fade control 7 forced to 1. 'shield-off / 'shield-on toggle the shield; 'die removes it. It removes itself at spawn when its game task's status is invalid, so task none means it never appears.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Required: it deletes itself if this task's status is invalid (none, or a task already fully closed). Vanilla: citadel-sage-green (it goes away once the green sage is freed).",
+          "fields": [
+            {
+              "key": "og_game_task",
+              "default": "citadel-sage-green"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-hose",
+      "label": "Citadel Lurker Hose",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-hose-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/citb-hose-lod0.glb",
+      "shape": "CUBE",
+      "reacts_to": [
+        "trigger",
+        "spawn"
+      ],
+      "description": "Hanging hose that spits out lurkers. Idles; 'spawn plays the spit animation (a battlecontroller sends it to its spawner-trigger-actors when that path spawns). 'trigger plays the death animation and marks it complete. Starts dead if its state actor (default: itself) is complete.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Starts dead if this actor is complete (default: itself)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-coil",
+      "label": "Citadel Coil",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-coil-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/citb-coil-lod0.glb",
+      "shape": "CUBE",
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Glowing generator coil. 'trigger breaks it: break animation, glow particles off, marked complete. Starts broken if its state actor (default: itself) is complete.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "state-actor",
+              "slot": 0,
+              "label": "Starts broken if this actor is complete (default: itself)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "final-door",
+      "label": "Final Door (100-cell)",
+      "category": "Buttons and Doors",
+      "parent": "process-drawable",
+      "code": "final-door.o",
+      "tpage_group": "Final",
+      "shape": "CUBE",
+      "reacts_to": [
+        "open"
+      ],
+      "description": "One half of the 100 power cell door (solid collision mesh). 'open plays its opening animation and it stays open (not saved). Left half only: when Jak is within 15 m with 100+ cells and the vanilla finalboss-movies task is at need-reward-speech, it starts the hard-coded vanilla cutscene. That teleports Jak to the vanilla door spot, uses camera 'camera-403' and calls 'sage-finalboss-1'. Not reachable in a normal custom level.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_final-door_variant",
+              "label": "Half",
+              "type": "enum",
+              "default": "power-left",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "power-left",
+                  "value": "power-left",
+                  "etype": "power-left",
+                  "label": "Left half",
+                  "art_group": "power-left-ag.go",
+                  "glb": "levels/finalboss/power-left-lod0.glb"
+                },
+                {
+                  "id": "power-right",
+                  "value": "power-right",
+                  "etype": "power-right",
+                  "label": "Right half",
+                  "art_group": "power-right-ag.go",
+                  "glb": "levels/finalboss/power-right-lod0.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citb-chains",
+      "label": "Citadel Chains",
+      "category": "Hidden",
+      "parent": "process-hidden",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "art_group": "citb-chains-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/citb-chains-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: the type is process-hidden (no code, draws nothing). citb-chains-ag.go exists but nothing in the game uses it."
     },
     {
       "etype": "plat-eco-finalboss",
@@ -10163,10 +10610,67 @@
       "label": "Swamp Blimp",
       "category": "Visuals",
       "parent": "process-drawable",
-      "art_group": "swamp-blimp-ag.go",
-      "tpage_group": "Village2",
       "code": "swamp-blimp.o",
-      "is_prop": true
+      "art_group": [
+        "swamp-blimp-ag.go",
+        "swamp-rope-ag.go"
+      ],
+      "tpage_group": "Village2",
+      "glb": "levels/village2/swamp-blimp-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Precursor arm (sinks when the blimp leaves; never holds it down)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Tether rock 1",
+              "accepts": [
+                "swamp-tetherrock"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 2,
+              "label": "Tether rock 2",
+              "accepts": [
+                "swamp-tetherrock"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 3,
+              "label": "Tether rock 3",
+              "accepts": [
+                "swamp-tetherrock"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 4,
+              "label": "Tether rock 4",
+              "accepts": [
+                "swamp-tetherrock"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
+      "description": "Lurker blimp roped to its linked actors; rises a little per broken rope. When no rope in links 1-4 holds (none linked, or every rock's task closed) it floats away after 4 s and tells link 0 to sink."
     },
     {
       "etype": "swamp-rope",
@@ -10643,15 +11147,23 @@
       "label": "Sunken Fish School",
       "category": "Visuals",
       "parent": "process-drawable",
-      "tpage_group": "Sunken",
       "code": "sunken-fish.o",
-      "lumps": [
-        {"key": "speed", "type": "float", "description": "Speed range in game units/frame: 'lo hi'. Defaults: '8192 26624' (2–6.5 m/s)."},
-        {"key": "path-max-offset", "type": "float", "description": "Max wander from path: 'x_units y_units'. Defaults: '16384 28672' (4m, 7m)."},
-        {"key": "path-trans-offset", "type": "float", "description": "Offset the entire path: 'x y z' in raw game units. Default 0 0 0."}
-      ],
+      "art_group": "sunkenfisha-ag.go",
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/sunkenfisha-red-yellow-lod0.glb",
+      "shape": "CUBE",
       "panels": [
-        {"panel": "path", "required": true},
+        {
+          "panel": "path",
+          "required": true,
+          "min-points": 2,
+          "description": "The fish swim back and forth along it (curve or straight)."
+        },
+        {
+          "panel": "scale",
+          "export": false,
+          "description": "Ignored: fish are always scale 6."
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -10666,12 +11178,110 @@
                 "type": "uint32"
               },
               "write_if": "if_not_default"
+            },
+            {
+              "key": "og_fish_speed_lo",
+              "label": "Min (m/s)",
+              "type": "float",
+              "default": 2.0,
+              "min": 0.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "if_not_default",
+              "group": "fish-speed",
+              "group_label": "Swim Speed"
+            },
+            {
+              "key": "og_fish_speed_hi",
+              "label": "Max (m/s)",
+              "type": "float",
+              "default": 6.5,
+              "min": 0.0,
+              "lump": {
+                "key": "speed",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "if_not_default",
+              "group": "fish-speed"
+            },
+            {
+              "key": "og_fish_wander_side",
+              "label": "Sideways (m)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {
+                "key": "path-max-offset",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "if_not_default",
+              "group": "fish-wander",
+              "group_label": "Max Wander From Path"
+            },
+            {
+              "key": "og_fish_wander_up",
+              "label": "Up / down (m)",
+              "type": "float",
+              "default": 7.0,
+              "min": 0.0,
+              "lump": {
+                "key": "path-max-offset",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "if_not_default",
+              "group": "fish-wander"
+            },
+            {
+              "key": "og_fish_off_x",
+              "label": "X (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "path-trans-offset",
+                "type": "meters",
+                "slot": 0
+              },
+              "write_if": "if_any_nonzero",
+              "group": "fish-off",
+              "group_label": "Path Offset",
+              "group_note": "Shifts the whole path. Game axes."
+            },
+            {
+              "key": "og_fish_off_y",
+              "label": "Up (m)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "path-trans-offset",
+                "type": "meters",
+                "slot": 1
+              },
+              "write_if": "if_any_nonzero",
+              "group": "fish-off"
+            },
+            {
+              "key": "og_fish_off_z",
+              "label": "Z (m, = -Blender Y)",
+              "type": "float",
+              "default": 0.0,
+              "lump": {
+                "key": "path-trans-offset",
+                "type": "meters",
+                "slot": 2
+              },
+              "write_if": "if_any_nonzero",
+              "group": "fish-off"
             }
           ]
-        },
-        {"panel": "nav-mesh"}
+        }
       ],
-      "art_group": "sunkenfisha-ag.go"
+      "description": "School of fish (each a random one of 3 colours) swimming back and forth along a path and wandering around it. Fish count spawns extra fish on the same path."
     },
     {
       "etype": "sharkey",
@@ -10752,16 +11362,38 @@
     },
     {
       "etype": "villa-starfish",
-      "label": "Villa Starfish",
+      "label": "Starfish Spawner",
       "category": "Visuals",
       "parent": "process-drawable",
-      "tpage_group": "Village1",
       "code": "village-obs.o",
+      "art_group": "villa-starfish-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/villa-starfish-lod0.glb",
+      "shape": "PLAIN_AXES",
       "panels": [
-        {"panel": "path", "required": true, "linear-only": true},
-        {"panel": "spawner", "fields": [{"key": "og_num_lurkers", "label": "Child count", "min": -1}]}
+        {
+          "panel": "path",
+          "required": true,
+          "linear-only": true,
+          "description": "Starfish appear at random points on this path."
+        },
+        {
+          "panel": "spawner",
+          "fields": [
+            {
+              "key": "og_num_lurkers",
+              "label": "Starfish count",
+              "note": "-1 = 3 (default). Clamped to 1-8."
+            }
+          ]
+        },
+        {
+          "panel": "nav-mesh",
+          "fallback-sphere": true,
+          "description": "The starfish are nav-enemies using this actor's nav-mesh."
+        }
       ],
-      "art_group": "villa-starfish-ag.go"
+      "description": "Invisible spawner: while Jak is within 50 m it keeps up to N small starfish (one more every 0.5 s) at random points of its path. They crawl around while Jak is within 40 m."
     },
     {
       "etype": "eco-pill",
@@ -11633,16 +12265,20 @@
     {
       "etype": "citb-arm-shoulder",
       "label": "Citadel Arm Shoulder",
-      "description": "Rotating shoulder piece of the citadel arms (no collision). Spins with its sync timing.",
       "category": "Visuals",
       "parent": "citb-arm-section",
       "tpage_group": "Citadel",
-      "code": ["battlecontroller.o", "citadel-part.o", "citadel-obs.o"],
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
       "rotation_lock": [
         "x",
         "y",
         "z"
       ],
+      "description": "Rotating shoulder piece of the citadel arms (no collision). Spins around Y from its sync timing; the empty's rotation is ignored. Hides itself while the camera sees it from its back side (about 46 degrees either side of its local -X-Z diagonal), so seen from there it blinks out during part of each turn. Sync period 0 (or under 1/300 s) crashes the game.",
       "panels": [
         {
           "panel": "custom-fields",
@@ -13142,26 +13778,27 @@
       "label": "Ceiling Flag",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": "village2-obs.o",
       "art_group": "ceilingflag-ag.go",
       "tpage_group": "Village2",
-      "code": "village2-obs.o",
+      "glb": "levels/village2/ceilingflag-geo.glb",
+      "shape": "CUBE",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "alt-task",
-          "type": "enum-uint32",
-          "description": "Linked game task (already in fields on oracle/pontoon pattern)."
-        }
-      ]
+      "description": "Hanging banner from the Rock Village; the origin is at the top. Loops its sway animation. No settings."
     },
     {
       "etype": "windturbine",
       "label": "Wind Turbine",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "misty-obs.o"
+      ],
       "art_group": "windturbine-ag.go",
       "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
+      "glb": "levels/misty/windturbine-lod0.glb",
+      "shape": "CUBE",
       "is_prop": true,
       "panels": [
         {
@@ -13181,152 +13818,121 @@
             }
           ]
         }
-      ]
+      ],
+      "description": "Small Misty turbine spinning around its local Y axis at a wind-driven speed. Optional particles."
     },
     {
       "etype": "boatpaddle",
-      "label": "Boat Paddle",
+      "label": "Boat Paddle Wheel",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "misty-obs.o"
+      ],
       "art_group": "boatpaddle-ag.go",
       "tpage_group": "Misty",
-      "code": ["battlecontroller.o", "misty-obs.o"],
+      "glb": "levels/misty/boatpaddle-lod0.glb",
+      "shape": "CUBE",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "animation-select",
-          "type": "uint32",
-          "description": "Animation variant."
-        },
-        {
-          "key": "particle-select",
-          "type": "uint32",
-          "description": "Particle variant."
-        }
-      ]
+      "description": "Misty boat paddle wheel turning 30 deg/s around its local X axis, with splash particles. No settings."
     },
     {
       "etype": "accordian",
-      "label": "Accordian (prop)",
+      "label": "Accordion Machine",
       "category": "Visuals",
       "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Task gate entity (optional)",
-              "accepts": [
-                "any"
-              ],
-              "required": false
-            }
-          ]
-        }
-      ],
+      "code": "jungle-obs.o",
       "art_group": "accordian-ag.go",
       "tpage_group": "Jungle",
-      "code": "jungle-obs.o",
-      "lumps": [
-        {
-          "key": "height-info",
-          "type": "float",
-          "description": "Height parameters: 2 floats."
-        }
+      "glb": "levels/jungle/accordian-lod0.glb",
+      "shape": "CUBE",
+      "is_prop": true,
+      "reacts_to": [
+        "stop"
       ],
-      "shape": "CUBE"
+      "description": "Jungle bellows machine looping its pumping animation (only while drawn). On 'stop it halts and saves itself complete, so it stays stopped (vanilla sender: reflector mirror)."
     },
     {
       "etype": "lavafall",
       "label": "Lava Fall",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": "lavatube-obs.o",
       "art_group": "lavafall-ag.go",
       "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
+      "glb": "levels/lavatube/lavafall-lod0.glb",
       "is_prop": true,
-      "lumps": [
+      "shape": "CUBE",
+      "description": "Animated lava fall. Loops its idle animation forever; reads no lumps, links or task. Sewer A / B are the big sewer outflows (bounds 185 m / 120 m).",
+      "panels": [
         {
-          "key": "delay",
-          "type": "float",
-          "description": "Animation delay."
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_lavafall_variant",
+              "label": "Piece",
+              "type": "enum",
+              "default": "lavafall",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "lavafall",
+                  "value": "lavafall",
+                  "etype": "lavafall",
+                  "label": "Lava Fall",
+                  "art_group": "lavafall-ag.go",
+                  "glb": "levels/lavatube/lavafall-lod0.glb"
+                },
+                {
+                  "id": "lavafallsewera",
+                  "value": "lavafallsewera",
+                  "etype": "lavafallsewera",
+                  "label": "Lava Fall Sewer A",
+                  "art_group": "lavafallsewera-ag.go",
+                  "glb": "levels/lavatube/lavafallsewera-lod0.glb"
+                },
+                {
+                  "id": "lavafallsewerb",
+                  "value": "lavafallsewerb",
+                  "etype": "lavafallsewerb",
+                  "label": "Lava Fall Sewer B",
+                  "art_group": "lavafallsewerb-ag.go",
+                  "glb": "levels/lavatube/lavafallsewerb-lod0.glb"
+                }
+              ]
+            }
+          ]
         }
-      ],
-      "shape": "CUBE"
-    },
-    {
-      "etype": "lavafallsewera",
-      "label": "Lava Fall Sewer A",
-      "category": "Visuals",
-      "parent": "process-drawable",
-      "art_group": "lavafallsewera-ag.go",
-      "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
-      "is_prop": true,
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Animation delay."
-        }
-      ],
-      "shape": "CUBE"
-    },
-    {
-      "etype": "lavafallsewerb",
-      "label": "Lava Fall Sewer B",
-      "category": "Visuals",
-      "parent": "process-drawable",
-      "art_group": "lavafallsewerb-ag.go",
-      "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
-      "is_prop": true,
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Animation delay."
-        }
-      ],
-      "shape": "CUBE"
+      ]
     },
     {
       "etype": "lavabase",
       "label": "Lava Base",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": "lavatube-obs.o",
       "art_group": "lavabase-ag.go",
       "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
+      "glb": "levels/lavatube/lavabase-lod0.glb",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Animation delay."
-        }
-      ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Animated lava pool base (22 m bounds). Loops its idle animation; reads no lumps, links or task."
     },
     {
       "etype": "lavayellowtarp",
-      "label": "Yellow Tarp (prop)",
+      "label": "Yellow Tarp",
       "category": "Visuals",
       "parent": "process-drawable",
+      "code": "lavatube-obs.o",
       "art_group": "lavayellowtarp-ag.go",
       "tpage_group": "Lavatube",
-      "code": "lavatube-obs.o",
+      "glb": "levels/lavatube/lavayellowtarp-lod0.glb",
       "is_prop": true,
-      "lumps": [
-        {
-          "key": "delay",
-          "type": "float",
-          "description": "Animation delay."
-        }
-      ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "description": "Small flapping yellow tarp (5 m bounds). Loops its idle animation; reads no lumps, links or task."
     },
     {
       "etype": "chainmine",
