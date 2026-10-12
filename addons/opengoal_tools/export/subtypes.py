@@ -20,6 +20,9 @@
 #   dark-plant.gc / happy-plant.gc  own task, no freeze on linked plants
 #   muse.gc         catching it gives its own task's cell
 #   sage-finalboss.gc  ending cutscenes without vanilla positions / final door
+#   sage / assistant / gambler / geologist / minershort.gc  cutscenes without
+#                   the level commands that unload the custom level
+#   explorer.gc     talks from anywhere (vanilla: a fixed Sandover area)
 # ───────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 

@@ -1,0 +1,53 @@
+;; The short miner for custom levels. Its vanilla cutscenes send level commands
+;; (want-levels / display-level / want-vis ... for the vanilla levels around it),
+;; which unload the custom level in the middle of the cutscene. This child plays
+;; the same cutscenes without those commands: play-anim! returns a filtered copy
+;; of each vanilla cutscene (made once per cutscene, the vanilla data is kept).
+;; Its vanilla game task(s) and dialogue are unchanged.
+(deftype __TYPE__ (minershort)
+  ((strip-src basic 8)
+   (strip-dst basic 8)
+   (strip-cnt int32)))
+
+(defun __TYPE__-level-cmd? ((cmd object))
+  (or (= cmd 'want-levels) (= cmd 'display-level) (= cmd 'want-force-vis)
+      (= cmd 'want-force-inside) (= cmd 'want-vis) (= cmd 'save)))
+
+(defun __TYPE__-strip ((anim spool-anim))
+  (let ((rev '())
+        (out '())
+        (it (-> anim command-list)))
+    (while (not (null? it))
+      (if (not (__TYPE__-level-cmd? (car (cdr (car it)))))
+        (set! rev (cons (car it) rev)))
+      (set! it (cdr it)))
+    (while (not (null? rev))
+      (set! out (cons (car rev) out))
+      (set! rev (cdr rev)))
+    (let ((n (new 'global 'spool-anim)))
+      (set! (-> n name) (-> anim name))
+      (set! (-> n index) (-> anim index))
+      (set! (-> n parts) (-> anim parts))
+      (set! (-> n priority) (-> anim priority))
+      (set! (-> n owner) (-> anim owner))
+      (set! (-> n command-list) (the-as pair out))
+      n)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (let ((a (call-parent-method this arg0)))
+    (cond
+      ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
+      (else
+       (dotimes (i (-> this strip-cnt))
+         (if (= (-> this strip-src i) a) (return (-> this strip-dst i))))
+       (let ((n (__TYPE__-strip (the-as spool-anim a))))
+         (when (< (-> this strip-cnt) 8)
+           (set! (-> this strip-src (-> this strip-cnt)) a)
+           (set! (-> this strip-dst (-> this strip-cnt)) n)
+           (+! (-> this strip-cnt) 1))
+         n)))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this strip-cnt) 0)
+  (call-parent-method this arg0)
+  (none))

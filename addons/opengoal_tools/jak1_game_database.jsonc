@@ -7702,31 +7702,551 @@
       "description": "Hidden; plays the ending cutscenes once the robot boss is beaten (link it as the robot's slot 5): Daxter's sacrifice, then the outros and the credits (which end the game like vanilla). Cutscenes play around it, so place it like vanilla: from the robot (unrotated) X -228 m, Y -138 m, Z +59.5 m. Exported as a level subtype (subtypes/sage-finalboss.gc). Uses the vanilla finalboss-movies task."
     },
     {
+      "etype": "sage",
+      "label": "Samos (Sage's Hut)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": [
+        "assistant.o",
+        "sage.o"
+      ],
+      "art_group": [
+        "sage-ag.go",
+        "assistant-ag.go"
+      ],
+      "tpage_group": "Village1",
+      "glb": "levels/village1/sage-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/sage.gc): its vanilla cutscenes play without the level commands that unloaded the custom level. Hidden: unsafe in a custom level. Talking plays Samos's vanilla speeches for intro / beach-ecorocks / misty-cannon, but most start with 'want-levels village1 beach|misty|training', which unloads the custom level mid-cutscene. With a non-'play boot it also closes the intro task and restarts at game-start (Geyser Rock). Needs a subtype: drop the level-load commands and the boot-message branch."
+    },
+    {
+      "etype": "assistant",
+      "label": "Keira (Sage's Hut)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": "assistant.o",
+      "art_group": "assistant-ag.go",
+      "tpage_group": "Village1",
+      "glb": "levels/village1/assistant-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/assistant.gc): its vanilla cutscenes play without the level commands that unloaded the custom level. Hidden: Keira's introductions (jungle-eggtop blue eco switch, misty-bike race bike) start with 'want-levels village1 beach' and unload the custom level. Reminders are safe. Removes itself once firecanyon-assistant has started. Needs a subtype: drop the level-load commands."
+    },
+    {
+      "etype": "bird-lady",
+      "label": "Bird Lady (Village)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "bird-lady.o",
+      "art_group": "bird-lady-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/bird-lady-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Hidden: her beach-flutflut introduction starts with 'want-levels village1 beach' (unloads the custom level), and she only offers to talk while Jak is at game Z < -20 m (hard-coded). Removed once beach-flutflut's reminder stage is closed. Needs a subtype: drop level-load commands, target-above-threshold? -> #t."
+    },
+    {
+      "etype": "bird-lady-beach",
+      "label": "Bird Lady (Beach, Flut Flut hatch)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": [
+        "beach-obs.o",
+        "bird-lady-beach.o"
+      ],
+      "art_group": [
+        "bird-lady-beach-ag.go",
+        "flutflut-ag.go",
+        "flutflutegg-ag.go"
+      ],
+      "tpage_group": "Beach",
+      "glb": "levels/beach/bird-lady-beach-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Invisible until beach-flutflut is at its reward speech (vanilla: the flut flut egg was pushed off the cliff). Then she plays the hatching cutscene (with the flut flut and egg) and gives the beach-flutflut cell."
+    },
+    {
+      "etype": "seagullflock",
+      "label": "Seagull Flock",
+      "category": "NPCs",
+      "parent": "process",
+      "code": [
+        "air-h.o",
+        "air.o",
+        "seagull.o"
+      ],
+      "art_group": "seagull-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/seagull-lod0.glb",
+      "shape": "CUBE",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "beach-seagull (the flock also closes beach-seagull's reminder itself; its save state keeps how far they were chased)."
+        },
+        {
+          "panel": "path",
+          "required": true
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Rock to drop (gets 'loading, then 'trigger; the flock waits until it is complete)",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ],
+      "description": "21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (vanilla lrocklrg). With no rock linked they wait at the end for good (no crash)."
+    },
+    {
+      "etype": "sage-bluehut",
+      "label": "Samos (Blue Sage's Hut)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Keira (Blue Hut) (required)",
+              "accepts": [
+                "assistant-bluehut"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
+      "code": "sage-bluehut.o",
+      "art_group": "sage-bluehut-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/sage-bluehut-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Vanilla rolling-plants and swamp-arm speeches (Keira joins in). Shown once village2-levitator's introduction is closed (Keira's Blue Hut speech) and until the sages are kidnapped. Needs its Keira link (read with no null check). Only talks while Jak is at game Z > -1554 m and X < 393.75 m."
+    },
+    {
+      "etype": "flutflut-bluehut",
+      "label": "Flut Flut (Blue Hut)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": "flutflut-bluehut.o",
+      "art_group": "flutflut-bluehut-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/flutflut-bluehut-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Idle Flut Flut; never talks. Shown once village2-levitator's introduction is closed and the beach-flutflut cell is collected. Keira (Blue Hut) needs one in the level (she pulls it into her cutscenes)."
+    },
+    {
+      "etype": "assistant-bluehut",
+      "label": "Keira (Blue Hut)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Samos (Blue Hut) (required)",
+              "accepts": [
+                "sage-bluehut"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
+      "code": [
+        "sage-bluehut.o",
+        "flutflut-bluehut.o",
+        "assistant-village2.o"
+      ],
+      "art_group": [
+        "assistant-village2-ag.go",
+        "jaws-ag.go"
+      ],
+      "tpage_group": "Village2",
+      "glb": "levels/village2/assistant-village2-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Vanilla village2-levitator / sunken-room / rolling-robbers / swamp-flutflut speeches. While village2-levitator is at its introduction she grabs Jak and plays it at once, wherever he is. Needs her Samos link and a Flut Flut (Blue Hut) in the level (both read with no null check). Only talks while game X + Z > -1172 m."
+    },
+    {
+      "etype": "assistant-levitator",
+      "label": "Keira (Levitator)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Boulder to lift (required; vanilla fireboulder-6)",
+              "accepts": [
+                "fireboulder"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ],
+      "code": [
+        "sage-bluehut.o",
+        "flutflut-bluehut.o",
+        "assistant-village2.o"
+      ],
+      "art_group": "assistant-village2-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/assistant-village2-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Shown only while village2-levitator is at its reward speech (Jak has the cells): plays the levitator cutscene, lifts the linked boulder and gives the cell. Before that she is hidden and shows a 'need cells' hint within 15 m; after it only the blue beam is left. Needs its boulder link (read with no null check). The beam start offset is vanilla-relative (unrotated)."
+    },
+    {
+      "etype": "assistant-lavatube-start",
+      "label": "Keira (Lava Tube start)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": "assistant-lavatube.o",
+      "art_group": "assistant-lavatube-start-ag.go",
+      "tpage_group": "Lavatube",
+      "glb": "levels/lavatube/assistant-lavatube-start-lod0.glb",
+      "shape": "CUBE",
+      "description": "Keira at the heat shield. Task lavatube-start is hard-coded: she is invisible (no collision) until Jak holds 72 power cells. Below 72, coming within 15 m of her spot plays the 'need 72 cells' voice hint (asstva74) and its text. At 72+ she idles; talking plays the assistant-lavatube-start-resolution cutscene once and closes lavatube-start (no cell), then she hides again. No lumps or links read."
+    },
+    {
+      "etype": "assistant-lavatube-end",
+      "label": "Keira (Citadel entrance)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "assistant-citadel.o",
+      "art_group": "assistant-lavatube-end-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/assistant-lavatube-end-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: tied to the vanilla task village4-button. She only shows while that task sits at need-reward-speech (vanilla: Jak's first arrival in the Citadel, before its warp-gate button is pressed) and the green sage isn't freed; then she auto-plays assistant-lavatube-end-resolution. On a normal save the task sits at its first 'unknown' stage, so she stays invisible. Spawns safely (no lumps / links); a subtype dropping the should-display gate would make her usable."
+    },
+    {
+      "etype": "red-sagecage",
+      "label": "Caged Sage (Citadel)",
+      "category": "NPCs",
+      "parent": "citb-sage",
+      "code": [
+        "citadel-part.o",
+        "citadel-sages.o"
+      ],
+      "art_group": [
+        "redsage-ag.go",
+        "citb-sagecage-ag.go"
+      ],
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/redsage-lod0.glb",
+      "shape": "CUBE",
+      "description": "Red / blue / yellow sage in his energy cage (the cage is a child with solid collision; Jak can stand on it). The game task picks the task control (vanilla citadel-sage-<colour>). Before he's freed: idles, ambient lines, and talking plays his '<colour>sage-resolution' cutscene (drops the cage bars; repeatable, nothing closes). 'open (a broken Citadel Generator's open actor) drops the bars. Collecting the task's cell sends 'play-anim to the process named '<colour>-sagecage-1' (hard-coded in the cell code), which plays the cutscene; afterwards the task is complete and he fires his beam at the linked target forever. Hidden once vanilla citadel-sage-green is fully done. Name the object so it exports as <colour>-sagecage-1.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Required: vanilla citadel-sage-red / -blue / -yellow (match the variant). Its cell (from a Citadel Generator with the same task) triggers the rescue cutscene. none: he fires his beam at once and the game logs errors every frame."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Beam target (required)",
+              "accepts": [
+                "citb-robotboss",
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_sage_variant",
+              "label": "Sage",
+              "type": "enum",
+              "default": "red-sagecage",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "id": "red-sagecage",
+                  "value": "red-sagecage",
+                  "etype": "red-sagecage",
+                  "label": "Red sage",
+                  "code": [
+                    "citadel-part.o",
+                    "citadel-sages.o"
+                  ],
+                  "art_group": [
+                    "redsage-ag.go",
+                    "citb-sagecage-ag.go"
+                  ],
+                  "glb": "levels/citadel/redsage-lod0.glb"
+                },
+                {
+                  "id": "blue-sagecage",
+                  "value": "blue-sagecage",
+                  "etype": "blue-sagecage",
+                  "label": "Blue sage",
+                  "code": [
+                    "citadel-part.o",
+                    "citadel-sages.o"
+                  ],
+                  "art_group": [
+                    "bluesage-ag.go",
+                    "citb-sagecage-ag.go"
+                  ],
+                  "glb": "levels/citadel/bluesage-lod0.glb"
+                },
+                {
+                  "id": "yellow-sagecage",
+                  "value": "yellow-sagecage",
+                  "etype": "yellow-sagecage",
+                  "label": "Yellow sage",
+                  "code": [
+                    "citadel-part.o",
+                    "citadel-sages.o"
+                  ],
+                  "art_group": [
+                    "yellowsage-ag.go",
+                    "citb-sagecage-ag.go"
+                  ],
+                  "glb": "levels/citadel/yellowsage-lod0.glb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "green-sagecage",
+      "label": "Green Sage (Citadel, caged)",
+      "category": "Hidden",
+      "parent": "citb-sage",
+      "code": [
+        "citadel-part.o",
+        "citadel-sages.o"
+      ],
+      "art_group": [
+        "green-sagecage-ag.go",
+        "citb-sagecage-ag.go",
+        "evilbro-citadel-ag.go",
+        "evilsis-citadel-ag.go"
+      ],
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/green-sagecage-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: drives the vanilla Citadel story. Its intro auto-plays only when Jak's world Z < -4595 m (vanilla coordinate), closes the other sages' need-hint and sets continue 'citadel-elevator'. Its pre-boss outro runs want-levels citadel finalboss (unloads the custom level), kills ~60 vanilla actors by name, and ends with start 'play at continue 'citadel-elevator' (vanilla Citadel). The cell -> cutscene hook is by name 'green-sagecage-1'. Same beam-target crash as the other sages without alt-actor."
+    },
+    {
+      "etype": "assistant-firecanyon",
+      "label": "Keira (Fire Canyon)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "assistant-firecanyon.o",
+      "art_group": "assistant-firecanyon-ag.go",
+      "tpage_group": "Firecanyon",
+      "glb": "levels/firecanyon/assistant-firecanyon-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: task firecanyon-assistant is hard-coded; invisible until Jak holds 20 cells (below that she voices the 'need 20 cells' hint within 15 m). Her resolution cutscene starts with (want-levels village1 firecanyon), which unloads the custom level mid-cutscene, taking her with it. A subtype stripping that command would make her a working 20-cell gate NPC."
+    },
+    {
+      "etype": "evilbro",
+      "label": "Gol (Misty ending)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "evilbro.o",
+      "art_group": [
+        "evilbro-ag.go",
+        "evilsis-ag.go"
+      ],
+      "glb": "levels/intro/evilbro-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden until an 'intro' tpage group (INT.DGO tpage-1454..1457) exists: no addon tpage group carries the intro Gol / Maia textures. Behaviour otherwise works: task leaving-misty is hard-coded; talking plays the evilbro-misty-end cutscene (Gol and Maia; Maia clones it from the linked evilsis) and can be replayed. The alt-actor must be an evilsis: without it, talking dereferences #f.",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Maia (evilsis, required)",
+              "accepts": [
+                "evilsis"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "evilsis",
+      "label": "Maia (Misty ending)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "evilbro.o",
+      "art_group": "evilsis-ag.go",
+      "glb": "levels/intro/evilsis-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden until an 'intro' tpage group exists (see evilbro). Never talks; idles and clones Gol's cutscene when an evilbro links to her."
+    },
+    {
+      "etype": "sage-villagec",
+      "label": "Sage (Volcanic Crater)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "sage-village3.o",
+      "art_group": [
+        "sage-village3-ag.go",
+        "evilbro-village3-ag.go",
+        "evilsis-village3-ag.go"
+      ],
+      "tpage_group": "Village3",
+      "glb": "levels/village3/sage-village3-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: invisible until vanilla village3-button need-hint is closed, hidden again once the sages are kidnapped; the talk prompt only shows when Jak is at vanilla world X < 1117 m and Z > -3497 m; auto-plays its intro when village3-button is at need-introduction, which dereferences its alt-actor (assistant-villagec) without a check."
+    },
+    {
+      "etype": "assistant-villagec",
+      "label": "Keira (Volcanic Crater)",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "assistant-village3.o",
+      "art_group": "assistant-village3-ag.go",
+      "tpage_group": "Village3",
+      "glb": "levels/village3/assistant-village3-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: only visible after vanilla village3-button need-introduction is closed and before the sages are kidnapped, and its talk prompt only shows when Jak is at vanilla world Z < -3478 m. Talking would play assistant-village3-reminder."
+    },
+    {
+      "etype": "sequenceA-village1",
+      "label": "Intro sequence A",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "sequence-a-village1.o",
+      "shape": "CUBE",
+      "description": "Hidden: Not an entity type: no init-from-entity (spawned by start-sequence-a on the vanilla 'sage-23' entity). Its cutscene runs want-levels village1 misty."
+    },
+    {
+      "etype": "sequenceB",
+      "label": "Intro sequence B",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "sidekick-human.o",
+      "art_group": "sidekick-human-ag.go",
+      "tpage_group": "Misty",
+      "glb": "levels/misty/sidekick-human-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: Never displays (should-display #f); only played by sequenceA. Cutscene runs want-levels misty intro, uses level-get 'misty without a check, looks up / kills vanilla names and ends with start 'play."
+    },
+    {
+      "etype": "sequenceC",
+      "label": "Intro sequence C",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "sidekick-human.o",
+      "art_group": "sidekick-human-ag.go",
+      "tpage_group": "Misty",
+      "glb": "levels/misty/sidekick-human-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: Never displays (should-display #f); only played by sequenceB. Cutscene runs want-levels misty village1 and ends with start 'play at continue 'village1-intro'."
+    },
+    {
+      "etype": "finalbosscam",
+      "label": "Final boss camera",
+      "category": "Hidden",
+      "parent": "process-taskable",
+      "code": "robotboss-misc.o",
+      "art_group": "finalbosscam-ag.go",
+      "tpage_group": "Final",
+      "glb": "levels/finalboss/finalbosscam-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden: Not an entity type: spawned by robotboss via finalbosscam-init-by-other (white-eco cutscene); never displays."
+    },
+    {
       "etype": "yakow",
       "label": "Yakow",
       "category": "NPCs",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
-        {"panel": "nav-mesh"}
+        {
+          "panel": "game-task",
+          "description": "village1-yakow for the herd (its intro / reminder stages close once every yakow of the chain is penned; the farmer gives the cell)."
+        },
+        {
+          "panel": "nav-mesh"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Farmer (pen camera plays at it; grazing yakows notify it)",
+              "accepts": [
+                "farmer",
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next yakow of the herd",
+              "accepts": [
+                "yakow"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous yakow of the herd",
+              "accepts": [
+                "yakow"
+              ],
+              "required": false
+            }
+          ]
+        }
       ],
-      "art_group": "yakow-ag.go",
+      "art_group": [
+        "yakow-ag.go",
+        "village1cam-ag.go"
+      ],
       "tpage_group": "Village1",
       "code": "yakow.o",
       "glb": "levels/village1/yakow-lod0.glb",
+      "shape": "SINGLE_ARROW",
       "lumps": [
         {
           "key": "alt-vector",
           "type": "vector3m",
-          "description": "Yakow wander target position: 'x y z'."
+          "description": "Pen spot: 'x y z' (m) where it grazes once penned; w = facing."
         },
         {
           "key": "water-height",
           "type": "water-height",
           "description": "Water surface to wade at."
         }
-      ]
+      ],
+      "description": "Wanders and runs off when kicked. A yakow counts as penned when it walks onto a nav-mesh poly flagged as pen (pat bit 2); the addon's nav-mesh export writes no pat, so herding can't complete yet."
     },
     {
       "etype": "flutflut",
@@ -7830,123 +8350,240 @@
       "label": "Mayor",
       "category": "NPCs",
       "parent": "process-taskable",
-      "art_group": "mayor-ag.go",
-      "tpage_group": "Village1",
       "code": "mayor.o",
-      "glb": "levels/beach/mayor-lod0.glb"
+      "art_group": "mayor-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/mayor-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Talking plays the vanilla mayor speeches: jungle-lurkerm (power beams) and village1-mayor-money (90 orb donation, gives its cell). The beams reward plays once jungle-lurkerm reaches its reward speech (vanilla periscope chain). Hides while Jak is more than 14 m toward +Z (game axes, = -Blender Y) from him (vanilla hut hack), so let players approach from -Z."
     },
     {
       "etype": "farmer",
       "label": "Farmer",
       "category": "NPCs",
       "parent": "process-taskable",
+      "panels": [
+        {
+          "panel": "nav-mesh"
+        }
+      ],
+      "code": "farmer.o",
       "art_group": "farmer-ag.go",
       "tpage_group": "Village1",
-      "code": "farmer.o",
-      "glb": "levels/village1/farmer-lod0.glb"
+      "glb": "levels/village1/farmer-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Vanilla village1-yakow: introduction / reminders, then the reward speech and cell once the yakow herd is penned. Joins the nav-mesh (if linked) so yakows walk around him."
     },
     {
       "etype": "fisher",
-      "label": "Fisher",
-      "category": "NPCs",
+      "label": "Fisherman",
+      "category": "Hidden",
       "parent": "process-taskable",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "path", "required": true}
+        {
+          "panel": "path",
+          "required": true
+        }
       ],
-      "art_group": "fisher-ag.go",
-      "tpage_group": "Jungle",
       "code": "fisher.o",
-      "glb": "levels/jungle/fisher-lod0.glb"
+      "art_group": [
+        "fisher-ag.go",
+        "fish-net-ag.go",
+        "catch-fisha-ag.go",
+        "catch-fishb-ag.go",
+        "catch-fishc-ag.go",
+        "eichar-fish+0-ag.go"
+      ],
+      "tpage_group": "Jungle",
+      "glb": "levels/jungle/fisher-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Hidden: the jungle-fishgame introduction starts with 'want-levels village1 jungle' (unloads the custom level), and the minigame moves Jak to fixed jungle coordinates and looks for camera entity camera-152. The fish run down its path (net at path point 6.5). Needs a subtype."
     },
     {
       "etype": "explorer",
-      "label": "Explorer",
+      "label": "Uncle (Explorer)",
       "category": "NPCs",
       "parent": "process-taskable",
+      "code": "explorer.o",
       "art_group": "explorer-ag.go",
       "tpage_group": "Village1",
-      "code": "explorer.o",
-      "glb": "levels/village1/explorer-lod0.glb"
+      "glb": "levels/village1/explorer-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/explorer.gc): talks from anywhere near (vanilla: only from a fixed Sandover area). Vanilla village1-uncle-money (90 orbs, gives its cell). Idles safely anywhere, but the talk prompt only appears while Jak is at game X < -49.5 m and Z > 24 m (vanilla hut area, hard-coded); elsewhere it needs a subtype (target-above-threshold? -> #t)."
     },
     {
       "etype": "geologist",
       "label": "Geologist",
       "category": "NPCs",
       "parent": "process-taskable",
+      "code": "geologist.o",
       "art_group": "geologist-ag.go",
       "tpage_group": "Village2",
-      "code": "geologist.o",
-      "glb": "levels/village2/geologist-lod0.glb"
+      "glb": "levels/village2/geologist-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/geologist.gc): its vanilla cutscenes play without the level commands that unloaded the custom level. Hidden: her introduction starts with 'want-levels village2 rolling' (unloads the custom level). The rest is safe: rolling-moles reward and village2-geologist-money (90 orbs). Needs a subtype: drop the level-load commands."
     },
     {
       "etype": "warrior",
       "label": "Warrior",
-      "category": "NPCs",
+      "category": "Hidden",
       "parent": "process-taskable",
+      "panels": [
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Actors reborn then killed on payment (vanilla: the pontoons)",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ],
+      "code": "warrior.o",
       "art_group": "warrior-ag.go",
       "tpage_group": "Village2",
-      "code": "warrior.o",
-      "glb": "levels/village2/warrior-lod0.glb"
+      "glb": "levels/village2/warrior-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Hidden: leaving any of his cutscenes sends to (entity-by-type allpontoons) with no null check, so talking crashes without an allpontoons actor. Vanilla village2-warrior-money (90 orbs, gives its cell). Needs a subtype: guard the allpontoons lookups."
     },
     {
       "etype": "gambler",
       "label": "Gambler",
       "category": "NPCs",
       "parent": "process-taskable",
+      "code": "gambler.o",
       "art_group": "gambler-ag.go",
       "tpage_group": "Village2",
-      "code": "gambler.o",
-      "glb": "levels/village2/gambler-lod0.glb"
+      "glb": "levels/village2/gambler-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/gambler.gc): its vanilla cutscenes play without the level commands that unloaded the custom level. Hidden: his introduction starts with 'want-levels village2 rolling' (unloads the custom level). The rest is safe: rolling-race reward and village2-gambler-money (90 orbs). Needs a subtype: drop the level-load commands."
     },
     {
       "etype": "sculptor",
       "label": "Sculptor",
       "category": "NPCs",
       "parent": "process-taskable",
-      "art_group": "sculptor-ag.go",
-      "tpage_group": "Beach",
       "code": "sculptor.o",
-      "glb": "levels/beach/sculptor-lod0.glb"
+      "art_group": [
+        "sculptor-ag.go",
+        "sculptor-muse-ag.go"
+      ],
+      "tpage_group": "Beach",
+      "glb": "levels/beach/sculptor-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Vanilla misty-muse: introduction and reminder, then the reward speech (with the muse) once misty-muse reaches its reward speech, giving the misty-muse cell. Holds the muse after that."
     },
     {
       "etype": "billy",
-      "label": "Billy",
+      "label": "Billy (rat game)",
       "category": "NPCs",
       "parent": "process-taskable",
-      "panels": [
-        {"panel": "path", "required": true}
+      "code": [
+        "swamp-rat.o",
+        "billy.o"
       ],
-      "description": "A lurker frog type found in Boggy Swamp.",
-      "art_group": "billy-ag.go",
+      "art_group": [
+        "billy-ag.go",
+        "billy-sidekick-ag.go",
+        "farthy-snack-ag.go",
+        "swamp-rat-ag.go"
+      ],
       "tpage_group": "Swamp",
-      "code": ["swamp-rat.o", "billy.o"],
-      "glb": "levels/swamp/billy-lod0.glb"
+      "glb": "levels/swamp/billy-lod0.glb",
+      "shape": "CUBE",
+      "description": "Billy and his pet Farthy (a clone-anim manipy). Task swamp-billy is hard-coded. Talk: billy-introduction cutscene (puts snack props along path 0, offset X -10 m / Z +5 m), then later talks ask to play; accepting moves Jak to the linked Jak-spot actor and starts the rat-shooting game: snacks along path 0, rats spawn at random points of path 1 and walk to random points of path 2 (rats use Billy's nav-mesh). Win: resolution cutscene gives the swamp-billy cell (at movie-pos). Lose: replay prompt. Vanilla reads all three paths from the one 'path' lump at keyframes 0/1/2, which a .jsonc lump can't hold (one entry per name): needs a level subtype reading path / pathb / pathc. Without paths 1/2 the rats spawn at the world origin and the game never ends.",
+      "panels": [
+        {
+          "panel": "movie-pos",
+          "description": "Where the swamp-billy cell plays its pickup animation after the win (cone = facing). Not set: at Jak."
+        },
+        {
+          "panel": "nav-mesh",
+          "show-panel": true
+        },
+        {
+          "panel": "path",
+          "required": [
+            "path",
+            "pathb",
+            "pathc"
+          ],
+          "paths": [
+            "path",
+            "pathb",
+            "pathc"
+          ],
+          "linear-only": true,
+          "description": "path: snack spots (one Farthy snack per point). pathb: rat spawn points. pathc: rat waypoints (random points they wander to). Needs the billy subtype (vanilla keys all three as 'path' keyframes 0/1/2)."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Jak's spot during the game (required)",
+              "accepts": [
+                "any"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "pelican",
       "label": "Pelican",
-      "category": "NPCs",
+      "category": "Hidden",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "movie-pos", "description": "[0] the cell in the nest, [1] the cell it drops when hit (cone = facing)."},
-        {"panel": "path", "required": true}
+        {
+          "panel": "game-task",
+          "description": "beach-pelican: the cell in its nest / the one it drops."
+        },
+        {
+          "panel": "movie-pos",
+          "description": "[0] the cell in the nest, [1] the cell it drops when hit (cone = facing)."
+        },
+        {
+          "panel": "path",
+          "required": true
+        }
       ],
-      "art_group": "pelican-ag.go",
+      "code": [
+        "beach-obs.o",
+        "pelican.o"
+      ],
+      "art_group": [
+        "pelican-ag.go",
+        "beachcam-ag.go"
+      ],
       "tpage_group": "Beach",
-      "code": "pelican.o",
-      "glb": "levels/beach/pelican-lod0.glb"
+      "glb": "levels/beach/pelican-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Hidden: reads 8 separate 'path' lumps keyed by time 1-8 (circle, dives, to / from nest, spit); the exporter writes one path, so every flight uses the same curve. Also wants camera entity camera-215."
     },
     {
       "etype": "seagull",
       "label": "Seagull",
-      "category": "NPCs",
+      "category": "Hidden",
       "parent": "process-drawable",
+      "code": [
+        "air-h.o",
+        "air.o",
+        "seagull.o"
+      ],
       "art_group": "seagull-ag.go",
       "tpage_group": "Beach",
-      "code": "seagull.o",
-      "glb": "levels/beach/seagull-lod0.glb"
+      "glb": "levels/beach/seagull-lod0.glb",
+      "description": "Hidden: only spawned by a Seagull Flock (it has no init-from-entity!); place a Seagull Flock instead."
     },
     {
       "etype": "robber",
@@ -12969,12 +13606,15 @@
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-taskable",
+      "code": "oracle.o",
       "art_group": "oracle-ag.go",
       "tpage_group": "Village1",
-      "code": "oracle.o",
       "glb": "levels/village1/oracle-lod0.glb",
+      "shape": "SINGLE_ARROW",
       "panels": [
-        {"panel": "task-gated"},
+        {
+          "panel": "task-gated"
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -12993,7 +13633,8 @@
           ],
           "show-panel": false
         }
-      ]
+      ],
+      "description": "Two power cells in its eyes for 120 orbs each: its game task = right eye, Linked Task = left eye (use a vanilla pair: village1/2/3-oracle-money1 + -money2). Trading works, but its speeches are picked by the vanilla village Jak is in, so in a custom level it plays no cutscene (only its idle) before giving the cell."
     },
     {
       "etype": "minershort",
@@ -13007,7 +13648,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Paired minertall (required)",
+              "label": "Paired Miner (Tall) (required)",
               "accepts": [
                 "minertall"
               ],
@@ -13016,20 +13657,24 @@
           ]
         }
       ],
+      "code": "miners.o",
       "art_group": "minershort-ag.go",
       "tpage_group": "Village3",
-      "code": "miners.o",
-      "glb": "levels/village3/minershort-lod0.glb"
+      "glb": "levels/village3/minershort-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Exported as a level subtype (subtypes/minershort.gc): its vanilla cutscenes play without the level commands that unloaded the custom level. Hidden: the cave-gnawers introduction starts with 'want-levels village3 maincave' (unloads the custom level). Otherwise vanilla village3-miner-money1-4 (90 orbs each) and snow-eggtop speeches with the tall miner. Needs its tall miner link (no null check). Needs a subtype: drop the level-load commands."
     },
     {
       "etype": "minertall",
       "label": "Miner (Tall)",
       "category": "NPCs",
       "parent": "process-taskable",
+      "code": "miners.o",
       "art_group": "minertall-ag.go",
       "tpage_group": "Village3",
-      "code": "miners.o",
-      "glb": "levels/village3/minertall-lod0.glb"
+      "glb": "levels/village3/minertall-lod0.glb",
+      "shape": "SINGLE_ARROW",
+      "description": "Never talks; the short miner's partner (joins his cutscenes). Link it from a Miner (Short)."
     },
     {
       "etype": "jng-iris-door",
