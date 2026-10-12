@@ -4155,6 +4155,7 @@
           "label": "Liquid",
           "type": "enum",
           "default": "water",
+          "note": "Mud, tar and shallow water only let Jak wade: put ground under the surface within the wade depth or he sinks through (vanilla mud is about 0.5 m deep). Tar only hurts below world Y -0.1 m (vanilla check). Lava / dark eco kill on contact.",
           "choices": [
             {
               "value": "water",
@@ -4179,10 +4180,6 @@
             {
               "value": "lava",
               "label": "Lava (instant death)"
-            },
-            {
-              "value": "lava-heat",
-              "label": "Hot lava (heat meter, Lava Tube)"
             },
             {
               "value": "dark-eco",
@@ -7188,6 +7185,50 @@
           "panel": "custom-fields",
           "fields": [
             {
+              "key": "og_mole_appear",
+              "label": "Appears",
+              "type": "enum",
+              "default": "-1",
+              "write_if": "always",
+              "lump": {
+                "key": "appear",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "-1",
+                  "label": "Always",
+                  "lump_value": -1
+                },
+                {
+                  "value": "2",
+                  "label": "Once its task's need-hint stage is closed",
+                  "lump_value": 2
+                },
+                {
+                  "value": "3",
+                  "label": "Once its need-introduction stage is closed (vanilla)",
+                  "lump_value": 3
+                },
+                {
+                  "value": "4",
+                  "label": "Once its need-reminder-a stage is closed",
+                  "lump_value": 4
+                },
+                {
+                  "value": "5",
+                  "label": "Once its need-reminder stage is closed",
+                  "lump_value": 5
+                },
+                {
+                  "value": "6",
+                  "label": "Once its need-reward-speech stage is closed",
+                  "lump_value": 6
+                }
+              ],
+              "note": "A stage that doesn't exist for its task never closes (no task: always)."
+            },
+            {
               "key": "og_mole_mode",
               "label": "When all moles are caught",
               "type": "enum",
@@ -7216,7 +7257,7 @@
       "tpage_group": "Rolling",
       "code": "rolling-lightning-mole.o",
       "art_group": "lightning-mole-ag.go",
-      "description": "Exported as a level subtype (subtypes/lightning-mole.gc): its hole is at the linked peeper and it shows up without the geologist. Herd it to its hole. Chain several moles with next / prev links (one game task for all); the last one caught finishes the task."
+      "description": "Exported as a level subtype (subtypes/lightning-mole.gc): its hole is at the linked peeper; 'Appears' sets when it shows up. Herd it to its hole. Chain several moles with next / prev links (one game task for all); the last one caught finishes the task."
     },
     {
       "etype": "ice-cube",
@@ -7750,7 +7791,7 @@
           ]
         }
       ],
-      "description": "Gol and Maia's Precursor robot, the final boss. Needs its alt-actor links (4 yellow eco and the blue vent, or it writes through empty links) and the Final Boss Sage for the light eco ending. A level patch (subtypes/robotboss.gc) puts the yellow shot and the light eco at the boss's height.",
+      "description": "Gol and Maia's Precursor robot, the final boss. Needs its alt-actor links (4 yellow eco and the blue vent, or it writes through empty links) and the Final Boss Sage for the light eco ending. A level patch (subtypes/robotboss.gc) puts the yellow shot and the light eco at the boss's height. Its looping sounds (charge buzz, red buzz, blue loop) fade out 80 m from its origin: vanilla fights within about 20 m of it (the 4 yellow eco 11 m around, the blue vent 20 m).",
       "art_group": [
         "robotboss-ag.go",
         "green-eco-lurker-ag.go",
@@ -8436,6 +8477,11 @@
         ],
         [
           "snow-vis-pris",
+          "flut-eye-16x16",
+          "flut-eyelid"
+        ],
+        [
+          "beach-vis-pris",
           "flut-eye-16x16",
           "flut-eyelid"
         ]
@@ -10580,12 +10626,13 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Spike group: first half, then second half, then any last entry (itself)",
+              "label": "Spike group: first half, then second half (itself is added last on export)",
               "accepts": [
                 "spike"
               ],
               "required": false,
-              "allow-multiple": true
+              "allow-multiple": true,
+              "append_self": true
             }
           ]
         }
@@ -10594,7 +10641,7 @@
       "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "description": "Rises when Jak on the zoomer comes within 55 m (once). Only one spike of a group (the controller) has links; the others have none and wait down. Controller links: group A, then group B, then one last entry that is never read (link itself). It randomly raises group A, or group B plus itself. With exactly one link it always rises itself."
+      "description": "Rises when Jak on the zoomer comes within 55 m (once). Only one spike of a group (the controller) has links; the others have none and wait down. Controller links: group A, then group B; the export adds the controller itself as the last entry (the game never reads it). It randomly raises group A, or group B plus itself. With one link (itself) it always rises."
     },
     {
       "etype": "steam-cap",
@@ -10946,7 +10993,46 @@
       "glb": "levels/village1/mayorgears-geo.glb",
       "shape": "CUBE",
       "is_prop": true,
-      "description": "Gear set from the mayor's power machine. Frozen until vanilla jungle-lurkerm is closed, then loops its turning animation."
+      "description": "The mayor's machine gears. Exported as a level subtype (subtypes/mayorgears.gc): turns always, once its task is complete, or until then (vanilla: once jungle-lurkerm is done).",
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "Its own task for the turning mode (none: always turns)."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_gears_mode",
+              "label": "Turning",
+              "type": "enum",
+              "default": "0",
+              "write_if": "always",
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "0",
+                  "label": "Always",
+                  "lump_value": 0
+                },
+                {
+                  "value": "1",
+                  "label": "Once its task is complete",
+                  "lump_value": 1
+                },
+                {
+                  "value": "2",
+                  "label": "Until its task is complete",
+                  "lump_value": 2
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "bladeassm",
@@ -13623,6 +13709,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13639,6 +13730,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13655,6 +13751,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13671,6 +13772,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13687,6 +13793,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13703,6 +13814,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13719,6 +13835,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13751,6 +13872,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13767,6 +13893,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13780,7 +13911,16 @@
                     "og_water_look": 10,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-11",
@@ -13796,6 +13936,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13812,6 +13957,11 @@
                   },
                   "code": [
                     "sunken-water.o"
+                  ],
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13825,7 +13975,16 @@
                     "og_water_look": 13,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "sunken-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-14",
@@ -13841,6 +14000,11 @@
                   },
                   "code": [
                     "maincave-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -13854,7 +14018,16 @@
                     "og_water_look": 15,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-16",
@@ -13867,7 +14040,16 @@
                     "og_water_look": 16,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-17",
@@ -13880,7 +14062,16 @@
                     "og_water_look": 17,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-18",
@@ -13893,7 +14084,16 @@
                     "og_water_look": 18,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-19",
@@ -13906,7 +14106,16 @@
                     "og_water_look": 19,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water"
+                    ],
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-20",
@@ -13919,7 +14128,13 @@
                     "og_water_look": 20,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-21",
@@ -14108,7 +14323,13 @@
                     "og_water_look": 32,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-33",
@@ -14140,6 +14361,11 @@
                   },
                   "code": [
                     "jungle-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "jungle-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14172,6 +14398,11 @@
                   },
                   "code": [
                     "training-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "training-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14188,6 +14419,11 @@
                   },
                   "code": [
                     "maincave-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "darkcave-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14204,6 +14440,11 @@
                   },
                   "code": [
                     "rolling-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "rolling-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14220,6 +14461,11 @@
                   },
                   "code": [
                     "rolling-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "rolling-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14233,7 +14479,13 @@
                     "og_water_look": 41,
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
-                  }
+                  },
+                  "textures": [
+                    [
+                      "maincave-vis-water",
+                      "environment-darkwater"
+                    ]
+                  ]
                 },
                 {
                   "value": "look-42",
@@ -14265,6 +14517,11 @@
                   },
                   "code": [
                     "village-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "village1-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14281,6 +14538,11 @@
                   },
                   "code": [
                     "village-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "village1-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14297,6 +14559,11 @@
                   },
                   "code": [
                     "village-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "village1-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14313,6 +14580,11 @@
                   },
                   "code": [
                     "village-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "village1-vis-water"
+                    ]
                   ]
                 },
                 {
@@ -14329,6 +14601,15 @@
                   },
                   "code": [
                     "village2-obs.o"
+                  ],
+                  "textures": [
+                    [
+                      "village2-vis-water"
+                    ],
+                    [
+                      "village2-vis-alpha",
+                      "ya-water"
+                    ]
                   ]
                 }
               ]

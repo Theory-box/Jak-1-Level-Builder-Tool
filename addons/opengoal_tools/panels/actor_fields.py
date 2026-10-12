@@ -185,10 +185,17 @@ def _draw_enum_field(layout, obj, field):
     if current is None:
         current = field.get("default")
 
+    if len(choices) > 12:
+        # Long lists (water looks ...): a searchable dropdown.
+        row = layout.row(align=True)
+        row.label(text=f"{label}:")
+        cur = next((c.get("label", c.get("value")) for c in choices if c.get("value") == current), str(current))
+        op = row.operator("og.pick_enum_field", text=cur, icon="DOWNARROW_HLT")
+        op.prop_key = key
+        return
+
     box = layout.box()
     box.label(text=f"{label}:")
-    # Short lists (<=8): radio buttons. Longer lists: still radio, but in a
-    # scrollable column. Full dropdown would require a typed EnumProperty.
     col = box.column(align=True)
     for c in choices[:40]:  # cap the render count to avoid UI stalls
         val = c.get("value", "")
@@ -253,6 +260,39 @@ class OG_OT_PickTask(Operator):
 
 
 _TASK_ITEMS: list = []   # search-popup items must stay referenced
+
+
+class OG_OT_PickEnumField(Operator):
+    """Pick a value from a long list (search by name)"""
+    bl_idname   = "og.pick_enum_field"
+    bl_label    = "Pick Value"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "value"
+
+    def _items(self, context):
+        obj = context.active_object
+        et = obj.name.split("_", 2)[1] if obj and obj.name.count("_") >= 2 else ""
+        f = next((x for x in _db.inherited_fields(et) if x.get("key") == self.prop_key), None)
+        items = [(c.get("value", ""), c.get("label", c.get("value", "")), "")
+                 for c in _resolve_choices((f or {}).get("choices", []))]
+        _ENUM_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items or [("NONE", "-", "")])]
+        return _ENUM_ITEMS
+
+    prop_key: StringProperty(options={"SKIP_SAVE"})
+    value:    bpy.props.EnumProperty(name="Value", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        if not self.prop_key or self.value == "NONE":
+            return {"CANCELLED"}
+        # same path as the radio buttons (variant preview refresh ...)
+        return bpy.ops.og.set_actor_enum_field(prop_key=self.prop_key, value=self.value)
+
+
+_ENUM_ITEMS: list = []
 
 
 def _draw_bool_field(layout, obj, field):
@@ -395,6 +435,7 @@ class OG_PT_ActorFields(Panel):
 # Exported registry for __init__.py
 CLASSES = (
     OG_OT_PickTask,
+    OG_OT_PickEnumField,
     OG_OT_SetActorEnumField,
     OG_OT_SetFieldFromZ,
     OG_OT_ToggleActorBoolField,

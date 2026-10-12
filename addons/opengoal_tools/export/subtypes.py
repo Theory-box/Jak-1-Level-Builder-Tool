@@ -15,7 +15,7 @@
 #   water-anim.gc   basic water-anim (flat surface) for floating / splashing actors
 #   fireboulder.gc  hover sound for every boulder (vanilla: fireboulder-6 only)
 #   ogreboss.gc     Klaww with an editable intro trigger / continue point / task
-#   lightning-mole.gc  hole at its peeper, shows up without the geologist
+#   lightning-mole.gc  hole at its peeper, 'appear' option, cell mode
 #   robotboss.gc    (patch) yellow shot / light eco heights relative to the boss
 #   dark-plant.gc / happy-plant.gc  own task, no freeze on linked plants
 #   muse.gc         catching it gives its own task's cell
@@ -23,6 +23,7 @@
 #   sage / assistant / gambler / geologist / minershort.gc  cutscenes without
 #                   the level commands that unload the custom level
 #   explorer.gc     talks from anywhere (vanilla: a fixed Sandover area)
+#   mayorgears.gc   turns always / once / until its own task is complete
 # ───────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 

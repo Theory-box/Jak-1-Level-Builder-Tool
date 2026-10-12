@@ -646,6 +646,11 @@ def _build_actor_link_lumps(obj, etype):
         for i in range(max_idx + 1):
             if i in slot_map:
                 names.append(slot_map[i])
+        # "append_self" slots (spike): the actor's own name goes last, once.
+        if names and _db.link_slot(etype, lkey, 0).get("append_self"):
+            me = obj.name[6:].replace("_", "-", 1) if obj.name.startswith("ACTOR_") else obj.name
+            if names[-1] != me:
+                names.append(me)
         if names:
             result[lkey] = ["string"] + names
     return result

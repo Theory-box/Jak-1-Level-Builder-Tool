@@ -455,6 +455,40 @@ class OG_OT_ClearDoorCP(Operator):
             del o["og_continue_name"]
         return {"FINISHED"}
 
+class OG_OT_ShowLinkTypes(Operator):
+    """List every actor type this link slot expects (its "accepts" list,
+    parent types and actors that react to its event)"""
+    bl_idname  = "og.show_link_types"
+    bl_label   = "Actors that work here"
+    bl_options = {"INTERNAL"}
+    source_name: bpy.props.StringProperty()
+    lump_key:    bpy.props.StringProperty()
+    slot_index:  bpy.props.IntProperty()
+
+    def _types(self):
+        src = bpy.data.objects.get(self.source_name)
+        et = src.name.split("_", 2)[1] if src and src.name.count("_") >= 2 else ""
+        acc = _db.link_slot(et, self.lump_key, self.slot_index).get("accepts")
+        out = [(a.get("label") or a["etype"], a["etype"]) for a in _db.actors()
+               if a.get("category") != "Hidden" and _db.link_accepts(acc, a["etype"])]
+        return acc, sorted(out)
+
+    def invoke(self, ctx, event):
+        return ctx.window_manager.invoke_popup(self, width=380)
+
+    def draw(self, ctx):
+        acc, types = self._types()
+        col = self.layout.column(align=True)
+        col.label(text=f"[{self.lump_key} {self.slot_index}] expects: {_db.accepts_text(acc)}", icon="INFO")
+        if not types:
+            col.label(text="No spawnable actor in the database fits.")
+        for label, et in types:
+            col.label(text=f"{label}  ({et})")
+
+    def execute(self, ctx):
+        return {"FINISHED"}
+
+
 class OG_OT_SetCrateType(Operator):
     """Set the crate type (look/defense) on the selected crate actor."""
     bl_idname  = "og.set_crate_type"
@@ -655,6 +689,7 @@ CLASSES = (
     OG_OT_ToggleDoorFlag,
     OG_OT_SetDoorCP,
     OG_OT_ClearDoorCP,
+    OG_OT_ShowLinkTypes,
     OG_OT_SetCrateType,
     OG_OT_SetCratePickup,
     OG_OT_SetCrateAmount,

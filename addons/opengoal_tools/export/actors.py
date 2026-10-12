@@ -577,6 +577,7 @@ def collect_actors(scene, depsgraph=None):
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
+            "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,
         })
         if _bc_campos is not None and not any(x["lump"]["name"] == _bc_campos["lump"]["name"] for x in _extra_actors):

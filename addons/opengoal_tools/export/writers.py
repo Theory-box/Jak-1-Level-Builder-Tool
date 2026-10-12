@@ -577,15 +577,43 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
     # init/go references, since those contain the base name as a prefix.
     for _base in (*_TRIGGER_ETYPES, "point-in-planes?"):
         new_text = new_text.replace(_base, f"{_pfx}-{_base}")
-    if p.exists() and p.read_text() == new_text:
+    old_text = p.read_text() if p.exists() else ""
+    if old_text == new_text:
         log(f"Skipped {p} (unchanged)")
     else:
+        # A running GOALC refuses a deftype that differs from the one it
+        # already compiled ("Inconsistent type definition"), so the build
+        # restarts GOALC when this level's types changed (see build.py).
+        global TYPES_CHANGED
+        if old_text and _deftypes(old_text) != _deftypes(new_text):
+            TYPES_CHANGED = True
+            log("  [write_gc] level type definitions changed — GOALC will be restarted before (mi)")
         p.write_text(new_text)
         log(f"Wrote {p}")
 
+
+TYPES_CHANGED = False
+
+
+def _deftypes(text: str) -> list[str]:
+    """Every (deftype ...) form in a GOAL file, as written (paren-matched)."""
+    out, i = [], text.find("(deftype")
+    while i >= 0:
+        d = 0
+        for j in range(i, len(text)):
+            if text[j] == "(":
+                d += 1
+            elif text[j] == ")":
+                d -= 1
+                if d == 0:
+                    out.append(" ".join(text[i:j + 1].split()))
+                    break
+        i = text.find("(deftype", i + 1)
+    return out
+
 # Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
 # that are not part of the level format — never written to the .jsonc.
-_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages")
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
 
 
 def _dumps_with_raw_lumps(data):
@@ -664,7 +692,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     _textures = list(_textures) + [t for t in _incl["json_texture"] if t not in _textures]
     from .. import db as _tdb
     for _a in all_actors:
-        for _t in _tdb.actor_textures(_a.get("_db_etype") or _a.get("etype", "")):
+        for _t in _tdb.actor_textures(_a.get("_db_etype") or _a.get("etype", "")) + list(_a.get("_textures") or []):
             if _t not in _textures:
                 _textures.append(_t)
     ambients = list(ambients) + _incl["ambients"]

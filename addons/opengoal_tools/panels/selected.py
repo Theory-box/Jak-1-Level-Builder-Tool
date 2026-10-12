@@ -974,12 +974,18 @@ def _draw_vol_link_add(layout, target):
                       target_name=target.name, search_for="volume")
 
 
-def _draw_link_search(box, text, op_id, **props):
+def _draw_link_search(box, text, op_id, accepted=None, **props):
     """The "Search…" button every link UI ends with (actor slots, path
-    curves): opens a searchable list of every candidate in the scene."""
-    op = box.row().operator(op_id, text=text, icon="VIEWZOOM")
+    curves): opens a searchable list of every candidate in the scene. With a
+    specific "accepts" list, a "?" button lists every actor type that fits."""
+    row = box.row(align=True)
+    op = row.operator(op_id, text=text, icon="VIEWZOOM")
     for k, v in props.items():
         setattr(op, k, v)
+    if accepted and "any" not in accepted:
+        h = row.operator("og.show_link_types", text="", icon="QUESTION")
+        h.source_name = props.get("source_name", ""); h.lump_key = props.get("lump_key", "")
+        h.slot_index = props.get("slot_index", 0)
 
 
 def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=()):
@@ -989,7 +995,7 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
     cands = [o for o in sel_actors if o.name not in skip]
     search = dict(source_name=obj.name, lump_key=lkey, slot_index=sidx, append=append)
     if not cands:
-        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", **search)
+        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", accepted, **search)
         return
     for tgt in cands[:6]:
         ok = _db.link_accepts(accepted, _link_target_etype(tgt))
@@ -1006,7 +1012,7 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
         hint.label(text=f"  Expected: {_db.accepts_text(accepted)} — others may not work", icon="INFO")
     if len(cands) > 6:
         box.label(text=f"... and {len(cands) - 6} more selected")
-    _draw_link_search(box, "Search actor…", "og.link_actor_search", **search)
+    _draw_link_search(box, "Search actor…", "og.link_actor_search", accepted, **search)
 
 
 def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors):

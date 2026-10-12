@@ -748,6 +748,10 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         actor["og_water_surface"] = round(cur.z, 4)   # kept at its volume's top while Sync is on
         actor["og_water_wade"]    = 0.5
         actor["og_water_swim"]    = 1.0
+        _vf = _db.variant_field(etype)   # water-anim look picked before spawning
+        _sv = getattr(scene.og_props, "spawn_variant", "")
+        if _vf and _sv and _sv != "NONE" and any(c.get("value") == _sv for c in _db.variant_choices(etype)):
+            actor[_vf["key"]] = _sv
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
         self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")
