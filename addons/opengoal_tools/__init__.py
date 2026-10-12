@@ -181,6 +181,8 @@ def register():
     _load_previews()
     _mp.register_handler()
     _bviz.register_handler()
+    from .operators.misc import register_water_handler
+    register_water_handler()
     register_texturing()
     for cls in classes:
         try:
@@ -447,6 +449,8 @@ def unregister():
     _unload_previews()
     _mp.unregister_handler()
     _bviz.unregister_handler()
+    from .operators.misc import unregister_water_handler
+    unregister_water_handler()
     unregister_texturing()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:

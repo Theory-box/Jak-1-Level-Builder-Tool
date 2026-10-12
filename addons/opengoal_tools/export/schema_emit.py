@@ -130,6 +130,12 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
     for f in fields:
         if f.get("type") == "object_ref":
             continue
+        # "export_if_visible": only written while its visible_if holds
+        # (e.g. the Sunken on / off water fields for those looks only).
+        if f.get("export_if_visible") and f.get("visible_if"):
+            if not all((get(k) in v) if isinstance(v, list) else get(k) == v
+                       for k, v in f["visible_if"].items()):
+                continue
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None
 
@@ -155,7 +161,21 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
                 cf = next((x for x in fields if x.get("key") == ck), None)
                 cd = _resolve_default(cf, etype) if cf else 0.0
                 vals.append(float(_num(get(ck, cd))))
-            direct[lp["key"]] = ["water-height"] + vals + [lp.get("flags")]
+            flags, attack = lp.get("flags"), None
+            if lp.get("liquids"):
+                # Liquid preset (water panel): its water-flags bits + attack
+                # event; wt20 = surface follows the look's ripples (looks only).
+                lf = next((x for x in fields if x.get("key") == lp.get("liquid_key")), None)
+                liq = lp["liquids"].get(get(lp.get("liquid_key"), _resolve_default(lf, etype) if lf else "water"),
+                                        lp["liquids"].get("water", {}))
+                bits = list(liq.get("flags", []))
+                if lp.get("ripple_key") and get(lp["ripple_key"], False):
+                    bits.append("wt20")
+                flags = "(water-flags %s)" % " ".join(bits)
+                attack = liq.get("attack")
+            direct[lp["key"]] = ["water-height"] + vals + [flags]
+            if attack:
+                direct["attack-event"] = "'" + attack
             continue
 
         # ── Task fields (type "task"): (game-task X) or a custom task ────────

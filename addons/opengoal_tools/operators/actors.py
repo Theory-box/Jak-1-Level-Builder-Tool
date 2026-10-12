@@ -455,18 +455,6 @@ class OG_OT_ClearDoorCP(Operator):
             del o["og_continue_name"]
         return {"FINISHED"}
 
-class OG_OT_SetWaterAttack(Operator):
-    """Set the damage type for this water volume."""
-    bl_idname  = "og.set_water_attack"
-    bl_label   = "Set Water Attack"
-    bl_options = {"REGISTER", "UNDO"}
-    mesh_name:  bpy.props.StringProperty()
-    attack_val: bpy.props.StringProperty()
-    def execute(self, ctx):
-        o = bpy.data.objects.get(self.mesh_name)
-        if o: o["og_water_attack"] = self.attack_val
-        return {"FINISHED"}
-
 class OG_OT_SetCrateType(Operator):
     """Set the crate type (look/defense) on the selected crate actor."""
     bl_idname  = "og.set_crate_type"
@@ -667,7 +655,6 @@ CLASSES = (
     OG_OT_ToggleDoorFlag,
     OG_OT_SetDoorCP,
     OG_OT_ClearDoorCP,
-    OG_OT_SetWaterAttack,
     OG_OT_SetCrateType,
     OG_OT_SetCratePickup,
     OG_OT_SetCrateAmount,

@@ -726,11 +726,30 @@ class OG_PT_ActorWaterVol(Panel):
         from .actor_fields import _draw_field
         etype = sel.name.split("_", 2)[1]
         info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        forced = _db.actor_variant(etype, lambda k, d=None: sel.get(k, d)).get("props") or {}
+        manual = bool(sel.get("og_water_surface_manual", False))
         for f in _db.panel_fields(etype, "water", visible_only=True):
+            key = f.get("key")
+            if key in forced:
+                # set by the selected look (variant "props")
+                lab = next((c.get("label") for c in f.get("choices", []) if c.get("value") == forced[key]), forced[key])
+                box.label(text=f"{f.get('label', key)}: {lab} (set by the look)", icon="LOCKED")
+                continue
+            if key == "og_water_surface":
+                row = box.row(align=True)
+                sub = row.row(); sub.enabled = manual
+                _draw_field(sub, sel, f, info)
+                op = row.operator("og.toggle_actor_bool_field", text="", depress=manual,
+                                  icon="UNLOCKED" if manual else "LOCKED")
+                op.prop_key = "og_water_surface_manual"
+                if not manual:
+                    box.label(text="Kept at the top of its volume (unlock to set it by hand)", icon="INFO")
+                continue
             _draw_field(box, sel, f, info)
-        op = box.operator("og.sync_water_from_object",
-                          text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
-        op.actor_name = sel.name
+        if manual:
+            op = box.operator("og.sync_water_from_object",
+                              text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
+            op.actor_name = sel.name
 
 
 class OG_PT_ActorLauncherDoor(Panel):

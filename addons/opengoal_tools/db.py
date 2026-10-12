@@ -503,15 +503,25 @@ def legacy_keys() -> dict:
 
 
 def prop_getter(obj):
-    """get(key, default) for an object's props that also reads legacy keys."""
+    """get(key, default) for an object's props that also reads legacy keys.
+    A selected variant choice's "props" ({field key: value}) win over the
+    object's own values (e.g. a water-anim look sets its liquid)."""
     leg = legacy_keys()
-    def get(k, d=None):
+    def base(k, d=None):
         if k in obj.keys():
             return obj.get(k)
         old = leg.get(k)
         if old and old in obj.keys():
             return obj.get(old)
         return d
+    name = getattr(obj, "name", "") or ""
+    forced = {}
+    if name.startswith("ACTOR_") and name.count("_") >= 2:
+        forced = actor_variant(name.split("_", 2)[1], base).get("props") or {}
+    if not forced:
+        return base
+    def get(k, d=None):
+        return forced[k] if k in forced else base(k, d)
     return get
 
 

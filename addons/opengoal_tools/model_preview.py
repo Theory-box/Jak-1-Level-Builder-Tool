@@ -461,6 +461,7 @@ def _cleanup_orphans(names: list) -> None:
     return None  # don't repeat
 
 
+@bpy.app.handlers.persistent
 def _on_depsgraph_update(scene, depsgraph):
     """Depsgraph handler — detect orphaned preview meshes and schedule removal.
     Kept intentionally cheap: only scans if there are any preview meshes at all."""
