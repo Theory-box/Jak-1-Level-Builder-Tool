@@ -383,6 +383,25 @@ def check_sync_period(scene):
     return issues
 
 
+def check_texture_sources(scene):
+    """DB "texture_sources" (actor or selected variant): textures that only
+    draw when the level borrows one of those levels' textures (Level settings
+    > Texture source), e.g. Flut Flut eyes, transparent water looks."""
+    from .collections import _get_level_prop
+    src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
+    issues = []
+    for o in _actor_objs(scene):
+        et = _etype(o)
+        var = _db.actor_variant(et, lambda k, d=None: o.get(k, d))
+        need = var.get("texture_sources") or (_db.find_actor(et) or {}).get("texture_sources")
+        if need and src not in need:
+            what = var.get("texture_note") or (_db.find_actor(et) or {}).get("texture_note") or "some of its textures"
+            issues.append(_issue("WARNING",
+                f"{o.name}: {what} only show with the texture source {' / '.join(need)} "
+                f"(Level settings; this level uses {src}). They stay blank otherwise.", o.name))
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -474,6 +493,7 @@ _REGISTERED_CHECKS = [
     check_entity_defs_audit_blocks,
     check_axis_not_vertical,
     check_sync_period,
+    check_texture_sources,
     check_scene_summary,   # always last
 ]
 

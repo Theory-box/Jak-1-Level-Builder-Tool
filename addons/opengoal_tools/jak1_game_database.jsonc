@@ -8470,23 +8470,11 @@
       "glb": "levels/swamp/flut-saddle-lod0.glb",
       "shape": "CUBE",
       "description": "Rideable Flut Flut: press circle next to it. Only its Yaw field sets its facing.",
-      "textures": [
-        [
-          "swamp-vis-pris",
-          "flut-eye-16x16",
-          "flut-eyelid"
-        ],
-        [
-          "snow-vis-pris",
-          "flut-eye-16x16",
-          "flut-eyelid"
-        ],
-        [
-          "beach-vis-pris",
-          "flut-eye-16x16",
-          "flut-eyelid"
-        ]
-      ]
+      "texture_sources": [
+        "swamp",
+        "snow"
+      ],
+      "texture_note": "its eyes (iris + lid)"
     },
     {
       "etype": "mayor",
@@ -13682,7 +13670,7 @@
       "category": "Hidden",
       "parent": "water-vol",
       "shape": "CUBE",
-      "description": "Water volume with a vanilla water look (its mesh and ripples) or no look. The look sets the liquid (mud, lava, dark eco ...). Floating / splashing actors (ogre-isle, ogre-step, square-platform) link it as their water. The look meshes keep their vanilla size: scale / place the volume to match. Sunken on / off looks shock Jak part of each period.",
+      "description": "Water volume with a vanilla water look (its mesh and ripples) or no look. The look sets the liquid (mud, lava, dark eco ...). Floating / splashing actors (ogre-isle, ogre-step, square-platform) link it as their water. The look meshes keep their vanilla size: scale / place the volume to match. Sunken on / off looks shock Jak part of each period. Transparent / reflective looks (water, electric, dark eco) only show their surface with their level as the texture source (Level settings); mud and lava looks work anywhere.",
       "panels": [
         {
           "panel": "custom-fields",
@@ -13717,11 +13705,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-1",
@@ -13738,11 +13726,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-2",
@@ -13759,11 +13747,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-3",
@@ -13780,11 +13768,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-4",
@@ -13801,11 +13789,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-5",
@@ -13822,11 +13810,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-6",
@@ -13843,11 +13831,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-7",
@@ -13863,7 +13851,11 @@
                   },
                   "code": [
                     "sunken-water.o"
-                  ]
+                  ],
+                  "texture_sources": [
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-8",
@@ -13880,11 +13872,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-9",
@@ -13901,11 +13893,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-10",
@@ -13919,15 +13911,11 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-11",
@@ -13944,11 +13932,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-12",
@@ -13965,11 +13953,11 @@
                   "code": [
                     "sunken-water.o"
                   ],
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-13",
@@ -13983,15 +13971,11 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "sunken-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-14",
@@ -14008,11 +13992,10 @@
                   "code": [
                     "maincave-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-15",
@@ -14026,15 +14009,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-16",
@@ -14048,15 +14026,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-17",
@@ -14070,15 +14043,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-18",
@@ -14092,15 +14060,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-19",
@@ -14114,15 +14077,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water"
-                    ],
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-20",
@@ -14136,12 +14094,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "robocave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-21",
@@ -14331,12 +14287,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "misty"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-33",
@@ -14369,11 +14323,10 @@
                   "code": [
                     "jungle-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "jungle-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "jungle"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-35",
@@ -14406,11 +14359,10 @@
                   "code": [
                     "training-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "training-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "training"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-37",
@@ -14427,11 +14379,10 @@
                   "code": [
                     "maincave-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "darkcave-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "darkcave"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-38",
@@ -14448,11 +14399,10 @@
                   "code": [
                     "rolling-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "rolling-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-39",
@@ -14469,11 +14419,10 @@
                   "code": [
                     "rolling-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "rolling-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-41",
@@ -14487,12 +14436,10 @@
                     "og_water_liquid": "dark-eco",
                     "og_water_ripple": true
                   },
-                  "textures": [
-                    [
-                      "maincave-vis-water",
-                      "environment-darkwater"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "finalboss"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-42",
@@ -14525,11 +14472,10 @@
                   "code": [
                     "village-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "village1-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-44",
@@ -14546,11 +14492,10 @@
                   "code": [
                     "village-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "village1-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-45",
@@ -14567,11 +14512,10 @@
                   "code": [
                     "village-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "village1-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-46",
@@ -14588,11 +14532,10 @@
                   "code": [
                     "village-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "village1-vis-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
                 },
                 {
                   "value": "look-47",
@@ -14609,15 +14552,10 @@
                   "code": [
                     "village2-obs.o"
                   ],
-                  "textures": [
-                    [
-                      "village2-vis-water"
-                    ],
-                    [
-                      "village2-vis-alpha",
-                      "ya-water"
-                    ]
-                  ]
+                  "texture_sources": [
+                    "village2"
+                  ],
+                  "texture_note": "the look's water surface"
                 }
               ]
             },

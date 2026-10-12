@@ -24,7 +24,6 @@
 #                   the level commands that unload the custom level
 #   explorer.gc     talks from anywhere (vanilla: a fixed Sandover area)
 #   mayorgears.gc   turns always / once / until its own task is complete
-#   flutflut.gc     eye shaders pointed at the Swamp eye textures (any texture source)
 # ───────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
