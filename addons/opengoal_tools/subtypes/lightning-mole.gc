@@ -12,3 +12,36 @@
     (close-specific-task! (-> arg0 extra perm task) (task-status need-introduction)))
   (call-parent-method this arg0)
   (none))
+
+;; mode 1: the last mole caught (all moles of its next/prev chain caught, or a
+;; mole with no chain) gives its task's cell at the peeper (pickup at its
+;; movie-pos if set). It isn't marked dead until the cell is collected, so the
+;; cell comes back if Jak leaves without it. mode 0 is vanilla: the task only
+;; gets to need-reminder (vanilla: the geologist gives the cell).
+(defun __TYPE__-all-caught? ((this lightning-mole))
+  (let ((e (-> this entity))
+        (all #t))
+    (while (prev-actor e)
+      (set! e (prev-actor e)))
+    (while e
+      (if (not (logtest? (-> e extra perm status) (entity-perm-status complete))) (set! all #f))
+      (set! e (next-actor e)))
+    all))
+
+(defmethod cleanup-for-death ((this __TYPE__))
+  (let ((task (-> this entity extra perm task)))
+    (cond
+      ((and (= (res-lump-value (-> this entity) 'mode int) 1)
+            (nonzero? task)
+            (not (task-complete? *game-info* task))
+            (__TYPE__-all-caught? this))
+       (clear-collide-with-as (-> this collide-info))
+       (ja-channel-set! 0)
+       (let ((pos (new 'stack-no-clear 'vector)))
+         (if (-> this alt-actor)
+           (set! (-> pos quad) (-> this alt-actor extra trans quad))
+           (set! (-> pos quad) (-> this collide-info trans quad)))
+         (+! (-> pos y) 6144.0)
+         (birth-pickup-at-point pos (pickup-type fuel-cell) (the float task) #f this (the-as fact-info #f))))
+      (else (call-parent-method this))))
+  (none))

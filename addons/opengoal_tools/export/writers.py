@@ -662,6 +662,11 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     _ag_names = [g.replace(".go", "") for g in ags]
     _ag_names += [g for g in _incl["json_ag"] if g not in _ag_names]
     _textures = list(_textures) + [t for t in _incl["json_texture"] if t not in _textures]
+    from .. import db as _tdb
+    for _a in all_actors:
+        for _t in _tdb.actor_textures(_a.get("_db_etype") or _a.get("etype", "")):
+            if _t not in _textures:
+                _textures.append(_t)
     ambients = list(ambients) + _incl["ambients"]
     if _incl["cameras"]:
         # Included cameras go in with either camera system; same no-actor

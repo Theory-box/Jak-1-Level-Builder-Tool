@@ -1,0 +1,51 @@
+;; Level patch (no child type) for the final boss. Vanilla puts two things at a
+;; fixed world height, the Citadel arena's (robotboss at Y 481 m):
+;;   - the yellow eco shot starts at Y 481.6 m (robotboss.gc robotboss-yellowshot)
+;;   - the light eco pieces fly to Y 482 m (light-eco.gc spawn-child-eco)
+;; so in any other level the shots never reach Jak and the light eco can't be
+;; picked up (the ending never starts). These redefinitions use the boss's own
+;; height (+0.6 m / +1 m, the vanilla offsets), which gives the vanilla values in
+;; the vanilla level.
+
+(defbehavior robotboss-yellowshot robotboss ()
+  (+! (-> self children-spawned) 1)
+  (let ((gp-0 (new 'stack-no-clear 'vector)))
+    (let ((s5-0 (new 'stack-no-clear 'vector)))
+      (vector<-cspace! gp-0 (joint-node robotboss-basic-lod0-jg Lyellow_ecoBarrell))
+      (set! (-> gp-0 y) (+ 2457.6 (-> self entity extra trans y)))
+      (if *target* (set! (-> s5-0 quad) (-> (target-pos 0) quad)) (set! (-> s5-0 quad) (-> self entity extra trans quad)))
+      (set! (-> s5-0 y) (+ 8192.0 (-> self entity extra trans y)))
+      (vector-! s5-0 s5-0 gp-0)
+      (vector-normalize! s5-0 (the-as float 819200.0))
+      (vector+! s5-0 s5-0 gp-0)
+      (process-spawn yellowshot gp-0 s5-0 0.0 750 :to self))
+    (send-event self 'flash 255.0)
+    (process-spawn part-tracker
+                   :init
+                   part-tracker-init
+                   group-robotboss-yellowshot-launch
+                   300
+                   #f
+                   #f
+                   #f
+                   gp-0
+                   :to
+                   *entity-pool*))
+  (sound-play "bfg-fire")
+  (none))
+
+(defmethod spawn-child-eco ((this light-eco-mother))
+  (countdown (s3-0 4)
+    (let ((gp-0 (rand-vu-int-count 32)))
+      (when (not (logtest? (-> this angle-mask) (ash 1 gp-0)))
+        (let ((f28-0 (* 2048.0 (the float gp-0)))
+              (f30-0 (rand-vu-float-range 61440.0 88514.56))
+              (s4-0 (new 'stack-no-clear 'vector)))
+          (set-vector! s4-0 (* (sin f28-0) f30-0) 0.0 (* (cos f28-0) f30-0) 1.0)
+          (vector+! s4-0 s4-0 (-> this root trans))
+          (set! (-> s4-0 y) (+ 4096.0 (-> this entity extra trans y)))
+          (when (or (not *target*) (>= (vector-vector-xz-distance s4-0 (target-pos 0)) 49152.0))
+            (logior! (-> this angle-mask) (ash 1 gp-0))
+            (process-spawn light-eco-child (-> this entity) (-> this root trans) s4-0 gp-0 :to this)
+            (return #t))))))
+  #f)

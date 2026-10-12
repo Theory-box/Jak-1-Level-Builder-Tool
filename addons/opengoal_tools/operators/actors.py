@@ -105,7 +105,7 @@ class OG_OT_SetActorLink(Operator):
         slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
         if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
             self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
-                                     f"{', '.join(slot.get('accepts') or [])} — it may not work in game")
+                                     f"{_db.accepts_text(slot.get('accepts'))} — it may not work in game")
         else:
             self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}

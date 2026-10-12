@@ -166,7 +166,7 @@ def check_actor_links(scene):
             if t_et and not _db.link_accepts(accepts, t_et):
                 issues.append(_issue("WARNING",
                     f"'{o.name}' ({et}): link '{lk.lump_key}' → '{lk.target_name}' ({t_et}) is not an "
-                    f"expected type ({', '.join(accepts)}). It may not work in game.", o.name))
+                    f"expected type ({_db.accepts_text(accepts)}). It may not work in game.", o.name))
     return issues
 
 

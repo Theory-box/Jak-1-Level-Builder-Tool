@@ -8,21 +8,31 @@
 # file's GOAL in its -obs.gc with __TYPE__ = "<level>-<etype>", and the actor
 # exports with that etype (write_jsonc adds the prefix).
 #
+# A file without "(deftype __TYPE__" is a level patch instead: its GOAL is
+# added the same way but the actor keeps its vanilla etype.
+#
 # Current files (see each file's header for why):
 #   water-anim.gc   basic water-anim (flat surface) for floating / splashing actors
 #   fireboulder.gc  hover sound for every boulder (vanilla: fireboulder-6 only)
 #   ogreboss.gc     Klaww with an editable intro trigger / continue point / task
+#   lightning-mole.gc  hole at its peeper, shows up without the geologist
+#   robotboss.gc    (patch) yellow shot / light eco heights relative to the boss
+#   dark-plant.gc / happy-plant.gc  own task, no freeze on linked plants
+#   muse.gc         catching it gives its own task's cell
+#   sage-finalboss.gc  ending cutscenes without vanilla positions / final door
 # ───────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
 from pathlib import Path
 
 _DIR = Path(__file__).resolve().parent.parent / "subtypes"
-ETYPES = tuple(sorted(p.stem for p in _DIR.glob("*.gc")))
+FILES = tuple(sorted(p.stem for p in _DIR.glob("*.gc")))
+# etypes exported as "<level>-<etype>" (the file defines a child type)
+ETYPES = tuple(e for e in FILES if "(deftype __TYPE__" in (_DIR / f"{e}.gc").read_text(encoding="utf-8"))
 
 
 def _used(objects):
-    return [e for e in ETYPES
+    return [e for e in FILES
             if any(o.type == "EMPTY" and o.name.startswith(f"ACTOR_{e}_") for o in objects)]
 
 

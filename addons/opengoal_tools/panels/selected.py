@@ -1003,7 +1003,7 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
         op.target_name = tgt.name; op.append = append
     if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
         hint = box.row(); hint.enabled = False
-        hint.label(text=f"  Expected: {', '.join(accepted)} — others may not work", icon="INFO")
+        hint.label(text=f"  Expected: {_db.accepts_text(accepted)} — others may not work", icon="INFO")
     if len(cands) > 6:
         box.label(text=f"... and {len(cands) - 6} more selected")
     _draw_link_search(box, "Search actor…", "og.link_actor_search", **search)

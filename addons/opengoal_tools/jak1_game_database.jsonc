@@ -4973,6 +4973,9 @@
           "panel": "actor-link",
           "show-panel": true
         }
+      ],
+      "reacts_to": [
+        "trigger"
       ]
     },
     {
@@ -5123,6 +5126,9 @@
             }
           ]
         }
+      ],
+      "reacts_to": [
+        "trigger"
       ]
     },
     {
@@ -5446,7 +5452,10 @@
           "elevator-at-top-going-down",
           "elevator-at-top-going-up"
         ]
-      }
+      },
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "babak-with-cannon",
@@ -5858,11 +5867,11 @@
       "label": "Muse",
       "category": "Interactive Objects",
       "parent": "nav-enemy",
-      "description": "Runs along its path loop; catching it gives its task's cell (needs a game task). Also writes the vanilla misty-muse reminder.",
+      "description": "Exported as a level subtype (subtypes/muse.gc): runs along its path loop; catching it plays the vanilla catch cutscene (at movie-pos if set), then gives its task's cell. No task: no cell.",
       "panels": [
         {"panel": "path", "required": true, "min-points": 11, "description": "A loop of at least 11 points; the muse starts at point 8. Add more points if muse gets stuck"},
         {"panel": "nav-mesh", "can-jump": true},
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
+        {"panel": "game-task", "description": "Cell given when it is caught."},
         {"panel": "movie-pos", "description": "Where the muse catch cutscene plays (cone = facing). Not set: at Jak."},
         {"panel": "visibility", "export": false},
         {"panel": "activation", "export": false}
@@ -7027,6 +7036,10 @@
           "description": "Task this actor is tied to (its saved state, the cell it gives)."
         },
         {
+          "panel": "movie-pos",
+          "description": "Cell mode: where the cell's pickup plays (cone = facing). Not set: at the peeper."
+        },
+        {
           "panel": "path",
           "required": true,
           "description": "Patrol points: it wanders between them, then flees to its hole when Jak comes near."
@@ -7074,12 +7087,40 @@
               "required": false
             }
           ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_mole_mode",
+              "label": "When all moles are caught",
+              "type": "enum",
+              "default": "1",
+              "write_if": "always",
+              "lump": {
+                "key": "mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "1",
+                  "label": "A cell appears at the peeper",
+                  "lump_value": 1
+                },
+                {
+                  "value": "0",
+                  "label": "Vanilla: task to need-reminder (a geologist gives the cell)",
+                  "lump_value": 0
+                }
+              ]
+            }
+          ]
         }
       ],
       "tpage_group": "Rolling",
       "code": "rolling-lightning-mole.o",
       "art_group": "lightning-mole-ag.go",
-      "description": "Exported as a level subtype (subtypes/lightning-mole.gc): its hole is at the linked peeper and its task's introduction is closed so it shows up. Gives no cell itself (vanilla: the geologist)."
+      "description": "Exported as a level subtype (subtypes/lightning-mole.gc): its hole is at the linked peeper and it shows up without the geologist. Herd it to its hole. Chain several moles with next / prev links (one game task for all); the last one caught finishes the task."
     },
     {
       "etype": "ice-cube",
@@ -7180,12 +7221,16 @@
       "glb": "levels/rolling/dark-plant-lod0.glb",
       "panels": [
         {
+          "panel": "game-task",
+          "description": "Optional: the plant stays gone once this task's cell is collected (use the Happy Plant's task)."
+        },
+        {
           "panel": "actor-link",
           "slots": [
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Neighbour plants (it regrows while one lives; max 4)",
+              "label": "Neighbour plants (max 4; one alive makes it regrow; links can go both ways)",
               "accepts": [
                 "dark-plant"
               ],
@@ -7195,14 +7240,17 @@
           ]
         }
       ],
-      "description": "Dies when Jak has green eco within 4 m. Starts gone once the vanilla rolling-plants task is done."
+      "description": "Exported as a level subtype (subtypes/dark-plant.gc). Dies when Jak has green eco within 4 m and regrows while a linked neighbour is alive."
     },
     {
       "etype": "happy-plant",
       "label": "Happy Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
-      "art_group": "happy-plant-ag.go",
+      "art_group": [
+        "happy-plant-ag.go",
+        "rollingcam-ag.go"
+      ],
       "tpage_group": "Rolling",
       "code": "rolling-obs.o",
       "glb": "levels/rolling/happy-plant-lod0.glb",
@@ -7213,7 +7261,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Connect to one dark-plant in the group",
+              "label": "Any dark plant of the group (every plant linked to it, directly or not, must be gone)",
               "accepts": [
                 "dark-plant"
               ],
@@ -7223,14 +7271,14 @@
         },
         {
           "panel": "movie-pos",
-          "description": "Where the power cell this actor gives plays its pickup animation (cone = facing)."
+          "description": "Where the cell's pickup plays (cone = facing). Not set: in the flower."
         },
         {
           "panel": "game-task",
-          "description": "Cell given when completed."
+          "description": "Cell given when it opens. none: it opens without a cell."
         }
       ],
-      "description": "Grows and spawn a cell when all the dark-plant have been cleared"
+      "description": "Exported as a level subtype (subtypes/happy-plant.gc): opens with its cutscene and gives its task's cell once every dark plant linked to it is gone. Give the plants the same task so they stop regrowing once the cell is collected."
     },
     {
       "etype": "ogreboss",
@@ -7544,11 +7592,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 5,
-              "label": "sage-finalboss (cutscene; not in the addon yet: crash at the light eco)",
+              "label": "Final boss sage (its cutscenes; required: crashes at the light eco without it)",
               "accepts": [
-                "any"
+                "sage-finalboss"
               ],
-              "required": false
+              "required": true
             },
             {
               "lump_key": "alt-actor",
@@ -7616,7 +7664,7 @@
           ]
         }
       ],
-      "description": "Gol and Maia's Precursor robot is the final boss of The Precursor Legacy. An ancient Precursor war machine excavated and reactivated by the two dark eco sages to open the dark eco silos. Needs its alt-actor links (4 yellow eco and the blue vent, or it writes through empty links), and the light-eco ending needs sage-finalboss, which the addon doesn't support yet. The yellow shot and light eco use absolute heights from vanilla Final Boss.",
+      "description": "Gol and Maia's Precursor robot, the final boss. Needs its alt-actor links (4 yellow eco and the blue vent, or it writes through empty links) and the Final Boss Sage for the light eco ending. A level patch (subtypes/robotboss.gc) puts the yellow shot and the light eco at the boss's height.",
       "art_group": [
         "robotboss-ag.go",
         "green-eco-lurker-ag.go",
@@ -7640,6 +7688,28 @@
         "robotboss.o"
       ],
       "glb": "levels/finalboss/robotboss-basic-lod0.glb"
+    },
+    {
+      "etype": "sage-finalboss",
+      "label": "Final Boss Sage (ending cutscenes)",
+      "category": "NPCs",
+      "parent": "process-taskable",
+      "code": [
+        "final-door.o",
+        "sage-finalboss-part.o",
+        "sage-finalboss.o"
+      ],
+      "art_group": [
+        "green-sagecage-ag.go",
+        "jak-white-ag.go",
+        "robotboss-cinematic-ag.go",
+        "silodoor-ag.go",
+        "plat-eco-finalboss-ag.go"
+      ],
+      "tpage_group": "Final",
+      "glb": "levels/finalboss/green-sagecage-lod0.glb",
+      "shape": "CUBE",
+      "description": "Hidden; plays the ending cutscenes once the robot boss is beaten (link it as the robot's slot 5): Daxter's sacrifice, then the outros and the credits (which end the game like vanilla). Cutscenes play around it, so place it like vanilla: from the robot (unrotated) X -228 m, Y -138 m, Z +59.5 m. Exported as a level subtype (subtypes/sage-finalboss.gc). Uses the vanilla finalboss-movies task."
     },
     {
       "etype": "yakow",
@@ -7751,7 +7821,19 @@
       ],
       "glb": "levels/swamp/flut-saddle-lod0.glb",
       "shape": "CUBE",
-      "description": "Rideable Flut Flut: press circle next to it. Only its Yaw field sets its facing."
+      "description": "Rideable Flut Flut: press circle next to it. Only its Yaw field sets its facing.",
+      "textures": [
+        [
+          "swamp-vis-pris",
+          "flut-eye-16x16",
+          "flut-eyelid"
+        ],
+        [
+          "snow-vis-pris",
+          "flut-eye-16x16",
+          "flut-eyelid"
+        ]
+      ]
     },
     {
       "etype": "mayor",
@@ -8614,7 +8696,10 @@
           "min-points": 1
         }
       ],
-      "code": "citb-plat.o"
+      "code": "citb-plat.o",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "plat-button",
@@ -8861,7 +8946,10 @@
       "parent": "plat",
       "shape": "CUBE",
       "code": "snow-flutflut-obs.o",
-      "description": "Flut flut platform. Variant: small / medium / large (each its own type and model)."
+      "description": "Flut flut platform. Variant: small / medium / large (each its own type and model).",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "snow-log",
@@ -8886,7 +8974,10 @@
       ],
       "art_group": "snow-log-ag.go",
       "code": "snow-obs.o",
-      "glb": "levels/snow/snow-log-lod0.glb"
+      "glb": "levels/snow/snow-log-lod0.glb",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "snow-log-button",
@@ -9048,7 +9139,10 @@
           ]
         }
       ],
-      "shape": "CONE"
+      "shape": "CONE",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "balance-plat",
@@ -9763,7 +9857,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Spike group (order matters; an unlinked spike never rises)",
+              "label": "Spike group: first half, then second half, then any last entry (itself)",
               "accepts": [
                 "spike"
               ],
@@ -9777,7 +9871,7 @@
       "tpage_group": "Firecanyon",
       "code": "firecanyon-obs.o",
       "glb": "levels/firecanyon/spike-lod0.glb",
-      "description": "Rises only when Jak rides the zoomer within 55 m. With 2+ links it picks at random whether it or part of its group rises."
+      "description": "Rises when Jak on the zoomer comes within 55 m (once). Only one spike of a group (the controller) has links; the others have none and wait down. Controller links: group A, then group B, then one last entry that is never read (link itself). It randomly raises group A, or group B plus itself. With exactly one link it always rises itself."
     },
     {
       "etype": "steam-cap",
@@ -12496,12 +12590,25 @@
       "art_group": "sun-iris-door-ag.go",
       "code": "sun-iris-door.o",
       "lumps": [
-        {"key": "scale-factor", "type": "float", "description": "Uniform scale multiplier. Default 1.0."},
-        {"key": "trans-offset", "type": "float", "description": "Open-position offset (3 floats X Y Z meters)."}
+        {
+          "key": "scale-factor",
+          "type": "float",
+          "description": "Uniform scale multiplier. Default 1.0."
+        },
+        {
+          "key": "trans-offset",
+          "type": "float",
+          "description": "Open-position offset (3 floats X Y Z meters)."
+        }
       ],
       "panels": [
-        {"panel": "game-task", "description": "Task this actor is tied to (its saved state, the cell it gives)."},
-        {"panel": "sun-iris-door"},
+        {
+          "panel": "game-task",
+          "description": "Task this actor is tied to (its saved state, the cell it gives)."
+        },
+        {
+          "panel": "sun-iris-door"
+        },
         {
           "panel": "custom-fields",
           "fields": [
@@ -12533,7 +12640,10 @@
           "show-panel": false
         }
       ],
-      "shape": "CUBE"
+      "shape": "CUBE",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "basebutton",
@@ -12580,7 +12690,7 @@
               "slot": 0,
               "label": "Notify actor (gets 'trigger when the button is flopped)",
               "accepts": [
-                "any"
+                "event:trigger"
               ],
               "required": false
             },
@@ -12589,7 +12699,8 @@
               "slot": 0,
               "label": "Button chain: next (with no notify actor, 'trigger goes to the whole chain)",
               "accepts": [
-                "any"
+                "basebutton",
+                "event:trigger"
               ],
               "required": false
             },
@@ -12598,7 +12709,8 @@
               "slot": 0,
               "label": "Button chain: previous",
               "accepts": [
-                "any"
+                "basebutton",
+                "event:trigger"
               ],
               "required": false
             }
@@ -12607,7 +12719,10 @@
       ],
       "shape": "CUBE",
       "glb": "levels/sunken/generic-button-lod0.glb",
-      "description": "Flop (ground-pound) button. Sends 'trigger to its notify actor: toggles an eco door's lock, opens a sun iris door, lowers a swamp gate ... Stays down unless it has a timeout."
+      "description": "Flop (ground-pound) button. Sends 'trigger to its notify actor (or, with none, to its whole button chain). Actors that react are listed when linking: doors (eco doors toggle their lock), gates, rising platforms, Citadel coils / hoses ... Stays down unless it has a timeout.",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "shover",
@@ -12693,7 +12808,10 @@
         "swamp-obs.o"
       ],
       "shape": "CUBE",
-      "description": "Lowers for good when it gets 'trigger (e.g. a button's notify actor)."
+      "description": "Lowers for good when it gets 'trigger (e.g. a button's notify actor).",
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "gorge-pusher",
@@ -14023,6 +14141,11 @@
             }
           ]
         }
+      ],
+      "textures": [
+        [
+          "zoomerhud"
+        ]
       ]
     },
     {
@@ -14175,7 +14298,10 @@
           ]
         }
       ],
-      "spawnable": false
+      "spawnable": false,
+      "reacts_to": [
+        "trigger"
+      ]
     },
     {
       "etype": "rolling-lightning-mole",

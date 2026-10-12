@@ -1,0 +1,81 @@
+;; Muse for custom levels. Vanilla only closes the misty-muse reminder when it
+;; is caught (the sculptor gives the cell later). This child plays the same catch
+;; cutscene, then gives the cell of its own game task at Jak (vanilla's
+;; non-'play branch of muse-caught, muse.gc). No task: nothing is given.
+(deftype __TYPE__ (muse) ()
+  (:states __TYPE__-caught))
+
+(defmethod touch-handler ((this __TYPE__) (arg0 process) (arg1 event-message-block))
+  (go __TYPE__-caught))
+
+(defmethod attack-handler ((this __TYPE__) (arg0 process) (arg1 event-message-block))
+  (go __TYPE__-caught))
+
+(defstate __TYPE__-caught (__TYPE__)
+  :event #f
+  :trans
+    (behavior ()
+      (spool-push *art-control* (-> self anim name) 0 self -1.0))
+  :code
+    (behavior ()
+      (sound-play "money-pickup")
+      (process-entity-status! self (entity-perm-status dead) #t)
+      (suspend)
+      (when (send-event *target* 'clone-anim self)
+        (set-blackout-frames (seconds 10))
+        (let ((gp-1 (res-lump-struct (-> self entity) 'movie-pos vector)))
+          (cond
+            (gp-1 (move-to-point! (-> self collide-info) gp-1) (set-yaw-angle-clear-roll-pitch! (-> self collide-info) (-> gp-1 w)))
+            (else
+             (move-to-point! (-> self collide-info) (-> *target* control trans))
+             (quaternion-copy! (-> self collide-info quat) (-> *target* control quat))
+             (move-to-ground (-> self collide-info) 40960.0 40960.0 #f (collide-kind background)))))
+        (send-event *target* 'trans 'save (-> self old-target-pos))
+        (send-event (ppointer->process (-> *target* sidekick)) 'matrix 'play-anim)
+        (send-event *target* 'blend-shape #t)
+        (if #t
+          (set! (-> self trans-hook)
+                (lambda :behavior muse ()
+                  (spool-push *art-control* (-> self victory-anim name) 0 self -1.0)
+                  (none))))
+        (add-setting! 'music-volume 'rel (-> *setting-control* current music-volume-movie) 0)
+        (add-setting! 'sfx-volume 'rel (-> *setting-control* current sfx-volume-movie) 0)
+        (add-setting! 'ambient-volume 'rel (-> *setting-control* current ambient-volume-movie) 0)
+        (logclear! (-> self mask) (process-mask enemy))
+        (process-spawn othercam self 3 #f #t :to self)
+        (auto-save-command 'auto-save 0 0 *default-pool*)
+        (ja-play-spooled-anim (-> self anim)
+                              (the-as art-joint-anim muse-idle-ja)
+                              (the-as art-joint-anim muse-idle-ja)
+                              (the-as (function process-drawable symbol) false-func))
+        (remove-setting! 'music-volume)
+        (remove-setting! 'sfx-volume)
+        (remove-setting! 'ambient-volume)
+        (send-event *target* 'blend-shape #f)
+        (cond
+          (#t
+           (set-blackout-frames 0)
+           (ja-channel-set! 0)
+           (ja-post)
+           (clear-collide-with-as (-> self collide-info))
+           (send-event *target* 'trans 'restore (-> self old-target-pos))
+           (let ((gp-4 (ppointer->handle (if (nonzero? (-> self entity extra perm task))
+                                            (birth-pickup-at-point (target-pos 0)
+                                                                (pickup-type fuel-cell)
+                                                                (the float (-> self entity extra perm task))
+                                                                #f
+                                                                self
+                                                                (the-as fact-info #f))))))
+             (send-event (handle->process (the-as handle gp-4)) 'pickup)
+             (while (handle->process (the-as handle gp-4))
+               (suspend))))
+          (else
+           (send-event *target* 'trans 'restore (-> self old-target-pos))
+           (set-blackout-frames 0)
+           (set-blackout-frames (seconds 0.1))))))
+  :post
+    (behavior ()
+      (nav-enemy-method-51 self)
+      (level-hint-surpress!)
+      (kill-current-level-hint '() '() 'exit)
+      (ja-post)))

@@ -641,6 +641,17 @@ def actor_tpages(etype: str) -> list:
     return []
 
 
+def actor_textures(etype: str) -> list:
+    """Extra textures for the level .jsonc "textures" list ([tpage-name,
+    texture...] entries) that an actor draws without a model, so build_level
+    doesn't copy them from its art groups: HUD sprites (the zoomer gauge),
+    eye textures. From the DB entry (or the nearest parent) "textures" key."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        if "textures" in rec:
+            return [list(x) for x in rec["textures"] or []]
+    return []
+
+
 def category(cat_id: str) -> dict:
     """Category record by id ({} when the category isn't listed)."""
     for c in DB.get("Categories", []):
@@ -927,14 +938,31 @@ def supports_aggro_trigger(etype: str) -> bool:
     return has_panel(etype, "aggro-trigger")
 
 
+def reacts_to(etype: str, message: str) -> bool:
+    """True when the actor (or a parent type) lists `message` in its
+    "reacts_to" key: the events it does something with (e.g. "trigger" for a
+    button's notify actor). The lists come from a scan of the game source."""
+    recs = [find_actor(etype) or {}] + list(parent_chain(etype))
+    return any(message in (r.get("reacts_to") or []) for r in recs)
+
+
 def link_accepts(accepted, target_etype: str) -> bool:
     """True when `target_etype` fits a link slot's "accepts" list: "any"
-    anywhere in the list, the etype itself, or any of its parent types
-    (accepts ["basebutton"] also takes warp-gate-switch, a basebutton child)."""
+    anywhere in the list, the etype itself, any of its parent types
+    (accepts ["basebutton"] also takes warp-gate-switch, a basebutton child),
+    or "event:<msg>" for any actor that reacts to that message (reacts_to)."""
     acc = list(accepted or [])
     if not acc or "any" in acc or target_etype in acc:
         return True
+    if any(a.startswith("event:") and reacts_to(target_etype, a[6:]) for a in acc):
+        return True
     return any(p.get("etype") in acc for p in parent_chain(target_etype))
+
+
+def accepts_text(accepted) -> str:
+    """Readable "accepts" list for labels / warnings."""
+    return ", ".join(f"anything that reacts to '{a[6:]}" if a.startswith("event:") else a
+                     for a in (accepted or []))
 
 
 def link_slot(etype: str, lump_key: str, slot: int) -> dict:
