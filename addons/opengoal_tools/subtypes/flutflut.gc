@@ -24,8 +24,24 @@
                       (adgif-shader-login-no-remap sh)))))))))))
   (none))
 
+;; The eyes are drawn from GS texture addresses bound when a page is uploaded in
+;; the level's pris bucket. Page 659 isn't one of this level's pages, so a child
+;; process re-binds it in that bucket every frame (PC: just the address binding).
+(defun __TYPE__-upload-eye-page ((bucket bucket-id))
+  (let ((pg (-> *texture-page-dir* entries 659 page)))
+    (if (and pg (nonzero? pg))
+      (upload-vram-pages *texture-pool* (-> *texture-pool* segment-common) pg -1 bucket)))
+  (none))
+
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (__TYPE__-fix-eyes "flut-saddle")
   (__TYPE__-fix-eyes "eichar-flut+0")
+  (process-spawn-function process
+                          (lambda :behavior process ((b bucket-id))
+                            (loop
+                              (__TYPE__-upload-eye-page b)
+                              (suspend)))
+                          (if (zero? (-> arg0 extra level index)) (bucket-id pris-tex0) (bucket-id pris-tex1))
+                          :to this)
   (call-parent-method this arg0)
   (none))
