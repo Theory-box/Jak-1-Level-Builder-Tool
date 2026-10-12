@@ -752,6 +752,12 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         _sv = getattr(scene.og_props, "spawn_variant", "")
         if _vf and _sv and _sv != "NONE" and any(c.get("value") == _sv for c in _db.variant_choices(etype)):
             actor[_vf["key"]] = _sv
+        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
+        if _prefs and _prefs.preferences.preview_models:
+            try:
+                _mp.attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
+            except Exception as e:
+                log(f"model_preview: {e}")
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
         self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")

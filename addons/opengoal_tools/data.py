@@ -220,6 +220,18 @@ TEXTURE_SOURCE_ITEMS = [
     ("misty",    "Misty Island",     "Borrow Misty textures + sky"),
     ("rolling",  "Rolling Hills",    "Borrow Rolling Hills textures + sky"),
     ("snow",     "Snowy Mountain",   "Borrow Snowy Mountain textures + sky"),
+    ("training", "Geyser Rock",      "Borrow Geyser Rock textures + sky"),
+    ("firecanyon", "Fire Canyon",    "Borrow Fire Canyon textures + sky"),
+    ("swamp",    "Boggy Swamp",      "Borrow Boggy Swamp textures + sky"),
+    ("sunken",   "Lost Precursor City", "Borrow Lost Precursor City textures + sky"),
+    ("sunkenb",  "Lost Precursor City (helix)", "Borrow Lost Precursor City (helix part) textures + sky"),
+    ("ogre",     "Mountain Pass",    "Borrow Mountain Pass textures + sky"),
+    ("maincave", "Spider Cave",      "Borrow Spider Cave textures + sky"),
+    ("darkcave", "Spider Cave (dark)", "Borrow Spider Cave (dark part) textures + sky"),
+    ("robocave", "Spider Cave (robot)", "Borrow Spider Cave (robot part) textures + sky"),
+    ("lavatube", "Lava Tube",        "Borrow Lava Tube textures + sky"),
+    ("citadel",  "Gol and Maia's Citadel", "Borrow Citadel textures + sky"),
+    ("finalboss", "Final Boss",      "Borrow Final Boss textures + sky"),
 ]
 TEXTURE_SOURCE_VALUES = [it[0] for it in TEXTURE_SOURCE_ITEMS]
 
