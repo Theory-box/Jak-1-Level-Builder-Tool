@@ -130,6 +130,9 @@ class SpawnItem:
     needs_target_sel: bool = False
     icon: str = "EMPTY_DATA"
     etype: Optional[str] = None
+    # special items whose pre-spawn "variant" list comes from this etype's
+    # variant field (Water Anim looks) without selecting it as an entity
+    variant_etype: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +212,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         operator="og.add_water_volume",
         op_kwargs=(("etype", "water-anim"),),
         pre_spawn_fields=("variant",),
-        etype="water-anim",
+        variant_etype="water-anim",
         icon="MOD_OCEAN",
     ),
     SpawnItem(

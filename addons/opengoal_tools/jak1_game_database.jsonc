@@ -7129,10 +7129,6 @@
           "description": "Task this actor is tied to (its saved state, the cell it gives)."
         },
         {
-          "panel": "movie-pos",
-          "description": "Cell mode: where the cell's pickup plays (cone = facing). Not set: at the peeper."
-        },
-        {
           "panel": "path",
           "required": true,
           "description": "Patrol points: it wanders between them, then flees to its hole when Jak comes near."
@@ -11759,7 +11755,13 @@
       "art_group": "lightning-mole-ag.go",
       "tpage_group": "Rolling",
       "code": "rolling-lightning-mole.o",
-      "description": "Peeks out of the lightning mole's hole; link it as the mole's peeper."
+      "description": "Peeks out of the lightning mole's hole; link it as the moles' peeper. Its movie-pos is where the moles' cell pickup plays.",
+      "panels": [
+        {
+          "panel": "movie-pos",
+          "description": "Lightning mole cell mode: where the cell's pickup plays (cone = facing), for every mole using this peeper. Not set: at the peeper."
+        }
+      ]
     },
     {
       "etype": "cave-trap",

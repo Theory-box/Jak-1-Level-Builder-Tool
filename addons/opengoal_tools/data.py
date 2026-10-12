@@ -379,8 +379,9 @@ def _spawn_variant_cb(self, context):
     from .spawn_items import get_selected_spawn_item
     items = []
     item = get_selected_spawn_item(context.scene)
-    if item is not None and getattr(item, "etype", None):
-        for c in _db.variant_choices(item.etype):
+    vet = (getattr(item, "etype", None) or getattr(item, "variant_etype", None)) if item is not None else None
+    if vet:
+        for c in _db.variant_choices(vet):
             vid = c.get("id", c.get("value"))
             items.append((vid, c.get("label", vid), ""))
     if not items:
