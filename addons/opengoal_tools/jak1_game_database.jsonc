@@ -7814,7 +7814,12 @@
         "green-eco-lurker.o",
         "robotboss.o"
       ],
-      "glb": "levels/finalboss/robotboss-basic-lod0.glb"
+      "glb": "levels/finalboss/robotboss-basic-lod0.glb",
+      "offset": [
+        50.0,
+        -50.0,
+        0.0
+      ]
     },
     {
       "etype": "sage-finalboss",
@@ -10922,7 +10927,7 @@
     },
     {
       "etype": "revcycle",
-      "label": "Rev Cycle",
+      "label": "Rev Cycle (Zoomer prop)",
       "category": "Visuals",
       "parent": "process-drawable",
       "code": "village-obs.o",
@@ -11096,7 +11101,7 @@
     },
     {
       "etype": "pistons",
-      "label": "Generator Pistons",
+      "label": "Gondola Pistons",
       "category": "Visuals",
       "parent": "process-drawable",
       "code": "village3-obs.o",

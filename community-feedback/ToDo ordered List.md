@@ -907,6 +907,8 @@ Another_actor_name is missing 1 required field:
 - path
 Click to open to the first panel.
 ```
+### Sound bank warnings
+If an actor need sound that are part of a soundbank that isn't loaded on the level. This could also give a warning somewhere. "Need X soundbank for Y sound"
 
 ---
 
