@@ -639,7 +639,8 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 Camera aren't using the path panel. They should, even if it put the panel a different place.
 ### Volumes
 Volumes should also use the normal volumes panel. Volumes for camera can also have priority volumes and cutout volumes.
-Same as for multiple paths, those should be flags that you set in the volume panel that allows multiple volumes per menu, if it needs the priority volumes and same for the cutout
+Same as for multiple paths, those should be flags that you set in the volume panel that allows multiple volumes per menu, if it needs the priority volumes and same for the cutout.
+These can be features of volumes in general which needs to be turned on for actors that need it. (at this moment I think that's only cameras but can be checked to see if useable elsewhere)
 
 ---
 
@@ -925,6 +926,10 @@ To fix this, while still keeping the option there. Those panels that aren't spec
 - to an always loaded file in game.gd
 - As it's the same type that'll be used in all levels
 
+---
+
+## Give the same link feature of navmesh to paths
+When multiple actors are using the same paths, have the same feature that warns the user and allows you to move all other actors to a path-actor connected to the selected actor from one button. 
 
 ---
 
