@@ -561,33 +561,11 @@ def _draw_selected_camera(layout, sel, scene):
             prow.operator("og.spawn_cam_pivot", text="Add Pivot")
 
     elif mode == "spline":
-        # Path camera (cam-spline): rides along this camera's own path — the
-        # same waypoint / curve list actors use.
+        # Path camera (cam-spline): the standard Path panel (DB Cameras.panels.path)
+        from .actor import draw_path_panel
         pbox = box.box()
-        n_pts = 0
-        for s in sel.og_waypoint_sources:
-            o = s.obj
-            if o and o.type == "CURVE":
-                n_pts += sum(len(sp.bezier_points) or len(sp.points) for sp in o.data.splines)
-            elif o and o.type == "EMPTY":
-                n_pts += 1
-        pbox.label(text=f"Path ({n_pts} point{'s' if n_pts != 1 else ''})",
-                   icon="CHECKMARK" if n_pts >= 4 else "ERROR")
-        if n_pts < 4:
-            pbox.label(text="Needs 4+ points (cubic path)", icon="INFO")
-        lrow = pbox.row()
-        lrow.template_list("OG_UL_WaypointSources", "", sel, "og_waypoint_sources",
-                           sel, "og_waypoint_sources_index", rows=3)
-        side = lrow.column(align=True)
-        side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM")
-        side.operator("og.waypoint_source_remove", text="", icon="X")
-        side.separator()
-        side.operator("og.waypoint_source_move", text="", icon="TRIA_UP").direction = "UP"
-        side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN").direction = "DOWN"
-        arow = pbox.row(align=True)
-        arow.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS").enemy_name = sel.name
-        arow.operator("og.waypoint_source_link_curve", text="Link Curve",
-                      icon="CURVE_DATA").actor_name = sel.name
+        pbox.label(text="Path", icon="ANIM")
+        draw_path_panel(pbox, bpy.context, sel, None, cam_db.get("panels", {}).get("path"))
 
     # ── Flags (DB Cameras.flags, built-in only) ─────────────────────────
     if builtin:
@@ -644,29 +622,15 @@ def _draw_selected_camera(layout, sel, scene):
     except Exception:
         pass
 
-    # ── Linked trigger volumes ───────────────────────────────────────────
-    vols = _vols_linking_to(scene, sel.name)
+    # ── Volumes: the standard Volume panel (DB Cameras.panels.volume) ────
+    from .actor import draw_volume_panel
     vbox = layout.box()
-    vbox.label(text="Trigger Volumes", icon="MESH_CUBE")
-    if vols:
-        for v in vols:
-            row = vbox.row(align=True)
-            row.label(text=v.name, icon="CHECKMARK")
-            if builtin:
-                for entry in _vol_links(v):
-                    if entry.target_name == sel.name:
-                        row.prop(entry, "cam_role", text="")
-                        break
-            op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
-            op.obj_name = v.name
-            op = row.operator("og.remove_vol_link", text="", icon="X")
-            op.vol_name = v.name
-            op.target_name = sel.name
-    else:
-        vbox.label(text="No trigger volume — camera never activates", icon="ERROR")
-    op = vbox.operator("og.spawn_volume_autolink", text="Add Volume", icon="ADD")
-    op.target_name = sel.name
-    _draw_vol_link_add(vbox, sel)
+    vbox.label(text="Volumes", icon="MESH_CUBE")
+    vopts = dict(cam_db.get("panels", {}).get("volume") or {})
+    if not builtin:
+        vopts.pop("roles", None)     # roles need built-in cameras
+    vopts["empty_text"] = "No volume — the camera never activates"
+    draw_volume_panel(vbox, bpy.context, sel, vopts)
 
 
 

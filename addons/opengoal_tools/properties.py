@@ -957,7 +957,7 @@ class OGVolLink(PropertyGroup):
         default="cue-chase",
         description="Event sent to the enemy on volume enter (nav-enemies only — ignored for cameras/checkpoints)",
     )
-    cam_role:    EnumProperty(
+    role:        EnumProperty(
         name="Volume role",
         items=[
             ("vol",       "Volume",    "Camera is used while Jak is inside"),
@@ -965,7 +965,7 @@ class OGVolLink(PropertyGroup):
             ("cutoutvol", "Cut-out",   "Camera is NOT used while Jak is inside (cuts a hole in its volume)"),
         ],
         default="vol",
-        description="How a linked camera uses this volume (built-in cameras only)",
+        description="How the linked target uses this volume (volume panel \"roles\"; cameras: built-in only)",
     )
 
 

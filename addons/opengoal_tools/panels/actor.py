@@ -131,21 +131,37 @@ class OG_PT_ActorVolume(Panel):
         return len(parts) >= 3 and parts[0] == "ACTOR" and _db.needs_vol(parts[1])
 
     def draw(self, ctx):
-        from ..export import _vols_linking_to, _vol_has_link_to
-        from .selected import _draw_link_search
-        layout = self.layout
         sel = ctx.active_object
+        et = sel.name.split("_", 2)[1]
+        draw_volume_panel(self.layout, ctx, sel, {
+            "multiple": _db.panel_option(et, "volume", "multiple", False),
+            "roles": _db.panel_option(et, "volume", "roles", None)})
+
+
+def draw_volume_panel(layout, ctx, sel, opts=None):
+    """The Volume panel body, shared by actors and cameras. opts (DB volume
+    panel options; cameras: Cameras.panels.volume):
+      "multiple": several volumes are used (else only the first exports)
+      "roles": role choices shown per volume (vol / pvol / cutoutvol)"""
+    from ..export import _vols_linking_to, _vol_has_link_to, _vol_links
+    from .selected import _draw_link_search
+    opts = opts or {}
+    if True:
         vols = _vols_linking_to(ctx.scene, sel.name)
         for v in vols:
             row = layout.row(align=True)
             row.label(text=f"✓ {v.name}", icon="CHECKMARK")
+            if opts.get("roles"):
+                entry = next((e for e in _vol_links(v) if e.target_name == sel.name), None)
+                if entry is not None:
+                    row.prop(entry, "role", text="")
             op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = v.name
             op = row.operator("og.remove_vol_link", text="", icon="X"); op.vol_name = v.name; op.target_name = sel.name
-        if len(vols) > 1:
+        if len(vols) > 1 and not opts.get("multiple"):
             warn = layout.row(); warn.alert = True
             warn.label(text="Only the first volume is exported", icon="ERROR")
         if not vols:
-            layout.label(text="No volume linked", icon="INFO")
+            layout.label(text=opts.get("empty_text") or "No volume linked", icon="ERROR" if opts.get("empty_text") else "INFO")
         layout.operator("og.add_actor_volume", text="Add Volume", icon="ADD").actor_name = sel.name
         for m in [o for o in ctx.selected_objects if o.type == "MESH" and o is not sel][:6]:
             if m.name.startswith("VOL_"):
@@ -1209,15 +1225,23 @@ class OG_PT_ActorWaypoints(Panel):
                 and _actor_uses_waypoints(parts[1]))
 
     def draw(self, ctx):
-        layout = self.layout
-        sel    = ctx.active_object
+        sel = ctx.active_object
+        draw_path_panel(self.layout, ctx, sel, sel.name.split("_", 2)[1])
+
+
+
+def draw_path_panel(layout, ctx, sel, etype, opts=None):
+    """The Path panel body, shared by actors (OG_PT_ActorWaypoints) and
+    cameras (Path mode). opts (cameras: DB Cameras.panels.path):
+      "min-points": int, "lump": fixed lump name (no Lump / Keyframe / extra
+      paths shown), "linear-only": bool."""
+    opts = opts or {}
+    if True:
         scene  = ctx.scene
-        parts  = sel.name.split("_", 2)
-        etype  = parts[1]
-        einfo  = ENTITY_DEFS.get(etype, {})
+        einfo  = ENTITY_DEFS.get(etype, {}) if etype else {}
 
         sources = sel.og_waypoint_sources
-        legacy_wps = self._discover_legacy_wps(sel, scene)
+        legacy_wps = _legacy_wps(sel, scene)
         n_sources = len(sources)
 
         # Total point count for the header — sum across the list, expanding
@@ -1270,7 +1294,7 @@ class OG_PT_ActorWaypoints(Panel):
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
         from ..export import path_modes as _pm
-        linear_only = _db.path_linear_only(etype)
+        linear_only = bool(opts.get("linear-only")) if not etype else _db.path_linear_only(etype)
         mode_box = layout.box()
         if linear_only:
             mode_box.label(text="Path Mode (this actor only moves in straight lines):", icon="IPO_LINEAR")
@@ -1292,7 +1316,7 @@ class OG_PT_ActorWaypoints(Panel):
             if _warn:
                 w = info.row(); w.alert = True
                 w.label(text=_warn, icon="ERROR")
-            draw_knot_editor(mode_box, sel, (sel.og_path_lump or "path").strip(), sel.name, -1, _knots,
+            draw_knot_editor(mode_box, sel, opts.get("lump") or (sel.og_path_lump or "path").strip(), sel.name, -1, _knots,
                              "og_path_knots_manual", "og_path_knots", "og_path_knots_index",
                              "og_path_knots_open")
         except Exception:
@@ -1300,7 +1324,7 @@ class OG_PT_ActorWaypoints(Panel):
 
         # Validation hints. Path panel options: "required" (errors without a
         # path), "min-points" (e.g. plat-button / sync platforms need 2).
-        min_pts = int(_db.panel_option(etype, "path", "min-points", 1) or 1)
+        min_pts = int(opts.get("min-points") or (_db.panel_option(etype, "path", "min-points", 1) if etype else 1) or 1)
         if einfo.get("needs_path") or min_pts > 1:
             pt_count = sum(
                 (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
@@ -1315,9 +1339,12 @@ class OG_PT_ActorWaypoints(Panel):
                     layout.label(text=f"Add ≥ {min_pts} waypoints to make it move", icon="INFO")
 
         # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
-        self._draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
+        if not opts.get("lump"):
+            _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
 
-    def _draw_extra_paths(self, layout, sel, scene, etype, einfo, linear_only):
+
+def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
+    if True:
         from ..export import path_modes as _pm
         layout.separator(factor=0.5)
         hdr = layout.row(align=True)
@@ -1391,16 +1418,16 @@ class OG_PT_ActorWaypoints(Panel):
         if einfo.get("needs_pathb") and not has_b:
             layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
 
-    def _discover_legacy_wps(self, actor_obj, scene):
-        """Return the list of legacy <actor>_wp_NN empty objects in name order.
-        Used to show the migration button and as the fallback path count."""
-        prefix = actor_obj.name + "_wp_"
-        return sorted(
-            [o for o in _level_objects(scene)
-             if o.name.startswith(prefix) and o.type == "EMPTY"
-             and o.name[len(prefix):].isdigit()],     # not extra-path empties
-            key=lambda o: o.name
-        )
+def _legacy_wps(actor_obj, scene):
+    """Return the list of legacy <actor>_wp_NN empty objects in name order.
+    Used to show the migration button and as the fallback path count."""
+    prefix = actor_obj.name + "_wp_"
+    return sorted(
+        [o for o in _level_objects(scene)
+         if o.name.startswith(prefix) and o.type == "EMPTY"
+         and o.name[len(prefix):].isdigit()],     # not extra-path empties
+        key=lambda o: o.name
+    )
 
 
 
