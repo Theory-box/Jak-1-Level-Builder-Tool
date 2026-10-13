@@ -324,6 +324,8 @@ def lump_reference(etype: str) -> list[dict]:
             add("scale", "float", "Scale panel: the empty's scale" + off, psrc)
         elif pid == "fact-options":
             add("options", "enum-uint32", "Options panel: fact-options bits" + off, psrc)
+        elif pid == "movie-pos":
+            add("movie-pos", "movie-pos", "Movie Position panel: 'x y z angle' per position" + off, psrc)
         for f in p["fields"]:
             lp = f.get("lump") if isinstance(f.get("lump"), dict) else f.get("lump_bit")
             if isinstance(lp, dict) and lp.get("key"):
@@ -501,15 +503,25 @@ def legacy_keys() -> dict:
 
 
 def prop_getter(obj):
-    """get(key, default) for an object's props that also reads legacy keys."""
+    """get(key, default) for an object's props that also reads legacy keys.
+    A selected variant choice's "props" ({field key: value}) win over the
+    object's own values (e.g. a water-anim look sets its liquid)."""
     leg = legacy_keys()
-    def get(k, d=None):
+    def base(k, d=None):
         if k in obj.keys():
             return obj.get(k)
         old = leg.get(k)
         if old and old in obj.keys():
             return obj.get(old)
         return d
+    name = getattr(obj, "name", "") or ""
+    forced = {}
+    if name.startswith("ACTOR_") and name.count("_") >= 2:
+        forced = actor_variant(name.split("_", 2)[1], base).get("props") or {}
+    if not forced:
+        return base
+    def get(k, d=None):
+        return forced[k] if k in forced else base(k, d)
     return get
 
 
@@ -616,15 +628,6 @@ def custom_fields(etype: str) -> list[dict]:
     return panel_fields(etype, "custom-fields")
 
 
-def schema_export_enabled(etype: str) -> bool:
-    """True if the actor or any ancestor is flagged `schema_export` — so a parent
-    can switch on schema export for a whole family (e.g. enemy defaults)."""
-    actor = find_actor(etype)
-    if actor and actor.get("schema_export"):
-        return True
-    return any(p.get("schema_export") for p in parent_chain(etype))
-
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Section accessors (stable names — prefer these over raw DB['...'])
 # ═══════════════════════════════════════════════════════════════════════════
@@ -636,24 +639,27 @@ def categories() -> list[dict]:
     return DB["Categories"]
 
 
-def tpage_group_level(group: str) -> dict:
-    """The Levels entry a tpage_group names: the one whose "tpage_group"
-    matches (finalboss = "Final"), else the one named group.lower()."""
-    if not group:
-        return {}
-    for lv in DB.get("Levels", []):
-        if lv.get("tpage_group") == group:
-            return lv
-    return level(group.lower()) or {}
-
-
 def actor_tpages(etype: str) -> list:
-    """Tpage .go files an actor needs: its own "tpages" when listed (an
-    override), else the tpages of its tpage_group's level."""
-    a = find_actor(etype) or {}
-    if "tpages" in a:
-        return list(a["tpages"] or [])
-    return list(tpage_group_level(a.get("tpage_group", "")).get("tpages", []) or [])
+    """Tpage .go files an actor needs in its level's DGO: the "tpages" its
+    DB entry (or the nearest parent) lists, else none. On PC the actor
+    models take their textures from the level's FR3 and particles use the
+    always-loaded "effects" tpage, so a tpage is only listed where an actor
+    was checked in game and needs one (they fill the level heap on load)."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        if "tpages" in rec:
+            return list(rec["tpages"] or [])
+    return []
+
+
+def actor_textures(etype: str) -> list:
+    """Extra textures for the level .jsonc "textures" list ([tpage-name,
+    texture...] entries) that an actor draws without a model, so build_level
+    doesn't copy them from its art groups: HUD sprites (the zoomer gauge),
+    eye textures. From the DB entry (or the nearest parent) "textures" key."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        if "textures" in rec:
+            return [list(x) for x in rec["textures"] or []]
+    return []
 
 
 def category(cat_id: str) -> dict:
@@ -677,6 +683,29 @@ def actor_color(etype: str) -> tuple:
     """Viewport color for an actor: its category's color (set on the empty
     and on its preview mesh)."""
     return category_color((find_actor(etype) or {}).get("category", ""))
+
+
+def rotation_offset(etype: str):
+    """DB "rotation_offset" [x, y, z] in degrees (the actor's own, else the
+    nearest parent's), or None: the empty's starting rotation when spawned
+    (export takes the empty's rotation as it is). swingpole: 90° on X, the
+    game reads the pole direction from its local Y."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        v = rec.get("rotation_offset")
+        if v:
+            return tuple(float(x) for x in v)
+    return None
+
+
+def rotation_lock(etype: str) -> tuple:
+    """DB "rotation_lock" (e.g. ["x", "y"]: only turns around Z) — the
+    actor's own, else the nearest parent's. Set as Blender's rotation locks
+    on spawn, after the offset; users can unlock them."""
+    for rec in [find_actor(etype) or {}] + parent_chain(etype):
+        v = rec.get("rotation_lock")
+        if v is not None:
+            return tuple(a in [x.lower() for x in v] for a in "xyz")
+    return (False, False, False)
 
 
 def empty_size(etype: str):
@@ -714,7 +743,8 @@ def bank_sfx() -> dict[str, list[str]]:
 
 
 def crate_types() -> list[dict]:
-    return DB["CrateTypes"]
+    """The crate's variant choices (defined on the crate actor)."""
+    return variant_choices("crate")
 
 
 def crate_pickups() -> list[dict]:
@@ -723,6 +753,19 @@ def crate_pickups() -> list[dict]:
 
 def game_tasks() -> list[dict]:
     return DB["GameTasks"]
+
+
+def task_expression(get, key: str):
+    """GOAL expression for a "task" field ("(game-task jungle-eggtop)"), or
+    None for no task. "custom" reads <key>_custom: a task name (wrapped in
+    (game-task ...)) or a full expression in parentheses."""
+    v = get(key, "none") or "none"
+    if v == "custom":
+        v = str(get(key + "_custom", "") or "").strip()
+        if not v:
+            return None
+        return v if v.startswith("(") else f"(game-task {v})"
+    return None if v == "none" else f"(game-task {v})"
 
 
 def pat() -> dict:
@@ -877,20 +920,59 @@ def uses_navmesh(etype: str) -> bool:
     return panel_exports(etype, "nav-mesh")
 
 
+def can_jump(etype: str) -> bool:
+    """Nav-mesh panel "can-jump": true — a nav-enemy whose nav-enemy-info has
+    a jump animation (jump-anim != -1), so it can follow cue-jump-to-point
+    (battlecontroller spawn paths; nav-mesh jumps later). Read even when a
+    pinned override stops the panel exporting."""
+    p = actor_panels(etype).get("nav-mesh")
+    return bool(p and p["options"].get("can-jump"))
+
+
+def jumping_enemies() -> list[str]:
+    """Every nav-enemy (child / sub-child of nav-enemy) tagged can-jump."""
+    return [a["etype"] for a in actors()
+            if can_jump(a["etype"]) and any(p.get("etype") == "nav-enemy" for p in parent_chain(a["etype"]))]
+
+
+def battlecontroller_lurkers() -> list[str]:
+    """Jumping enemies a battlecontroller can spawn: all but the ones marked
+    "battlecontroller_lurker": false (no initialize-collision of their own,
+    so nav-enemy-init-by-other crashes on them)."""
+    return [et for et in jumping_enemies() if (find_actor(et) or {}).get("battlecontroller_lurker", True)]
+
+
 def supports_aggro_trigger(etype: str) -> bool:
     """"aggro-trigger" panel: nav-enemies handle 'cue-chase / 'cue-patrol /
     'go-wait-for-cue (nav-enemy.gc). On the nav-enemy parent."""
     return has_panel(etype, "aggro-trigger")
 
 
+def reacts_to(etype: str, message: str) -> bool:
+    """True when the actor (or a parent type) lists `message` in its
+    "reacts_to" key: the events it does something with (e.g. "trigger" for a
+    button's notify actor). The lists come from a scan of the game source."""
+    recs = [find_actor(etype) or {}] + list(parent_chain(etype))
+    return any(message in (r.get("reacts_to") or []) for r in recs)
+
+
 def link_accepts(accepted, target_etype: str) -> bool:
     """True when `target_etype` fits a link slot's "accepts" list: "any"
-    anywhere in the list, the etype itself, or any of its parent types
-    (accepts ["basebutton"] also takes warp-gate-switch, a basebutton child)."""
+    anywhere in the list, the etype itself, any of its parent types
+    (accepts ["basebutton"] also takes warp-gate-switch, a basebutton child),
+    or "event:<msg>" for any actor that reacts to that message (reacts_to)."""
     acc = list(accepted or [])
     if not acc or "any" in acc or target_etype in acc:
         return True
+    if any(a.startswith("event:") and reacts_to(target_etype, a[6:]) for a in acc):
+        return True
     return any(p.get("etype") in acc for p in parent_chain(target_etype))
+
+
+def accepts_text(accepted) -> str:
+    """Readable "accepts" list for labels / warnings."""
+    return ", ".join(f"anything that reacts to '{a[6:]}" if a.startswith("event:") else a
+                     for a in (accepted or []))
 
 
 def link_slot(etype: str, lump_key: str, slot: int) -> dict:
@@ -1006,7 +1088,7 @@ def choices_table(name: str) -> list[dict] | None:
 
 def preview_offset(etype: str, prop_get) -> list:
     """Default preview-mesh offset in Blender metres [x, y, z]. A selected
-    variant's `offset` overrides the actor's `preview_offset` (e.g. each bridge
+    variant's `offset` overrides the actor's own `offset` (e.g. each bridge
     variant shifts its mesh back by half its length so the preview matches where
     the bridge spawns centred in-game). A per-object override is applied by the
     caller on top of this."""
@@ -1014,7 +1096,7 @@ def preview_offset(etype: str, prop_get) -> list:
     if var.get("offset"):
         return list(var["offset"])
     a = find_actor(etype) or {}
-    return list(a.get("preview_offset") or [0.0, 0.0, 0.0])
+    return list(a.get("offset") or [0.0, 0.0, 0.0])
 
 
 def actor_variant(etype: str, prop_get) -> dict:
@@ -1052,7 +1134,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist", "fact-options", "scale")
+                  "spawner", "notice-dist", "fact-options", "scale", "movie-pos", "game-task")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:

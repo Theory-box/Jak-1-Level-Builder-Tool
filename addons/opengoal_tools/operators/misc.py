@@ -252,6 +252,52 @@ class OG_OT_ClearLauncherDest(Operator):
             del launcher["og_launcher_dest"]
         return {"FINISHED"}
 
+def _water_top(vol):
+    """World Z (game Y) of the highest vertex of a VOL_ mesh, or None."""
+    if not vol.data.vertices:
+        return None
+    return round(max((vol.matrix_world @ v.co).z for v in vol.data.vertices), 4)
+
+
+@bpy.app.handlers.persistent
+def _on_depsgraph_water(scene, depsgraph):
+    """Keep each water actor's surface at the top of its linked VOL_ mesh
+    while its "Manual surface height" is off (the water panel greys the
+    field out). Only runs when a VOL_ object / mesh changed."""
+    from .. import db as _wdb
+    names = set()
+    for u in depsgraph.updates:
+        idb = getattr(u.id, "original", u.id)
+        if isinstance(idb, bpy.types.Object) and idb.name.startswith("VOL_"):
+            names.add(idb.name)
+        elif isinstance(idb, bpy.types.Mesh):
+            names.update(o.name for o in bpy.data.objects
+                         if o.type == "MESH" and o.data == idb and o.name.startswith("VOL_"))
+    for vn in names:
+        vol = bpy.data.objects.get(vn)
+        if vol is None or vol.type != "MESH":
+            continue
+        for an in _vol_link_targets(vol):
+            a = bpy.data.objects.get(an)
+            if a is None or a.get("og_water_surface_manual") or a.name.count("_") < 2:
+                continue
+            if not _wdb.has_panel(a.name.split("_", 2)[1], "water"):
+                continue
+            top = _water_top(vol)
+            if top is not None and abs(float(a.get("og_water_surface", 0.0)) - top) > 1e-4:
+                a["og_water_surface"] = top
+
+
+def register_water_handler():
+    if _on_depsgraph_water not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(_on_depsgraph_water)
+
+
+def unregister_water_handler():
+    if _on_depsgraph_water in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(_on_depsgraph_water)
+
+
 class OG_OT_SyncWaterFromObject(Operator):
     """Set the water-vol surface height from the top of its linked VOL_ mesh."""
     bl_idname  = "og.sync_water_from_object"
@@ -272,7 +318,9 @@ class OG_OT_SyncWaterFromObject(Operator):
             self.report({"WARNING"}, "No VOL_ mesh linked to this water actor")
             return {"CANCELLED"}
         # Blender Z = game Y (up). Surface = top of the linked volume.
-        top_y = round(max((vol.matrix_world @ vtx.co).z for vtx in vol.data.vertices), 4)
+        top_y = _water_top(vol)
+        if top_y is None:
+            return {"CANCELLED"}
         o["og_water_surface"] = top_y
         self.report({"INFO"}, f"Water surface set to {top_y:.2f}m (top of {vol.name})")
         return {"FINISHED"}

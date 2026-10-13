@@ -1,0 +1,106 @@
+;; Dark plant for custom levels. Vanilla (rolling-obs.gc) starts gone and stops
+;; regrowing from the vanilla rolling-plants task, and finds gone neighbours by
+;; their vanilla state. This child uses its own (optional) game task instead:
+;; it stays gone once that task's cell is collected (give it the Happy Plant's
+;; task). Gone = hidden, which the Happy Plant subtype checks.
+(deftype __TYPE__ (dark-plant) ()
+  (:states __TYPE__-death __TYPE__-gone __TYPE__-idle __TYPE__-sprout __TYPE__-startup))
+
+;; a living (not hidden) neighbour plant keeps this one regrowing
+(defun __TYPE__-has-bad-neighbor ((this dark-plant))
+  (dotimes (i (-> this num-alts))
+    (let* ((e (-> this alts i))
+           (p (if e (-> e extra process))))
+      (if (and p (type-type? (-> p type) dark-plant)
+               (not (logtest? (-> (the-as dark-plant p) draw status) (draw-status hidden))))
+        (return #t))))
+  #f)
+
+(defun __TYPE__-regrow-ok? ((this dark-plant))
+  (let ((task (-> this entity extra perm task)))
+    (or (zero? task) (not (task-complete? *game-info* task)))))
+
+(defbehavior __TYPE__-trans __TYPE__ ()
+  (if (dark-plant-check-target self) (go __TYPE__-death))
+  (none))
+
+(defstate __TYPE__-sprout (__TYPE__)
+  :trans __TYPE__-trans
+  :code
+    (behavior ()
+      (dark-plant-randomize self)
+      (logclear! (-> self draw status) (draw-status hidden))
+      (sound-play "darkvine-grow")
+      (ja-no-eval :group! dark-plant-sprout-ja :num! (seek!) :frame-num 0.0)
+      (until (ja-done? 0)
+        (suspend)
+        (ja :num! (seek!)))
+      (go __TYPE__-idle))
+  :post ja-post)
+
+(defstate __TYPE__-gone (__TYPE__)
+  :code
+    (behavior ()
+      (logior! (-> self draw status) (draw-status hidden))
+      (let ((delay (+ (the int (rand-vu-float-range 0.0 1500.0)) 3000)))
+        (set-time! (-> self state-time))
+        (loop
+          (when (__TYPE__-regrow-ok? self)
+            (cond
+              ((time-elapsed? (-> self state-time) delay) (go __TYPE__-sprout))
+              ((dark-plant-check-target self) (set-time! (-> self state-time)))
+              ((not (__TYPE__-has-bad-neighbor self)) (set-time! (-> self state-time)))))
+          (suspend))))
+  :post ja-post)
+
+(defstate __TYPE__-death (__TYPE__)
+  :code
+    (behavior ()
+      (spawn (-> self part) (-> self root trans))
+      (ja-channel-push! 1 (seconds 0.2))
+      (sound-play "darkvine-kill")
+      (ja-no-eval :group! dark-plant-death-ja :num! (seek!) :frame-num 0.0)
+      (until (ja-done? 0)
+        (suspend)
+        (ja :num! (seek!)))
+      (go __TYPE__-gone))
+  :post ja-post)
+
+(defstate __TYPE__-idle (__TYPE__)
+  :trans __TYPE__-trans
+  :code
+    (behavior ()
+      (loop
+        (when (and (logtest? (-> self draw status) (draw-status was-drawn))
+                   *target*
+                   (>= 81920.0 (vector-vector-distance (-> self root trans) (-> *target* control trans))))
+          (if (rand-vu-percent? 0.3) (sound-play "darkvine-move")))
+        (let ((spd (+ 0.9 (* 0.25 (rand-float-gen)))))
+          (ja-no-eval :group! dark-plant-idle-ja :num! (seek! max spd) :frame-num 0.0)
+          (until (ja-done? 0)
+            (suspend)
+            (ja :num! (seek! max spd))))))
+  :post ja-post)
+
+(defstate __TYPE__-startup (__TYPE__)
+  :trans __TYPE__-trans
+  :code
+    (behavior ()
+      (ja-no-eval :group! dark-plant-idle-ja :num! (seek!) :frame-num (* (rand-float-gen) (the float (ja-num-frames 0))))
+      (until (ja-done? 0)
+        (suspend)
+        (ja :num! (seek!)))
+      (go __TYPE__-idle))
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *dark-plant-sg* '())
+  (set! (-> this part) (create-launch-control group-dark-plant this))
+  (set! (-> this num-alts) (min 4 (entity-actor-count (-> this entity) 'alt-actor)))
+  (dotimes (i (-> this num-alts))
+    (set! (-> this alts i) (entity-actor-lookup (-> this entity) 'alt-actor i)))
+  (dark-plant-randomize this)
+  (if (__TYPE__-regrow-ok? this) (go __TYPE__-startup) (go __TYPE__-gone))
+  (none))

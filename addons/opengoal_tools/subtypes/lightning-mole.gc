@@ -1,0 +1,125 @@
+;; Lightning mole for custom levels. Vanilla dives into a hole at a fixed
+;; Rolling Hills world position (*lightning-mole-hole*, rolling-lightning-mole.gc)
+;; and hides until its task's need-introduction is closed (the geologist does
+;; that in vanilla). This child (init and hiding state copied from vanilla):
+;;   - puts the hole at its linked peeper (alt-actor 0)
+;;   - "appear" lump: -1 = always there, else a task-status: it shows up once
+;;     its task's stage with that status is closed
+(deftype __TYPE__ (lightning-mole) ()
+  (:states __TYPE__-hiding))
+
+(defun __TYPE__-appears? ((this lightning-mole))
+  (let ((st (res-lump-value (-> this entity) 'appear int :default (the-as uint128 -1))))
+    (or (< (the-as int st) 0)
+        (zero? (-> this entity extra perm task))
+        (task-closed? (-> this entity extra perm task) (the-as task-status st)))))
+
+(defstate __TYPE__-hiding (__TYPE__)
+  :enter
+    (behavior ()
+      (ja-channel-set! 0)
+      (clear-collide-with-as (-> self collide-info)))
+  :trans
+    (behavior ()
+      (when (__TYPE__-appears? self)
+        (ja-channel-set! 1)
+        (ja :group! lightning-mole-idle-ja)
+        (restore-collide-with-as (-> self collide-info))
+        (go-virtual nav-enemy-idle)))
+  :code
+    (behavior ()
+      (loop
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))
+    (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
+    (set! (-> s4-0 reaction) default-collision-reaction)
+    (set! (-> s4-0 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+    (let ((s3-0 (new 'process 'collide-shape-prim-sphere s4-0 (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind enemy))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid attackable attackable-unused))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set-vector! (-> s3-0 local-sphere) 0.0 10240.0 0.0 10240.0)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this collide-info) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (let ((hole (entity-actor-lookup arg0 'alt-actor 0)))
+    (if hole (set! (-> *lightning-mole-hole* quad) (-> hole extra trans quad))))
+  (initialize-skeleton this *lightning-mole-sg* '())
+  (init-defaults! this *lightning-mole-nav-enemy-info*)
+  (logclear! (-> this nav flags) (nav-control-flags navcf5 navcf6 navcf7))
+  (set! (-> this draw origin-joint-index) (the-as uint 3))
+  (set! (-> this reaction-time) (seconds 0.05))
+  (set! (-> this last-reflection-time) 0)
+  (set! (-> this collide-info pause-adjust-distance) 122880.0)
+  (set! (-> this link) (new 'process 'actor-link-info this))
+  (set! (-> this alt-actor) (entity-actor-lookup arg0 'alt-actor 0))
+  (set! (-> this flee-info min-reflect-angle) 10922.667)
+  (set! (-> this flee-info max-reflect-angle) 14563.556)
+  (set! (-> this flee-info max-boundary-deflection) 18204.445)
+  (set! (-> this flee-info deflection-min-dist) 20480.0)
+  (set! (-> this flee-info deflection-max-dist) 49152.0)
+  (set! (-> this flee-info reflection-time) 225)
+  (set! (-> this flee-info travel-rotate-speed) 1820.4445)
+  (set! (-> this flee-info blend_interp_angle) 2184.5334)
+  (set! (-> this flee-info min-speed-adjust) 0.8)
+  (set! (-> this flee-info max-speed-adjust) 1.2)
+  (set! (-> this flee-info speed-adjust-center) 40960.0)
+  (set! (-> this flee-info speed-adjust-range) 20480.0)
+  (set! (-> this flee-info abort-notice-distance) 49152.0)
+  (set! (-> this flee-info min-notice-dist) 61440.0)
+  (set! (-> this flee-info max-notice-dist) 143360.0)
+  (set! (-> this flee-info min-stop-chase-dist) 40960.0)
+  (set! (-> this flee-info max-stop-chase-dist) 184320.0)
+  (set! (-> this flee-info max-flee-rotation) 364.0889)
+  (cond
+    ((and (-> this entity) (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+     (go lightning-mole-gone))
+    ((__TYPE__-appears? this)
+     (go (method-of-object this nav-enemy-idle)))
+    (else (go __TYPE__-hiding)))
+  (none))
+
+;; mode 1: the last mole caught (all moles of its next/prev chain caught, or a
+;; mole with no chain) gives its task's cell at the peeper. The cell is spawned
+;; under the peeper so its pickup plays at the PEEPER's movie-pos (one setting
+;; for all moles); the mole waits for it. It isn't marked dead until the cell is
+;; collected, so the cell comes back if Jak leaves without it. mode 0 is
+;; vanilla: the task only gets to need-reminder (the geologist gives the cell).
+(defun __TYPE__-all-caught? ((this lightning-mole))
+  (let ((e (-> this entity))
+        (all #t))
+    (while (prev-actor e)
+      (set! e (prev-actor e)))
+    (while e
+      (if (not (logtest? (-> e extra perm status) (entity-perm-status complete))) (set! all #f))
+      (set! e (next-actor e)))
+    all))
+
+(defmethod cleanup-for-death ((this __TYPE__))
+  (let ((task (-> this entity extra perm task)))
+    (cond
+      ((and (= (res-lump-value (-> this entity) 'mode int) 1)
+            (nonzero? task)
+            (not (task-complete? *game-info* task))
+            (__TYPE__-all-caught? this))
+       (clear-collide-with-as (-> this collide-info))
+       (ja-channel-set! 0)
+       (let ((pos (new 'stack-no-clear 'vector))
+             (peeper (if (-> this alt-actor) (-> this alt-actor extra process))))
+         (if (-> this alt-actor)
+           (set! (-> pos quad) (-> this alt-actor extra trans quad))
+           (set! (-> pos quad) (-> this collide-info trans quad)))
+         (+! (-> pos y) 6144.0)
+         (let ((cell (ppointer->handle (birth-pickup-at-point pos (pickup-type fuel-cell) (the float task) #f
+                                                              (the-as process-tree (if peeper peeper this))
+                                                              (the-as fact-info #f)))))
+           ;; called from lightning-mole-gone's code: wait here until it is collected
+           (while (handle->process cell)
+             (suspend)))))
+      (else (call-parent-method this))))
+  (none))

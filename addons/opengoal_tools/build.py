@@ -251,6 +251,21 @@ def write_startup_gc(commands):
     p.write_text("\n".join(commands) + "\n")
     log(f"Wrote startup.gc: {commands}")
 
+def _restart_goalc_if_types_changed(state):
+    """The level's -obs.gc changed a deftype (a subtype update, a new
+    battlecontroller camera ...): a running GOALC would fail with
+    "Inconsistent type definition", so kill it; the caller then launches a
+    fresh one for (mi)."""
+    from .export import writers as _w
+    if _w.TYPES_CHANGED:
+        _w.TYPES_CHANGED = False
+        if goalc_ok():
+            state["status"] = "Level types changed — restarting GOALC..."
+            log("[build] level types changed — restarting GOALC")
+            kill_goalc()
+            time.sleep(0.5)
+
+
 def launch_goalc(wait_for_nrepl=False):
     global GOALC_PORT
     exe = _goalc()
@@ -451,6 +466,7 @@ def _bg_build(name, scene, depsgraph=None):
         patch_game_gp(name, code_deps, scene=scene)
         prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
 
+        _restart_goalc_if_types_changed(state)
         if goalc_ok():
             state["status"] = "Running (mi) via nREPL..."
             r = goalc_send("(mi)", timeout=GOALC_TIMEOUT)
@@ -600,6 +616,7 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         patch_load_boundaries(name, collect_load_boundaries(scene), scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
+        _restart_goalc_if_types_changed(state)
         if goalc_ok():
             state["status"] = "Running (mi) — re-extracting geo..."
             r = goalc_send("(mi)", timeout=GOALC_TIMEOUT)
@@ -685,6 +702,7 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         state["status"] = "Killing existing GK..."
         kill_gk()
         time.sleep(0.3)
+        _restart_goalc_if_types_changed(state)
 
         if not goalc_ok():
             # nREPL not reachable — kill any stale GOALC holding port 8181

@@ -172,7 +172,7 @@ def _draw_selected_actor(layout, sel, scene):
         if nm_obj:
             row = box.row(align=True)
             row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
-            row.operator("og.unlink_navmesh", text="", icon="X")
+            row.operator("og.unlink_navmesh", text="", icon="X").actor_name = sel.name
             try:
                 nm_obj.data.calc_loop_triangles()
                 tc = len(nm_obj.data.loop_triangles)
@@ -921,7 +921,8 @@ def _draw_actor_links(layout, obj, scene, etype):
     - A 'Link →' button when exactly one compatible ACTOR_ is shift-selected
     - An X (clear) button when a link is set
     """
-    slots = _actor_link_slots(etype)
+    # slots with "show-in" are drawn by that actor's own panel (battlecontroller)
+    slots = [s for s in _actor_link_slots(etype) if not _db.link_slot(etype, s[0], s[1]).get("show-in")]
     if not slots:
         layout.label(text="No entity link slots for this actor type.", icon="INFO")
         return
@@ -973,12 +974,18 @@ def _draw_vol_link_add(layout, target):
                       target_name=target.name, search_for="volume")
 
 
-def _draw_link_search(box, text, op_id, **props):
+def _draw_link_search(box, text, op_id, accepted=None, **props):
     """The "Search…" button every link UI ends with (actor slots, path
-    curves): opens a searchable list of every candidate in the scene."""
-    op = box.row().operator(op_id, text=text, icon="VIEWZOOM")
+    curves): opens a searchable list of every candidate in the scene. With a
+    specific "accepts" list, a "?" button lists every actor type that fits."""
+    row = box.row(align=True)
+    op = row.operator(op_id, text=text, icon="VIEWZOOM")
     for k, v in props.items():
         setattr(op, k, v)
+    if accepted and "any" not in accepted:
+        h = row.operator("og.show_link_types", text="", icon="QUESTION")
+        h.source_name = props.get("source_name", ""); h.lump_key = props.get("lump_key", "")
+        h.slot_index = props.get("slot_index", 0)
 
 
 def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=()):
@@ -988,7 +995,7 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
     cands = [o for o in sel_actors if o.name not in skip]
     search = dict(source_name=obj.name, lump_key=lkey, slot_index=sidx, append=append)
     if not cands:
-        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", **search)
+        _draw_link_search(box, "Search actor…  (or shift-select one)", "og.link_actor_search", accepted, **search)
         return
     for tgt in cands[:6]:
         ok = _db.link_accepts(accepted, _link_target_etype(tgt))
@@ -1002,10 +1009,10 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
         op.target_name = tgt.name; op.append = append
     if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
         hint = box.row(); hint.enabled = False
-        hint.label(text=f"  Expected: {', '.join(accepted)} — others may not work", icon="INFO")
+        hint.label(text=f"  Expected: {_db.accepts_text(accepted)} — others may not work", icon="INFO")
     if len(cands) > 6:
         box.label(text=f"... and {len(cands) - 6} more selected")
-    _draw_link_search(box, "Search actor…", "og.link_actor_search", **search)
+    _draw_link_search(box, "Search actor…", "og.link_actor_search", accepted, **search)
 
 
 def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors):

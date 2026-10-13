@@ -1,0 +1,24 @@
+;; Warp gate switch for custom levels. The warp-gate it spawns picks its
+;; "level-slot" from the level name (training / village1-3 / citadel or
+;; lavatube); any other level gets -1 and the gate never offers its menu
+;; (villagep-obs.gc). This child gives the spawned gate slot 5, so the menu
+;; lists every unlocked vanilla hub (destinations stay the vanilla *-warp
+;; continue points).
+(deftype __TYPE__ (warp-gate-switch) ())
+
+(defstate basebutton-down-idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      ((-> (method-of-type warp-gate-switch basebutton-down-idle) event) proc argc message block))
+  :enter
+    (behavior ()
+      (let ((t9-0 (-> (method-of-type warp-gate-switch basebutton-down-idle) enter))) (if t9-0 (t9-0)))
+      (let ((g (the warp-gate (handle->process (-> self warp)))))
+        (if g (set! (-> g level-slot) 5))))
+  :exit
+    (behavior ()
+      (let ((t9-0 (-> (method-of-type warp-gate-switch basebutton-down-idle) exit))) (if t9-0 (t9-0))))
+  :trans
+    (behavior ()
+      (let ((t9-0 (-> (method-of-type warp-gate-switch basebutton-down-idle) trans))) (if t9-0 (t9-0)))))

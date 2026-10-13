@@ -47,6 +47,8 @@ def _is_linkable(obj):
                     return True
                 if _is_custom_type(parts[1]):
                     return True
+                if _db.needs_vol(parts[1]):   # "volume" panel (water-vol, swamp-bat ...)
+                    return True
     return False
 
 

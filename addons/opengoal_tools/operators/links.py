@@ -192,33 +192,159 @@ class OG_OT_LinkNavMeshTo(Operator):
         self.report({"INFO"}, f"Linked {actor.name} to {nm.name}")
         return {"FINISHED"}
 
-class OG_OT_UnlinkNavMesh(Operator):
-    """Remove navmesh link from selected enemy actors.
-    Also renames the mesh (strips NAVMESH_ prefix) and moves it to Geometry/Solid."""
-    bl_idname = "og.unlink_navmesh"
-    bl_label  = "Unlink NavMesh"
-    bl_description = "Remove navmesh link from selected enemy actor(s)"
+# ─── Movie Position (movie-pos) ─────────────────────────────────────────────
+def _is_movie_pos_candidate(o):
+    """Empties that can be a movie position: any non-actor, non-waypoint empty."""
+    return (o.type == "EMPTY" and not o.name.startswith("ACTOR_")
+            and "_wp_" not in o.name and "_wpb_" not in o.name)
+
+
+def _movie_pos_items(self, ctx):
+    scene = ctx.scene if ctx else bpy.context.scene
+    actor = scene.objects.get(self.actor_name)
+    have = {s.obj.name for s in getattr(actor, "og_movie_pos", []) if s.obj} if actor else set()
+    cands = sorted((o for o in scene.objects if _is_movie_pos_candidate(o)),
+                   key=lambda o: (not o.name.startswith("MOVIEPOS_"), o.name))
+    items = [(o.name, o.name + ("  (linked)" if o.name in have else ""), f"Use {o.name} as a movie position",
+              "MESH_CONE", i) for i, o in enumerate(cands)]
+    if not items:
+        items = [("__none__", "(no empties in scene)", "", "ERROR", 0)]
+    _SEARCH_ITEMS[:] = items
+    return _SEARCH_ITEMS
+
+
+class OG_OT_MoviePosAdd(Operator):
+    """Spawn a cone empty as this actor's next movie position (at the 3D
+    cursor, or at the actor with At Actor Position on). Its Z rotation is
+    the facing angle"""
+    bl_idname  = "og.movie_pos_add"
+    bl_label   = "Add Position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
 
     def execute(self, ctx):
+        import math
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None:
+            self.report({"ERROR"}, "Actor not found"); return {"CANCELLED"}
+        base = "MOVIEPOS_" + (actor.name[len("ACTOR_"):] if actor.name.startswith("ACTOR_") else actor.name)
+        n = 0
+        while bpy.data.objects.get(f"{base}_{n:02d}"):
+            n += 1
+        at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
+        e = bpy.data.objects.new(f"{base}_{n:02d}", None)
+        e.empty_display_type = "CONE"      # the cone shows the facing axis
+        e.empty_display_size = 1.0         # 1 m: smaller gets hard to select
+        e.location = actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
+        # the empty's Z rotation is the angle
+        e.rotation_euler = (0.0, 0.0, actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0)
+        e.color = (1.0, 0.85, 0.1, 1.0)
+        e["og_movie_pos_for"] = actor.name
+        ctx.scene.collection.objects.link(e)
+        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        actor.og_movie_pos.add().obj = e
+        self.report({"INFO"}, f"Added movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_MoviePosLink(Operator):
+    """Use an existing empty as a movie position: the shift-selected one, or
+    one searched by name"""
+    bl_idname   = "og.movie_pos_link"
+    bl_label    = "Link Movie Position"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+
+    actor_name:  bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"},
+                                          description="Link this empty directly instead of searching")
+    pick:        bpy.props.EnumProperty(name="Empty", items=_movie_pos_items)
+
+    def invoke(self, ctx, event):
+        if self.target_name:
+            return self.execute(ctx)
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        e = ctx.scene.objects.get(self.target_name or self.pick)
+        if actor is None or e is None or not _is_movie_pos_candidate(e):
+            self.report({"ERROR"}, "Actor or empty not found"); return {"CANCELLED"}
+        if any(s.obj is e for s in actor.og_movie_pos):
+            self.report({"INFO"}, f"{e.name} is already linked"); return {"CANCELLED"}
+        actor.og_movie_pos.add().obj = e
+        self.report({"INFO"}, f"Linked movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_MoviePosRemove(Operator):
+    """Remove this movie position from the list (the empty stays in the scene)"""
+    bl_idname  = "og.movie_pos_remove"
+    bl_label   = "Remove Movie Position"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+    index:      bpy.props.IntProperty()
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None or not (0 <= self.index < len(actor.og_movie_pos)):
+            return {"CANCELLED"}
+        actor.og_movie_pos.remove(self.index)
+        return {"FINISHED"}
+
+
+class OG_OT_UnlinkNavMesh(Operator):
+    """Remove the navmesh link from this actor (or the selected actors). The
+    mesh stays a navmesh: other actors may still use it."""
+    bl_idname = "og.unlink_navmesh"
+    bl_label  = "Unlink NavMesh"
+    bl_description = "Remove the navmesh link from this actor (the mesh stays a navmesh)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name) if self.actor_name else None
+        objs = [actor] if actor else ctx.selected_objects
         count = 0
-        for o in ctx.selected_objects:
+        for o in objs:
             if "og_navmesh_link" in o:
-                nm_name = o["og_navmesh_link"]
                 del o["og_navmesh_link"]
-                # Clean up the mesh itself if it still exists
-                nm_obj = bpy.data.objects.get(nm_name)
-                if nm_obj and nm_obj.type == "MESH":
-                    # Remove navmesh tag
-                    if "og_navmesh" in nm_obj:
-                        del nm_obj["og_navmesh"]
-                    # Strip NAVMESH_ prefix
-                    if nm_obj.name.startswith("NAVMESH_"):
-                        nm_obj.name = nm_obj.name[len("NAVMESH_"):]
-                    # Move back to Geometry/Solid
-                    _link_object_to_sub_collection(ctx.scene, nm_obj, *_COL_PATH_GEO_SOLID)
                 count += 1
         self.report({"INFO"}, f"Unlinked {count} actor(s)")
         return {"FINISHED"}
+
+
+def navmesh_users(scene, nm_name):
+    """Actors linked to the navmesh named nm_name."""
+    return [o for o in scene.objects if o.get("og_navmesh_link") == nm_name]
+
+
+class OG_OT_NavMeshShare(Operator):
+    """The other actors on this navmesh use this actor's one instead
+    (nav-mesh-actor link), so the navmesh is built once"""
+    bl_idname  = "og.navmesh_share"
+    bl_label   = "Make Other Connected Actors Use This as Nav-Mesh-Actor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        from ..data import _actor_set_link
+        actor = bpy.data.objects.get(self.actor_name)
+        nm_name = actor.get("og_navmesh_link", "") if actor else ""
+        if not nm_name:
+            return {"CANCELLED"}
+        others = [o for o in navmesh_users(ctx.scene, nm_name) if o is not actor]
+        for o in others:
+            del o["og_navmesh_link"]
+            _actor_set_link(o, "nav-mesh-actor", 0, actor.name)
+        self.report({"INFO"}, f"{len(others)} actor(s) now use the nav-mesh of {actor.name}")
+        return {"FINISHED"}
+
 
 class OG_OT_AddWaypoint(Operator):
     """Add a waypoint empty linked to the selected enemy. Spawns at the 3D cursor, or at the actor position if Spawn at Position is enabled."""
@@ -989,7 +1115,11 @@ CLASSES = (
     OG_OT_LinkNavMesh,
     OG_OT_LinkNavMeshTo,
     OG_OT_VolLinkSearch,
+    OG_OT_MoviePosAdd,
+    OG_OT_MoviePosLink,
+    OG_OT_MoviePosRemove,
     OG_OT_UnlinkNavMesh,
+    OG_OT_NavMeshShare,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,
     OG_OT_WaypointSourceRemove,

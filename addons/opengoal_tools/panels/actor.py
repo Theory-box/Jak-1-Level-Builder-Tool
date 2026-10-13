@@ -62,45 +62,6 @@ from ..audit import run_audit
 from .selected import _draw_actor_links
 
 
-# ─── Task list used by OG_PT_ActorTaskGated (oracle/pontoon) ────────────────
-# Populated from jak1_game_database.jsonc's GameTasks. This was a latent
-# bug in the original panels.py — the name was referenced but never defined,
-# so the panel would crash on draw. Now wired up explicitly.
-_GAME_TASKS_COMMON = [
-    ("none", "None"),
-    ("jungle-eggtop", "Jungle: Egg Top"),
-    ("jungle-lurkercage", "Jungle: Lurker Cage"),
-    ("jungle-plant", "Jungle: Plant Boss"),
-    ("village1-yakow", "Village: Yakow"),
-    ("village1-mayor-money", "Village: Mayor Orbs"),
-    ("village1-uncle-money", "Village: Uncle Orbs"),
-    ("village1-oracle-money1", "Village: Oracle 1"),
-    ("village1-oracle-money2", "Village: Oracle 2"),
-    ("beach-ecorocks", "Beach: Eco Rocks"),
-    ("beach-volcanoes", "Beach: Volcanoes"),
-    ("beach-cannon", "Beach: Cannon"),
-    ("beach-buzzer", "Beach: Scout Flies"),
-    ("misty-muse", "Misty: Muse"),
-    ("misty-cannon", "Misty: Cannon"),
-    ("misty-bike", "Misty: Bike"),
-    ("misty-buzzer", "Misty: Scout Flies"),
-    ("swamp-billy", "Swamp: Billy"),
-    ("swamp-flutflut", "Swamp: Flut Flut"),
-    ("swamp-buzzer", "Swamp: Scout Flies"),
-    ("sunken-platforms", "Sunken: Platforms"),
-    ("sunken-pipe", "Sunken: Pipe"),
-    ("snow-zorbing", "Snow: Zorbing"),
-    ("snow-fort", "Snow: Fort"),
-    ("snow-buzzer", "Snow: Scout Flies"),
-    ("firecanyon-buzzer", "Fire Canyon: Scout Flies"),
-    ("ogre-boss", "Ogre: Boss"),
-    ("ogre-buzzer", "Ogre: Scout Flies"),
-    ("maincave-gnawers", "Maincave: Gnawers"),
-    ("maincave-darkecobarrel", "Maincave: Dark Eco Barrel"),
-    ("robocave-robot", "Robocave: Robot"),
-]
-
-
 class OG_PT_ActorNavBehaviour(Panel):
     """Activation fields ("activation" panel) + aggro trigger volumes."""
     bl_label       = "Nav Behaviour"
@@ -151,6 +112,52 @@ class OG_PT_ActorNavBehaviour(Panel):
 
 
 
+class OG_PT_ActorVolume(Panel):
+    """Volume (DB "volume" panel): the convex VOL_ mesh this actor reads as
+    its own vol (water-vol / water-anim surface area, swamp-bat launch area ...)."""
+    bl_label       = "Volume"
+    bl_idname      = "OG_PT_actor_volume"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.needs_vol(parts[1])
+
+    def draw(self, ctx):
+        from ..export import _vols_linking_to, _vol_has_link_to
+        from .selected import _draw_link_search
+        layout = self.layout
+        sel = ctx.active_object
+        vols = _vols_linking_to(ctx.scene, sel.name)
+        for v in vols:
+            row = layout.row(align=True)
+            row.label(text=f"✓ {v.name}", icon="CHECKMARK")
+            op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = v.name
+            op = row.operator("og.remove_vol_link", text="", icon="X"); op.vol_name = v.name; op.target_name = sel.name
+        if len(vols) > 1:
+            warn = layout.row(); warn.alert = True
+            warn.label(text="Only the first volume is exported", icon="ERROR")
+        if not vols:
+            layout.label(text="No volume linked", icon="INFO")
+        layout.operator("og.add_actor_volume", text="Add Volume", icon="ADD").actor_name = sel.name
+        for m in [o for o in ctx.selected_objects if o.type == "MESH" and o is not sel][:6]:
+            if m.name.startswith("VOL_"):
+                if not _vol_has_link_to(m, sel.name):
+                    op = layout.operator("og.add_link_from_selection", text=f"Link → {m.name}", icon="MESH_CUBE")
+                    op.vol_name = m.name; op.target_name = sel.name
+            else:
+                op = layout.operator("og.mesh_to_volume", text=f"Use {m.name} as volume", icon="MESH_CUBE")
+                op.actor_name = sel.name; op.mesh_name = m.name
+        _draw_link_search(layout, "Search volume…", "og.vol_link_search", target_name=sel.name, search_for="volume")
+
+
 class OG_PT_ActorNavMesh(Panel):
     bl_label       = "NavMesh"
     bl_idname      = "OG_PT_actor_navmesh"
@@ -175,7 +182,15 @@ class OG_PT_ActorNavMesh(Panel):
         if nm_obj:
             row = layout.row(align=True)
             row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
-            row.operator("og.unlink_navmesh", text="", icon="X")
+            row.operator("og.unlink_navmesh", text="", icon="X").actor_name = sel.name
+            others = [o for o in ctx.scene.objects if o is not sel and o.get("og_navmesh_link") == nm_obj.name]
+            if others:
+                warn = layout.column(align=True)
+                warn.alert = True
+                warn.label(text=f"{len(others)} other actor(s) also use this nav-mesh:", icon="ERROR")
+                warn.label(text="it is built once per actor. Share it instead:")
+                layout.operator("og.navmesh_share", text="Make other connected actors use this as nav-mesh-actor",
+                                icon="LINKED").actor_name = sel.name
             try:
                 nm_obj.data.calc_loop_triangles()
                 tc = len(nm_obj.data.loop_triangles)
@@ -193,10 +208,238 @@ class OG_PT_ActorNavMesh(Panel):
         _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
         nav_r = float(sel.get("og_nav_radius", 6.0))
         layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
+        if _db.can_jump(sel.name.split("_", 2)[1]):
+            r = layout.row(); r.enabled = False
+            r.label(text="Can jump (usable as a battlecontroller lurker)", icon="CHECKMARK")
         if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
             layout.separator()
             _draw_panel_fields(layout, sel, "nav-mesh")
 
+
+
+def _bc_section(layout, idname, title, icon, closed=False):
+    """A collapsible sub menu (Blender 4.1+ layout panels; a box before)."""
+    if hasattr(layout, "panel"):
+        header, body = layout.panel(idname, default_closed=closed)
+        header.label(text=title, icon=icon)
+        return body
+    box = layout.box(); box.label(text=title, icon=icon)
+    return box
+
+
+class OG_PT_ActorBattlecontroller(Panel):
+    """Battlecontroller (ambush): intro camera variant + its options."""
+    bl_label       = "Battle Controller"
+    bl_idname      = "OG_PT_actor_battlecontroller"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "battlecontroller")
+
+    def draw(self, ctx):
+        from .actor_fields import _draw_field
+        from .selected import _draw_link_slot
+        from ..export import battlecontroller as _bc
+        layout = self.layout
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        fields = _db.panel_fields(etype, "battlecontroller", visible_only=True)
+        by_sec = lambda s: [f for f in fields if f.get("section") == s]
+        sel_actors = [o for o in ctx.selected_objects if o != sel and o.type == "EMPTY"
+                      and o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+
+        def links(box, *keys):
+            for k in keys:
+                s = _db.link_slot(etype, k, 0)
+                if s:
+                    _draw_link_slot(box, sel, ctx.scene, etype, k, 0, s.get("label", k),
+                                    s.get("accepts", ["any"]), s.get("required", False), sel_actors)
+
+        body = _bc_section(layout, "og_bc_camera", "Intro camera", "CAMERA_DATA")
+        if body:
+            self._camera(body, ctx, sel, etype, _bc)
+        body = _bc_section(layout, "og_bc_spawn", "Lurkers spawn", "OUTLINER_OB_ARMATURE")
+        if body:
+            for f in by_sec("spawn"):
+                _draw_field(body, sel, f, info)
+            links(body, "spawner-blocker-actor", "spawner-trigger-actor")
+        body = _bc_section(layout, "og_bc_lurkers", "Lurker info", "COMMUNITY")
+        if body:
+            for i, e in enumerate(sel.og_bc_lurkers):
+                b = body.box()
+                r = b.row(align=True)
+                r.label(text=f"[{i}] {(_db.find_actor(e.etype) or {}).get('label', e.etype)}", icon="GHOST_ENABLED")
+                op = r.operator("og.bc_lurker_remove", text="", icon="X"); op.index = i
+                col = b.column(align=True)
+                col.prop(e, "percent"); col.prop(e, "pickup_percent")
+                col.prop(e, "pickup_type"); col.prop(e, "max_pickup_count")
+                if i >= _bc.MAX_LURKER_TYPES:
+                    w = b.row(); w.alert = True; w.label(text="Not used (max 4 lurker types)", icon="ERROR")
+            r = body.row(align=True)
+            r.operator("og.bc_lurker_add", text="Add Lurker", icon="ADD")
+            if len(sel.og_bc_lurkers) > 1:
+                r.operator("og.bc_lurker_even", text="Split Evenly", icon="ALIGN_JUSTIFY")
+            if not len(sel.og_bc_lurkers):
+                h = body.row(); h.enabled = False
+                h.label(text="None added: the game spawns babaks", icon="INFO")
+            for w in _bc.percent_problems(sel):
+                r = body.row(); r.alert = True; r.label(text=w, icon="ERROR")
+            body.separator()
+            for f in by_sec("lurkers"):
+                _draw_field(body, sel, f, info)
+        body = _bc_section(layout, "og_bc_end", "End pickup", "FUND")
+        if body:
+            for f in by_sec("end"):
+                _draw_field(body, sel, f, info)
+        body = _bc_section(layout, "og_bc_other", "Other options", "PREFERENCES", closed=True)
+        if body:
+            links(body, "kill-actor", "trigger-actor", "fade-actor", "alt-actor")
+            for f in by_sec("other"):
+                _draw_field(body, sel, f, info)
+
+    def _camera(self, box, ctx, sel, etype, _bc):
+        from .actor_fields import _draw_enum_field, _prop_row
+        vf = _db.variant_field(etype)
+        if vf:
+            _draw_enum_field(box, sel, vf)
+        var = _bc.variant(sel)
+        if var.get("custom_camera"):
+            ag, anim = _bc.camera(sel)
+            row = box.row(align=True)
+            row.label(text="Camera:")
+            row.operator("og.bc_pick_camera", text=("Custom…" if sel.get("og_bc_cam") == "custom" else (ag or "Pick…")), icon="VIEWZOOM")
+            if sel.get("og_bc_cam") == "custom":
+                _prop_row(box, sel, "og_bc_cam_custom", "  Art group:", "")
+            row = box.row(align=True)
+            row.label(text="Animation:")
+            row.operator("og.bc_pick_anim", text=("Custom…" if sel.get("og_bc_anim") == "custom" else (anim or "Pick…")), icon="VIEWZOOM")
+            if sel.get("og_bc_anim") == "custom":
+                _prop_row(box, sel, "og_bc_anim_custom", "  Animation:", "")
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Plays at the controller when the ambush starts", icon="INFO")
+            if not (ag and anim):
+                w = box.row(); w.alert = True
+                w.label(text="Pick a camera and an animation", icon="ERROR")
+        elif var.get("needs_citadel_camera"):
+            cam = _bc.citadel_camera_object(sel)
+            row = box.row(align=True)
+            if cam:
+                row.label(text=f"Camera position: {cam.name}", icon="MESH_CONE")
+                op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = cam.name
+            else:
+                row.alert = True
+                row.label(text=f"Needs a camera position ({_bc.CITADEL_CAM_NAME})", icon="ERROR")
+            for e in [o for o in ctx.selected_objects if o.type == "EMPTY" and o is not sel
+                      and not o.name.startswith("ACTOR_") and o is not cam][:4]:
+                op = box.row().operator("og.bc_campos_link", text=f"Link → {e.name}", icon="LINKED")
+                op.actor_name = sel.name; op.target_name = e.name
+            row = box.row(align=True)
+            op = row.operator("og.bc_campos_add", text="Add Camera Position", icon="PLUS"); op.actor_name = sel.name
+            row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Exported as the entity 'citadelcam-1' (one per level)", icon="INFO")
+
+
+class OG_PT_ActorGameTask(Panel):
+    """DB "game-task" panel: the actor's game task (the .jsonc "game_task";
+    cells / scout flies also write it into their eco-info) + fly number."""
+    bl_label       = "Game Task"
+    bl_idname      = "OG_PT_actor_game_task"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "game-task")
+
+    def draw(self, ctx):
+        layout = self.layout
+        sel = ctx.active_object
+        etype = sel.name.split("_", 2)[1]
+        note = _db.panel_option(etype, "game-task", "description", "")
+        if note:
+            hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text=note, icon="INFO")
+        _draw_panel_fields(layout, sel, "game-task")
+
+
+class OG_PT_ActorMoviePos(Panel):
+    """DB "movie-pos" panel: where a power cell plays its pickup animation
+    (cells; actors that give one), or where the cell jumps (last scout fly)."""
+    bl_label       = "Movie Position"
+    bl_idname      = "OG_PT_actor_movie_pos"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "movie-pos")
+
+    def draw(self, ctx):
+        from .selected import _draw_link_search
+        layout = self.layout
+        sel    = ctx.active_object
+        etype  = sel.name.split("_", 2)[1]
+        note = _db.panel_option(etype, "movie-pos", "description",
+                                "Where the power cell plays its pickup animation (cone = facing).")
+        hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
+        hint.label(text=note, icon="INFO")
+        ents = list(sel.og_movie_pos)
+        for i, s in enumerate(ents):
+            row = layout.row(align=True)
+            if s.obj is None or s.obj.name not in ctx.scene.objects:
+                row.alert = True
+                row.label(text=f"[{i}] missing", icon="ERROR")
+            else:
+                row.label(text=f"[{i}] {s.obj.name}", icon="MESH_CONE")
+                op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = s.obj.name
+            op = row.operator("og.movie_pos_remove", text="", icon="X")
+            op.actor_name = sel.name; op.index = i
+        if not ents:
+            r = layout.row(); r.enabled = False
+            r.label(text="Not set — the game uses its default spot", icon="DOT")
+        # same pattern as the other links: selected, search, then spawn
+        have = {s.obj.name for s in ents if s.obj}
+        for e in [o for o in ctx.selected_objects if o.type == "EMPTY" and o is not sel
+                  and not o.name.startswith("ACTOR_") and "_wp_" not in o.name and o.name not in have][:6]:
+            op = layout.row().operator("og.movie_pos_link", text=f"Link → {e.name}", icon="LINKED")
+            op.actor_name = sel.name; op.target_name = e.name
+        _draw_link_search(layout, "Search empty…", "og.movie_pos_link", actor_name=sel.name)
+        row = layout.row(align=True)
+        op = row.operator("og.movie_pos_add", text="Add Position", icon="PLUS"); op.actor_name = sel.name
+        row.prop(ctx.scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
+        # movie-mask: victory animations the cell must not pick (8 toggles)
+        mask = [f for f in _db.panel_fields(etype, "movie-pos", visible_only=True) if f.get("group") == "movie-mask"]
+        if mask:
+            layout.separator()
+            layout.label(text="Victory animations not to use (movie-mask):")
+            grid = layout.grid_flow(columns=4, align=True)
+            for i, f in enumerate(mask):
+                on = bool(sel.get(f["key"], f.get("default", False)))
+                op = grid.operator("og.toggle_actor_bool_field", text=str(i + 1),
+                                   icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT", depress=on)
+                op.prop_key = f["key"]
 
 
 class OG_PT_ActorLinks(Panel):
@@ -287,6 +530,10 @@ class OG_PT_ActorCrate(Panel):
             warn = box.box()
             warn.alert = True
             warn.label(text="Scout Fly needs Iron/Steel!", icon="ERROR")
+        elif ct == "iron" and pickup != "buzzer":
+            warn = box.box()
+            warn.alert = True
+            warn.label(text="Iron only holds a scout fly (the game makes it wood)", icon="ERROR")
 
         # ── Contents ─────────────────────────────────────────────────────
         box2 = layout.box()
@@ -304,6 +551,8 @@ class OG_PT_ActorCrate(Panel):
             _prop_row(box2, sel, "og_crate_pickup_amount", "Amount (1–5):", 1)
         elif pickup == "buzzer":
             box2.label(text="Amount: 1  (fixed)", icon="INFO")
+        if sel.get("og_fop_fade"):
+            _prop_row(box2, sel, "og_crate_fade_time", "Fade time (s):", 0.0)
 
 
 
@@ -340,8 +589,19 @@ class OG_PT_ActorLauncher(Panel):
             sub = box.row(); sub.enabled = False
             sub.label(text="Uses art default (~40m). Set above to override.", icon="INFO")
 
-        # ── Springbox has no destination, launcher does ───────────────────────
-        if etype == "launcher":
+        # ── Destination: actors whose DB fields have og_launcher_dest ─────────
+        _keys = {f.get("key") for f in _db.inherited_fields(etype)}
+        if "og_launcher_mode" in _keys:
+            boxm = layout.box()
+            boxm.label(text="Camera on Launch", icon="VIEW_CAMERA")
+            mf = next(f for f in _db.inherited_fields(etype) if f.get("key") == "og_launcher_mode")
+            cur = sel.get("og_launcher_mode", mf.get("default"))
+            colm = boxm.column(align=True)
+            for c in mf.get("choices", []):
+                op = colm.operator("og.set_actor_enum_field", text=c["label"],
+                                   icon="RADIOBUT_ON" if cur == c["value"] else "RADIOBUT_OFF")
+                op.prop_key = "og_launcher_mode"; op.value = c["value"]
+        if "og_launcher_dest" in _keys:
             box2 = layout.box()
             box2.label(text="Launch Destination (optional)", icon="EMPTY_AXIS")
             dest_name = sel.get("og_launcher_dest", "")
@@ -411,56 +671,32 @@ class OG_PT_ActorEcoDoor(Panel):
         sel    = ctx.active_object
 
         # ── Open condition hint ───────────────────────────────────────────────
-        # (module-level import of _actor_get_link at the top of this file is used)
         has_state_actor = bool(_actor_get_link(sel, "state-actor", 0))
         hint = layout.box()
+        hint.label(text="Opens when Jak is near AND one of:", icon="INFO")
+        col = hint.column(align=True)
+        col.enabled = False
+        col.label(text="• Jak has blue eco")
+        col.label(text="• One-way + Jak behind it")
+        col.label(text="• it was opened before (saved complete)")
         if has_state_actor:
-            hint.label(text="Button-controlled door", icon="LINKED")
-            col = hint.column(align=True)
-            col.enabled = False
-            col.label(text="• Locked until linked button is pressed")
-            col.label(text="• Opens when Jak walks close with blue eco")
-            col.label(text="• Tip: enable One Way to skip blue eco requirement")
+            col.label(text="Locked until the lock controller is complete", icon="LINKED")
         else:
-            hint.label(text="Opens when Jak is nearby AND one of:", icon="INFO")
-            col = hint.column(align=True)
-            col.enabled = False
-            col.label(text="• Jak has blue eco")
-            col.label(text="• Starts Open is enabled")
-            col.label(text="• One-way flag + Jak on exit side")
-            col.label(text="• Link a button via Actor Links → state-actor")
+            col.label(text="Lock it with a state-actor in Entity Links")
 
-        # ── Behaviour flags ───────────────────────────────────────────────────
+        # ── Behaviour flags: the eco-door fields this door shows ─────────────
+        etype = sel.name.split("_", 2)[1]
+        shown = {f["key"]: f for f in _db.inherited_fields(etype)
+                 if f.get("key", "").startswith("og_door_") and f.get("show-field") is not False}
         box = layout.box()
         box.label(text="Door Behaviour", icon="SETTINGS")
-
-        auto_close  = bool(sel.get("og_door_auto_close",  False))
-        one_way     = bool(sel.get("og_door_one_way",     False))
-        starts_open = bool(sel.get("og_door_starts_open", False))
-
-        row = box.row()
-        icon = "CHECKBOX_HLT" if auto_close else "CHECKBOX_DEHLT"
-        row.operator("og.toggle_door_flag", text="Auto Close",   icon=icon).flag = "auto_close"
-
-        row2 = box.row()
-        icon2 = "CHECKBOX_HLT" if one_way else "CHECKBOX_DEHLT"
-        row2.operator("og.toggle_door_flag", text="One Way",     icon=icon2).flag = "one_way"
-
-        row3 = box.row()
-        icon3 = "CHECKBOX_HLT" if starts_open else "CHECKBOX_DEHLT"
-        row3.operator("og.toggle_door_flag", text="Starts Open", icon=icon3).flag = "starts_open"
-
-        sub = box.row(); sub.enabled = False
-        if starts_open:
-            sub.label(text="Door spawns already open (perm-complete set)", icon="CHECKMARK")
-        elif auto_close and one_way:
-            sub.label(text="Closes after Jak passes, one direction only", icon="INFO")
-        elif auto_close:
-            sub.label(text="Closes automatically after Jak passes", icon="INFO")
-        elif one_way:
-            sub.label(text="Can only be opened from one side", icon="INFO")
-        else:
-            sub.label(text="Default: needs blue eco or button link", icon="INFO")
+        for key, f in shown.items():
+            on = bool(sel.get(key, False))
+            box.row().operator("og.toggle_door_flag", text=f.get("label", key),
+                               icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT").flag = key[len("og_door_"):]
+        if _db.find_actor(etype) and _db.find_actor(etype).get("description"):
+            sub = box.row(); sub.enabled = False
+            sub.label(text=_db.find_actor(etype)["description"][:90], icon="INFO")
 
 
 
@@ -485,16 +721,35 @@ class OG_PT_ActorWaterVol(Panel):
         sel    = ctx.active_object
         box = layout.box()
         box.label(text="Water Volume", icon="MOD_OCEAN")
-        box.label(text="Shape the linked VOL_ mesh to cover the water.", icon="INFO")
+        box.label(text="Its area is the volume linked in the Volume panel.", icon="INFO")
         # The "water" panel's fields (PanelTypes water + actor overrides).
         from .actor_fields import _draw_field
         etype = sel.name.split("_", 2)[1]
         info = {"etype": etype, **(_db.find_actor(etype) or {})}
+        forced = _db.actor_variant(etype, lambda k, d=None: sel.get(k, d)).get("props") or {}
+        manual = bool(sel.get("og_water_surface_manual", False))
         for f in _db.panel_fields(etype, "water", visible_only=True):
+            key = f.get("key")
+            if key in forced:
+                # set by the selected look (variant "props")
+                lab = next((c.get("label") for c in f.get("choices", []) if c.get("value") == forced[key]), forced[key])
+                box.label(text=f"{f.get('label', key)}: {lab} (set by the look)", icon="LOCKED")
+                continue
+            if key == "og_water_surface":
+                row = box.row(align=True)
+                sub = row.row(); sub.enabled = manual
+                _draw_field(sub, sel, f, info)
+                op = row.operator("og.toggle_actor_bool_field", text="", depress=manual,
+                                  icon="UNLOCKED" if manual else "LOCKED")
+                op.prop_key = "og_water_surface_manual"
+                if not manual:
+                    box.label(text="Kept at the top of its volume (unlock to set it by hand)", icon="INFO")
+                continue
             _draw_field(box, sel, f, info)
-        op = box.operator("og.sync_water_from_object",
-                          text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
-        op.actor_name = sel.name
+        if manual:
+            op = box.operator("og.sync_water_from_object",
+                              text="Sync Surface from Volume Top", icon="OBJECT_ORIGIN")
+            op.actor_name = sel.name
 
 
 class OG_PT_ActorLauncherDoor(Panel):
@@ -669,7 +924,6 @@ class OG_PT_ActorTaskGated(Panel):
         layout = self.layout
         sel    = ctx.active_object
         etype  = sel.name.split("_", 2)[1]
-        cur    = sel.get("og_alt_task", "none")
 
         box = layout.box()
         if etype == "oracle":
@@ -681,12 +935,11 @@ class OG_PT_ActorTaskGated(Panel):
             sub = box.row(); sub.enabled = False
             sub.label(text="Pontoon sinks when this task is complete", icon="INFO")
 
-        col = box.column(align=True)
-        for (val, label) in _GAME_TASKS_COMMON:
-            row = col.row()
-            icon = "RADIOBUT_ON" if cur == val else "RADIOBUT_OFF"
-            op = row.operator("og.set_alt_task", text=label, icon=icon)
-            op.task_name = val
+        # same searchable task picker as the Game Task panel (+ Custom)
+        from .actor_fields import _draw_task_field
+        field = next((f for f in _db.panel_fields(etype, "custom-fields") if f.get("key") == "og_alt_task"),
+                     {"key": "og_alt_task", "label": "Task", "type": "task", "default": "none"})
+        _draw_task_field(box, sel, field)
 
 
 
@@ -1264,8 +1517,11 @@ class OG_PT_ActorGoalCode(Panel):
 _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_platform",        # Sync
     "OG_PT_actor_waypoints",       # Path
+    "OG_PT_actor_volume",          # Volume
     "OG_PT_actor_navmesh",
     "OG_PT_actor_nav_behaviour",   # Activation + Trigger Behaviour
+    "OG_PT_actor_game_task",       # Game Task
+    "OG_PT_actor_movie_pos",       # Movie Position (power cell)
     "OG_PT_actor_fact_options",    # Options
     "OG_PT_actor_links",           # Entity Links
     "OG_PT_actor_visibility",
@@ -1282,7 +1538,11 @@ def _actor_panel_rank(cls) -> int:
 
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
+    OG_PT_ActorBattlecontroller,
     OG_PT_ActorNavBehaviour,
+    OG_PT_ActorGameTask,
+    OG_PT_ActorMoviePos,
+    OG_PT_ActorVolume,
     OG_PT_ActorNavMesh,
     OG_PT_ActorLinks,
     OG_PT_ActorPlatform,

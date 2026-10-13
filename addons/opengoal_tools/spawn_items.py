@@ -130,6 +130,9 @@ class SpawnItem:
     needs_target_sel: bool = False
     icon: str = "EMPTY_DATA"
     etype: Optional[str] = None
+    # special items whose pre-spawn "variant" list comes from this etype's
+    # variant field (Water Anim looks) without selecting it as an entity
+    variant_etype: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -194,11 +197,23 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         spawn_id="special:water_volume",
         label="Water volume",
         category="Volumes",
-        description="Mesh volume that flags areas as water — affects swim/wade "
-                    "behaviour. Scale to cover the water area; surface height "
-                    "is set per-object after spawn.",
+        description="Water actor (swim / wade). Add or link its area in its "
+                    "Volume panel; the surface height is set per object.",
         operator="og.add_water_volume",
         icon="MOD_FLUIDSIM",
+    ),
+    SpawnItem(
+        spawn_id="special:water_anim",
+        label="Water Anim",
+        category="Volumes",
+        description="Water with a vanilla look (mesh + ripples) or none. Other "
+                    "actors can use it as their water surface (ogre isles / steps "
+                    "float on it, square platforms splash in it).",
+        operator="og.add_water_volume",
+        op_kwargs=(("etype", "water-anim"),),
+        pre_spawn_fields=("variant",),
+        variant_etype="water-anim",
+        icon="MOD_OCEAN",
     ),
     SpawnItem(
         spawn_id="special:music_zone",
@@ -392,7 +407,9 @@ def count_filtered(scene) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 def populate_spawn_list(scene) -> None:
     """Fill scene.og_props.spawn_list_items from SPAWN_INDEX. Idempotent —
-    skips work if the collection already matches the index size.
+    skips work if the collection already holds exactly the index's ids (the
+    list is saved in the .blend; same size alone isn't enough when actors
+    were swapped in the DB).
 
     Called:
       - At addon register for the current scene
@@ -402,9 +419,8 @@ def populate_spawn_list(scene) -> None:
     if props is None:
         return
     index = get_spawn_index()
-    if len(props.spawn_list_items) == len(index):
-        # Already populated and current — skip
-        return
+    if [r.spawn_id for r in props.spawn_list_items] == list(index.keys()):
+        return   # already current
     props.spawn_list_items.clear()
     for spawn_id in index.keys():
         row = props.spawn_list_items.add()

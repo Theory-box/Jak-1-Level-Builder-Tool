@@ -1,0 +1,33 @@
+;; Mayor's gears for custom levels. Vanilla (village-obs.gc) only turns once the
+;; vanilla jungle-lurkerm task is done. This child reads its "mode" lump:
+;;   0  always turning
+;;   1  turns once its own game task is complete
+;;   2  turns until its own game task is complete
+;; (no task: always turning)
+(deftype __TYPE__ (mayorgears) ()
+  (:states __TYPE__-idle))
+
+(defun __TYPE__-turning? ((this mayorgears))
+  (let ((mode (the-as int (res-lump-value (-> this entity) 'mode int)))
+        (task (-> this entity extra perm task)))
+    (cond
+      ((or (zero? mode) (zero? task)) #t)
+      ((= mode 1) (task-complete? *game-info* task))
+      (else (not (task-complete? *game-info* task))))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :code
+    (behavior ()
+      (loop
+        (if (__TYPE__-turning? self) (ja :num! (loop!)) (ja :num! (loop! 0.0)))
+        (suspend)))
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (logior! (-> this mask) (process-mask ambient))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *mayorgears-sg* '())
+  (set! (-> this draw shadow-mask) (the-as uint 255))
+  (go __TYPE__-idle)
+  (none))

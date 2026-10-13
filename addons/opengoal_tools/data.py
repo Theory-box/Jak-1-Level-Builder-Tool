@@ -220,6 +220,18 @@ TEXTURE_SOURCE_ITEMS = [
     ("misty",    "Misty Island",     "Borrow Misty textures + sky"),
     ("rolling",  "Rolling Hills",    "Borrow Rolling Hills textures + sky"),
     ("snow",     "Snowy Mountain",   "Borrow Snowy Mountain textures + sky"),
+    ("training", "Geyser Rock",      "Borrow Geyser Rock textures + sky"),
+    ("firecanyon", "Fire Canyon",    "Borrow Fire Canyon textures + sky"),
+    ("swamp",    "Boggy Swamp",      "Borrow Boggy Swamp textures + sky"),
+    ("sunken",   "Lost Precursor City", "Borrow Lost Precursor City textures + sky"),
+    ("sunkenb",  "Lost Precursor City (helix)", "Borrow Lost Precursor City (helix part) textures + sky"),
+    ("ogre",     "Mountain Pass",    "Borrow Mountain Pass textures + sky"),
+    ("maincave", "Spider Cave",      "Borrow Spider Cave textures + sky"),
+    ("darkcave", "Spider Cave (dark)", "Borrow Spider Cave (dark part) textures + sky"),
+    ("robocave", "Spider Cave (robot)", "Borrow Spider Cave (robot part) textures + sky"),
+    ("lavatube", "Lava Tube",        "Borrow Lava Tube textures + sky"),
+    ("citadel",  "Gol and Maia's Citadel", "Borrow Citadel textures + sky"),
+    ("finalboss", "Final Boss",      "Borrow Final Boss textures + sky"),
 ]
 TEXTURE_SOURCE_VALUES = [it[0] for it in TEXTURE_SOURCE_ITEMS]
 
@@ -379,8 +391,9 @@ def _spawn_variant_cb(self, context):
     from .spawn_items import get_selected_spawn_item
     items = []
     item = get_selected_spawn_item(context.scene)
-    if item is not None and getattr(item, "etype", None):
-        for c in _db.variant_choices(item.etype):
+    vet = (getattr(item, "etype", None) or getattr(item, "variant_etype", None)) if item is not None else None
+    if vet:
+        for c in _db.variant_choices(vet):
             vid = c.get("id", c.get("value"))
             items.append((vid, c.get("label", vid), ""))
     if not items:
@@ -402,7 +415,7 @@ ETYPE_EXTRAS_AG   = {e: list(info["extras_ag"]) for e, info in ENTITY_DEFS.items
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; tpages from the tpage_group's level)
+# ETYPE_CODE + ETYPE_TPAGES (Actors[].code; explicit DB tpages, see db.actor_tpages)
 # ═══════════════════════════════════════════════════════════════════════════
 # etype -> .o files for the level DGO, in load order (dependencies first,
 # e.g. mother-spider-h.o ... mother-spider.o). See db.code_files().
@@ -462,7 +475,8 @@ def needed_tpages(actors):
     """Return de-duplicated ordered list of tpage .go files needed for placed entities."""
     seen, r = set(), []
     for a in actors:
-        for tp in ETYPE_TPAGES.get(a.get("_db_etype") or a["etype"], []):
+        # extra_tpages: tpages of actors this one spawns (battlecontroller lurkers)
+        for tp in list(ETYPE_TPAGES.get(a.get("_db_etype") or a["etype"], [])) + list(a.get("extra_tpages") or []):
             if tp not in seen:
                 seen.add(tp)
                 r.append(tp)
@@ -645,6 +659,11 @@ def _build_actor_link_lumps(obj, etype):
         for i in range(max_idx + 1):
             if i in slot_map:
                 names.append(slot_map[i])
+        # "append_self" slots (spike): the actor's own name goes last, once.
+        if names and _db.link_slot(etype, lkey, 0).get("append_self"):
+            me = obj.name[6:].replace("_", "-", 1) if obj.name.startswith("ACTOR_") else obj.name
+            if names[-1] != me:
+                names.append(me)
         if names:
             result[lkey] = ["string"] + names
     return result

@@ -1,0 +1,7 @@
+;; Explorer for custom levels: vanilla only lets Jak talk to him from a fixed
+;; area of Sandover (X < -49.5 m, Z > 24 m, explorer.gc target-above-threshold?).
+;; This child lets Jak talk to him from anywhere near.
+(deftype __TYPE__ (explorer) ())
+
+(defmethod target-above-threshold? ((this __TYPE__))
+  (the-as symbol *target*))

@@ -555,24 +555,65 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
             log(f"  [write_gc] injected {len(custom_blocks)} custom GOAL code block(s): "
                 f"{', '.join(n for n, _ in custom_blocks)}")
 
+    # Battlecontrollers with an intro camera: their child types (already level-scoped).
+    _pfx = _level_type_prefix(name)
+    if scene is not None:
+        from . import battlecontroller as _bc
+        _bcl = _bc.gc_lines(_pfx, _level_objects(scene))
+        if _bcl:
+            lines += ["", ";; --- battlecontrollers with an intro camera ---"] + _bcl
+            log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} battlecontroller type(s)")
+        from . import subtypes as _sub
+        _sl = _sub.gc_lines(_pfx, _level_objects(scene))
+        if _sl:
+            lines += ["", ";; --- level subtypes (export/subtypes.py) ---"] + _sl
+            log(f"  [write_gc] {sum(1 for l in _sl if l.startswith('(deftype'))} level subtype(s)")
+
     new_text = "\n".join(lines)
     # Level-scope the addon's trigger type names (and the shared plane-test
     # helper) so this level's types can never clash with another level's copy
     # in the same compile. Replacing the bare base name also catches its states
     # (e.g. "checkpoint-trigger-active" -> "<pfx>-checkpoint-trigger-active") and
     # init/go references, since those contain the base name as a prefix.
-    _pfx = _level_type_prefix(name)
     for _base in (*_TRIGGER_ETYPES, "point-in-planes?"):
         new_text = new_text.replace(_base, f"{_pfx}-{_base}")
-    if p.exists() and p.read_text() == new_text:
+    old_text = p.read_text() if p.exists() else ""
+    if old_text == new_text:
         log(f"Skipped {p} (unchanged)")
     else:
+        # A running GOALC refuses a deftype that differs from the one it
+        # already compiled ("Inconsistent type definition"), so the build
+        # restarts GOALC when this level's types changed (see build.py).
+        global TYPES_CHANGED
+        if old_text and _deftypes(old_text) != _deftypes(new_text):
+            TYPES_CHANGED = True
+            log("  [write_gc] level type definitions changed — GOALC will be restarted before (mi)")
         p.write_text(new_text)
         log(f"Wrote {p}")
 
+
+TYPES_CHANGED = False
+
+
+def _deftypes(text: str) -> list[str]:
+    """Every (deftype ...) form in a GOAL file, as written (paren-matched)."""
+    out, i = [], text.find("(deftype")
+    while i >= 0:
+        d = 0
+        for j in range(i, len(text)):
+            if text[j] == "(":
+                d += 1
+            elif text[j] == ")":
+                d -= 1
+                if d == 0:
+                    out.append(" ".join(text[i:j + 1].split()))
+                    break
+        i = text.find("(deftype", i + 1)
+    return out
+
 # Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
 # that are not part of the level format — never written to the .jsonc.
-_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code")
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
 
 
 def _dumps_with_raw_lumps(data):
@@ -607,8 +648,10 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # Match the per-level type scoping done in write_gc: a trigger actor's etype
     # must point at the level-scoped type name so the engine births the right type.
     _pfx = _level_type_prefix(name)
+    from .battlecontroller import GEN_PREFIX as _BC_GEN
+    from .subtypes import ETYPES as _SUBTYPES
     for _a in all_actors:
-        if _a.get("etype") in _TRIGGER_ETYPES:
+        if _a.get("etype") in _TRIGGER_ETYPES + _SUBTYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
             _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins
@@ -647,6 +690,11 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     _ag_names = [g.replace(".go", "") for g in ags]
     _ag_names += [g for g in _incl["json_ag"] if g not in _ag_names]
     _textures = list(_textures) + [t for t in _incl["json_texture"] if t not in _textures]
+    from .. import db as _tdb
+    for _a in all_actors:
+        for _t in _tdb.actor_textures(_a.get("_db_etype") or _a.get("etype", "")) + list(_a.get("_textures") or []):
+            if _t not in _textures:
+                _textures.append(_t)
     ambients = list(ambients) + _incl["ambients"]
     if _incl["cameras"]:
         # Included cameras go in with either camera system; same no-actor
@@ -734,9 +782,12 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     inc_go  = [f'  "{f}"' for f in _incl["gd"] if not f.endswith(".o") and f not in _have]
     if inc_o or inc_go:
         log(f"  [include] .gd: +{len(inc_o) + len(inc_go)} file(s)")
+    # <name>-obs.o links after the actor code: its generated types (e.g. a
+    # generated battlecontroller) need their parent type already loaded.
     files = (
-        [f'  "{name}-obs.o"']
-        + code_o + inc_o
+        code_o
+        + [f'  "{name}-obs.o"']
+        + inc_o
         + level_tpages
         + [f'  "{g}"' for g in ags]
         + extras_lines + inc_go
@@ -1117,10 +1168,16 @@ def patch_game_gp(name, code_deps=None, scene=None):
     for _gc, _dep in _incl["goal_src"]:
         extra_goal_src += f'(goal-src "{_gc}" "{_dep}") {_tag}\n'
 
+    # a generated battlecontroller type in the -obs needs its parents compiled first
+    _obs_deps = '"process-drawable"'
+    if scene is not None:
+        from . import battlecontroller as _bc
+        if _bc.generated_types(_level_objects(scene)):
+            _obs_deps += ' "battlecontroller" "pov-camera"'
     correct_block = (
         f'(build-custom-level "{name}")\n'
         f'(custom-level-cgo "{dgo}" "{name}/{nick}.gd")\n'
-        f'(goal-src "levels/{name}/{name}-obs.gc" "process-drawable")\n'
+        f'(goal-src "levels/{name}/{name}-obs.gc" {_obs_deps})\n'
         + extra_goal_src
     )
 

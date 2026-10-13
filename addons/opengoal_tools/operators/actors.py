@@ -105,7 +105,7 @@ class OG_OT_SetActorLink(Operator):
         slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
         if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
             self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
-                                     f"{', '.join(slot.get('accepts') or [])} — it may not work in game")
+                                     f"{_db.accepts_text(slot.get('accepts'))} — it may not work in game")
         else:
             self.report({"INFO"}, f"Linked {self.source_name} [{self.lump_key}] → {self.target_name}")
         return {"FINISHED"}
@@ -124,17 +124,27 @@ def _link_target_items(self, ctx):
     from ..data import _actor_multi_links
     have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
             if src and self.append else set())
+    # nav-mesh-actor / path-actor: actors that have what the link borrows first
+    has, what = {"nav-mesh-actor": (lambda o: bool(o.get("og_navmesh_link")), "navmesh"),
+                 "path-actor": (lambda o: len(getattr(o, "og_waypoint_sources", ())) > 0, "path"),
+                 }.get(self.lump_key, (None, ""))
     rows = []
     for o in scene.objects:
         if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
                 or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
             continue
         ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
-        rows.append((not ok, _natural_key(o.name), o.name, ok))
+        got = has(o) if has else None
+        rows.append((got is False, not ok, _natural_key(o.name), o.name, ok, got))
     rows.sort()
-    items = [(n, n + ("" if ok else "  (unexpected type)") + ("  (linked)" if n in have else ""),
-              f"Link {n}", "LINKED" if ok else "ERROR", i)
-             for i, (_bad, _k, n, ok) in enumerate(rows)]
+
+    def _label(n, ok, got):
+        s = n + ("" if ok else "  (unexpected type)")
+        if got is not None:
+            s += f"  (has a {what} connected)" if got else f"  (no {what} connected)"
+        return s + ("  (linked)" if n in have else "")
+    items = [(n, _label(n, ok, got), f"Link {n}", "LINKED" if ok and got is not False else "ERROR", i)
+             for i, (_g, _bad, _k, n, ok, got) in enumerate(rows)]
     if not items:
         items = [("__none__", "(no other actors)", "", "ERROR", 0)]
     _SEARCH_ITEMS[:] = items
@@ -164,6 +174,180 @@ class OG_OT_LinkActorSearch(Operator):
         return bpy.ops.og.set_actor_link(source_name=self.source_name, lump_key=self.lump_key,
                                          slot_index=self.slot_index, target_name=self.target,
                                          append=self.append)
+
+
+# ─── Battlecontroller: intro camera picks + citadel camera position ─────────
+_BC_ITEMS: list = []   # search-popup items must stay referenced
+
+
+def _bc_camera_items(self, ctx):
+    from ..export.battlecontroller import camera_anims
+    items = [("custom", "Custom…", "Type a camera art group name")]
+    items += [(ag, f"{ag}  ({len(an)} animations)", ag) for ag, an in sorted(camera_anims().items())]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    return _BC_ITEMS
+
+
+def _bc_anim_items(self, ctx):
+    from ..export.battlecontroller import camera_anims
+    o = ctx.active_object if ctx else None
+    ag = str(o.get("og_bc_cam", "") or "") if o else ""
+    items = [("custom", "Custom…", "Type an animation name")]
+    items += [(a, a, f"{ag}-{a}") for a in camera_anims().get(ag, [])]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    return _BC_ITEMS
+
+
+class OG_OT_BCPickCamera(Operator):
+    """Pick the camera art group the intro plays (search by name), or Custom to type one"""
+    bl_idname   = "og.bc_pick_camera"
+    bl_label    = "Pick Camera"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Camera", items=_bc_camera_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        from ..export.battlecontroller import camera_anims
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        o["og_bc_cam"] = self.pick
+        anims = camera_anims().get(self.pick, [])
+        if o.get("og_bc_anim", "") not in anims + ["custom"]:
+            o["og_bc_anim"] = anims[-1] if anims else "custom"
+        return {"FINISHED"}
+
+
+class OG_OT_BCPickAnim(Operator):
+    """Pick the camera animation (search by name), or Custom to type one"""
+    bl_idname   = "og.bc_pick_anim"
+    bl_label    = "Pick Camera Animation"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Animation", items=_bc_anim_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        o["og_bc_anim"] = self.pick
+        return {"FINISHED"}
+
+
+class OG_OT_BCCamposAdd(Operator):
+    """Spawn the camera-position empty the citadel camera plays from (at the
+    3D cursor, or at the controller with At Actor Position on)"""
+    bl_idname  = "og.bc_campos_add"
+    bl_label   = "Add Camera Position"
+    bl_options = {"REGISTER", "UNDO"}
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        from ..collections import _link_object_to_sub_collection, _COL_PATH_WAYPOINTS
+        base = "CAMPOS_" + actor.name[len("ACTOR_"):]
+        name, n = base, 1
+        while bpy.data.objects.get(name):
+            name = f"{base}_{n}"; n += 1
+        e = bpy.data.objects.new(name, None)
+        e.empty_display_type = "CONE"; e.empty_display_size = 1.0
+        e.location = actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor \
+            else ctx.scene.cursor.location.copy()
+        ctx.scene.collection.objects.link(e)
+        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        actor["og_bc_campos"] = e.name
+        return {"FINISHED"}
+
+
+class OG_OT_BCCamposLink(Operator):
+    """Use this empty as the citadel camera position"""
+    bl_idname  = "og.bc_campos_link"
+    bl_label   = "Link Camera Position"
+    bl_options = {"REGISTER", "UNDO"}
+    actor_name:  bpy.props.StringProperty()
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        actor = ctx.scene.objects.get(self.actor_name)
+        if actor is None or self.target_name not in ctx.scene.objects:
+            return {"CANCELLED"}
+        actor["og_bc_campos"] = self.target_name
+        return {"FINISHED"}
+
+
+def _bc_lurker_items(self, ctx):
+    from .. import db as _d
+    o = ctx.active_object if ctx else None
+    have = {e.etype for e in getattr(o, "og_bc_lurkers", [])} if o else set()
+    items = [(et, (_d.find_actor(et) or {}).get("label", et) + ("  (added)" if et in have else ""), et)
+             for et in sorted(_d.battlecontroller_lurkers())]
+    _BC_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)] or [("__none__", "(no jumping enemies)", "", 0)]
+    return _BC_ITEMS
+
+
+class OG_OT_BCLurkerAdd(Operator):
+    """Add a lurker type to this battlecontroller (enemies that can jump, max 4)"""
+    bl_idname   = "og.bc_lurker_add"
+    bl_label    = "Add Lurker"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Lurker", items=_bc_lurker_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or self.pick == "__none__":
+            return {"CANCELLED"}
+        if len(o.og_bc_lurkers) >= 4:
+            self.report({"WARNING"}, "A battlecontroller uses at most 4 lurker types"); return {"CANCELLED"}
+        e = o.og_bc_lurkers.add()
+        e.etype = self.pick
+        e.percent = 1.0 if len(o.og_bc_lurkers) == 1 else 0.0
+        return {"FINISHED"}
+
+
+class OG_OT_BCLurkerRemove(Operator):
+    """Remove this lurker type"""
+    bl_idname  = "og.bc_lurker_remove"
+    bl_label   = "Remove Lurker"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or not (0 <= self.index < len(o.og_bc_lurkers)):
+            return {"CANCELLED"}
+        o.og_bc_lurkers.remove(self.index)
+        return {"FINISHED"}
+
+
+class OG_OT_BCLurkerEven(Operator):
+    """Split the spawn chance evenly between the lurkers (adds up to 1.0)"""
+    bl_idname  = "og.bc_lurker_even"
+    bl_label   = "Split Evenly"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        ls = list(getattr(o, "og_bc_lurkers", []))[:4] if o else []
+        for e in ls:
+            e.percent = round(1.0 / len(ls), 4)
+        if ls:   # absorb rounding in the last one
+            ls[-1].percent = round(1.0 - sum(e.percent for e in ls[:-1]), 4)
+        return {"FINISHED"}
 
 
 def _natural_key(name):
@@ -271,17 +455,39 @@ class OG_OT_ClearDoorCP(Operator):
             del o["og_continue_name"]
         return {"FINISHED"}
 
-class OG_OT_SetWaterAttack(Operator):
-    """Set the damage type for this water volume."""
-    bl_idname  = "og.set_water_attack"
-    bl_label   = "Set Water Attack"
-    bl_options = {"REGISTER", "UNDO"}
-    mesh_name:  bpy.props.StringProperty()
-    attack_val: bpy.props.StringProperty()
+class OG_OT_ShowLinkTypes(Operator):
+    """List every actor type this link slot expects (its "accepts" list,
+    parent types and actors that react to its event)"""
+    bl_idname  = "og.show_link_types"
+    bl_label   = "Actors that work here"
+    bl_options = {"INTERNAL"}
+    source_name: bpy.props.StringProperty()
+    lump_key:    bpy.props.StringProperty()
+    slot_index:  bpy.props.IntProperty()
+
+    def _types(self):
+        src = bpy.data.objects.get(self.source_name)
+        et = src.name.split("_", 2)[1] if src and src.name.count("_") >= 2 else ""
+        acc = _db.link_slot(et, self.lump_key, self.slot_index).get("accepts")
+        out = [(a.get("label") or a["etype"], a["etype"]) for a in _db.actors()
+               if a.get("category") != "Hidden" and _db.link_accepts(acc, a["etype"])]
+        return acc, sorted(out)
+
+    def invoke(self, ctx, event):
+        return ctx.window_manager.invoke_popup(self, width=380)
+
+    def draw(self, ctx):
+        acc, types = self._types()
+        col = self.layout.column(align=True)
+        col.label(text=f"[{self.lump_key} {self.slot_index}] expects: {_db.accepts_text(acc)}", icon="INFO")
+        if not types:
+            col.label(text="No spawnable actor in the database fits.")
+        for label, et in types:
+            col.label(text=f"{label}  ({et})")
+
     def execute(self, ctx):
-        o = bpy.data.objects.get(self.mesh_name)
-        if o: o["og_water_attack"] = self.attack_val
         return {"FINISHED"}
+
 
 class OG_OT_SetCrateType(Operator):
     """Set the crate type (look/defense) on the selected crate actor."""
@@ -425,20 +631,6 @@ class OG_OT_SetBoneBridgeAnim(Operator):
             o["og_bone_bridge_anim"] = self.anim_val
         return {"FINISHED"}
 
-class OG_OT_SetAltTask(Operator):
-    """Set the alt-task lump on oracle / pontoon actors."""
-    bl_idname  = "og.set_alt_task"
-    bl_label   = "Set Alt Task"
-    bl_options = {"REGISTER", "UNDO"}
-
-    task_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_alt_task"] = self.task_name
-        return {"FINISHED"}
-
 class OG_OT_TogglePlatformWrap(Operator):
     """Toggle wrap-phase (one-way loop vs ping-pong) on the selected platform."""
     bl_idname = "og.toggle_platform_wrap"
@@ -485,12 +677,19 @@ class OG_OT_SetVersionField(bpy.types.Operator):
 CLASSES = (
     OG_OT_SetActorLink,
     OG_OT_LinkActorSearch,
+    OG_OT_BCPickCamera,
+    OG_OT_BCPickAnim,
+    OG_OT_BCCamposAdd,
+    OG_OT_BCCamposLink,
+    OG_OT_BCLurkerAdd,
+    OG_OT_BCLurkerRemove,
+    OG_OT_BCLurkerEven,
     OG_OT_LinkAddSelected,
     OG_OT_LinkChainSelected,
     OG_OT_ToggleDoorFlag,
     OG_OT_SetDoorCP,
     OG_OT_ClearDoorCP,
-    OG_OT_SetWaterAttack,
+    OG_OT_ShowLinkTypes,
     OG_OT_SetCrateType,
     OG_OT_SetCratePickup,
     OG_OT_SetCrateAmount,
@@ -500,7 +699,6 @@ CLASSES = (
     OG_OT_ToggleTurbineParticles,
     OG_OT_SetElevatorMode,
     OG_OT_SetBoneBridgeAnim,
-    OG_OT_SetAltTask,
     OG_OT_TogglePlatformWrap,
     OG_OT_SetPlatformDefaults,
     OG_OT_SetVersionField,

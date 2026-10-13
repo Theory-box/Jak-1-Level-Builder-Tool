@@ -15,6 +15,8 @@
 #          (fixed eco-info for pickups; no backing prop).
 #   computed encoder — lump.type "eco-info-picker": pickup enum (choices carry
 #          engine_string) + pairs_with amount field -> ["eco-info", sym, amount].
+#   vector lumps (type vector / vector3m / vector4m): one field per slot,
+#              emitted as ["vector3m", [x, y, z]]
 #   lump_bit:  { key, type, bit_value }   (OR-accumulated uint32 bitfield)
 #   types: float|meters|degrees (->float), int|int32|uint32|mode (->int),
 #          bool, symbol|string|enum-uint32|water-height|... (passthrough),
@@ -36,6 +38,7 @@ from __future__ import annotations
 
 _FLOAT = ("float", "meters", "degrees")
 _INT = ("int", "int32", "uint32", "mode")
+_VECTOR = ("vector", "vector3m", "vector4m")
 
 
 def _num(v):
@@ -127,6 +130,12 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
     for f in fields:
         if f.get("type") == "object_ref":
             continue
+        # "export_if_visible": only written while its visible_if holds
+        # (e.g. the Sunken on / off water fields for those looks only).
+        if f.get("export_if_visible") and f.get("visible_if"):
+            if not all((get(k) in v) if isinstance(v, list) else get(k) == v
+                       for k, v in f["visible_if"].items()):
+                continue
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None
 
@@ -152,7 +161,29 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
                 cf = next((x for x in fields if x.get("key") == ck), None)
                 cd = _resolve_default(cf, etype) if cf else 0.0
                 vals.append(float(_num(get(ck, cd))))
-            direct[lp["key"]] = ["water-height"] + vals + [lp.get("flags")]
+            flags, attack = lp.get("flags"), None
+            if lp.get("liquids"):
+                # Liquid preset (water panel): its water-flags bits + attack
+                # event; wt20 = surface follows the look's ripples (looks only).
+                lf = next((x for x in fields if x.get("key") == lp.get("liquid_key")), None)
+                liq = lp["liquids"].get(get(lp.get("liquid_key"), _resolve_default(lf, etype) if lf else "water"),
+                                        lp["liquids"].get("water", {}))
+                bits = list(liq.get("flags", []))
+                if lp.get("ripple_key") and get(lp["ripple_key"], False):
+                    bits.append("wt20")
+                flags = "(water-flags %s)" % " ".join(bits)
+                attack = liq.get("attack")
+            direct[lp["key"]] = ["water-height"] + vals + [flags]
+            if attack:
+                direct["attack-event"] = "'" + attack
+            continue
+
+        # ── Task fields (type "task"): (game-task X) or a custom task ────────
+        if lp and f.get("type") == "task":
+            from .. import db as _tdb
+            expr = _tdb.task_expression(get, f.get("key"))
+            if expr is not None or f.get("write_if") == "always":
+                direct[lp["key"]] = [lp.get("type", "enum-uint32"), expr or "(game-task none)"]
             continue
 
         # ── Computed encoder: eco-info-picker ────────────────────────────────
@@ -206,6 +237,13 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
             value, is_lv = _enum_value(f, raw, default)
         else:
             value = raw
+            # A field's min / max also hold at export (values saved before
+            # the limit existed, e.g. a 0 ease out that the game divides by).
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                if f.get("min") is not None:
+                    value = max(value, f["min"])
+                if f.get("max") is not None:
+                    value = min(value, f["max"])
 
         if lb:
             key = lb["key"]
@@ -264,7 +302,9 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
         mode = g.get("mode")
         if mode == "array":
             n = max(g["slots"]) + 1 if g["slots"] else 0
-            result[key] = [t] + [_coerce(t, g["slots"].get(i, 0)) for i in range(n)]
+            vals = [_coerce("float" if t in _VECTOR else t, g["slots"].get(i, 0)) for i in range(n)]
+            # vector lumps are one nested list: ["vector3m", [x, y, z]]
+            result[key] = [t, vals] if t in _VECTOR else [t] + vals
         elif mode == "bits":
             acc = 0
             for bit, ok in g["bits"]:

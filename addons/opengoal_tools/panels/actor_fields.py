@@ -9,7 +9,7 @@
 #   {
 #     "key":       "og_orbit_scale",
 #     "label":     "Orbit scale",
-#     "type":      "float" | "int" | "bool" | "enum" | "string" | "vector3",
+#     "type":      "float" | "int" | "bool" | "enum" | "string" | "vector3" | "task",
 #     "default":   ...,
 #     "lump":      { "key": "scale", "type": "float" },   (informational)
 #     "write_if":  "always" | "if_true" | "if_nonzero" | ...,
@@ -52,6 +52,22 @@ class OG_OT_SetActorEnumField(Operator):
         return {"FINISHED"}
 
 
+class OG_OT_SetFieldFromZ(Operator):
+    """Set this field to the active object's height (Blender Z = game height)"""
+    bl_idname = "og.set_field_from_z"
+    bl_label = "Set From Height"
+    bl_options = {"INTERNAL", "UNDO"}
+
+    prop_key: StringProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        obj[self.prop_key] = round(obj.matrix_world.translation.z, 4)
+        return {"FINISHED"}
+
+
 class OG_OT_ToggleActorBoolField(Operator):
     """Toggle a boolean custom property on the active actor."""
     bl_idname = "og.toggle_actor_bool_field"
@@ -80,7 +96,7 @@ def _resolve_choices(choices_spec):
       * list of plain strings              → normalised into dicts
       * "CrateTypes"                       → db.crate_types()
       * "CratePickups"                     → db.crate_pickups()
-      * "GameTasks"                        → db.game_tasks() plus a "none" entry up top
+      * "GameTasks"                        → db.game_tasks() (the game-task enum, none first)
       * "SoundBanks"                       → db.sound_banks()
       * "BankSFX"                          → flattened bank/sfx list
       * anything else → []
@@ -89,20 +105,17 @@ def _resolve_choices(choices_spec):
         out = []
         for c in choices_spec:
             if isinstance(c, dict):
-                out.append(c)
+                # inline variant lists may key entries by "id"
+                out.append(c if "value" in c else {**c, "value": c.get("id")})
             else:
                 out.append({"value": str(c), "label": str(c)})
         return out
 
     if isinstance(choices_spec, str):
-        if choices_spec == "CrateTypes":
-            return [{"value": t["id"], "label": t["label"]} for t in _db.crate_types()]
         if choices_spec == "CratePickups":
             return [{"value": p["id"], "label": p["label"]} for p in _db.crate_pickups()]
-        if choices_spec == "GameTasks":
-            items = [{"value": "none", "label": "None"}]
-            items += [{"value": t["id"], "label": t["label"]} for t in _db.game_tasks()]
-            return items
+        if choices_spec == "GameTasks":   # already starts with none
+            return [{"value": t["id"], "label": t["label"]} for t in _db.game_tasks()]
         if choices_spec == "SoundBanks":
             return [{"value": b["id"], "label": b["label"]} for b in _db.sound_banks()]
         if choices_spec == "BankSFX":
@@ -172,10 +185,17 @@ def _draw_enum_field(layout, obj, field):
     if current is None:
         current = field.get("default")
 
+    if len(choices) > 12:
+        # Long lists (water looks ...): a searchable dropdown.
+        row = layout.row(align=True)
+        row.label(text=f"{label}:")
+        cur = next((c.get("label", c.get("value")) for c in choices if c.get("value") == current), str(current))
+        op = row.operator("og.pick_enum_field", text=cur, icon="DOWNARROW_HLT")
+        op.prop_key = key
+        return
+
     box = layout.box()
     box.label(text=f"{label}:")
-    # Short lists (<=8): radio buttons. Longer lists: still radio, but in a
-    # scrollable column. Full dropdown would require a typed EnumProperty.
     col = box.column(align=True)
     for c in choices[:40]:  # cap the render count to avoid UI stalls
         val = c.get("value", "")
@@ -189,6 +209,90 @@ def _draw_enum_field(layout, obj, field):
         row = box.row()
         row.enabled = False
         row.label(text=f"… (+{len(choices) - 40} more, edit DB to reduce)")
+
+
+def _draw_task_field(layout, obj, field):
+    """Game task: a searchable picker (None, Custom..., every game task) and a
+    text field for a custom task name when Custom is picked."""
+    key = field["key"]
+    label = field.get("label", key)
+    cur = obj.get(key, field.get("default", "none")) or "none"
+    names = {"none": "None", "custom": "Custom…"}
+    names.update({t["id"]: t["label"] for t in _db.game_tasks()})
+    row = layout.row(align=True)
+    row.label(text=f"{label}:")
+    op = row.operator("og.pick_task", text=names.get(cur, cur), icon="VIEWZOOM")
+    op.prop_key = key
+    if cur == "custom":
+        _prop_row(layout, obj, key + "_custom", "  Custom task:", "")
+
+
+class OG_OT_PickTask(Operator):
+    """Pick a game task (search by name), or Custom to type one"""
+    bl_idname   = "og.pick_task"
+    bl_label    = "Pick Game Task"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "task"
+
+    def _items(self, context):
+        # the DB list (game-task-h.gc) already starts with none
+        items = [("custom", "Custom…", "Type a custom task name")]
+        items += [(t["id"], t["label"] if t["id"] == "none" else f"{t['label']}  ({t['id']})", t["id"])
+                  for t in _db.game_tasks()]
+        _TASK_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        return _TASK_ITEMS
+
+    prop_key: StringProperty(options={"SKIP_SAVE"})
+    task:     bpy.props.EnumProperty(name="Task", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None or not self.prop_key:
+            return {"CANCELLED"}
+        obj[self.prop_key] = self.task
+        if self.task == "custom" and (self.prop_key + "_custom") not in obj:
+            obj[self.prop_key + "_custom"] = ""
+        return {"FINISHED"}
+
+
+_TASK_ITEMS: list = []   # search-popup items must stay referenced
+
+
+class OG_OT_PickEnumField(Operator):
+    """Pick a value from a long list (search by name)"""
+    bl_idname   = "og.pick_enum_field"
+    bl_label    = "Pick Value"
+    bl_options  = {"REGISTER", "UNDO"}
+    bl_property = "value"
+
+    def _items(self, context):
+        obj = context.active_object
+        et = obj.name.split("_", 2)[1] if obj and obj.name.count("_") >= 2 else ""
+        f = next((x for x in _db.inherited_fields(et) if x.get("key") == self.prop_key), None)
+        items = [(c.get("value", ""), c.get("label", c.get("value", "")), "")
+                 for c in _resolve_choices((f or {}).get("choices", []))]
+        _ENUM_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items or [("NONE", "-", "")])]
+        return _ENUM_ITEMS
+
+    prop_key: StringProperty(options={"SKIP_SAVE"})
+    value:    bpy.props.EnumProperty(name="Value", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        if not self.prop_key or self.value == "NONE":
+            return {"CANCELLED"}
+        # same path as the radio buttons (variant preview refresh ...)
+        return bpy.ops.og.set_actor_enum_field(prop_key=self.prop_key, value=self.value)
+
+
+_ENUM_ITEMS: list = []
 
 
 def _draw_bool_field(layout, obj, field):
@@ -223,6 +327,8 @@ def _draw_field(layout, obj, field, actor_info=None):
 
     if ftype == "enum":
         _draw_enum_field(layout, obj, field)
+    elif ftype == "task":
+        _draw_task_field(layout, obj, field)
     elif ftype == "bool":
         _draw_bool_field(layout, obj, field)
     elif ftype == "vector3":
@@ -237,6 +343,11 @@ def _draw_field(layout, obj, field, actor_info=None):
         # float / int / string — _prop_row handles all three
         _prop_row(layout, obj, field["key"], f"{label}:",
                   default if default is not None else 0)
+        # "from_location": "z" -> button that copies the object's Blender Z
+        # (game height) into the field (e.g. water heights).
+        if field.get("from_location") == "z":
+            op = layout.operator("og.set_field_from_z", text="Set to this actor's height", icon="EMPTY_SINGLE_ARROW")
+            op.prop_key = field["key"]
 
     if field.get("note"):
         _draw_note(layout, field["note"])
@@ -290,10 +401,29 @@ class OG_PT_ActorFields(Panel):
         # shared field groups (e.g. lavaballoon=3.0 vs darkecobarrel=15.0)
         actor_info = {"etype": etype, **actor}
         if _db.has_panel(etype, "custom-fields"):
-            for field in _db.ui_fields(etype):
-                if field.get("show-field") is False:   # DB: hidden but still exported
-                    continue
-                _draw_field(self.layout, sel, field, actor_info)
+            fields = [f for f in _db.ui_fields(etype) if f.get("show-field") is not False]   # DB: hidden but still exported
+            done = set()
+            for field in fields:
+                grp = field.get("group")
+                if not grp:
+                    _draw_field(self.layout, sel, field, actor_info)
+                elif grp not in done:
+                    # "group": fields drawn together in a collapsible sub menu;
+                    # the first one's "group_label" / "group_note" head it.
+                    done.add(grp)
+                    title, note = field.get("group_label", grp), field.get("group_note")
+                    if hasattr(self.layout, "panel"):
+                        header, body = self.layout.panel(f"og_fields_{grp}", default_closed=True)
+                        header.label(text=title)
+                    else:
+                        body = self.layout.box(); body.label(text=title)
+                    if body is None:
+                        continue
+                    if note:
+                        body.label(text=note, icon="INFO")
+                    for f in fields:
+                        if f.get("group") == grp:
+                            _draw_field(body, sel, f, actor_info)
         # Small DB panels with no hand-written Blender panel ("draw": "generic").
         for pid, pt in _db.generic_panels(etype):
             box = self.layout.box()
@@ -304,7 +434,10 @@ class OG_PT_ActorFields(Panel):
 
 # Exported registry for __init__.py
 CLASSES = (
+    OG_OT_PickTask,
+    OG_OT_PickEnumField,
     OG_OT_SetActorEnumField,
+    OG_OT_SetFieldFromZ,
     OG_OT_ToggleActorBoolField,
     OG_PT_ActorFields,
 )

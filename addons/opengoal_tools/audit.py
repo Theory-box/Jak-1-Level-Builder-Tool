@@ -23,7 +23,6 @@
 from . import db as _db
 from .data import (
     ENTITY_DEFS,
-    GLOBAL_TPAGE_GROUPS,
     ACTOR_LINK_DEFS,
     _actor_link_slots,
     _actor_get_link,
@@ -65,31 +64,6 @@ def _camera_objs(scene):
 
 def _issue(severity, message, obj_name=None):
     return {"severity": severity, "message": message, "obj_name": obj_name}
-
-
-# ---------------------------------------------------------------------------
-# Check 1 — Tpage budget
-# ---------------------------------------------------------------------------
-
-def check_tpage_budget(scene):
-    issues = []
-    groups = set()
-    for o in _actor_objs(scene):
-        et   = _etype(o)
-        info = ENTITY_DEFS.get(et, {}) if et else {}
-        grp  = info.get("tpage_group")
-        if grp and grp not in GLOBAL_TPAGE_GROUPS:
-            groups.add(grp)
-    if len(groups) > 2:
-        issues.append(_issue("WARNING",
-            f"Tpage budget: {len(groups)} non-global groups in use "
-            f"({', '.join(sorted(groups))}). Jak 1 can load at most 2 "
-            "non-global tpage groups per level — extra groups will fail to stream art."))
-    elif len(groups) == 2:
-        issues.append(_issue("INFO",
-            f"Tpage groups: 2 non-global groups in use ({', '.join(sorted(groups))}). "
-            "This is the maximum — adding more non-global actor types may break art loading."))
-    return issues
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +166,7 @@ def check_actor_links(scene):
             if t_et and not _db.link_accepts(accepts, t_et):
                 issues.append(_issue("WARNING",
                     f"'{o.name}' ({et}): link '{lk.lump_key}' → '{lk.target_name}' ({t_et}) is not an "
-                    f"expected type ({', '.join(accepts)}). It may not work in game.", o.name))
+                    f"expected type ({_db.accepts_text(accepts)}). It may not work in game.", o.name))
     return issues
 
 
@@ -283,7 +257,9 @@ def check_camera_targets(scene):
 # Check 9 — Door system checks (v1.7.0)
 # ---------------------------------------------------------------------------
 
-_ECO_DOOR_ETYPES = {"eco-door", "jng-iris-door", "sidedoor", "rounddoor"}
+def _is_eco_door(et):
+    """eco-door and its children (DB parent tree, not a list)."""
+    return et == "eco-door" or any(r.get("etype") == "eco-door" for r in _db.parent_chain(et))
 
 def check_doors(scene):
     issues  = []
@@ -294,7 +270,7 @@ def check_doors(scene):
     used_buttons = set()
     for o in actors:
         et = _etype(o)
-        if et not in _ECO_DOOR_ETYPES:
+        if not _is_eco_door(et):
             continue
         link = _actor_get_link(o, "state-actor", 0)
         if link and link.target_name.strip():
@@ -306,7 +282,7 @@ def check_doors(scene):
             continue
 
         # eco-door family: state-actor target should be a basebutton
-        if et in _ECO_DOOR_ETYPES:
+        if _is_eco_door(et):
             link = _actor_get_link(o, "state-actor", 0)
             target_name = link.target_name.strip() if link else ""
             if target_name:
@@ -332,21 +308,22 @@ def check_doors(scene):
                     "The door won't know which checkpoint to activate when opened.",
                     o.name))
             else:
-                try:
-                    cp_obj = objects.get(cp_name)
-                except Exception:
-                    cp_obj = None
-                if cp_obj is None:
+                # checkpoints export as "<level>-<uid>" (CHECKPOINT_<uid>)
+                lvl = str(scene.get("og_level_name", "") or getattr(scene.og_props, "level_name", "")).strip().lower()
+                cps = {o.name[len("CHECKPOINT_"):] for o in objects if o.name.startswith("CHECKPOINT_")}
+                ok = (cp_name in cps or any(cp_name == f"{lvl}-{u}" for u in cps)
+                      or any(cp_name.endswith("-" + u) for u in cps) or objects.get(cp_name) is not None)
+                if not ok:
                     issues.append(_issue("ERROR",
                         f"'{o.name}' (launcherdoor) continue-name '{cp_name}' "
                         "does not exist in the scene.", o.name))
 
         # basebutton: warn if nothing is listening to it
         if et == "basebutton":
-            if o.name not in used_buttons:
+            if o.name not in used_buttons and not _actor_get_link(o, "alt-actor", 0)                     and not _actor_get_link(o, "next-actor", 0) and not _actor_get_link(o, "prev-actor", 0):
                 issues.append(_issue("WARNING",
-                    f"'{o.name}' (basebutton) is not linked to any door via "
-                    "state-actor. The button will animate but open nothing.",
+                    f"'{o.name}' (basebutton) has no notify actor or chain and no door uses it "
+                    "as state-actor. The button will animate but trigger nothing.",
                     o.name))
 
     return issues
@@ -377,6 +354,54 @@ def check_entity_defs_audit_blocks(scene):
     return issues
 
 
+def check_axis_not_vertical(scene):
+    """DB "axis_not_vertical": "x"|"y"|"z" (game axis): the actor uses that
+    local axis as a horizontal direction (swingpole: its pole), so it must
+    not point straight up or down."""
+    col = {"x": 0, "y": 2, "z": 1}   # game axis -> Blender local axis (game Y = Blender Z)
+    issues = []
+    for o in _actor_objs(scene):
+        ax = (_db.find_actor(_etype(o)) or {}).get("axis_not_vertical")
+        if ax in col:
+            d = o.matrix_world.to_3x3().col[col[ax]].normalized()
+            if abs(d.z) > 0.98:
+                issues.append(_issue("WARNING",
+                    f"{o.name}: its local {ax.upper()} axis (game) points straight up/down, "
+                    f"so it won't work. Rotate it (swingpole: spawn turns it 90° on X).", o.name))
+    return issues
+
+
+def check_sync_period(scene):
+    """A sync period under one frame (1/300 s) divides by zero in the game's
+    sync code (citb-arm, citb-disc ... crash on load)."""
+    issues = []
+    for o in _actor_objs(scene):
+        v = o.get("og_sync_period")
+        if v is not None and _db.has_panel(_etype(o), "sync") and abs(float(v)) < 1.0 / 300.0:
+            issues.append(_issue("ERROR", f"{o.name}: sync period {float(v):g} s crashes the game (divide by zero). "
+                                          f"Use at least 0.01 s (negative turns the other way).", o.name))
+    return issues
+
+
+def check_texture_sources(scene):
+    """DB "texture_sources" (actor or selected variant): textures that only
+    draw when the level borrows one of those levels' textures (Level settings
+    > Texture source), e.g. Flut Flut eyes, transparent water looks."""
+    from .collections import _get_level_prop
+    src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
+    issues = []
+    for o in _actor_objs(scene):
+        et = _etype(o)
+        var = _db.actor_variant(et, lambda k, d=None: o.get(k, d))
+        need = var.get("texture_sources") or (_db.find_actor(et) or {}).get("texture_sources")
+        if need and src not in need:
+            what = var.get("texture_note") or (_db.find_actor(et) or {}).get("texture_note") or "some of its textures"
+            issues.append(_issue("WARNING",
+                f"{o.name}: {what} only show with the texture source {' / '.join(need)} "
+                f"(Level settings; this level uses {src}). They stay blank otherwise.", o.name))
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -402,24 +427,6 @@ def check_scene_summary(scene):
         f"{len(vols)} volume(s), {len(cameras)} camera(s), "
         f"{len(checkpts)} checkpoint(s), {len(spawns)} spawn(s)."))
 
-    groups = {}
-    for o in actors:
-        et   = _etype(o)
-        info = ENTITY_DEFS.get(et, {}) if et else {}
-        grp  = info.get("tpage_group")
-        if grp:
-            groups[grp] = groups.get(grp, 0) + 1
-    if groups:
-        non_global = {k: v for k, v in groups.items() if k not in GLOBAL_TPAGE_GROUPS}
-        always     = {k: v for k, v in groups.items() if k in GLOBAL_TPAGE_GROUPS}
-        parts = []
-        if non_global:
-            parts.append("non-global: " + ", ".join(f"{k}×{v}" for k, v in sorted(non_global.items())))
-        if always:
-            parts.append("always-resident: " + ", ".join(f"{k}×{v}" for k, v in sorted(always.items())))
-        if parts:
-            issues.append(_issue("INFO", "Tpage groups — " + "; ".join(parts)))
-
     return issues
 
 
@@ -441,10 +448,41 @@ def check_load_boundaries(scene):
     return issues
 
 
+_BC_SPAWN_PATHS = ("patha", "pathb", "pathc", "pathd", "pathe", "pathf", "pathg", "pathh")
+
+
+def check_battlecontrollers(scene):
+    """Battlecontroller setup: a spawn path, chances, camera variant needs."""
+    from .export import battlecontroller as _bc
+    issues, citadel = [], []
+    for o in _actor_objs(scene):
+        if _etype(o) != "battlecontroller":
+            continue
+        spawn = [p.name.strip() for p in getattr(o, "og_extra_paths", [])
+                 if p.name.strip() in _BC_SPAWN_PATHS and len(p.sources)]
+        if not spawn:
+            issues.append(_issue("ERROR", f"'{o.name}' needs at least one spawn path (patha .. pathh) — "
+                                          "Path panel > Add Path.", o.name))
+        for w in _bc.percent_problems(o):
+            issues.append(_issue("WARNING", f"'{o.name}': {w}.", o.name))
+        var = _bc.variant(o)
+        if var.get("custom_camera") and not all(_bc.camera(o)):
+            issues.append(_issue("ERROR", f"'{o.name}': the custom camera needs a camera art group and an animation.", o.name))
+        if var.get("needs_citadel_camera"):
+            citadel.append(o)
+            if _bc.citadel_camera_object(o) is None:
+                issues.append(_issue("ERROR", f"'{o.name}': the citadel camera needs a camera position "
+                                              f"({_bc.CITADEL_CAM_NAME}) — the game crashes without it.", o.name))
+    if len(citadel) > 1:
+        issues.append(_issue("WARNING", f"{len(citadel)} citadel-camera battlecontrollers: they all use the one "
+                                        f"'{_bc.CITADEL_CAM_NAME}' position (the first one exported)."))
+    return issues
+
+
 _REGISTERED_CHECKS = [
-    check_tpage_budget,
     check_navmesh_links,
     check_missing_paths,
+    check_battlecontrollers,
     check_actor_links,
     check_volumes,
     check_spawn_points,
@@ -453,6 +491,9 @@ _REGISTERED_CHECKS = [
     check_doors,
     check_load_boundaries,
     check_entity_defs_audit_blocks,
+    check_axis_not_vertical,
+    check_sync_period,
+    check_texture_sources,
     check_scene_summary,   # always last
 ]
 

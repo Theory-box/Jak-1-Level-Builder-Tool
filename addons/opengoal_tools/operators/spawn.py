@@ -213,6 +213,12 @@ class OG_OT_SpawnEntity(Operator):
         o.show_name = True
         o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
         o.color = _db.actor_color(etype)                       # category color
+        # DB rotation: the starting offset first, then the axis locks
+        _rot = _db.rotation_offset(etype)
+        if _rot:
+            import math as _m
+            o.rotation_euler = [_m.radians(a) for a in _rot]
+        o.lock_rotation = _db.rotation_lock(etype)
         _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
         # Pre-spawn variant selection -> the actor's variant field (any variant
         # actor: crate types, bridge variants, ...).
@@ -720,10 +726,14 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
     bl_label   = "Add Water Volume"
     bl_options = {"REGISTER", "UNDO"}
 
+    # "water-anim": same volume, but floating / splashing actors can link it
+    # (export/subtypes.py gives it a surface height).
+    etype: bpy.props.StringProperty(default="water-vol", options={"HIDDEN"})
+
     def execute(self, ctx):
         scene = ctx.scene
         cur   = scene.cursor.location
-        etype = "water-vol"
+        etype = self.etype or "water-vol"
 
         # 1) The water-vol actor empty (like any other actor).
         n = len([o for o in _level_objects(scene) if o.name.startswith(f"ACTOR_{etype}_")])
@@ -735,34 +745,81 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         actor.show_name          = True
         actor.empty_display_size = 0.8
         actor.color              = (0.1, 0.4, 1.0, 1.0)
-        actor["og_water_surface"] = round(cur.z + 2.0, 4)   # top of the size-4 starter cube
+        actor["og_water_surface"] = round(cur.z, 4)   # kept at its volume's top while Sync is on
         actor["og_water_wade"]    = 0.5
         actor["og_water_swim"]    = 1.0
-        actor["og_water_attack"]  = "drown"
+        _vf = _db.variant_field(etype)   # water-anim look picked before spawning
+        _sv = getattr(scene.og_props, "spawn_variant", "")
+        if _vf and _sv and _sv != "NONE" and any(c.get("value") == _sv for c in _db.variant_choices(etype)):
+            actor[_vf["key"]] = _sv
+        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
+        if _prefs and _prefs.preferences.preview_models:
+            try:
+                _mp.attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
+            except Exception as e:
+                log(f"model_preview: {e}")
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
-        # 2) A starter VOL_ cube linked to the actor (convex — reshape freely).
-        vn = len([o for o in _level_objects(scene)
-                  if o.type == "MESH" and o.name.startswith("VOL_")])
-        bpy.ops.mesh.primitive_cube_add(size=4.0, location=cur)
-        vol = ctx.active_object
-        vol.name = f"VOL_{vn}"
-        vol.name = f"VOL_{vn}"
-        vol["og_vol_id"]  = vn
-        vol.show_name     = True
-        vol.display_type  = "WIRE"
-        vol.color         = (0.1, 0.4, 1.0, 0.4)
-        vol.set_invisible = True
-        vol.set_collision = True
-        vol.ignore        = True
-        entry = _vol_links(vol).add()
-        entry.target_name = actor_name
-        _rename_vol_for_links(vol)
-        _link_object_to_sub_collection(scene, vol, *_COL_PATH_TRIGGERS)
-
-        self.report({"INFO"},
-            f"Added {actor_name} + linked {vol.name} — reshape the VOL_ mesh to cover your water")
+        self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")
         return {"FINISHED"}
+
+def make_volume(scene, mesh, target_name):
+    """Turn a mesh into a trigger volume (VOL_ prefix, wire, invisible,
+    no collision, Triggers collection) linked to target_name."""
+    vn = len([o for o in _level_objects(scene) if o.type == "MESH" and o.name.startswith("VOL_")])
+    if not mesh.name.startswith("VOL_"):
+        mesh.name = f"VOL_{vn}"
+    mesh["og_vol_id"] = mesh.get("og_vol_id", vn)
+    mesh.show_name     = True
+    mesh.display_type  = "WIRE"
+    mesh.set_invisible = True
+    mesh.set_collision = True
+    mesh.ignore        = True
+    if not _vol_has_link_to(mesh, target_name):
+        _vol_links(mesh).add().target_name = target_name
+    _rename_vol_for_links(mesh)
+    _link_object_to_sub_collection(scene, mesh, *_COL_PATH_TRIGGERS)
+    return mesh
+
+
+class OG_OT_AddActorVolume(Operator):
+    """Add a 4 m volume cube at this actor, linked to it (reshape it freely; it must stay convex)"""
+    bl_idname  = "og.add_actor_volume"
+    bl_label   = "Add Volume"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: StringProperty()
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        bpy.ops.mesh.primitive_cube_add(size=4.0, location=actor.matrix_world.translation)
+        vol = make_volume(ctx.scene, ctx.active_object, actor.name)
+        vol.color = (0.1, 0.4, 1.0, 0.4)
+        ctx.view_layer.objects.active = actor
+        self.report({"INFO"}, f"Added {vol.name} linked to {actor.name}")
+        return {"FINISHED"}
+
+
+class OG_OT_MeshToVolume(Operator):
+    """Turn this mesh into a volume linked to the actor (it must be convex)"""
+    bl_idname  = "og.mesh_to_volume"
+    bl_label   = "Use Mesh as Volume"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: StringProperty()
+    mesh_name:  StringProperty()
+
+    def execute(self, ctx):
+        actor = bpy.data.objects.get(self.actor_name)
+        mesh = bpy.data.objects.get(self.mesh_name)
+        if actor is None or mesh is None or mesh.type != "MESH":
+            return {"CANCELLED"}
+        vol = make_volume(ctx.scene, mesh, actor.name)
+        self.report({"INFO"}, f"{vol.name} is now a volume linked to {actor.name}")
+        return {"FINISHED"}
+
 
 class OG_OT_SpawnPlatform(Operator):
     """Place a platform actor empty at the 3D cursor."""
@@ -1120,6 +1177,8 @@ CLASSES = (
     OG_OT_SpawnCamLookAt,
     OG_OT_AddLauncherDest,
     OG_OT_AddWaterVolume,
+    OG_OT_AddActorVolume,
+    OG_OT_MeshToVolume,
     OG_OT_RefreshPreviewModel,
     OG_OT_SpawnPlatform,
     OG_OT_PickNavMesh,

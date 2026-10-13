@@ -1,0 +1,134 @@
+;; Happy plant for custom levels. Vanilla (rolling-obs.gc) gives the hard-coded
+;; rolling-plants cell (55), and its "all plants gone" check follows only the
+;; first neighbour link of each plant with no end: two plants linked to each
+;; other freeze the game once they are all gone. This child walks every plant
+;; reachable through the links (any shape, each plant once, up to 32), checks
+;; "gone" by the hidden flag (vanilla and subtype plants), and gives the cell of
+;; its own game task (pickup at its movie-pos if set).
+(deftype __TYPE__ (happy-plant)
+  ((seen     process 32)
+   (num-seen int32))
+  (:states __TYPE__-init __TYPE__-opening))
+
+(defun __TYPE__-cleared? ((this __TYPE__) (start process))
+  (set! (-> this seen 0) start)
+  (set! (-> this num-seen) 1)
+  (let ((i 0))
+    (while (< i (-> this num-seen))
+      (let ((plant (the-as dark-plant (-> this seen i))))
+        (if (not (logtest? (-> plant draw status) (draw-status hidden))) (return #f))
+        (dotimes (j (-> plant num-alts))
+          (let* ((e (-> plant alts j))
+                 (p (if e (-> e extra process))))
+            (when (and p (type-type? (-> p type) dark-plant) (< (-> this num-seen) 32))
+              (let ((dup #f))
+                (dotimes (k (-> this num-seen))
+                  (if (= (-> this seen k) p) (set! dup #t)))
+                (when (not dup)
+                  (set! (-> this seen (-> this num-seen)) p)
+                  (+! (-> this num-seen) 1)))))))
+      (+! i 1)))
+  #t)
+
+(defstate __TYPE__-init (__TYPE__)
+  :trans
+    (behavior ()
+      (when (-> self alt-actor)
+        (spool-push *art-control* "happy-plant-open" 0 self -99.0)
+        (let ((p (-> self alt-actor extra process)))
+          (when (and p (nonzero? p) (type-type? (-> p type) dark-plant) (__TYPE__-cleared? self p))
+            (go __TYPE__-opening)))))
+  :code
+    (behavior ()
+      (clear-collide-with-as (-> self root))
+      (loop
+        (ja-no-eval :group! (ja-group) :num! (seek!) :frame-num 0.0)
+        (until (ja-done? 0)
+          (suspend)
+          (ja :num! (seek!)))))
+  :post ja-post)
+
+(defstate __TYPE__-opening (__TYPE__)
+  :exit
+    (behavior ()
+      (when *target*
+        (logclear! (-> *target* mask) (process-mask sleep))
+        (process-entity-status! self (entity-perm-status bit-3) #f)
+        (logior! (-> self mask) (process-mask actor-pause))))
+  :code
+    (behavior ()
+      ;; vanilla closes rolling-plants need-reminder; here "opened" is the entity's complete bit
+      (process-entity-status! self (entity-perm-status complete) #t)
+      (process-entity-status! self (entity-perm-status bit-3) #t)
+      (logclear! (-> self mask) (process-mask actor-pause))
+      (while (and *target* (< (vector-vector-distance (-> self root trans) (target-pos 0)) 24576.0))
+        (suspend))
+      (let ((gp-2 (ppointer->handle (manipy-spawn (-> self entity extra trans) (-> self entity) *rollingcam-sg* #f :to self)))
+            (task (-> self entity extra perm task)))
+        (let ((s5-1 (get-process *default-dead-pool* othercam #x4000)))
+          (when s5-1
+            ((method-of-type othercam activate) (the-as othercam s5-1) (-> gp-2 process 0) 'othercam (the-as pointer #x70004000))
+            (run-now-in-process s5-1 othercam-init-by-other (-> gp-2 process 0) 4 #f #t)))
+        (let ((s5-3 (if (nonzero? task)
+                        (ppointer->handle (process-spawn fuel-cell :init fuel-cell-init-as-clone (process->handle self) (the-as int task) :to self))
+                        (the-as handle #f))))
+          (if *target* (logior! (-> *target* mask) (process-mask sleep)))
+          (send-event (-> gp-2 process 0) 'anim-mode 'clone-anim)
+          (ja-play-spooled-anim (new 'static
+                                     'spool-anim
+                                     :name "happy-plant-open"
+                                     :index 5
+                                     :parts 2
+                                     :command-list
+                                     '((0 send-event target draw #f) (10000 send-event target draw #t)))
+                                (the-as art-joint-anim #f)
+                                (the-as art-joint-anim happy-plant-idle-ja)
+                                (the-as (function process-drawable symbol) false-func))
+          (ja-channel-set! 1)
+          (ja :group! happy-plant-idle-ja)
+          (if (handle->process gp-2) (deactivate (-> gp-2 process 0)))
+          (let ((cell (handle->process s5-3)))
+            (when cell
+              (send-event cell 'stop-cloning)
+              (let ((pos (new-stack-vector0)))
+                (vector<-cspace! pos (joint-node happy-plant-lod0-jg fuelcell))
+                (send-event cell 'trans pos))))))
+      (restore-collide-with-as (-> self root))
+      (go happy-plant-opened))
+  :post transform-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (stack-size-set! (-> this main-thread) 512)
+  (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-player))))
+    (let ((s3-0 (new 'process 'collide-shape-prim-sphere s4-0 (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind enemy))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set-vector! (-> s3-0 local-sphere) 0.0 0.0 0.0 8192.0)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this root) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *happy-plant-sg* '())
+  (set! (-> this alt-actor) (entity-actor-lookup (-> this entity) 'alt-actor 0))
+  (let ((task (-> arg0 extra perm task)))
+    (cond
+      ;; opened and its cell collected
+      ((and (nonzero? task) (task-complete? *game-info* task))
+       (set! (-> this skel root-channel 0 frame-group) (the-as art-joint-anim (-> this draw art-group data 4)))
+       (go happy-plant-opened))
+      ;; opened, cell not collected yet: the cell waits in the flower
+      ((logtest? (-> arg0 extra perm status) (entity-perm-status complete))
+       (let ((pos (new 'stack-no-clear 'vector)))
+         (set! (-> this skel root-channel 0 frame-group) (the-as art-joint-anim (-> this draw art-group data 4)))
+         (logior! (-> this skel status) (janim-status inited))
+         (ja-post)
+         (logclear! (-> this skel status) (janim-status inited))
+         (vector<-cspace! pos (-> this node-list data 25))
+         (if (nonzero? task)
+           (birth-pickup-at-point pos (pickup-type fuel-cell) (the float task) #f this (the-as fact-info #f))))
+       (go happy-plant-opened))
+      (else (go __TYPE__-init))))
+  (none))
