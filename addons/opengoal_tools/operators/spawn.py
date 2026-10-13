@@ -498,9 +498,36 @@ class OG_OT_SpawnCamera(Operator):
         o["og_cam_look_at"] = ""
         for f in _db.cameras().get("fields", []):
             o[f["key"]] = f.get("default", 0.0)
+        camera_fov_driver(o)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         self.report({"INFO"}, f"Added {o.name}  |  Numpad-0 to look through it")
         return {"FINISHED"}
+
+def camera_fov_driver(o):
+    """The Blender camera shows the game FOV: lens unit Field of View
+    (horizontal), its angle driven by og_cam_fov (0 = the game's 64). The
+    angle itself can't take a driver, so the focal length is driven from the
+    FOV and the sensor width (angle = 2 atan(sensor / 2 lens))."""
+    cam = o.data
+    cam.lens_unit = "FOV"
+    cam.sensor_fit = "HORIZONTAL"
+    fc = cam.driver_add("lens")
+    drv = fc.driver
+    drv.type = "SCRIPTED"
+    v = drv.variables.new()
+    v.name = "fov"
+    v.type = "SINGLE_PROP"
+    v.targets[0].id_type = "OBJECT"
+    v.targets[0].id = o
+    v.targets[0].data_path = '["og_cam_fov"]'
+    s = drv.variables.new()
+    s.name = "sw"
+    s.type = "SINGLE_PROP"
+    s.targets[0].id_type = "CAMERA"
+    s.targets[0].id = cam
+    s.targets[0].data_path = "sensor_width"
+    drv.expression = "sw / (2 * tan(radians(fov if fov > 0 else 64.0) / 2))"
+
 
 class OG_OT_SpawnVolume(Operator):
     """Spawn a generic trigger volume (VOL_N wireframe cube).
