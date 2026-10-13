@@ -94,7 +94,7 @@ from .build import (
     _exe_root, _data_root, _data, _gk, _goalc,
     _user_dir, kill_gk, launch_gk,
     goalc_send, goalc_ok, launch_goalc,
-    _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from .properties import (
     OGPreferences, OGProperties,

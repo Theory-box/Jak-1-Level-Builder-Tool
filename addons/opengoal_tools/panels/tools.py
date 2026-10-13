@@ -167,7 +167,7 @@ class OG_PT_BuildPlay(Panel):
         col.scale_y = 1.8
         col.operator("og.export_build",  text="⚙  Export & Compile",        icon="EXPORT")
         col.scale_y = 1.4
-        col.operator("og.geo_rebuild",   text="🔄  Quick Geo Rebuild",       icon="FILE_REFRESH")
+        col.operator("og.quick_export",   text="🔄  Quick Level Export",       icon="FILE_REFRESH")
         col.scale_y = 1.8
         col.operator("og.play",          text="▶  Launch Game",              icon="PLAY")
         # Spawn dropdown — "none" means bare launch (debug, navigate manually).

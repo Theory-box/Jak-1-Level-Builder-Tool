@@ -490,7 +490,7 @@ def _bg_build(name, scene, depsgraph=None):
 
 
 _PLAY_STATE = {"done":False, "error":None, "status":""}
-_GEO_REBUILD_STATE = {"done": False, "status": "", "error": None, "ok": False}
+_QUICK_EXPORT_STATE = {"done": False, "status": "", "error": None, "ok": False}
 _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
@@ -579,16 +579,13 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
 
 
 
-def _bg_geo_rebuild(name, scene, depsgraph=None):
-    """Export geo + actor placement, repack DGO, relaunch GK. No GOAL recompile.
-
-    (mi) is GOALC's incremental build command — it skips .gc files that haven't
-    changed, so it only re-extracts the GLB and repacks the DGO.
-
-    NOTE: if you've added a NEW enemy type since the last full Export & Compile,
-    use that instead — this path skips the game.gp patch those types need.
+def _bg_quick_export(name, scene, depsgraph=None):
+    """Quick Level Export: write this level's own files (.jsonc, .gd, level
+    code; the GLB is exported on the main thread first) and run (mi). Shared
+    files are not touched: level-info.gc (checkpoints / load boundaries),
+    entity.gc (nav-mesh entries), game.gp.
     """
-    state = _GEO_REBUILD_STATE
+    state = _QUICK_EXPORT_STATE
     try:
         state["status"] = "Collecting scene..."
         _clean_orphaned_vol_links(scene)
@@ -612,8 +609,6 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
-        patch_level_info(name, spawns, scene)  # update spawn continue-points if moved
-        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
         _restart_goalc_if_types_changed(state)

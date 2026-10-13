@@ -48,9 +48,9 @@ from ..export import (
     export_glb,
 )
 from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _GEO_REBUILD_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
+    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -232,14 +232,16 @@ class OG_OT_OpenFile(Operator):
             return {"CANCELLED"}
         return {"FINISHED"}
 
-class OG_OT_GeoRebuild(Operator):
-    """Re-export geometry and actor placement, repack DGO, relaunch game.
-    Skips GOAL compilation — fastest loop for geo and enemy placement changes."""
-    bl_idname      = "og.geo_rebuild"
-    bl_label       = "Quick Geo Rebuild"
+class OG_OT_QuickExport(Operator):
+    """Export only this level's own files (GLB, .jsonc actors / cameras /
+    settings, .gd, level code) and rebuild. Checkpoints, load boundaries,
+    nav-mesh entries and game.gp (shared files) are left as they are"""
+    bl_idname      = "og.quick_export"
+    bl_label       = "Quick Level Export"
     bl_description = (
-        "Re-export geo + actor placement, repack DGO, relaunch game. "
-        "No GOAL recompile. Use when only geometry or placement changed."
+        "Export this level's GLB, .jsonc (actors, cameras, settings), .gd and level code, then rebuild. "
+        "Doesn't touch checkpoints, load boundaries, nav-mesh entries or game.gp: "
+        "use Export & Compile after changing those or adding a new actor type"
     )
     _timer = None
 
@@ -249,17 +251,14 @@ class OG_OT_GeoRebuild(Operator):
             self.report({"ERROR"}, "Enter a level name first"); return {"CANCELLED"}
         if len(name) > 10:
             self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
-        if len(name) > 10:
-            self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max is 10. Shorten it in Level Settings.")
-            return {"CANCELLED"}
         try:
             export_glb(ctx, name)
         except Exception as e:
             self.report({"ERROR"}, f"GLB export failed: {e}"); return {"CANCELLED"}
-        _GEO_REBUILD_STATE.clear()
-        _GEO_REBUILD_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
+        _QUICK_EXPORT_STATE.clear()
+        _QUICK_EXPORT_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
         depsgraph = ctx.evaluated_depsgraph_get()  # fetch on main thread — unsafe from bg thread
-        threading.Thread(target=_bg_geo_rebuild, args=(name, ctx.scene, depsgraph), daemon=True).start()
+        threading.Thread(target=_bg_quick_export, args=(name, ctx.scene, depsgraph), daemon=True).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)
@@ -267,13 +266,13 @@ class OG_OT_GeoRebuild(Operator):
 
     def modal(self, ctx, event):
         if event.type == "TIMER":
-            ctx.workspace.status_text_set("OpenGOAL Geo: " + _GEO_REBUILD_STATE.get("status", "Working..."))
-            if _GEO_REBUILD_STATE.get("done"):
+            ctx.workspace.status_text_set("OpenGOAL Quick Export: " + _QUICK_EXPORT_STATE.get("status", "Working..."))
+            if _QUICK_EXPORT_STATE.get("done"):
                 ctx.window_manager.event_timer_remove(self._timer)
                 ctx.workspace.status_text_set(None)
-                if _GEO_REBUILD_STATE.get("error"):
-                    self.report({"ERROR"}, _GEO_REBUILD_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Geo rebuild done — load your level in-game")
+                if _QUICK_EXPORT_STATE.get("error"):
+                    self.report({"ERROR"}, _QUICK_EXPORT_STATE["error"]); return {"CANCELLED"}
+                self.report({"INFO"}, "Quick export done — load your level in-game")
                 return {"FINISHED"}
         return {"PASS_THROUGH"}
 
@@ -418,7 +417,7 @@ CLASSES = (
     OG_OT_Play,
     OG_OT_OpenFolder,
     OG_OT_OpenFile,
-    OG_OT_GeoRebuild,
+    OG_OT_QuickExport,
     OG_OT_ExportBuildPlay,
     OG_OT_BakeLighting,
 )
