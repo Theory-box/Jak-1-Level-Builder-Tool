@@ -112,6 +112,7 @@ from .spawn_items import (
 from .operators import ALL_CLASSES as _OPS_CLASSES
 from .operators.misc import _draw_mat
 from .panels import ALL_CLASSES as _PANELS_CLASSES
+from .versions import CLASSES as _VERSION_CLASSES
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -148,6 +149,7 @@ classes = (
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
     *_PANELS_CLASSES,
+    *_VERSION_CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)

@@ -454,6 +454,11 @@ class OG_PT_DevTools(Panel):
         from ..properties import draw_db_status
         draw_db_status(box)
 
+        # Versions — Blender / OpenGOAL and the features they support
+        layout.label(text="Versions", icon="INFO")
+        from ..versions import draw_versions
+        draw_versions(layout)
+
         layout.separator()
 
         # Launch Timing — tune for slower / faster machines. Default 4s
