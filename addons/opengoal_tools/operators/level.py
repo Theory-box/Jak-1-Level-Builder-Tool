@@ -485,8 +485,8 @@ class OG_OT_ToggleCollectionNoExport(Operator):
         col = bpy.data.collections.get(self.col_name)
         if col is None:
             self.report({"ERROR"}, f"Collection '{self.col_name}' not found"); return {"CANCELLED"}
-        cur = bool(col.get("og_no_export", False))
-        col["og_no_export"] = not cur
+        cur = bool(col.get("skip_export", False))
+        col["skip_export"] = not cur
         state = "excluded" if not cur else "included"
         self.report({"INFO"}, f"'{self.col_name}' now {state} from export")
         return {"FINISHED"}

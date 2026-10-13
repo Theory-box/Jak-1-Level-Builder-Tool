@@ -14,7 +14,7 @@
 #
 # The Imports collection lives OUTSIDE every level collection, so the
 # export pipeline (which walks <active_level>/Geometry/) never sees these
-# meshes. No og_no_export flag needed.
+# meshes. No skip_export flag needed.
 #
 # Module-level _GLB_CACHE holds the scan result so the live filter in the
 # panel's draw() stays cheap. Populated on first access and on explicit

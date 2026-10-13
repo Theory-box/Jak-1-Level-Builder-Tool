@@ -54,7 +54,7 @@ def _get_viewport_override(ctx):
 
 def _ensure_preview_collection(scene) -> bpy.types.Collection:
     """Find or create the level-local 'Preview Meshes' sub-collection,
-    marked og_no_export so export_glb() skips it entirely."""
+    marked skip_export so export_glb() skips it entirely."""
     from .collections import _active_level_col, _ensure_sub_collection
 
     level_col = _active_level_col(scene)
@@ -65,12 +65,12 @@ def _ensure_preview_collection(scene) -> bpy.types.Collection:
         if col is None:
             col = bpy.data.collections.new(col_name)
             scene.collection.children.link(col)
-        col.og_no_export = True
+        col["skip_export"] = True
         return col
 
     # Use _ensure_sub_collection so the name is level-prefixed (e.g. my-level.Preview Meshes)
     col = _ensure_sub_collection(level_col, _PREVIEW_COL)
-    col.og_no_export = True
+    col["skip_export"] = True
     return col
 
 

@@ -340,12 +340,17 @@ class OG_PT_DisableExport(Panel):
         if not children:
             layout.label(text="No sub-collections")
         else:
+            def _row(lay, c):   # the collection's "skip_export" custom property
+                on = bool(c.get("skip_export", False))
+                op = lay.operator("og.toggle_collection_no_export", text=c.name, emboss=False,
+                                  icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT")
+                op.col_name = c.name
             for col in children:
-                layout.prop(col, "og_no_export", text=col.name)
+                _row(layout, col)
                 if col.name.endswith(".Geometry"):   # its own folders (Reference ...)
                     for sub in sorted(col.children, key=lambda c: c.name):
                         row = layout.row(); row.separator(factor=2.0)
-                        row.prop(sub, "og_no_export", text=sub.name)
+                        _row(row, sub)
 
 
 

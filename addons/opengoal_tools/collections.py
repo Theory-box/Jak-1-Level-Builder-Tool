@@ -170,17 +170,16 @@ def actor_lump_name(obj_name, scene=None):
 
 
 def _col_is_no_export(col):
-    """Check if a collection is marked as no-export.
-    og_no_export is a registered RNA BoolProperty on bpy.types.Collection,
-    so getattr reads it correctly. Custom prop dict access col.get() would
-    read a separate shadow key and should NOT be used here."""
-    return bool(getattr(col, "og_no_export", False))
+    """A collection is left out of the level export when its "skip_export"
+    custom property is on (Properties > Collection > Custom Properties, or
+    Level > Collections > Disable Export)."""
+    return bool(col.get("skip_export", False))
 
 
 def _recursive_col_objects(col, exclude_no_export=True):
     """Return all objects in a collection and its children, deduplicated.
 
-    If exclude_no_export=True, skips sub-collections with og_no_export=True.
+    If exclude_no_export=True, skips sub-collections with skip_export on.
     """
     seen = set()
     result = []
@@ -234,6 +233,7 @@ def _ensure_sub_collection(level_col, *path):
                 break
         if child is None:
             child = bpy.data.collections.new(unique_name)
+            child["skip_export"] = False   # visible in Custom Properties, ready to turn on
             current.children.link(child)
         current = child
     return current

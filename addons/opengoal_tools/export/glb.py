@@ -6,7 +6,7 @@ collection exporter. The addon creates it and sets what the level build needs
 compression, vertex colours, ...) is the user's to change in Properties >
 Collection > Exporters. Every object in Geometry and its sub-collections is
 exported, whether or not it can be selected; sub-collections marked "Disable
-Export" (og_no_export) are skipped.
+Export" (the collection's "skip_export" custom property) are skipped.
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _DEFAULTS = {
 _REQUIRED = {
     "export_format": "GLB", "export_extras": True, "export_yup": True,
     "export_apply": True, "use_selection": False, "use_visible": False,
-    "use_renderable": True,   # skips the Disable Export sub-collections (hidden from render while exporting)
+    "use_renderable": False,  # render-off meshes (invisible walls / floors) are still level geometry
 }
 
 # meshes that are helpers, not level geometry
@@ -95,13 +95,16 @@ def export_level_glb(level_col, filepath):
     p.filepath = str(filepath)
     for k, v in _REQUIRED.items():
         setattr(p, k, v)
-    hidden = []
-    def _walk(c, off=False):   # glTF checks an object's own collections only: hide the whole branch
-        off = off or _col_is_no_export(c)
-        if off and not c.hide_render:
-            c.hide_render = True; hidden.append(c)
-        for ch in c.children:
-            _walk(ch, off)
+    if _col_is_no_export(geo):
+        raise RuntimeError(f"{geo.name} has skip_export on: nothing to export")
+    # skip_export sub-collections are unlinked while the exporter runs
+    unlinked = []
+    def _walk(c):
+        for ch in list(c.children):
+            if _col_is_no_export(ch):
+                c.children.unlink(ch); unlinked.append((c, ch))
+            else:
+                _walk(ch)
     _walk(geo)
     try:
         idx = list(geo.exporters).index(ex)
@@ -110,5 +113,5 @@ def export_level_glb(level_col, filepath):
         if "FINISHED" not in r:
             raise RuntimeError(f"glTF export of {geo.name} failed")
     finally:
-        for c in hidden:
-            c.hide_render = False
+        for parent, ch in unlinked:
+            parent.children.link(ch)

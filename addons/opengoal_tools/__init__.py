@@ -413,11 +413,6 @@ def register():
         name="Bwd Name", default="",
         description="continue-name (checkpt) or vis nick (vis)")
 
-    bpy.types.Collection.og_no_export      = bpy.props.BoolProperty(
-        name="Exclude from Export",
-        description="When enabled, this collection and its contents are excluded from level export",
-        default=False)
-
     # Unified spawn picker — register the load_post handler so freshly-loaded
     # blend files get their spawn list populated. The initial population for
     # any already-open scenes has to be deferred because bpy.data is wrapped
@@ -491,8 +486,6 @@ def unregister():
               "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
-    try: delattr(bpy.types.Collection, "og_no_export")
-    except Exception: pass
 
 if __name__ == "__main__":
     register()
