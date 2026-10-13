@@ -58,6 +58,7 @@ DB_CAT_TO_TILE = {
     "Obstacles":           "Obstacles",
     "Buttons and Doors":   "Buttons and Doors",
     "Visuals":             "Visuals",
+    "Particles":           "Audio",
     "NPCs":                "NPCs",
     "Pickups":             "Pickups",
 }
