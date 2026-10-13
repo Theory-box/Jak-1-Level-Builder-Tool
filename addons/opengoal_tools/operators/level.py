@@ -185,6 +185,10 @@ class OG_OT_CreateLevel(Operator):
         col["og_fog_max"]           = 0.95
         col["og_fog_min"]           = 0.10
 
+        # Geometry collection + its GLB exporter
+        from ..export.glb import geometry_collection, glb_exporter
+        glb_exporter(geometry_collection(col))
+
         # Set as active level
         ctx.scene.og_props.active_level = col.name
         _set_blender_active_collection(ctx, col)
@@ -289,6 +293,10 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         col["og_fog_end"]           = 200.0
         col["og_fog_max"]           = 0.95
         col["og_fog_min"]           = 0.10
+
+        # Geometry collection + its GLB exporter
+        from ..export.glb import geometry_collection, glb_exporter
+        glb_exporter(geometry_collection(col))
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name

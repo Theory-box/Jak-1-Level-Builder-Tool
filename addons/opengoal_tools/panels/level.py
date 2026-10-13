@@ -342,6 +342,10 @@ class OG_PT_DisableExport(Panel):
         else:
             for col in children:
                 layout.prop(col, "og_no_export", text=col.name)
+                if col.name.endswith(".Geometry"):   # its own folders (Reference ...)
+                    for sub in sorted(col.children, key=lambda c: c.name):
+                        row = layout.row(); row.separator(factor=2.0)
+                        row.prop(sub, "og_no_export", text=sub.name)
 
 
 

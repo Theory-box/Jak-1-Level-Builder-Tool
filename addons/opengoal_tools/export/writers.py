@@ -1217,88 +1217,11 @@ def export_glb(ctx, name):
 
 
 def _export_glb_impl(ctx, name):
-    d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
-
+    """The level's Geometry collection exporter writes <level>.glb (see glb.py)."""
+    from .glb import export_level_glb
     level_col = _active_level_col(ctx.scene)
-    if level_col is not None:
-        # Collection mode — export only objects inside the Geometry sub-collection,
-        # excluding anything under the Reference sub-collection (og_no_export=True).
-        # We select only those objects, export with use_selection=True, then restore.
-        geo_col = None
-        for c in level_col.children:
-            if c.name == "Geometry":
-                geo_col = c
-                break
-
-        # Gather exportable objects: meshes in Geometry (and its children) except Reference
-        if geo_col is not None:
-            export_objs = _recursive_col_objects(geo_col, exclude_no_export=True)
-            export_objs = [o for o in export_objs if o.type == "MESH"]
-        else:
-            # No Geometry sub-collection yet — fall back to all meshes in the level.
-            # Exclude WATER_ volumes (invisible helpers, not renderable geometry).
-            _HELPER_PREFIXES = ("WATER_", "VOL_", "CPVOL_", "NAVMESH_", "LOADBND_")
-            export_objs = [o for o in _recursive_col_objects(level_col, exclude_no_export=True)
-                           if o.type == "MESH"
-                           and not any(o.name.startswith(p) for p in _HELPER_PREFIXES)
-                           and not o.get("og_preview_mesh")
-                           and not o.get("og_waypoint_preview_mesh")]
-
-        # Save selection state
-        prev_active    = ctx.view_layer.objects.active
-        prev_selected  = [o for o in ctx.scene.objects if o.select_get()]
-
-        # Deselect all, select export targets
-        for o in ctx.scene.objects:
-            o.select_set(False)
-        for o in export_objs:
-            o.select_set(True)
-        if export_objs:
-            ctx.view_layer.objects.active = export_objs[0]
-
-        bpy.ops.export_scene.gltf(
-            filepath=str(d / f"{name}.glb"), export_format="GLB",
-            export_vertex_color="ACTIVE", export_normals=True,
-            export_materials="EXPORT", export_texcoords=True,
-            export_apply=True, use_selection=True,
-            export_yup=True, export_skins=False, export_animations=False,
-            export_extras=True)
-
-        # Restore selection state
-        for o in ctx.scene.objects:
-            o.select_set(False)
-        for o in prev_selected:
-            o.select_set(True)
-        ctx.view_layer.objects.active = prev_active
-
-    else:
-        # Fallback: v1.1.0 behaviour — export entire scene, but exclude preview meshes
-        prev_active   = ctx.view_layer.objects.active
-        prev_selected = [o for o in ctx.scene.objects if o.select_get()]
-
-        # Select everything except og_preview_mesh objects
-        for o in ctx.scene.objects:
-            o.select_set(False)
-        export_objs = [o for o in ctx.scene.objects
-                       if o.type == "MESH" and not o.get("og_preview_mesh")
-                       and not o.name.startswith("LOADBND_")]
-        for o in export_objs:
-            o.select_set(True)
-        if export_objs:
-            ctx.view_layer.objects.active = export_objs[0]
-
-        bpy.ops.export_scene.gltf(
-            filepath=str(d / f"{name}.glb"), export_format="GLB",
-            export_vertex_color="ACTIVE", export_normals=True,
-            export_materials="EXPORT", export_texcoords=True,
-            export_apply=True, use_selection=True,
-            export_yup=True, export_skins=False, export_animations=False,
-            export_extras=True)
-
-        for o in ctx.scene.objects:
-            o.select_set(False)
-        for o in prev_selected:
-            o.select_set(True)
-        ctx.view_layer.objects.active = prev_active
-
+    if level_col is None:
+        raise RuntimeError("Add a level first (Level panel > Add Level)")
+    d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
+    export_level_glb(level_col, d / f"{name}.glb")
     log("Exported GLB")

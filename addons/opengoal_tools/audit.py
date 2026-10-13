@@ -449,6 +449,18 @@ def check_particle_files(scene):
             for f, lvl in sorted(seen.items())]
 
 
+def check_stray_geometry(scene):
+    """Only the Geometry collection is exported to the level GLB."""
+    from .collections import _active_level_col
+    from .export.glb import stray_meshes
+    objs = stray_meshes(_active_level_col(scene))
+    if not objs:
+        return []
+    return [_issue("WARNING", f"{len(objs)} mesh(es) outside the Geometry collection aren't exported "
+                              f"({', '.join(o.name for o in objs[:4])}{' ...' if len(objs) > 4 else ''}). "
+                              f"Build & Play > Move to Geometry.", objs[0].name)]
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -543,6 +555,7 @@ _REGISTERED_CHECKS = [
     check_texture_sources,
     check_sound_banks,
     check_particle_files,
+    check_stray_geometry,
     check_scene_summary,   # always last
 ]
 
