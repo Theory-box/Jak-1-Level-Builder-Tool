@@ -398,8 +398,6 @@ def _draw_selected_emitter(layout, sel):
     op = row.operator("og.pick_sound", text=str(snd), icon="VIEWZOOM")
     op.target_name = sel.name
     _prop_row(box, sel, "og_sound_radius", "Radius (m):", 15.0)
-    if not (sel.animation_data and any(d.data_path == "empty_display_size" for d in sel.animation_data.drivers)):
-        box.operator("og.link_sound_radius", text="Show radius as the sphere size", icon="DRIVER").obj_name = sel.name
 
 
 

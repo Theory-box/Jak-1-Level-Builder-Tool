@@ -359,8 +359,6 @@ class OG_OT_ClearPreviews(Operator):
 def sound_radius_driver(o):
     """The emitter's sphere shows its radius: empty_display_size is driven by
     og_sound_radius (editing the radius resizes the sphere)."""
-    if o.animation_data and any(d.data_path == "empty_display_size" for d in o.animation_data.drivers):
-        return
     fc = o.driver_add("empty_display_size")
     drv = fc.driver
     drv.type = "SCRIPTED"
@@ -434,21 +432,6 @@ class OG_OT_AddSoundEmitter(Operator):
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SOUND_EMITTERS)
         self.report({"INFO"}, f"Added '{name}' → {snd}")
         return {"FINISHED"}
-
-class OG_OT_LinkSoundRadius(Operator):
-    """Drive the emitter's sphere size from its radius"""
-    bl_idname  = "og.link_sound_radius"
-    bl_label   = "Link Sphere Size to Radius"
-    bl_options = {"REGISTER", "UNDO"}
-    obj_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        o = bpy.data.objects.get(self.obj_name)
-        if o is None:
-            return {"CANCELLED"}
-        sound_radius_driver(o)
-        return {"FINISHED"}
-
 
 class OG_OT_AddMusicZone(Operator):
     """Add a music ambient zone (sphere) at the 3D cursor.
@@ -1211,7 +1194,6 @@ CLASSES = (
     OG_OT_ClearPreviews,
     OG_OT_PickSound,
     OG_OT_AddSoundEmitter,
-    OG_OT_LinkSoundRadius,
     OG_OT_AddMusicZone,
     OG_OT_SpawnCamera,
     OG_OT_SpawnVolume,
