@@ -526,8 +526,8 @@ class OGProperties(PropertyGroup):
                                       description="Show NPCs in the picker list")
     cat_pickups:         BoolProperty(default=False, name="Pickups",
                                       description="Show Pickups in the picker list")
-    cat_audio:           BoolProperty(default=False, name="Audio",
-                                      description="Show Audio (sound emitters, music zones) in the picker list")
+    cat_audio:           BoolProperty(default=False, name="Effects",
+                                      description="Show Effects (sound emitters, music zones, particle spawners) in the picker list")
     cat_volumes:         BoolProperty(default=False, name="Volumes",
                                       description="Show Volumes (water) in the picker list")
     cat_triggers:        BoolProperty(default=False, name="Triggers",
