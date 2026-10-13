@@ -105,7 +105,30 @@ Have it at the bottom of the menu, called "OpenGOAL object"
 
 ## Specific tools/menu for some actors
 ### citb-drop-plat
-### racering
+This actors can have a very long list to define all of the platform that makes it up.
+We need to be able to set the number of platforms on X and Z axis with `count` lumpt
+Then you can either have it set as random platforms or you can set every platform yourself.
+When you set every platfom, it's all in one single lump, `plat-type` that can have:
+- 0 = No platform
+- 1 to 5 = The different colors
+
+To make this easier to visualize and use. You can have a collapsing menu for the plat-type which create a grid of buttons equal to the count values.
+Each button would have the number and be colored, dark grey for no platform and the correct color for each of the platform types.
+Clicking on the button would scroll through the numbers from 0 to 5
+Then a platform preview mesh would be added and get edited for each platform at the correct spot to get a full visualisation for the user
+### race-ring
+The prev/next chain feature already help a lot for race-ring but it could be made even easier.
+Give a path to the race-ring but instead of it being there to export a path, if it has one, it'll:
+- export a race-ring on every point on the path instead
+- connect a circle empty (with a rotation to match how it'd appear in game)
+- connect them all through prev/next
+- game task set to all
+- use the "tilt" value on each point as rotoffset
+  - race-ring have a built in feature that rotate rings depending on previous and next ring. This behaviour should be replicated to show it in blender and then match the tilt to how they'd change from the rotoffset
+- Multiply the "weight" value to the default set delay
+- movie-pos would only be set to the last ring
+
+Race-rings color are also kind of hard coded. Havin a custom type that allow us to connect to other particles and then have automatic particle definition that get created from a single color input. Check existing race-ring particle for examples
 ### evilplant
 ### Distribute plat along paths
 
