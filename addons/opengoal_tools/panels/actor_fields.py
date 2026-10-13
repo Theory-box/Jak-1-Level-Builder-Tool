@@ -189,7 +189,7 @@ def _draw_enum_field(layout, obj, field):
     if current is None:
         current = field.get("default")
 
-    if len(choices) > 12:
+    if len(choices) > 12 or field.get("dropdown"):
         # Long lists (water looks ...): a searchable dropdown.
         row = layout.row(align=True)
         row.label(text=f"{label}:")

@@ -127,6 +127,12 @@ def _draw_field_crate_type(layout, ctx, item):
 
 def _draw_field_variant(layout, ctx, item):
     layout.prop(ctx.scene.og_props, "spawn_variant", text="Variant")
+    # the picked variant's own option list (e.g. a particle file's groups)
+    from ..data import spawn_sub_field
+    vet = getattr(item, "etype", None) or getattr(item, "variant_etype", None)
+    f = spawn_sub_field(vet, ctx.scene.og_props.spawn_variant) if vet else None
+    if f:
+        layout.prop(ctx.scene.og_props, "spawn_variant_sub", text=f.get("label", "Option"))
 
 
 def _draw_field_nav_radius(layout, ctx, item):

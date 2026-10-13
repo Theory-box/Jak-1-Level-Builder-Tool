@@ -402,6 +402,42 @@ def _spawn_variant_cb(self, context):
     return items
 
 
+_SPAWN_SUB_CACHE: list = []
+
+
+def spawn_sub_field(etype, variant_value):
+    """The field marked "spawn_pick" (picked before spawning, next to the
+    variant) whose visible_if matches the picked variant, or None."""
+    from . import db as _db
+    vf = _db.variant_field(etype)
+    for f in _db.inherited_fields(etype):
+        if not f.get("spawn_pick"):
+            continue
+        cond = (f.get("visible_if") or {}).get(vf["key"]) if vf else None
+        if cond is None or cond == variant_value or (isinstance(cond, list) and variant_value in cond):
+            return f
+    return None
+
+
+def _spawn_variant_sub_cb(self, context):
+    """Second pre-spawn dropdown: the choices of the "spawn_pick" field that
+    belongs to the picked variant (e.g. a particle file's groups)."""
+    global _SPAWN_SUB_CACHE
+    from .spawn_items import get_selected_spawn_item
+    from .panels.actor_fields import _resolve_choices
+    items = []
+    item = get_selected_spawn_item(context.scene)
+    vet = (getattr(item, "etype", None) or getattr(item, "variant_etype", None)) if item is not None else None
+    if vet:
+        f = spawn_sub_field(vet, getattr(context.scene.og_props, "spawn_variant", ""))
+        if f:
+            items = [(c.get("value"), c.get("label", c.get("value")), "") for c in _resolve_choices(f.get("choices", []))]
+    if not items:
+        items = [("NONE", "—", "")]
+    _SPAWN_SUB_CACHE = items
+    return items
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Derived lookup sets
 # ═══════════════════════════════════════════════════════════════════════════

@@ -8219,7 +8219,9 @@
                   "value": "group-beach-moth",
                   "label": "beach-moth"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_citadel_part",
@@ -8308,7 +8310,9 @@
                   "value": "group-firehose-blast-smoke",
                   "label": "firehose-blast-smoke  (unused in vanilla)"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_firecanyon_part",
@@ -8465,7 +8469,9 @@
                   "value": "group-firecanyon-heat-59",
                   "label": "firecanyon-heat-59"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_jungle_part",
@@ -8514,7 +8520,9 @@
                   "value": "group-jungle-lurkermachine-1",
                   "label": "jungle-lurkermachine-1"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_lavatube_part",
@@ -8591,7 +8599,9 @@
                   "value": "group-lavatube-heavy-smoke-end",
                   "label": "lavatube-heavy-smoke-end"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_maincave_part",
@@ -8624,7 +8634,9 @@
                   "value": "group-cave-cavedrip-3",
                   "label": "cave-cavedrip-3"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_misty_part",
@@ -8729,7 +8741,9 @@
                   "value": "group-misty-lurkermachine-spout-312",
                   "label": "misty-lurkermachine-spout-312"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_ogre_part",
@@ -8754,7 +8768,9 @@
                   "value": "group-ogre-lava-lava-20x20",
                   "label": "ogre-lava-lava-20x20"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_robocave_part",
@@ -8775,7 +8791,9 @@
                   "value": "group-part-robocave-torch",
                   "label": "robocave-torch"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_snow_part",
@@ -8832,7 +8850,9 @@
                   "value": "group-snow-birds",
                   "label": "snow-birds"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_sunken_part",
@@ -8933,7 +8953,9 @@
                   "value": "group-sunken-heatpipe-365",
                   "label": "sunken-heatpipe-365"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_sunken_part2",
@@ -9050,7 +9072,9 @@
                   "value": "group-sunken-window-bubbles-399",
                   "label": "sunken-window-bubbles-399"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_sunken_part3",
@@ -9135,7 +9159,9 @@
                   "value": "group-sunken-window-bubbles-391",
                   "label": "sunken-window-bubbles-391"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_sunken_part4",
@@ -9260,7 +9286,9 @@
                   "value": "group-sunken-sheild",
                   "label": "sunken-sheild"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_sunken_part5",
@@ -9337,7 +9365,9 @@
                   "value": "group-sunken-heatpipe-268",
                   "label": "sunken-heatpipe-268"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_swamp_part",
@@ -9418,7 +9448,9 @@
                   "value": "group-swamp-torch",
                   "label": "swamp-torch"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_training_part",
@@ -9471,7 +9503,9 @@
                   "value": "group-training-waterfall-20",
                   "label": "training-waterfall-20"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_village1_part",
@@ -9524,7 +9558,9 @@
                   "value": "group-village1-bird-lady-birds",
                   "label": "village1-bird-lady-birds"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_village1_part2",
@@ -9573,7 +9609,9 @@
                   "value": "group-village1-training-spouts",
                   "label": "village1-training-spouts  (unused in vanilla)"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_village2_part",
@@ -9650,7 +9688,9 @@
                   "value": "group-village2-fireboulder-hover",
                   "label": "village2-fireboulder-hover  (unused in vanilla)"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_village2_part2",
@@ -9699,7 +9739,9 @@
                   "value": "group-village2-tree-fire",
                   "label": "village2-tree-fire"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_group_village3_part",
@@ -9828,7 +9870,9 @@
                   "value": "group-village3-sagehut-understeam",
                   "label": "village3-sagehut-understeam"
                 }
-              ]
+              ],
+              "dropdown": true,
+              "spawn_pick": true
             },
             {
               "key": "og_part_custom_file",
