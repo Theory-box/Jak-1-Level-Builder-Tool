@@ -71,6 +71,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_music_bank":        "none",
     "og_mood":              "village1",
     "og_texture_source":    "village1",
+    "og_actor_name_nick":   True,
     "og_include_enabled":   False,
     "og_include_text":      "",
     "og_sky":               True,
@@ -135,6 +136,37 @@ def spawn_uid(o):
         if head in nicks:
             rest = tail
     return rest or dflt
+
+
+def _get_actor_name_nick_live(self):
+    col = _active_level_col(bpy.context.scene)
+    return bool(col.get("og_actor_name_nick", True)) if col is not None else True
+
+
+def _set_actor_name_nick_live(self, value):
+    col = _active_level_col(bpy.context.scene)
+    if col is not None:
+        col["og_actor_name_nick"] = bool(value)
+
+
+def actor_name_prefix(scene=None):
+    """"<nick>-" when the active level's "Level nick in actor names" is on
+    (default), else "". Exported actor names become <nick>-<etype>-<n> so they
+    can't clash with vanilla actors (babak-1 ...) or other custom levels."""
+    scene = scene or bpy.context.scene
+    col = _active_level_col(scene)
+    if col is None or not bool(col.get("og_actor_name_nick", True)):
+        return ""
+    return _resolve_vis_nick(col) + "-"
+
+
+def actor_lump_name(obj_name, scene=None):
+    """Exported 'name lump of an ACTOR_<etype>_<n> object (also used for every
+    link that points at it)."""
+    parts = obj_name.split("_", 2)
+    if len(parts) < 3 or parts[0] != "ACTOR":
+        return obj_name
+    return f"{actor_name_prefix(scene)}{parts[1]}-{parts[2]}"
 
 
 def _col_is_no_export(col):

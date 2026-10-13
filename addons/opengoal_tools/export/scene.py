@@ -117,7 +117,8 @@ def collect_aggro_triggers(scene):
             if len(parts) < 3:
                 log(f"  [WARNING] aggro-trigger {vol.name}: malformed target name '{entry.target_name}' — skipped")
                 continue
-            target_lump_name = f"{parts[1]}-{parts[2]}"
+            from ..collections import actor_lump_name
+            target_lump_name = actor_lump_name(entry.target_name)
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
             planes, cull_r = _vol_planes(vol)
             if not planes:
@@ -173,7 +174,8 @@ def collect_custom_triggers(scene):
             if len(parts) < 3:
                 log(f"  [WARNING] vol-trigger {vol.name}: malformed target name '{entry.target_name}' — skipped")
                 continue
-            target_lump_name = f"{parts[1]}-{parts[2]}"
+            from ..collections import actor_lump_name
+            target_lump_name = actor_lump_name(entry.target_name)
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
             planes, cull_r = _vol_planes(vol)
             if not planes:

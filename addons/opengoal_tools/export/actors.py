@@ -266,7 +266,8 @@ def collect_actors(scene, depsgraph=None):
         aqz = round(_gq.z, 6)
         aqw = round(_gq.w, 6)
 
-        lump = {"name": f"{etype}-{uid}"}
+        from ..collections import actor_lump_name
+        lump = {"name": actor_lump_name(o.name)}
 
         einfo = ENTITY_DEFS.get(etype, {})
 
@@ -703,7 +704,8 @@ def collect_actors(scene, depsgraph=None):
             gz_v = round(-wco.y, 4)
             uid  = f"ve{ve_counter}"
             ve_counter += 1
-            lump_v = {"name": f"{etype}-{uid}"}
+            from ..collections import actor_name_prefix
+            lump_v = {"name": f"{actor_name_prefix()}{etype}-{uid}"}
             for _lk, _lv in emit_schema_lumps(
                     _schema_db.prop_getter(o),
                     _schema_db.inherited_fields(etype),

@@ -136,6 +136,7 @@ class OG_PT_LevelSettings(Panel):
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "bottom_height")
         layout.prop(props, "texture_source")
+        layout.prop(props, "actor_name_nick")
 
         # Derived / read-only info
         name = str(col.get("og_level_name", col.name))

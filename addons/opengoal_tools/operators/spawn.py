@@ -338,8 +338,19 @@ def auto_connect(ctx, o, etype, pre_sel):
 
 
 def _actor_search_items(self, ctx):
-    items = [(et, info.get("label", et), et) for et, info in ENTITY_DEFS.items()
-             if (_db.find_actor(et) or {}).get("category") not in (None, "Hidden")]
+    """Every spawnable actor, plus one entry per variant ("Label — Variant")."""
+    items = []
+    for et, info in ENTITY_DEFS.items():
+        if (_db.find_actor(et) or {}).get("category") in (None, "Hidden"):
+            continue
+        label = info.get("label", et)
+        choices = _db.variant_choices(et)
+        if choices:
+            for c in choices:
+                vid = c.get("id", c.get("value"))
+                items.append((f"{et}|{vid}", f"{label} — {c.get('label', vid)}", et))
+        else:
+            items.append((et, label, et))
     _ADD_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(sorted(items, key=lambda x: x[1].lower()))]
     return _ADD_ITEMS
 
@@ -348,10 +359,10 @@ _ADD_ITEMS: list = []
 
 
 class OG_OT_AddActorSearch(Operator):
-    """Add an OpenGOAL actor at the 3D cursor (search by name)"""
+    """Add an OpenGOAL actor at the 3D cursor: search by name (variants listed too)"""
     bl_idname   = "og.add_actor_search"
     bl_label    = "OpenGOAL Object"
-    bl_options  = {"REGISTER", "UNDO"}
+    bl_options  = {"UNDO"}          # no redo panel: everything is picked in the search
     bl_property = "etype"
     etype: bpy.props.EnumProperty(name="Actor", items=_actor_search_items)
 
@@ -360,13 +371,20 @@ class OG_OT_AddActorSearch(Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, ctx):
-        ctx.scene.og_props.entity_type = self.etype
-        return bpy.ops.og.spawn_entity()
+        et, _, vid = self.etype.partition("|")
+        ctx.scene.og_props.entity_type = et
+        r = bpy.ops.og.spawn_entity()
+        vf = _db.variant_field(et)
+        if vid and vf and "FINISHED" in r:
+            bpy.ops.og.set_actor_enum_field(prop_key=vf["key"], value=vid)
+        return {"FINISHED"} if "FINISHED" in r else {"CANCELLED"}
 
 
 def draw_add_menu(self, ctx):
-    """Shift+A: "OpenGOAL object" at the bottom of the Add menu."""
+    """Shift+A: "OpenGOAL Object" at the bottom of the Add menu (opens the
+    search first; the Add menu runs operators without invoke by default)."""
     self.layout.separator()
+    self.layout.operator_context = "INVOKE_REGION_WIN"
     self.layout.operator("og.add_actor_search", text="OpenGOAL Object", icon="OUTLINER_OB_EMPTY")
 
 

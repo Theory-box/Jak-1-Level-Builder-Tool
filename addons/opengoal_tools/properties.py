@@ -34,6 +34,7 @@ from .collections import (
     _get_include_text_live, _set_include_text_live,
     _on_mood_changed, _on_sky_changed,
     _get_texture_source_live, _set_texture_source_live,
+    _get_actor_name_nick_live, _set_actor_name_nick_live,
     _on_fog_override_changed,
 )
 
@@ -643,6 +644,11 @@ class OGProperties(PropertyGroup):
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
                                          update=_on_mood_changed,
                                          description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
+    actor_name_nick:        BoolProperty(name="Level nick in actor names",
+                                         description=("Exported actor names start with the level's vis nickname "
+                                                      "(<nick>-babak-0) so they can't clash with vanilla actors or other "
+                                                      "levels loaded at the same time"),
+                                         get=_get_actor_name_nick_live, set=_set_actor_name_nick_live)
     texture_source:         EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS,
                                          get=_get_texture_source_live, set=_set_texture_source_live,
                                          description="Vanilla level to borrow textures + sky from. Use 'None' for any level streamed alongside another custom level — two co-resident levels sharing a source crash on load")
