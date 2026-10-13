@@ -804,8 +804,8 @@ class OG_PT_ActorLauncherDoor(Panel):
             if o.name.startswith("SPAWN_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
         ], key=lambda o: o.name)
 
-        all_cps = [(o, f"{level_name}-{o.name[11:]}") for o in cps] + \
-                  [(o, f"{level_name}-{o.name[6:]}") for o in spawns]
+        from ..collections import spawn_uid
+        all_cps = [(o, f"{level_name}-{spawn_uid(o)}") for o in cps + spawns]
 
         if cp_name:
             row = box.row(align=True)

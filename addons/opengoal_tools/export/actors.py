@@ -625,7 +625,8 @@ def collect_actors(scene, depsgraph=None):
             continue
         if o.name.endswith("_CAM"):
             continue
-        uid = o.name[11:] or "cp0"
+        from ..collections import spawn_uid
+        uid = spawn_uid(o)
         l   = o.location
         gx  = round(l.x,  4)
         gy  = round(l.z,  4)

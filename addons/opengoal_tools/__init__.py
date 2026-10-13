@@ -183,6 +183,8 @@ def register():
     _bviz.register_handler()
     from .operators.misc import register_water_handler
     register_water_handler()
+    from .operators.spawn import draw_add_menu
+    bpy.types.VIEW3D_MT_add.append(draw_add_menu)
     register_texturing()
     for cls in classes:
         try:
@@ -451,6 +453,8 @@ def unregister():
     _bviz.unregister_handler()
     from .operators.misc import unregister_water_handler
     unregister_water_handler()
+    from .operators.spawn import draw_add_menu
+    bpy.types.VIEW3D_MT_add.remove(draw_add_menu)
     unregister_texturing()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:

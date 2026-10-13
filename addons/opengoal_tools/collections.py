@@ -110,6 +110,33 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def free_object_name(prefix, n=0):
+    """f"{prefix}{n}" with the first n not used by any object in the file, so
+    an actor spawned in a second level doesn't get Blender's ".001"."""
+    while f"{prefix}{n}" in bpy.data.objects:
+        n += 1
+    return f"{prefix}{n}"
+
+
+def spawn_uid(o):
+    """Checkpoint / spawn uid of a SPAWN_ / CHECKPOINT_ empty: the name after
+    the prefix, without a leading "<level vis-nick>_" (objects are named
+    SPAWN_<nick>_start so two levels can each have a "start"). None for
+    other objects."""
+    if o.name.startswith("SPAWN_"):
+        rest, dflt = o.name[6:], "start"
+    elif o.name.startswith("CHECKPOINT_"):
+        rest, dflt = o.name[11:], "cp0"
+    else:
+        return None
+    head, sep, tail = rest.partition("_")
+    if sep and tail:
+        nicks = {_resolve_vis_nick(c) for c in _all_level_collections(bpy.context.scene)}
+        if head in nicks:
+            rest = tail
+    return rest or dflt
+
+
 def _col_is_no_export(col):
     """Check if a collection is marked as no-export.
     og_no_export is a registered RNA BoolProperty on bpy.types.Collection,

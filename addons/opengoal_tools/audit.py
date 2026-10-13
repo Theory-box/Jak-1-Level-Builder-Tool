@@ -310,7 +310,8 @@ def check_doors(scene):
             else:
                 # checkpoints export as "<level>-<uid>" (CHECKPOINT_<uid>)
                 lvl = str(scene.get("og_level_name", "") or getattr(scene.og_props, "level_name", "")).strip().lower()
-                cps = {o.name[len("CHECKPOINT_"):] for o in objects if o.name.startswith("CHECKPOINT_")}
+                from .collections import spawn_uid
+                cps = {spawn_uid(o) for o in objects if o.name.startswith("CHECKPOINT_")}
                 ok = (cp_name in cps or any(cp_name == f"{lvl}-{u}" for u in cps)
                       or any(cp_name.endswith("-" + u) for u in cps) or objects.get(cp_name) is not None)
                 if not ok:

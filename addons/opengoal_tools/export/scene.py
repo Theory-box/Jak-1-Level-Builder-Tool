@@ -612,10 +612,8 @@ def collect_spawns(scene):
         if not (is_spawn or is_checkpoint):
             continue
 
-        if is_spawn:
-            uid = o.name[6:] or "start"
-        else:
-            uid = o.name[11:] or "cp0"
+        from ..collections import spawn_uid
+        uid = spawn_uid(o)
 
         l = o.location
         gx = round(l.x,  4)
