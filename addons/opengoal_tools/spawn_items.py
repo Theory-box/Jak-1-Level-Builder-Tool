@@ -39,7 +39,7 @@ TILE_CATEGORIES = (
     "Visuals",
     "NPCs",
     "Pickups",
-    "Audio",
+    "Effects",
     "Volumes",
     "Triggers",
     "Level Flow",
@@ -58,6 +58,7 @@ DB_CAT_TO_TILE = {
     "Obstacles":           "Obstacles",
     "Buttons and Doors":   "Buttons and Doors",
     "Visuals":             "Visuals",
+    "Particles":           "Effects",
     "NPCs":                "NPCs",
     "Pickups":             "Pickups",
 }
@@ -72,7 +73,7 @@ CATEGORY_TO_PROP = {
     "Visuals":             "cat_visuals",
     "NPCs":                "cat_npcs",
     "Pickups":             "cat_pickups",
-    "Audio":               "cat_audio",
+    "Effects":             "cat_audio",
     "Volumes":             "cat_volumes",
     "Triggers":            "cat_triggers",
     "Level Flow":          "cat_flow",
@@ -91,7 +92,7 @@ CATEGORY_ICONS = {
     "Visuals":             "BRUSH_DATA",
     "NPCs":                "USER",
     "Pickups":             "OUTLINER_OB_LIGHT",
-    "Audio":               "OUTLINER_OB_SPEAKER",
+    "Effects":             "OUTLINER_OB_SPEAKER",
     "Volumes":             "MOD_FLUIDSIM",
     "Triggers":            "MESH_CUBE",
     "Level Flow":          "PLAY",
@@ -218,7 +219,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
     SpawnItem(
         spawn_id="special:music_zone",
         label="Music zone",
-        category="Audio",
+        category="Effects",
         description="Ambient music trigger. Uses the bank / flava / priority / "
                     "radius fields as defaults.",
         operator="og.add_music_zone",
@@ -229,7 +230,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
     SpawnItem(
         spawn_id="special:sound_emitter",
         label="Sound emitter",
-        category="Audio",
+        category="Effects",
         description="Point sound source. Pick a sound + default radius below; "
                     "an emitter is added at the 3D cursor.",
         operator="og.add_sound_emitter",

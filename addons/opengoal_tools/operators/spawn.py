@@ -227,6 +227,11 @@ class OG_OT_SpawnEntity(Operator):
             _sv = getattr(ctx.scene.og_props, "spawn_variant", "")
             if _sv and _sv != "NONE":
                 o[_vf["key"]] = _sv
+                from ..data import spawn_sub_field
+                _sf = spawn_sub_field(etype, _sv)
+                _ss = getattr(ctx.scene.og_props, "spawn_variant_sub", "")
+                if _sf and _ss and _ss != "NONE":
+                    o[_sf["key"]] = _ss
         # Apply the selected variant's default field values (e.g. crate contents
         # per type). Runs before the generic default seeding below, which then
         # fills any field the variant didn't set.
@@ -351,6 +356,20 @@ class OG_OT_ClearPreviews(Operator):
         self.report({"INFO"}, f"Removed {n} preview mesh{'es' if n != 1 else ''}")
         return {"FINISHED"}
 
+def sound_radius_driver(o):
+    """The emitter's sphere shows its radius: empty_display_size is driven by
+    og_sound_radius (editing the radius resizes the sphere)."""
+    fc = o.driver_add("empty_display_size")
+    drv = fc.driver
+    drv.type = "SCRIPTED"
+    v = drv.variables.new()
+    v.name = "r"
+    v.type = "SINGLE_PROP"
+    v.targets[0].id = o
+    v.targets[0].data_path = '["og_sound_radius"]'
+    drv.expression = "max(r, 0.1)"
+
+
 class OG_OT_PickSound(Operator):
     """Open sound picker — choose a sound then click OK to place an emitter"""
     bl_idname   = "og.pick_sound"
@@ -362,11 +381,18 @@ class OG_OT_PickSound(Operator):
         description="Select a sound to place",
         items=ALL_SFX_ITEMS,
     )
+    # set: change this placed emitter's sound instead of the one to place
+    target_name: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     def execute(self, ctx):
+        snd = self.sfx_sound.split("__")[0] if "__" in self.sfx_sound else self.sfx_sound
+        tgt = bpy.data.objects.get(self.target_name) if self.target_name else None
+        if tgt is not None:
+            tgt["og_sound_name"] = snd
+            self.report({"INFO"}, f"{tgt.name}: sound {snd}")
+            return {"FINISHED"}
         # Just store the selected sound — emitter is placed separately via Add Emitter
         ctx.scene.og_props.sfx_sound = self.sfx_sound
-        snd = self.sfx_sound.split("__")[0] if "__" in self.sfx_sound else self.sfx_sound
         self.report({"INFO"}, f"Sound selected: {snd}")
         return {"FINISHED"}
 
@@ -401,6 +427,7 @@ class OG_OT_AddSoundEmitter(Operator):
         o["og_sound_name"]   = snd
         o["og_sound_radius"] = props.ambient_default_radius
         o["og_sound_mode"]   = "loop"
+        sound_radius_driver(o)
 
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SOUND_EMITTERS)
         self.report({"INFO"}, f"Added '{name}' → {snd}")

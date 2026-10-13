@@ -137,7 +137,8 @@
     {"id": "Obstacles", "label": "Obstacles", "color": [0.6, 0.1, 0.8, 1.0]},
     {"id": "Interactive Objects", "label": "Interactive Objects", "color": [0.2, 0.8, 0.6, 1.0]},
     {"id": "Buttons and Doors", "label": "Buttons and Doors", "color": [0.2, 0.7, 0.8, 1.0]},
-    {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]}
+    {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]},
+    {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]}
   ],
 
   // ── Defaults ────────────────────────────────────────────────────
@@ -7939,6 +7940,2110 @@
         }
       ],
       "description": "21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (vanilla lrocklrg). With no rock linked they wait at the end for good (no crash)."
+    },
+    {
+      "etype": "part-spawner",
+      "label": "Particle Spawner",
+      "category": "Particles",
+      "parent": "process-drawable",
+      "shape": "SPHERE",
+      "is_prop": true,
+      "description": "Spawns a vanilla particle group (waterfalls, steam, torches, bubbles, moths ...) at its position, optionally with a sound. Pick the vanilla particle file (its code is added to the level) and a group from it; every vanilla group uses the always-loaded 'effects' textures, so they work with any texture source. Rotation has no effect. Reacts to 'stop / 'start (e.g. from a warp gate switch). Some splash / drip groups cut off at vanilla heights.",
+      "reacts_to": [
+        "stop",
+        "start"
+      ],
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_part_file",
+              "label": "Particle file",
+              "type": "enum",
+              "default": "beach-part",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "value": "beach-part",
+                  "id": "beach-part",
+                  "label": "Sentinel Beach (12)",
+                  "code": [
+                    "beach-part.o"
+                  ]
+                },
+                {
+                  "value": "citadel-part",
+                  "id": "citadel-part",
+                  "label": "Citadel (18)",
+                  "code": [
+                    "citadel-part.o"
+                  ]
+                },
+                {
+                  "value": "firecanyon-part",
+                  "id": "firecanyon-part",
+                  "label": "Fire Canyon (35)",
+                  "code": [
+                    "firecanyon-part.o"
+                  ]
+                },
+                {
+                  "value": "jungle-part",
+                  "id": "jungle-part",
+                  "label": "Forbidden Jungle (8)",
+                  "code": [
+                    "jungle-part.o"
+                  ]
+                },
+                {
+                  "value": "lavatube-part",
+                  "id": "lavatube-part",
+                  "label": "Lava Tube (15)",
+                  "code": [
+                    "lavatube-part.o"
+                  ]
+                },
+                {
+                  "value": "maincave-part",
+                  "id": "maincave-part",
+                  "label": "Spider Cave (4)",
+                  "code": [
+                    "maincave-part.o"
+                  ]
+                },
+                {
+                  "value": "misty-part",
+                  "id": "misty-part",
+                  "label": "Misty Island (22)",
+                  "code": [
+                    "misty-part.o"
+                  ]
+                },
+                {
+                  "value": "ogre-part",
+                  "id": "ogre-part",
+                  "label": "Mountain Pass (2)",
+                  "code": [
+                    "ogre-part.o"
+                  ]
+                },
+                {
+                  "value": "robocave-part",
+                  "id": "robocave-part",
+                  "label": "Spider Cave (robot) (1)",
+                  "code": [
+                    "robocave-part.o"
+                  ]
+                },
+                {
+                  "value": "snow-part",
+                  "id": "snow-part",
+                  "label": "Snowy Mountain (10)",
+                  "code": [
+                    "snow-part.o"
+                  ]
+                },
+                {
+                  "value": "sunken-part",
+                  "id": "sunken-part",
+                  "label": "Lost Precursor City 1 (21)",
+                  "code": [
+                    "sunken-part.o"
+                  ]
+                },
+                {
+                  "value": "sunken-part2",
+                  "id": "sunken-part2",
+                  "label": "Lost Precursor City 2 (25)",
+                  "code": [
+                    "sunken-part.o",
+                    "sunken-part2.o"
+                  ]
+                },
+                {
+                  "value": "sunken-part3",
+                  "id": "sunken-part3",
+                  "label": "Lost Precursor City 3 (17)",
+                  "code": [
+                    "sunken-part.o",
+                    "sunken-part3.o"
+                  ]
+                },
+                {
+                  "value": "sunken-part4",
+                  "id": "sunken-part4",
+                  "label": "Lost Precursor City 4 (27)",
+                  "code": [
+                    "sunken-part.o",
+                    "sunken-part4.o"
+                  ]
+                },
+                {
+                  "value": "sunken-part5",
+                  "id": "sunken-part5",
+                  "label": "Lost Precursor City 5 (15)",
+                  "code": [
+                    "sunken-part.o",
+                    "sunken-part5.o"
+                  ]
+                },
+                {
+                  "value": "swamp-part",
+                  "id": "swamp-part",
+                  "label": "Boggy Swamp (16)",
+                  "code": [
+                    "swamp-part.o"
+                  ]
+                },
+                {
+                  "value": "training-part",
+                  "id": "training-part",
+                  "label": "Geyser Rock (9)",
+                  "code": [
+                    "training-part.o"
+                  ]
+                },
+                {
+                  "value": "village1-part",
+                  "id": "village1-part",
+                  "label": "Sandover 1 (9)",
+                  "code": [
+                    "village1-part.o"
+                  ]
+                },
+                {
+                  "value": "village1-part2",
+                  "id": "village1-part2",
+                  "label": "Sandover 2 (8)",
+                  "code": [
+                    "village1-part2.o"
+                  ]
+                },
+                {
+                  "value": "village2-part",
+                  "id": "village2-part",
+                  "label": "Rock Village 1 (15)",
+                  "code": [
+                    "village2-part.o"
+                  ]
+                },
+                {
+                  "value": "village2-part2",
+                  "id": "village2-part2",
+                  "label": "Rock Village 2 (8)",
+                  "code": [
+                    "village2-part.o",
+                    "village2-part2.o"
+                  ]
+                },
+                {
+                  "value": "village3-part",
+                  "id": "village3-part",
+                  "label": "Volcanic Crater (28)",
+                  "code": [
+                    "village3-part.o"
+                  ]
+                },
+                {
+                  "value": "custom",
+                  "id": "custom",
+                  "label": "Custom (your own particle file)",
+                  "etype_from": "og_part_custom_etype",
+                  "code_from": "og_part_custom_file"
+                }
+              ]
+            },
+            {
+              "key": "og_part_group_beach_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-beach-grotto-2",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "beach-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-beach-grotto-2",
+                  "label": "beach-grotto-2"
+                },
+                {
+                  "value": "group-beach-waterfall",
+                  "label": "beach-waterfall"
+                },
+                {
+                  "value": "group-beach-24",
+                  "label": "beach-24"
+                },
+                {
+                  "value": "group-beach-23",
+                  "label": "beach-23"
+                },
+                {
+                  "value": "group-beach-22",
+                  "label": "beach-22"
+                },
+                {
+                  "value": "group-beach-18",
+                  "label": "beach-18"
+                },
+                {
+                  "value": "group-beach-17",
+                  "label": "beach-17"
+                },
+                {
+                  "value": "group-beach-16",
+                  "label": "beach-16"
+                },
+                {
+                  "value": "group-beach-15",
+                  "label": "beach-15"
+                },
+                {
+                  "value": "group-beach-14",
+                  "label": "beach-14"
+                },
+                {
+                  "value": "group-beach-butterflies",
+                  "label": "beach-butterflies"
+                },
+                {
+                  "value": "group-beach-moth",
+                  "label": "beach-moth"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_citadel_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-citb-coil-glow",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "citadel-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-citb-coil-glow",
+                  "label": "citb-coil-glow  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-generator-off",
+                  "label": "citb-generator-off  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-generator-break",
+                  "label": "citb-generator-break  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-generator-mushroom-on",
+                  "label": "citb-generator-mushroom-on  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-generator-on",
+                  "label": "citb-generator-on  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-robotboss-shield",
+                  "label": "citb-robotboss-shield  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-coil-off",
+                  "label": "citb-coil-off  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-blue-sage-beam",
+                  "label": "citb-blue-sage-beam  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-red-sage-beam",
+                  "label": "citb-red-sage-beam  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-yellow-sage-beam",
+                  "label": "citb-yellow-sage-beam  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-green-sage-beam",
+                  "label": "citb-green-sage-beam  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-blue-sage-beam-impact",
+                  "label": "citb-blue-sage-beam-impact  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-red-sage-beam-impact",
+                  "label": "citb-red-sage-beam-impact  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-yellow-sage-beam-impact",
+                  "label": "citb-yellow-sage-beam-impact  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citb-green-sage-beam-impact",
+                  "label": "citb-green-sage-beam-impact  (unused in vanilla)"
+                },
+                {
+                  "value": "group-citadel-warpgate",
+                  "label": "citadel-warpgate"
+                },
+                {
+                  "value": "group-part-citadel-torch",
+                  "label": "citadel-torch"
+                },
+                {
+                  "value": "group-firehose-blast-smoke",
+                  "label": "firehose-blast-smoke  (unused in vanilla)"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_firecanyon_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-firecanyon-lava-1",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "firecanyon-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-firecanyon-lava-1",
+                  "label": "firecanyon-lava-1"
+                },
+                {
+                  "value": "group-firecanyon-lava-2",
+                  "label": "firecanyon-lava-2"
+                },
+                {
+                  "value": "group-firecanyon-lava-3",
+                  "label": "firecanyon-lava-3"
+                },
+                {
+                  "value": "group-firecanyon-lava-5",
+                  "label": "firecanyon-lava-5"
+                },
+                {
+                  "value": "group-firecanyon-lava-6",
+                  "label": "firecanyon-lava-6"
+                },
+                {
+                  "value": "group-firecanyon-lava-7",
+                  "label": "firecanyon-lava-7"
+                },
+                {
+                  "value": "group-firecanyon-lava-8",
+                  "label": "firecanyon-lava-8"
+                },
+                {
+                  "value": "group-firecanyon-lava-9",
+                  "label": "firecanyon-lava-9"
+                },
+                {
+                  "value": "group-firecanyon-lava-10",
+                  "label": "firecanyon-lava-10"
+                },
+                {
+                  "value": "group-firecanyon-lava-11",
+                  "label": "firecanyon-lava-11"
+                },
+                {
+                  "value": "group-firecanyon-lava-14",
+                  "label": "firecanyon-lava-14"
+                },
+                {
+                  "value": "group-firecanyon-lava-15",
+                  "label": "firecanyon-lava-15"
+                },
+                {
+                  "value": "group-firecanyon-lava-16",
+                  "label": "firecanyon-lava-16"
+                },
+                {
+                  "value": "group-firecanyon-lava-18",
+                  "label": "firecanyon-lava-18"
+                },
+                {
+                  "value": "group-firecanyon-lava-19",
+                  "label": "firecanyon-lava-19"
+                },
+                {
+                  "value": "group-firecanyon-lava-21",
+                  "label": "firecanyon-lava-21"
+                },
+                {
+                  "value": "group-firecanyon-lava-22",
+                  "label": "firecanyon-lava-22"
+                },
+                {
+                  "value": "group-firecanyon-lava-60",
+                  "label": "firecanyon-lava-60"
+                },
+                {
+                  "value": "group-firecanyon-lava-62",
+                  "label": "firecanyon-lava-62"
+                },
+                {
+                  "value": "group-firecanyon-lava-63",
+                  "label": "firecanyon-lava-63"
+                },
+                {
+                  "value": "group-firecanyon-lava-64",
+                  "label": "firecanyon-lava-64  (unused in vanilla)"
+                },
+                {
+                  "value": "group-firecanyon-heat-44",
+                  "label": "firecanyon-heat-44"
+                },
+                {
+                  "value": "group-firecanyon-heat-45",
+                  "label": "firecanyon-heat-45"
+                },
+                {
+                  "value": "group-firecanyon-heat-46",
+                  "label": "firecanyon-heat-46"
+                },
+                {
+                  "value": "group-firecanyon-heat-47",
+                  "label": "firecanyon-heat-47"
+                },
+                {
+                  "value": "group-firecanyon-heat-48",
+                  "label": "firecanyon-heat-48"
+                },
+                {
+                  "value": "group-firecanyon-heat-50",
+                  "label": "firecanyon-heat-50"
+                },
+                {
+                  "value": "group-firecanyon-heat-52",
+                  "label": "firecanyon-heat-52"
+                },
+                {
+                  "value": "group-firecanyon-heat-53",
+                  "label": "firecanyon-heat-53"
+                },
+                {
+                  "value": "group-firecanyon-heat-54",
+                  "label": "firecanyon-heat-54"
+                },
+                {
+                  "value": "group-firecanyon-heat-55",
+                  "label": "firecanyon-heat-55"
+                },
+                {
+                  "value": "group-firecanyon-heat-56",
+                  "label": "firecanyon-heat-56"
+                },
+                {
+                  "value": "group-firecanyon-heat-57",
+                  "label": "firecanyon-heat-57"
+                },
+                {
+                  "value": "group-firecanyon-heat-58",
+                  "label": "firecanyon-heat-58"
+                },
+                {
+                  "value": "group-firecanyon-heat-59",
+                  "label": "firecanyon-heat-59"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_jungle_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-jungle-waterfall-1",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "jungle-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-jungle-waterfall-1",
+                  "label": "jungle-waterfall-1"
+                },
+                {
+                  "value": "group-jungle-waterfall-2",
+                  "label": "jungle-waterfall-2"
+                },
+                {
+                  "value": "group-jungle-waterfall-3",
+                  "label": "jungle-waterfall-3"
+                },
+                {
+                  "value": "group-jungle-waterfall-4",
+                  "label": "jungle-waterfall-4"
+                },
+                {
+                  "value": "group-jungle-dapple-light-1",
+                  "label": "jungle-dapple-light-1"
+                },
+                {
+                  "value": "group-jungle-tower-spewer",
+                  "label": "jungle-tower-spewer"
+                },
+                {
+                  "value": "group-jungle-lurkermachine-3",
+                  "label": "jungle-lurkermachine-3"
+                },
+                {
+                  "value": "group-jungle-lurkermachine-1",
+                  "label": "jungle-lurkermachine-1"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_lavatube_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-lavatube-crust-20x20",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "lavatube-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-lavatube-crust-20x20",
+                  "label": "lavatube-crust-20x20"
+                },
+                {
+                  "value": "group-lavatube-lowlava-20x20",
+                  "label": "lavatube-lowlava-20x20"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-down-1",
+                  "label": "lavatube-green-smoke-down-1"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-down-2",
+                  "label": "lavatube-green-smoke-down-2"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-down-3",
+                  "label": "lavatube-green-smoke-down-3"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-angle-1",
+                  "label": "lavatube-green-smoke-angle-1  (unused in vanilla)"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-angle-2",
+                  "label": "lavatube-green-smoke-angle-2  (unused in vanilla)"
+                },
+                {
+                  "value": "group-lavatube-green-smoke-angle-3",
+                  "label": "lavatube-green-smoke-angle-3  (unused in vanilla)"
+                },
+                {
+                  "value": "group-lavatube-fountain",
+                  "label": "lavatube-fountain"
+                },
+                {
+                  "value": "group-lavatube-vents",
+                  "label": "lavatube-vents"
+                },
+                {
+                  "value": "group-lavatube-crust-40x40",
+                  "label": "lavatube-crust-40x40"
+                },
+                {
+                  "value": "group-lavatube-lowlava-40x40",
+                  "label": "lavatube-lowlava-40x40"
+                },
+                {
+                  "value": "group-lavatube-heavy-smoke",
+                  "label": "lavatube-heavy-smoke"
+                },
+                {
+                  "value": "group-lavatube-heavy-smoke-start",
+                  "label": "lavatube-heavy-smoke-start"
+                },
+                {
+                  "value": "group-lavatube-heavy-smoke-end",
+                  "label": "lavatube-heavy-smoke-end"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_maincave_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-part-maincave-torch",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "maincave-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-part-maincave-torch",
+                  "label": "maincave-torch"
+                },
+                {
+                  "value": "group-cave-cavedrip-1",
+                  "label": "cave-cavedrip-1"
+                },
+                {
+                  "value": "group-cave-cavedrip-2",
+                  "label": "cave-cavedrip-2"
+                },
+                {
+                  "value": "group-cave-cavedrip-3",
+                  "label": "cave-cavedrip-3"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_misty_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-misty-ship-steam",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "misty-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-misty-ship-steam",
+                  "label": "misty-ship-steam"
+                },
+                {
+                  "value": "group-part-misty-torch",
+                  "label": "misty-torch"
+                },
+                {
+                  "value": "group-misty-fog",
+                  "label": "misty-fog"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-316",
+                  "label": "misty-lurkermachine-vent-316"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-313",
+                  "label": "misty-lurkermachine-vent-313"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-308",
+                  "label": "misty-lurkermachine-vent-308"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-307",
+                  "label": "misty-lurkermachine-vent-307"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-305",
+                  "label": "misty-lurkermachine-vent-305"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-309",
+                  "label": "misty-lurkermachine-vent-309"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-2",
+                  "label": "misty-lurkermachine-vent-2"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-328",
+                  "label": "misty-lurkermachine-vent-328"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-325",
+                  "label": "misty-lurkermachine-vent-325"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-320",
+                  "label": "misty-lurkermachine-vent-320"
+                },
+                {
+                  "value": "group-misty-lurkermachine-vent-324",
+                  "label": "misty-lurkermachine-vent-324"
+                },
+                {
+                  "value": "group-misty-fort-steam",
+                  "label": "misty-fort-steam"
+                },
+                {
+                  "value": "group-misty-fort-steam2",
+                  "label": "misty-fort-steam2"
+                },
+                {
+                  "value": "group-misty-fort-steam3",
+                  "label": "misty-fort-steam3"
+                },
+                {
+                  "value": "group-misty-fort-steam4",
+                  "label": "misty-fort-steam4"
+                },
+                {
+                  "value": "group-misty-lurkermachine-spout-314",
+                  "label": "misty-lurkermachine-spout-314"
+                },
+                {
+                  "value": "group-misty-lurkermachine-spout-310",
+                  "label": "misty-lurkermachine-spout-310"
+                },
+                {
+                  "value": "group-misty-lurkermachine-spout-311",
+                  "label": "misty-lurkermachine-spout-311"
+                },
+                {
+                  "value": "group-misty-lurkermachine-spout-312",
+                  "label": "misty-lurkermachine-spout-312"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_ogre_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-ogre-bridge-splash",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "ogre-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-ogre-bridge-splash",
+                  "label": "ogre-bridge-splash  (unused in vanilla)"
+                },
+                {
+                  "value": "group-ogre-lava-lava-20x20",
+                  "label": "ogre-lava-lava-20x20"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_robocave_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-part-robocave-torch",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "robocave-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-part-robocave-torch",
+                  "label": "robocave-torch"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_snow_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-snow-snowdrops1",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "snow-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-snow-snowdrops1",
+                  "label": "snow-snowdrops1"
+                },
+                {
+                  "value": "group-snow-snowdrops2",
+                  "label": "snow-snowdrops2"
+                },
+                {
+                  "value": "group-snow-snowdrops3",
+                  "label": "snow-snowdrops3"
+                },
+                {
+                  "value": "group-snow-snowdrops4",
+                  "label": "snow-snowdrops4"
+                },
+                {
+                  "value": "group-snow-snowdrops5",
+                  "label": "snow-snowdrops5"
+                },
+                {
+                  "value": "group-snow-snowdrops6",
+                  "label": "snow-snowdrops6"
+                },
+                {
+                  "value": "group-part-snow-torch",
+                  "label": "snow-torch"
+                },
+                {
+                  "value": "group-snow-mountain-snow",
+                  "label": "snow-mountain-snow"
+                },
+                {
+                  "value": "group-snow-door-torch",
+                  "label": "snow-door-torch"
+                },
+                {
+                  "value": "group-snow-birds",
+                  "label": "snow-birds"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_sunken_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-sunken-heatpipe-183",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "sunken-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-sunken-heatpipe-183",
+                  "label": "sunken-heatpipe-183"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-27",
+                  "label": "sunken-tunnel-bubbles-27"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-32",
+                  "label": "sunken-tunnel-bubbles-32"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-33",
+                  "label": "sunken-tunnel-bubbles-33"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-199",
+                  "label": "sunken-tunnel-bubbles-199"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-281",
+                  "label": "sunken-tunnel-bubbles-281"
+                },
+                {
+                  "value": "group-sunken-tunnel-bubbles-202",
+                  "label": "sunken-tunnel-bubbles-202"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-35",
+                  "label": "sunken-window-bubbles-35"
+                },
+                {
+                  "value": "group-sunken-helix-bubbles-398",
+                  "label": "sunken-helix-bubbles-398"
+                },
+                {
+                  "value": "group-sunken-helix-bubbles-397",
+                  "label": "sunken-helix-bubbles-397"
+                },
+                {
+                  "value": "group-sunken-heatpipe-355",
+                  "label": "sunken-heatpipe-355"
+                },
+                {
+                  "value": "group-sunken-heatpipe-361",
+                  "label": "sunken-heatpipe-361"
+                },
+                {
+                  "value": "group-sunken-heatpipe-360",
+                  "label": "sunken-heatpipe-360"
+                },
+                {
+                  "value": "group-sunken-heatpipe-377",
+                  "label": "sunken-heatpipe-377"
+                },
+                {
+                  "value": "group-sunken-heatpipe-376",
+                  "label": "sunken-heatpipe-376"
+                },
+                {
+                  "value": "group-sunken-heatpipe-375",
+                  "label": "sunken-heatpipe-375"
+                },
+                {
+                  "value": "group-sunken-heatpipe-374",
+                  "label": "sunken-heatpipe-374"
+                },
+                {
+                  "value": "group-sunken-heatpipe-363",
+                  "label": "sunken-heatpipe-363"
+                },
+                {
+                  "value": "group-sunken-heatpipe-362",
+                  "label": "sunken-heatpipe-362"
+                },
+                {
+                  "value": "group-sunken-heatpipe-364",
+                  "label": "sunken-heatpipe-364"
+                },
+                {
+                  "value": "group-sunken-heatpipe-365",
+                  "label": "sunken-heatpipe-365"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_sunken_part2",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-sunken-window-bubbles-34",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "sunken-part2"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-sunken-window-bubbles-34",
+                  "label": "sunken-window-bubbles-34"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-36",
+                  "label": "sunken-window-bubbles-36"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-30",
+                  "label": "sunken-window-bubbles-30"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-31",
+                  "label": "sunken-window-bubbles-31"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-29",
+                  "label": "sunken-window-bubbles-29"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-159",
+                  "label": "sunken-window-bubbles-159"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-161",
+                  "label": "sunken-window-bubbles-161"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-204",
+                  "label": "sunken-window-bubbles-204"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-205",
+                  "label": "sunken-window-bubbles-205"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-203",
+                  "label": "sunken-window-bubbles-203"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-42",
+                  "label": "sunken-window-bubbles-42  (unused in vanilla)"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-41",
+                  "label": "sunken-window-bubbles-41"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-206",
+                  "label": "sunken-window-bubbles-206"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-201",
+                  "label": "sunken-window-bubbles-201"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-3",
+                  "label": "sunken-window-bubbles-3"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-2",
+                  "label": "sunken-window-bubbles-2"
+                },
+                {
+                  "value": "group-sunken-heatpipe-382",
+                  "label": "sunken-heatpipe-382  (unused in vanilla)"
+                },
+                {
+                  "value": "group-sunken-heatpipe-381",
+                  "label": "sunken-heatpipe-381  (unused in vanilla)"
+                },
+                {
+                  "value": "group-sunken-heatpipe-380",
+                  "label": "sunken-heatpipe-380  (unused in vanilla)"
+                },
+                {
+                  "value": "group-sunken-heatpipe-379",
+                  "label": "sunken-heatpipe-379  (unused in vanilla)"
+                },
+                {
+                  "value": "group-sunken-heatpipe-378",
+                  "label": "sunken-heatpipe-378"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-402",
+                  "label": "sunken-window-bubbles-402"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-401",
+                  "label": "sunken-window-bubbles-401"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-400",
+                  "label": "sunken-window-bubbles-400"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-399",
+                  "label": "sunken-window-bubbles-399"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_sunken_part3",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-sunken-heatpipe-383",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "sunken-part3"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-sunken-heatpipe-383",
+                  "label": "sunken-heatpipe-383"
+                },
+                {
+                  "value": "group-sunken-heatpipe-198",
+                  "label": "sunken-heatpipe-198"
+                },
+                {
+                  "value": "group-sunken-heatpipe-189",
+                  "label": "sunken-heatpipe-189"
+                },
+                {
+                  "value": "group-sunken-heatpipe-193",
+                  "label": "sunken-heatpipe-193"
+                },
+                {
+                  "value": "group-sunken-heatpipe-207",
+                  "label": "sunken-heatpipe-207"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-388",
+                  "label": "sunken-window-bubbles-388"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-387",
+                  "label": "sunken-window-bubbles-387"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-386",
+                  "label": "sunken-window-bubbles-386"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-384",
+                  "label": "sunken-window-bubbles-384"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-385",
+                  "label": "sunken-window-bubbles-385"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-394",
+                  "label": "sunken-window-bubbles-394"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-390",
+                  "label": "sunken-window-bubbles-390"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-393",
+                  "label": "sunken-window-bubbles-393"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-392",
+                  "label": "sunken-window-bubbles-392"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-38",
+                  "label": "sunken-window-bubbles-38"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-200",
+                  "label": "sunken-window-bubbles-200"
+                },
+                {
+                  "value": "group-sunken-window-bubbles-391",
+                  "label": "sunken-window-bubbles-391"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_sunken_part4",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-sunken-heatpipe-282",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "sunken-part4"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-sunken-heatpipe-282",
+                  "label": "sunken-heatpipe-282"
+                },
+                {
+                  "value": "group-sunken-heatpipe-285",
+                  "label": "sunken-heatpipe-285"
+                },
+                {
+                  "value": "group-sunken-heatpipe-288",
+                  "label": "sunken-heatpipe-288"
+                },
+                {
+                  "value": "group-sunken-heatpipe-299",
+                  "label": "sunken-heatpipe-299"
+                },
+                {
+                  "value": "group-sunken-heatpipe-302",
+                  "label": "sunken-heatpipe-302"
+                },
+                {
+                  "value": "group-sunken-heatpipe-367",
+                  "label": "sunken-heatpipe-367"
+                },
+                {
+                  "value": "group-sunken-heatpipe-371",
+                  "label": "sunken-heatpipe-371"
+                },
+                {
+                  "value": "group-sunken-heatpipe-308",
+                  "label": "sunken-heatpipe-308"
+                },
+                {
+                  "value": "group-sunken-heatpipe-312",
+                  "label": "sunken-heatpipe-312"
+                },
+                {
+                  "value": "group-sunken-heatpipe-316",
+                  "label": "sunken-heatpipe-316"
+                },
+                {
+                  "value": "group-sunken-heatpipe-320",
+                  "label": "sunken-heatpipe-320"
+                },
+                {
+                  "value": "group-sunken-heatpipe-324",
+                  "label": "sunken-heatpipe-324"
+                },
+                {
+                  "value": "group-sunken-heatpipe-328",
+                  "label": "sunken-heatpipe-328"
+                },
+                {
+                  "value": "group-sunken-heatpipe-332",
+                  "label": "sunken-heatpipe-332"
+                },
+                {
+                  "value": "group-sunken-heatpipe-333",
+                  "label": "sunken-heatpipe-333"
+                },
+                {
+                  "value": "group-sunken-heatpipe-334",
+                  "label": "sunken-heatpipe-334"
+                },
+                {
+                  "value": "group-sunken-heatpipe-335",
+                  "label": "sunken-heatpipe-335"
+                },
+                {
+                  "value": "group-sunken-heatpipe-336",
+                  "label": "sunken-heatpipe-336"
+                },
+                {
+                  "value": "group-sunken-heatpipe-337",
+                  "label": "sunken-heatpipe-337"
+                },
+                {
+                  "value": "group-sunken-heatpipe-338",
+                  "label": "sunken-heatpipe-338"
+                },
+                {
+                  "value": "group-sunken-heatpipe-339",
+                  "label": "sunken-heatpipe-339"
+                },
+                {
+                  "value": "group-sunken-heatpipe-340",
+                  "label": "sunken-heatpipe-340"
+                },
+                {
+                  "value": "group-sunken-heatpipe-341",
+                  "label": "sunken-heatpipe-341"
+                },
+                {
+                  "value": "group-sunken-heatpipe-357",
+                  "label": "sunken-heatpipe-357"
+                },
+                {
+                  "value": "group-sunken-heatpipe-356",
+                  "label": "sunken-heatpipe-356"
+                },
+                {
+                  "value": "group-sunken-heatpipe-354",
+                  "label": "sunken-heatpipe-354"
+                },
+                {
+                  "value": "group-sunken-sheild",
+                  "label": "sunken-sheild"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_sunken_part5",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-sunken-heatpipe-227",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "sunken-part5"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-sunken-heatpipe-227",
+                  "label": "sunken-heatpipe-227"
+                },
+                {
+                  "value": "group-sunken-heatpipe-238",
+                  "label": "sunken-heatpipe-238"
+                },
+                {
+                  "value": "group-sunken-heatpipe-239",
+                  "label": "sunken-heatpipe-239"
+                },
+                {
+                  "value": "group-sunken-heatpipe-240",
+                  "label": "sunken-heatpipe-240"
+                },
+                {
+                  "value": "group-sunken-heatpipe-241",
+                  "label": "sunken-heatpipe-241"
+                },
+                {
+                  "value": "group-sunken-heatpipe-242",
+                  "label": "sunken-heatpipe-242"
+                },
+                {
+                  "value": "group-sunken-heatpipe-243",
+                  "label": "sunken-heatpipe-243"
+                },
+                {
+                  "value": "group-sunken-heatpipe-278",
+                  "label": "sunken-heatpipe-278"
+                },
+                {
+                  "value": "group-sunken-heatpipe-251",
+                  "label": "sunken-heatpipe-251"
+                },
+                {
+                  "value": "group-sunken-heatpipe-254",
+                  "label": "sunken-heatpipe-254"
+                },
+                {
+                  "value": "group-sunken-heatpipe-264",
+                  "label": "sunken-heatpipe-264"
+                },
+                {
+                  "value": "group-sunken-heatpipe-265",
+                  "label": "sunken-heatpipe-265"
+                },
+                {
+                  "value": "group-sunken-heatpipe-266",
+                  "label": "sunken-heatpipe-266"
+                },
+                {
+                  "value": "group-sunken-heatpipe-267",
+                  "label": "sunken-heatpipe-267"
+                },
+                {
+                  "value": "group-sunken-heatpipe-268",
+                  "label": "sunken-heatpipe-268"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_swamp_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-swamp-bayou-billy-hut",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "swamp-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-swamp-bayou-billy-hut",
+                  "label": "swamp-bayou-billy-hut"
+                },
+                {
+                  "value": "group-swamp-bubbles-01",
+                  "label": "swamp-bubbles-01"
+                },
+                {
+                  "value": "group-swamp-bubbles-02",
+                  "label": "swamp-bubbles-02"
+                },
+                {
+                  "value": "group-swamp-bubbles-03",
+                  "label": "swamp-bubbles-03"
+                },
+                {
+                  "value": "group-swamp-bubbles-04",
+                  "label": "swamp-bubbles-04"
+                },
+                {
+                  "value": "group-swamp-bubbles-05",
+                  "label": "swamp-bubbles-05"
+                },
+                {
+                  "value": "group-swamp-bubbles-06",
+                  "label": "swamp-bubbles-06"
+                },
+                {
+                  "value": "group-swamp-bubbles-07",
+                  "label": "swamp-bubbles-07"
+                },
+                {
+                  "value": "group-swamp-bubbles-08",
+                  "label": "swamp-bubbles-08"
+                },
+                {
+                  "value": "group-swamp-bubbles-09",
+                  "label": "swamp-bubbles-09"
+                },
+                {
+                  "value": "group-swamp-bubbles-10",
+                  "label": "swamp-bubbles-10"
+                },
+                {
+                  "value": "group-swamp-bubbles-11",
+                  "label": "swamp-bubbles-11"
+                },
+                {
+                  "value": "group-swamp-bubbles-12",
+                  "label": "swamp-bubbles-12"
+                },
+                {
+                  "value": "group-swamp-bubbles-13",
+                  "label": "swamp-bubbles-13"
+                },
+                {
+                  "value": "group-swamp-bubbles-14",
+                  "label": "swamp-bubbles-14"
+                },
+                {
+                  "value": "group-swamp-torch",
+                  "label": "swamp-torch"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_training_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-training-geyser-2",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "training-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-training-geyser-2",
+                  "label": "training-geyser-2"
+                },
+                {
+                  "value": "group-training-geyser-5",
+                  "label": "training-geyser-5"
+                },
+                {
+                  "value": "group-training-geyser-4",
+                  "label": "training-geyser-4"
+                },
+                {
+                  "value": "group-training-geyser-6",
+                  "label": "training-geyser-6"
+                },
+                {
+                  "value": "group-training-warpgate",
+                  "label": "training-warpgate"
+                },
+                {
+                  "value": "group-training-butterflies",
+                  "label": "training-butterflies"
+                },
+                {
+                  "value": "group-training-birds",
+                  "label": "training-birds"
+                },
+                {
+                  "value": "group-training-waterfall-21",
+                  "label": "training-waterfall-21"
+                },
+                {
+                  "value": "group-training-waterfall-20",
+                  "label": "training-waterfall-20"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_village1_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-village1-butterflies",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "village1-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-village1-butterflies",
+                  "label": "village1-butterflies"
+                },
+                {
+                  "value": "group-village1-moth",
+                  "label": "village1-moth"
+                },
+                {
+                  "value": "group-village1-hummingbird",
+                  "label": "village1-hummingbird"
+                },
+                {
+                  "value": "group-village1-pot",
+                  "label": "village1-pot"
+                },
+                {
+                  "value": "group-village1-mayor-fire",
+                  "label": "village1-mayor-fire"
+                },
+                {
+                  "value": "group-village1-sagehut-seagulls",
+                  "label": "village1-sagehut-seagulls"
+                },
+                {
+                  "value": "group-village1-butterfly-sitting",
+                  "label": "village1-butterfly-sitting"
+                },
+                {
+                  "value": "group-village1-fountain",
+                  "label": "village1-fountain"
+                },
+                {
+                  "value": "group-village1-bird-lady-birds",
+                  "label": "village1-bird-lady-birds"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_village1_part2",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-village1-sagehut-rings",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "village1-part2"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-village1-sagehut-rings",
+                  "label": "village1-sagehut-rings"
+                },
+                {
+                  "value": "group-village1-sagehut-rings-2",
+                  "label": "village1-sagehut-rings-2"
+                },
+                {
+                  "value": "group-village1-sagehut-rings-3",
+                  "label": "village1-sagehut-rings-3"
+                },
+                {
+                  "value": "group-village1-sagehut-drips",
+                  "label": "village1-sagehut-drips"
+                },
+                {
+                  "value": "group-village1-sagehut-warpgate",
+                  "label": "village1-sagehut-warpgate"
+                },
+                {
+                  "value": "group-village1-misty-fog",
+                  "label": "village1-misty-fog  (unused in vanilla)"
+                },
+                {
+                  "value": "group-village1-trans-pad",
+                  "label": "village1-trans-pad"
+                },
+                {
+                  "value": "group-village1-training-spouts",
+                  "label": "village1-training-spouts  (unused in vanilla)"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_village2_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-village2-moth",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "village2-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-village2-moth",
+                  "label": "village2-moth  (unused in vanilla)"
+                },
+                {
+                  "value": "group-village2-tableflys",
+                  "label": "village2-tableflys"
+                },
+                {
+                  "value": "group-village2-flamepot",
+                  "label": "village2-flamepot"
+                },
+                {
+                  "value": "group-village2-flamepot-half",
+                  "label": "village2-flamepot-half"
+                },
+                {
+                  "value": "group-village2-flamepot-alt1",
+                  "label": "village2-flamepot-alt1"
+                },
+                {
+                  "value": "group-village2-flamepot-alt2",
+                  "label": "village2-flamepot-alt2"
+                },
+                {
+                  "value": "group-village2-flamepot-off",
+                  "label": "village2-flamepot-off"
+                },
+                {
+                  "value": "group-village2-fireboulder",
+                  "label": "village2-fireboulder"
+                },
+                {
+                  "value": "group-village2-window-flames-45",
+                  "label": "village2-window-flames-45"
+                },
+                {
+                  "value": "group-village2-window-flames-41",
+                  "label": "village2-window-flames-41"
+                },
+                {
+                  "value": "group-village2-big-boulder",
+                  "label": "village2-big-boulder"
+                },
+                {
+                  "value": "group-village2-sages-controlpanel",
+                  "label": "village2-sages-controlpanel"
+                },
+                {
+                  "value": "group-village2-sages-machine",
+                  "label": "village2-sages-machine"
+                },
+                {
+                  "value": "group-village2-fireboulder-off",
+                  "label": "village2-fireboulder-off"
+                },
+                {
+                  "value": "group-village2-fireboulder-hover",
+                  "label": "village2-fireboulder-hover  (unused in vanilla)"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_village2_part2",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-village2-waterfall-29",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "village2-part2"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-village2-waterfall-29",
+                  "label": "village2-waterfall-29"
+                },
+                {
+                  "value": "group-village2-waterfall-30",
+                  "label": "village2-waterfall-30"
+                },
+                {
+                  "value": "group-village2-waterfall-31",
+                  "label": "village2-waterfall-31"
+                },
+                {
+                  "value": "group-village2-waterfall-32",
+                  "label": "village2-waterfall-32"
+                },
+                {
+                  "value": "group-village2-waterfall-33",
+                  "label": "village2-waterfall-33"
+                },
+                {
+                  "value": "group-village2-waterfall-34",
+                  "label": "village2-waterfall-34"
+                },
+                {
+                  "value": "group-village2-sagehut-warpgate",
+                  "label": "village2-sagehut-warpgate"
+                },
+                {
+                  "value": "group-village2-tree-fire",
+                  "label": "village2-tree-fire"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_group_village3_part",
+              "label": "Particle group",
+              "type": "enum",
+              "default": "group-village3-candle",
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_file": "village3-part"
+              },
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              },
+              "choices": [
+                {
+                  "value": "group-village3-candle",
+                  "label": "village3-candle"
+                },
+                {
+                  "value": "group-village3-sulphur-05",
+                  "label": "village3-sulphur-05"
+                },
+                {
+                  "value": "group-village3-sulphur-06",
+                  "label": "village3-sulphur-06"
+                },
+                {
+                  "value": "group-village3-sulphur-07",
+                  "label": "village3-sulphur-07"
+                },
+                {
+                  "value": "group-village3-sulphur-08",
+                  "label": "village3-sulphur-08"
+                },
+                {
+                  "value": "group-village3-sulphur-09",
+                  "label": "village3-sulphur-09"
+                },
+                {
+                  "value": "group-village3-sulphur-10",
+                  "label": "village3-sulphur-10  (unused in vanilla)"
+                },
+                {
+                  "value": "group-village3-sulphur-11",
+                  "label": "village3-sulphur-11"
+                },
+                {
+                  "value": "group-village3-sulphur-12",
+                  "label": "village3-sulphur-12"
+                },
+                {
+                  "value": "group-village3-sulphur-13",
+                  "label": "village3-sulphur-13"
+                },
+                {
+                  "value": "group-village3-sulphur-14",
+                  "label": "village3-sulphur-14"
+                },
+                {
+                  "value": "group-village3-sulphur-15",
+                  "label": "village3-sulphur-15"
+                },
+                {
+                  "value": "group-village3-minor-fire",
+                  "label": "village3-minor-fire"
+                },
+                {
+                  "value": "group-spewing-volcano-36",
+                  "label": "spewing-volcano-36"
+                },
+                {
+                  "value": "group-spewing-volcano-37",
+                  "label": "spewing-volcano-37"
+                },
+                {
+                  "value": "group-village3-steam-puff-31",
+                  "label": "village3-steam-puff-31"
+                },
+                {
+                  "value": "group-village3-steam-puff-22",
+                  "label": "village3-steam-puff-22"
+                },
+                {
+                  "value": "group-village3-steam-puff-23",
+                  "label": "village3-steam-puff-23"
+                },
+                {
+                  "value": "group-village3-bottom-puff-25",
+                  "label": "village3-bottom-puff-25"
+                },
+                {
+                  "value": "group-village3-bottom-puff-27",
+                  "label": "village3-bottom-puff-27"
+                },
+                {
+                  "value": "group-village3-bottom-puff-28",
+                  "label": "village3-bottom-puff-28"
+                },
+                {
+                  "value": "group-village3-bottom-puff-29",
+                  "label": "village3-bottom-puff-29  (unused in vanilla)"
+                },
+                {
+                  "value": "group-village3-bottom-puff-30",
+                  "label": "village3-bottom-puff-30"
+                },
+                {
+                  "value": "group-village3-lava-lava-20x20",
+                  "label": "village3-lava-lava-20x20"
+                },
+                {
+                  "value": "group-village3-sagehut-warpgate",
+                  "label": "village3-sagehut-warpgate"
+                },
+                {
+                  "value": "group-village3-sagehut-boiling",
+                  "label": "village3-sagehut-boiling"
+                },
+                {
+                  "value": "group-village3-sagehut-steam",
+                  "label": "village3-sagehut-steam"
+                },
+                {
+                  "value": "group-village3-sagehut-understeam",
+                  "label": "village3-sagehut-understeam"
+                }
+              ],
+              "dropdown": true,
+              "spawn_pick": true
+            },
+            {
+              "key": "og_part_custom_file",
+              "label": "Code file (.o, added to the .gd)",
+              "type": "string",
+              "default": "",
+              "visible_if": {
+                "og_part_file": "custom"
+              },
+              "note": "Your particle file's object name, e.g. my-part.o (empty: none added)."
+            },
+            {
+              "key": "og_part_custom_etype",
+              "label": "Etype",
+              "type": "string",
+              "default": "part-spawner",
+              "visible_if": {
+                "og_part_file": "custom"
+              }
+            },
+            {
+              "key": "og_part_custom_group",
+              "label": "Particle group (art-name)",
+              "type": "string",
+              "default": "",
+              "visible_if": {
+                "og_part_file": "custom"
+              },
+              "export_if_visible": true,
+              "write_if": "if_non_empty",
+              "lump": {
+                "key": "art-name",
+                "type": "string"
+              }
+            },
+            {
+              "key": "og_part_sound",
+              "label": "Sound",
+              "type": "enum",
+              "default": "none",
+              "choices": "BankSFXOrNone",
+              "lump": {
+                "key": "effect-name",
+                "type": "symbol@0.0"
+              },
+              "write_if": "if_not_none",
+              "note": "The sound's bank must be loaded by the level (common, or one of its two sound banks)."
+            },
+            {
+              "key": "og_part_snd_k1",
+              "label": "",
+              "type": "float",
+              "default": 3.0,
+              "show-field": false,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "effect-param",
+                "type": "float@0.0",
+                "slot": 0
+              }
+            },
+            {
+              "key": "og_part_snd_volume",
+              "label": "Volume (%)",
+              "type": "float",
+              "default": 80.0,
+              "min": 0.0,
+              "max": 100.0,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "effect-param",
+                "type": "float@0.0",
+                "slot": 1
+              }
+            },
+            {
+              "key": "og_part_snd_k2",
+              "label": "",
+              "type": "float",
+              "default": 12.0,
+              "show-field": false,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "effect-param",
+                "type": "float@0.0",
+                "slot": 2
+              }
+            },
+            {
+              "key": "og_part_snd_range",
+              "label": "Heard up to (m)",
+              "type": "float",
+              "default": 30.0,
+              "min": 0.0,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "effect-param",
+                "type": "float@0.0",
+                "slot": 3
+              }
+            },
+            {
+              "key": "og_part_snd_every",
+              "label": "Repeat every (s, -1 = loop)",
+              "type": "float",
+              "default": -1.0,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "cycle-speed",
+                "type": "float",
+                "slot": 0
+              }
+            },
+            {
+              "key": "og_part_snd_random",
+              "label": "+ random (s)",
+              "type": "float",
+              "default": 0.0,
+              "min": 0.0,
+              "write_if": "always",
+              "export_if_visible": true,
+              "visible_if": {
+                "og_part_sound": {
+                  "not": "none",
+                  "default": "none"
+                }
+              },
+              "lump": {
+                "key": "cycle-speed",
+                "type": "float",
+                "slot": 1
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "sage-bluehut",

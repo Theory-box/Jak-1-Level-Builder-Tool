@@ -17,6 +17,7 @@ from .data import (
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _spawn_variant_cb,
+    _spawn_variant_sub_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
     _search_results_cb,
     _parse_lump_row,
@@ -525,8 +526,8 @@ class OGProperties(PropertyGroup):
                                       description="Show NPCs in the picker list")
     cat_pickups:         BoolProperty(default=False, name="Pickups",
                                       description="Show Pickups in the picker list")
-    cat_audio:           BoolProperty(default=False, name="Audio",
-                                      description="Show Audio (sound emitters, music zones) in the picker list")
+    cat_audio:           BoolProperty(default=False, name="Effects",
+                                      description="Show Effects (sound emitters, music zones, particle spawners) in the picker list")
     cat_volumes:         BoolProperty(default=False, name="Volumes",
                                       description="Show Volumes (water) in the picker list")
     cat_triggers:        BoolProperty(default=False, name="Triggers",
@@ -573,6 +574,7 @@ class OGProperties(PropertyGroup):
     platform_type:  EnumProperty(name="Platform Type",  items=_platform_enum_cb)
     crate_type:  EnumProperty(name="Crate Type",  items=CRATE_ITEMS)
     spawn_variant:  EnumProperty(name="Variant",  items=_spawn_variant_cb)
+    spawn_variant_sub: EnumProperty(name="Option", items=_spawn_variant_sub_cb)
     # Per-category entity pickers — each Spawn sub-panel uses its own prop
     # so the dropdown only shows types relevant to that sub-panel.
     # items= uses a dynamic callback so the Limit Search tpage filter is respected.

@@ -531,6 +531,16 @@ def collect_actors(scene, depsgraph=None):
                 log(f"  [scale] {o.name}  {_sc[1:4]}")
         # Battlecontroller camera variants (export/battlecontroller.py)
         _out_etype = _variant.get("etype") or etype
+        # A variant may take its etype / extra code file from text fields
+        # (custom particles: "etype_from" / "code_from" = field keys).
+        _vget = _schema_db.prop_getter(o)
+        if _variant.get("etype_from"):
+            _out_etype = str(_vget(_variant["etype_from"], "") or "").strip() or _out_etype
+        _var_code = _variant.get("code")
+        if _variant.get("code_from"):
+            _cf = str(_vget(_variant["code_from"], "") or "").strip()
+            if _cf:
+                _var_code = [_cf if _cf.endswith(".o") else _cf + ".o"]
         _out_ag = _variant.get("art_group")
         _bc_campos = None
         _extra = {}
@@ -575,7 +585,7 @@ def collect_actors(scene, depsgraph=None):
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
-            "code":      _variant.get("code"),   # variant's extra .o files (db.code_files)
+            "code":      _var_code,   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
             "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,

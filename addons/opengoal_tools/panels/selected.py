@@ -393,7 +393,10 @@ def _draw_selected_emitter(layout, sel):
     layout.label(text=sel.name, icon="SPEAKER")
     box = layout.box()
     snd = sel.get("og_sound_name", "?")
-    box.label(text=f"Sound: {snd}", icon="PLAY")
+    row = box.row(align=True)
+    row.label(text="Sound:", icon="PLAY")
+    op = row.operator("og.pick_sound", text=str(snd), icon="VIEWZOOM")
+    op.target_name = sel.name
     _prop_row(box, sel, "og_sound_radius", "Radius (m):", 15.0)
 
 

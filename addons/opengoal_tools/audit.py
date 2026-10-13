@@ -402,6 +402,52 @@ def check_texture_sources(scene):
     return issues
 
 
+def check_sound_banks(scene):
+    """A sound (sound emitter, particle spawner) only plays if its bank is
+    loaded: common, or one of the level's two sound banks. Warn only; the
+    pick stays allowed (a bank can also be loaded another way)."""
+    from .collections import _get_level_prop, _level_objects
+    banks = {"common"} | {str(_get_level_prop(scene, k, "none") or "none").lower()
+                          for k in ("og_sound_bank_1", "og_sound_bank_2")}
+    where = {}
+    for bank, sounds in _db.bank_sfx().items():
+        for s in sounds:
+            where.setdefault(s, set()).add(bank)
+    issues = []
+    for o in _level_objects(scene):
+        snd = None
+        if o.name.startswith("AMBIENT_") and o.get("og_sound_name"):
+            snd = str(o["og_sound_name"])
+        elif _etype(o) == "part-spawner" and str(o.get("og_part_sound", "none")) not in ("", "none"):
+            snd = str(o["og_part_sound"])
+        if not snd:
+            continue
+        snd = snd.split("__")[0]
+        found = where.get(snd)
+        if found and not (found & banks):
+            issues.append(_issue("WARNING",
+                f"{o.name}: sound '{snd}' is in the {' / '.join(sorted(found))} sound bank, which this level doesn't load "
+                f"(common + {' / '.join(sorted(banks - {'common', 'none'})) or 'no level banks'}). Set it as one of the "
+                f"level's sound banks or it won't play.", o.name))
+    return issues
+
+
+def check_particle_files(scene):
+    """Each vanilla particle file used here is also loaded by its vanilla
+    level; if both levels are in memory together, unloading one clears the
+    shared particle definitions and can break the other's particles."""
+    seen = {}
+    for o in _actor_objs(scene):
+        if _etype(o) != "part-spawner":
+            continue
+        var = _db.actor_variant("part-spawner", lambda k, d=None: o.get(k, d))
+        if var and var.get("value") != "custom":
+            seen.setdefault(var.get("value"), var.get("label", "").split(" (")[0])
+    return [_issue("INFO", f"Particle file {f} is also used by vanilla {lvl}: if both levels are loaded at the same "
+                           f"time, unloading one can break the other's particles.", None)
+            for f, lvl in sorted(seen.items())]
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -494,6 +540,8 @@ _REGISTERED_CHECKS = [
     check_axis_not_vertical,
     check_sync_period,
     check_texture_sources,
+    check_sound_banks,
+    check_particle_files,
     check_scene_summary,   # always last
 ]
 

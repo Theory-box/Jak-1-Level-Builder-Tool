@@ -133,8 +133,13 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
         # "export_if_visible": only written while its visible_if holds
         # (e.g. the Sunken on / off water fields for those looks only).
         if f.get("export_if_visible") and f.get("visible_if"):
-            if not all((get(k) in v) if isinstance(v, list) else get(k) == v
-                       for k, v in f["visible_if"].items()):
+            def _ok(k, v):
+                if isinstance(v, list):
+                    return get(k) in v
+                if isinstance(v, dict) and "not" in v:
+                    return get(k, v.get("default")) != v["not"]
+                return get(k) == v
+            if not all(_ok(k, v) for k, v in f["visible_if"].items()):
                 continue
         lp = f.get("lump") if isinstance(f.get("lump"), dict) else None
         lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else None

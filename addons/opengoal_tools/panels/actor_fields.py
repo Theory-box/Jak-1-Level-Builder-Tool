@@ -118,8 +118,8 @@ def _resolve_choices(choices_spec):
             return [{"value": t["id"], "label": t["label"]} for t in _db.game_tasks()]
         if choices_spec == "SoundBanks":
             return [{"value": b["id"], "label": b["label"]} for b in _db.sound_banks()]
-        if choices_spec == "BankSFX":
-            out = []
+        if choices_spec in ("BankSFX", "BankSFXOrNone"):
+            out = [{"value": "none", "label": "None"}] if choices_spec == "BankSFXOrNone" else []
             for bank, sounds in _db.bank_sfx().items():
                 for s in sounds:
                     out.append({"value": s, "label": f"[{bank}] {s}"})
@@ -145,6 +145,10 @@ def _field_visible(obj, field) -> bool:
         # A list means "any of these values" (e.g. camera fields per mode).
         if isinstance(expected, list):
             if obj.get(k) not in expected:
+                return False
+        elif isinstance(expected, dict) and "not" in expected:
+            # {"not": v}: hidden while the field is v (unset = its default)
+            if obj.get(k, expected.get("default")) == expected["not"]:
                 return False
         elif obj.get(k) != expected:
             return False
@@ -185,7 +189,7 @@ def _draw_enum_field(layout, obj, field):
     if current is None:
         current = field.get("default")
 
-    if len(choices) > 12:
+    if len(choices) > 12 or field.get("dropdown"):
         # Long lists (water looks ...): a searchable dropdown.
         row = layout.row(align=True)
         row.label(text=f"{label}:")
