@@ -9916,7 +9916,7 @@
               "choices": "BankSFXOrNone",
               "lump": {
                 "key": "effect-name",
-                "type": "symbol"
+                "type": "symbol@0.0"
               },
               "write_if": "if_not_none",
               "note": "The sound's bank must be loaded by the level (common, or one of its two sound banks)."
@@ -9937,7 +9937,7 @@
               },
               "lump": {
                 "key": "effect-param",
-                "type": "float",
+                "type": "float@0.0",
                 "slot": 0
               }
             },
@@ -9958,7 +9958,7 @@
               },
               "lump": {
                 "key": "effect-param",
-                "type": "float",
+                "type": "float@0.0",
                 "slot": 1
               }
             },
@@ -9978,7 +9978,7 @@
               },
               "lump": {
                 "key": "effect-param",
-                "type": "float",
+                "type": "float@0.0",
                 "slot": 2
               }
             },
@@ -9998,7 +9998,7 @@
               },
               "lump": {
                 "key": "effect-param",
-                "type": "float",
+                "type": "float@0.0",
                 "slot": 3
               }
             },
