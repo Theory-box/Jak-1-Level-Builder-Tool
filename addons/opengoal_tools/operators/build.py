@@ -384,40 +384,24 @@ class OG_OT_BakeLighting(Operator):
         scene.render.engine  = "CYCLES"
         scene.cycles.samples = samples
 
-        # Prepare each target mesh's vertex-color layer up-front, so the
-        # single bake call below writes to a consistent target attribute
-        # on every mesh in the selection.
-        vc_name = "BakedLight"
-        for obj in targets:
-            mesh = obj.data
-            if vc_name not in mesh.color_attributes:
-                mesh.color_attributes.new(name=vc_name, type="BYTE_COLOR", domain="CORNER")
-            mesh.color_attributes.active_color = mesh.color_attributes[vc_name]
-
-        # Selection is already what the user passed in. Blender's native bake
-        # operator iterates every selected mesh on its own — we don't need to
-        # loop in Python. One 'INVOKE_DEFAULT' call = one modal job that handles
-        # the whole selection and keeps the UI responsive throughout.
-        # Deselect non-bakeable items first so the modal bake job never sees
-        # them (otherwise empty meshes would slow the bake and Blender's status
-        # would report misleading "X meshes baked" counts).
+        # Deselect non-bakeable items first so the bake jobs never see them,
+        # and make sure the active object is a bakeable mesh (Blender needs it).
         for o in sel:
             if o not in targets:
                 o.select_set(False)
-        # Ensure the active object is a bakeable mesh — Blender requires this.
         if ctx.view_layer.objects.active not in targets:
             ctx.view_layer.objects.active = targets[0]
 
-        bpy.ops.object.bake(
-            'INVOKE_DEFAULT',
-            type="DIFFUSE",
-            pass_filter={"DIRECT", "INDIRECT"},
-            target="VERTEX_COLORS",
-            save_mode="INTERNAL",
-        )
+        # bake.py: light pass (+ emit pass), then the level's bake options
+        # (emit blend, curve, blur). One Blender bake job per pass.
+        from .. import bake as _bake
+        from ..collections import _active_level_col
+        if _bake.busy():
+            self.report({"WARNING"}, "A bake is still running"); return {"CANCELLED"}
+        passes = _bake.start(targets, _active_level_col(scene), blocking=bpy.app.background)
 
         names = ", ".join(o.name for o in targets)
-        msg = f"Baking {len(targets)} mesh(es)"
+        msg = f"Baking {len(targets)} mesh(es) ({' + '.join(passes)})"
         if skipped:
             msg += f" (skipped {skipped} non-mesh / empty)"
         msg += f": {names}"

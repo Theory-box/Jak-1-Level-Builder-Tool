@@ -722,6 +722,11 @@ def _draw_selected_mesh_lightbake(layout, ctx):
     box = layout.box()
     box.label(text="Light Baking", icon="LIGHT")
     box.prop(props, "lightbake_samples")
+    from ..collections import _active_level_col
+    from .. import bake as _bake
+    _lv = _active_level_col(ctx.scene)
+    if _lv is not None:
+        _bake.draw_options(box, _lv)
     row = box.row()
     row.scale_y = 1.4
     row.operator("og.bake_lighting", text=f"Bake {len(targets)} mesh(es)", icon="RENDER_STILL")
