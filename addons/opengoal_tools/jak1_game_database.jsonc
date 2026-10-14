@@ -3956,7 +3956,7 @@
     {
       "id": "sync",
       "label": "Sync",
-      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase is in the fact-options panel. Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
+      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase is in the fact-options panel. Option \"distribute\": true offers Distribute along the path (N copies, phase + i/N; on plat and its children). Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
       "fields": [
         {
           "key": "og_sync_period",
@@ -11304,7 +11304,8 @@
           "min-points": 2
         },
         {
-          "panel": "sync"
+          "panel": "sync",
+          "distribute": true
         },
         {
           "panel": "fact-options",

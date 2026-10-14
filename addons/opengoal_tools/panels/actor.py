@@ -510,6 +510,10 @@ class OG_PT_ActorPlatform(Panel):
 
     def draw(self, ctx):
         _draw_platform_settings(self.layout, ctx.active_object, ctx.scene)
+        etype = ctx.active_object.name.split("_", 2)[1]
+        if _db.panel_option(etype, "sync", "distribute", False):
+            from .. import distribute
+            distribute.draw(self.layout, ctx.active_object)
 
 
 

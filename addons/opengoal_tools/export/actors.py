@@ -597,6 +597,12 @@ def collect_actors(scene, depsgraph=None):
             "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,
         })
+        from .. import distribute as _dist
+        if _dist.enabled(o, etype):   # copies spread along the path (sync phase)
+            _copies = _dist.entities(o, out[-1])
+            out.extend(_copies)
+            if _copies:
+                log(f"  [distribute] {o.name}  +{len(_copies)} platforms")
         if _rings:   # race-ring with a path: one ring per point instead
             from .. import race_rings as _rr
             _chain = _rr.entities(o, out[-1])
