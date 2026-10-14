@@ -482,6 +482,12 @@ class OG_PT_ActorLinks(Panel):
         sel   = ctx.active_object
         etype = sel.name.split("_", 2)[1]
         _draw_actor_links(self.layout, sel, ctx.scene, etype)
+        # slots with the "connect" option: link all selected ones at once
+        from .. import connect_neighbours as _cn
+        for (lkey, sidx, label, _acc, _req) in _actor_link_slots(etype):
+            opt = _db.link_slot(etype, lkey, sidx).get("connect")
+            if opt:
+                _cn.draw(self.layout, ctx, sel, etype, lkey, sidx, label, opt)
 
 
 
@@ -504,6 +510,10 @@ class OG_PT_ActorPlatform(Panel):
 
     def draw(self, ctx):
         _draw_platform_settings(self.layout, ctx.active_object, ctx.scene)
+        etype = ctx.active_object.name.split("_", 2)[1]
+        if _db.panel_option(etype, "sync", "distribute", False):
+            from .. import distribute
+            distribute.draw(self.layout, ctx.active_object)
 
 
 
@@ -981,6 +991,27 @@ class OG_PT_ActorVisibility(Panel):
 
 
 
+class OG_PT_ActorPlatGrid(Panel):
+    """DB "plat-grid" panel: platform counts and the per-slot platform types."""
+    bl_label       = "Platforms"
+    bl_idname      = "OG_PT_actor_plat_grid"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "plat-grid")
+
+    def draw(self, ctx):
+        from .. import plat_grid
+        plat_grid.draw(self.layout, ctx.active_object)
+
+
 def _draw_panel_fields(layout, sel, pid):
     """Draw one DB panel's visible fields (labels/defaults/notes from the DB)."""
     from .actor_fields import _draw_field
@@ -1291,6 +1322,24 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # Link a curve (selected / searched), or spawn an empty waypoint.
         _draw_path_add(layout, sel, scene, sources)
 
+        # race-ring (path option "rings"): one ring per point, no path lump
+        if etype and _db.panel_option(etype, "path", "rings", False):
+            from .. import race_rings as _rr
+            pts = _rr.points(sel)
+            box = layout.box(); col = box.column(); col.scale_y = 0.8
+            if not pts:
+                col.label(text="No path: exported as this one ring", icon="INFO")
+                return
+            col.label(text=f"{len(pts)} rings, one per point (in order)", icon="MESH_CIRCLE")
+            col.label(text="Point Tilt: + yaw · Point Radius: x the time")
+            col.label(text="Linked next / prev, last ring gets the movie-pos")
+            bad = _rr.straight_rings(pts)
+            if bad:
+                w = box.row(); w.alert = True
+                w.label(text=f"Ring {', '.join(str(i + 1) for i in bad)}: edge-on in game (straight line), "
+                             "bend the path a little", icon="ERROR")
+            return
+
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
         from ..export import path_modes as _pm
@@ -1565,6 +1614,7 @@ def _actor_panel_rank(cls) -> int:
 
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
+    OG_PT_ActorPlatGrid,
     OG_PT_ActorBattlecontroller,
     OG_PT_ActorNavBehaviour,
     OG_PT_ActorGameTask,

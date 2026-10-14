@@ -1,0 +1,541 @@
+;; Race ring for custom levels (vanilla: rolling-race-ring.gc). This child:
+;;   - 'ring-color [r g b] (0-1): the ring particles' colour, per ring
+;;     (vanilla: purple, or cyan for rolling-ring-chase-2). Own copies of the
+;;     ring particles (part ids 3500-3511, groups 1000-1002); the colour is
+;;     written into them before each spawn, like vanilla does for the facing.
+;;   - 'cell-anim on the last ring: 0 purple-ring cell animation
+;;     (race-ring-anim), 1 blue-ring one (race-ring-second-anim), 2 none: the
+;;     cell appears at the last ring and flies 2 m above the ring's movie-pos. The
+;;     vanilla animations end at a fixed rolling spot (far, below the ring),
+;;     so with a movie-pos the cell flies there after them too.
+;;   - the rolling-only hint dialogue is left out (the fail stinger stays).
+(deftype __TYPE__ (race-ring)
+  ((color     vector :inline)
+   (cell-anim int32))
+  (:states
+   __TYPE__-active
+   __TYPE__-idle
+   __TYPE__-wait))
+
+(defpartgroup __TYPE__-ring
+  :id 1000
+  :linger-duration (seconds 0)
+  :bounds (static-bspherem 0 0 0 8)
+  :parts
+  ((sp-item 3500 :fade-after (meters 100) :falloff-to (meters 100))
+   (sp-item 3501 :fade-after (meters 80))
+   (sp-item 3502 :flags (is-3d))
+   (sp-item 3503 :flags (is-3d))))
+
+(defpart 3500
+  :init-specs
+  ((:texture (starflash effects))
+   (:num 2.0 2.0)
+   (:scale-x (meters 1) (meters 1))
+   (:rot-z (degrees 0) (degrees 360))
+   (:scale-y :copy scale-x)
+   (:r 64.0 1 64.0)
+   (:g 64.0 1 64.0)
+   (:b 64.0 1 64.0)
+   (:a 64.0)
+   (:rotvel-z (degrees -0.2) (degrees 0.4))
+   (:fade-a -1.4222221)
+   (:timer (seconds 0.14))
+   (:flags (bit2 bit3))
+   (:conerot-x (degrees 0) (degrees 360))
+   (:conerot-radius (meters 4.5))
+   (:rotate-y (degrees 0))))
+
+(defpart 3501
+  :init-specs
+  ((:texture (starflash effects))
+   (:num 1.0)
+   (:scale-x (meters 1) (meters 4))
+   (:rot-z (degrees 0) (degrees 360))
+   (:scale-y :copy scale-x)
+   (:r 64.0 1 64.0)
+   (:g 64.0 1 64.0)
+   (:b 64.0 1 64.0)
+   (:a 64.0)
+   (:rotvel-z (degrees -0.2) (degrees 0.4))
+   (:fade-a -1.4222221)
+   (:timer (seconds 0.14))
+   (:flags (bit2 bit3))
+   (:conerot-x (degrees 0) (degrees 360))
+   (:conerot-radius (meters 4.5))
+   (:rotate-y (degrees 0))))
+
+(defpart 3502
+  :init-specs
+  ((:texture (water-ring effects))
+   (:num 1.0)
+   (:scale-x (meters 10))
+   (:rot-x (degrees 0) (degrees 360))
+   (:rot-y (degrees -1) (degrees 2))
+   (:rot-z (degrees 90))
+   (:scale-y :copy scale-x)
+   (:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0)
+   (:a 96.0 32.0)
+   (:fade-a -8.533334)
+   (:timer (seconds 0.035))
+   (:flags (bit2 bit3))))
+
+(defpart 3503
+  :init-specs
+  ((:texture (middot effects))
+   (:num 1.0)
+   (:scale-x (meters 12))
+   (:rot-x (degrees 0) (degrees 360))
+   (:rot-y (degrees 0))
+   (:rot-z (degrees 90))
+   (:scale-y :copy scale-x)
+   (:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0)
+   (:a 32.0 32.0)
+   (:timer (seconds 0.017))
+   (:flags (bit2 bit3))))
+
+(defpartgroup __TYPE__-spawn-ring
+  :id 1001
+  :duration (seconds 0.017)
+  :linger-duration (seconds 0.47)
+  :bounds (static-bspherem 0 0 0 8)
+  :parts
+  ((sp-item 3504 :fade-after (meters 100) :falloff-to (meters 100))
+   (sp-item 3505 :flags (is-3d))
+   (sp-item 3506 :flags (is-3d))))
+
+(defpart 3504
+  :init-specs
+  ((:texture (starflash effects))
+   (:num 32.0)
+   (:scale-x (meters 1) (meters 3))
+   (:rot-z (degrees 0) (degrees 360))
+   (:scale-y :copy scale-x)
+   (:r 64.0 1 64.0)
+   (:g 64.0 1 64.0)
+   (:b 64.0 1 64.0)
+   (:a 0.0 63 1.0)
+   (:vel-y (meters 0.03))
+   (:rotvel-z (degrees -0.2) (degrees 0.4))
+   (:timer (seconds 0.5))
+   (:flags (bit3))
+   (:next-time (seconds 0.067) (seconds 0.065))
+   (:next-launcher 3507)
+   (:conerot-x (degrees 0) (degrees 360))
+   (:conerot-radius (meters 0))
+   (:rotate-y (degrees 0))))
+
+(defpart 3507
+  :init-specs
+  ((:r 64.0 1 64.0)
+   (:g 64.0 1 64.0)
+   (:b 64.0 1 64.0)
+   (:a 0.0 63 1.0)
+   (:next-time (seconds 0.067) (seconds 0.065))
+   (:next-launcher 3507)))
+
+(defpart 3505
+  :init-specs
+  ((:texture (water-ring effects))
+   (:num 1.0)
+   (:scale-x (meters 0))
+   (:rot-x (degrees 0) (degrees 360))
+   (:rot-y (degrees -1) (degrees 2))
+   (:rot-z (degrees 90))
+   (:scale-y :copy scale-x)
+   (:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0)
+   (:a 96.0 32.0)
+   (:scalevel-x (meters 0.06666667))
+   (:scalevel-y :copy scalevel-x)
+   (:timer (seconds 0.5))
+   (:flags (bit2 bit3 left-multiply-quat))
+   (:next-time (seconds 0.017))
+   (:next-launcher 3508)))
+
+(defpart 3508
+  :init-specs ((:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0) (:a 32.0 32.0) (:next-time (seconds 0.017)) (:next-launcher 3508)))
+
+(defpart 3506
+  :init-specs
+  ((:texture (middot effects))
+   (:num 1.0)
+   (:scale-x (meters 0))
+   (:rot-x (degrees 0) (degrees 360))
+   (:rot-y (degrees 0))
+   (:rot-z (degrees 90))
+   (:scale-y :copy scale-x)
+   (:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0)
+   (:a 32.0 32.0)
+   (:scalevel-x (meters 0.08))
+   (:scalevel-y :copy scalevel-x)
+   (:timer (seconds 0.5))
+   (:flags (bit2 bit3 left-multiply-quat))
+   (:next-time (seconds 0.017))
+   (:next-launcher 3509)))
+
+(defpart 3509
+  :init-specs ((:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0) (:a 32.0 32.0) (:next-time (seconds 0.017)) (:next-launcher 3509)))
+
+(defpartgroup __TYPE__-explode-ring
+  :id 1002
+  :duration (seconds 0.017)
+  :linger-duration (seconds 0.5)
+  :bounds (static-bspherem 0 0 0 8)
+  :parts ((sp-item 3510 :fade-after (meters 100) :falloff-to (meters 100)) (sp-item 3511 :flags (is-3d))))
+
+(defpart 3510
+  :init-specs
+  ((:texture (starflash effects))
+   (:num 64.0)
+   (:scale-x (meters 1) (meters 1))
+   (:rot-z (degrees 0) (degrees 360))
+   (:scale-y :copy scale-x)
+   (:r 64.0 1 64.0)
+   (:g 64.0 1 64.0)
+   (:b 64.0 1 64.0)
+   (:a 32.0 96.0)
+   (:vel-y (meters 0.1) (meters 0.033333335))
+   (:rotvel-z (degrees -0.2) (degrees 0.4))
+   (:fade-a -0.85333335)
+   (:friction 0.9)
+   (:timer (seconds 0.5))
+   (:flags (bit2 bit3))
+   (:conerot-x (degrees 0) (degrees 360))
+   (:conerot-radius (meters 4.5))
+   (:rotate-y (degrees 0))))
+
+(defpart 3511
+  :init-specs
+  ((:texture (water-ring effects))
+   (:num 2.0)
+   (:scale-x (meters 10))
+   (:rot-x (degrees 0) (degrees 360))
+   (:rot-y (degrees -1) (degrees 2))
+   (:rot-z (degrees 90))
+   (:scale-y :copy scale-x)
+   (:r 128.0 1 127.0)
+   (:g 128.0 1 127.0)
+   (:b 128.0 1 127.0)
+   (:a 128.0)
+   (:scalevel-x (meters 0.06666667))
+   (:scalevel-y :copy scalevel-x)
+   (:fade-a -0.85333335)
+   (:timer (seconds 0.5))
+   (:flags (bit2 bit3))))
+
+;; per-ring colour + facing, written into the parts before each spawn
+;; (vanilla does the same for the facing)
+(defun __TYPE__-tint ((id int) (idx int) (base float) (mult float) (c vector))
+  (let ((s (-> *part-id-table* id init-specs)))
+    (dotimes (i 3)
+      (let ((k (-> c data i)))
+        (set! (-> s (+ idx i) initial-valuef) (* base k))
+        (set! (-> s (+ idx i) random-multf) (* mult k)))))
+  0
+  (none))
+
+(defun __TYPE__-part-callback ((arg0 part-tracker))
+  (let* ((ring (-> (the-as (pointer __TYPE__) (-> arg0 userdata)) 0))
+         (f0-0 (-> ring rot-y)))
+    (set! (-> *part-id-table* 3500 init-specs 15 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3501 init-specs 15 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3502 init-specs 4 initial-valuef) (+ -182.04445 f0-0))
+    (set! (-> *part-id-table* 3503 init-specs 4 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3504 init-specs 17 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3505 init-specs 4 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3506 init-specs 4 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3510 init-specs 17 initial-valuef) f0-0)
+    (set! (-> *part-id-table* 3511 init-specs 4 initial-valuef) f0-0)
+    (__TYPE__-tint 3500 5 64.0 64.0 (-> ring color))
+    (__TYPE__-tint 3501 5 64.0 64.0 (-> ring color))
+    (__TYPE__-tint 3502 7 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3503 7 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3504 5 64.0 64.0 (-> ring color))
+    (__TYPE__-tint 3507 0 64.0 64.0 (-> ring color))
+    (__TYPE__-tint 3505 7 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3508 0 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3506 7 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3509 0 128.0 127.0 (-> ring color))
+    (__TYPE__-tint 3510 5 64.0 64.0 (-> ring color))
+    (__TYPE__-tint 3511 7 128.0 127.0 (-> ring color)))
+  0
+  (none))
+
+(defbehavior __TYPE__-track __TYPE__ ((group sparticle-launch-group))
+  (ppointer->handle (process-spawn part-tracker
+                                   :init
+                                   part-tracker-init
+                                   group
+                                   -1
+                                   __TYPE__-part-callback
+                                   (-> self ppointer)
+                                   #f
+                                   (-> self root trans)
+                                   :to
+                                   self)))
+
+(defun __TYPE__-cell-pos ((this __TYPE__) (out vector))
+  "Where the cell ends up: 2 m above the ring's movie-pos (the ground spot of the
+   pickup animation), else at the ring."
+  (let ((mp (res-lump-struct (-> this entity) 'movie-pos vector)))
+    (cond
+      (mp (set! (-> out quad) (-> mp quad)) (+! (-> out y) 8192.0))
+      (else (set! (-> out quad) (-> this root trans quad)))))
+  (set! (-> out w) 1.0)
+  out)
+
+(defbehavior __TYPE__-move-cell __TYPE__ ((cell handle) (from vector))
+  "Fly a cell from 'from' to the ring's movie-pos (about 1.3 s)."
+  (let ((to (new 'stack-no-clear 'vector))
+        (pos (new 'stack-no-clear 'vector))
+        (t 0.0))
+    (__TYPE__-cell-pos self to)
+    (while (< t 1.0)
+      (set! t (fmin 1.0 (+ t (* 0.75 (seconds-per-frame)))))
+      (vector-lerp! pos from to (- 1.0 (* (- 1.0 t) (- 1.0 t))))
+      (let ((c (the-as collectable (handle->process cell))))
+        (when c
+          (move-to-point! (-> c root) pos)
+          (set! (-> c base quad) (-> pos quad))))
+      (suspend)))
+  0
+  (none))
+
+(defbehavior __TYPE__-fly-cell __TYPE__ ()
+  "No animation: the cell appears at the ring and flies to the movie-pos."
+  (close-specific-task! (-> self entity extra perm task) (task-status need-reminder))
+  (let ((from (new 'stack-no-clear 'vector)))
+    (set! (-> from quad) (-> self root trans quad))
+    (__TYPE__-move-cell (ppointer->handle (birth-pickup-at-point from
+                                                                 (pickup-type fuel-cell)
+                                                                 (the float (-> self entity extra perm task))
+                                                                 #f
+                                                                 self
+                                                                 (the-as fact-info #f)))
+                        from))
+  0
+  (none))
+
+(defstate __TYPE__-active (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('notify)
+         (when (and (= (-> block param 0) 'die) (= proc (-> self part-track process 0)))
+           (set! (-> self part-track) (__TYPE__-track (get-part-group 1000)))
+           (set! (-> self keep-part-track-alive) #t)
+           #t))))
+  :enter
+    (behavior ()
+      (cond
+        ((first-ring? self)
+         (logior! (-> self mask) (process-mask actor-pause))
+         (process-entity-status! self (entity-perm-status bit-3) #f))
+        (else (logclear! (-> self mask) (process-mask actor-pause)) (process-entity-status! self (entity-perm-status bit-3) #t)))
+      (set! (-> self keep-part-track-alive) #f)
+      (set! (-> self part-track) (__TYPE__-track (get-part-group 1001)))
+      (set! (-> self old-hips quad) (-> (target-pos 26) quad))
+      (+! (-> self old-hips x) 1.0)
+      (set! (-> self state-time) (-> *display* game-frame-counter)))
+  :exit
+    (behavior ()
+      (sound-play "close-racering")
+      (let ((a0-3 (handle->process (-> self part-track)))) (if a0-3 (deactivate a0-3)))
+      (set! (-> self part-track) (__TYPE__-track (get-part-group 1002)))
+      (cond
+        ((first-ring? self)
+         (logclear! (-> self mask) (process-mask actor-pause))
+         (process-entity-status! self (entity-perm-status bit-3) #t))
+        (else (logior! (-> self mask) (process-mask actor-pause)) (process-entity-status! self (entity-perm-status bit-3) #f))))
+  :trans
+    (behavior ()
+      (if (nonzero? (-> self sound)) (update! (-> self sound)))
+      (cond
+        ((handle->process (-> self part-track))
+         (if (-> self keep-part-track-alive) (set-time! (-> (the-as part-tracker (-> self part-track process 0)) start-time))))
+        (else
+         (set! (-> self part-track) (__TYPE__-track (get-part-group 1000)))
+         (set! (-> self keep-part-track-alive) #t)))
+      (when (last-ring? self)
+        (case (-> self cell-anim)
+          ((0) (spool-push *art-control* "race-ring-anim" 0 self -99.0))
+          ((1) (spool-push *art-control* "race-ring-second-anim" 0 self -99.0)))))
+  :code
+    (behavior ()
+      (loop
+        (suspend)
+        (cond
+          ((first-ring? self))
+          ((>= (- (-> *display* game-frame-counter) (-> self state-time)) (-> self timeout))
+           (ambient-hint-spawn "st-lose" (the-as vector #f) *entity-pool* 'stinger)
+           (let ((a1-2 (new 'stack-no-clear 'event-message-block)))
+             (set! (-> a1-2 from) self)
+             (set! (-> a1-2 num-params) 0)
+             (set! (-> a1-2 message) 'activate)
+             (let ((t9-3 send-event-function)
+                   (v1-7 (-> self alt-actor)))
+               (t9-3 (if v1-7 (-> v1-7 extra process)) a1-2)))
+           (go __TYPE__-idle)))
+        (when *target*
+          (let ((gp-0 (new 'stack-no-clear 'vector)))
+            (set! (-> gp-0 quad) (-> self old-hips quad))
+            (set! (-> self old-hips quad) (-> (target-pos 26) quad))
+            (vector-! gp-0 gp-0 (-> self old-hips))
+            (when (>= (ray-flat-cyl-intersect (-> self cyl) (-> self old-hips) gp-0) 0.0)
+              (cond
+                ((first-ring? self)
+                 (close-specific-task! (-> self entity extra perm task) (task-status need-hint))
+                 (entity-birth-no-kill (-> self link next))
+                 (let ((a1-9 (new 'stack-no-clear 'event-message-block)))
+                   (set! (-> a1-9 from) self)
+                   (set! (-> a1-9 num-params) 0)
+                   (set! (-> a1-9 message) 'activate)
+                   (let ((t9-12 send-event-function)
+                         (v1-30 (-> self link next)))
+                     (t9-12 (if v1-30 (-> v1-30 extra process)) a1-9))))
+                ((and (last-ring? self) (= (-> self cell-anim) 2))
+                 (__TYPE__-fly-cell))
+                ((last-ring? self)
+                 (let ((gp-2 (ppointer->handle (process-spawn othercam self 4 #f #t :to self)))
+                       (s5-2 (ppointer->handle (process-spawn fuel-cell :init fuel-cell-init-as-clone (process->handle self) (-> self entity extra perm task) :to self))))
+                   (if *target* (logior! (-> *target* mask) (process-mask sleep)))
+                   (close-specific-task! (-> self entity extra perm task) (task-status need-reminder))
+                   (logclear! (-> self draw status) (draw-status hidden))
+                   (logior! (-> self draw status) (draw-status skip-bones))
+                   (if (= (-> self cell-anim) 1)
+                     (ja-play-spooled-anim (new 'static 'spool-anim :name "race-ring-second-anim" :index 4 :parts 2 :command-list '())
+                                           (the-as art-joint-anim #f)
+                                           (the-as art-joint-anim #f)
+                                           (the-as (function process-drawable symbol) false-func))
+                     (ja-play-spooled-anim (new 'static 'spool-anim :name "race-ring-anim" :index 3 :parts 2 :command-list '())
+                                           (the-as art-joint-anim #f)
+                                           (the-as art-joint-anim #f)
+                                           (the-as (function process-drawable symbol) false-func)))
+                   (logclear! (-> self draw status) (draw-status skip-bones))
+                   (logior! (-> self draw status) (draw-status hidden))
+                   (cond
+                     ((handle->process (the-as int gp-2)) (deactivate (-> gp-2 process 0)))
+                     (else))
+                   (if *target* (logclear! (-> *target* mask) (process-mask sleep)))
+                   (let ((a0-54 (handle->process s5-2))) (if a0-54 (send-event a0-54 'stop-cloning)))
+                   ;; the vanilla animations end at a rolling spot (far / below the ring):
+                   ;; with a movie-pos the cell flies there afterwards
+                   (let ((c (the-as collectable (handle->process s5-2))))
+                     (when (and c (res-lump-struct (-> self entity) 'movie-pos vector))
+                       (let ((from (new 'stack-no-clear 'vector)))
+                         (set! (-> from quad) (-> c root trans quad))
+                         (__TYPE__-move-cell s5-2 from))))))
+                (else
+                 (entity-birth-no-kill (-> self link next))
+                 (let ((a1-22 (new 'stack-no-clear 'event-message-block)))
+                   (set! (-> a1-22 from) self)
+                   (set! (-> a1-22 num-params) 0)
+                   (set! (-> a1-22 message) 'activate)
+                   (let ((t9-26 send-event-function)
+                         (v1-86 (-> self link next)))
+                     (t9-26 (if v1-86 (-> v1-86 extra process)) a1-22)))))
+              (go __TYPE__-idle))))))
+  :post ja-post)
+
+(defstate __TYPE__-wait (__TYPE__)
+  :code
+    (behavior ()
+      (if (nonzero? (-> self sound)) (stop! (-> self sound)))
+      (loop
+        (suspend)
+        (when (= (get-task-status (the-as game-task (-> self alt-task))) (task-status invalid))
+          (close-specific-task! (-> self entity extra perm task) (task-status need-hint))
+          (logclear! (-> self mask) (process-mask actor-pause))
+          (go __TYPE__-active)))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('activate) (logclear! (-> self mask) (process-mask actor-pause)) (go __TYPE__-active))))
+  :code
+    (behavior ()
+      (if (nonzero? (-> self sound)) (stop! (-> self sound)))
+      (loop
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (let ((a0-1 arg0)) (if (not (entity-actor-lookup a0-1 'next-actor 0)) (stack-size-set! (-> this main-thread) 512)))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *race-ring-sg* '())
+  (set! (-> this root pause-adjust-distance) 122880.0)
+  (set! (-> this link) (new 'process 'actor-link-info this))
+  (set! (-> this part-track) (the-as handle #f))
+  (set! (-> this alt-actor) (entity-actor-lookup arg0 'alt-actor 0))
+  (let ((c (res-lump-data arg0 'ring-color (pointer float))))
+    (if c
+      (set-vector! (-> this color) (-> c 0) (-> c 1) (-> c 2) 1.0)
+      (set-vector! (-> this color) 1.0 0.0 1.0 1.0)))
+  (set! (-> this cell-anim) (res-lump-value arg0 'cell-anim int :default (the-as uint128 0)))
+  (logior! (-> this draw status) (draw-status hidden))
+  (set! (-> this sound) (new 'process 'ambient-sound (static-sound-spec "loop-racering" :fo-max 40) (-> this root trans)))
+  (let ((f0-1 (res-lump-float arg0 'timeout))) (set! (-> this timeout) (the-as time-frame (the int (* 300.0 f0-1)))))
+  (let ((s4-0 (new 'stack-no-clear 'vector)))
+    (cond
+      ((-> this link next) (vector-! (-> this face-vec) (-> this link next extra trans) (-> this root trans)))
+      ((-> this link prev) (vector-! (-> this face-vec) (-> this root trans) (-> this link prev extra trans))))
+    (vector-flatten! (-> this face-vec) (-> this face-vec) (new 'static 'vector :y 1.0))
+    (vector-normalize! (-> this face-vec) 1.0)
+    (cond
+      ((and (-> this link next) (-> this link prev))
+       (vector-! s4-0 (-> this link prev extra trans) (-> this root trans))
+       (vector-flatten! s4-0 s4-0 (new 'static 'vector :y 1.0))
+       (vector-normalize! s4-0 1.0)
+       (vector+! s4-0 s4-0 (-> this face-vec))
+       (vector-normalize! s4-0 1.0)
+       (set! (-> this rot-y) (acos (vector-dot s4-0 (new 'static 'vector :z 1.0))))
+       (if (< (vector-dot s4-0 (new 'static 'vector :x 1.0)) 0.0) (set! (-> this rot-y) (- (-> this rot-y)))))
+      (else
+       (set! (-> this rot-y) (acos (vector-dot (-> this face-vec) (new 'static 'vector :z 1.0))))
+       (if (< (vector-dot (-> this face-vec) (new 'static 'vector :x 1.0)) 0.0) (set! (-> this rot-y) (- (-> this rot-y))))
+       (+! (-> this rot-y) 16384.0))))
+  (+! (-> this rot-y) (res-lump-float arg0 'rotoffset))
+  (set-vector! (-> this cyl axis) (cos (-> this rot-y)) 0.0 (- (sin (-> this rot-y))) 1.0)
+  (vector+float*! (-> this cyl origin) (-> this root trans) (-> this cyl axis) -2048.0)
+  (set! (-> this cyl radius) 24576.0)
+  (set! (-> this cyl length) 4096.0)
+  (cond
+    ((and (first-ring? this)
+          (!= (get-task-status (-> this entity extra perm task)) (task-status invalid))
+          (!= (get-task-status (-> this entity extra perm task)) 7))
+     (set! (-> this alt-task) (res-lump-value (-> this entity) 'alt-task uint))
+     (if (or (= (-> this alt-task) 0) (= (get-task-status (the-as game-task (-> this alt-task))) (task-status invalid)))
+       (go __TYPE__-active)
+       (go __TYPE__-wait)))
+    ((and (last-ring? this) (= (get-task-status (-> this entity extra perm task)) (task-status need-resolution)))
+     ;; the cell was earned but not collected: put it back where it ended up
+     (let ((s5-2 (new 'stack-no-clear 'vector)))
+       (cond
+         ((or (= (-> this cell-anim) 2) (res-lump-struct (-> this entity) 'movie-pos vector)) (__TYPE__-cell-pos this s5-2))
+         (else
+          (logclear! (-> this draw status) (draw-status hidden))
+          (ja-post)
+          (vector<-cspace! s5-2 (-> this node-list data 5))
+          (logior! (-> this draw status) (draw-status hidden))))
+       (birth-pickup-at-point s5-2
+                              (pickup-type fuel-cell)
+                              (the float (-> this entity extra perm task))
+                              #f
+                              this
+                              (the-as fact-info #f)))))
+  (set! (-> this event-hook) (-> __TYPE__-idle event))
+  (go __TYPE__-idle)
+  (none))

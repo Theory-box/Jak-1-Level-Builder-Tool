@@ -311,7 +311,8 @@ def collect_actors(scene, depsgraph=None):
         # (patrolling nav-enemies, process-drawable enemies, sync platforms,
         # plat-button ...). "required" actors error at runtime without one.
         # "export": false on the panel turns the lump off.
-        if _schema_db.panel_exports(etype, "path"):
+        _rings = _schema_db.panel_option(etype, "path", "rings", False) is True
+        if _schema_db.panel_exports(etype, "path") and not _rings:
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")
@@ -381,6 +382,11 @@ def collect_actors(scene, depsgraph=None):
             if _mp_list:
                 lump["movie-pos"] = ["movie-pos"] + [movie_pos_vector(e) for e in _mp_list]
                 log(f"  [movie-pos] {o.name}  {len(_mp_list)} position(s)")
+
+        # ── Platform grid panel (citb-drop-plat): 'count + 'plat-type ──────────
+        if _schema_db.panel_exports(etype, "plat-grid"):
+            from .. import plat_grid as _pg
+            lump.update(_pg.lumps(o))
 
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
@@ -591,6 +597,18 @@ def collect_actors(scene, depsgraph=None):
             "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,
         })
+        from .. import distribute as _dist
+        if _dist.enabled(o, etype):   # copies spread along the path (sync phase)
+            _copies = _dist.entities(o, out[-1])
+            out.extend(_copies)
+            if _copies:
+                log(f"  [distribute] {o.name}  +{len(_copies)} platforms")
+        if _rings:   # race-ring with a path: one ring per point instead
+            from .. import race_rings as _rr
+            _chain = _rr.entities(o, out[-1])
+            if _chain:
+                out[-1:] = _chain
+                log(f"  [race-ring] {o.name}  {len(_chain)} rings")
         if _bc_campos is not None and not any(x["lump"]["name"] == _bc_campos["lump"]["name"] for x in _extra_actors):
             _extra_actors.append(_bc_campos)   # after all actors (AIDs follow the canonical order); one per name
 

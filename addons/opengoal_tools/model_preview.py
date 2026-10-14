@@ -213,6 +213,10 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     if _var.get("glb"):
         glb_rel = _var["glb"]
 
+    if _db.has_panel(etype, "plat-grid"):   # one model per platform slot
+        from . import plat_grid
+        return plat_grid.build_preview(ctx, actor_empty)
+
     preview_col = _ensure_preview_collection(ctx.scene)
     attached    = False
 
@@ -506,6 +510,11 @@ def _on_depsgraph_update(scene, depsgraph):
     """Depsgraph handler — detect orphaned preview meshes and schedule removal.
     Kept intentionally cheap: only scans if there are any preview meshes at all."""
     _redirect_preview_selection()
+    from . import race_rings, distribute
+    objs, curves = race_rings.changed(depsgraph)   # only edited actors / paths are looked at
+    if objs or curves:
+        race_rings.on_depsgraph(scene, depsgraph, objs, curves)
+        distribute.on_depsgraph(scene, depsgraph, objs, curves)
     orphans = [
         o.name for o in scene.objects
         if _is_any_preview(o) and o.parent is None

@@ -3956,7 +3956,7 @@
     {
       "id": "sync",
       "label": "Sync",
-      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase is in the fact-options panel. Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
+      "description": "Path timing: how long one trip along the path takes (period), its offset (phase) and ease out / in. Wrap phase is in the fact-options panel. Option \"distribute\": true offers Distribute along the path (N copies, phase + i/N; on plat and its children). Actors that use sync for something else set their own \"description\". \"export\": false on a field leaves it out (ease fields -> 2-value sync).",
       "fields": [
         {
           "key": "og_sync_period",
@@ -4786,6 +4786,7 @@
     {"id": "launcherdoor", "label": "Launcher Door", "description": "Launcher door settings.", "fields": []},
     {"id": "sun-iris-door", "label": "Sun Iris Door", "description": "Iris door settings.", "fields": []},
     {"id": "task-gated", "label": "Task Gated", "description": "Task picker for task-gated actors (oracle).", "fields": []},
+    {"id": "plat-grid", "label": "Platforms", "description": "A grid of platforms spawned by one actor (citb-drop-plat): 'count [x z] and 'plat-type per slot (0 none, 1-5 colours; random without it), 4 m apart around the actor. Preview: one model per slot.", "fields": []},
     {"id": "caveelevator", "label": "Cave Elevator", "description": "Cave elevator settings.", "fields": []}
   ],
 
@@ -7359,7 +7360,8 @@
                 "dark-plant"
               ],
               "required": false,
-              "allow-multiple": true
+              "allow-multiple": true,
+              "connect": {"max": 4}
             }
           ]
         }
@@ -11302,7 +11304,8 @@
           "min-points": 2
         },
         {
-          "panel": "sync"
+          "panel": "sync",
+          "distribute": true
         },
         {
           "panel": "fact-options",
@@ -12504,6 +12507,20 @@
         }
       ],
       "shape": "SINGLE_ARROW"
+    },
+    {
+      "etype": "citb-drop-plat",
+      "label": "Drop Platforms (citadel)",
+      "description": "A grid of coloured platforms that rise when it gets a 'trigger (link it from a button or a trigger volume) and drop after a while or when Jak walks away; stepping on one colour drops the others of that colour. Set the grid size and each platform in the Platforms panel (random when not set).",
+      "category": "Platforms",
+      "art_group": "citb-drop-plat-ag.go",
+      "code": ["citb-drop-plat.o"],
+      "glb": "levels/citadel/citb-drop-plat-lod0.glb",
+      "panels": [
+        {"panel": "plat-grid"}
+      ],
+      "reacts_to": ["trigger"],
+      "shape": "CUBE"
     },
     {
       "etype": "citb-launcher",
@@ -18473,8 +18490,13 @@
       "tpage_group": "Rolling",
       "glb": "levels/rolling/race-ring-lod0.glb",
       "shape": "CUBE",
-      "description": "Chain of timed rings: jump through the first to start; each ring must be reached before its time or the chain resets. The last ring gives the task's cell. The ring itself is particles.",
+      "description": "Chain of timed rings: jump through the first to start; each ring must be reached before its time or the chain resets. The last ring gives the task's cell. The ring itself is particles. Give it a path to make the whole chain from one actor (one ring per point).",
       "panels": [
+        {
+          "panel": "path",
+          "rings": true,
+          "description": "Optional: one ring per point (curve control points or waypoints), linked in order. Point Tilt = extra yaw, point Weight multiplies the time."
+        },
         {
           "panel": "game-task",
           "description": "First and last ring: the chase's task. rolling-ring-chase-2 = blue rings."
@@ -18529,7 +18551,7 @@
                 "type": "float"
               },
               "write_if": "always",
-              "note": "Not used by the first ring."
+              "note": "Not used by the first ring. With a path: x each point's Radius."
             },
             {
               "key": "og_ring_rot",
@@ -18540,7 +18562,37 @@
                 "key": "rotoffset",
                 "type": "degrees"
               },
-              "write_if": "if_nonzero"
+              "write_if": "if_nonzero",
+              "note": "With a path: + each point's Tilt."
+            },
+            {
+              "key": "og_ring_color",
+              "label": "Ring colour",
+              "type": "color",
+              "default": [1.0, 0.0, 1.0],
+              "lump": {
+                "key": "ring-color",
+                "type": "float"
+              },
+              "write_if": "always",
+              "note": "Vanilla: purple (1, 0, 1), blue rings cyan (0, 1, 1)."
+            },
+            {
+              "key": "og_ring_cell_anim",
+              "label": "Cell animation (last ring)",
+              "type": "enum",
+              "default": "purple",
+              "choices": [
+                {"value": "purple", "label": "Purple rings animation", "lump_value": 0},
+                {"value": "blue", "label": "Blue rings animation", "lump_value": 1},
+                {"value": "none", "label": "None: the cell flies from the last ring to 2 m above its movie-pos", "lump_value": 2}
+              ],
+              "lump": {
+                "key": "cell-anim",
+                "type": "int32"
+              },
+              "write_if": "if_not_default",
+              "note": "The animations end far below the ring (rolling's layout): the cell then flies 2 m above the last ring's movie-pos."
             },
             {
               "key": "og_ring_alt_task",
