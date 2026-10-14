@@ -86,14 +86,13 @@ class OG_PT_Lighting(Panel):
         layout.label(text="Result stored in 'BakedLight' layer", icon="GROUP_VCOL")
 
         layout.separator(factor=0.5)
-        col = layout.column(align=True)
-        col.label(text="Cycles Bake Settings:", icon="SETTINGS")
-        col.prop(props, "lightbake_samples")
         from ..collections import _active_level_col
         from .. import bake as _bake
         _lv = _active_level_col(ctx.scene)
         if _lv is not None:
-            _bake.draw_options(layout, _lv)
+            _bake.draw_options(layout, _lv, ctx.scene)   # samples + options (collapsible)
+        else:
+            layout.prop(props, "lightbake_samples")
             _bake.draw_tod(layout, _lv)
 
 
