@@ -17,8 +17,9 @@
 #   - Alpha: the bake writes alpha 1.0, so as the last step the alpha of the
 #     user's ALPHA colour layer (ALPHA_SUNRISE ... per time of day, else
 #     ALPHA) is copied into every baked layer (any domain).
-#   - Light passes unplug the materials' Color Attribute colour (it reads a
-#     colour layer, e.g. a black ALPHA = a black surface = a black bake).
+#   - Light passes unplug the materials' Color Attribute nodes (they read a
+#     colour layer: black colour = black surface, alpha 0 = see-through
+#     surface, both bake black). The emit pass gets the colour back, not alpha.
 #   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
 #     (the level builder's names), each with only its own light collection
 #     rendering and its own world; emit / curve / blur apply to every time.
@@ -518,10 +519,11 @@ def _prepare(objs, name, domain):
 
 
 def _cut_colour_links(job, objs):
-    """Light passes: unplug the Color output of the materials' Color Attribute
-    nodes (also inside groups). They read the render colour layer (or a named
-    one, e.g. ALPHA): a black one is a black surface, and the diffuse bake of a
-    black surface is black. Put back by _relink."""
+    """Light passes: unplug the outputs of the materials' Color Attribute nodes
+    (also inside groups). They read a colour layer (the render one, or a named
+    one like ALPHA): its colour into Base Color makes a black layer a black
+    surface, its alpha into Alpha makes alpha 0 a see-through one, and either
+    bakes black. Put back by _relink."""
     if "links" in job:
         return
     cut, seen = [], set()
@@ -530,7 +532,7 @@ def _cut_colour_links(job, objs):
             return
         seen.add(ref)
         for lk in list(tree.links):
-            if lk.from_node.bl_idname == "ShaderNodeVertexColor" and lk.from_socket.identifier == "Color":
+            if lk.from_node.bl_idname == "ShaderNodeVertexColor":
                 cut.append((ref, lk.from_node.name, lk.from_socket.identifier, lk.to_node.name, lk.to_socket.identifier))
                 tree.links.remove(lk)
         for n in tree.nodes:
@@ -544,8 +546,14 @@ def _cut_colour_links(job, objs):
     job["links"] = cut
 
 
-def _relink(job):
-    for (kind, tname), fn, fs, tn, ts in job.pop("links", ()):
+def _relink(job, output=None):
+    """Put the cut links back (only those from `output`, e.g. "Color")."""
+    links = job.get("links", [])
+    back = [x for x in links if output is None or x[2] == output]
+    job["links"] = [x for x in links if x not in back]
+    if not job["links"]:
+        job.pop("links")
+    for (kind, tname), fn, fs, tn, ts in back:
         idb = (bpy.data.materials if kind == "M" else bpy.data.node_groups).get(tname)
         tree = idb.node_tree if kind == "M" and idb else idb
         if tree is None or fn not in tree.nodes or tn not in tree.nodes:
@@ -582,7 +590,7 @@ def _run_pass():
         _cut_colour_links(job, objs)
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
-        _relink(job)                       # emission may come from vertex colours
+        _relink(job, "Color")              # emission may come from vertex colours (alpha stays off)
         objs = _objs(job["emit_objs"])
         _prepare(objs, _EMIT_ATTR, job["domain"])
         args = dict(type="EMIT")
