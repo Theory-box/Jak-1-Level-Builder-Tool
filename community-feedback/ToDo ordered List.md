@@ -150,7 +150,7 @@ The option would be a toggle and when it's on, it allows you to set how many pla
 
 ---
 
-## Export settings
+## Export settings (on main)
 ### Geometry compression for export (Draco)
 - Draco compression algorithm is useable in useable in opengoal, which allow you to shrink level glb files by quite a lot
 - Since the addon takes care of the export itself, there should be an option to turn this on as well as have all of the settings you normally have to control the compression.
@@ -448,7 +448,7 @@ If an actor need sound that are part of a soundbank that isn't loaded on the lev
 
 ---
 
-## Hide unused entity links field under a sub menu
+## Hide unused entity links field under a sub menu (on main)
 Same as with fact options, some actor links usages isn't always shown on an actor code itself but can be used by other code instead. It's for this reason I've wanted to keep the entity link panel visible on all actors.
 
 However, that does add a lot of, often useless, pannels to each actor.
