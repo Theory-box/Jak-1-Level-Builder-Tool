@@ -130,7 +130,23 @@ Give a path to the race-ring but instead of it being there to export a path, if 
 
 Race-rings color are also kind of hard coded. Havin a custom type that allow us to connect to other particles and then have automatic particle definition that get created from a single color input. Check existing race-ring particle for examples
 ### evilplant
+Connecting all of the evil-plant together can be quite cumbersome. It'd be nice if when you have all of them selected, there's a menu with these options:
+- Maximum distance
+- Maximum number of connections
+Then a button "connect all plants" which would then, for every plants, connect it to its closest neighbour, respecting the maximum number of connection as well as the maximum distance set. Have a warning if some plants didn't have any neighbour close enough.
 ### Distribute plat along paths
+Options added to the sync panel, which can be turned on/off in the database. Turned on by default on `plat` and other non-children of plat that still move as platforms along paths.
+The option would be a toggle and when it's on, it allows you to set how many platform you want to distribute, with a minimum of 2.
+- Each extra distributed platform will get the exact same settings as the original plat except their phase setting would be  `A + (1.0/B)*C` Where
+  - A is the original platform phase 
+  - B the number set in distribute
+  - C is the specific's platform #, ignoring the first
+  - Then warp around if it goes over 1.0
+- For example, if the original platform has a phase set to 0.4 and the distribute plat is set to 4 platform
+  - 1st platform is the original `0.4`
+  - 2nd platform is `0.4 + (1.0/4)*1 = 0.65`
+  - 3rd platform is `0.4 + (1.0/4)*2 = 0.90`
+  - 3rd platform is `0.4 + (1.0/4)*2 = 1.15` wrapped back to `0.15`
 
 ---
 
