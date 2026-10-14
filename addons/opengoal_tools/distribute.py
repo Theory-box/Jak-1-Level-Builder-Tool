@@ -52,6 +52,8 @@ def _eased(v, ease_out, ease_in):
     ylo = o * o
     m2 = o / (1.0 - thi)
     yend = (1.0 - thi) ** 2 * m2 + 2.0 * o * (thi - o) + ylo
+    if yend <= 1e-9:   # ease out 0 (or ease in 1): the game divides by zero here; show it linear
+        return v
     if v < tlo:
         y = v * v
     elif v < thi:
@@ -195,18 +197,26 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     _PENDING.update(todo)
 
     def _run():
-        for n in todo:
-            ob = bpy.data.objects.get(n)
-            if ob is not None:
-                apply(bpy.context, ob)
-        _PENDING.difference_update(todo)
+        try:
+            for n in todo:
+                ob = bpy.data.objects.get(n)
+                if ob is not None:
+                    try:
+                        apply(bpy.context, ob)
+                    except Exception as e:   # never stop following this platform
+                        print(f"[OpenGOAL] place on path {n}: {e}")
+        finally:
+            _PENDING.difference_update(todo)
         return None
     bpy.app.timers.register(_run, first_interval=0.0)
 
 
 def _upd(self, ctx):
     if _etype(self):
-        apply(ctx, self)
+        try:
+            apply(ctx, self)
+        except Exception as e:
+            print(f"[OpenGOAL] place on path {self.name}: {e}")
 
 
 # ── UI / export ────────────────────────────────────────────────────────────

@@ -172,11 +172,16 @@ def update_preview(ctx, o):
 
 def _rebuild_later(names):
     def _run():
-        for n in names:
-            o = bpy.data.objects.get(n)
-            if o is not None:
-                update_preview(bpy.context, o)
-        _PENDING.difference_update(names)
+        try:
+            for n in names:
+                o = bpy.data.objects.get(n)
+                if o is not None:
+                    try:
+                        update_preview(bpy.context, o)
+                    except Exception as e:   # never stop following this actor
+                        print(f"[OpenGOAL] race-ring preview {n}: {e}")
+        finally:
+            _PENDING.difference_update(names)
         return None
     bpy.app.timers.register(_run, first_interval=0.0)
 
