@@ -10,9 +10,10 @@
 #   - Vertex / Face corner: which domain the next bake writes.
 #   - Auto blur: averages neighbouring colours (Strength, Passes); with Keep
 #     sharp edges, corners across the mesh's sharp edges (marked sharp,
-#     flat-shaded faces; Auto sharp: also edges sharper than the angle) aren't
+#     flat-shaded faces, Auto Smooth modifier; Auto sharp: also edges sharper
+#     than the angle) aren't
 #     mixed, so face-corner bakes keep their clean edges.
-#   - Curve presets: built-ins + your own (saved in the addon preferences).
+#   - Curve presets: built-ins + your own (saved in the .blend, on the scene).
 #   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
 #     (the level builder's names), each with only its own light collection
 #     rendering and its own world; emit / curve / blur apply to every time.
@@ -49,22 +50,21 @@ _BUILTIN_ITEMS = [
 _USER = "USER:"   # enum ids of saved presets
 
 
+_PRESETS_KEY = "og_bake_curve_presets"
+
+
 def user_presets() -> dict:
-    """Saved curves {name: [R, G, B, C points]} (addon preferences: every file)."""
+    """Saved curves {name: [R, G, B, C points]}, kept in this .blend (on the scene)."""
     import json
-    a = bpy.context.preferences.addons.get("opengoal_tools")
     try:
-        return json.loads(a.preferences.bake_curve_presets) if a else {}
+        return json.loads(bpy.context.scene.get(_PRESETS_KEY, "{}"))
     except Exception:
         return {}
 
 
 def _save_user_presets(d):
     import json
-    a = bpy.context.preferences.addons.get("opengoal_tools")
-    if a:
-        a.preferences.bake_curve_presets = json.dumps(d)
-        bpy.context.preferences.is_dirty = True
+    bpy.context.scene[_PRESETS_KEY] = json.dumps(d)
 
 
 _ITEMS: list = []
@@ -256,7 +256,29 @@ def apply_curve(cols, xs, luts, factor):
     return out
 
 
-def _corner_groups(mesh, keep_sharp, angle=None):
+def sharp_arrays(obj):
+    """(sharp edges, flat faces) as Blender shades the object: from the
+    evaluated mesh when its topology matches (Auto Smooth / Smooth by Angle is
+    a modifier since 4.1), else from the mesh itself."""
+    def read(m):
+        se = np.zeros(len(m.edges), dtype=bool)
+        if "sharp_edge" in m.attributes:
+            m.attributes["sharp_edge"].data.foreach_get("value", se)
+        sf = np.zeros(len(m.polygons), dtype=bool)
+        if "sharp_face" in m.attributes:
+            m.attributes["sharp_face"].data.foreach_get("value", sf)
+        return se, sf
+    me = obj.data
+    try:
+        ev = obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).data
+        if (len(ev.edges), len(ev.polygons), len(ev.loops)) == (len(me.edges), len(me.polygons), len(me.loops)):
+            return read(ev)
+    except Exception:
+        pass
+    return read(me)
+
+
+def _corner_groups(mesh, keep_sharp, angle=None, sharp_flat=None):
     """Group id per face corner: corners at one vertex joined across smooth
     edges: not marked sharp, neither face flat-shaded, and (angle given)
     faces less than `angle` apart."""
@@ -273,12 +295,15 @@ def _corner_groups(mesh, keep_sharp, angle=None):
     ends = ls + lt
     nxt[ends - 1] = ls                                   # wrap inside each face
     pn = np.empty(npoly * 3, dtype=np.float32); mesh.polygons.foreach_get("normal", pn); pn = pn.reshape(-1, 3)
-    sharp = np.zeros(len(mesh.edges), dtype=bool)
-    if "sharp_edge" in mesh.attributes:
-        mesh.attributes["sharp_edge"].data.foreach_get("value", sharp)
-    flat = np.zeros(npoly, dtype=bool)
-    if "sharp_face" in mesh.attributes:
-        mesh.attributes["sharp_face"].data.foreach_get("value", flat)
+    if sharp_flat is not None:
+        sharp, flat = sharp_flat
+    else:
+        sharp = np.zeros(len(mesh.edges), dtype=bool)
+        if "sharp_edge" in mesh.attributes:
+            mesh.attributes["sharp_edge"].data.foreach_get("value", sharp)
+        flat = np.zeros(npoly, dtype=bool)
+        if "sharp_face" in mesh.attributes:
+            mesh.attributes["sharp_face"].data.foreach_get("value", flat)
     parent = np.arange(nl)
 
     def find(i):
@@ -308,7 +333,7 @@ def _corner_groups(mesh, keep_sharp, angle=None):
     return gid, int(gid.max()) + 1 if nl else 0
 
 
-def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None):
+def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None, sharp_flat=None):
     """Average neighbouring colours `passes` times."""
     if domain == "POINT":
         ne = len(mesh.edges)
@@ -317,7 +342,7 @@ def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None):
         a, b = ev[:, 0], ev[:, 1]
         vals = cols.copy()
     else:
-        gid, ng = _corner_groups(mesh, keep_sharp, angle)
+        gid, ng = _corner_groups(mesh, keep_sharp, angle, sharp_flat)
         nl = len(mesh.loops)
         npoly = len(mesh.polygons)
         ls = np.empty(npoly, dtype=np.int64); mesh.polygons.foreach_get("loop_start", ls)
@@ -346,6 +371,7 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
     em = None
     if emitted and _EMIT_ATTR in mesh.color_attributes:
         em, _ = _read(mesh.color_attributes[_EMIT_ATTR])
+    sf = None
     for name in attrs:
         attr = mesh.color_attributes.get(name)
         if attr is None:
@@ -357,8 +383,10 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
             xs, lu = luts if luts is not None else curve_luts(mapping)
             cols = apply_curve(cols, xs, lu, settings.curve_factor)
         if settings.use_blur and settings.blur_strength > 0:
+            if sf is None and settings.blur_keep_sharp:
+                sf = sharp_arrays(obj)              # once per object
             cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
-                        settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None)
+                        settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None, sf)
         _write(attr, np.clip(cols, 0.0, 1.0), key)
     if _EMIT_ATTR in mesh.color_attributes:
         mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
@@ -871,7 +899,7 @@ def _level_curve(ctx):
 
 
 class OG_OT_BakeCurveSave(bpy.types.Operator):
-    """Save the current curve as a preset (kept in the addon preferences: every file)"""
+    """Save the current curve as a preset (kept in this .blend file)"""
     bl_idname = "og.bake_curve_save"
     bl_label = "Save Curve Preset"
     bl_options = {"REGISTER", "UNDO"}
