@@ -79,6 +79,41 @@ def mod_settings_path() -> Path:
     return data() / "goal_src" / "jak1" / "engine" / "mods" / "mod-settings.gc"
 
 
+_DCP_RE = re.compile(r'\(define\s+\*debug-continue-point\*\s+"([^"]*)"\)')
+
+
+def debug_continue_point():
+    """mod-base: the continue point the game boots into (mod-settings.gc), or None."""
+    try:
+        m = _DCP_RE.search(mod_settings_path().read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    return m.group(1) if m else None
+
+
+def set_debug_continue_point(cp) -> bool:
+    """Write cp into mod-settings.gc's *debug-continue-point* (mod-base boots
+    there, no teleport). True when the file now holds cp."""
+    p = mod_settings_path()
+    try:
+        raw = p.read_bytes()
+    except OSError:
+        return False
+    txt = raw.decode("utf-8")
+    m = _DCP_RE.search(txt)
+    if not m:
+        return False
+    if m.group(1) != cp:
+        txt = txt[:m.start(1)] + cp + txt[m.end(1):]
+        p.write_bytes(txt.encode("utf-8"))
+    return True
+
+
+def modbase_spawn_on(scene) -> bool:
+    """The "Boot into spawn (mod-base)" setting is on and this OpenGOAL has it."""
+    return bool(getattr(scene.og_props, "og_modbase_spawn", True)) and feature_status("mod_base_spawn")[0] is True
+
+
 def game_info() -> dict:
     """{"kind", "version" (release, e.g. "0.3.8"), "commit" (dev), "root"}."""
     from .paths_core import data, exe_root, EXE

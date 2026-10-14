@@ -63,6 +63,20 @@ from .. import model_preview as _mp
 import re as _re
 
 
+def _boot_cp(ctx, cp=None):
+    """mod-base: the spawn a build writes into mod-settings.gc (the Spawn
+    dropdown, or cp), None when not used."""
+    from ..versions import modbase_spawn_on
+    cp = cp or getattr(ctx.scene.og_props, "og_launch_checkpoint", "none")
+    return cp if cp and cp != "none" and modbase_spawn_on(ctx.scene) else None
+
+
+def _booted_cp(ctx):
+    """mod-base: the spawn the game currently boots into, None when not used."""
+    from ..versions import modbase_spawn_on, debug_continue_point
+    return debug_continue_point() if modbase_spawn_on(ctx.scene) else None
+
+
 class OG_OT_ExportBuild(Operator):
     bl_idname = "og.export_build"
     bl_label  = "Export & Build"
@@ -85,7 +99,7 @@ class OG_OT_ExportBuild(Operator):
         _BUILD_STATE.clear()
         _BUILD_STATE.update({"done":False,"status":"Starting...","error":None,"ok":False})
         depsgraph = ctx.evaluated_depsgraph_get()  # fetch on main thread — unsafe from bg thread
-        threading.Thread(target=_bg_build, args=(name, ctx.scene, depsgraph), daemon=True).start()
+        threading.Thread(target=_bg_build, args=(name, ctx.scene, depsgraph, _boot_cp(ctx)), daemon=True).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)
@@ -155,7 +169,7 @@ class OG_OT_Play(Operator):
         listener_wait = float(getattr(props, "og_launch_listener_wait", 1.0))
         threading.Thread(
             target=_bg_play,
-            args=(name, cp, boot_wait, listener_wait),
+            args=(name, cp, boot_wait, listener_wait, _booted_cp(ctx)),
             daemon=True,
         ).start()
         wm = ctx.window_manager
@@ -258,7 +272,7 @@ class OG_OT_QuickExport(Operator):
         _QUICK_EXPORT_STATE.clear()
         _QUICK_EXPORT_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
         depsgraph = ctx.evaluated_depsgraph_get()  # fetch on main thread — unsafe from bg thread
-        threading.Thread(target=_bg_quick_export, args=(name, ctx.scene, depsgraph), daemon=True).start()
+        threading.Thread(target=_bg_quick_export, args=(name, ctx.scene, depsgraph, _boot_cp(ctx)), daemon=True).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)
@@ -300,7 +314,7 @@ class OG_OT_ExportBuildPlay(Operator):
         _BUILD_PLAY_STATE.clear()
         _BUILD_PLAY_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
         depsgraph = ctx.evaluated_depsgraph_get()  # fetch on main thread — unsafe from bg thread
-        threading.Thread(target=_bg_build_and_play, args=(name, ctx.scene, depsgraph), daemon=True).start()
+        threading.Thread(target=_bg_build_and_play, args=(name, ctx.scene, depsgraph, _boot_cp(ctx, f"{name}-start")), daemon=True).start()
         wm = ctx.window_manager
         self._timer = wm.event_timer_add(0.5, window=ctx.window)
         wm.modal_handler_add(self)

@@ -449,6 +449,13 @@ class OGProperties(PropertyGroup):
         description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
         items=_launch_checkpoint_items,
     )
+    og_modbase_spawn: BoolProperty(
+        name="Boot into spawn (mod-base)",
+        description="mod-base only: builds write the spawn into engine/mods/mod-settings.gc "
+                    "(*debug-continue-point*) so the game boots straight there instead of teleporting Jak "
+                    "after the boot. Not available on jak-project releases / dev clones",
+        default=True,
+    )
     # Launch timing — exposed in Developer Tools for tuning per-machine.
     # See _bg_play in build.py for how these are used.
     og_launch_boot_wait: FloatProperty(

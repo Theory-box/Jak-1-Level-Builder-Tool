@@ -174,6 +174,15 @@ class OG_PT_BuildPlay(Panel):
         # Selecting any continue-point loads the level and spawns Jak there.
         col.scale_y = 1.0
         col.prop(ctx.scene.og_props, "og_launch_checkpoint", text="Spawn")
+        from ..versions import feature_status
+        ok, why = feature_status("mod_base_spawn")
+        if ok is True:
+            col.prop(ctx.scene.og_props, "og_modbase_spawn")
+        else:   # shown off, with the reason
+            row = col.row(); row.enabled = False
+            row.label(text="Boot into spawn (mod-base)", icon="CHECKBOX_DEHLT")
+            sub = col.row(); sub.scale_y = 0.7
+            sub.label(text=why, icon="INFO")
 
         # Level GLB: the Geometry collection's exporter (Draco etc. set there)
         level_col = _active_level_col(ctx.scene)
