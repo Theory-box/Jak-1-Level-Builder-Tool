@@ -70,6 +70,25 @@ def _refresh_variant_preview(context, obj, key):
     _mp.attach_preview(context, etype, obj)
 
 
+class OG_OT_InitColorField(Operator):
+    """Add this colour field to the actor (with the colour picker)"""
+    bl_idname = "og.init_color_field"
+    bl_label = "Set Colour"
+    bl_options = {"INTERNAL", "UNDO"}
+
+    prop_key: StringProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        etype = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
+        f = next((x for x in _db.inherited_fields(etype) if x.get("key") == self.prop_key), {})
+        obj[self.prop_key] = list(f.get("default") or [1.0, 1.0, 1.0])
+        obj.id_properties_ui(self.prop_key).update(subtype="COLOR", min=0.0, max=1.0, soft_min=0.0, soft_max=1.0)
+        return {"FINISHED"}
+
+
 class OG_OT_SetFieldFromZ(Operator):
     """Set this field to the active object's height (Blender Z = game height)"""
     bl_idname = "og.set_field_from_z"
@@ -355,6 +374,14 @@ def _draw_field(layout, obj, field, actor_info=None):
         _draw_bool_field(layout, obj, field)
     elif ftype == "vector3":
         _draw_vector3_field(layout, obj, field)
+    elif ftype == "color":
+        row = layout.row(align=True)
+        row.label(text=f"{label}:")
+        if field["key"] in obj:
+            row.prop(obj, f'["{field["key"]}"]', text="")
+        else:
+            op = row.operator("og.init_color_field", text="Set colour", icon="COLOR")
+            op.prop_key = field["key"]
     elif ftype == "object_ref":
         # Simple text input for object name. A proper picker would need
         # a typed PointerProperty; not worth adding for a few fields.
@@ -460,6 +487,7 @@ CLASSES = (
     OG_OT_PickEnumField,
     OG_OT_SetActorEnumField,
     OG_OT_SetFieldFromZ,
+    OG_OT_InitColorField,
     OG_OT_ToggleActorBoolField,
     OG_PT_ActorFields,
 )

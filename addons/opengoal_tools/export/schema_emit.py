@@ -191,6 +191,12 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
                 direct[lp["key"]] = [lp.get("type", "enum-uint32"), expr or "(game-task none)"]
             continue
 
+        # ── Colour fields (type "color"): ["float", r, g, b] (0-1) ─────────────
+        if lp and f.get("type") == "color":
+            c = get(f.get("key"), f.get("default") or [1.0, 1.0, 1.0])
+            direct[lp["key"]] = ["float"] + [round(float(x), 4) for x in list(c)[:3]]
+            continue
+
         # ── Computed encoder: eco-info-picker ────────────────────────────────
         # A pickup enum (choices carry an `engine_string` per id) plus a paired
         # amount field become the 3-element eco-info lump:

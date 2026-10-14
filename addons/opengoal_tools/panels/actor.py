@@ -1321,7 +1321,7 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
                 col.label(text="No path: exported as this one ring", icon="INFO")
                 return
             col.label(text=f"{len(pts)} rings, one per point (in order)", icon="MESH_CIRCLE")
-            col.label(text="Point Tilt: extra yaw · Point Weight: x the time")
+            col.label(text="Point Tilt: + yaw · Point W (weight): x the time")
             col.label(text="Linked next / prev, last ring gets the movie-pos")
             bad = _rr.straight_rings(pts)
             if bad:

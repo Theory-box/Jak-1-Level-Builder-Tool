@@ -18549,7 +18549,7 @@
                 "type": "float"
               },
               "write_if": "always",
-              "note": "Not used by the first ring."
+              "note": "Not used by the first ring. With a path: x each point's Weight (W; Bezier: Weight)."
             },
             {
               "key": "og_ring_rot",
@@ -18560,7 +18560,37 @@
                 "key": "rotoffset",
                 "type": "degrees"
               },
-              "write_if": "if_nonzero"
+              "write_if": "if_nonzero",
+              "note": "With a path: + each point's Tilt."
+            },
+            {
+              "key": "og_ring_color",
+              "label": "Ring colour",
+              "type": "color",
+              "default": [1.0, 0.0, 1.0],
+              "lump": {
+                "key": "ring-color",
+                "type": "float"
+              },
+              "write_if": "always",
+              "note": "Vanilla: purple (1, 0, 1), blue rings cyan (0, 1, 1)."
+            },
+            {
+              "key": "og_ring_cell_anim",
+              "label": "Cell animation (last ring)",
+              "type": "enum",
+              "default": "purple",
+              "choices": [
+                {"value": "purple", "label": "Purple rings animation", "lump_value": 0},
+                {"value": "blue", "label": "Blue rings animation", "lump_value": 1},
+                {"value": "none", "label": "None: the cell flies from the last ring to its movie-pos", "lump_value": 2}
+              ],
+              "lump": {
+                "key": "cell-anim",
+                "type": "int32"
+              },
+              "write_if": "if_not_default",
+              "note": "The animations end far below the ring (rolling's layout): the cell then flies to the last ring's movie-pos."
             },
             {
               "key": "og_ring_alt_task",

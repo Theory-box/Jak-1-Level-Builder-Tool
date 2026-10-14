@@ -45,10 +45,12 @@ def points(o) -> list:
         elif s.type == "CURVE":
             M = s.matrix_world
             for sp in s.data.splines:
-                pts = sp.bezier_points if sp.type == "BEZIER" else sp.points
-                for p in pts:
+                bez = sp.type == "BEZIER"
+                for p in (sp.bezier_points if bez else sp.points):
                     co = mathutils.Vector(p.co[:3])
-                    w = float(p.weight_softbody)
+                    # poly / NURBS: the point's W (any value); Bezier points
+                    # only have the soft-body Weight
+                    w = float(p.weight_softbody if bez else p.weight)
                     out.append({"co": M @ co, "tilt": float(p.tilt), "weight": w if w > 0 else 1.0})   # 0: unset
     return out
 

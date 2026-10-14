@@ -274,6 +274,8 @@ class OG_OT_SpawnEntity(Operator):
                 _dv = _db.field_default(_f, etype)
                 if _dv is not None:
                     o[_k] = _dv
+            if _k and _f.get("type") == "color" and _k in o:   # Blender colour picker
+                o.id_properties_ui(_k).update(subtype="COLOR", min=0.0, max=1.0, soft_min=0.0, soft_max=1.0)
         # DB field drivers (e.g. launcher spring height -> arrow length)
         from ..utils import apply_db_drivers
         apply_db_drivers(o, etype)
