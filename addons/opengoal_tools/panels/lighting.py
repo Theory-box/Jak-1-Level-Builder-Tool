@@ -6,8 +6,8 @@
 # its own main panel because lighting is one of the first things a user
 # sets up on a level mesh and it deserves a visible top-level entry.
 #
-# The context-aware per-mesh light-bake section (OG_PT_SelectedLightBaking)
-# still lives in panels/selected.py under the Object Settings panel.
+# The bake options (bake.py: emit, curve, domain, blur) are drawn here too;
+# baking is only in this panel.
 # ─────────────────────────────────────────────────────────────────────────
 
 from __future__ import annotations
@@ -53,15 +53,15 @@ class OG_PT_Lighting(Panel):
 
         layout.separator(factor=0.5)
 
-        col = layout.column(align=True)
-        col.label(text="Cycles Bake Settings:", icon="LIGHT")
-        col.prop(props, "lightbake_samples")
-
-        layout.separator(factor=0.5)
-
+        # ── Light baking: the Bake button first, then its settings ─────────
         sel = ctx.selected_objects
         targets = _bakeable_meshes(sel)
         skipped = len(sel) - len(targets)
+        layout.label(text="Light Baking:", icon="LIGHT")
+        row = layout.row()
+        row.enabled = len(targets) > 0
+        row.scale_y = 1.6
+        row.operator("og.bake_lighting", text=f"Bake {len(targets)} mesh(es) → Vertex Color", icon="RENDER_STILL")
         if targets:
             box = layout.box()
             header = f"{len(targets)} mesh(es) selected"
@@ -76,14 +76,17 @@ class OG_PT_Lighting(Panel):
             layout.label(text=f"Selected items have no bakeable geometry  ({skipped} skipped)", icon="INFO")
         else:
             layout.label(text="Select mesh object(s) to bake", icon="INFO")
+        layout.label(text="Result stored in 'BakedLight' layer", icon="GROUP_VCOL")
 
         layout.separator(factor=0.5)
-        row = layout.row()
-        row.enabled = len(targets) > 0
-        row.scale_y = 1.6
-        row.operator("og.bake_lighting", text="Bake Lighting → Vertex Color", icon="RENDER_STILL")
-        layout.separator(factor=0.3)
-        layout.label(text="Result stored in 'BakedLight' layer", icon="GROUP_VCOL")
+        col = layout.column(align=True)
+        col.label(text="Cycles Bake Settings:", icon="SETTINGS")
+        col.prop(props, "lightbake_samples")
+        from ..collections import _active_level_col
+        from .. import bake as _bake
+        _lv = _active_level_col(ctx.scene)
+        if _lv is not None:
+            _bake.draw_options(layout, _lv)
 
 
 CLASSES = (

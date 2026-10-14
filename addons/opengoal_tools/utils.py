@@ -182,7 +182,6 @@ def sync_defaults(etype: str) -> dict:
 #
 #  🔍 Object Settings    OG_PT_SelectedObject    (always visible)
 #    Collision          OG_PT_SelectedCollision  (sub, DEFAULT_CLOSED, mesh poll)
-#    Light Baking       OG_PT_SelectedLightBaking(sub, DEFAULT_CLOSED, mesh poll)
 #    NavMesh            OG_PT_SelectedNavMeshTag (sub, DEFAULT_CLOSED, mesh poll)
 #  〰 Waypoints          OG_PT_Waypoints          (context, poll-gated)
 #  ▶  Build & Play       OG_PT_BuildPlay      (always visible)

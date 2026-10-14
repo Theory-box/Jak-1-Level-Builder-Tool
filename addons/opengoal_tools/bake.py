@@ -9,10 +9,13 @@
 #     black and > 0.75 as over-lit; the presets help fit the bake to that.
 #   - Vertex / Face corner: which domain the next bake writes.
 #   - Auto blur: averages neighbouring colours (Strength, Passes); with Keep
-#     sharp edges, corners across a marked-sharp edge or an edge sharper than
-#     the angle aren't mixed (face-corner bakes keep their clean edges).
+#     sharp edges, corners across the mesh's sharp edges (marked sharp,
+#     flat-shaded faces; Auto sharp: also edges sharper than the angle) aren't
+#     mixed, so face-corner bakes keep their clean edges.
+#   - Curve presets: built-ins + your own (saved in the addon preferences).
 # Each pass is one Blender bake job (UI stays responsive); the next pass and
-# the post-processing start from object_bake_complete. Post-processing works
+# the post-processing start once the job is gone (polled); the emit pass only
+# renders the emissive meshes. Post-processing works
 # on whole attribute arrays (numpy). Values are the stored (sRGB) bytes, the
 # ones Blender shows / paints.
 # ---------------------------------------------------------------------------
@@ -25,20 +28,62 @@ import bpy
 BAKE_ATTR = "BakedLight"
 _EMIT_ATTR = "_og_bake_emit"
 
+_LIN = [(0.0, 0.0), (1.0, 1.0)]
 _PRESETS = {
-    # combined-curve points; channel curves stay linear
-    "LINEAR":   [(0.0, 0.0), (1.0, 1.0)],
-    "JAK":      [(0.0, 0.25), (0.35, 0.4), (0.75, 0.72), (1.0, 0.9)],
-    "SOFT":     [(0.0, 0.1), (0.5, 0.5), (1.0, 0.9)],
-    "CONTRAST": [(0.0, 0.0), (0.25, 0.18), (0.75, 0.82), (1.0, 1.0)],
+    # [R, G, B, combined] curve points (built-ins only shape the combined curve)
+    "LINEAR":   [_LIN, _LIN, _LIN, _LIN],
+    "JAK":      [_LIN, _LIN, _LIN, [(0.0, 0.25), (0.35, 0.4), (0.75, 0.72), (1.0, 0.9)]],
+    "SOFT":     [_LIN, _LIN, _LIN, [(0.0, 0.1), (0.5, 0.5), (1.0, 0.9)]],
+    "CONTRAST": [_LIN, _LIN, _LIN, [(0.0, 0.0), (0.25, 0.18), (0.75, 0.82), (1.0, 1.0)]],
 }
-_PRESET_ITEMS = (
+_BUILTIN_ITEMS = [
     ("JAK", "Fit 0.25-0.75", "Lifts darks above 0.25 and eases highlights, keeping bright spots over 0.75"),
     ("SOFT", "Soft", "Slightly flatter"),
     ("CONTRAST", "Contrast", "Darker darks, brighter brights"),
     ("LINEAR", "Linear", "No change (edit the curve yourself)"),
-    ("CUSTOM", "Custom", "Your own curve (choosing a preset overwrites it)"),
-)
+]
+_USER = "USER:"   # enum ids of saved presets
+
+
+def user_presets() -> dict:
+    """Saved curves {name: [R, G, B, C points]} (addon preferences: every file)."""
+    import json
+    a = bpy.context.preferences.addons.get("opengoal_tools")
+    try:
+        return json.loads(a.preferences.bake_curve_presets) if a else {}
+    except Exception:
+        return {}
+
+
+def _save_user_presets(d):
+    import json
+    a = bpy.context.preferences.addons.get("opengoal_tools")
+    if a:
+        a.preferences.bake_curve_presets = json.dumps(d)
+        bpy.context.preferences.is_dirty = True
+
+
+_ITEMS: list = []
+
+
+def _preset_items(self, ctx):
+    items = list(_BUILTIN_ITEMS)
+    items += [(_USER + n, n, "Saved curve") for n in sorted(user_presets())]
+    items.append(("CUSTOM", "Custom", "Your own curve (choosing a preset overwrites it)"))
+    _ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    return _ITEMS
+
+
+def preset_points(preset):
+    if preset in _PRESETS:
+        return _PRESETS[preset]
+    if preset.startswith(_USER):
+        return user_presets().get(preset[len(_USER):])
+    return None
+
+
+def mapping_points(m):
+    return [[list(p.location) for p in m.curves[ci].points] for ci in range(4)]
 
 
 # ── settings ────────────────────────────────────────────────────────────────
@@ -63,14 +108,14 @@ def curve_mapping(level_col, create=False):
 
 
 def _apply_preset(ng, preset):
-    pts = _PRESETS.get(preset)
+    pts = preset_points(preset)
     if pts is None:
         return
     node = next(n for n in ng.nodes if n.bl_idname == "ShaderNodeRGBCurve")
     m = node.mapping
     for ci in range(4):
         c = m.curves[ci]
-        want = pts if ci == 3 else _PRESETS["LINEAR"]
+        want = pts[ci]
         while len(c.points) > len(want):
             c.points.remove(c.points[-1])
         while len(c.points) < len(want):
@@ -94,7 +139,7 @@ class OGBakeSettings(bpy.types.PropertyGroup):
     use_curve: bpy.props.BoolProperty(
         name="Light curve", default=False,
         description="Remap the baked light with a curve (Jak 1: < 0.25 shows black, > 0.75 over-lit)")
-    curve_preset: bpy.props.EnumProperty(name="Preset", items=_PRESET_ITEMS, default="JAK", update=_preset_update)
+    curve_preset: bpy.props.EnumProperty(name="Preset", items=_preset_items, update=_preset_update)
     curve_factor: bpy.props.FloatProperty(name="Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
                                           description="How much the curve affects the result")
     domain: bpy.props.EnumProperty(
@@ -107,7 +152,9 @@ class OGBakeSettings(bpy.types.PropertyGroup):
     blur_strength: bpy.props.FloatProperty(name="Strength", default=0.5, min=0.0, max=1.0, subtype="FACTOR")
     blur_passes: bpy.props.IntProperty(name="Passes", default=2, min=1, max=50)
     blur_keep_sharp: bpy.props.BoolProperty(name="Keep sharp edges", default=True,
-                                            description="Don't mix across edges marked sharp or sharper than the angle")
+                                            description="Don't mix across the mesh's sharp edges (marked sharp, or flat-shaded faces)")
+    blur_auto_sharp: bpy.props.BoolProperty(name="Auto sharp", default=False,
+                                            description="Also treat edges sharper than the angle as sharp")
     blur_angle: bpy.props.FloatProperty(name="Angle", default=math.radians(30.0), min=0.0, max=math.pi,
                                         subtype="ANGLE")
 
@@ -151,9 +198,10 @@ def apply_curve(cols, xs, luts, factor):
     return out
 
 
-def _corner_groups(mesh, keep_sharp, angle):
+def _corner_groups(mesh, keep_sharp, angle=None):
     """Group id per face corner: corners at one vertex joined across smooth
-    edges (not marked sharp, face angle under `angle`)."""
+    edges: not marked sharp, neither face flat-shaded, and (angle given)
+    faces less than `angle` apart."""
     nl = len(mesh.loops)
     lv = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("vertex_index", lv)
     le = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("edge_index", le)
@@ -170,6 +218,9 @@ def _corner_groups(mesh, keep_sharp, angle):
     sharp = np.zeros(len(mesh.edges), dtype=bool)
     if "sharp_edge" in mesh.attributes:
         mesh.attributes["sharp_edge"].data.foreach_get("value", sharp)
+    flat = np.zeros(npoly, dtype=bool)
+    if "sharp_face" in mesh.attributes:
+        mesh.attributes["sharp_face"].data.foreach_get("value", flat)
     parent = np.arange(nl)
 
     def find(i):
@@ -179,7 +230,7 @@ def _corner_groups(mesh, keep_sharp, angle):
         return i
     order = np.argsort(le, kind="stable")
     se = le[order]
-    cos_lim = math.cos(angle)
+    cos_lim = math.cos(angle) if angle is not None else -2.0
     i = 0
     while i < nl:
         j = i
@@ -187,7 +238,8 @@ def _corner_groups(mesh, keep_sharp, angle):
             j += 1
         if j == i + 1 and not sharp[se[i]]:              # manifold edge shared by two faces
             a, b = order[i], order[j]
-            if float(np.dot(pn[poly_of[a]], pn[poly_of[b]])) >= cos_lim:
+            if (not flat[poly_of[a]] and not flat[poly_of[b]]
+                    and float(np.dot(pn[poly_of[a]], pn[poly_of[b]])) >= cos_lim):
                 for x, y in ((a, nxt[b]), (b, nxt[a])):  # same vertex on both faces
                     rx, ry = find(x), find(y)
                     if rx != ry:
@@ -198,7 +250,7 @@ def _corner_groups(mesh, keep_sharp, angle):
     return gid, int(gid.max()) + 1 if nl else 0
 
 
-def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=math.radians(30.0)):
+def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None):
     """Average neighbouring colours `passes` times."""
     if domain == "POINT":
         ne = len(mesh.edges)
@@ -244,7 +296,7 @@ def post_process(obj, settings, mapping, emitted):
         cols = apply_curve(cols, xs, luts, settings.curve_factor)
     if settings.use_blur and settings.blur_strength > 0:
         cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
-                    settings.blur_keep_sharp, settings.blur_angle)
+                    settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None)
     _write(attr, np.clip(cols, 0.0, 1.0), key)
     if _EMIT_ATTR in mesh.color_attributes:
         mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
@@ -285,20 +337,35 @@ def _prepare(objs, name, domain):
         cas.active_color = cas[name]
 
 
+def _objs(names):
+    return [o for o in (bpy.data.objects.get(n) for n in names) if o is not None]
+
+
+def _select_only(objs):
+    vl = bpy.context.view_layer
+    keep = set(o.name for o in objs)
+    for o in vl.objects:
+        if o.select_get() != (o.name in keep):
+            o.select_set(o.name in keep)
+    if objs:
+        vl.objects.active = objs[0]
+
+
 def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
-    objs = [bpy.data.objects.get(n) for n in job["objs"]]
-    objs = [o for o in objs if o is not None]
     if kind == "light":
+        objs = _objs(job["objs"])
         _prepare(objs, BAKE_ATTR, job["domain"])
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
-    else:
+    else:   # only the meshes with an emissive material render the emit pass
+        objs = _objs(job["emit_objs"])
         _prepare(objs, _EMIT_ATTR, job["domain"])
         args = dict(type="EMIT")
+    _select_only(objs)
     if job["blocking"]:
         bpy.ops.object.bake("EXEC_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
-        _on_complete(None)
+        _next()
     else:
         # later passes start from a timer: give the bake job a window
         win = bpy.context.window or (bpy.context.window_manager.windows[0] if bpy.context.window_manager.windows else None)
@@ -307,11 +374,24 @@ def _run_pass():
             bpy.context.view_layer.objects.active = objs[0]
         with bpy.context.temp_override(window=win):
             bpy.ops.object.bake("INVOKE_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
+        bpy.app.timers.register(_poll, first_interval=0.5)
+
+
+def _poll():
+    """Next step once Blender's bake job has really finished (the complete
+    event can come before every mesh is done)."""
+    if not _JOB:
+        return None                       # cancelled
+    if bpy.app.is_job_running("OBJECT_BAKE"):
+        return 0.5
+    _safe(_next)
+    return None
 
 
 def _finish():
     job = dict(_JOB)
     _JOB.clear()
+    _select_only(_objs(job["objs"]))       # the selection the bake started with
     col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
     settings = col.og_bake if col is not None else None
     if settings is None:
@@ -320,7 +400,7 @@ def _finish():
     for n in job["objs"]:
         o = bpy.data.objects.get(n)
         if o is not None:
-            post_process(o, settings, mapping, "emit" in job["passes"])
+            post_process(o, settings, mapping, o.name in job["emit_objs"])
 
 
 def _safe(fn):
@@ -333,21 +413,14 @@ def _safe(fn):
         raise
 
 
-@bpy.app.handlers.persistent
-def _on_complete(_scene, *args):
-    if not _JOB or (_JOB["blocking"] and _scene is not None):   # blocking passes advance themselves
-        return
+def _next():
+    import time
+    _JOB["t"] = time.time()
     _JOB["i"] += 1
     if _JOB["i"] < len(_JOB["passes"]):
-        if _JOB["blocking"]:
-            _run_pass()
-        else:
-            bpy.app.timers.register(lambda: (_safe(_run_pass), None)[1], first_interval=0.0)
+        _run_pass()
     else:
-        if _JOB["blocking"]:
-            _finish()
-        else:
-            bpy.app.timers.register(lambda: (_safe(_finish), None)[1], first_interval=0.0)
+        _finish()
 
 
 @bpy.app.handlers.persistent
@@ -359,10 +432,12 @@ def start(objs, level_col, blocking=False):
     """Bake the passes for objs (names kept), then post-process."""
     s = level_col.og_bake if level_col is not None else None
     passes = ["light"]
-    if s is not None and s.emit_strength > 0 and any(has_emission(o) for o in objs):
+    emit_objs = [o.name for o in objs if has_emission(o)] if s is not None and s.emit_strength > 0 else []
+    if emit_objs:
         passes.append("emit")
     _JOB.clear()
-    _JOB.update({"objs": [o.name for o in objs], "passes": passes, "i": 0,
+    import time
+    _JOB.update({"t": time.time(), "objs": [o.name for o in objs], "emit_objs": emit_objs, "passes": passes, "i": 0,
                  "domain": s.domain if s is not None else "CORNER",
                  "level": level_col.name if level_col is not None else "", "blocking": blocking})
     _safe(_run_pass)
@@ -370,6 +445,12 @@ def start(objs, level_col, blocking=False):
 
 
 def busy() -> bool:
+    """A bake queue is running. A leftover queue (an error, a reload) with no
+    Blender bake job behind it is dropped."""
+    if _JOB and not _JOB.get("blocking") and not bpy.app.is_job_running("OBJECT_BAKE"):
+        import time
+        if time.time() - _JOB.get("t", 0) > 5.0:
+            _JOB.clear()
     return bool(_JOB)
 
 
@@ -387,7 +468,11 @@ def draw_options(layout, level_col):
         m = curve_mapping(level_col)
         row = col.row(align=True)
         row.prop(s, "curve_preset", text="")
-        row.prop(s, "curve_factor")
+        row.operator("og.bake_curve_save", text="", icon="ADD")
+        if s.curve_preset.startswith(_USER):
+            row.operator("og.bake_curve_update", text="", icon="FILE_REFRESH")
+            row.operator("og.bake_curve_remove", text="", icon="REMOVE")
+        col.prop(s, "curve_factor")
         if m is None:
             col.operator("og.bake_curve_init", icon="FCURVE")
         else:
@@ -400,10 +485,12 @@ def draw_options(layout, level_col):
         row.prop(s, "blur_strength")
         row.prop(s, "blur_passes")
         if s.domain == "CORNER":
-            row = col.row(align=True)
-            row.prop(s, "blur_keep_sharp")
-            sub = row.row(); sub.enabled = s.blur_keep_sharp
-            sub.prop(s, "blur_angle")
+            col.prop(s, "blur_keep_sharp")
+            if s.blur_keep_sharp:
+                row = col.row(align=True)
+                row.prop(s, "blur_auto_sharp")
+                sub = row.row(); sub.enabled = s.blur_auto_sharp
+                sub.prop(s, "blur_angle")
 
 
 class OG_OT_BakeCurveInit(bpy.types.Operator):
@@ -421,21 +508,82 @@ class OG_OT_BakeCurveInit(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGBakeSettings, OG_OT_BakeCurveInit)
+def _level_curve(ctx):
+    from .collections import _active_level_col
+    col = _active_level_col(ctx.scene)
+    return col, (curve_mapping(col) if col is not None else None)
+
+
+class OG_OT_BakeCurveSave(bpy.types.Operator):
+    """Save the current curve as a preset (kept in the addon preferences: every file)"""
+    bl_idname = "og.bake_curve_save"
+    bl_label = "Save Curve Preset"
+    bl_options = {"REGISTER", "UNDO"}
+
+    name: bpy.props.StringProperty(name="Name", default="My curve")
+
+    def invoke(self, ctx, event):
+        return ctx.window_manager.invoke_props_dialog(self)
+
+    def execute(self, ctx):
+        col, m = _level_curve(ctx)
+        name = self.name.strip()
+        if m is None or not name:
+            return {"CANCELLED"}
+        d = user_presets(); d[name] = mapping_points(m); _save_user_presets(d)
+        col.og_bake.curve_preset = _USER + name
+        self.report({"INFO"}, f"Saved curve preset '{name}'")
+        return {"FINISHED"}
+
+
+class OG_OT_BakeCurveUpdate(bpy.types.Operator):
+    """Overwrite the selected saved preset with the current curve"""
+    bl_idname = "og.bake_curve_update"
+    bl_label = "Update Curve Preset"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        col, m = _level_curve(ctx)
+        if m is None or not col.og_bake.curve_preset.startswith(_USER):
+            return {"CANCELLED"}
+        name = col.og_bake.curve_preset[len(_USER):]
+        d = user_presets(); d[name] = mapping_points(m); _save_user_presets(d)
+        self.report({"INFO"}, f"Updated curve preset '{name}'")
+        return {"FINISHED"}
+
+
+class OG_OT_BakeCurveRemove(bpy.types.Operator):
+    """Delete the selected saved preset (the curve itself stays)"""
+    bl_idname = "og.bake_curve_remove"
+    bl_label = "Remove Curve Preset"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        col, m = _level_curve(ctx)
+        p = col.og_bake.curve_preset if col is not None else ""
+        if not p.startswith(_USER):
+            return {"CANCELLED"}
+        d = user_presets(); d.pop(p[len(_USER):], None); _save_user_presets(d)
+        col.og_bake["curve_preset"] = len(_BUILTIN_ITEMS) + len(d)   # -> Custom (keeps the curve)
+        self.report({"INFO"}, f"Removed curve preset '{p[len(_USER):]}'")
+        return {"FINISHED"}
+
+
+CLASSES = (OGBakeSettings, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 
 def register_props():
     bpy.types.Collection.og_bake = bpy.props.PointerProperty(type=OGBakeSettings)
-    for h, f in ((bpy.app.handlers.object_bake_complete, _on_complete),
-                 (bpy.app.handlers.object_bake_cancel, _on_cancel)):
-        if f not in h:
-            h.append(f)
+    # an addon reload can leave the previous module's handlers registered
+    for hl in (bpy.app.handlers.object_bake_cancel, bpy.app.handlers.object_bake_complete):
+        for f in [f for f in hl if getattr(f, "__module__", "").endswith(".bake")]:
+            hl.remove(f)
+    if _on_cancel not in bpy.app.handlers.object_bake_cancel:
+        bpy.app.handlers.object_bake_cancel.append(_on_cancel)
 
 
 def unregister_props():
-    for h, f in ((bpy.app.handlers.object_bake_complete, _on_complete),
-                 (bpy.app.handlers.object_bake_cancel, _on_cancel)):
-        if f in h:
-            h.remove(f)
+    if _on_cancel in bpy.app.handlers.object_bake_cancel:
+        bpy.app.handlers.object_bake_cancel.remove(_on_cancel)
     try: del bpy.types.Collection.og_bake
     except Exception: pass

@@ -140,6 +140,9 @@ def draw_db_status(layout):
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"
 
+    # Light curve presets saved from the Lighting panel (bake.py), JSON
+    bake_curve_presets: StringProperty(default="{}", options={"HIDDEN"})
+
     # ── Auto-detect fields ────────────────────────────────────────────────────
     og_root_path: StringProperty(
         name="OpenGOAL Root",
