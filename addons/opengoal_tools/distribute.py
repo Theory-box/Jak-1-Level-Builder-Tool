@@ -179,14 +179,17 @@ def apply(ctx, o):
 _PENDING = set()
 
 
-def on_depsgraph(scene, depsgraph):
-    if not any(u.id.__class__.__name__ in ("Object", "Curve") for u in depsgraph.updates):
+def on_depsgraph(scene, depsgraph, objs=None, curves=None):
+    """Only platforms whose own settings or path were edited are looked at."""
+    from .race_rings import changed, touched
+    if objs is None:
+        objs, curves = changed(depsgraph)
+    if not objs and not curves:
         return
     todo = [o.name for o in scene.objects
-            if o.type == "EMPTY" and o.name not in _PENDING and getattr(o, "og_place_on_path", False)
+            if o.type == "EMPTY" and o.name.startswith("ACTOR_") and not o.get("og_preview_mesh") and o.name not in _PENDING
+            and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
             and allowed(_etype(o) or "") and _differs(o)]
-    todo += [o.name for o in scene.objects
-             if o.name not in _PENDING and not getattr(o, "og_place_on_path", True) and _ghosts(o)]
     if not todo:
         return
     _PENDING.update(todo)

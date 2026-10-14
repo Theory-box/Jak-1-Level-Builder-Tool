@@ -73,6 +73,7 @@ class OG_OT_SetActorEnumField(Operator):
             return {"CANCELLED"}
         for obj in objs:
             obj[self.prop_key] = self.value
+            obj.update_tag()   # custom props don't notify the depsgraph by themselves
             _refresh_variant_preview(context, obj, self.prop_key)
         if len(objs) > 1:
             self.report({"INFO"}, f"Set on {len(objs)} actors")
@@ -151,6 +152,7 @@ class OG_OT_ToggleActorBoolField(Operator):
         new = not bool(obj.get(self.prop_key, False))   # all get the active one's new state
         for o in alt_targets(context, self.prop_key, self.all_selected):
             o[self.prop_key] = new
+            o.update_tag()
         return {"FINISHED"}
 
 
@@ -330,6 +332,7 @@ class OG_OT_PickTask(Operator):
             return {"CANCELLED"}
         for o in alt_targets(context, self.prop_key, self.all_selected):
             o[self.prop_key] = self.task
+            o.update_tag()
             if self.task == "custom" and (self.prop_key + "_custom") not in o:
                 o[self.prop_key + "_custom"] = obj.get(self.prop_key + "_custom", "")
         return {"FINISHED"}

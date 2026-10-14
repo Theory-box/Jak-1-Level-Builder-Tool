@@ -159,26 +159,61 @@ def _differs(o):
 _PENDING = set()
 
 
+def update_preview(ctx, o):
+    """Move the existing circles; rebuild only when the point count changed."""
+    have = _ring_objs(o)
+    want = wanted(o)
+    if len(have) != len(want):
+        build_preview(ctx, o)
+        return
+    for e, M in zip(have, want):
+        e.matrix_world = M
+
+
 def _rebuild_later(names):
     def _run():
         for n in names:
             o = bpy.data.objects.get(n)
             if o is not None:
-                build_preview(bpy.context, o)
+                update_preview(bpy.context, o)
         _PENDING.difference_update(names)
         return None
     bpy.app.timers.register(_run, first_interval=0.0)
 
 
-def on_depsgraph(scene, depsgraph):
-    """Called from the preview depsgraph handler: rebuild ring previews whose
-    path / actor changed."""
-    if not any(u.id.__class__.__name__ in ("Object", "Curve") for u in depsgraph.updates):
+def changed(depsgraph):
+    """(object names, curve data names) this update touched."""
+    objs, curves = set(), set()
+    for u in depsgraph.updates:
+        n = u.id.__class__.__name__
+        if n == "Object":
+            objs.add(u.id.original.name)
+        elif n == "Curve":
+            curves.add(u.id.original.name)
+    return objs, curves
+
+
+def touched(o, objs, curves) -> bool:
+    """The actor itself, one of its path empties / curves, or a curve's points."""
+    if o.name in objs:
+        return True
+    for s in getattr(o, "og_waypoint_sources", []):
+        p = s.obj
+        if p is not None and (p.name in objs or (p.type == "CURVE" and p.data.name in curves)):
+            return True
+    return False
+
+
+def on_depsgraph(scene, depsgraph, objs=None, curves=None):
+    """Called from the preview depsgraph handler: only race-rings whose actor
+    or path was edited are looked at (moving circles in place)."""
+    if objs is None:
+        objs, curves = changed(depsgraph)
+    if not objs and not curves:
         return
-    todo = []
-    for o in scene.objects:
-        if o.name.startswith("ACTOR_race-ring_") and o.name not in _PENDING and uses_rings(o) and _differs(o):
-            todo.append(o.name)
+    todo = [o.name for o in scene.objects
+            if o.name.startswith("ACTOR_race-ring_") and not o.get(_PREVIEW_PROP) and o.name not in _PENDING
+            and touched(o, objs, curves) and uses_rings(o) and _differs(o)]
     if todo:
         _PENDING.update(todo)
         _rebuild_later(todo)
