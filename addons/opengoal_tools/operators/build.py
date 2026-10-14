@@ -399,6 +399,7 @@ class OG_OT_BakeLighting(Operator):
         if _bake.busy():
             self.report({"WARNING"}, "A bake is still running"); return {"CANCELLED"}
         passes = _bake.start(targets, _active_level_col(scene), blocking=bpy.app.background)
+        modal = _bake.busy() and not bpy.app.background
 
         names = ", ".join(o.name for o in targets)
         msg = f"Baking {len(targets)} mesh(es) ({' + '.join(passes)}"
@@ -409,7 +410,36 @@ class OG_OT_BakeLighting(Operator):
             msg += f" (skipped {skipped} non-mesh / empty)"
         msg += f": {names}"
         self.report({"INFO"}, msg)
+        if modal:
+            # the next passes + post-processing run from this operator (modal,
+            # timer events): Blender always allows data changes here
+            wm = ctx.window_manager
+            self._timer = wm.event_timer_add(0.5, window=ctx.window)
+            wm.modal_handler_add(self)
+            return {"RUNNING_MODAL"}
         return {"FINISHED"}
+
+    def modal(self, ctx, event):
+        if event.type == "TIMER":
+            from .. import bake as _bake
+            try:
+                more = _bake.step()
+            except Exception as e:
+                import traceback
+                print("[OpenGOAL] bake:", traceback.format_exc())
+                _bake._JOB.clear()
+                _bake._status(f"Bake error: {e}")
+                more = False
+            if not more:
+                ctx.window_manager.event_timer_remove(self._timer)
+                st = getattr(ctx.window_manager, "og_bake_status", "")
+                self.report({"ERROR"} if st.startswith("Bake error") else {"INFO"}, st or "Bake finished")
+                return {"FINISHED"}
+        return {"PASS_THROUGH"}
+
+    def cancel(self, ctx):
+        if getattr(self, "_timer", None):
+            ctx.window_manager.event_timer_remove(self._timer)
 
 
 # ─── Classes to register ───────────────────────────────────────────────────

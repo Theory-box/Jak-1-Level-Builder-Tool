@@ -13,10 +13,10 @@
 #     flat-shaded faces; Auto sharp: also edges sharper than the angle) aren't
 #     mixed, so face-corner bakes keep their clean edges.
 #   - Curve presets: built-ins + your own (saved in the addon preferences).
-# Each pass is one Blender bake job (UI stays responsive); the next pass and
-# the post-processing start once that pass's object_bake_complete event came
-# and the job is gone (polled); the emit pass only renders the emissive
-# meshes. A status line under the Bake button shows each step / errors. Post-processing works
+# Each pass is one Blender bake job (UI stays responsive); the modal Bake
+# operator starts the next pass / the post-processing once that pass's
+# object_bake_complete event came, the job is gone and data writes are allowed
+# again; the emit pass only renders the emissive meshes. A status line under the Bake button shows each step / errors. Post-processing works
 # on whole attribute arrays (numpy). Values are the stored (sRGB) bytes, the
 # ones Blender shows / paints.
 # ---------------------------------------------------------------------------
@@ -420,35 +420,39 @@ def _run_pass():
         bpy.ops.object.bake("EXEC_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
         _next()
     else:
-        # later passes start from a timer: give the bake job a window
-        win = bpy.context.window or (bpy.context.window_manager.windows[0] if bpy.context.window_manager.windows else None)
-        act = bpy.context.view_layer.objects.active
-        if act is None or act.name not in job["objs"]:
-            bpy.context.view_layer.objects.active = objs[0]
-        with bpy.context.temp_override(window=win):
-            bpy.ops.object.bake("INVOKE_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
-        bpy.app.timers.register(_poll, first_interval=0.5)
+        # started from the modal Bake operator (operators/build.py), which
+        # calls step() on its timer events
+        bpy.ops.object.bake("INVOKE_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
 
 
-def _poll():
-    """Next step once this pass's bake has really finished: its
+def step() -> bool:
+    """Called by the modal Bake operator on its timer: start the next pass /
+    post-process once this pass's bake has really finished (its
     object_bake_complete event came, the job is gone and Blender accepts data
-    writes again (neither the job check nor the event alone is reliable on
-    every Blender version / scene)."""
+    writes again). False when the whole bake is over (or failed)."""
     import time
     if not _JOB:
-        return None                       # cancelled
-    running = bpy.app.is_job_running("OBJECT_BAKE") or _still_rendering(_JOB["objs"])
+        return False                      # finished / cancelled / error
+    job_running = bpy.app.is_job_running("OBJECT_BAKE")
+    refused = _still_rendering(_JOB["objs"])
+    running = job_running or refused
     if running:
         _JOB["seen"] = True
     if running or not _JOB.get("evt"):
-        if not running and not _JOB["seen"] and time.time() - _JOB.get("pass_t", 0) > 120:
+        waited = time.time() - _JOB.get("pass_t", 0)
+        if not running and not _JOB["seen"] and waited > 120:
             _status("Bake error: the bake job never started (see the system console)")
+            print("[OpenGOAL] bake: the bake job never started")
             _JOB.clear()
-            return None
-        return 0.5
+            return False
+        if waited > 60 and not _JOB.get("told"):
+            _JOB["told"] = True           # one diagnostic line for long waits
+            print(f"[OpenGOAL] bake: still waiting on the {_JOB['passes'][_JOB['i']]} pass after {waited:.0f}s "
+                  f"(job running {job_running}, finished event {bool(_JOB.get('evt'))}, writes refused {refused})")
+        return True
+    _JOB["told"] = False
     _safe(_next)
-    return None
+    return bool(_JOB)
 
 
 def _still_rendering(names) -> bool:
@@ -459,10 +463,8 @@ def _still_rendering(names) -> bool:
         cas = o.data.color_attributes
         try:
             cas.active_color_index = cas.active_color_index
-        except (AttributeError, RuntimeError, TypeError) as e:
-            if "not allowed" in str(e):
-                return True
-            raise
+        except Exception as e:            # anything else (linked data ...) isn't "still rendering"
+            return "not allowed" in str(e)
     return False
 
 
@@ -538,7 +540,7 @@ def start(objs, level_col, blocking=False):
 def busy() -> bool:
     """A bake queue is running. A leftover queue (an error, a reload) with no
     Blender bake job behind it is dropped."""
-    if _JOB and not _JOB.get("blocking") and not bpy.app.is_job_running("OBJECT_BAKE"):
+    if _JOB and not _JOB.get("blocking") and not bpy.app.is_job_running("OBJECT_BAKE") and _JOB.get("evt"):
         import time
         if time.time() - _JOB.get("t", 0) > 5.0:
             _JOB.clear()
