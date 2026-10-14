@@ -95,6 +95,8 @@ def export_level_glb(level_col, filepath):
     p.filepath = str(filepath)
     for k, v in _REQUIRED.items():
         setattr(p, k, v)
+    # time of day: _SUNRISE ... _GREENSUN go out as custom attributes
+    p.export_attributes = bool(getattr(level_col, "og_bake", None) and level_col.og_bake.tod_enabled)
     if _col_is_no_export(geo):
         raise RuntimeError(f"{geo.name} has skip_export on: nothing to export")
     # meshes with a bake export it, whatever colour layer was picked since

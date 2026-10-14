@@ -94,6 +94,7 @@ class OG_PT_Lighting(Panel):
         _lv = _active_level_col(ctx.scene)
         if _lv is not None:
             _bake.draw_options(layout, _lv)
+            _bake.draw_tod(layout, _lv)
 
 
 CLASSES = (

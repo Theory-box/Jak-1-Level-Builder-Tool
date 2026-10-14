@@ -13,6 +13,9 @@
 #     flat-shaded faces; Auto sharp: also edges sharper than the angle) aren't
 #     mixed, so face-corner bakes keep their clean edges.
 #   - Curve presets: built-ins + your own (saved in the addon preferences).
+#   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
+#     (the level builder's names), each with only its own light collection
+#     rendering and its own world; emit / curve / blur apply to every time.
 # Each pass is one Blender bake job (UI stays responsive); the modal Bake
 # operator starts the next pass / the post-processing once that pass's
 # object_bake_complete event came, the job is gone and data writes are allowed
@@ -133,6 +136,40 @@ def _preset_update(self, ctx):
         _apply_preset(ng, self.curve_preset)
 
 
+# Time of day: the 8 colour attributes the level builder reads (jak-project
+# d04ac9d; a missing one uses the closest time, none at all COLOR_0).
+# (key, attribute, label, default world colour, strength, sun elevation deg, sun colour, sun strength)
+TIMES = (
+    ("sunrise",   "_SUNRISE",   "Sunrise",   (1.0, 0.62, 0.42), 0.6,  8.0, (1.0, 0.62, 0.38), 2.5),
+    ("morning",   "_MORNING",   "Morning",   (0.72, 0.82, 1.0), 0.9, 30.0, (1.0, 0.92, 0.8), 3.5),
+    ("noon",      "_NOON",      "Noon",      (0.8, 0.9, 1.0),   1.0, 70.0, (1.0, 1.0, 0.95), 4.0),
+    ("afternoon", "_AFTERNOON", "Afternoon", (0.9, 0.86, 0.8),  0.9, 40.0, (1.0, 0.9, 0.75), 3.5),
+    ("sunset",    "_SUNSET",    "Sunset",    (1.0, 0.5, 0.32),  0.6,  8.0, (1.0, 0.5, 0.25), 2.5),
+    ("twilight",  "_TWILIGHT",  "Twilight",  (0.42, 0.42, 0.72), 0.35, 4.0, (0.7, 0.55, 0.9), 1.0),
+    ("evening",   "_EVENING",   "Evening",   (0.14, 0.18, 0.36), 0.2, 35.0, (0.55, 0.65, 1.0), 0.6),
+    ("greensun",  "_GREENSUN",  "Green Sun", (0.42, 0.9, 0.55), 0.5, 45.0, (0.55, 1.0, 0.6), 3.0),
+)
+TOD_ATTRS = tuple(t[1] for t in TIMES)
+# moods whose function picks a fixed time (update-mood-quick): time of day doesn't change in game
+FIXED_TIME_MOODS = {"jungleb", "maincave", "darkcave", "robocave", "lavatube", "citadel"}
+PARTLY_FIXED_MOODS = {"ogre", "finalboss"}
+
+
+class OGTodTime(bpy.types.PropertyGroup):
+    enabled: bpy.props.BoolProperty(name="Bake", default=True, description="Bake this time of day")
+    lights: bpy.props.PointerProperty(type=bpy.types.Collection, name="Lights",
+                                      description="Lights only used for this time (other times' collections are "
+                                                  "off while it bakes; lights outside them light every time)")
+    world: bpy.props.PointerProperty(type=bpy.types.World, name="World",
+                                     description="World (environment) used while this time bakes")
+    show: bpy.props.BoolProperty(name="Show", default=True)
+
+
+def tod_times(settings):
+    """[(key, attr, label, OGTodTime)] for the 8 times."""
+    return [(k, a, l, getattr(settings, "tod_" + k)) for k, a, l, *_ in TIMES]
+
+
 class OGBakeSettings(bpy.types.PropertyGroup):
     emit_strength: bpy.props.FloatProperty(
         name="Emit strength", default=1.0, min=0.0, soft_max=1.0,
@@ -158,6 +195,19 @@ class OGBakeSettings(bpy.types.PropertyGroup):
                                             description="Also treat edges sharper than the angle as sharp")
     blur_angle: bpy.props.FloatProperty(name="Angle", default=math.radians(30.0), min=0.0, max=math.pi,
                                         subtype="ANGLE")
+    tod_enabled: bpy.props.BoolProperty(
+        name="Time of day", default=False,
+        description="Bake one colour layer per time of day (_SUNRISE ... _GREENSUN), each with its own lights / world. "
+                    "Off: one BakedLight layer, as before")
+    tod_sunrise: bpy.props.PointerProperty(type=OGTodTime)
+    tod_morning: bpy.props.PointerProperty(type=OGTodTime)
+    tod_noon: bpy.props.PointerProperty(type=OGTodTime)
+    tod_afternoon: bpy.props.PointerProperty(type=OGTodTime)
+    tod_sunset: bpy.props.PointerProperty(type=OGTodTime)
+    tod_twilight: bpy.props.PointerProperty(type=OGTodTime)
+    tod_evening: bpy.props.PointerProperty(type=OGTodTime)
+    tod_greensun: bpy.props.PointerProperty(type=OGTodTime)
+
 
 
 # ── post-processing (numpy) ─────────────────────────────────────────────────
@@ -282,38 +332,45 @@ def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None):
     return vals[gid] if domain != "POINT" else vals
 
 
-def post_process(obj, settings, mapping, emitted):
-    """Emit combine, curve, blur on the object's BakedLight layer."""
+def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None):
+    """Emit combine, curve, blur on each baked layer (BakedLight, or the time
+    of day layers)."""
     mesh = obj.data
-    attr = mesh.color_attributes.get(BAKE_ATTR)
-    if attr is None:
-        return
-    cols, key = _read(attr)
+    em = None
     if emitted and _EMIT_ATTR in mesh.color_attributes:
         em, _ = _read(mesh.color_attributes[_EMIT_ATTR])
-        cols = screen(cols, em, settings.emit_strength)
-    if settings.use_curve and mapping is not None and settings.curve_factor > 0:
-        xs, luts = curve_luts(mapping)
-        cols = apply_curve(cols, xs, luts, settings.curve_factor)
-    if settings.use_blur and settings.blur_strength > 0:
-        cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
-                    settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None)
-    _write(attr, np.clip(cols, 0.0, 1.0), key)
+    for name in attrs:
+        attr = mesh.color_attributes.get(name)
+        if attr is None:
+            continue
+        cols, key = _read(attr)
+        if em is not None:
+            cols = screen(cols, em, settings.emit_strength)
+        if settings.use_curve and mapping is not None and settings.curve_factor > 0:
+            xs, lu = luts if luts is not None else curve_luts(mapping)
+            cols = apply_curve(cols, xs, lu, settings.curve_factor)
+        if settings.use_blur and settings.blur_strength > 0:
+            cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
+                        settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None)
+        _write(attr, np.clip(cols, 0.0, 1.0), key)
     if _EMIT_ATTR in mesh.color_attributes:
         mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
-    use_baked(mesh)
+    use_baked(mesh, "_NOON" if "_NOON" in attrs else attrs[0])   # shown in the viewport / COLOR_0
     mesh.update()
 
 
-def use_baked(mesh):
-    """BakedLight becomes the active and render colour layer: what the viewport
-    shows and the GLB exports (with other colour layers on the mesh)."""
+def use_baked(mesh, name=None):
+    """The baked layer becomes the active and render colour layer: what the
+    viewport shows and the GLB exports as COLOR_0. Default: BakedLight, else
+    a time of day layer (noon first)."""
     cas = mesh.color_attributes
-    a = cas.get(BAKE_ATTR)
+    if name is None:
+        name = next((n for n in (BAKE_ATTR, "_NOON") + TOD_ATTRS if n in cas), None)
+    a = cas.get(name) if name else None
     if a is None:
         return False
     cas.active_color = a
-    idx = next(i for i, x in enumerate(cas) if x.name == BAKE_ATTR)
+    idx = next(i for i, x in enumerate(cas) if x.name == name)
     cas.active_color_index = idx
     cas.render_color_index = idx
     return True
@@ -402,9 +459,12 @@ def _select_only(objs):
 def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
-    if kind == "light":
+    if kind.startswith("light"):
         objs = _objs(job["objs"])
-        _prepare(objs, BAKE_ATTR, job["domain"])
+        attr = kind[6:] or BAKE_ATTR       # "light" or "light:_SUNRISE"
+        if attr != BAKE_ATTR:
+            _tod_setup(job, attr)
+        _prepare(objs, attr, job["domain"])
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
         objs = _objs(job["emit_objs"])
@@ -415,7 +475,8 @@ def _run_pass():
     job["evt"] = False                     # set by object_bake_complete for this pass
     job["pass_t"] = time.time()
     job["seen"] = False
-    _status(f"Baking: {kind} pass ({len(objs)} mesh(es)) — {job['i'] + 1} of {len(job['passes'])}")
+    label = {a: l for _k, a, l, *_r in TIMES}.get(kind[6:], kind) if kind.startswith("light:") else kind
+    _status(f"Baking: {label} pass ({len(objs)} mesh(es)) — {job['i'] + 1} of {len(job['passes'])}")
     if job["blocking"]:
         bpy.ops.object.bake("EXEC_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
         _next()
@@ -443,6 +504,7 @@ def step() -> bool:
         if not running and not _JOB["seen"] and waited > 120:
             _status("Bake error: the bake job never started (see the system console)")
             print("[OpenGOAL] bake: the bake job never started")
+            _restore(_JOB)
             _JOB.clear()
             return False
         if waited > 60 and not _JOB.get("told"):
@@ -474,9 +536,43 @@ def _on_complete(_scene, *args):
         _JOB["evt"] = True
 
 
+def _level_settings(job):
+    col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
+    return col, (col.og_bake if col is not None else None)
+
+
+def _tod_setup(job, attr):
+    """Only this time's light collection renders; its world is the scene's."""
+    col, s = _level_settings(job)
+    if s is None:
+        return
+    sc = bpy.context.scene
+    if "restore" not in job:                 # put back after the bake
+        job["restore"] = {"world": sc.world.name if sc.world else "",
+                          "hide": {t.lights.name: t.lights.hide_render for _k, _a, _l, t in tod_times(s) if t.lights}}
+    for _k, a, _l, t in tod_times(s):
+        if t.lights:
+            t.lights.hide_render = (a != attr)
+    cur = next(t for _k, a, _l, t in tod_times(s) if a == attr)
+    if cur.world:
+        sc.world = cur.world
+
+
+def _restore(job):
+    r = job.get("restore")
+    if not r:
+        return
+    for n, h in r["hide"].items():
+        c = bpy.data.collections.get(n)
+        if c is not None:
+            c.hide_render = h
+    bpy.context.scene.world = bpy.data.worlds.get(r["world"]) if r["world"] else None
+
+
 def _finish():
     job = dict(_JOB)
     _JOB.clear()
+    _restore(job)
     _status("Baking: post-processing…")
     _select_only(_objs(job["objs"]))       # the selection the bake started with
     col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
@@ -484,11 +580,15 @@ def _finish():
     if settings is None:
         return
     mapping = curve_mapping(col) if settings.use_curve else None
+    luts = curve_luts(mapping) if mapping is not None else None
+    attrs = tuple(p[6:] or BAKE_ATTR for p in job["passes"] if p.startswith("light"))
     for n in job["objs"]:
         o = bpy.data.objects.get(n)
         if o is not None:
-            post_process(o, settings, mapping, o.name in job["emit_objs"])
-    steps = [p for p in job["passes"]] + [x for x, on in (("curve", settings.use_curve), ("blur", settings.use_blur)) if on]
+            post_process(o, settings, mapping, o.name in job["emit_objs"], attrs, luts)
+    labels = {a: l for _k, a, l, *_r in TIMES}
+    steps = [labels.get(p[6:], p) if p.startswith("light:") else p for p in job["passes"]] + \
+            [x for x, on in (("curve", settings.use_curve), ("blur", settings.use_blur)) if on]
     _status(f"Baked {len(job['objs'])} mesh(es): {' + '.join(steps)}")
 
 
@@ -497,6 +597,7 @@ def _safe(fn):
     try:
         fn()
     except Exception as e:
+        _restore(_JOB)
         _JOB.clear()
         _status(f"Bake error: {e}")
         import traceback
@@ -518,6 +619,7 @@ def _next():
 def _on_cancel(_scene, *args):
     if _JOB:
         _status("Bake cancelled")
+        _restore(_JOB)
     _JOB.clear()
 
 
@@ -525,6 +627,11 @@ def start(objs, level_col, blocking=False):
     """Bake the passes for objs (names kept), then post-process."""
     s = level_col.og_bake if level_col is not None else None
     passes = ["light"]
+    if s is not None and s.tod_enabled:
+        passes = [f"light:{a}" for _k, a, _l, t in tod_times(s) if t.enabled]
+        if not passes:
+            _status("Bake error: time of day is on but every time is off")
+            return []
     emit_objs = [o.name for o in objs if has_emission(o)] if s is not None and s.emit_strength > 0 else []
     if emit_objs:
         passes.append("emit")
@@ -584,6 +691,150 @@ def draw_options(layout, level_col):
                 row.prop(s, "blur_auto_sharp")
                 sub = row.row(); sub.enabled = s.blur_auto_sharp
                 sub.prop(s, "blur_angle")
+
+
+def draw_tod(layout, level_col):
+    s = level_col.og_bake
+    box = layout.box()
+    box.prop(s, "tod_enabled", icon="TIME")
+    if not s.tod_enabled:
+        return
+    from .versions import draw_feature_note
+    draw_feature_note(box, "time_of_day")
+    mood = str(level_col.get("og_mood", "village1") or "village1")
+    if mood in FIXED_TIME_MOODS or mood in PARTLY_FIXED_MOODS:
+        r = box.row(); r.alert = True
+        r.label(text=(f"Mood '{mood}' uses a fixed time: time of day won't change in game" if mood in FIXED_TIME_MOODS
+                      else f"Mood '{mood}' switches to a fixed time in places"), icon="ERROR")
+    row = box.row(align=True)
+    row.operator("og.tod_default_worlds", icon="WORLD")
+    row.operator("og.tod_default_suns", icon="LIGHT_SUN")
+    for k, a, l, t in tod_times(s):
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.prop(t, "show", text="", emboss=False, icon="TRIA_DOWN" if (t.show and t.enabled) else "TRIA_RIGHT")
+        row.prop(t, "enabled", text=f"{l}  ({a})")
+        if not (t.show and t.enabled):
+            continue
+        r = col.row(align=True)
+        r.prop(t, "lights", text="Lights")
+        op = r.operator("og.tod_new_lights", text="", icon="ADD"); op.time = k
+        r = col.row(align=True)
+        r.prop(t, "world", text="World")
+        op = r.operator("og.tod_new_world", text="", icon="ADD"); op.time = k
+
+
+def _tod_level(ctx):
+    from .collections import _active_level_col
+    return _active_level_col(ctx.scene)
+
+
+def _time_row(key):
+    return next(t for t in TIMES if t[0] == key)
+
+
+def _new_lights(level_col, key):
+    from .collections import _ensure_sub_collection
+    label = _time_row(key)[2]
+    c = _ensure_sub_collection(level_col, "Time of Day", label)
+    c["skip_export"] = True                       # lights aren't level geometry
+    getattr(level_col.og_bake, "tod_" + key).lights = c
+    return c
+
+
+def _new_world(level_col, key):
+    _k, _a, label, colour, strength, *_r = _time_row(key)
+    w = bpy.data.worlds.new(f"{level_col.name} {label}")
+    w.use_nodes = True
+    bg = w.node_tree.nodes.get("Background")
+    if bg is not None:
+        bg.inputs["Color"].default_value = (*colour, 1.0)
+        bg.inputs["Strength"].default_value = strength
+    w.color = colour
+    getattr(level_col.og_bake, "tod_" + key).world = w
+    return w
+
+
+def _new_sun(level_col, key):
+    import math as _m
+    _k, _a, label, _c, _s, elev, scol, sstr = _time_row(key)
+    t = getattr(level_col.og_bake, "tod_" + key)
+    col = t.lights or _new_lights(level_col, key)
+    d = bpy.data.lights.new(f"{level_col.name} {label} Sun", "SUN")
+    d.color = scol; d.energy = sstr; d.angle = _m.radians(2.0)
+    o = bpy.data.objects.new(d.name, d)
+    # elevation above the horizon; the sun turns through the day (east -> west)
+    az = {"sunrise": 90, "morning": 120, "noon": 180, "afternoon": 240, "sunset": 270,
+          "twilight": 280, "evening": 200, "greensun": 150}[key]
+    o.rotation_euler = (_m.radians(90 - elev), 0.0, _m.radians(az))
+    o.location = (0.0, 0.0, 20.0)
+    col.objects.link(o)
+    return o
+
+
+class OG_OT_TodNewLights(bpy.types.Operator):
+    """New light collection for this time of day (in <level>.Time of Day)"""
+    bl_idname = "og.tod_new_lights"
+    bl_label = "New Light Collection"
+    bl_options = {"REGISTER", "UNDO"}
+    time: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        if lv is None:
+            return {"CANCELLED"}
+        _new_lights(lv, self.time)
+        return {"FINISHED"}
+
+
+class OG_OT_TodNewWorld(bpy.types.Operator):
+    """New world for this time of day (outdoor-looking default colour)"""
+    bl_idname = "og.tod_new_world"
+    bl_label = "New World"
+    bl_options = {"REGISTER", "UNDO"}
+    time: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        if lv is None:
+            return {"CANCELLED"}
+        _new_world(lv, self.time)
+        return {"FINISHED"}
+
+
+class OG_OT_TodDefaultWorlds(bpy.types.Operator):
+    """Give every time of day without a world a default outdoor world"""
+    bl_idname = "og.tod_default_worlds"
+    bl_label = "Default Worlds"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        if lv is None:
+            return {"CANCELLED"}
+        n = 0
+        for k, *_r in TIMES:
+            if getattr(lv.og_bake, "tod_" + k).world is None:
+                _new_world(lv, k); n += 1
+        self.report({"INFO"}, f"Created {n} world(s)")
+        return {"FINISHED"}
+
+
+class OG_OT_TodDefaultSuns(bpy.types.Operator):
+    """Add a default sun to every time of day's light collection (angle and
+    colour per time, for an outdoor look like Sandover's)"""
+    bl_idname = "og.tod_default_suns"
+    bl_label = "Default Suns"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        if lv is None:
+            return {"CANCELLED"}
+        for k, *_r in TIMES:
+            _new_sun(lv, k)
+        self.report({"INFO"}, "Added 8 suns (one per time of day)")
+        return {"FINISHED"}
 
 
 class OG_OT_BakeCurveInit(bpy.types.Operator):
@@ -662,7 +913,8 @@ class OG_OT_BakeCurveRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGBakeSettings, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
+CLASSES = (OGTodTime, OGBakeSettings, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
+           OG_OT_TodDefaultSuns, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 
 def register_props():
