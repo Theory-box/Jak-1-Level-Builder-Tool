@@ -62,6 +62,10 @@ class OG_PT_Lighting(Panel):
         row.enabled = len(targets) > 0
         row.scale_y = 1.6
         row.operator("og.bake_lighting", text=f"Bake {len(targets)} mesh(es) → Vertex Color", icon="RENDER_STILL")
+        st = getattr(ctx.window_manager, "og_bake_status", "")
+        if st:
+            r = layout.row(); r.alert = st.startswith("Bake error")
+            r.label(text=st, icon="ERROR" if r.alert else "INFO")
         if targets:
             box = layout.box()
             header = f"{len(targets)} mesh(es) selected"

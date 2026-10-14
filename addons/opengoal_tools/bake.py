@@ -14,8 +14,9 @@
 #     mixed, so face-corner bakes keep their clean edges.
 #   - Curve presets: built-ins + your own (saved in the addon preferences).
 # Each pass is one Blender bake job (UI stays responsive); the next pass and
-# the post-processing start once the job is gone (polled); the emit pass only
-# renders the emissive meshes. Post-processing works
+# the post-processing start once that pass's object_bake_complete event came
+# and the job is gone (polled); the emit pass only renders the emissive
+# meshes. A status line under the Bake button shows each step / errors. Post-processing works
 # on whole attribute arrays (numpy). Values are the stored (sRGB) bytes, the
 # ones Blender shows / paints.
 # ---------------------------------------------------------------------------
@@ -363,6 +364,17 @@ def has_emission(obj) -> bool:
 _JOB: dict = {}
 
 
+def _status(msg):
+    try:
+        bpy.context.window_manager.og_bake_status = msg
+        for w in bpy.context.window_manager.windows:
+            for a in w.screen.areas:
+                if a.type == "VIEW_3D":
+                    a.tag_redraw()
+    except Exception:
+        pass
+
+
 def _prepare(objs, name, domain):
     for o in objs:
         cas = o.data.color_attributes
@@ -399,6 +411,11 @@ def _run_pass():
         _prepare(objs, _EMIT_ATTR, job["domain"])
         args = dict(type="EMIT")
     _select_only(objs)
+    import time
+    job["evt"] = False                     # set by object_bake_complete for this pass
+    job["pass_t"] = time.time()
+    job["seen"] = False
+    _status(f"Baking: {kind} pass ({len(objs)} mesh(es)) — {job['i'] + 1} of {len(job['passes'])}")
     if job["blocking"]:
         bpy.ops.object.bake("EXEC_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
         _next()
@@ -414,19 +431,35 @@ def _run_pass():
 
 
 def _poll():
-    """Next step once Blender's bake job has really finished (the complete
-    event can come before every mesh is done)."""
+    """Next step once this pass's bake has really finished: its
+    object_bake_complete event came and the job is gone. (Just polling the job
+    can see "not running" before a big bake has even started.)"""
+    import time
     if not _JOB:
         return None                       # cancelled
-    if bpy.app.is_job_running("OBJECT_BAKE"):
+    running = bpy.app.is_job_running("OBJECT_BAKE")
+    if running:
+        _JOB["seen"] = True
+    if running or not _JOB.get("evt"):
+        if not running and not _JOB["seen"] and time.time() - _JOB.get("pass_t", 0) > 120:
+            _status("Bake error: the bake job never started (see the system console)")
+            _JOB.clear()
+            return None
         return 0.5
     _safe(_next)
     return None
 
 
+@bpy.app.handlers.persistent
+def _on_complete(_scene, *args):
+    if _JOB:
+        _JOB["evt"] = True
+
+
 def _finish():
     job = dict(_JOB)
     _JOB.clear()
+    _status("Baking: post-processing…")
     _select_only(_objs(job["objs"]))       # the selection the bake started with
     col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
     settings = col.og_bake if col is not None else None
@@ -437,6 +470,8 @@ def _finish():
         o = bpy.data.objects.get(n)
         if o is not None:
             post_process(o, settings, mapping, o.name in job["emit_objs"])
+    steps = [p for p in job["passes"]] + [x for x, on in (("curve", settings.use_curve), ("blur", settings.use_blur)) if on]
+    _status(f"Baked {len(job['objs'])} mesh(es): {' + '.join(steps)}")
 
 
 def _safe(fn):
@@ -445,7 +480,9 @@ def _safe(fn):
         fn()
     except Exception as e:
         _JOB.clear()
-        print(f"[OpenGOAL] bake: {e}")
+        _status(f"Bake error: {e}")
+        import traceback
+        print("[OpenGOAL] bake:", traceback.format_exc())
         raise
 
 
@@ -461,6 +498,8 @@ def _next():
 
 @bpy.app.handlers.persistent
 def _on_cancel(_scene, *args):
+    if _JOB:
+        _status("Bake cancelled")
     _JOB.clear()
 
 
@@ -614,12 +653,19 @@ def register_props():
     for hl in (bpy.app.handlers.object_bake_cancel, bpy.app.handlers.object_bake_complete):
         for f in [f for f in hl if getattr(f, "__module__", "").endswith(".bake")]:
             hl.remove(f)
+    bpy.types.WindowManager.og_bake_status = bpy.props.StringProperty(default="")
     if _on_cancel not in bpy.app.handlers.object_bake_cancel:
         bpy.app.handlers.object_bake_cancel.append(_on_cancel)
+    if _on_complete not in bpy.app.handlers.object_bake_complete:
+        bpy.app.handlers.object_bake_complete.append(_on_complete)
 
 
 def unregister_props():
     if _on_cancel in bpy.app.handlers.object_bake_cancel:
         bpy.app.handlers.object_bake_cancel.remove(_on_cancel)
+    if _on_complete in bpy.app.handlers.object_bake_complete:
+        bpy.app.handlers.object_bake_complete.remove(_on_complete)
+    try: del bpy.types.WindowManager.og_bake_status
+    except Exception: pass
     try: del bpy.types.Collection.og_bake
     except Exception: pass
