@@ -7360,7 +7360,8 @@
                 "dark-plant"
               ],
               "required": false,
-              "allow-multiple": true
+              "allow-multiple": true,
+              "connect": {"max": 4}
             }
           ]
         }

@@ -449,6 +449,13 @@ class OGProperties(PropertyGroup):
         description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
         items=_launch_checkpoint_items,
     )
+    # Entity Links > Connect all (slot option "connect", connect_neighbours.py)
+    og_connect_max_dist: FloatProperty(
+        name="Max distance", default=15.0, min=0.0, subtype="DISTANCE",
+        description="Only neighbours closer than this are linked")
+    og_connect_max: IntProperty(
+        name="Max links", default=4, min=1, max=16,
+        description="Links per actor (closest first)")
     og_modbase_spawn: BoolProperty(
         name="Boot into spawn (mod-base)",
         description="mod-base only: builds write the spawn into engine/mods/mod-settings.gc "

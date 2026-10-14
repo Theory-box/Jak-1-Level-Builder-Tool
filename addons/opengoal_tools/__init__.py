@@ -114,6 +114,7 @@ from .operators.misc import _draw_mat
 from .panels import ALL_CLASSES as _PANELS_CLASSES
 from .versions import CLASSES as _VERSION_CLASSES
 from . import plat_grid as _plat_grid
+from . import connect_neighbours as _connect_neighbours
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -152,6 +153,7 @@ classes = (
     *_PANELS_CLASSES,
     *_VERSION_CLASSES,
     *_plat_grid.CLASSES,
+    *_connect_neighbours.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)

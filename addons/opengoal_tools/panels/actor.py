@@ -482,6 +482,12 @@ class OG_PT_ActorLinks(Panel):
         sel   = ctx.active_object
         etype = sel.name.split("_", 2)[1]
         _draw_actor_links(self.layout, sel, ctx.scene, etype)
+        # slots with the "connect" option: link all selected ones at once
+        from .. import connect_neighbours as _cn
+        for (lkey, sidx, label, _acc, _req) in _actor_link_slots(etype):
+            opt = _db.link_slot(etype, lkey, sidx).get("connect")
+            if opt:
+                _cn.draw(self.layout, ctx, sel, etype, lkey, sidx, label, opt)
 
 
 
