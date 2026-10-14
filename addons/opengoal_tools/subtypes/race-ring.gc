@@ -5,7 +5,7 @@
 ;;     written into them before each spawn, like vanilla does for the facing.
 ;;   - 'cell-anim on the last ring: 0 purple-ring cell animation
 ;;     (race-ring-anim), 1 blue-ring one (race-ring-second-anim), 2 none: the
-;;     cell appears at the last ring and flies to the ring's movie-pos. The
+;;     cell appears at the last ring and flies 2 m above the ring's movie-pos. The
 ;;     vanilla animations end at a fixed rolling spot (far, below the ring),
 ;;     so with a movie-pos the cell flies there after them too.
 ;;   - the rolling-only hint dialogue is left out (the fail stinger stays).
@@ -287,9 +287,12 @@
                                    self)))
 
 (defun __TYPE__-cell-pos ((this __TYPE__) (out vector))
-  "Where the cell ends up without an animation: the ring's movie-pos (else the ring)."
+  "Where the cell ends up: 2 m above the ring's movie-pos (the ground spot of the
+   pickup animation), else at the ring."
   (let ((mp (res-lump-struct (-> this entity) 'movie-pos vector)))
-    (if mp (set! (-> out quad) (-> mp quad)) (set! (-> out quad) (-> this root trans quad))))
+    (cond
+      (mp (set! (-> out quad) (-> mp quad)) (+! (-> out y) 8192.0))
+      (else (set! (-> out quad) (-> this root trans quad)))))
   (set! (-> out w) 1.0)
   out)
 

@@ -512,6 +512,8 @@ def _on_depsgraph_update(scene, depsgraph):
     _redirect_preview_selection()
     from . import race_rings
     race_rings.on_depsgraph(scene, depsgraph)
+    from . import distribute
+    distribute.on_depsgraph(scene, depsgraph)
     orphans = [
         o.name for o in scene.objects
         if _is_any_preview(o) and o.parent is None

@@ -4,7 +4,8 @@
 # plant's neighbour list): with several of these actors selected, the Entity
 # Links panel offers "Connect all": each selected actor's slot gets its
 # closest selected neighbours, within Max distance, up to Max connections
-# (never more than the slot's "max", what the game reads).
+# (never more than the slot's "max", what the game reads). The active
+# actor's game task is copied to all of them.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -46,13 +47,17 @@ def draw(layout, ctx, obj, etype, lkey, sidx, label, opt):
     if ctx.scene.og_props.og_connect_max > cap:
         w = box.row(); w.alert = True
         w.label(text=f"The game reads {cap} at most", icon="ERROR")
+    if _db.has_panel(etype, "game-task"):
+        n = box.row(); n.enabled = False
+        n.label(text=f"Also gives all of them {obj.name}'s game task", icon="INFO")
     op = box.operator("og.connect_neighbours", text="Connect all", icon="AUTOMERGE_ON")
     op.etype = etype; op.lump_key = lkey; op.slot_index = sidx
 
 
 class OG_OT_ConnectNeighbours(bpy.types.Operator):
     """Link each selected actor to its closest selected neighbours (within Max
-    distance, up to Max links). Replaces their current links in this slot"""
+    distance, up to Max links), replacing their current links in this slot,
+    and give them all the active actor's game task"""
     bl_idname  = "og.connect_neighbours"
     bl_label   = "Connect All"
     bl_options = {"REGISTER", "UNDO"}
@@ -73,12 +78,23 @@ class OG_OT_ConnectNeighbours(bpy.types.Operator):
                 _actor_remove_link(o, self.lump_key, e.slot_index)
             for n in links[o.name]:
                 _actor_add_multi_link(o, self.lump_key, self.slot_index, n)
+        # the active actor's game task goes to all of them
+        task_note = ""
+        src = ctx.active_object
+        if _db.has_panel(self.etype, "game-task") and src in objs:
+            for o in objs:
+                for k in ("og_game_task", "og_game_task_custom"):
+                    if k in src:
+                        o[k] = src[k]
+                    elif k in o:
+                        del o[k]
+            task_note = f", game task {src.get('og_game_task', 'none')} on all"
         n = sum(len(v) for v in links.values())
         if lonely:
-            self.report({"WARNING"}, f"Made {n} links. No neighbour within {props.og_connect_max_dist:g} m: "
+            self.report({"WARNING"}, f"Made {n} links{task_note}. No neighbour within {props.og_connect_max_dist:g} m: "
                                      + ", ".join(lonely[:6]) + (" ..." if len(lonely) > 6 else ""))
         else:
-            self.report({"INFO"}, f"Made {n} links between {len(objs)} actors")
+            self.report({"INFO"}, f"Made {n} links between {len(objs)} actors{task_note}")
         return {"FINISHED"}
 
 

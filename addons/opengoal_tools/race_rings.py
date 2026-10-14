@@ -3,7 +3,7 @@
 # A race-ring with a path exports one ring per path point (DB path panel
 # option "rings"): linked next / prev, alt-actor = the first ring, the actor's
 # settings and task on every ring, timeout = the actor's time x the point's
-# Weight, rotoffset = the point's Tilt (+ the actor's extra yaw), movie-pos on
+# Radius, rotoffset = the point's Tilt (+ the actor's extra yaw), movie-pos on
 # the last ring only.
 #
 # Ring facing (rolling-race-ring.gc init-from-entity!): yaw rot-y from the
@@ -45,13 +45,10 @@ def points(o) -> list:
         elif s.type == "CURVE":
             M = s.matrix_world
             for sp in s.data.splines:
-                bez = sp.type == "BEZIER"
-                for p in (sp.bezier_points if bez else sp.points):
+                for p in (sp.bezier_points if sp.type == "BEZIER" else sp.points):
                     co = mathutils.Vector(p.co[:3])
-                    # poly / NURBS: the point's W (any value); Bezier points
-                    # only have the soft-body Weight
-                    w = float(p.weight_softbody if bez else p.weight)
-                    out.append({"co": M @ co, "tilt": float(p.tilt), "weight": w if w > 0 else 1.0})   # 0: unset
+                    # the point's Radius (every curve type, default 1) multiplies the time
+                    out.append({"co": M @ co, "tilt": float(p.tilt), "weight": max(0.0, float(p.radius))})
     return out
 
 
