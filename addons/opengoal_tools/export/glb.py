@@ -20,7 +20,11 @@ GLTF_HANDLER = "IO_FH_gltf2"
 
 # set when the exporter is created; the user can change these afterwards
 _DEFAULTS = {
-    "export_vertex_color": "ACTIVE", "export_normals": True,
+    # Active (the render colour layer) keeps vertex colour + alpha on every
+    # object in every Blender version; "all vertex colours" off avoids a 5.2.2
+    # bug (meshes whose render / active layers differ exported white).
+    "export_vertex_color": "ACTIVE", "export_all_vertex_colors": False,
+    "export_active_vertex_color_when_no_material": True, "export_normals": True,
     "export_materials": "EXPORT", "export_texcoords": True,
     "export_skins": False, "export_animations": False,
     "export_cameras": False, "export_lights": False,
@@ -87,6 +91,50 @@ def stray_meshes(level_col):
     return out
 
 
+def exported_meshes(level_col):
+    """The meshes the level GLB is made of: Geometry and its folders, without
+    skip_export folders, without meshes whose rendering is off."""
+    geo = geometry_collection(level_col, create=False)
+    if geo is None:
+        return []
+    out, seen = [], set()
+
+    def walk(c):
+        if _col_is_no_export(c) or c.hide_render:
+            return
+        for o in c.objects:
+            if o.type == "MESH" and not o.hide_render and o.name not in seen:
+                seen.add(o.name)
+                out.append(o)
+        for ch in c.children:
+            walk(ch)
+    walk(geo)
+    return out
+
+
+# collision / visibility properties the level builder reads from glTF extras
+_COLLISION_PROPS = ("set_invisible", "set_collision", "ignore", "noedge", "noentity", "nolineofsight",
+                    "nocamera", "collide_material", "collide_event", "collide_mode")
+
+
+def _plain_collision_props(ids):
+    """Blender 5.0 only: its glTF exporter leaves out properties registered by
+    addons, so collision was lost. Copy them to plain custom properties (what
+    the exporter writes) for the export; the caller removes them after."""
+    added = []
+    for idb in ids:
+        rna = idb.bl_rna.properties
+        for k in _COLLISION_PROPS:
+            if k not in rna or k in idb.keys():
+                continue
+            v = getattr(idb, k)
+            if rna[k].type == "ENUM":
+                v = rna[k].enum_items[v].value if v in rna[k].enum_items else 0
+            idb[k] = int(v)
+            added.append((idb, k))
+    return added
+
+
 def export_level_glb(level_col, filepath):
     """Run the level's Geometry exporter to filepath."""
     geo = geometry_collection(level_col)
@@ -95,8 +143,15 @@ def export_level_glb(level_col, filepath):
     p.filepath = str(filepath)
     for k, v in _REQUIRED.items():
         setattr(p, k, v)
+    # time of day: _SUNRISE ... _GREENSUN go out as custom attributes
+    p.export_attributes = bool(getattr(level_col, "og_bake", None) and level_col.og_bake.tod_enabled)
     if _col_is_no_export(geo):
         raise RuntimeError(f"{geo.name} has skip_export on: nothing to export")
+    # meshes with a bake export it, whatever colour layer was picked since
+    from ..bake import use_baked
+    for o in geo.all_objects:
+        if o.type == "MESH":
+            use_baked(o.data)
     # skip_export sub-collections are unlinked while the exporter runs
     unlinked = []
     def _walk(c):
@@ -106,6 +161,13 @@ def export_level_glb(level_col, filepath):
             else:
                 _walk(ch)
     _walk(geo)
+    plain = []
+    if bpy.app.version[:2] == (5, 0):
+        ids = set()
+        for o in exported_meshes(level_col):
+            ids.add(o)
+            ids.update(s.material for s in o.material_slots if s.material)
+        plain = _plain_collision_props(ids)
     try:
         idx = list(geo.exporters).index(ex)
         with bpy.context.temp_override(collection=geo):
@@ -115,3 +177,6 @@ def export_level_glb(level_col, filepath):
     finally:
         for parent, ch in unlinked:
             parent.children.link(ch)
+        for idb, k in plain:              # Blender 5.0 copies, only for the export
+            if k in idb.keys():
+                del idb[k]

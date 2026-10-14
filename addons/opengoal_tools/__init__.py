@@ -116,6 +116,7 @@ from .versions import CLASSES as _VERSION_CLASSES
 from . import plat_grid as _plat_grid
 from . import connect_neighbours as _connect_neighbours
 from . import distribute as _distribute
+from . import bake as _bake
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -155,6 +156,7 @@ classes = (
     *_VERSION_CLASSES,
     *_plat_grid.CLASSES,
     *_connect_neighbours.CLASSES,
+    *_bake.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -202,6 +204,7 @@ def register():
             pass
         bpy.utils.register_class(cls)
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
+    _bake.register_props()   # needs OGBakeSettings registered
 
     # Audit results — registered after OGAuditResult is in classes tuple.
     bpy.types.Scene.og_audit_results       = bpy.props.CollectionProperty(type=OGAuditResult)
@@ -462,6 +465,7 @@ def unregister():
     unregister_texturing()
     _plat_grid.unregister_props()
     _distribute.unregister_props()
+    _bake.unregister_props()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr

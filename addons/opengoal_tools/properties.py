@@ -140,6 +140,7 @@ def draw_db_status(layout):
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"
 
+
     # ── Auto-detect fields ────────────────────────────────────────────────────
     og_root_path: StringProperty(
         name="OpenGOAL Root",
@@ -571,6 +572,8 @@ class OGProperties(PropertyGroup):
     cat_favorites:       BoolProperty(default=False, name="Favorites",
                                       description="Show only favorited items in the picker list")
 
+    show_bake_selection: BoolProperty(name="Selected meshes", default=False,
+                                      description="List the meshes the bake will use (light icon: gets the emit pass)")
     show_other_links: BoolProperty(name="Other links", default=False,
                                    description="Generic links every actor has (alt-actor, prev / next, nav-mesh-actor): "
                                                "only read by actors that use them, or by another actor that looks them up")

@@ -712,22 +712,6 @@ def _draw_selected_mesh_visibility(layout, obj):
 
 
 
-def _draw_selected_mesh_lightbake(layout, ctx):
-    """Draw light bake controls for selected mesh(es)."""
-    props = ctx.scene.og_props
-    targets = [o for o in ctx.selected_objects if o.type == "MESH"]
-    if not targets:
-        return
-
-    box = layout.box()
-    box.label(text="Light Baking", icon="LIGHT")
-    box.prop(props, "lightbake_samples")
-    row = box.row()
-    row.scale_y = 1.4
-    row.operator("og.bake_lighting", text=f"Bake {len(targets)} mesh(es)", icon="RENDER_STILL")
-
-
-
 def _draw_selected_mesh_navtag(layout, obj):
     """Draw navmesh mark/unmark controls for mesh objects."""
     is_tagged = obj.get("og_navmesh", False)
@@ -839,25 +823,6 @@ class OG_PT_SelectedCollision(Panel):
         _draw_selected_mesh_collision(self.layout, ctx.active_object)
         self.layout.separator(factor=0.2)
         _draw_selected_mesh_visibility(self.layout, ctx.active_object)
-
-
-
-class OG_PT_SelectedLightBaking(Panel):
-    bl_label       = "Light Baking"
-    bl_idname      = "OG_PT_selected_lightbaking"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        return sel is not None and sel.type == "MESH"
-
-    def draw(self, ctx):
-        _draw_selected_mesh_lightbake(self.layout, ctx)
 
 
 
@@ -1282,7 +1247,6 @@ class OG_PT_MeshPreviewSettings(Panel):
 CLASSES = (
     OG_PT_SelectedObject,
     OG_PT_SelectedCollision,
-    OG_PT_SelectedLightBaking,
     OG_PT_SelectedNavMeshTag,
     OG_PT_SpawnSettings,
     OG_PT_MeshPreviewSettings,
