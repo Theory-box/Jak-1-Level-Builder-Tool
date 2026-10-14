@@ -4786,6 +4786,7 @@
     {"id": "launcherdoor", "label": "Launcher Door", "description": "Launcher door settings.", "fields": []},
     {"id": "sun-iris-door", "label": "Sun Iris Door", "description": "Iris door settings.", "fields": []},
     {"id": "task-gated", "label": "Task Gated", "description": "Task picker for task-gated actors (oracle).", "fields": []},
+    {"id": "plat-grid", "label": "Platforms", "description": "A grid of platforms spawned by one actor (citb-drop-plat): 'count [x z] and 'plat-type per slot (0 none, 1-5 colours; random without it), 4 m apart around the actor. Preview: one model per slot.", "fields": []},
     {"id": "caveelevator", "label": "Cave Elevator", "description": "Cave elevator settings.", "fields": []}
   ],
 
@@ -12504,6 +12505,20 @@
         }
       ],
       "shape": "SINGLE_ARROW"
+    },
+    {
+      "etype": "citb-drop-plat",
+      "label": "Drop Platforms (citadel)",
+      "description": "A grid of coloured platforms that rise when it gets a 'trigger (link it from a button or a trigger volume) and drop after a while or when Jak walks away; stepping on one colour drops the others of that colour. Set the grid size and each platform in the Platforms panel (random when not set).",
+      "category": "Platforms",
+      "art_group": "citb-drop-plat-ag.go",
+      "code": ["citb-drop-plat.o"],
+      "glb": "levels/citadel/citb-drop-plat-lod0.glb",
+      "panels": [
+        {"panel": "plat-grid"}
+      ],
+      "reacts_to": ["trigger"],
+      "shape": "CUBE"
     },
     {
       "etype": "citb-launcher",

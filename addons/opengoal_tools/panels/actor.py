@@ -981,6 +981,27 @@ class OG_PT_ActorVisibility(Panel):
 
 
 
+class OG_PT_ActorPlatGrid(Panel):
+    """DB "plat-grid" panel: platform counts and the per-slot platform types."""
+    bl_label       = "Platforms"
+    bl_idname      = "OG_PT_actor_plat_grid"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_actor_fields"
+
+    @classmethod
+    def poll(cls, ctx):
+        sel = ctx.active_object
+        if not sel or "_wp_" in sel.name: return False
+        parts = sel.name.split("_", 2)
+        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "plat-grid")
+
+    def draw(self, ctx):
+        from .. import plat_grid
+        plat_grid.draw(self.layout, ctx.active_object)
+
+
 def _draw_panel_fields(layout, sel, pid):
     """Draw one DB panel's visible fields (labels/defaults/notes from the DB)."""
     from .actor_fields import _draw_field
@@ -1565,6 +1586,7 @@ def _actor_panel_rank(cls) -> int:
 
 # ─── Classes to register ───────────────────────────────────────────────────
 _ACTOR_SUBPANELS = (
+    OG_PT_ActorPlatGrid,
     OG_PT_ActorBattlecontroller,
     OG_PT_ActorNavBehaviour,
     OG_PT_ActorGameTask,

@@ -382,6 +382,11 @@ def collect_actors(scene, depsgraph=None):
                 lump["movie-pos"] = ["movie-pos"] + [movie_pos_vector(e) for e in _mp_list]
                 log(f"  [movie-pos] {o.name}  {len(_mp_list)} position(s)")
 
+        # ── Platform grid panel (citb-drop-plat): 'count + 'plat-type ──────────
+        if _schema_db.panel_exports(etype, "plat-grid"):
+            from .. import plat_grid as _pg
+            lump.update(_pg.lumps(o))
+
         # ── Oracle / pontoon: alt-task ────────────────────────────────────────
         if etype == "pontoon":  # oracle is schema-driven; pontoon not yet migrated
             task = _schema_db.task_expression(_schema_db.prop_getter(o), "og_alt_task")

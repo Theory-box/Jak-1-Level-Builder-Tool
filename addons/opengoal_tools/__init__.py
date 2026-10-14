@@ -113,6 +113,7 @@ from .operators import ALL_CLASSES as _OPS_CLASSES
 from .operators.misc import _draw_mat
 from .panels import ALL_CLASSES as _PANELS_CLASSES
 from .versions import CLASSES as _VERSION_CLASSES
+from . import plat_grid as _plat_grid
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -150,6 +151,7 @@ classes = (
     *TEXTURING_CLASSES,
     *_PANELS_CLASSES,
     *_VERSION_CLASSES,
+    *_plat_grid.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -188,6 +190,7 @@ def register():
     from .operators.spawn import draw_add_menu
     bpy.types.VIEW3D_MT_add.append(draw_add_menu)
     register_texturing()
+    _plat_grid.register_props()
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)
@@ -453,6 +456,7 @@ def unregister():
     from .operators.spawn import draw_add_menu
     bpy.types.VIEW3D_MT_add.remove(draw_add_menu)
     unregister_texturing()
+    _plat_grid.unregister_props()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr

@@ -213,6 +213,10 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     if _var.get("glb"):
         glb_rel = _var["glb"]
 
+    if _db.has_panel(etype, "plat-grid"):   # one model per platform slot
+        from . import plat_grid
+        return plat_grid.build_preview(ctx, actor_empty)
+
     preview_col = _ensure_preview_collection(ctx.scene)
     attached    = False
 
