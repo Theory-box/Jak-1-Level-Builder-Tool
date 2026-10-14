@@ -1312,6 +1312,24 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # Link a curve (selected / searched), or spawn an empty waypoint.
         _draw_path_add(layout, sel, scene, sources)
 
+        # race-ring (path option "rings"): one ring per point, no path lump
+        if etype and _db.panel_option(etype, "path", "rings", False):
+            from .. import race_rings as _rr
+            pts = _rr.points(sel)
+            box = layout.box(); col = box.column(); col.scale_y = 0.8
+            if not pts:
+                col.label(text="No path: exported as this one ring", icon="INFO")
+                return
+            col.label(text=f"{len(pts)} rings, one per point (in order)", icon="MESH_CIRCLE")
+            col.label(text="Point Tilt: extra yaw · Point Weight: x the time")
+            col.label(text="Linked next / prev, last ring gets the movie-pos")
+            bad = _rr.straight_rings(pts)
+            if bad:
+                w = box.row(); w.alert = True
+                w.label(text=f"Ring {', '.join(str(i + 1) for i in bad)}: edge-on in game (straight line), "
+                             "bend the path a little", icon="ERROR")
+            return
+
         # Path mode (export/path_modes.py). Linear-only actors (path-control —
         # they ignore path-k) only get the straight-line choices.
         from ..export import path_modes as _pm

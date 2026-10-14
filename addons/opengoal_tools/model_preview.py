@@ -510,6 +510,8 @@ def _on_depsgraph_update(scene, depsgraph):
     """Depsgraph handler — detect orphaned preview meshes and schedule removal.
     Kept intentionally cheap: only scans if there are any preview meshes at all."""
     _redirect_preview_selection()
+    from . import race_rings
+    race_rings.on_depsgraph(scene, depsgraph)
     orphans = [
         o.name for o in scene.objects
         if _is_any_preview(o) and o.parent is None

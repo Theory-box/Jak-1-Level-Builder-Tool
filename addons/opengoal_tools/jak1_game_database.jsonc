@@ -18488,8 +18488,13 @@
       "tpage_group": "Rolling",
       "glb": "levels/rolling/race-ring-lod0.glb",
       "shape": "CUBE",
-      "description": "Chain of timed rings: jump through the first to start; each ring must be reached before its time or the chain resets. The last ring gives the task's cell. The ring itself is particles.",
+      "description": "Chain of timed rings: jump through the first to start; each ring must be reached before its time or the chain resets. The last ring gives the task's cell. The ring itself is particles. Give it a path to make the whole chain from one actor (one ring per point).",
       "panels": [
+        {
+          "panel": "path",
+          "rings": true,
+          "description": "Optional: one ring per point (curve control points or waypoints), linked in order. Point Tilt = extra yaw, point Weight multiplies the time."
+        },
         {
           "panel": "game-task",
           "description": "First and last ring: the chase's task. rolling-ring-chase-2 = blue rings."

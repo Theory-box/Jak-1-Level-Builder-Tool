@@ -311,7 +311,8 @@ def collect_actors(scene, depsgraph=None):
         # (patrolling nav-enemies, process-drawable enemies, sync platforms,
         # plat-button ...). "required" actors error at runtime without one.
         # "export": false on the panel turns the lump off.
-        if _schema_db.panel_exports(etype, "path"):
+        _rings = _schema_db.panel_option(etype, "path", "rings", False) is True
+        if _schema_db.panel_exports(etype, "path") and not _rings:
             if path_pts:
                 lump["path"] = ["vector4m"] + path_pts
                 log(f"  [path] {o.name}  {len(path_pts)} points")
@@ -596,6 +597,12 @@ def collect_actors(scene, depsgraph=None):
             "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,
         })
+        if _rings:   # race-ring with a path: one ring per point instead
+            from .. import race_rings as _rr
+            _chain = _rr.entities(o, out[-1])
+            if _chain:
+                out[-1:] = _chain
+                log(f"  [race-ring] {o.name}  {len(_chain)} rings")
         if _bc_campos is not None and not any(x["lump"]["name"] == _bc_campos["lump"]["name"] for x in _extra_actors):
             _extra_actors.append(_bc_campos)   # after all actors (AIDs follow the canonical order); one per name
 
