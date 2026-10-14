@@ -571,6 +571,9 @@ class OGProperties(PropertyGroup):
     cat_favorites:       BoolProperty(default=False, name="Favorites",
                                       description="Show only favorited items in the picker list")
 
+    show_other_links: BoolProperty(name="Other links", default=False,
+                                   description="Generic links every actor has (alt-actor, prev / next, nav-mesh-actor): "
+                                               "only read by actors that use them, or by another actor that looks them up")
     show_all_fact_options: BoolProperty(name="All options", default=False,
         description="Show every fact-option, also the ones this actor's code isn't known to read")
     spawn_sort_mode: EnumProperty(

@@ -910,7 +910,22 @@ def _draw_actor_links(layout, obj, scene, etype):
         if lkey not in seen_keys:
             seen_keys.append(lkey)
 
-    for lkey in seen_keys:
+    # Slots only defined by the root "process" entry (alt-actor, prev / next,
+    # nav-mesh-actor for every actor) and not linked go under a collapsed
+    # "Other links": they're there for code that reads them indirectly.
+    _root = next((pp for pp in (_db.find_parent("process") or {}).get("panels", [])
+                  if pp.get("panel") == "actor-link"), {})
+    generic = {(s.get("lump_key"), s.get("slot", 0)): s.get("label") for s in _root.get("slots", [])}
+
+    def _is_generic(lkey):
+        ks = [(sidx, lbl) for (lk, sidx, lbl, _a, _r) in slots if lk == lkey]
+        return (all(generic.get((lkey, sidx)) == lbl for sidx, lbl in ks)
+                and not any(e.lump_key == lkey for e in (getattr(obj, "og_actor_links", None) or [])))
+
+    own = [k for k in seen_keys if not _is_generic(k)]
+    other = [k for k in seen_keys if _is_generic(k)]
+
+    def _draw_key(layout, lkey):
         key_slots = [(sidx, lbl, acc, req) for (lk, sidx, lbl, acc, req) in slots if lk == lkey]
 
         box = layout.box()
@@ -923,6 +938,20 @@ def _draw_actor_links(layout, obj, scene, etype):
 
         for (sidx, label, accepted, required) in key_slots:
             _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors)
+
+    for lkey in own:
+        _draw_key(layout, lkey)
+    if not own:
+        layout.label(text="No links this actor is known to use", icon="INFO")
+    if other:
+        props = scene.og_props
+        box = layout.box()
+        box.prop(props, "show_other_links", emboss=False,
+                 icon="TRIA_DOWN" if props.show_other_links else "TRIA_RIGHT",
+                 text=f"Other links ({', '.join(other)})")
+        if props.show_other_links:
+            for lkey in other:
+                _draw_key(box, lkey)
 
 
 def _link_target_etype(o):
