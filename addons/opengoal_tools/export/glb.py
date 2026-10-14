@@ -20,7 +20,11 @@ GLTF_HANDLER = "IO_FH_gltf2"
 
 # set when the exporter is created; the user can change these afterwards
 _DEFAULTS = {
-    "export_vertex_color": "ACTIVE", "export_normals": True,
+    # Active (the render colour layer) keeps vertex colour + alpha on every
+    # object in every Blender version; "all vertex colours" off avoids a 5.2.2
+    # bug (meshes whose render / active layers differ exported white).
+    "export_vertex_color": "ACTIVE", "export_all_vertex_colors": False,
+    "export_active_vertex_color_when_no_material": True, "export_normals": True,
     "export_materials": "EXPORT", "export_texcoords": True,
     "export_skins": False, "export_animations": False,
     "export_cameras": False, "export_lights": False,
@@ -108,6 +112,29 @@ def exported_meshes(level_col):
     return out
 
 
+# collision / visibility properties the level builder reads from glTF extras
+_COLLISION_PROPS = ("set_invisible", "set_collision", "ignore", "noedge", "noentity", "nolineofsight",
+                    "nocamera", "collide_material", "collide_event", "collide_mode")
+
+
+def _plain_collision_props(ids):
+    """Blender 5.0 only: its glTF exporter leaves out properties registered by
+    addons, so collision was lost. Copy them to plain custom properties (what
+    the exporter writes) for the export; the caller removes them after."""
+    added = []
+    for idb in ids:
+        rna = idb.bl_rna.properties
+        for k in _COLLISION_PROPS:
+            if k not in rna or k in idb.keys():
+                continue
+            v = getattr(idb, k)
+            if rna[k].type == "ENUM":
+                v = rna[k].enum_items[v].value if v in rna[k].enum_items else 0
+            idb[k] = int(v)
+            added.append((idb, k))
+    return added
+
+
 def export_level_glb(level_col, filepath):
     """Run the level's Geometry exporter to filepath."""
     geo = geometry_collection(level_col)
@@ -134,6 +161,13 @@ def export_level_glb(level_col, filepath):
             else:
                 _walk(ch)
     _walk(geo)
+    plain = []
+    if bpy.app.version[:2] == (5, 0):
+        ids = set()
+        for o in exported_meshes(level_col):
+            ids.add(o)
+            ids.update(s.material for s in o.material_slots if s.material)
+        plain = _plain_collision_props(ids)
     try:
         idx = list(geo.exporters).index(ex)
         with bpy.context.temp_override(collection=geo):
@@ -143,3 +177,6 @@ def export_level_glb(level_col, filepath):
     finally:
         for parent, ch in unlinked:
             parent.children.link(ch)
+        for idb, k in plain:              # Blender 5.0 copies, only for the export
+            if k in idb.keys():
+                del idb[k]
