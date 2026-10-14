@@ -67,11 +67,14 @@ class OG_PT_Lighting(Panel):
             header = f"{len(targets)} mesh(es) selected"
             if skipped:
                 header += f"  ({skipped} non-mesh / empty skipped)"
-            box.label(text=header + ":", icon="OBJECT_DATA")
-            for o in targets[:6]:
-                box.label(text=f"  • {o.name}")
-            if len(targets) > 6:
-                box.label(text=f"  … and {len(targets) - 6} more")
+            box.prop(props, "show_bake_selection", text=header, emboss=False,
+                     icon="TRIA_DOWN" if props.show_bake_selection else "TRIA_RIGHT")
+            if props.show_bake_selection:
+                from .. import bake as _bk
+                for o in targets[:20]:
+                    box.label(text=f"  • {o.name}", icon="LIGHT" if _bk.has_emission(o) else "BLANK1")
+                if len(targets) > 20:
+                    box.label(text=f"  … and {len(targets) - 20} more")
         elif skipped:
             layout.label(text=f"Selected items have no bakeable geometry  ({skipped} skipped)", icon="INFO")
         else:

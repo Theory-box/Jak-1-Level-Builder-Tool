@@ -401,7 +401,10 @@ class OG_OT_BakeLighting(Operator):
         passes = _bake.start(targets, _active_level_col(scene), blocking=bpy.app.background)
 
         names = ", ".join(o.name for o in targets)
-        msg = f"Baking {len(targets)} mesh(es) ({' + '.join(passes)})"
+        msg = f"Baking {len(targets)} mesh(es) ({' + '.join(passes)}"
+        if "emit" in passes:
+            msg += f", emit on {len(_bake._JOB.get('emit_objs', []))}"
+        msg += ")"
         if skipped:
             msg += f" (skipped {skipped} non-mesh / empty)"
         msg += f": {names}"

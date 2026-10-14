@@ -97,6 +97,11 @@ def export_level_glb(level_col, filepath):
         setattr(p, k, v)
     if _col_is_no_export(geo):
         raise RuntimeError(f"{geo.name} has skip_export on: nothing to export")
+    # meshes with a bake export it, whatever colour layer was picked since
+    from ..bake import use_baked
+    for o in geo.all_objects:
+        if o.type == "MESH":
+            use_baked(o.data)
     # skip_export sub-collections are unlinked while the exporter runs
     unlinked = []
     def _walk(c):

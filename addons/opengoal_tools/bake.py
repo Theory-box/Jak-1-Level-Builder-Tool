@@ -134,7 +134,7 @@ def _preset_update(self, ctx):
 
 class OGBakeSettings(bpy.types.PropertyGroup):
     emit_strength: bpy.props.FloatProperty(
-        name="Emit strength", default=0.5, min=0.0, soft_max=1.0,
+        name="Emit strength", default=1.0, min=0.0, soft_max=1.0,
         description="How much emissive materials brighten the bake (screen blend). 0 = no emit pass")
     use_curve: bpy.props.BoolProperty(
         name="Light curve", default=False,
@@ -300,25 +300,61 @@ def post_process(obj, settings, mapping, emitted):
     _write(attr, np.clip(cols, 0.0, 1.0), key)
     if _EMIT_ATTR in mesh.color_attributes:
         mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
-    mesh.color_attributes.active_color = mesh.color_attributes[BAKE_ATTR]
+    use_baked(mesh)
     mesh.update()
 
 
+def use_baked(mesh):
+    """BakedLight becomes the active and render colour layer: what the viewport
+    shows and the GLB exports (with other colour layers on the mesh)."""
+    cas = mesh.color_attributes
+    a = cas.get(BAKE_ATTR)
+    if a is None:
+        return False
+    cas.active_color = a
+    idx = next(i for i, x in enumerate(cas) if x.name == BAKE_ATTR)
+    cas.active_color_index = idx
+    cas.render_color_index = idx
+    return True
+
+
+def _lit(sock, colour=False):
+    """The socket carries something: linked (texture, nodes) or a non-zero value."""
+    if sock is None:
+        return False
+    if sock.is_linked:
+        return True
+    v = sock.default_value
+    return any(float(x) > 0 for x in list(v)[:3]) if colour else float(v) > 0
+
+
+def _tree_emits(tree, seen) -> bool:
+    if tree is None or tree.name in seen:
+        return False
+    seen.add(tree.name)
+    for n in tree.nodes:
+        if n.mute:
+            continue
+        if n.bl_idname == "ShaderNodeBsdfPrincipled":
+            st = n.inputs.get("Emission Strength")
+            co = n.inputs.get("Emission Color") or n.inputs.get("Emission")
+            if _lit(st) and _lit(co, colour=True):
+                return True
+        elif n.bl_idname == "ShaderNodeEmission":
+            if _lit(n.inputs.get("Strength")) and _lit(n.inputs.get("Color"), colour=True):
+                return True
+        elif n.bl_idname == "ShaderNodeGroup" and _tree_emits(n.node_tree, seen):
+            return True
+    return False
+
+
 def has_emission(obj) -> bool:
+    """A material of the object emits light (Principled emission or an Emission
+    node, plain values or driven by textures / nodes, also inside groups)."""
     for slot in obj.material_slots:
         m = slot.material
-        if not (m and m.use_nodes and m.node_tree):
-            continue
-        for n in m.node_tree.nodes:
-            if n.bl_idname == "ShaderNodeBsdfPrincipled":
-                s = n.inputs.get("Emission Strength")
-                c = n.inputs.get("Emission Color")
-                if s is not None and s.default_value > 0 and (c is None or any(c.default_value[:3]) or c.is_linked):
-                    return True
-            elif n.bl_idname == "ShaderNodeEmission":
-                s = n.inputs.get("Strength")
-                if s is not None and s.default_value > 0:
-                    return True
+        if m and m.use_nodes and m.node_tree and _tree_emits(m.node_tree, set()):
+            return True
     return False
 
 
