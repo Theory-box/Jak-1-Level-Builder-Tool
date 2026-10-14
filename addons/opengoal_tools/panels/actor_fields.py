@@ -26,7 +26,7 @@
 from __future__ import annotations
 import bpy
 from bpy.types import Operator, Panel
-from bpy.props import StringProperty
+from bpy.props import StringProperty, BoolProperty
 
 from .. import db as _db
 from ..utils import _prop_row
@@ -35,21 +35,47 @@ from ..utils import _prop_row
 # ═════════════════════════════════════════════════════════════════════════════
 # Generic setter operators — used by the panel to write custom props
 # ═════════════════════════════════════════════════════════════════════════════
+_ALT_TIP = ". Alt+click: all selected actors with this setting"
+
+
+def alt_targets(context, key, all_selected):
+    """The active actor, plus (Alt held) every other selected actor that has
+    the field `key` — like Blender's Alt+edit on regular properties."""
+    obj = context.active_object
+    out = [obj] if obj is not None else []
+    if all_selected:
+        for o in context.selected_objects:
+            if o is obj or not o.name.startswith("ACTOR_") or "_wp_" in o.name:
+                continue
+            et = o.name.split("_", 2)[1]
+            if any(f.get("key") == key for f in _db.inherited_fields(et)):
+                out.append(o)
+    return out
+
+
 class OG_OT_SetActorEnumField(Operator):
-    """Set a string-valued custom property on the active actor to a specific value."""
     bl_idname = "og.set_actor_enum_field"
     bl_label = "Set Field"
+    bl_description = "Set this value" + _ALT_TIP
     bl_options = {"INTERNAL", "UNDO"}
 
     prop_key: StringProperty()
     value: StringProperty()
+    all_selected: BoolProperty(options={"SKIP_SAVE", "HIDDEN"})
+
+    def invoke(self, context, event):
+        self.all_selected = event.alt
+        return self.execute(context)
 
     def execute(self, context):
-        obj = context.active_object
-        if obj is None:
+        objs = alt_targets(context, self.prop_key, self.all_selected)
+        if not objs:
             return {"CANCELLED"}
-        obj[self.prop_key] = self.value
-        _refresh_variant_preview(context, obj, self.prop_key)
+        for obj in objs:
+            obj[self.prop_key] = self.value
+            _refresh_variant_preview(context, obj, self.prop_key)
+        if len(objs) > 1:
+            self.report({"INFO"}, f"Set on {len(objs)} actors")
         return {"FINISHED"}
 
 
@@ -106,19 +132,25 @@ class OG_OT_SetFieldFromZ(Operator):
 
 
 class OG_OT_ToggleActorBoolField(Operator):
-    """Toggle a boolean custom property on the active actor."""
     bl_idname = "og.toggle_actor_bool_field"
     bl_label = "Toggle Field"
+    bl_description = "Toggle this setting" + _ALT_TIP
     bl_options = {"INTERNAL", "UNDO"}
 
     prop_key: StringProperty()
+    all_selected: BoolProperty(options={"SKIP_SAVE", "HIDDEN"})
+
+    def invoke(self, context, event):
+        self.all_selected = event.alt
+        return self.execute(context)
 
     def execute(self, context):
         obj = context.active_object
         if obj is None:
             return {"CANCELLED"}
-        current = bool(obj.get(self.prop_key, False))
-        obj[self.prop_key] = not current
+        new = not bool(obj.get(self.prop_key, False))   # all get the active one's new state
+        for o in alt_targets(context, self.prop_key, self.all_selected):
+            o[self.prop_key] = new
         return {"FINISHED"}
 
 
@@ -269,7 +301,7 @@ def _draw_task_field(layout, obj, field):
 
 
 class OG_OT_PickTask(Operator):
-    """Pick a game task (search by name), or Custom to type one"""
+    """Pick a game task (search by name), or Custom to type one. Alt+click: all selected actors with this setting"""
     bl_idname   = "og.pick_task"
     bl_label    = "Pick Game Task"
     bl_options  = {"REGISTER", "UNDO"}
@@ -284,9 +316,11 @@ class OG_OT_PickTask(Operator):
         return _TASK_ITEMS
 
     prop_key: StringProperty(options={"SKIP_SAVE"})
+    all_selected: BoolProperty(options={"SKIP_SAVE", "HIDDEN"})
     task:     bpy.props.EnumProperty(name="Task", items=_items)
 
     def invoke(self, context, event):
+        self.all_selected = event.alt
         context.window_manager.invoke_search_popup(self)
         return {"RUNNING_MODAL"}
 
@@ -294,9 +328,10 @@ class OG_OT_PickTask(Operator):
         obj = context.active_object
         if obj is None or not self.prop_key:
             return {"CANCELLED"}
-        obj[self.prop_key] = self.task
-        if self.task == "custom" and (self.prop_key + "_custom") not in obj:
-            obj[self.prop_key + "_custom"] = ""
+        for o in alt_targets(context, self.prop_key, self.all_selected):
+            o[self.prop_key] = self.task
+            if self.task == "custom" and (self.prop_key + "_custom") not in o:
+                o[self.prop_key + "_custom"] = obj.get(self.prop_key + "_custom", "")
         return {"FINISHED"}
 
 
@@ -304,7 +339,7 @@ _TASK_ITEMS: list = []   # search-popup items must stay referenced
 
 
 class OG_OT_PickEnumField(Operator):
-    """Pick a value from a long list (search by name)"""
+    """Pick a value from a long list (search by name). Alt+click: all selected actors with this setting"""
     bl_idname   = "og.pick_enum_field"
     bl_label    = "Pick Value"
     bl_options  = {"REGISTER", "UNDO"}
@@ -320,9 +355,11 @@ class OG_OT_PickEnumField(Operator):
         return _ENUM_ITEMS
 
     prop_key: StringProperty(options={"SKIP_SAVE"})
+    all_selected: BoolProperty(options={"SKIP_SAVE", "HIDDEN"})
     value:    bpy.props.EnumProperty(name="Value", items=_items)
 
     def invoke(self, context, event):
+        self.all_selected = event.alt
         context.window_manager.invoke_search_popup(self)
         return {"RUNNING_MODAL"}
 
@@ -330,7 +367,7 @@ class OG_OT_PickEnumField(Operator):
         if not self.prop_key or self.value == "NONE":
             return {"CANCELLED"}
         # same path as the radio buttons (variant preview refresh ...)
-        return bpy.ops.og.set_actor_enum_field(prop_key=self.prop_key, value=self.value)
+        return bpy.ops.og.set_actor_enum_field(prop_key=self.prop_key, value=self.value, all_selected=self.all_selected)
 
 
 _ENUM_ITEMS: list = []
