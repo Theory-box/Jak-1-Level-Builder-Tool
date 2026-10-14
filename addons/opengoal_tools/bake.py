@@ -432,12 +432,13 @@ def _run_pass():
 
 def _poll():
     """Next step once this pass's bake has really finished: its
-    object_bake_complete event came and the job is gone. (Just polling the job
-    can see "not running" before a big bake has even started.)"""
+    object_bake_complete event came, the job is gone and Blender accepts data
+    writes again (neither the job check nor the event alone is reliable on
+    every Blender version / scene)."""
     import time
     if not _JOB:
         return None                       # cancelled
-    running = bpy.app.is_job_running("OBJECT_BAKE")
+    running = bpy.app.is_job_running("OBJECT_BAKE") or _still_rendering(_JOB["objs"])
     if running:
         _JOB["seen"] = True
     if running or not _JOB.get("evt"):
@@ -448,6 +449,21 @@ def _poll():
         return 0.5
     _safe(_next)
     return None
+
+
+def _still_rendering(names) -> bool:
+    """Blender refuses data writes while a bake is still rendering ("Writing to
+    ID classes in this context is not allowed"). A no-op write tells us,
+    whatever the job / event signals say."""
+    for o in _objs(names[:1]):
+        cas = o.data.color_attributes
+        try:
+            cas.active_color_index = cas.active_color_index
+        except (AttributeError, RuntimeError, TypeError) as e:
+            if "not allowed" in str(e):
+                return True
+            raise
+    return False
 
 
 @bpy.app.handlers.persistent
