@@ -17,6 +17,8 @@
 #   - Alpha: the bake writes alpha 1.0, so as the last step the alpha of the
 #     user's ALPHA colour layer (ALPHA_SUNRISE ... per time of day, else
 #     ALPHA) is copied into every baked layer (any domain).
+#   - Light passes unplug the materials' Color Attribute colour (it reads a
+#     colour layer, e.g. a black ALPHA = a black surface = a black bake).
 #   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
 #     (the level builder's names), each with only its own light collection
 #     rendering and its own world; emit / curve / blur apply to every time.
@@ -515,6 +517,45 @@ def _prepare(objs, name, domain):
         cas.active_color = cas[name]
 
 
+def _cut_colour_links(job, objs):
+    """Light passes: unplug the Color output of the materials' Color Attribute
+    nodes (also inside groups). They read the render colour layer (or a named
+    one, e.g. ALPHA): a black one is a black surface, and the diffuse bake of a
+    black surface is black. Put back by _relink."""
+    if "links" in job:
+        return
+    cut, seen = [], set()
+    def walk(tree, ref):
+        if tree is None or ref in seen:
+            return
+        seen.add(ref)
+        for lk in list(tree.links):
+            if lk.from_node.bl_idname == "ShaderNodeVertexColor" and lk.from_socket.identifier == "Color":
+                cut.append((ref, lk.from_node.name, lk.from_socket.identifier, lk.to_node.name, lk.to_socket.identifier))
+                tree.links.remove(lk)
+        for n in tree.nodes:
+            if n.bl_idname == "ShaderNodeGroup" and n.node_tree:
+                walk(n.node_tree, ("G", n.node_tree.name))
+    for o in objs:
+        for slot in o.material_slots:
+            m = slot.material
+            if m and m.use_nodes and m.node_tree and not m.library:
+                walk(m.node_tree, ("M", m.name))
+    job["links"] = cut
+
+
+def _relink(job):
+    for (kind, tname), fn, fs, tn, ts in job.pop("links", ()):
+        idb = (bpy.data.materials if kind == "M" else bpy.data.node_groups).get(tname)
+        tree = idb.node_tree if kind == "M" and idb else idb
+        if tree is None or fn not in tree.nodes or tn not in tree.nodes:
+            continue
+        a = next((s for s in tree.nodes[fn].outputs if s.identifier == fs), None)
+        b = next((s for s in tree.nodes[tn].inputs if s.identifier == ts), None)
+        if a is not None and b is not None:
+            tree.links.new(a, b)
+
+
 def _objs(names):
     return [o for o in (bpy.data.objects.get(n) for n in names) if o is not None]
 
@@ -538,8 +579,10 @@ def _run_pass():
         if attr != BAKE_ATTR:
             _tod_setup(job, attr)
         _prepare(objs, attr, job["domain"])
+        _cut_colour_links(job, objs)
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
+        _relink(job)                       # emission may come from vertex colours
         objs = _objs(job["emit_objs"])
         _prepare(objs, _EMIT_ATTR, job["domain"])
         args = dict(type="EMIT")
@@ -632,6 +675,7 @@ def _tod_setup(job, attr):
 
 
 def _restore(job):
+    _relink(job)
     r = job.get("restore")
     if not r:
         return
