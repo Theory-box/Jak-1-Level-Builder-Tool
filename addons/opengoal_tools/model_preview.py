@@ -54,7 +54,7 @@ def _get_viewport_override(ctx):
 
 def _ensure_preview_collection(scene) -> bpy.types.Collection:
     """Find or create the level-local 'Preview Meshes' sub-collection,
-    marked og_no_export so export_glb() skips it entirely."""
+    marked skip_export so export_glb() skips it entirely."""
     from .collections import _active_level_col, _ensure_sub_collection
 
     level_col = _active_level_col(scene)
@@ -65,12 +65,12 @@ def _ensure_preview_collection(scene) -> bpy.types.Collection:
         if col is None:
             col = bpy.data.collections.new(col_name)
             scene.collection.children.link(col)
-        col.og_no_export = True
+        col["skip_export"] = True
         return col
 
     # Use _ensure_sub_collection so the name is level-prefixed (e.g. my-level.Preview Meshes)
     col = _ensure_sub_collection(level_col, _PREVIEW_COL)
-    col.og_no_export = True
+    col["skip_export"] = True
     return col
 
 
@@ -239,7 +239,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         preview_col.objects.link(dup)
         dup.show_in_front = False
         dup.display_type  = "TEXTURED"
-        dup.hide_select   = True
+        dup.hide_select   = not _select_via_preview()
         _fit_empty_to_mesh(actor_empty, dup)
         _apply_db_display(etype, actor_empty, [dup])
         return True
@@ -282,7 +282,7 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         # ---- Display settings ----
         mesh_obj.show_in_front     = False
         mesh_obj.display_type      = "TEXTURED"
-        mesh_obj.hide_select       = True   # non-selectable — move the ACTOR empty instead
+        mesh_obj.hide_select       = not _select_via_preview()   # clicks select the ACTOR (handler)
 
         # ---- Fit empty display size to mesh bounds (first GLB only) ----
         if not attached:  # only on the first mesh so double-lurker doesn't overwrite
@@ -424,6 +424,46 @@ def attach_waypoint_preview(ctx, etype: str, waypoint_empty: bpy.types.Object) -
     return True
 
 
+def _select_via_preview() -> bool:
+    a = bpy.context.preferences.addons.get(__package__)
+    return bool(a and getattr(a.preferences, "select_via_preview", True))
+
+
+def set_previews_selectable(flag: bool) -> None:
+    """Preference toggle: actor previews (not waypoint ghosts) selectable."""
+    for o in bpy.data.objects:
+        if o.get(_PREVIEW_PROP):
+            o.hide_select = not flag
+
+
+_REDIRECTING = False
+
+
+def _redirect_preview_selection():
+    """A selected actor preview selects its actor instead (click, shift-click,
+    box select). Active preview -> its actor becomes active."""
+    global _REDIRECTING
+    if _REDIRECTING or not _select_via_preview():
+        return
+    ctx = bpy.context
+    vl = getattr(ctx, "view_layer", None)
+    if vl is None:
+        return
+    picked = [o for o in vl.objects if o.select_get() and o.get(_PREVIEW_PROP) and o.parent is not None]
+    if not picked:
+        return
+    _REDIRECTING = True
+    try:
+        act = vl.objects.active
+        for o in picked:
+            o.select_set(False)
+            o.parent.select_set(True)
+        if act is not None and act.get(_PREVIEW_PROP) and act.parent is not None:
+            vl.objects.active = act.parent
+    finally:
+        _REDIRECTING = False
+
+
 def _is_any_preview(obj) -> bool:
     """Return True if obj is either an actor preview or a waypoint ghost preview."""
     return bool(obj.get(_PREVIEW_PROP) or obj.get(_WAYPOINT_PREVIEW_PROP))
@@ -465,6 +505,7 @@ def _cleanup_orphans(names: list) -> None:
 def _on_depsgraph_update(scene, depsgraph):
     """Depsgraph handler — detect orphaned preview meshes and schedule removal.
     Kept intentionally cheap: only scans if there are any preview meshes at all."""
+    _redirect_preview_selection()
     orphans = [
         o.name for o in scene.objects
         if _is_any_preview(o) and o.parent is None

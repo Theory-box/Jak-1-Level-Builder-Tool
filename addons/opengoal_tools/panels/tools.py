@@ -167,13 +167,91 @@ class OG_PT_BuildPlay(Panel):
         col.scale_y = 1.8
         col.operator("og.export_build",  text="⚙  Export & Compile",        icon="EXPORT")
         col.scale_y = 1.4
-        col.operator("og.geo_rebuild",   text="🔄  Quick Geo Rebuild",       icon="FILE_REFRESH")
+        col.operator("og.quick_export",   text="🔄  Quick Level Export",       icon="FILE_REFRESH")
         col.scale_y = 1.8
         col.operator("og.play",          text="▶  Launch Game",              icon="PLAY")
         # Spawn dropdown — "none" means bare launch (debug, navigate manually).
         # Selecting any continue-point loads the level and spawns Jak there.
         col.scale_y = 1.0
         col.prop(ctx.scene.og_props, "og_launch_checkpoint", text="Spawn")
+        from ..versions import feature_status
+        ok, why = feature_status("mod_base_spawn")
+        if ok is True:
+            col.prop(ctx.scene.og_props, "og_modbase_spawn")
+        else:   # shown off, with the reason
+            row = col.row(); row.enabled = False
+            row.label(text="Boot into spawn (mod-base)", icon="CHECKBOX_DEHLT")
+            sub = col.row(); sub.scale_y = 0.7
+            sub.label(text=why, icon="INFO")
+
+        # Level GLB: the Geometry collection's exporter (Draco etc. set there)
+        level_col = _active_level_col(ctx.scene)
+        if level_col is not None:
+            from ..export.glb import stray_meshes
+            layout.separator(factor=0.3)
+            layout.operator("og.glb_export_settings", text="GLB Export Settings", icon="SETTINGS")
+            stray = stray_meshes(level_col)
+            if stray:
+                box = layout.box()
+                box.alert = True
+                box.label(text=f"{len(stray)} mesh(es) outside Geometry aren't exported", icon="ERROR")
+                box.operator("og.move_to_geometry", text="Move to Geometry", icon="FORWARD")
+
+
+def _find_layer_col(lc, col):
+    if lc.collection == col:
+        return lc
+    for ch in lc.children:
+        r = _find_layer_col(ch, col)
+        if r:
+            return r
+    return None
+
+
+class OG_OT_GlbExportSettings(Operator):
+    """Show the level GLB export settings: the glTF exporter of the level's
+    Geometry collection (Properties > Collection > Exporters). Draco compression
+    and the other glTF options are set there"""
+    bl_idname  = "og.glb_export_settings"
+    bl_label   = "GLB Export Settings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..export.glb import geometry_collection, glb_exporter
+        level_col = _active_level_col(ctx.scene)
+        if level_col is None:
+            self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
+        geo = geometry_collection(level_col)
+        glb_exporter(geo)
+        lc = _find_layer_col(ctx.view_layer.layer_collection, geo)
+        if lc:
+            ctx.view_layer.active_layer_collection = lc
+        for area in ctx.screen.areas:
+            if area.type == "PROPERTIES":
+                for sp in area.spaces:
+                    if sp.type == "PROPERTIES":
+                        try: sp.context = "COLLECTION"
+                        except TypeError: pass
+                area.tag_redraw()
+        self.report({"INFO"}, f"Properties > Collection ({geo.name}) > Exporters > glTF 2.0")
+        return {"FINISHED"}
+
+
+class OG_OT_MoveToGeometry(Operator):
+    """Move the level's meshes that are outside the Geometry collection into
+    Geometry / Solid so they are exported"""
+    bl_idname  = "og.move_to_geometry"
+    bl_label   = "Move to Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..export.glb import stray_meshes
+        level_col = _active_level_col(ctx.scene)
+        objs = stray_meshes(level_col)
+        for o in objs:
+            _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_GEO_SOLID)
+        self.report({"INFO"}, f"Moved {len(objs)} mesh(es) to Geometry")
+        return {"FINISHED"}
 
 
 
@@ -385,6 +463,11 @@ class OG_PT_DevTools(Panel):
         from ..properties import draw_db_status
         draw_db_status(box)
 
+        # Versions — Blender / OpenGOAL and the features they support
+        layout.label(text="Versions", icon="INFO")
+        from ..versions import draw_versions
+        draw_versions(layout)
+
         layout.separator()
 
         # Launch Timing — tune for slower / faster machines. Default 4s
@@ -526,6 +609,8 @@ CLASSES = (
     OG_OT_UseLumpRef,
     OG_PT_VertexExport,
     OG_PT_BuildPlay,
+    OG_OT_GlbExportSettings,
+    OG_OT_MoveToGeometry,
     OG_OT_ReloadAddon,
     OG_OT_ReloadDatabase,
     OG_OT_BlendPathsFromPrefs,

@@ -49,7 +49,25 @@ class OG_OT_SetActorEnumField(Operator):
         if obj is None:
             return {"CANCELLED"}
         obj[self.prop_key] = self.value
+        _refresh_variant_preview(context, obj, self.prop_key)
         return {"FINISHED"}
+
+
+def _refresh_variant_preview(context, obj, key):
+    """A new variant can have its own model / offset: rebuild the preview
+    (when preview models are on)."""
+    from .. import model_preview as _mp
+    prefs = context.preferences.addons.get("opengoal_tools")
+    if not obj.name.startswith("ACTOR_") or not (prefs and prefs.preferences.preview_models):
+        return
+    etype = obj.name.split("_", 2)[1]
+    vf = _db.variant_field(etype)
+    if not vf or vf.get("key") != key:
+        return
+    if "_og_preview_offset_ovr" in obj:
+        del obj["_og_preview_offset_ovr"]
+    _mp.remove_preview(obj)
+    _mp.attach_preview(context, etype, obj)
 
 
 class OG_OT_SetFieldFromZ(Operator):

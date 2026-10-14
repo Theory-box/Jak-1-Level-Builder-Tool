@@ -24287,6 +24287,10 @@
   // campath -> spline, stringMaxLength > 0 -> string, else fixed.
   "Cameras": {
     "min_opengoal": "v0.3.4",
+    "panels": {
+      "path": {"min-points": 4, "lump": "campath"},
+      "volume": {"multiple": true, "roles": ["vol", "pvol", "cutoutvol"]}
+    },
     "note": "Fields use the same schema as Actors[].fields (key/label/type/default/lump/write_if). visible_if.og_cam_mode lists the modes a field applies to. Volumes come from linked VOL_ meshes (role vol / pvol / cutoutvol, keyframe 0).",
     "modes": [
       {"id": "fixed",    "label": "Fixed",       "description": "Camera stays where the CAMERA_ object is, aimed by its rotation (or a Look-At target)."},

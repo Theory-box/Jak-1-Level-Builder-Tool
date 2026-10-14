@@ -71,6 +71,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_music_bank":        "none",
     "og_mood":              "village1",
     "og_texture_source":    "village1",
+    "og_actor_name_nick":   True,
     "og_include_enabled":   False,
     "og_include_text":      "",
     "og_sky":               True,
@@ -110,18 +111,75 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def free_object_name(prefix, n=0):
+    """f"{prefix}{n}" with the first n not used by any object in the file, so
+    an actor spawned in a second level doesn't get Blender's ".001"."""
+    while f"{prefix}{n}" in bpy.data.objects:
+        n += 1
+    return f"{prefix}{n}"
+
+
+def spawn_uid(o):
+    """Checkpoint / spawn uid of a SPAWN_ / CHECKPOINT_ empty: the name after
+    the prefix, without a leading "<level vis-nick>_" (objects are named
+    SPAWN_<nick>_start so two levels can each have a "start"). None for
+    other objects."""
+    if o.name.startswith("SPAWN_"):
+        rest, dflt = o.name[6:], "start"
+    elif o.name.startswith("CHECKPOINT_"):
+        rest, dflt = o.name[11:], "cp0"
+    else:
+        return None
+    head, sep, tail = rest.partition("_")
+    if sep and tail:
+        nicks = {_resolve_vis_nick(c) for c in _all_level_collections(bpy.context.scene)}
+        if head in nicks:
+            rest = tail
+    return rest or dflt
+
+
+def _get_actor_name_nick_live(self):
+    col = _active_level_col(bpy.context.scene)
+    return bool(col.get("og_actor_name_nick", True)) if col is not None else True
+
+
+def _set_actor_name_nick_live(self, value):
+    col = _active_level_col(bpy.context.scene)
+    if col is not None:
+        col["og_actor_name_nick"] = bool(value)
+
+
+def actor_name_prefix(scene=None):
+    """"<nick>-" when the active level's "Level nick in actor names" is on
+    (default), else "". Exported actor names become <nick>-<etype>-<n> so they
+    can't clash with vanilla actors (babak-1 ...) or other custom levels."""
+    scene = scene or bpy.context.scene
+    col = _active_level_col(scene)
+    if col is None or not bool(col.get("og_actor_name_nick", True)):
+        return ""
+    return _resolve_vis_nick(col) + "-"
+
+
+def actor_lump_name(obj_name, scene=None):
+    """Exported 'name lump of an ACTOR_<etype>_<n> object (also used for every
+    link that points at it)."""
+    parts = obj_name.split("_", 2)
+    if len(parts) < 3 or parts[0] != "ACTOR":
+        return obj_name
+    return f"{actor_name_prefix(scene)}{parts[1]}-{parts[2]}"
+
+
 def _col_is_no_export(col):
-    """Check if a collection is marked as no-export.
-    og_no_export is a registered RNA BoolProperty on bpy.types.Collection,
-    so getattr reads it correctly. Custom prop dict access col.get() would
-    read a separate shadow key and should NOT be used here."""
-    return bool(getattr(col, "og_no_export", False))
+    """A collection is left out of the level export when its "skip_export"
+    custom property is on (Properties > Collection > Custom Properties, or
+    Level > Collections > Disable Export)."""
+    return bool(col.get("skip_export", False))
 
 
 def _recursive_col_objects(col, exclude_no_export=True):
     """Return all objects in a collection and its children, deduplicated.
 
-    If exclude_no_export=True, skips sub-collections with og_no_export=True.
+    If exclude_no_export=True, skips sub-collections with skip_export on.
     """
     seen = set()
     result = []
@@ -175,6 +233,7 @@ def _ensure_sub_collection(level_col, *path):
                 break
         if child is None:
             child = bpy.data.collections.new(unique_name)
+            child["skip_export"] = False   # visible in Custom Properties, ready to turn on
             current.children.link(child)
         current = child
     return current

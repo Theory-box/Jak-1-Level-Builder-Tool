@@ -423,7 +423,7 @@ def patch_entity_gc(navmesh_actors):
     p.write_bytes(out.encode("utf-8"))
     log(f"Patched entity.gc with {len(navmesh_actors)} nav-mesh actor(s)")
 
-def _bg_build(name, scene, depsgraph=None):
+def _bg_build(name, scene, depsgraph=None, boot_cp=None):
     state = _BUILD_STATE
     try:
         state["status"] = "Collecting scene..."
@@ -466,6 +466,7 @@ def _bg_build(name, scene, depsgraph=None):
         patch_game_gp(name, code_deps, scene=scene)
         prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
 
+        _write_boot_cp(state, boot_cp)
         _restart_goalc_if_types_changed(state)
         if goalc_ok():
             state["status"] = "Running (mi) via nREPL..."
@@ -490,12 +491,20 @@ def _bg_build(name, scene, depsgraph=None):
 
 
 _PLAY_STATE = {"done":False, "error":None, "status":""}
-_GEO_REBUILD_STATE = {"done": False, "status": "", "error": None, "ok": False}
+_QUICK_EXPORT_STATE = {"done": False, "status": "", "error": None, "ok": False}
 _BUILD_PLAY_STATE  = {"done": False, "status": "", "error": None, "ok": False}
 
 
 
-def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
+def _write_boot_cp(state, boot_cp):
+    """mod-base: the spawn goes into mod-settings.gc before (mi) compiles it."""
+    if boot_cp:
+        from .versions import set_debug_continue_point
+        if set_debug_continue_point(boot_cp):
+            log(f"[mod-base] *debug-continue-point* = {boot_cp}")
+
+
+def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0, booted_cp=None):
     """Spawn Jak at the given continue-point in GK.
 
     cp_name — full continue-point name, e.g. "my-level-start". Format is
@@ -534,6 +543,14 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
     """
     state = _PLAY_STATE
     try:
+        if booted_cp and booted_cp == cp_name:
+            # mod-base: mod-settings.gc already boots into this spawn
+            state["status"] = f"Launching GK (boots into {cp_name})..."
+            ok, msg = launch_gk()
+            if not ok:
+                state["error"] = msg; return
+            state["status"] = "Done!"
+            return
         if not goalc_ok():
             state["error"] = (
                 "GOALC isn't running. Run Export & Compile first — that "
@@ -579,16 +596,13 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0):
 
 
 
-def _bg_geo_rebuild(name, scene, depsgraph=None):
-    """Export geo + actor placement, repack DGO, relaunch GK. No GOAL recompile.
-
-    (mi) is GOALC's incremental build command — it skips .gc files that haven't
-    changed, so it only re-extracts the GLB and repacks the DGO.
-
-    NOTE: if you've added a NEW enemy type since the last full Export & Compile,
-    use that instead — this path skips the game.gp patch those types need.
+def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
+    """Quick Level Export: write this level's own files (.jsonc, .gd, level
+    code; the GLB is exported on the main thread first) and run (mi). Shared
+    files are not touched: level-info.gc (checkpoints / load boundaries),
+    entity.gc (nav-mesh entries), game.gp.
     """
-    state = _GEO_REBUILD_STATE
+    state = _QUICK_EXPORT_STATE
     try:
         state["status"] = "Collecting scene..."
         _clean_orphaned_vol_links(scene)
@@ -612,10 +626,9 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
         _lv_objs = _level_objects(scene)
         has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
         write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
-        patch_level_info(name, spawns, scene)  # update spawn continue-points if moved
-        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
+        _write_boot_cp(state, boot_cp)
         _restart_goalc_if_types_changed(state)
         if goalc_ok():
             state["status"] = "Running (mi) — re-extracting geo..."
@@ -643,7 +656,7 @@ def _bg_geo_rebuild(name, scene, depsgraph=None):
 
 
 
-def _bg_build_and_play(name, scene, depsgraph=None):
+def _bg_build_and_play(name, scene, depsgraph=None, boot_cp=None):
     """Export files, compile with GOALC, then launch GK and load the level.
 
     FLOW:
@@ -702,6 +715,7 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         state["status"] = "Killing existing GK..."
         kill_gk()
         time.sleep(0.3)
+        _write_boot_cp(state, boot_cp)
         _restart_goalc_if_types_changed(state)
 
         if not goalc_ok():
@@ -738,6 +752,12 @@ def _bg_build_and_play(name, scene, depsgraph=None):
         log(f"[launch] launch_gk returned: ok={ok} msg={msg}")
         if not ok:
             state["error"] = f"GK launch failed: {msg}"; return
+
+        if boot_cp:
+            # mod-base: the game boots into the spawn itself (mod-settings.gc)
+            state["status"] = "Done! (boots into the spawn)"
+            state["ok"] = True
+            return
 
         # Poll until *game-info* exists (GAME.CGO done) then spawn.
         # Match "'ready" (with leading quote) to catch only the GOAL symbol return,

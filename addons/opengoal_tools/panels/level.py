@@ -136,6 +136,7 @@ class OG_PT_LevelSettings(Panel):
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "bottom_height")
         layout.prop(props, "texture_source")
+        layout.prop(props, "actor_name_nick")
 
         # Derived / read-only info
         name = str(col.get("og_level_name", col.name))
@@ -340,7 +341,46 @@ class OG_PT_DisableExport(Panel):
             layout.label(text="No sub-collections")
         else:
             for col in children:
-                layout.prop(col, "og_no_export", text=col.name)
+                _draw_skip_tree(layout, col, 0)
+
+
+_TREE_OPEN: set = set()   # Disable Export list: expanded collections (UI only)
+
+
+def _draw_skip_tree(layout, c, depth):
+    """One row per collection (its "skip_export" custom property), children
+    under an arrow, at any depth."""
+    row = layout.row(align=True)
+    if depth:
+        row.separator(factor=1.5 * depth)
+    if c.children:
+        op = row.operator("og.toggle_skip_tree", text="", emboss=False,
+                          icon="DISCLOSURE_TRI_DOWN" if c.name in _TREE_OPEN else "DISCLOSURE_TRI_RIGHT")
+        op.col_name = c.name
+    else:
+        row.label(text="", icon="BLANK1")
+    on = bool(c.get("skip_export", False))
+    op = row.operator("og.toggle_collection_no_export", text=c.name, emboss=False,
+                      icon="CHECKBOX_HLT" if on else "CHECKBOX_DEHLT")
+    op.col_name = c.name
+    if c.name in _TREE_OPEN:
+        for ch in sorted(c.children, key=lambda x: x.name):
+            _draw_skip_tree(layout, ch, depth + 1)
+
+
+class OG_OT_ToggleSkipTree(Operator):
+    """Show / hide this collection's sub-collections"""
+    bl_idname = "og.toggle_skip_tree"
+    bl_label  = "Expand"
+    bl_options = {"INTERNAL"}
+
+    col_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        _TREE_OPEN.symmetric_difference_update({self.col_name})
+        for area in ctx.screen.areas:
+            area.tag_redraw()
+        return {"FINISHED"}
 
 
 
@@ -573,6 +613,7 @@ CLASSES = (
     OG_OT_SortLevelObjects,
     OG_PT_CollectionProperties,
     OG_PT_DisableExport,
+    OG_OT_ToggleSkipTree,
     OG_PT_CleanSub,
     OG_PT_Music,
     OG_OT_RunAudit,

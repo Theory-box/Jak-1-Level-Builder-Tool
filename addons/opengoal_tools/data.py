@@ -680,11 +680,8 @@ def _build_actor_link_lumps(obj, etype):
     if links:
         for entry in links:
             if entry.target_name and entry.lump_key in by_key:
-                raw = entry.target_name
-                if raw.startswith("ACTOR_"):
-                    raw = raw[6:]
-                    raw = raw.replace("_", "-", 1)
-                by_key[entry.lump_key][entry.slot_index] = raw
+                from .collections import actor_lump_name
+                by_key[entry.lump_key][entry.slot_index] = actor_lump_name(entry.target_name)
 
     result = {}
     for lkey, slot_map in by_key.items():
@@ -697,7 +694,8 @@ def _build_actor_link_lumps(obj, etype):
                 names.append(slot_map[i])
         # "append_self" slots (spike): the actor's own name goes last, once.
         if names and _db.link_slot(etype, lkey, 0).get("append_self"):
-            me = obj.name[6:].replace("_", "-", 1) if obj.name.startswith("ACTOR_") else obj.name
+            from .collections import actor_lump_name
+            me = actor_lump_name(obj.name)
             if names[-1] != me:
                 names.append(me)
         if names:

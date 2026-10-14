@@ -51,9 +51,9 @@ from ..export import (
     export_glb,
 )
 from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _GEO_REBUILD_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
+    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -185,6 +185,10 @@ class OG_OT_CreateLevel(Operator):
         col["og_fog_max"]           = 0.95
         col["og_fog_min"]           = 0.10
 
+        # Geometry collection + its GLB exporter
+        from ..export.glb import geometry_collection, glb_exporter
+        glb_exporter(geometry_collection(col))
+
         # Set as active level
         ctx.scene.og_props.active_level = col.name
         _set_blender_active_collection(ctx, col)
@@ -289,6 +293,10 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         col["og_fog_end"]           = 200.0
         col["og_fog_max"]           = 0.95
         col["og_fog_min"]           = 0.10
+
+        # Geometry collection + its GLB exporter
+        from ..export.glb import geometry_collection, glb_exporter
+        glb_exporter(geometry_collection(col))
 
         # Set as active level
         ctx.scene.og_props.active_level = col.name
@@ -477,8 +485,8 @@ class OG_OT_ToggleCollectionNoExport(Operator):
         col = bpy.data.collections.get(self.col_name)
         if col is None:
             self.report({"ERROR"}, f"Collection '{self.col_name}' not found"); return {"CANCELLED"}
-        cur = bool(col.get("og_no_export", False))
-        col["og_no_export"] = not cur
+        cur = bool(col.get("skip_export", False))
+        col["skip_export"] = not cur
         state = "excluded" if not cur else "included"
         self.report({"INFO"}, f"'{self.col_name}' now {state} from export")
         return {"FINISHED"}

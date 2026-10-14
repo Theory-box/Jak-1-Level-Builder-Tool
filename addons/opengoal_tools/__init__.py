@@ -94,7 +94,7 @@ from .build import (
     _exe_root, _data_root, _data, _gk, _goalc,
     _user_dir, kill_gk, launch_gk,
     goalc_send, goalc_ok, launch_goalc,
-    _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from .properties import (
     OGPreferences, OGProperties,
@@ -112,6 +112,7 @@ from .spawn_items import (
 from .operators import ALL_CLASSES as _OPS_CLASSES
 from .operators.misc import _draw_mat
 from .panels import ALL_CLASSES as _PANELS_CLASSES
+from .versions import CLASSES as _VERSION_CLASSES
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -148,6 +149,7 @@ classes = (
     OG_UL_LumpRows,
     *TEXTURING_CLASSES,
     *_PANELS_CLASSES,
+    *_VERSION_CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -183,6 +185,8 @@ def register():
     _bviz.register_handler()
     from .operators.misc import register_water_handler
     register_water_handler()
+    from .operators.spawn import draw_add_menu
+    bpy.types.VIEW3D_MT_add.append(draw_add_menu)
     register_texturing()
     for cls in classes:
         try:
@@ -411,11 +415,6 @@ def register():
         name="Bwd Name", default="",
         description="continue-name (checkpt) or vis nick (vis)")
 
-    bpy.types.Collection.og_no_export      = bpy.props.BoolProperty(
-        name="Exclude from Export",
-        description="When enabled, this collection and its contents are excluded from level export",
-        default=False)
-
     # Unified spawn picker — register the load_post handler so freshly-loaded
     # blend files get their spawn list populated. The initial population for
     # any already-open scenes has to be deferred because bpy.data is wrapped
@@ -451,6 +450,8 @@ def unregister():
     _bviz.unregister_handler()
     from .operators.misc import unregister_water_handler
     unregister_water_handler()
+    from .operators.spawn import draw_add_menu
+    bpy.types.VIEW3D_MT_add.remove(draw_add_menu)
     unregister_texturing()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
@@ -487,8 +488,6 @@ def unregister():
               "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
-    try: delattr(bpy.types.Collection, "og_no_export")
-    except Exception: pass
 
 if __name__ == "__main__":
     register()

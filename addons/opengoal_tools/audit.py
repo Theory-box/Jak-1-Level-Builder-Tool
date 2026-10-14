@@ -310,7 +310,8 @@ def check_doors(scene):
             else:
                 # checkpoints export as "<level>-<uid>" (CHECKPOINT_<uid>)
                 lvl = str(scene.get("og_level_name", "") or getattr(scene.og_props, "level_name", "")).strip().lower()
-                cps = {o.name[len("CHECKPOINT_"):] for o in objects if o.name.startswith("CHECKPOINT_")}
+                from .collections import spawn_uid
+                cps = {spawn_uid(o) for o in objects if o.name.startswith("CHECKPOINT_")}
                 ok = (cp_name in cps or any(cp_name == f"{lvl}-{u}" for u in cps)
                       or any(cp_name.endswith("-" + u) for u in cps) or objects.get(cp_name) is not None)
                 if not ok:
@@ -448,6 +449,18 @@ def check_particle_files(scene):
             for f, lvl in sorted(seen.items())]
 
 
+def check_stray_geometry(scene):
+    """Only the Geometry collection is exported to the level GLB."""
+    from .collections import _active_level_col
+    from .export.glb import stray_meshes
+    objs = stray_meshes(_active_level_col(scene))
+    if not objs:
+        return []
+    return [_issue("WARNING", f"{len(objs)} mesh(es) outside the Geometry collection aren't exported "
+                              f"({', '.join(o.name for o in objs[:4])}{' ...' if len(objs) > 4 else ''}). "
+                              f"Build & Play > Move to Geometry.", objs[0].name)]
+
+
 # ---------------------------------------------------------------------------
 # Check 11 — Scene summary (always INFO, always last)
 # ---------------------------------------------------------------------------
@@ -542,6 +555,7 @@ _REGISTERED_CHECKS = [
     check_texture_sources,
     check_sound_banks,
     check_particle_files,
+    check_stray_geometry,
     check_scene_summary,   # always last
 ]
 

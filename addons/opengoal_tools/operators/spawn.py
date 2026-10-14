@@ -49,9 +49,9 @@ from ..export import (
     export_glb,
 )
 from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _GEO_REBUILD_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
+    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -74,11 +74,15 @@ class OG_OT_SpawnPlayer(Operator):
     bl_label  = "Add Player Spawn"
     bl_description = "Place a player spawn empty at the 3D cursor"
     def execute(self, ctx):
+        from ..collections import _active_level_col, _resolve_vis_nick
+        nick = _resolve_vis_nick(_active_level_col(ctx.scene))
         n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith("SPAWN_") and not o.name.endswith("_CAM")])
         uid = "start" if n == 0 else f"spawn{n}"
+        while f"SPAWN_{nick}_{uid}" in bpy.data.objects:
+            n += 1; uid = f"spawn{n}"
         bpy.ops.object.empty_add(type="CONE", location=ctx.scene.cursor.location)
         o = ctx.active_object
-        o.name = f"SPAWN_{uid}"; o.show_name = True
+        o.name = f"SPAWN_{nick}_{uid}"; o.show_name = True
         o.empty_display_size = 1.0; o.color = (0.0,1.0,0.0,1.0)
         o.rotation_euler[2] = math.pi  # cone tip points +Y by default; flip to -Y (game forward)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNS)
@@ -94,11 +98,15 @@ class OG_OT_SpawnCheckpoint(Operator):
         "moves around, so these act as silent progress saves without any trigger actors."
     )
     def execute(self, ctx):
+        from ..collections import _active_level_col, _resolve_vis_nick
+        nick = _resolve_vis_nick(_active_level_col(ctx.scene))
         n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")])
+        while f"CHECKPOINT_{nick}_cp{n}" in bpy.data.objects:
+            n += 1
         uid = f"cp{n}"
         bpy.ops.object.empty_add(type="CONE", location=ctx.scene.cursor.location)
         o = ctx.active_object
-        o.name = f"CHECKPOINT_{uid}"; o.show_name = True
+        o.name = f"CHECKPOINT_{nick}_{uid}"; o.show_name = True
         o.empty_display_size = 1.2; o.color = (1.0, 0.85, 0.0, 1.0)
         o.rotation_euler[2] = math.pi  # cone tip points +Y by default; flip to -Y (game forward)
         o["og_checkpoint_radius"] = 3.0
@@ -206,10 +214,12 @@ class OG_OT_SpawnEntity(Operator):
             except Exception: pass
         info  = ENTITY_DEFS.get(etype, {})
         shape = info.get("shape", "SPHERE")
+        pre_sel = list(ctx.selected_objects)
+        from ..collections import free_object_name
         n     = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
         bpy.ops.object.empty_add(type=shape, location=ctx.scene.cursor.location)
         o = ctx.active_object
-        o.name = f"ACTOR_{etype}_{n}"
+        o.name = free_object_name(f"ACTOR_{etype}_", n)
         o.show_name = True
         o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
         o.color = _db.actor_color(etype)                       # category color
@@ -279,7 +289,104 @@ class OG_OT_SpawnEntity(Operator):
                 # Never crash the spawn operator over a preview failure
                 log(f"model_preview: {e}")
 
+        for msg in auto_connect(ctx, o, etype, pre_sel):
+            self.report({"INFO"}, msg)
+        select_only(ctx, o)
         return {"FINISHED"}
+
+def select_only(ctx, o):
+    """The spawned object becomes the only selected object and the active one
+    (ready to move / rotate / scale)."""
+    for x in list(ctx.selected_objects):
+        x.select_set(False)
+    o.select_set(True)
+    ctx.view_layer.objects.active = o
+
+
+def auto_connect(ctx, o, etype, pre_sel):
+    """Preference "Connect spawned actors to the selection": what was selected
+    before spawning gets linked: curves -> path, a nav-mesh (or an actor that
+    has one -> its nav-mesh-actor) -> nav-mesh, a VOL_ volume -> volume.
+    Returns messages for what was linked."""
+    a = bpy.context.preferences.addons.get("opengoal_tools")
+    if not (a and getattr(a.preferences, "auto_connect_spawn", True)):
+        return []
+    from .links import _is_navmesh
+    from ..data import _actor_set_link
+    done = []
+    if _db.uses_waypoints(etype):
+        for c in [x for x in pre_sel if x.type == "CURVE"]:
+            src = o.og_waypoint_sources.add()
+            src.obj = c
+            done.append(f"path: {c.name}")
+    if _actor_uses_navmesh(etype):
+        nm = next((x for x in pre_sel if _is_navmesh(x)), None)
+        owner = next((x for x in pre_sel if x.name.startswith("ACTOR_") and x.get("og_navmesh_link")), None)
+        if nm is not None:
+            bpy.ops.og.link_navmesh_to(actor_name=o.name, target_name=nm.name)
+            done.append(f"nav-mesh: {nm.name}")
+        elif owner is not None and _db.link_slot(etype, "nav-mesh-actor", 0):
+            _actor_set_link(o, "nav-mesh-actor", 0, owner.name)
+            done.append(f"nav-mesh-actor: {owner.name}")
+    if _db.needs_vol(etype):
+        for v in [x for x in pre_sel if x.type == "MESH" and x.name.startswith("VOL_")][:1]:
+            bpy.ops.og.add_link_from_selection(vol_name=v.name, target_name=o.name)
+            done.append(f"volume: {v.name}")
+    if done:
+        log(f"  [spawn] {o.name} connected to the selection: {', '.join(done)}")
+    return [f"{o.name} connected to the selection: {', '.join(done)}"] if done else []
+
+
+def _actor_search_items(self, ctx):
+    """Every spawnable actor, plus one entry per variant ("Label — Variant")."""
+    items = []
+    for et, info in ENTITY_DEFS.items():
+        if (_db.find_actor(et) or {}).get("category") in (None, "Hidden"):
+            continue
+        label = info.get("label", et)
+        choices = _db.variant_choices(et)
+        if choices:
+            for c in choices:
+                vid = c.get("id", c.get("value"))
+                items.append((f"{et}|{vid}", f"{label} — {c.get('label', vid)}", et))
+        else:
+            items.append((et, label, et))
+    _ADD_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(sorted(items, key=lambda x: x[1].lower()))]
+    return _ADD_ITEMS
+
+
+_ADD_ITEMS: list = []
+
+
+class OG_OT_AddActorSearch(Operator):
+    """Add an OpenGOAL actor at the 3D cursor: search by name (variants listed too)"""
+    bl_idname   = "og.add_actor_search"
+    bl_label    = "OpenGOAL Object"
+    bl_options  = {"UNDO"}          # no redo panel: everything is picked in the search
+    bl_property = "etype"
+    etype: bpy.props.EnumProperty(name="Actor", items=_actor_search_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        et, _, vid = self.etype.partition("|")
+        ctx.scene.og_props.entity_type = et
+        r = bpy.ops.og.spawn_entity()
+        vf = _db.variant_field(et)
+        if vid and vf and "FINISHED" in r:
+            bpy.ops.og.set_actor_enum_field(prop_key=vf["key"], value=vid)
+        return {"FINISHED"} if "FINISHED" in r else {"CANCELLED"}
+
+
+def draw_add_menu(self, ctx):
+    """Shift+A: "OpenGOAL Object" at the bottom of the Add menu (opens the
+    search first; the Add menu runs operators without invoke by default)."""
+    self.layout.separator()
+    self.layout.operator_context = "INVOKE_REGION_WIN"
+    self.layout.operator("og.add_actor_search", text="OpenGOAL Object", icon="OUTLINER_OB_EMPTY")
+
 
 class OG_OT_DuplicateEntity(Operator):
     """Duplicate the selected ACTOR empty and re-attach its preview mesh."""
@@ -498,9 +605,36 @@ class OG_OT_SpawnCamera(Operator):
         o["og_cam_look_at"] = ""
         for f in _db.cameras().get("fields", []):
             o[f["key"]] = f.get("default", 0.0)
+        camera_fov_driver(o)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         self.report({"INFO"}, f"Added {o.name}  |  Numpad-0 to look through it")
         return {"FINISHED"}
+
+def camera_fov_driver(o):
+    """The Blender camera shows the game FOV: lens unit Field of View
+    (horizontal), its angle driven by og_cam_fov (0 = the game's 64). The
+    angle itself can't take a driver, so the focal length is driven from the
+    FOV and the sensor width (angle = 2 atan(sensor / 2 lens))."""
+    cam = o.data
+    cam.lens_unit = "FOV"
+    cam.sensor_fit = "HORIZONTAL"
+    fc = cam.driver_add("lens")
+    drv = fc.driver
+    drv.type = "SCRIPTED"
+    v = drv.variables.new()
+    v.name = "fov"
+    v.type = "SINGLE_PROP"
+    v.targets[0].id_type = "OBJECT"
+    v.targets[0].id = o
+    v.targets[0].data_path = '["og_cam_fov"]'
+    s = drv.variables.new()
+    s.name = "sw"
+    s.type = "SINGLE_PROP"
+    s.targets[0].id_type = "CAMERA"
+    s.targets[0].id = cam
+    s.targets[0].data_path = "sensor_width"
+    drv.expression = "sw / (2 * tan(radians(fov if fov > 0 else 64.0) / 2))"
+
 
 class OG_OT_SpawnVolume(Operator):
     """Spawn a generic trigger volume (VOL_N wireframe cube).
@@ -761,10 +895,12 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         scene = ctx.scene
         cur   = scene.cursor.location
         etype = self.etype or "water-vol"
+        pre_sel = list(ctx.selected_objects)
 
         # 1) The water-vol actor empty (like any other actor).
+        from ..collections import free_object_name
         n = len([o for o in _level_objects(scene) if o.name.startswith(f"ACTOR_{etype}_")])
-        actor_name = f"ACTOR_{etype}_{n}"
+        actor_name = free_object_name(f"ACTOR_{etype}_", n)
         bpy.ops.object.empty_add(type="PLAIN_AXES", location=cur)
         actor = ctx.active_object
         actor.name = actor_name
@@ -787,6 +923,9 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
                 log(f"model_preview: {e}")
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
+        for msg in auto_connect(ctx, actor, etype, pre_sel):
+            self.report({"INFO"}, msg)
+        select_only(ctx, actor)
         self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")
         return {"FINISHED"}
 
@@ -824,7 +963,7 @@ class OG_OT_AddActorVolume(Operator):
         bpy.ops.mesh.primitive_cube_add(size=4.0, location=actor.matrix_world.translation)
         vol = make_volume(ctx.scene, ctx.active_object, actor.name)
         vol.color = (0.1, 0.4, 1.0, 0.4)
-        ctx.view_layer.objects.active = actor
+        select_only(ctx, actor)   # the new volume isn't left selected (spawn auto-connect)
         self.report({"INFO"}, f"Added {vol.name} linked to {actor.name}")
         return {"FINISHED"}
 
@@ -1194,6 +1333,7 @@ CLASSES = (
     OG_OT_ClearPreviews,
     OG_OT_PickSound,
     OG_OT_AddSoundEmitter,
+    OG_OT_AddActorSearch,
     OG_OT_AddMusicZone,
     OG_OT_SpawnCamera,
     OG_OT_SpawnVolume,

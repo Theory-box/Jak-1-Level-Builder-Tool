@@ -117,7 +117,8 @@ def collect_aggro_triggers(scene):
             if len(parts) < 3:
                 log(f"  [WARNING] aggro-trigger {vol.name}: malformed target name '{entry.target_name}' — skipped")
                 continue
-            target_lump_name = f"{parts[1]}-{parts[2]}"
+            from ..collections import actor_lump_name
+            target_lump_name = actor_lump_name(entry.target_name)
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
             planes, cull_r = _vol_planes(vol)
             if not planes:
@@ -173,7 +174,8 @@ def collect_custom_triggers(scene):
             if len(parts) < 3:
                 log(f"  [WARNING] vol-trigger {vol.name}: malformed target name '{entry.target_name}' — skipped")
                 continue
-            target_lump_name = f"{parts[1]}-{parts[2]}"
+            from ..collections import actor_lump_name
+            target_lump_name = actor_lump_name(entry.target_name)
             xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
             planes, cull_r = _vol_planes(vol)
             if not planes:
@@ -289,7 +291,7 @@ def _cam_vols_by_role(level_objs):
         if o.type == "MESH" and o.name.startswith("VOL_"):
             for entry in _vol_links(o):
                 if _classify_target(entry.target_name) == "camera":
-                    role = getattr(entry, "cam_role", "vol") or "vol"
+                    role = getattr(entry, "role", "vol") or "vol"
                     out.setdefault(entry.target_name, {}).setdefault(role, []).append(o)
     return out
 
@@ -368,6 +370,9 @@ def collect_builtin_cameras(scene):
                 log(f"  [camera] {name}: {pwarn}")
             if knots is None and len(raw) >= 2:
                 raw, knots = _pm.straight_bezier(raw)
+            if knots and getattr(cam_obj, "og_path_knots_manual", False):
+                knots, _kn = _pm.manual_knots(knots, [k.value for k in cam_obj.og_path_knots])
+                log(f"  [camera] {name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if knots and len(raw) <= _pm.MAX_CVERTS:
                 lump["campath"] = ["vector4m"] + [_to_game_coords(mathutils.Vector(p)) for p in raw]
                 lump["campath-k"] = ["float"] + knots
@@ -436,7 +441,7 @@ def collect_cameras(scene):
                 if _classify_target(entry.target_name) == "camera":
                     # Preferred / cut-out roles are built-in-camera features; the
                     # legacy trigger can only switch a camera ON inside a volume.
-                    role = getattr(entry, "cam_role", "vol") or "vol"
+                    role = getattr(entry, "role", "vol") or "vol"
                     if role != "vol":
                         log(f"  [camera] WARNING: {o.name} is a '{role}' volume for "
                             f"{entry.target_name} — legacy cameras ignore it (needs built-in cameras)")
@@ -609,10 +614,8 @@ def collect_spawns(scene):
         if not (is_spawn or is_checkpoint):
             continue
 
-        if is_spawn:
-            uid = o.name[6:] or "start"
-        else:
-            uid = o.name[11:] or "cp0"
+        from ..collections import spawn_uid
+        uid = spawn_uid(o)
 
         l = o.location
         gx = round(l.x,  4)

@@ -48,9 +48,9 @@ from ..export import (
     export_glb,
 )
 from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _GEO_REBUILD_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
+    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_geo_rebuild, _bg_build_and_play,
+    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (

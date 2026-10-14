@@ -34,6 +34,7 @@ from .collections import (
     _get_include_text_live, _set_include_text_live,
     _on_mood_changed, _on_sky_changed,
     _get_texture_source_live, _set_texture_source_live,
+    _get_actor_name_nick_live, _set_actor_name_nick_live,
     _on_fog_override_changed,
 )
 
@@ -206,6 +207,19 @@ class OGPreferences(AddonPreferences):
         description="Automatically show the enemy's game model as a viewport stand-in when spawning",
         default=True,
     )
+    select_via_preview: BoolProperty(
+        name="Select actors by their preview model",
+        description=("Clicking (or box-selecting) an actor's preview model selects the actor instead. "
+                     "Turn off to select preview meshes themselves"),
+        default=True,
+        update=lambda self, ctx: __import__(__package__ + ".model_preview", fromlist=["x"]).set_previews_selectable(self.select_via_preview),
+    )
+    auto_connect_spawn: BoolProperty(
+        name="Connect spawned actors to the selection",
+        description=("When spawning an actor, link what was selected: curves become its path, a nav-mesh "
+                     "(or an actor that has one) its nav-mesh, a VOL_ volume its volume"),
+        default=True,
+    )
 
     def draw(self, ctx):
         import sys
@@ -220,6 +234,8 @@ class OGPreferences(AddonPreferences):
         if not self.og_root_path.strip():
             layout.separator()
             layout.prop(self, "preview_models")
+            layout.prop(self, "select_via_preview")
+            layout.prop(self, "auto_connect_spawn")
             # Advanced — always last, and doesn't need any folder set.
             layout.separator()
             self._draw_database(layout)
@@ -327,6 +343,8 @@ class OGPreferences(AddonPreferences):
 
         layout.separator()
         layout.prop(self, "preview_models")
+        layout.prop(self, "select_via_preview")
+        layout.prop(self, "auto_connect_spawn")
 
         # Advanced — always last.
         layout.separator()
@@ -377,11 +395,9 @@ def _launch_checkpoint_items(self, context):
     for o in _recursive_col_objects(col, exclude_no_export=True):
         if o.type != "EMPTY" or o.name.endswith("_CAM"):
             continue
-        if o.name.startswith("SPAWN_"):
-            uid = o.name[6:] or "start"
-        elif o.name.startswith("CHECKPOINT_"):
-            uid = o.name[11:] or "cp0"
-        else:
+        from .collections import spawn_uid
+        uid = spawn_uid(o)
+        if uid is None:
             continue
         if uid in seen_uids:
             continue
@@ -432,6 +448,13 @@ class OGProperties(PropertyGroup):
         name="Spawn",
         description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
         items=_launch_checkpoint_items,
+    )
+    og_modbase_spawn: BoolProperty(
+        name="Boot into spawn (mod-base)",
+        description="mod-base only: builds write the spawn into engine/mods/mod-settings.gc "
+                    "(*debug-continue-point*) so the game boots straight there instead of teleporting Jak "
+                    "after the boot. Not available on jak-project releases / dev clones",
+        default=True,
     )
     # Launch timing — exposed in Developer Tools for tuning per-machine.
     # See _bg_play in build.py for how these are used.
@@ -628,6 +651,11 @@ class OGProperties(PropertyGroup):
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
                                          update=_on_mood_changed,
                                          description="Stock jak-project mood-context to load. Selects fog, light, and sun tables; the matching update-mood-* callback runs every frame. 'beach' uses the village1 callback")
+    actor_name_nick:        BoolProperty(name="Level nick in actor names",
+                                         description=("Exported actor names start with the level's vis nickname "
+                                                      "(<nick>-babak-0) so they can't clash with vanilla actors or other "
+                                                      "levels loaded at the same time"),
+                                         get=_get_actor_name_nick_live, set=_set_actor_name_nick_live)
     texture_source:         EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS,
                                          get=_get_texture_source_live, set=_set_texture_source_live,
                                          description="Vanilla level to borrow textures + sky from. Use 'None' for any level streamed alongside another custom level — two co-resident levels sharing a source crash on load")
@@ -957,7 +985,7 @@ class OGVolLink(PropertyGroup):
         default="cue-chase",
         description="Event sent to the enemy on volume enter (nav-enemies only — ignored for cameras/checkpoints)",
     )
-    cam_role:    EnumProperty(
+    role:        EnumProperty(
         name="Volume role",
         items=[
             ("vol",       "Volume",    "Camera is used while Jak is inside"),
@@ -965,7 +993,7 @@ class OGVolLink(PropertyGroup):
             ("cutoutvol", "Cut-out",   "Camera is NOT used while Jak is inside (cuts a hole in its volume)"),
         ],
         default="vol",
-        description="How a linked camera uses this volume (built-in cameras only)",
+        description="How the linked target uses this volume (volume panel \"roles\"; cameras: built-in only)",
     )
 
 
