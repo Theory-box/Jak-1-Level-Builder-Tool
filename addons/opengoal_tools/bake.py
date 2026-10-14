@@ -20,6 +20,7 @@
 #   - Light passes unplug the materials' Color Attribute nodes (they read a
 #     colour layer: black colour = black surface, alpha 0 = see-through
 #     surface, both bake black). The emit pass gets the colour back, not alpha.
+#     Option "Ignore vertex colours in materials" (on by default).
 #   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
 #     (the level builder's names), each with only its own light collection
 #     rendering and its own world; emit / curve / blur apply to every time.
@@ -206,6 +207,11 @@ class OGBakeSettings(bpy.types.PropertyGroup):
                                             description="Also treat edges sharper than the angle as sharp")
     blur_angle: bpy.props.FloatProperty(name="Angle", default=math.radians(30.0), min=0.0, max=math.pi,
                                         subtype="ANGLE")
+    ignore_vertex_colors: bpy.props.BoolProperty(
+        name="Ignore vertex colours in materials", default=True,
+        description="While baking light, unplug the materials' Color Attribute nodes (colour and alpha). "
+                    "They read colour layers: a black layer bakes black, alpha 0 makes the surface see-through "
+                    "(also black). Off: vertex colours / transparency affect the bake")
     show_options: bpy.props.BoolProperty(name="Bake options", default=True)
     show_tod: bpy.props.BoolProperty(name="Time of day", default=True)
     tod_enabled: bpy.props.BoolProperty(
@@ -587,7 +593,8 @@ def _run_pass():
         if attr != BAKE_ATTR:
             _tod_setup(job, attr)
         _prepare(objs, attr, job["domain"])
-        _cut_colour_links(job, objs)
+        if job.get("ignore_vc", True):
+            _cut_colour_links(job, objs)
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
         _relink(job, "Color")              # emission may come from vertex colours (alpha stays off)
@@ -764,6 +771,7 @@ def start(objs, level_col, blocking=False):
     import time
     _JOB.update({"t": time.time(), "objs": [o.name for o in objs], "emit_objs": emit_objs, "passes": passes, "i": 0,
                  "domain": s.domain if s is not None else "CORNER",
+                 "ignore_vc": s.ignore_vertex_colors if s is not None else True,
                  "level": level_col.name if level_col is not None else "", "blocking": blocking})
     _safe(_run_pass)
     return passes
@@ -822,6 +830,7 @@ def draw_options(layout, level_col, scene=None):
                 row.prop(s, "blur_auto_sharp")
                 sub = row.row(); sub.enabled = s.blur_auto_sharp
                 sub.prop(s, "blur_angle")
+    box.prop(s, "ignore_vertex_colors")
 
 
 def draw_tod(layout, level_col):
