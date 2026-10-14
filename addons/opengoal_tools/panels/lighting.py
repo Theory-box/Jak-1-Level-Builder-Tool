@@ -58,10 +58,19 @@ class OG_PT_Lighting(Panel):
         targets = _bakeable_meshes(sel)
         skipped = len(sel) - len(targets)
         layout.label(text="Light Baking:", icon="LIGHT")
-        row = layout.row()
-        row.enabled = len(targets) > 0
+        from ..collections import _active_level_col as _alc
+        _lvc = _alc(ctx.scene)
+        tod_n = 0
+        if _lvc is not None and _lvc.og_bake.tod_enabled:
+            from .. import bake as _bk0
+            tod_n = sum(1 for *_x, t in _bk0.tod_times(_lvc.og_bake) if t.enabled)
+        row = layout.row(align=True)
         row.scale_y = 1.6
-        row.operator("og.bake_lighting", text=f"Bake {len(targets)} mesh(es) → Vertex Color", icon="RENDER_STILL")
+        sub = row.row(align=True)
+        sub.enabled = len(targets) > 0
+        sub.operator("og.bake_lighting", icon="RENDER_STILL",
+                     text=f"Bake {len(targets)} mesh(es)" + (f" ({tod_n} Time of day)" if tod_n else ""))
+        row.operator("og.select_level_geometry", text="", icon="RESTRICT_SELECT_OFF")
         st = getattr(ctx.window_manager, "og_bake_status", "")
         if st:
             r = layout.row(); r.alert = st.startswith("Bake error")
@@ -96,6 +105,37 @@ class OG_PT_Lighting(Panel):
             layout.prop(props, "lightbake_samples")
 
 
+class OG_OT_SelectLevelGeometry(bpy.types.Operator):
+    """Select every mesh of the level's GLB (Geometry and its folders; not
+    Disable Export folders, not meshes with rendering off)"""
+    bl_idname = "og.select_level_geometry"
+    bl_label = "Select Level Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from ..collections import _active_level_col
+        from ..export.glb import exported_meshes
+        lv = _active_level_col(ctx.scene)
+        if lv is None:
+            self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
+        meshes = exported_meshes(lv)
+        vl = ctx.view_layer
+        for o in ctx.selected_objects:
+            o.select_set(False)
+        picked, skipped = [], 0
+        for o in meshes:
+            if o.name in vl.objects and o.visible_get() and not o.hide_select:
+                o.select_set(True); picked.append(o)
+            else:
+                skipped += 1
+        if picked:
+            vl.objects.active = picked[0]
+        self.report({"INFO"}, f"Selected {len(picked)} level mesh(es)"
+                              + (f" ({skipped} hidden / unselectable skipped)" if skipped else ""))
+        return {"FINISHED"}
+
+
 CLASSES = (
     OG_PT_Lighting,
+    OG_OT_SelectLevelGeometry,
 )

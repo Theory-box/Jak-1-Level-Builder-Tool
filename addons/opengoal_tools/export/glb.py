@@ -87,6 +87,27 @@ def stray_meshes(level_col):
     return out
 
 
+def exported_meshes(level_col):
+    """The meshes the level GLB is made of: Geometry and its folders, without
+    skip_export folders, without meshes whose rendering is off."""
+    geo = geometry_collection(level_col, create=False)
+    if geo is None:
+        return []
+    out, seen = [], set()
+
+    def walk(c):
+        if _col_is_no_export(c) or c.hide_render:
+            return
+        for o in c.objects:
+            if o.type == "MESH" and not o.hide_render and o.name not in seen:
+                seen.add(o.name)
+                out.append(o)
+        for ch in c.children:
+            walk(ch)
+    walk(geo)
+    return out
+
+
 def export_level_glb(level_col, filepath):
     """Run the level's Geometry exporter to filepath."""
     geo = geometry_collection(level_col)
