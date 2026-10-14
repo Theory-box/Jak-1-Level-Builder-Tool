@@ -14,6 +14,9 @@
 #     than the angle) aren't
 #     mixed, so face-corner bakes keep their clean edges.
 #   - Curve presets: built-ins + your own (saved in the .blend, on the scene).
+#   - Alpha: the bake writes alpha 1.0, so as the last step the alpha of the
+#     user's ALPHA colour layer (ALPHA_SUNRISE ... per time of day, else
+#     ALPHA) is copied into every baked layer (any domain).
 #   - Time of day: one light pass per enabled time into _SUNRISE ... _GREENSUN
 #     (the level builder's names), each with only its own light collection
 #     rendering and its own world; emit / curve / blur apply to every time.
@@ -364,6 +367,35 @@ def blur(mesh, cols, domain, strength, passes, keep_sharp=True, angle=None, shar
     return vals[gid] if domain != "POINT" else vals
 
 
+ALPHA_ATTR = "ALPHA"
+
+
+def alpha_source(mesh, attr_name):
+    """The user's alpha layer for a baked layer: ALPHA_SUNRISE ... for a time
+    of day layer when it exists, else ALPHA. None when there's none."""
+    cas = mesh.color_attributes
+    if attr_name.startswith("_") and (ALPHA_ATTR + attr_name) in cas:
+        return cas[ALPHA_ATTR + attr_name]
+    return cas.get(ALPHA_ATTR)
+
+
+def alpha_values(mesh, src, domain):
+    """The source layer's alpha on `domain` (face corners / points)."""
+    vals, _ = _read(src)
+    a = vals[:, 3]
+    if src.domain == domain:
+        return a
+    lv = np.empty(len(mesh.loops), dtype=np.int64)
+    mesh.loops.foreach_get("vertex_index", lv)
+    if src.domain == "POINT" and domain == "CORNER":
+        return a[lv]
+    if src.domain == "CORNER" and domain == "POINT":   # mean of each vertex's corners
+        s = np.bincount(lv, weights=a, minlength=len(mesh.vertices))
+        n = np.bincount(lv, minlength=len(mesh.vertices))
+        return np.where(n > 0, s / np.maximum(n, 1), 1.0)
+    return None
+
+
 def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None):
     """Emit combine, curve, blur on each baked layer (BakedLight, or the time
     of day layers)."""
@@ -387,6 +419,12 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
                 sf = sharp_arrays(obj)              # once per object
             cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
                         settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None, sf)
+        # last step: the user's alpha (the bake writes 1.0)
+        src = alpha_source(mesh, name)
+        if src is not None:
+            al = alpha_values(mesh, src, attr.domain)
+            if al is not None and len(al) == len(cols):
+                cols[:, 3] = al
         _write(attr, np.clip(cols, 0.0, 1.0), key)
     if _EMIT_ATTR in mesh.color_attributes:
         mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
@@ -701,6 +739,8 @@ def draw_options(layout, level_col, scene=None):
         box.prop(scene.og_props, "lightbake_samples")
     box.row().prop(s, "domain", expand=True)
     box.prop(s, "emit_strength")
+    r = box.row(); r.enabled = False
+    r.label(text=f"Alpha: from an '{ALPHA_ATTR}' colour layer (or {ALPHA_ATTR}_SUNRISE ... per time)", icon="INFO")
     col = box.column()
     col.prop(s, "use_curve")
     if s.use_curve:
