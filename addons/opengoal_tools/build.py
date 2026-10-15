@@ -635,6 +635,11 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     patch_load_boundaries(name, collect_load_boundaries(scene), scene)
     patch_game_gp(name, code_deps, scene=scene)
     prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
+    # custom tasks of the .blend (Tasks panel; only written when changed)
+    from .export.tasks_export import export_tasks
+    errs = export_tasks(scene)
+    if errs:
+        raise RuntimeError("Tasks: " + "; ".join(errs[:3]))
     return navmesh_actors
 
 

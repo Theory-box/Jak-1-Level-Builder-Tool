@@ -56,13 +56,22 @@ def _levels(scene):
     return _all_level_collections(scene)
 
 
+_ITEMS = {"levels": [], "filter": []}     # dynamic enum items must stay referenced (else the dropdown flickers)
+
+
 def _level_items(self, ctx):
     scene = ctx.scene if ctx else bpy.context.scene
-    return [(c.name, str(c.get("og_level_name", c.name)), "") for c in _levels(scene)] or [("", "(no level)", "")]
+    items = [(c.name, str(c.get("og_level_name", c.name)), "") for c in _levels(scene)] or [("NONE", "(no level)", "")]
+    if items != _ITEMS["levels"]:
+        _ITEMS["levels"] = items
+    return _ITEMS["levels"]
 
 
 def _filter_items(self, ctx):
-    return [("ALL", "All tasks", "Every task of this .blend")] + list(_level_items(self, ctx))
+    items = [("ALL", "All tasks", "Every task of this .blend")] + list(_level_items(self, ctx))
+    if items != _ITEMS["filter"]:
+        _ITEMS["filter"] = items
+    return _ITEMS["filter"]
 
 
 def _task_level_get(self):
