@@ -458,8 +458,10 @@ def patch_entity_gc(navmesh_actors):
 
     # ── Strip any previously injected block ──────────────────────────────────
     import re
+    # (with the blank line the insert below adds before birth!, or every build
+    # would add a line: entity.gc changed = the engine recompiled from there)
     txt = re.sub(
-        r"\n;; \[OpenGOAL Tools\] BEGIN custom-nav-mesh.*?;; \[OpenGOAL Tools\] END custom-nav-mesh\n",
+        r"\n;; \[OpenGOAL Tools\] BEGIN custom-nav-mesh.*?;; \[OpenGOAL Tools\] END custom-nav-mesh\n\n?",
         "",
         txt,
         flags=re.DOTALL,
