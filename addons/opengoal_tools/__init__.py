@@ -212,6 +212,8 @@ def register():
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
     _bake.register_props()   # needs OGBakeSettings registered
     _level_settings.register_props()
+    from . import required as _required
+    _required.register_handlers()
 
     # Audit results — registered after OGAuditResult is in classes tuple.
     bpy.types.Scene.og_audit_results       = bpy.props.CollectionProperty(type=OGAuditResult)
@@ -482,6 +484,8 @@ def unregister():
     _distribute.unregister_props()
     _bake.unregister_props()
     _level_settings.unregister_props()
+    from . import required as _required
+    _required.unregister_handlers()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr

@@ -105,27 +105,14 @@ def check_navmesh_links(scene):
 # ---------------------------------------------------------------------------
 
 def check_missing_paths(scene):
+    """Required paths (required.py, shared with the panels' warnings)."""
+    from .required import missing
     issues = []
     for o in _actor_objs(scene):
-        et = _etype(o)
-        if not et or not _db.needs_path(et):
-            continue
-        if _actor_get_link(o, "path-actor", 0):   # every path lump read from that actor
-            continue
-        info      = ENTITY_DEFS.get(et, {})
-        wp_prefix = o.name + "_wp_"
-        wpb_prefix = o.name + "_wpb_"
-        wp_count  = len(getattr(o, "og_waypoint_sources", [])) or sum(
-            1 for ob in _level_objects(scene)
-            if ob.name.startswith(wp_prefix) and ob.name[len(wp_prefix):].isdigit())
-        wpb_count = sum(len(p.sources) for p in getattr(o, "og_extra_paths", [])
-                        if p.name.strip() == "pathb")
-        if wp_count == 0:
-            issues.append(_issue("ERROR",
-                f"'{o.name}' ({et}) requires path waypoints but has none.", o.name))
-        if info.get("needs_pathb") and wpb_count == 0:
-            issues.append(_issue("ERROR",
-                f"'{o.name}' ({et}) also requires a B-path (pathb) but has none.", o.name))
+        for m in missing(o, scene):
+            if m["panel"] == "path":
+                issues.append(_issue("ERROR",
+                    f"'{o.name}' ({_etype(o)}) requires a {m['key']} path but has none.", o.name))
     return issues
 
 
@@ -140,16 +127,12 @@ def check_actor_links(scene):
         et = _etype(o)
         if not et:
             continue
-        for slot in _actor_link_slots(et):
-            lump_key = slot[0]
-            slot_idx = slot[1] if len(slot) > 1 else 0
-            required = slot[4] if len(slot) > 4 else False
-            if required:
-                filled = bool(_actor_get_link(o, lump_key, slot_idx))
-                if not filled:
-                    issues.append(_issue("WARNING",
-                        f"'{o.name}' ({et}): required link slot '{lump_key}' is unset.",
-                        o.name))
+        from .required import missing
+        for m in missing(o, scene):         # shared with the panels' warnings
+            if m["panel"] == "links":
+                issues.append(_issue("WARNING",
+                    f"'{o.name}' ({et}): required link slot '{m['key']}' is unset.",
+                    o.name))
         slots = list(_actor_link_slots(et))
         for lk in getattr(o, "og_actor_links", []):
             if not lk.target_name.strip():
