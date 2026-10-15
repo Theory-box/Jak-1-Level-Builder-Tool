@@ -783,6 +783,76 @@ class OGProperties(PropertyGroup):
     tex_selected: StringProperty(name="Selected Texture", default="")
 
 
+# --- OGCommandRow ---
+class OGCommandRow(bpy.types.PropertyGroup):
+    """One command of a load-commands list, e.g. special "med-res-level-1" #t
+    (the list is exported as '((cmd) (cmd) ...))."""
+    cmd: StringProperty(name="Command", default="",
+                        description='One load command without its parentheses, e.g. special "med-res-level-1" #t')
+
+
+def command_list_value(rows) -> str:
+    """GOAL quoted list of a command list: '() when empty, else
+    '((cmd 1)
+      (cmd 2))"""
+    cmds = []
+    for r in rows:
+        c = r.cmd.strip()
+        if not c:
+            continue
+        cmds.append(c if c.startswith("(") and c.endswith(")") else f"({c})")
+    if not cmds:
+        return "'()"
+    return "'(" + "\n               ".join(cmds) + ")"
+
+
+class OG_OT_CommandAdd(bpy.types.Operator):
+    """Add a command to the list"""
+    bl_idname = "og.command_add"
+    bl_label = "Add Command"
+    bl_options = {"UNDO"}
+    prop: StringProperty()
+
+    def execute(self, ctx):
+        ob = ctx.active_object
+        if ob is None or not hasattr(ob, self.prop):
+            return {"CANCELLED"}
+        getattr(ob, self.prop).add()
+        return {"FINISHED"}
+
+
+class OG_OT_CommandRemove(bpy.types.Operator):
+    """Remove this command"""
+    bl_idname = "og.command_remove"
+    bl_label = "Remove Command"
+    bl_options = {"UNDO"}
+    prop: StringProperty()
+    index: IntProperty()
+
+    def execute(self, ctx):
+        ob = ctx.active_object
+        if ob is None or not hasattr(ob, self.prop):
+            return {"CANCELLED"}
+        rows = getattr(ob, self.prop)
+        if 0 <= self.index < len(rows):
+            rows.remove(self.index)
+        return {"FINISHED"}
+
+
+def draw_command_list(layout, ob, prop, label):
+    """A list of command rows with + / - buttons."""
+    rows = getattr(ob, prop)
+    head = layout.row(align=True)
+    head.label(text=f"{label} ({len(rows)})" if rows else label)
+    head.operator("og.command_add", text="", icon="ADD").prop = prop
+    col = layout.column(align=True)
+    for i, r in enumerate(rows):
+        row = col.row(align=True)
+        row.prop(r, "cmd", text="")
+        op = row.operator("og.command_remove", text="", icon="REMOVE")
+        op.prop = prop; op.index = i
+
+
 # --- OGLumpRow ---
 class OGLumpRow(bpy.types.PropertyGroup):
     """One custom lump entry on an ACTOR_ empty.

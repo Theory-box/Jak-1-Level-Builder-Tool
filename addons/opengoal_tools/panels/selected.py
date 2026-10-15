@@ -260,6 +260,9 @@ def _draw_selected_actor(layout, sel, scene):
             box.label(text="⚠ Also needs a 'pathb' path (Path panel > Add Path)", icon="ERROR")
 
 
+from ..properties import draw_command_list
+
+
 def _draw_continue_settings(layout, sel, scene):
     """Continue-point level/display settings of a CHECKPOINT_.
 
@@ -288,12 +291,12 @@ def _draw_continue_settings(layout, sel, scene):
         header.label(text="Advanced")
         if body is not None:
             _draw_cp_flags(body, sel)
-            body.prop(sel, "og_cp_load_commands")
+            draw_command_list(body, sel, "og_cp_load_cmds", "Load Commands")
     else:
         col = box.column(align=True)
         col.label(text="Advanced:", icon="TOOL_SETTINGS")
         _draw_cp_flags(col, sel)
-        col.prop(sel, "og_cp_load_commands")
+        draw_command_list(col, sel, "og_cp_load_cmds", "Load Commands")
 
 
 def _draw_cp_flags(layout, sel):

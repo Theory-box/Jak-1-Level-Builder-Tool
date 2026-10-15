@@ -864,9 +864,8 @@ def _make_continues(name, spawns, vis_nick=None):
         # the game knows which level you're in (music/menu), so don't use 'none.
         vn = (sp.get("cp_vis_nick") or "").strip()
         vis_nick = f"'{vn}" if vn else f"'{_default_vnick}"
-        # load-commands: blank → empty list; else raw GOAL passthrough.
-        lc = (sp.get("cp_load_commands") or "").strip()
-        load_cmds = lc if lc else "'()"
+        # load-commands: the quoted list built from the checkpoint's command rows
+        load_cmds = (sp.get("cp_load_commands") or "").strip() or "'()"
         # flags: optional continue-flags passthrough (advanced).
         fl = (sp.get("cp_flags") or "").strip()
         flags_line = f"             :flags (continue-flags {fl})\n" if fl else ""

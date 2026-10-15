@@ -99,6 +99,7 @@ from .build import (
 from .properties import (
     OGPreferences, OGProperties,
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
+    OGCommandRow, OG_OT_CommandAdd, OG_OT_CommandRemove,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
     OGWaypointSource, OGKnot, OGExtraPath, OGBattleLurker,
@@ -136,6 +137,9 @@ from .textures import (
 
 classes = (
     *_OPS_CLASSES,
+    OGCommandRow,
+    OG_OT_CommandAdd,
+    OG_OT_CommandRemove,
     OGLumpRow,
     OG_OT_AddLumpRow,
     OG_OT_RemoveLumpRow,
@@ -373,10 +377,7 @@ def register():
     bpy.types.Object.og_cp_flags = bpy.props.EnumProperty(
         name="Continue Flags", items=_flags, options={"ENUM_FLAG"}, default=set(),
         description="continue-flags of this continue point (most are for vanilla sequences)")
-    bpy.types.Object.og_cp_load_commands = bpy.props.StringProperty(
-        name="Load Commands", default="",
-        description="Advanced: raw GOAL load-commands list, e.g. "
-                    "'((display foo display)). Blank = '()")
+    bpy.types.Object.og_cp_load_cmds = bpy.props.CollectionProperty(type=OGCommandRow)
 
     # Load boundary (LOADBND_ mesh) settings → static-load-boundary entries.
     bpy.types.Object.og_lb_closed = bpy.props.BoolProperty(
@@ -501,7 +502,7 @@ def unregister():
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
-              "og_cp_vis_nick","og_cp_flags","og_cp_load_commands","og_cp_name","og_cp_trigger",
+              "og_cp_vis_nick","og_cp_flags","og_cp_load_cmds","og_cp_name","og_cp_trigger",
               "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",

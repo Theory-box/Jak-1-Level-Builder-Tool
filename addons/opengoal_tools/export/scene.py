@@ -583,6 +583,9 @@ def _cp_level_value(o, enum_attr, custom_attr):
     return val
 
 
+from ..properties import command_list_value
+
+
 def _cp_flags(o):
     """The checkpoint's continue-flags, space-separated in bit order."""
     from .. import db
@@ -702,7 +705,7 @@ def collect_spawns(scene):
             "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
             "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
             "cp_flags":         _cp_flags(o),
-            "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
+            "cp_load_commands": command_list_value(getattr(o, "og_cp_load_cmds", ())),
         })
     out.sort(key=lambda d: d["name"] != "start")   # stable: start first
     return out
