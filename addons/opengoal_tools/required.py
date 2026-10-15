@@ -23,16 +23,17 @@ def actor_etype(o):
     return parts[1] if len(parts) >= 3 else None
 
 
-def _has_path(o, name, scene):
+def _has_path(o, name, scene, names=None):
     if name == "path":
         if len(getattr(o, "og_waypoint_sources", ())):
             return True
         prefix = o.name + "_wp_"          # legacy waypoint empties
-        return any(ob.name.startswith(prefix) and ob.name[len(prefix):].isdigit() for ob in scene.objects)
+        return any(n.startswith(prefix) and n[len(prefix):].isdigit()
+                   for n in (names if names is not None else (ob.name for ob in scene.objects)))
     return any(p.name.strip() == name and len(p.sources) for p in getattr(o, "og_extra_paths", ()))
 
 
-def missing(o, scene=None):
+def missing(o, scene=None, names=None):
     """Missing required fields of an actor: [{"panel": "links" | "path",
     "key": lump name, "label": text}] (empty when nothing is missing)."""
     et = actor_etype(o)
@@ -55,7 +56,7 @@ def missing(o, scene=None):
             out.append({"panel": "links", "key": lkey, "slot": sidx, "label": f"{lkey} ({label})" if label != lkey else lkey})
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
-            if not _has_path(o, name, scene):
+            if not _has_path(o, name, scene, names):
                 out.append({"panel": "path", "key": name, "label": f"{name} (path)"})
     return out
 
@@ -129,7 +130,60 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
                     box.label(text="Add it in the Path panel (Add Path)", icon="INFO")
 
 
-CLASSES = (OG_OT_RequiredPopup,)
+def level_summary(by_actor):
+    n = sum(len(v) for v in by_actor.values())
+    lines = [f"{n} required field{'s' if n != 1 else ''} missing:"]
+    for name, items in by_actor.items():
+        lines.append(f"{name} is missing {len(items)}:")
+        lines += [f"  - {m['label']}" for m in items]
+    return "\n".join(lines)
+
+
+def draw_level_count(layout, scene):
+    """Next to Export & Compile: "N ⚠" for the whole level (cached)."""
+    by_actor = level_missing(scene)
+    n = sum(len(v) for v in by_actor.values())
+    if not n:
+        return
+    sub = layout.row(align=True)
+    sub.alert = True
+    sub.operator("og.required_level_popup", text=f"{n} ⚠")
+
+
+class OG_OT_RequiredLevelPopup(bpy.types.Operator):
+    bl_idname = "og.required_level_popup"
+    bl_label = "Missing Required Fields (Level)"
+
+    @classmethod
+    def description(cls, ctx, props):
+        return level_summary(level_missing(ctx.scene)) + "\nClick to see them."
+
+    def invoke(self, ctx, event):
+        return ctx.window_manager.invoke_popup(self, width=420)
+
+    def execute(self, ctx):
+        return {"FINISHED"}
+
+    def draw(self, ctx):
+        layout = self.layout
+        by_actor = level_missing(ctx.scene)
+        if not by_actor:
+            layout.label(text="Nothing missing", icon="CHECKMARK")
+            return
+        layout.label(text="Click an actor to select it; its header warning fills the fields in", icon="INFO")
+        for name, items in by_actor.items():
+            box = layout.box()
+            row = box.row(align=True)
+            op = row.operator("og.select_and_frame", text=name, icon="RESTRICT_SELECT_OFF")
+            op.obj_name = name
+            op = row.operator("og.required_popup", text=f"{len(items)} ⚠")
+            op.actor_name = name; op.panel = ""
+            col = box.column(align=True); col.scale_y = 0.8
+            for m in items:
+                col.label(text=m["label"], icon="DOT")
+
+
+CLASSES = (OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
 
 
 # ── level-wide, cached ──────────────────────────────────────────────────────
@@ -146,8 +200,10 @@ def level_missing(scene):
     if _CACHE["dirty"]:
         from .collections import _level_objects
         res = {}
-        for o in _level_objects(scene):
-            m = missing(o, scene)
+        objs = _level_objects(scene)
+        wp = {ob.name for ob in objs if "_wp_" in ob.name}     # legacy waypoints, looked up once
+        for o in objs:
+            m = missing(o, scene, wp)
             if m:
                 res[o.name] = m
         _CACHE["by_actor"] = res
@@ -157,7 +213,14 @@ def level_missing(scene):
 
 @bpy.app.handlers.persistent
 def _on_depsgraph(scene, depsgraph):
-    _CACHE["dirty"] = True
+    """Any edit except moving things (transform-only updates, every frame
+    while dragging) may change what's missing."""
+    if _CACHE["dirty"]:
+        return
+    for u in depsgraph.updates:
+        if not (u.is_updated_transform and not u.is_updated_geometry and not u.is_updated_shading):
+            _CACHE["dirty"] = True
+            return
 
 
 @bpy.app.handlers.persistent
