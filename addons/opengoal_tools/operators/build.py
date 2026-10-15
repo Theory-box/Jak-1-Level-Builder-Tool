@@ -51,6 +51,7 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
     launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
+    write_level_files, patch_entity_gc, _bg_compile, _file_times, LAUNCH,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -77,11 +78,56 @@ def _booted_cp(ctx):
     return debug_continue_point() if modbase_spawn_on(ctx.scene) else None
 
 
-class OG_OT_ExportBuild(Operator):
+def compile_running() -> bool:
+    """An Export & Compile / Quick Level Export compile is under way."""
+    return any(st.get("status") and not st.get("done") for st in (_BUILD_STATE, _QUICK_EXPORT_STATE))
+
+
+def _redraw(ctx):
+    for a in ctx.screen.areas if ctx.screen else ():
+        if a.type == "VIEW_3D":
+            a.tag_redraw()
+
+
+def _after_compile(ctx, ok):
+    """A compile ended: launch the game when Launch Game was clicked during it
+    or Auto is on."""
+    want = LAUNCH["pending"] or getattr(ctx.scene.og_props, "og_auto_launch", False)
+    LAUNCH["pending"] = False
+    _redraw(ctx)
+    if ok and want:
+        bpy.ops.og.play()
+
+
+class _BuildWatch:
+    """Modal part shared by the compile operators: shows _BUILD_STATE in the
+    status bar until the build thread is done. (A plain mixin: subclassing a
+    registered Operator class broke the parent operator.)"""
+    _timer = None
+
+    def modal(self, ctx, event):
+        if event.type == "TIMER":
+            ctx.workspace.status_text_set("OpenGOAL: " + _BUILD_STATE.get("status","Working..."))
+            if _BUILD_STATE.get("done"):
+                ctx.window_manager.event_timer_remove(self._timer)
+                ctx.workspace.status_text_set(None)
+                if _BUILD_STATE.get("error"):
+                    _after_compile(ctx, False)
+                    self.report({"ERROR"}, _BUILD_STATE["error"]); return {"CANCELLED"}
+                self.report({"INFO"}, _BUILD_STATE.get("status") or "Build complete!")
+                _after_compile(ctx, True)
+                return {"FINISHED"}
+        return {"PASS_THROUGH"}
+
+    def cancel(self, ctx):
+        ctx.window_manager.event_timer_remove(self._timer)
+        ctx.workspace.status_text_set(None)
+
+
+class OG_OT_ExportBuild(_BuildWatch, Operator):
     bl_idname = "og.export_build"
     bl_label  = "Export & Build"
     bl_description = "Export GLB, write all level files, compile with GOALC"
-    _timer = None
 
     def execute(self, ctx):
         name = _lname(ctx)
@@ -105,20 +151,72 @@ class OG_OT_ExportBuild(Operator):
         wm.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
-    def modal(self, ctx, event):
-        if event.type == "TIMER":
-            ctx.workspace.status_text_set("OpenGOAL: " + _BUILD_STATE.get("status","Working..."))
-            if _BUILD_STATE.get("done"):
-                ctx.window_manager.event_timer_remove(self._timer)
-                ctx.workspace.status_text_set(None)
-                if _BUILD_STATE.get("error"):
-                    self.report({"ERROR"}, _BUILD_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Build complete!"); return {"FINISHED"}
-        return {"PASS_THROUGH"}
 
-    def cancel(self, ctx):
-        ctx.window_manager.event_timer_remove(self._timer)
-        ctx.workspace.status_text_set(None)
+def _check_name(op, name):
+    if not name:
+        op.report({"ERROR"}, "Enter a level name first"); return False
+    if len(name) > 10:
+        op.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return False
+    return True
+
+
+class OG_OT_ExportOnly(Operator):
+    bl_idname = "og.export_only"
+    bl_label  = "Only Export"
+    bl_description = "Export the GLB and write all of this level's files, without compiling"
+
+    def execute(self, ctx):
+        name = _lname(ctx)
+        if not _check_name(self, name):
+            return {"CANCELLED"}
+        try:
+            export_glb(ctx, name)
+            write_level_files(name, ctx.scene, ctx.evaluated_depsgraph_get())
+        except Exception as e:
+            self.report({"ERROR"}, f"Export failed: {e}"); return {"CANCELLED"}
+        self.report({"INFO"}, f"Exported {name} (not compiled)")
+        return {"FINISHED"}
+
+
+class OG_OT_ExportBuildAll(_BuildWatch, Operator):
+    bl_idname = "og.export_build_all"
+    bl_label  = "Export & Compile All Levels"
+    bl_description = "Export every level in this .blend, then compile once with GOALC"
+
+    def execute(self, ctx):
+        from ..collections import _all_level_collections
+        props = ctx.scene.og_props
+        levels = _all_level_collections(ctx.scene)
+        if not levels:
+            self.report({"ERROR"}, "No level in this file"); return {"CANCELLED"}
+        prev = props.active_level
+        times = _file_times()
+        navmesh, done = [], []
+        try:
+            # the collectors read the active level: make each one active in turn
+            for col in levels:
+                props.active_level = col.name
+                name = _lname(ctx)
+                if not _check_name(self, name):
+                    return {"CANCELLED"}
+                export_glb(ctx, name)
+                navmesh += write_level_files(name, ctx.scene, ctx.evaluated_depsgraph_get(), navmesh=False)
+                done.append(name)
+            patch_entity_gc(navmesh)          # every level's nav-meshes, not only the last one's
+        except Exception as e:
+            self.report({"ERROR"}, f"Export of {col.name} failed: {e}"); return {"CANCELLED"}
+        finally:
+            if prev in {c.name for c in levels}:
+                props.active_level = prev
+        log(f"[build] exported {len(done)} level(s): {', '.join(done)}")
+        _BUILD_STATE.clear()
+        _BUILD_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
+        threading.Thread(target=_bg_compile, args=(times, _boot_cp(ctx)), daemon=True).start()
+        wm = ctx.window_manager
+        self._timer = wm.event_timer_add(0.5, window=ctx.window)
+        wm.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
 
 class OG_OT_Play(Operator):
     """Launch the game.
@@ -137,6 +235,13 @@ class OG_OT_Play(Operator):
     _timer = None
 
     def execute(self, ctx):
+        if compile_running():
+            # wait for the compile; clicking again cancels the wait
+            LAUNCH["pending"] = not LAUNCH["pending"]
+            _redraw(ctx)
+            self.report({"INFO"}, "The game will launch once the compile is done" if LAUNCH["pending"]
+                        else "Launch after the compile cancelled")
+            return {"FINISHED"}
         cp = getattr(ctx.scene.og_props, "og_launch_checkpoint", "none")
 
         # Bare-launch path: synchronous, no GOALC.
@@ -285,8 +390,10 @@ class OG_OT_QuickExport(Operator):
                 ctx.window_manager.event_timer_remove(self._timer)
                 ctx.workspace.status_text_set(None)
                 if _QUICK_EXPORT_STATE.get("error"):
+                    _after_compile(ctx, False)
                     self.report({"ERROR"}, _QUICK_EXPORT_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Quick export done — load your level in-game")
+                self.report({"INFO"}, _QUICK_EXPORT_STATE.get("status") or "Quick export done — load your level in-game")
+                _after_compile(ctx, True)
                 return {"FINISHED"}
         return {"PASS_THROUGH"}
 
@@ -445,6 +552,8 @@ class OG_OT_BakeLighting(Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_ExportBuild,
+    OG_OT_ExportOnly,
+    OG_OT_ExportBuildAll,
     OG_OT_Play,
     OG_OT_OpenFolder,
     OG_OT_OpenFile,

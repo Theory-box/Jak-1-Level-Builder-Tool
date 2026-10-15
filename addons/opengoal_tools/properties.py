@@ -450,6 +450,9 @@ class OGProperties(PropertyGroup):
         description="Pick a continue-point to spawn at after launch, or (None) to just launch GK",
         items=_launch_checkpoint_items,
     )
+    og_auto_launch: BoolProperty(
+        name="Auto", default=False,
+        description="Launch the game (as Launch Game does) as soon as a compile has finished")
     # Entity Links > Connect all (slot option "connect", connect_neighbours.py)
     og_connect_max_dist: FloatProperty(
         name="Max distance", default=15.0, min=0.0, subtype="DISTANCE",

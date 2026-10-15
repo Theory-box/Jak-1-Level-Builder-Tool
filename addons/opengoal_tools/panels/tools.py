@@ -165,11 +165,23 @@ class OG_PT_BuildPlay(Panel):
 
         col = layout.column(align=True)
         col.scale_y = 1.8
-        col.operator("og.export_build",  text="⚙  Export & Compile",        icon="EXPORT")
+        row = col.row(align=True)
+        row.scale_y = 1.8
+        row.operator("og.export_build",      text="⚙  Export & Compile",   icon="EXPORT")
+        sub = row.row(align=True); sub.scale_x = 0.55
+        sub.operator("og.export_build_all",  text="All levels")
         col.scale_y = 1.4
         col.operator("og.quick_export",   text="🔄  Quick Level Export",       icon="FILE_REFRESH")
-        col.scale_y = 1.8
-        col.operator("og.play",          text="▶  Launch Game",              icon="PLAY")
+        col.operator("og.export_only",    text="Only Export",                  icon="FILE_TICK")
+        # Launch Game: waits for a running compile (hourglass); Auto launches after each compile
+        from ..build import LAUNCH
+        row = col.row(align=True)
+        row.scale_y = 1.8
+        waiting = LAUNCH["pending"]
+        row.operator("og.play", text="Launch Game (after compile)" if waiting else "▶  Launch Game",
+                     icon="SORTTIME" if waiting else "PLAY", depress=waiting)
+        sub = row.row(align=True); sub.scale_x = 0.5
+        sub.prop(ctx.scene.og_props, "og_auto_launch", toggle=True)
         # Spawn dropdown — "none" means bare launch (debug, navigate manually).
         # Selecting any continue-point loads the level and spawns Jak there.
         col.scale_y = 1.0
