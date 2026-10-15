@@ -207,7 +207,7 @@ If the user's version is too old. Keep the menu there but give a warning.
 
 ---
 
-## Baking options
+## Baking options (on main)
 ### Jak handling of vertex color for lighting
 There's some limits in terms of how Jak 1 handle vertex color for lighting
 - Limit range of lighting 
@@ -257,7 +257,7 @@ Vertex alpha can be used in Jak 1 to make part of meshes transparent without hav
 
 ---
 
-## Time of day implementation 
+## Time of day implementation (on main)
 Time of day for custom level has been merged as of https://github.com/open-goal/jak-project/commit/d04ac9d so I've moved this feature under the export settings.
 ### Enable and disabling time of day export
 Have an option in baking that's just a toggle to enable time of day export or not. If the option is off then the current behaviour is kept. If the option is turned on then a bunch of new panel will appear.
