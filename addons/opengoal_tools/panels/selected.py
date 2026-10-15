@@ -966,11 +966,9 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
     for tgt in cands[:6]:
         ok = _db.link_accepts(accepted, _link_target_etype(tgt))
         row = box.row()
-        if not ok:
-            row.alert = True
         op = row.operator("og.set_actor_link",
                           text=(f"{'Add' if append else 'Link'} → {tgt.name}" + ("" if ok else "  (unexpected type)")),
-                          icon="LINKED" if ok else "ERROR")
+                          icon="LINKED" if ok else "QUESTION")
         op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
         op.target_name = tgt.name; op.append = append
     if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
@@ -999,12 +997,14 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
             else:
                 ok = _db.link_accepts(accepted, _link_target_etype(tgt))
                 r2.label(text=e.target_name + ("" if ok else "  (unexpected type)"),
-                         icon="CHECKMARK" if ok else "ERROR")
+                         icon="CHECKMARK" if ok else "QUESTION")
                 op = r2.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = e.target_name
             op = r2.operator("og.clear_actor_link", text="", icon="X")
             op.source_name = obj.name; op.lump_key = lkey; op.slot_index = e.slot_index; op.first_slot = sidx
         if not ents:
-            r2 = box.row(); r2.enabled = False
+            r2 = box.row()
+            r2.alert = required             # red = a required field is missing
+            r2.enabled = required
             r2.label(text=("Required — none linked" if required else "Optional — none linked"),
                      icon="ERROR" if required else "DOT")
         left = [o for o in sel_actors if o.name not in {e.target_name for e in ents}]
@@ -1021,7 +1021,7 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
     if current_obj:
         row2 = box.row(align=True)
         ok = _db.link_accepts(accepted, _link_target_etype(current_obj))
-        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "ERROR")
+        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "QUESTION")
         op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
         op.obj_name = current_name
         op = row2.operator("og.clear_actor_link", text="", icon="X")
@@ -1034,7 +1034,8 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
         op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
     else:
         row2 = box.row(align=True)
-        row2.enabled = False
+        row2.alert = required               # red = a required field is missing
+        row2.enabled = required
         req_text = "Required — not set" if required else "Optional — not set"
         row2.label(text=req_text, icon="ERROR" if required else "DOT")
     _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=False,

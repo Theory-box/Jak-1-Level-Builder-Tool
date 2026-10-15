@@ -1284,6 +1284,12 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
             header_text = f"Path  ({n_legacy} legacy waypoint{'s' if n_legacy != 1 else ''})"
 
         layout.label(text=header_text, icon="ANIM")
+        if etype and not opts.get("lump"):      # red = a required path is missing
+            from ..required import missing as _missing
+            for m in _missing(sel, scene):
+                if m["panel"] == "path":
+                    w = layout.row(); w.alert = True
+                    w.label(text=f"Required — no {m['key']}", icon="ERROR")
 
         # If the new collection is empty and legacy _wp_NN empties exist,
         # offer a one-click migration. Skips Path B which stays on the
