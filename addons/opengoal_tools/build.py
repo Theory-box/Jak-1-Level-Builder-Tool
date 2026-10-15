@@ -278,26 +278,55 @@ def goalc_run(cmd, timeout=GOALC_COMPILE_TIMEOUT):
         return None
     t0 = time.time()
     n = 0
+    seen = []                                # GOALC's log since cmd was sent
+
+    def read_log():
+        nonlocal pos
+        if lg is None:
+            return ""
+        try:
+            with open(lg, "rb") as f:
+                f.seek(pos)
+                raw = f.read()
+            pos += len(raw)
+            txt = raw.decode(errors="replace")
+            seen.append(txt)
+            return txt
+        except OSError:
+            return ""
     while time.time() - t0 < timeout:
         time.sleep(0.25)
         if stamp() > before:
+            read_log()
+            LAST_COMPILE["summary"] = _compile_summary("".join(seen), time.time() - t0)
             return "done"
         n += 1
         if n % 4:
             continue
-        if lg is not None:                   # an error stops cmd: the marker never comes
-            try:
-                with open(lg, "rb") as f:
-                    f.seek(pos)
-                    new = f.read().decode(errors="replace")
-                pos += len(new.encode(errors="replace"))
-                if any(e in new for e in _COMPILE_ERRORS):
-                    return "failed"
-            except OSError:
-                pass
+        if any(e in read_log() for e in _COMPILE_ERRORS):   # an error stops cmd: no marker
+            return "failed"
         if n % 40 == 0 and not _process_running(f"goalc{_EXE}"):   # GOALC closed
             return None
     return None
+
+
+LAST_COMPILE = {"summary": ""}
+# Launch Game clicked during a compile: launch once it's done (operators/build.py)
+LAUNCH = {"pending": False}
+_STEP_RE = re.compile(r"\[\s*\d+%\]\s*\[([a-z-]+)\s*\]\s*([\d.]+)\s+(\S+)")
+
+
+def _compile_summary(text, seconds):
+    """'3 of 1345 targets, 9.8 s (build-level unedtest 8.5 s, ...)' from
+    GOALC's log of one (mi)."""
+    text = re.sub(chr(27) + r"\[[0-9;]*m", "", text)   # colour codes
+    m = re.search(r"Found that (\d+) of (\d+) targets", text)
+    steps = sorted(((float(t), tool, Path(name).stem) for tool, t, name in _STEP_RE.findall(text)
+                    if "og-done" not in name), reverse=True)
+    slow = ", ".join(f"{tool} {name} {t:.1f}s" for t, tool, name in steps[:3] if t >= 0.5)
+    head = f"{m.group(1)} of {m.group(2)} targets rebuilt" if m else "compiled"
+    log(f"[build] {head} in {seconds:.1f}s" + (f" — slowest: {slow}" if slow else ""))
+    return f"{head}, {seconds:.1f}s" + (f" ({slow})" if slow else "")
 
 
 USER_NAME = "blender"
@@ -550,6 +579,7 @@ def _compile(state, scope):
             return False
         scope = "first build since GOALC started: all game code"
     state["status"] = f"Compiling (mi): {scope} — please wait..."
+    LAST_COMPILE["summary"] = ""
     r = goalc_run("(mi)")
     if r != "done":
         state["error"] = ("Compile failed — see the GOALC console" if r == "failed" else
@@ -615,7 +645,7 @@ def _bg_build(name, scene, depsgraph=None, boot_cp=None):
         scope = _compile_scope(times)
         _restart_goalc_if_types_changed(state)
         if _compile(state, scope):
-            state["ok"] = True; state["status"] = f"Build complete! ({scope})"
+            state["ok"] = True; state["status"] = f"Build complete! ({scope}; {LAST_COMPILE['summary']})"
     except Exception as e:
         state["error"] = str(e)
     finally:
@@ -782,7 +812,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
             return
 
         state["ok"] = True
-        state["status"] = "Done! Reload your level in-game."
+        state["status"] = f"Done! Reload your level in-game. ({LAST_COMPILE['summary']})"
     except Exception as e:
         state["error"] = str(e)
     finally:

@@ -51,7 +51,7 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
     launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-    write_level_files, patch_entity_gc, _bg_compile, _file_times,
+    write_level_files, patch_entity_gc, _bg_compile, _file_times, LAUNCH,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -78,6 +78,27 @@ def _booted_cp(ctx):
     return debug_continue_point() if modbase_spawn_on(ctx.scene) else None
 
 
+def compile_running() -> bool:
+    """An Export & Compile / Quick Level Export compile is under way."""
+    return any(st.get("status") and not st.get("done") for st in (_BUILD_STATE, _QUICK_EXPORT_STATE))
+
+
+def _redraw(ctx):
+    for a in ctx.screen.areas if ctx.screen else ():
+        if a.type == "VIEW_3D":
+            a.tag_redraw()
+
+
+def _after_compile(ctx, ok):
+    """A compile ended: launch the game when Launch Game was clicked during it
+    or Auto is on."""
+    want = LAUNCH["pending"] or getattr(ctx.scene.og_props, "og_auto_launch", False)
+    LAUNCH["pending"] = False
+    _redraw(ctx)
+    if ok and want:
+        bpy.ops.og.play()
+
+
 class _BuildWatch:
     """Modal part shared by the compile operators: shows _BUILD_STATE in the
     status bar until the build thread is done. (A plain mixin: subclassing a
@@ -91,8 +112,11 @@ class _BuildWatch:
                 ctx.window_manager.event_timer_remove(self._timer)
                 ctx.workspace.status_text_set(None)
                 if _BUILD_STATE.get("error"):
+                    _after_compile(ctx, False)
                     self.report({"ERROR"}, _BUILD_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Build complete!"); return {"FINISHED"}
+                self.report({"INFO"}, _BUILD_STATE.get("status") or "Build complete!")
+                _after_compile(ctx, True)
+                return {"FINISHED"}
         return {"PASS_THROUGH"}
 
     def cancel(self, ctx):
@@ -211,6 +235,13 @@ class OG_OT_Play(Operator):
     _timer = None
 
     def execute(self, ctx):
+        if compile_running():
+            # wait for the compile; clicking again cancels the wait
+            LAUNCH["pending"] = not LAUNCH["pending"]
+            _redraw(ctx)
+            self.report({"INFO"}, "The game will launch once the compile is done" if LAUNCH["pending"]
+                        else "Launch after the compile cancelled")
+            return {"FINISHED"}
         cp = getattr(ctx.scene.og_props, "og_launch_checkpoint", "none")
 
         # Bare-launch path: synchronous, no GOALC.
@@ -359,8 +390,10 @@ class OG_OT_QuickExport(Operator):
                 ctx.window_manager.event_timer_remove(self._timer)
                 ctx.workspace.status_text_set(None)
                 if _QUICK_EXPORT_STATE.get("error"):
+                    _after_compile(ctx, False)
                     self.report({"ERROR"}, _QUICK_EXPORT_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Quick export done — load your level in-game")
+                self.report({"INFO"}, _QUICK_EXPORT_STATE.get("status") or "Quick export done — load your level in-game")
+                _after_compile(ctx, True)
                 return {"FINISHED"}
         return {"PASS_THROUGH"}
 
