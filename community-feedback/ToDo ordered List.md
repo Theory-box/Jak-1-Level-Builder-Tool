@@ -286,7 +286,11 @@ It'd have a general "filter exports" toggle. Which, only if it's on, would show 
 ---
 
 ## Second entity pass
-Based on `community-feedback/Actor Notes.md` and notes here
+Based on `community-feedback/Actor Notes.md` and notes here.
+### Different levels of warnings
+At the moment, fields can be set to be "required". Which is good to set for fields that are needed or the actor would break in some way/not function at all. 
+We could also add different level of that like a "warning" which doesn't show as a required field because the actor can function without it but it might not have all of its function.
+For example, a path on a plat is not a requirement, it'll spawn and sit there fine without it, but the path is needed for it to move. This warning shouldn't be red and shouldn't create an icon by the building button but it can do in the actor settings.
 
 ---
 
