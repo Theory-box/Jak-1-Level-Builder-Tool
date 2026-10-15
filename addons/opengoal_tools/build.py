@@ -626,7 +626,9 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
     navmesh_actors = _collect_navmesh_actors(scene)
     _lv_objs = _level_objects(scene)
-    has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
+    from .export.actors import checkpoint_has_trigger
+    has_cps = any(o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
+                  and checkpoint_has_trigger(o) for o in _lv_objs)
     write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
     if navmesh:
         patch_entity_gc(navmesh_actors)

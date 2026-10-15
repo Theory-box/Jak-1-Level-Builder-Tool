@@ -331,9 +331,19 @@ def register():
     bpy.types.Object.og_vertex_export_etype  = bpy.props.StringProperty(name="Export As Entity", default="")
     bpy.types.Object.og_vertex_export_search = bpy.props.StringProperty(name="", default="")
 
-    # Checkpoint (continue-point) level/display settings.
-    # SPAWN_/CHECKPOINT_ empties export as continue-points; these drive which
-    # levels are resident (and displayed) when respawning at this point.
+    # Checkpoint (continue-point) settings. CHECKPOINT_ empties export as
+    # continue points; these drive which levels are resident (and displayed)
+    # when respawning at this point.
+    from .operators.spawn import _cp_name_get, _cp_name_set
+    bpy.types.Object.og_cp_name = bpy.props.StringProperty(
+        name="Name", get=_cp_name_get, set=_cp_name_set,
+        description="Checkpoint name: the continue point is <level>-<name> "
+                    "(\"start\" is where Build & Play spawns). Renames the object")
+    bpy.types.Object.og_cp_trigger = bpy.props.BoolProperty(
+        name="Trigger", default=False,
+        description="Add an invisible trigger that makes this the checkpoint when Jak enters its "
+                    "radius / volume. Off: a plain continue point (load boundaries, death, "
+                    "set-continue! choose it)")
     # Note: EnumProperty with a dynamic items callback can't take default= —
     # the first item ("self" / "none") is the effective default.
     bpy.types.Object.og_cp_lev0  = bpy.props.EnumProperty(
@@ -490,7 +500,7 @@ def unregister():
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
-              "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
+              "og_cp_vis_nick","og_cp_flags","og_cp_load_commands","og_cp_name","og_cp_trigger",
               "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",

@@ -809,13 +809,8 @@ class OG_PT_ActorLauncherDoor(Panel):
             o for o in _level_objects(scene)
             if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
         ], key=lambda o: o.name)
-        spawns = sorted([
-            o for o in _level_objects(scene)
-            if o.name.startswith("SPAWN_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
-        ], key=lambda o: o.name)
-
         from ..collections import spawn_uid
-        all_cps = [(o, f"{level_name}-{spawn_uid(o)}") for o in cps + spawns]
+        all_cps = [(o, f"{level_name}-{spawn_uid(o)}") for o in cps]
 
         if cp_name:
             row = box.row(align=True)

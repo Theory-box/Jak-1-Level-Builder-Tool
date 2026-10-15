@@ -178,7 +178,7 @@ def _draw_field_target_context(layout, ctx, item):
     Mirrors OG_OT_SpawnSelected._validate so the user sees the same state."""
     sel = ctx.active_object
     is_ok = (sel is not None and sel.type == "EMPTY"
-             and (sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_"))
+             and sel.name.startswith("CHECKPOINT_")
              and not sel.name.endswith("_CAM"))
     box = layout.box()
     if is_ok:
@@ -186,7 +186,7 @@ def _draw_field_target_context(layout, ctx, item):
     else:
         sub = box.row()
         sub.alert = True
-        sub.label(text="Select a SPAWN_ or CHECKPOINT_ empty first", icon="ERROR")
+        sub.label(text="Select a checkpoint first", icon="ERROR")
 
 
 FIELD_DRAWERS = {

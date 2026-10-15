@@ -120,14 +120,12 @@ def free_object_name(prefix, n=0):
 
 
 def spawn_uid(o):
-    """Checkpoint / spawn uid of a SPAWN_ / CHECKPOINT_ empty: the name after
-    the prefix, without a leading "<level vis-nick>_" (objects are named
-    SPAWN_<nick>_start so two levels can each have a "start"). None for
-    other objects."""
-    if o.name.startswith("SPAWN_"):
-        rest, dflt = o.name[6:], "start"
-    elif o.name.startswith("CHECKPOINT_"):
-        rest, dflt = o.name[11:], "cp0"
+    """Checkpoint name of a CHECKPOINT_ empty: the object name after the
+    prefix, without a leading "<level vis-nick>_" (objects are named
+    CHECKPOINT_<nick>_start so two levels can each have a "start"). It's
+    exported as the continue point "<level>-<name>". None for other objects."""
+    if o.name.startswith("CHECKPOINT_"):
+        rest, dflt = o.name[11:], "start"
     else:
         return None
     head, sep, tail = rest.partition("_")
@@ -311,8 +309,8 @@ def _classify_object(obj):
                 return _col_path_for_entity(etype)
             return _COL_PATH_SPAWNABLE_PROPS
 
-        # Spawn / checkpoint empties and their CAM anchors
-        if name.startswith("SPAWN_") or name.startswith("CHECKPOINT_"):
+        # Checkpoint empties and their CAM anchors
+        if name.startswith("CHECKPOINT_"):
             return _COL_PATH_SPAWNS
 
         # Sound emitters

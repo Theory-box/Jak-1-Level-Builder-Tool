@@ -38,7 +38,7 @@ def _is_linkable(obj):
         n = obj.name
         if n.endswith("_CAM"):
             return False
-        if n.startswith("SPAWN_") or n.startswith("CHECKPOINT_"):
+        if n.startswith("CHECKPOINT_"):
             return True
         if n.startswith("ACTOR_") and "_wp_" not in n and "_wpb_" not in n:
             parts = n.split("_", 2)

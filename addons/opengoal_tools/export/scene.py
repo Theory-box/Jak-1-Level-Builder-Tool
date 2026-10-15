@@ -584,7 +584,8 @@ def _cp_level_value(o, enum_attr, custom_attr):
 
 
 def collect_spawns(scene):
-    """Collect SPAWN_ empties into continue-point data dicts.
+    """Collect CHECKPOINT_ empties into continue-point data dicts ("start"
+    first: the level's first continue point).
 
     Each dict contains:
       name       — uid string (e.g. "start", "spawn1", or custom SPAWN_<name>)
@@ -609,9 +610,8 @@ def collect_spawns(scene):
         if o.name.endswith("_CAM"):
             continue
 
-        is_spawn      = o.name.startswith("SPAWN_")      and o.type == "EMPTY"
         is_checkpoint = o.name.startswith("CHECKPOINT_") and o.type == "EMPTY"
-        if not (is_spawn or is_checkpoint):
+        if not is_checkpoint:
             continue
 
         from ..collections import spawn_uid
@@ -697,6 +697,7 @@ def collect_spawns(scene):
             "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),
             "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
         })
+    out.sort(key=lambda d: d["name"] != "start")   # stable: start first
     return out
 
 

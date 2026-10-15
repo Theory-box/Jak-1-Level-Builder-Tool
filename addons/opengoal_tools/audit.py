@@ -51,8 +51,11 @@ def _vol_objs(scene):
             if o.type == "MESH" and o.name.startswith("VOL_")]
 
 def _spawn_objs(scene):
+    """The level's "start" checkpoint(s)."""
+    from .collections import spawn_uid
     return [o for o in _level_objects(scene)
-            if o.name.startswith("SPAWN_") and o.type == "EMPTY"]
+            if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY"
+            and not o.name.endswith("_CAM") and spawn_uid(o) == "start"]
 
 def _checkpoint_objs(scene):
     return [o for o in _level_objects(scene)
@@ -204,12 +207,8 @@ def check_spawn_points(scene):
     spawns = _spawn_objs(scene)
     if len(spawns) == 0:
         issues.append(_issue("ERROR",
-            "No SPAWN_ empty found. The level has no player start position."))
-    elif len(spawns) > 1:
-        names = ", ".join(o.name for o in spawns)
-        issues.append(_issue("WARNING",
-            f"Multiple SPAWN_ empties found ({names}). "
-            "The engine picks one arbitrarily — remove extras."))
+            "No checkpoint named \"start\". The level has no player start position "
+            "(Build & Play spawns at <level>-start)."))
     return issues
 
 
