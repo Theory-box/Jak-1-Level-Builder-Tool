@@ -363,6 +363,27 @@ class OGPreferences(AddonPreferences):
 
 
 
+# --- Level sound / music banks (live on the active level collection) ---
+_BANK_IDS = [b[0] for b in LEVEL_BANKS]
+
+
+def _bank_live(key):
+    """(get, set) for a bank EnumProperty stored as the level collection's
+    custom property `key` (og_music_bank, og_sound_bank_1/2)."""
+    def get(self):
+        from .collections import _active_level_col
+        col = _active_level_col(bpy.context.scene) if bpy.context else None
+        v = str(col.get(key, "none") or "none") if col is not None else "none"
+        return _BANK_IDS.index(v) if v in _BANK_IDS else (_BANK_IDS.index("none") if "none" in _BANK_IDS else 0)
+
+    def set(self, i):
+        from .collections import _active_level_col
+        col = _active_level_col(bpy.context.scene) if bpy.context else None
+        if col is not None and 0 <= i < len(_BANK_IDS):
+            col[key] = _BANK_IDS[i]
+    return get, set
+
+
 # --- Launch checkpoint dropdown ---
 def _launch_checkpoint_items(self, context):
     """Items for the og.play launch dropdown.
@@ -646,11 +667,15 @@ class OGProperties(PropertyGroup):
     lightbake_samples: IntProperty(name="Sample Count", default=128, min=1, max=4096,
                                    description="Number of Cycles render samples used when baking lighting to vertex colors")
     # Audio
-    sound_bank_1:           EnumProperty(name="Bank 1", items=LEVEL_BANKS, default="none",
+    # live on the active level collection (the export reads it from there)
+    sound_bank_1:           EnumProperty(name="Bank 1", items=LEVEL_BANKS,
+                                         get=_bank_live("og_sound_bank_1")[0], set=_bank_live("og_sound_bank_1")[1],
                                          description="First level sound bank (max 2 total)")
-    sound_bank_2:           EnumProperty(name="Bank 2", items=LEVEL_BANKS, default="none",
+    sound_bank_2:           EnumProperty(name="Bank 2", items=LEVEL_BANKS,
+                                         get=_bank_live("og_sound_bank_2")[0], set=_bank_live("og_sound_bank_2")[1],
                                          description="Second level sound bank (max 2 total)")
-    music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS, default="none",
+    music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS,
+                                         get=_bank_live("og_music_bank")[0], set=_bank_live("og_music_bank")[1],
                                          description="Music bank to load for this level")
     # Lighting (mood + sky)
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
