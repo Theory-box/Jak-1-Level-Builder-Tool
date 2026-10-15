@@ -51,8 +51,11 @@ def _vol_objs(scene):
             if o.type == "MESH" and o.name.startswith("VOL_")]
 
 def _spawn_objs(scene):
+    """The level's "start" checkpoint(s)."""
+    from .collections import spawn_uid
     return [o for o in _level_objects(scene)
-            if o.name.startswith("SPAWN_") and o.type == "EMPTY"]
+            if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY"
+            and not o.name.endswith("_CAM") and spawn_uid(o) == "start"]
 
 def _checkpoint_objs(scene):
     return [o for o in _level_objects(scene)
@@ -102,27 +105,14 @@ def check_navmesh_links(scene):
 # ---------------------------------------------------------------------------
 
 def check_missing_paths(scene):
+    """Required paths (required.py, shared with the panels' warnings)."""
+    from .required import missing
     issues = []
     for o in _actor_objs(scene):
-        et = _etype(o)
-        if not et or not _db.needs_path(et):
-            continue
-        if _actor_get_link(o, "path-actor", 0):   # every path lump read from that actor
-            continue
-        info      = ENTITY_DEFS.get(et, {})
-        wp_prefix = o.name + "_wp_"
-        wpb_prefix = o.name + "_wpb_"
-        wp_count  = len(getattr(o, "og_waypoint_sources", [])) or sum(
-            1 for ob in _level_objects(scene)
-            if ob.name.startswith(wp_prefix) and ob.name[len(wp_prefix):].isdigit())
-        wpb_count = sum(len(p.sources) for p in getattr(o, "og_extra_paths", [])
-                        if p.name.strip() == "pathb")
-        if wp_count == 0:
-            issues.append(_issue("ERROR",
-                f"'{o.name}' ({et}) requires path waypoints but has none.", o.name))
-        if info.get("needs_pathb") and wpb_count == 0:
-            issues.append(_issue("ERROR",
-                f"'{o.name}' ({et}) also requires a B-path (pathb) but has none.", o.name))
+        for m in missing(o, scene):
+            if m["panel"] == "path":
+                issues.append(_issue("ERROR",
+                    f"'{o.name}' ({_etype(o)}) requires a {m['key']} path but has none.", o.name))
     return issues
 
 
@@ -137,16 +127,12 @@ def check_actor_links(scene):
         et = _etype(o)
         if not et:
             continue
-        for slot in _actor_link_slots(et):
-            lump_key = slot[0]
-            slot_idx = slot[1] if len(slot) > 1 else 0
-            required = slot[4] if len(slot) > 4 else False
-            if required:
-                filled = bool(_actor_get_link(o, lump_key, slot_idx))
-                if not filled:
-                    issues.append(_issue("WARNING",
-                        f"'{o.name}' ({et}): required link slot '{lump_key}' is unset.",
-                        o.name))
+        from .required import missing
+        for m in missing(o, scene):         # shared with the panels' warnings
+            if m["panel"] == "links":
+                issues.append(_issue("WARNING",
+                    f"'{o.name}' ({et}): required link slot '{m['key']}' is unset.",
+                    o.name))
         slots = list(_actor_link_slots(et))
         for lk in getattr(o, "og_actor_links", []):
             if not lk.target_name.strip():
@@ -204,12 +190,8 @@ def check_spawn_points(scene):
     spawns = _spawn_objs(scene)
     if len(spawns) == 0:
         issues.append(_issue("ERROR",
-            "No SPAWN_ empty found. The level has no player start position."))
-    elif len(spawns) > 1:
-        names = ", ".join(o.name for o in spawns)
-        issues.append(_issue("WARNING",
-            f"Multiple SPAWN_ empties found ({names}). "
-            "The engine picks one arbitrarily — remove extras."))
+            "No checkpoint named \"start\". The level has no player start position "
+            "(Build & Play spawns at <level>-start)."))
     return issues
 
 
@@ -405,30 +387,18 @@ def check_texture_sources(scene):
 
 def check_sound_banks(scene):
     """A sound (sound emitter, particle spawner) only plays if its bank is
-    loaded: common, or one of the level's two sound banks. Warn only; the
-    pick stays allowed (a bank can also be loaded another way)."""
-    from .collections import _get_level_prop, _level_objects
-    banks = {"common"} | {str(_get_level_prop(scene, k, "none") or "none").lower()
-                          for k in ("og_sound_bank_1", "og_sound_bank_2")}
-    where = {}
-    for bank, sounds in _db.bank_sfx().items():
-        for s in sounds:
-            where.setdefault(s, set()).add(bank)
+    loaded: common, or one of the level's two sound banks (required.py,
+    shared with the warnings next to Export & Compile). Warn only."""
+    from .collections import _level_objects
+    from .required import missing_bank, _sound_banks
+    banks = _sound_banks(scene)
+    loaded = banks[0]
     issues = []
     for o in _level_objects(scene):
-        snd = None
-        if o.name.startswith("AMBIENT_") and o.get("og_sound_name"):
-            snd = str(o["og_sound_name"])
-        elif _etype(o) == "part-spawner" and str(o.get("og_part_sound", "none")) not in ("", "none"):
-            snd = str(o["og_part_sound"])
-        if not snd:
-            continue
-        snd = snd.split("__")[0]
-        found = where.get(snd)
-        if found and not (found & banks):
+        for m in missing_bank(o, scene, banks):
             issues.append(_issue("WARNING",
-                f"{o.name}: sound '{snd}' is in the {' / '.join(sorted(found))} sound bank, which this level doesn't load "
-                f"(common + {' / '.join(sorted(banks - {'common', 'none'})) or 'no level banks'}). Set it as one of the "
+                f"{o.name}: sound '{m['sound']}' is in the {m['key']} sound bank, which this level doesn't load "
+                f"(common + {' / '.join(sorted(loaded - {'common', 'none'})) or 'no level banks'}). Set it as one of the "
                 f"level's sound banks or it won't play.", o.name))
     return issues
 

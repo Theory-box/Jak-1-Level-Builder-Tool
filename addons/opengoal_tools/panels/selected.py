@@ -89,7 +89,7 @@ def _og_managed_object(obj):
     if obj is None:
         return False
     n = obj.name
-    if any(n.startswith(p) for p in ("ACTOR_", "SPAWN_", "CHECKPOINT_",
+    if any(n.startswith(p) for p in ("ACTOR_", "CHECKPOINT_",
                                       "AMBIENT_", "VOL_", "CAMERA_",
                                       "NAVMESH_", "LOADBND_")):
         return True
@@ -260,8 +260,11 @@ def _draw_selected_actor(layout, sel, scene):
             box.label(text="⚠ Also needs a 'pathb' path (Path panel > Add Path)", icon="ERROR")
 
 
+from ..properties import draw_command_list
+
+
 def _draw_continue_settings(layout, sel, scene):
-    """Continue-point level/display settings, shared by SPAWN_ and CHECKPOINT_.
+    """Continue-point level/display settings of a CHECKPOINT_.
 
     On respawn (a teleport) the engine uses only these values to rebuild the
     resident-level set; load boundaries handle streaming while walking, not on
@@ -287,51 +290,55 @@ def _draw_continue_settings(layout, sel, scene):
         header, body = layout.panel("og_continue_advanced", default_closed=True)
         header.label(text="Advanced")
         if body is not None:
-            body.prop(sel, "og_cp_flags")
-            body.prop(sel, "og_cp_load_commands")
+            _draw_cp_flags(body, sel)
+            draw_command_list(body, sel, "og_cp_load_cmds", "Load Commands")
     else:
         col = box.column(align=True)
         col.label(text="Advanced:", icon="TOOL_SETTINGS")
-        col.prop(sel, "og_cp_flags")
-        col.prop(sel, "og_cp_load_commands")
+        _draw_cp_flags(col, sel)
+        draw_command_list(col, sel, "og_cp_load_cmds", "Load Commands")
 
 
-def _draw_selected_spawn(layout, sel, scene):
-    """Draw settings for a SPAWN_ object."""
-    layout.label(text=sel.name, icon="EMPTY_ARROWS")
-    cam_obj = scene.objects.get(sel.name + "_CAM")
-    if cam_obj:
-        row = layout.row()
-        row.label(text=f"✓ {cam_obj.name}", icon="CAMERA_DATA")
-        op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
-        op.obj_name = cam_obj.name
-    else:
-        layout.label(text="⚠ No camera anchor", icon="ERROR")
-        layout.operator("og.spawn_cam_anchor", text="Add Camera", icon="CAMERA_DATA")
-
-    _draw_continue_settings(layout, sel, scene)
-
+def _draw_cp_flags(layout, sel):
+    """continue-flags: a collapsed list of toggles (tooltips say what each does)."""
+    on = sel.og_cp_flags
+    header, body = layout.panel("og_cp_flags", default_closed=True)
+    header.label(text=f"Continue Flags ({len(on)} on)" if on else "Continue Flags")
+    if body is not None:
+        from .. import db
+        col = body.column(align=True)
+        for f in db.continue_flags():
+            col.operator("og.toggle_continue_flag", text=f["label"], depress=f["id"] in on,
+                         icon="CHECKBOX_HLT" if f["id"] in on else "CHECKBOX_DEHLT").flag = f["id"]
 
 
 def _draw_selected_checkpoint(layout, sel, scene):
     """Draw settings for a CHECKPOINT_ object."""
     layout.label(text=sel.name, icon="EMPTY_SINGLE_ARROW")
+    layout.prop(sel, "og_cp_name")
 
     # Camera
     cam_obj = scene.objects.get(sel.name + "_CAM")
     if cam_obj:
         row = layout.row()
         row.label(text=f"✓ {cam_obj.name}", icon="CAMERA_DATA")
-        op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        sub = row.row(align=True)
+        op = sub.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        op.obj_name = cam_obj.name
+        op = sub.operator("og.delete_object", text="", icon="TRASH")
         op.obj_name = cam_obj.name
     else:
         layout.label(text="⚠ No camera anchor", icon="ERROR")
         layout.operator("og.spawn_cam_anchor", text="Add Camera", icon="CAMERA_DATA")
 
-    # Volume link
+    # Trigger: radius / linked volume
     layout.separator(factor=0.3)
     vol_list = _vols_linking_to(scene, sel.name)
-    if vol_list:
+    layout.prop(sel, "og_cp_trigger")
+    if not (sel.og_cp_trigger or vol_list):
+        hint = layout.row(); hint.enabled = False
+        hint.label(text="Plain continue point (no trigger)", icon="INFO")
+    elif vol_list:
         vol_linked = vol_list[0]
         row = layout.row(align=True)
         row.label(text=f"✓ {vol_linked.name}", icon="MESH_CUBE")
@@ -774,8 +781,6 @@ class OG_PT_SelectedObject(Panel):
             row.label(text=label, icon="OBJECT_DATA")
             sub = row.row(); sub.enabled = False
             sub.label(text=f"[{cat}]")
-        elif name.startswith("SPAWN_") and not name.endswith("_CAM"):
-            layout.label(text=name, icon="EMPTY_ARROWS")
         elif name.startswith("CHECKPOINT_") and not name.endswith("_CAM"):
             layout.label(text=name, icon="EMPTY_SINGLE_ARROW")
         elif name.startswith("AMBIENT_"):
@@ -961,11 +966,9 @@ def _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append, skip=
     for tgt in cands[:6]:
         ok = _db.link_accepts(accepted, _link_target_etype(tgt))
         row = box.row()
-        if not ok:
-            row.alert = True
         op = row.operator("og.set_actor_link",
                           text=(f"{'Add' if append else 'Link'} → {tgt.name}" + ("" if ok else "  (unexpected type)")),
-                          icon="LINKED" if ok else "ERROR")
+                          icon="LINKED" if ok else "QUESTION")
         op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
         op.target_name = tgt.name; op.append = append
     if any(not _db.link_accepts(accepted, _link_target_etype(t)) for t in cands[:6]):
@@ -994,12 +997,14 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
             else:
                 ok = _db.link_accepts(accepted, _link_target_etype(tgt))
                 r2.label(text=e.target_name + ("" if ok else "  (unexpected type)"),
-                         icon="CHECKMARK" if ok else "ERROR")
+                         icon="CHECKMARK" if ok else "QUESTION")
                 op = r2.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = e.target_name
             op = r2.operator("og.clear_actor_link", text="", icon="X")
             op.source_name = obj.name; op.lump_key = lkey; op.slot_index = e.slot_index; op.first_slot = sidx
         if not ents:
-            r2 = box.row(); r2.enabled = False
+            r2 = box.row()
+            r2.alert = required             # red = a required field is missing
+            r2.enabled = required
             r2.label(text=("Required — none linked" if required else "Optional — none linked"),
                      icon="ERROR" if required else "DOT")
         left = [o for o in sel_actors if o.name not in {e.target_name for e in ents}]
@@ -1016,7 +1021,7 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
     if current_obj:
         row2 = box.row(align=True)
         ok = _db.link_accepts(accepted, _link_target_etype(current_obj))
-        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "ERROR")
+        row2.label(text=current_name + ("" if ok else "  (unexpected type)"), icon="CHECKMARK" if ok else "QUESTION")
         op = row2.operator("og.select_and_frame", text="", icon="VIEWZOOM")
         op.obj_name = current_name
         op = row2.operator("og.clear_actor_link", text="", icon="X")
@@ -1029,32 +1034,12 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
         op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
     else:
         row2 = box.row(align=True)
-        row2.enabled = False
+        row2.alert = required               # red = a required field is missing
+        row2.enabled = required
         req_text = "Required — not set" if required else "Optional — not set"
         row2.label(text=req_text, icon="ERROR" if required else "DOT")
     _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=False,
                        skip={current_name} if current_obj else ())
-
-
-class OG_PT_SpawnSettings(Panel):
-    bl_label       = "Spawn Settings"
-    bl_idname      = "OG_PT_spawn_settings"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_selected_object"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        return (sel is not None
-                and sel.name.startswith("SPAWN_")
-                and not sel.name.endswith("_CAM"))
-
-    def draw(self, ctx):
-        _draw_selected_spawn(self.layout, ctx.active_object, ctx.scene)
-
 
 
 class OG_PT_LoadBoundarySettings(Panel):
@@ -1248,7 +1233,6 @@ CLASSES = (
     OG_PT_SelectedObject,
     OG_PT_SelectedCollision,
     OG_PT_SelectedNavMeshTag,
-    OG_PT_SpawnSettings,
     OG_PT_MeshPreviewSettings,
     OG_PT_LoadBoundarySettings,
     OG_PT_SelectedLumps,

@@ -108,11 +108,11 @@ def make_fog_actor_dict(spawns):
 
 
 # Addon-defined trigger types that are embedded per-level. Their names are
-# scoped to the level (e.g. checkpoint-trigger -> my-level-checkpoint-trigger)
+# scoped to the level (e.g. camera-trigger -> my-level-camera-trigger)
 # so two levels built with different addon versions / volume layouts can never
 # collide on a shared global type name in the same goalc image. camera-marker
 # and fog-control are intentionally left unscoped (stable, never layout-changed).
-_TRIGGER_ETYPES = ("camera-trigger", "checkpoint-trigger", "aggro-trigger", "vol-trigger")
+_TRIGGER_ETYPES = ("camera-trigger", "aggro-trigger", "vol-trigger")
 
 
 def _level_type_prefix(name):
@@ -131,10 +131,10 @@ def _level_type_prefix(name):
     return s
 
 
-def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
+def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
     """Write obs.gc: always emits camera-marker type; if has_triggers also
-    emits camera-trigger type; if has_checkpoints emits checkpoint-trigger type;
-    if has_aggro_triggers emits aggro-trigger type;
+    emits camera-trigger type (checkpoint triggers are the shared lt-checkpoint,
+    level_tools.py); if has_aggro_triggers emits aggro-trigger type;
     if has_custom_triggers emits vol-trigger type (sends 'trigger/'untrigger to custom actors).
     If has_fog_override emits fog-control type (overrides *math-camera* fog
     values every frame from baked-in panel values).
@@ -167,7 +167,7 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         "",
     ]
 
-    if has_triggers or has_checkpoints or has_aggro_triggers or has_custom_triggers:
+    if has_triggers or has_aggro_triggers or has_custom_triggers:
         lines += [
             ";; point-in-planes? -- convex half-space test shared by all trigger volumes.",
             ";; Planes come from the 'vol res-lump (vector-vol): outward unit normals,",
@@ -247,92 +247,6 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         ]
         log(f"  [write_gc] camera-trigger type embedded")
 
-    if has_checkpoints:
-        lines += [
-            ";; checkpoint-trigger: sets continue point when Jak enters. Two modes:",
-            ";; convex volume (quote vol) planes (has-volume = 1) or sphere radius (default).",
-            ";; After firing it waits for exit, then re-arms.",
-            "(deftype checkpoint-trigger (process-drawable)",
-            "  ((cp-name     string)",
-            "   (cull-radius float)",
-            "   (radius      float)",
-            "   (use-vol     symbol)",
-            "   (was-near    symbol)",
-            "   (num-planes  int32)",
-            "   (planes      (inline-array vector)))",
-            "  :heap-base #x70",
-            "  (:states checkpoint-trigger-active checkpoint-trigger-wait-exit))",
-            "",
-            "(defstate checkpoint-trigger-wait-exit (checkpoint-trigger)",
-            "  :code",
-            "  (behavior ()",
-            "    (loop",
-            "      (when (and *target* (zero? (mod (-> *display* base-frame-counter) 4)))",
-            "        (let* ((pos  (-> *target* control trans))",
-            "               (dx   (- (-> pos x) (-> self root trans x)))",
-            "               (dy   (- (-> pos y) (-> self root trans y)))",
-            "               (dz   (- (-> pos z) (-> self root trans z)))",
-            "               (cr   (-> self cull-radius))",
-            "               (still-inside (and",
-            "                 (< (+ (* dx dx) (* dy dy) (* dz dz)) (* cr cr))",
-            "                 (if (-> self use-vol)",
-            "                   (point-in-planes? (-> self planes) (-> self num-planes) pos)",
-            "                   (let ((r (-> self radius)))",
-            "                     (< (+ (* dx dx) (* dy dy) (* dz dz)) (* r r)))))))",
-            "          (when (not still-inside)",
-            "            (format 0 \"[cp-trigger] ~A re-armed~%\" (-> self cp-name))",
-            "            (go checkpoint-trigger-active))))",
-            "      (suspend))))",
-            "",
-            "(defstate checkpoint-trigger-active (checkpoint-trigger)",
-            "  :code",
-            "  (behavior ()",
-            "    (loop",
-            "      (when (and *target* (zero? (mod (-> *display* base-frame-counter) 4)))",
-            "        (let* ((pos  (-> *target* control trans))",
-            "               (dx   (- (-> pos x) (-> self root trans x)))",
-            "               (dy   (- (-> pos y) (-> self root trans y)))",
-            "               (dz   (- (-> pos z) (-> self root trans z)))",
-            "               (cr   (-> self cull-radius))",
-            "               (near (< (+ (* dx dx) (* dy dy) (* dz dz)) (* cr cr)))",
-            "               (inside (and near",
-            "                 (if (-> self use-vol)",
-            "                   (point-in-planes? (-> self planes) (-> self num-planes) pos)",
-            "                   (let ((r (-> self radius)))",
-            "                     (< (+ (* dx dx) (* dy dy) (* dz dz)) (* r r)))))))",
-            "          (set! (-> self was-near) near)",
-            "          (when inside",
-            "            (format 0 \"[cp-trigger] fired -> ~A~%\" (-> self cp-name))",
-            "            (set-continue! *game-info* (-> self cp-name))",
-            "            (go checkpoint-trigger-wait-exit))))",
-            "      (suspend))))",
-            "",
-            "(defmethod init-from-entity! ((this checkpoint-trigger) (arg0 entity-actor))",
-            "  (set! (-> this root) (new (quote process) (quote trsqv)))",
-            "  (process-drawable-from-entity! this arg0)",
-            "  (set! (-> this cp-name)  (res-lump-struct arg0 (quote continue-name) string))",
-            "  (set! (-> this radius)   (res-lump-float  arg0 (quote radius) :default 12288.0))",
-            "  (set! (-> this use-vol)  (!= 0 (the int (res-lump-value arg0 (quote has-volume) uint128))))",
-            "  (set! (-> this was-near) #f)",
-            "  (let ((tag (new (quote static) (quote res-tag))))",
-            "    (let ((data (res-lump-data arg0 (quote vol) (inline-array vector) :tag-ptr (& tag))))",
-            "      (cond",
-            "        (data",
-            "         (set! (-> this planes) (the-as (inline-array vector) data))",
-            "         (set! (-> this num-planes) (the-as int (-> tag elt-count))))",
-            "        (else",
-            "         (set! (-> this planes) (the-as (inline-array vector) #f))",
-            "         (set! (-> this num-planes) 0)))))",
-            "  (set! (-> this cull-radius)",
-            "    (if (-> this use-vol)",
-            "      (res-lump-float arg0 (quote cull-radius) :default 122880.0)",
-            "      (* (-> this radius) 1.2)))",
-            "  (format 0 \"[cp-trigger] armed: ~A~%\" (-> this cp-name))",
-            "  (go checkpoint-trigger-active)",
-            "  (none))",
-            "",
-        ]
-        log(f"  [write_gc] checkpoint-trigger type embedded")
 
     if has_aggro_triggers:
         lines += [
@@ -642,6 +556,47 @@ def _dumps_with_raw_lumps(data):
     return text
 
 
+def texture_sources(scene):
+    """(texture remap level, sky level) of the active level; "none" = not used."""
+    remap = str(_get_level_prop(scene, "og_texture_source", "village1") or "none").strip().lower()
+    sky = str(_get_level_prop(scene, "og_sky_source", "village1") or "none").strip().lower()
+    if sky == "custom":
+        col = _active_level_col(scene)
+        sky = (col.og_level.sky_custom.strip().lower() if col is not None else "") or "none"
+    return remap or "none", sky or "none"
+
+
+def texture_pages(scene):
+    """(the .jsonc "tpages", every texture page the level logs in).
+
+    The builder fills the level's 5 texture-page slots [tfrag, pris, shrub,
+    alpha, water] itself only when the texture remap and the sky are the same
+    level ("tpages": []). Otherwise they're written here: the remap level's
+    slots (or the sky level's when there's no remap) with the sky level's
+    page in the alpha slot."""
+    from .. import db as _sdb
+    remap, sky = texture_sources(scene)
+    if remap == "none" and sky == "none":
+        return [], []
+    if remap == sky:
+        return [], [t for t in (_sdb.texture_slots(remap) or []) if t]
+    slots = list(_sdb.texture_slots(remap if remap != "none" else sky) or [0, 0, 0, 0, 0])
+    if sky != "none":
+        sky_slots = _sdb.texture_slots(sky) or []
+        if len(sky_slots) > 3 and len(slots) > 3:
+            slots[3] = sky_slots[3]
+    return slots, [t for t in slots if t]
+
+
+def _collision_json(scene):
+    """automatic_wall_detection / _angle (-1 = off) and double_sided_collide."""
+    from .. import level_settings as _ls
+    st = _ls.settings(_active_level_col(scene)) if scene is not None else None
+    ang = float(st.wall_angle) if st is not None else 45.0
+    return {"automatic_wall_detection": ang >= 0.0, "automatic_wall_angle": ang if ang >= 0.0 else 45.0,
+            "double_sided_collide": bool(st.double_sided) if st is not None else False}
+
+
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
@@ -658,13 +613,13 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # that level's tpages. Two co-resident (streamed) custom levels that borrow
     # the SAME source both try to link those tpage objects -> crash. So levels
     # streamed together must use distinct sources, or "none" (vertex colors only).
-    _src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
-    if _src in ("none", ""):
-        _tex_remap = _sky_src = "none"
-        _textures  = []
-    else:
-        _tex_remap = _sky_src = _src
-        _textures  = [[f"{_src}-vis-alpha"]]
+    _tex_remap, _sky_src = texture_sources(scene)
+    # The sky's textures. The builder only reads sky / tex_remap when the level
+    # has art groups or textures, so a remap with no sky brings its own
+    # -vis-alpha textures (water, eyes ... live there anyway).
+    _tex_src = _sky_src if _sky_src != "none" else _tex_remap
+    _textures = [[f"{_tex_src}-vis-alpha"]] if _tex_src != "none" else []
+    _tpages, _ = texture_pages(scene)
     from . import includes as _inc
     _incl, _incl_err = _inc.load(scene)
     # Built-in camera entities (OpenGOAL v0.3.4+). In legacy mode
@@ -709,11 +664,10 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
-        "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
-        "double_sided_collide": False, "base_id": base_id,
+        **_collision_json(scene), "base_id": base_id,
         "art_groups": _ag_names,
         "custom_models": [], "textures": _textures,
-        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
+        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": _tpages,
         "ambients": ambients,
         "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
                    for a in all_actors] + _incl["actors"],
@@ -770,7 +724,9 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     # custom levels crash when the second re-links an already-loaded tpage
     # (segfault right after <name>-obs, on tpage-398). So exclude every global
     # tpage from the DGO file list.
-    level_tpages = [f'  "{tp}"' for tp in (tpages or [])
+    _, _tex_ids = texture_pages(scene) if scene is not None else ([], [])
+    tpages = list(tpages or []) + [f"tpage-{t}.go" for t in _tex_ids if f"tpage-{t}.go" not in (tpages or [])]
+    level_tpages = [f'  "{tp}"' for tp in tpages
                     if tp not in GLOBAL_TPAGE_GOS]
     extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
     # Always Include: code (.o) links with the actor code, everything else
@@ -864,9 +820,8 @@ def _make_continues(name, spawns, vis_nick=None):
         # the game knows which level you're in (music/menu), so don't use 'none.
         vn = (sp.get("cp_vis_nick") or "").strip()
         vis_nick = f"'{vn}" if vn else f"'{_default_vnick}"
-        # load-commands: blank → empty list; else raw GOAL passthrough.
-        lc = (sp.get("cp_load_commands") or "").strip()
-        load_cmds = lc if lc else "'()"
+        # load-commands: the quoted list built from the checkpoint's command rows
+        load_cmds = (sp.get("cp_load_commands") or "").strip() or "'()"
         # flags: optional continue-flags passthrough (advanced).
         fl = (sp.get("cp_flags") or "").strip()
         flags_line = f"             :flags (continue-flags {fl})\n" if fl else ""
@@ -927,8 +882,10 @@ def patch_level_info(name, spawns, scene=None):
         _vnick     = _vis_ov if _vis_ov else _nick(name)
         _lindex    = int(_get_level_prop(scene, "og_level_index", 100))
         # Lighting (mood + sky)
-        _mood      = str(_get_level_prop(scene, "og_mood", "village1") or "village1")
-        _sky_bool  = bool(_get_level_prop(scene, "og_sky", True))
+        from .. import level_settings as _lsm
+        _mood      = _lsm.mood_name(_active_level_col(scene))
+        _mood_sym  = _lsm.mood_value(_active_level_col(scene))
+        _sky_bool  = texture_sources(scene)[1] != "none"
     else:
         _music_val = "#f"
         _sbanks_val = "'()"
@@ -936,8 +893,19 @@ def patch_level_info(name, spawns, scene=None):
         _vnick   = _nick(name)
         _lindex  = 100
         _mood    = "village1"
+        _mood_sym = "'*village1-mood*"
         _sky_bool = True
-    _mood_func = MOOD_FUNC_OVERRIDES.get(_mood, _mood)
+    from .. import level_settings as _ls
+    _s = _ls.settings(_active_level_col(scene)) if scene is not None else None
+    _mood_func = _ls.mood_func_value(_s, MOOD_FUNC_OVERRIDES.get(_mood, _mood))
+    _ocean     = _ls.ocean_value(_s)
+    _sun_fade  = float(_s.sun_fade) if _s is not None else 1.0
+    _tasks     = _ls.tasks_value(_s)
+    from ..properties import command_list_value
+    _lcmds     = command_list_value(_s.load_cmds) if _s is not None else "'()"
+    _alt_lcmds = command_list_value(_s.alt_load_cmds) if _s is not None else "'()"
+    _priority  = int(_s.priority) if _s is not None else 100
+    _wait_load = "#t" if (_s is None or _s.wait_for_load) else "#f"
     _sky_val   = "#t" if _sky_bool else "#f"
 
     # ── Auto-compute bsphere from spawn positions ────────────────────────────
@@ -963,6 +931,7 @@ def patch_level_info(name, spawns, scene=None):
                        f" :w {bsphere_w})")
     else:
         bsphere_str = "(new 'static 'sphere :w 167772160000.0)"  # ~40km radius
+    bsphere_str = _ls.bsphere_value(_s) or bsphere_str     # a linked sphere empty wins
 
     block = (f"\n(define {name}\n"
              f"  (new 'static 'level-load-info\n"
@@ -974,22 +943,22 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sound-banks {_sbanks_val}\n"
              f"       :music-bank {_music_val}\n"
              f"       :ambient-sounds '()\n"
-             f"       :mood '*{_mood}-mood*\n"
-             f"       :mood-func 'update-mood-{_mood_func}\n"
-             f"       :ocean #f\n"
+             f"       :mood {_mood_sym}\n"
+             f"       :mood-func {_mood_func}\n"
+             f"       :ocean {_ocean}\n"
              f"       :sky {_sky_val}\n"
-             f"       :sun-fade 1.0\n"
+             f"       :sun-fade {_sun_fade}\n"
              f"       :continues\n"
              f"       {_make_continues(name, spawns, _vnick)}\n"
-             f"       :tasks '()\n"
-             f"       :priority 100\n"
-             f"       :load-commands '()\n"
-             f"       :alt-load-commands '()\n"
+             f"       :tasks {_tasks}\n"
+             f"       :priority {_priority}\n"
+             f"       :load-commands {_lcmds}\n"
+             f"       :alt-load-commands {_alt_lcmds}\n"
              f"       :bsp-mask #xffffffffffffffff\n"
              f"       :bsphere {bsphere_str}\n"
              f"       :bottom-height (meters {_bot_h:.1f})\n"
              f"       :run-packages '()\n"
-             f"       :wait-for-load #t))\n"
+             f"       :wait-for-load {_wait_load}))\n"
              f"\n(cons! *level-load-list* '{name})\n")
     txt = p.read_text(encoding="utf-8")
     txt = re.sub(rf"\n\(define {re.escape(name)}\b.*?\(cons!.*?'{re.escape(name)}\)\n",

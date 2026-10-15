@@ -69,44 +69,107 @@ _VALID_ETYPE_RE = _re.compile(r'^[a-z][a-z0-9\-]*$')
 
 
 
-class OG_OT_SpawnPlayer(Operator):
-    bl_idname = "og.spawn_player"
-    bl_label  = "Add Player Spawn"
-    bl_description = "Place a player spawn empty at the 3D cursor"
+def _cp_clean(name):
+    """A checkpoint name usable in a continue-point name: lowercase, a-z 0-9 -."""
+    s = re.sub(r"[^a-z0-9-]+", "-", str(name).strip().lower()).strip("-")
+    return s
+
+
+def _cp_default_name(scene):
+    """"start" for a level's first checkpoint, then cp1, cp2 ..."""
+    from ..collections import spawn_uid
+    used = {spawn_uid(o) for o in _level_objects(scene)
+            if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")}
+    if "start" not in used:
+        return "start"
+    n = 1
+    while f"cp{n}" in used:
+        n += 1
+    return f"cp{n}"
+
+
+def _cp_object_name(obj_or_scene, name):
+    from ..collections import _active_level_col, _resolve_vis_nick
+    scene = bpy.context.scene
+    return f"CHECKPOINT_{_resolve_vis_nick(_active_level_col(scene))}_{name}"
+
+
+def _cp_name_get(self):
+    from ..collections import spawn_uid
+    return spawn_uid(self) or ""
+
+
+def _cp_name_set(self, value):
+    """Rename the checkpoint: the object, its _CAM anchor and volume links."""
+    from ..collections import spawn_uid
+    name = _cp_clean(value)
+    if not name or not self.name.startswith("CHECKPOINT_") or name == spawn_uid(self):
+        return
+    old = self.name
+    rest = old[len("CHECKPOINT_"):]
+    uid = spawn_uid(self)
+    prefix = old[:len(old) - len(uid)] if uid and old.endswith(uid) else "CHECKPOINT_"
+    new = prefix + name
+    if new in bpy.data.objects:
+        return
+    self.name = new
+    cam = bpy.data.objects.get(old + "_CAM")
+    if cam is not None:
+        cam.name = new + "_CAM"
+    for o in bpy.data.objects:            # volume links point at the object name
+        for e in getattr(o, "og_vol_links", ()):
+            if e.target_name == old:
+                e.target_name = new
+
+
+class OG_OT_ToggleContinueFlag(Operator):
+    bl_idname = "og.toggle_continue_flag"
+    bl_label = "Continue Flag"
+    bl_options = {"UNDO"}
+    flag: StringProperty()
+
+    @classmethod
+    def description(cls, ctx, props):
+        from .. import db
+        f = next((f for f in db.continue_flags() if f["id"] == props.flag), None)
+        return f"{props.flag}: {f['desc']}" if f else props.flag
+
     def execute(self, ctx):
-        from ..collections import _active_level_col, _resolve_vis_nick
-        nick = _resolve_vis_nick(_active_level_col(ctx.scene))
-        n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith("SPAWN_") and not o.name.endswith("_CAM")])
-        uid = "start" if n == 0 else f"spawn{n}"
-        while f"SPAWN_{nick}_{uid}" in bpy.data.objects:
-            n += 1; uid = f"spawn{n}"
-        bpy.ops.object.empty_add(type="CONE", location=ctx.scene.cursor.location)
-        o = ctx.active_object
-        o.name = f"SPAWN_{nick}_{uid}"; o.show_name = True
-        o.empty_display_size = 1.0; o.color = (0.0,1.0,0.0,1.0)
-        o.rotation_euler[2] = math.pi  # cone tip points +Y by default; flip to -Y (game forward)
-        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNS)
-        self.report({"INFO"}, f"Added {o.name}")
+        ob = ctx.active_object
+        if ob is None or not hasattr(ob, "og_cp_flags"):
+            return {"CANCELLED"}
+        on = set(ob.og_cp_flags)
+        on ^= {self.flag}
+        ob.og_cp_flags = on
         return {"FINISHED"}
+
 
 class OG_OT_SpawnCheckpoint(Operator):
     bl_idname = "og.spawn_checkpoint"
     bl_label  = "Add Checkpoint"
     bl_description = (
-        "Place a mid-level checkpoint empty at the 3D cursor. "
-        "The engine auto-assigns the nearest zero-flag checkpoint as the player "
-        "moves around, so these act as silent progress saves without any trigger actors."
+        "Place a checkpoint (continue point) at the 3D cursor. The level's "
+        "first one is \"start\", where Build & Play spawns"
     )
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(name="Name", default="",
+                         description="Continue point <level>-<name>; blank = start / cp1, cp2 ...")
+
+    def invoke(self, ctx, event):
+        self.name = _cp_default_name(ctx.scene)
+        return ctx.window_manager.invoke_props_dialog(self)
+
     def execute(self, ctx):
-        from ..collections import _active_level_col, _resolve_vis_nick
-        nick = _resolve_vis_nick(_active_level_col(ctx.scene))
-        n   = len([o for o in _level_objects(ctx.scene) if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")])
-        while f"CHECKPOINT_{nick}_cp{n}" in bpy.data.objects:
-            n += 1
-        uid = f"cp{n}"
+        from ..collections import spawn_uid
+        name = _cp_clean(self.name) or _cp_default_name(ctx.scene)
+        used = {spawn_uid(o) for o in _level_objects(ctx.scene)
+                if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")}
+        if name in used or _cp_object_name(ctx.scene, name) in bpy.data.objects:
+            self.report({"ERROR"}, f"This level already has a checkpoint named '{name}'")
+            return {"CANCELLED"}
         bpy.ops.object.empty_add(type="CONE", location=ctx.scene.cursor.location)
         o = ctx.active_object
-        o.name = f"CHECKPOINT_{nick}_{uid}"; o.show_name = True
+        o.name = _cp_object_name(ctx.scene, name); o.show_name = True
         o.empty_display_size = 1.2; o.color = (1.0, 0.85, 0.0, 1.0)
         o.rotation_euler[2] = math.pi  # cone tip points +Y by default; flip to -Y (game forward)
         o["og_checkpoint_radius"] = 3.0
@@ -161,17 +224,17 @@ class OG_OT_SpawnCamAnchor(Operator):
     bl_idname = "og.spawn_cam_anchor"
     bl_label  = "Add Spawn Camera"
     bl_description = (
-        "Place a camera-anchor empty linked to the selected SPAWN_ or CHECKPOINT_ empty. "
+        "Place a camera-anchor empty linked to the selected CHECKPOINT_ empty. "
         "This sets the camera position and orientation used when the player respawns at that point."
     )
     def execute(self, ctx):
         sel = ctx.active_object
         if sel is None or sel.type != "EMPTY":
-            self.report({"ERROR"}, "Select a SPAWN_ or CHECKPOINT_ empty first")
+            self.report({"ERROR"}, "Select a checkpoint first")
             return {"CANCELLED"}
-        is_spawn = sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_")
+        is_spawn = sel.name.startswith("CHECKPOINT_")
         if not is_spawn:
-            self.report({"ERROR"}, "Selected object must be a SPAWN_ or CHECKPOINT_ empty")
+            self.report({"ERROR"}, "Selected object must be a checkpoint")
             return {"CANCELLED"}
         cam_name = sel.name + "_CAM"
         if ctx.scene.objects.get(cam_name):
@@ -193,6 +256,10 @@ class OG_OT_SpawnCamAnchor(Operator):
         o.parent = sel
         o.matrix_parent_inverse = sel.matrix_world.inverted()
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNS)
+        # keep the checkpoint selected so its settings / position stay editable
+        o.select_set(False)
+        sel.select_set(True)
+        ctx.view_layer.objects.active = sel
         self.report({"INFO"}, f"Added {cam_name}")
         return {"FINISHED"}
 
@@ -1213,9 +1280,9 @@ class OG_OT_SpawnSelected(Operator):
         if "target_context" in fields:
             sel = ctx.active_object
             if sel is None or sel.type != "EMPTY":
-                return "Select a SPAWN_ or CHECKPOINT_ empty in the viewport first"
-            if not (sel.name.startswith("SPAWN_") or sel.name.startswith("CHECKPOINT_")):
-                return "Selected object must be a SPAWN_ or CHECKPOINT_ empty"
+                return "Select a checkpoint in the viewport first"
+            if not sel.name.startswith("CHECKPOINT_"):
+                return "Selected object must be a checkpoint"
             if sel.name.endswith("_CAM"):
                 return "Selected object is already a camera anchor"
 
@@ -1326,7 +1393,8 @@ override mesh."""
 
 
 CLASSES = (
-    OG_OT_SpawnPlayer,
+    OG_OT_ToggleContinueFlag,
+    
     OG_OT_SpawnCheckpoint,
     OG_OT_SpawnLoadBoundary,
     OG_OT_SpawnCamAnchor,

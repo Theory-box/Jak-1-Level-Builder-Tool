@@ -217,6 +217,20 @@ def _computed_lumps(o, etype):
     return out
 
 
+def checkpoint_has_trigger(o, vol_by_cp=None):
+    """A checkpoint gets a trigger actor when its Trigger option is on or a
+    volume is linked to it."""
+    if getattr(o, "og_cp_trigger", False):
+        return True
+    if vol_by_cp is not None:
+        return o.name in vol_by_cp
+    for v in bpy.data.objects:
+        if v.type == "MESH" and v.name.startswith("VOL_"):
+            if any(e.target_name == o.name for e in _vol_links(v)):
+                return True
+    return False
+
+
 def collect_actors(scene, depsgraph=None):
     """Build actor list from ACTOR_ empties.
 
@@ -615,10 +629,10 @@ def collect_actors(scene, depsgraph=None):
     out += _extra_actors
 
     # ── Checkpoint trigger actors ─────────────────────────────────────────────
-    # CHECKPOINT_ empties export as two things:
+    # CHECKPOINT_ empties with Trigger on (or a linked volume) export as two things:
     #   1. A continue-point record in level-info.gc (via collect_spawns) — the
     #      spawn data the engine uses on respawn.
-    #   2. A checkpoint-trigger actor in the JSONC (here) — an invisible entity
+    #   2. An lt-checkpoint actor in the JSONC (here, code in level_tools.py) — an invisible entity
     #      that calls set-continue! when Jak enters it.
     # Both are needed: the actor does the triggering, the continue-point holds
     # the spawn position. The actor's continue-name lump must match the
@@ -644,6 +658,8 @@ def collect_actors(scene, depsgraph=None):
             continue
         if o.name.endswith("_CAM"):
             continue
+        if not checkpoint_has_trigger(o, vol_by_cp):
+            continue                      # plain continue point
         from ..collections import spawn_uid
         uid = spawn_uid(o)
         l   = o.location
@@ -668,7 +684,7 @@ def collect_actors(scene, depsgraph=None):
             lump["vol"]         = ["vector-vol"] + planes
             out.append({
                 "trans":     [cx, cy, cz],
-                "etype":     "checkpoint-trigger",
+                "etype":     "lt-checkpoint",
                 "game_task": "(game-task none)",
                 "quat":      [0, 0, 0, 1],
                 "vis_id":    0,
@@ -681,7 +697,7 @@ def collect_actors(scene, depsgraph=None):
             lump["radius"] = ["meters", r]
             out.append({
                 "trans":     [gx, gy, gz],
-                "etype":     "checkpoint-trigger",
+                "etype":     "lt-checkpoint",
                 "game_task": "(game-task none)",
                 "quat":      [0, 0, 0, 1],
                 "vis_id":    0,

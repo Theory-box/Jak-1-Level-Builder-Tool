@@ -73,6 +73,20 @@ actor itself; this file is the overview.
 snow-switch, snow fort gate, snow bumpers, sunken pipegame, gorge-pusher, swamp-tetherrock,
 sage-finalboss (finalboss-movies). Candidates for subtypes that use the actor's own task.
 
+## Sound bank requirements (for the next actor pass)
+The level only plays an actor's sounds when their sound bank is loaded (Level
+Settings > Sound & Music). The database knows which sounds are in which bank
+(BankSFX) but not which sounds each actor plays, so only sound emitters and
+particle spawner sounds get a "needs bank X" warning today. To warn for actors:
+1. For each actor, list the sounds its code plays: `sound-play` /
+   `ambient-sound` / `sound-play-by-name` calls in its .gc files (and the
+   sounds of the particle groups it spawns).
+2. Map each sound to its bank(s) through BankSFX ("common" sounds need no bank).
+3. Store the result per actor in the database, e.g. `"sound_banks": ["swamp"]`
+   (inherited from parents like the other panel data).
+4. The required-fields check then reports "needs the swamp bank" for actors
+   whose banks aren't loaded (audit + the warnings next to Export & Compile).
+
 ## Older notes from the earlier passes
 - gnawer: orb vertex list + vanilla cell / camera positions.
 - balloonlurker: boat-fuelcell.

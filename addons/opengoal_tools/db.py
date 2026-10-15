@@ -221,6 +221,16 @@ def orphan_etypes() -> list[dict]:
     return DB.get("OrphanEtypes", [])
 
 
+def texture_slots(level: str) -> list[int] | None:
+    """A vanilla level's 5 texture-page slots [tfrag, pris, shrub, alpha, water]."""
+    return DB.get("TextureSlots", {}).get(level)
+
+
+def continue_flags() -> list[dict]:
+    """continue-flags of a continue point, in bit order ({id, label, desc})."""
+    return DB.get("ContinueFlags", [])
+
+
 def all_sfx() -> list[dict]:
     return DB.get("AllSFX", [])
 

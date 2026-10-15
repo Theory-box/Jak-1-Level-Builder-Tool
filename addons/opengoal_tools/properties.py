@@ -13,7 +13,7 @@ from .data import (
     ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
     LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
-    TEXTURE_SOURCE_ITEMS,
+    TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _spawn_variant_cb,
@@ -32,7 +32,7 @@ from .collections import (
     _get_vis_nick_live, _set_vis_nick_live,
     _get_include_enabled_live, _set_include_enabled_live,
     _get_include_text_live, _set_include_text_live,
-    _on_mood_changed, _on_sky_changed,
+    _on_mood_changed, _get_sky_source_live, _set_sky_source_live,
     _get_texture_source_live, _set_texture_source_live,
     _get_actor_name_nick_live, _set_actor_name_nick_live,
     _on_fog_override_changed,
@@ -363,21 +363,35 @@ class OGPreferences(AddonPreferences):
 
 
 
+# --- Level sound / music banks (live on the active level collection) ---
+_BANK_IDS = [b[0] for b in LEVEL_BANKS]
+
+
+def _bank_live(key):
+    """(get, set) for a bank EnumProperty stored as the level collection's
+    custom property `key` (og_music_bank, og_sound_bank_1/2)."""
+    def get(self):
+        from .collections import _active_level_col
+        col = _active_level_col(bpy.context.scene) if bpy.context else None
+        v = str(col.get(key, "none") or "none") if col is not None else "none"
+        return _BANK_IDS.index(v) if v in _BANK_IDS else (_BANK_IDS.index("none") if "none" in _BANK_IDS else 0)
+
+    def set(self, i):
+        from .collections import _active_level_col
+        col = _active_level_col(bpy.context.scene) if bpy.context else None
+        if col is not None and 0 <= i < len(_BANK_IDS):
+            col[key] = _BANK_IDS[i]
+    return get, set
+
+
 # --- Launch checkpoint dropdown ---
 def _launch_checkpoint_items(self, context):
     """Items for the og.play launch dropdown.
 
     Always offers "(none)" — bare GK launch, navigate manually. Then lists
-    every SPAWN_/CHECKPOINT_ empty in the active level as a continue-point
-    the launcher can spawn at directly. The continue-name format matches
-    what _make_continues in export/writers.py writes into level-info.gc:
-    "<level>-<uid>" where uid is the empty's suffix after SPAWN_/CHECKPOINT_.
-
-    SPAWN_ and CHECKPOINT_ are functionally the same thing (both become
-    continue-points); we don't distinguish in the dropdown.
-
-    If the level has no SPAWN_/CHECKPOINT_ empties, _make_continues still
-    emits a default "<level>-start" continue, so we always offer that too.
+    every checkpoint of the active level as a continue point the launcher
+    can spawn at directly ("<level>-<name>", as _make_continues writes it
+    into level-info.gc). Only existing checkpoints are listed.
     """
     from .collections import _active_level_col, _recursive_col_objects
     items = [("none", "(None — bare launch)", "Launch GK only; navigate via debug menu")]
@@ -405,12 +419,8 @@ def _launch_checkpoint_items(self, context):
         seen_uids.add(uid)
         spawn_uids.append(uid)
 
-    # Always offer the default "<level>-start" — _make_continues emits it
-    # when no SPAWN_/CHECKPOINT_ empties exist in the scene.
-    if "start" not in seen_uids:
-        spawn_uids.insert(0, "start")
-
-    for uid in sorted(spawn_uids):
+    # only the level's own checkpoints ("start" first)
+    for uid in sorted(spawn_uids, key=lambda u: (u != "start", u)):
         cp_name = f"{level_name}-{uid}"
         items.append((cp_name, cp_name, f"Spawn at continue-point {cp_name}"))
     return items
@@ -657,11 +667,15 @@ class OGProperties(PropertyGroup):
     lightbake_samples: IntProperty(name="Sample Count", default=128, min=1, max=4096,
                                    description="Number of Cycles render samples used when baking lighting to vertex colors")
     # Audio
-    sound_bank_1:           EnumProperty(name="Bank 1", items=LEVEL_BANKS, default="none",
+    # live on the active level collection (the export reads it from there)
+    sound_bank_1:           EnumProperty(name="Bank 1", items=LEVEL_BANKS,
+                                         get=_bank_live("og_sound_bank_1")[0], set=_bank_live("og_sound_bank_1")[1],
                                          description="First level sound bank (max 2 total)")
-    sound_bank_2:           EnumProperty(name="Bank 2", items=LEVEL_BANKS, default="none",
+    sound_bank_2:           EnumProperty(name="Bank 2", items=LEVEL_BANKS,
+                                         get=_bank_live("og_sound_bank_2")[0], set=_bank_live("og_sound_bank_2")[1],
                                          description="Second level sound bank (max 2 total)")
-    music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS, default="none",
+    music_bank:             EnumProperty(name="Music Bank", items=LEVEL_BANKS,
+                                         get=_bank_live("og_music_bank")[0], set=_bank_live("og_music_bank")[1],
                                          description="Music bank to load for this level")
     # Lighting (mood + sky)
     mood:                   EnumProperty(name="Mood", items=MOOD_LEVELS, default="village1",
@@ -672,12 +686,15 @@ class OGProperties(PropertyGroup):
                                                       "(<nick>-babak-0) so they can't clash with vanilla actors or other "
                                                       "levels loaded at the same time"),
                                          get=_get_actor_name_nick_live, set=_set_actor_name_nick_live)
-    texture_source:         EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS,
+    texture_source:         EnumProperty(name="Texture Remap", items=TEXTURE_SOURCE_ITEMS,
                                          get=_get_texture_source_live, set=_set_texture_source_live,
-                                         description="Vanilla level to borrow textures + sky from. Use 'None' for any level streamed alongside another custom level — two co-resident levels sharing a source crash on load")
-    sky:                    BoolProperty(name="Has Sky", default=True,
-                                         update=_on_sky_changed,
-                                         description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")
+                                         description="Vanilla level whose texture remap table (and texture pages) the level uses: "
+                                                     "needed for things drawn with generic textures, e.g. Flut Flut eyes, water, "
+                                                     "dark eco pools, dying enemies. 'None' for a level streamed alongside another "
+                                                     "custom level (two co-resident levels sharing one crash on load)")
+    sky_source:             EnumProperty(name="Sky", items=SKY_SOURCE_ITEMS,
+                                         get=_get_sky_source_live, set=_set_sky_source_live,
+                                         description="Vanilla level whose sky is drawn. 'None' = no sky (caves, interiors)")
     # Fog Override — when enabled, exporter injects a fog-control actor that
     # overrides *math-camera* fog values every frame.  When disabled, the
     # active mood drives fog as normal.
@@ -781,6 +798,91 @@ class OGProperties(PropertyGroup):
     tex_search:   StringProperty(name="Search", default="",
                                  description="Filter textures by name")
     tex_selected: StringProperty(name="Selected Texture", default="")
+
+
+# --- OGCommandRow ---
+class OGCommandRow(bpy.types.PropertyGroup):
+    """One command of a load-commands list, e.g. special "med-res-level-1" #t
+    (the list is exported as '((cmd) (cmd) ...))."""
+    cmd: StringProperty(name="Command", default="",
+                        description='One load command without its parentheses, e.g. special "med-res-level-1" #t')
+
+
+def command_list_value(rows) -> str:
+    """GOAL quoted list of a command list: '() when empty, else
+    '((cmd 1)
+      (cmd 2))"""
+    cmds = []
+    for r in rows:
+        c = r.cmd.strip()
+        if not c:
+            continue
+        cmds.append(c if c.startswith("(") and c.endswith(")") else f"({c})")
+    if not cmds:
+        return "'()"
+    return "'(" + "\n               ".join(cmds) + ")"
+
+
+_CMD_OWNERS = [("OBJECT", "Object", "The active object"), ("LEVEL", "Level", "The active level's settings")]
+
+
+def _cmd_owner(ctx, owner):
+    if owner == "LEVEL":
+        from .collections import _active_level_col
+        col = _active_level_col(ctx.scene)
+        return col.og_level if col is not None else None
+    return ctx.active_object
+
+
+class OG_OT_CommandAdd(bpy.types.Operator):
+    """Add a command to the list"""
+    bl_idname = "og.command_add"
+    bl_label = "Add Command"
+    bl_options = {"UNDO"}
+    prop: StringProperty()
+    owner: EnumProperty(items=_CMD_OWNERS, default="OBJECT")
+
+    def execute(self, ctx):
+        ob = _cmd_owner(ctx, self.owner)
+        if ob is None or not hasattr(ob, self.prop):
+            return {"CANCELLED"}
+        getattr(ob, self.prop).add()
+        return {"FINISHED"}
+
+
+class OG_OT_CommandRemove(bpy.types.Operator):
+    """Remove this command"""
+    bl_idname = "og.command_remove"
+    bl_label = "Remove Command"
+    bl_options = {"UNDO"}
+    prop: StringProperty()
+    index: IntProperty()
+    owner: EnumProperty(items=_CMD_OWNERS, default="OBJECT")
+
+    def execute(self, ctx):
+        ob = _cmd_owner(ctx, self.owner)
+        if ob is None or not hasattr(ob, self.prop):
+            return {"CANCELLED"}
+        rows = getattr(ob, self.prop)
+        if 0 <= self.index < len(rows):
+            rows.remove(self.index)
+        return {"FINISHED"}
+
+
+def draw_command_list(layout, ob, prop, label, owner="OBJECT"):
+    """A list of command rows with + / - buttons (owner: the active object,
+    or LEVEL = the active level's settings)."""
+    rows = getattr(ob, prop)
+    head = layout.row(align=True)
+    head.label(text=f"{label} ({len(rows)})" if rows else label)
+    op = head.operator("og.command_add", text="", icon="ADD")
+    op.prop = prop; op.owner = owner
+    col = layout.column(align=True)
+    for i, r in enumerate(rows):
+        row = col.row(align=True)
+        row.prop(r, "cmd", text="")
+        op = row.operator("og.command_remove", text="", icon="REMOVE")
+        op.prop = prop; op.index = i; op.owner = owner
 
 
 # --- OGLumpRow ---

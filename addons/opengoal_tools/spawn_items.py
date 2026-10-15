@@ -141,20 +141,12 @@ class SpawnItem:
 # ---------------------------------------------------------------------------
 _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
     SpawnItem(
-        spawn_id="special:player_spawn",
-        label="Player spawn",
-        category="Level Flow",
-        description="Spawn point where the player appears when the level loads "
-                    "or after death.",
-        operator="og.spawn_player",
-        icon="EMPTY_ARROWS",
-    ),
-    SpawnItem(
         spawn_id="special:checkpoint",
         label="Checkpoint",
         category="Level Flow",
-        description="Mid-level continue point. Player respawns here after "
-                    "death until the next checkpoint is reached.",
+        description="Continue point (where Jak spawns / respawns). The level's first "
+                    "one is \"start\" (Build & Play spawns there). Trigger option: "
+                    "becomes the checkpoint when Jak enters it.",
         operator="og.spawn_checkpoint",
         icon="EMPTY_SINGLE_ARROW",
     ),

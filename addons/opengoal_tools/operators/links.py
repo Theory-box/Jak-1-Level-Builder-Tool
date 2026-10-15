@@ -323,6 +323,50 @@ def navmesh_users(scene, nm_name):
     return [o for o in scene.objects if o.get("og_navmesh_link") == nm_name]
 
 
+def path_key(o):
+    """The ordered path sources (curve / empty names) of an actor's main path."""
+    return tuple(s.obj.name for s in getattr(o, "og_waypoint_sources", ()) if s.obj)
+
+
+def path_users(scene, actor):
+    """Other actors whose main path is the same list of curves / waypoints."""
+    key = path_key(actor)
+    if not key:
+        return []
+    return [o for o in scene.objects
+            if o is not actor and o.type == "EMPTY" and o.name.startswith("ACTOR_") and "_wp_" not in o.name
+            and path_key(o) == key]
+
+
+class OG_OT_PathShare(Operator):
+    """The other actors on this path use this actor's one instead (path-actor
+    link), so the path is exported once"""
+    bl_idname  = "og.path_share"
+    bl_label   = "Make Other Connected Actors Use This as Path-Actor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    actor_name: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        from ..data import _actor_set_link
+        actor = bpy.data.objects.get(self.actor_name)
+        if actor is None:
+            return {"CANCELLED"}
+        moved, skipped = [], []
+        for o in path_users(ctx.scene, actor):
+            if len(getattr(o, "og_extra_paths", ())):
+                skipped.append(o.name)      # path-actor would replace its other paths too
+                continue
+            o.og_waypoint_sources.clear()
+            _actor_set_link(o, "path-actor", 0, actor.name)
+            moved.append(o.name)
+        msg = f"{len(moved)} actor(s) now use the path of {actor.name}"
+        if skipped:
+            msg += f"; kept {', '.join(skipped)} (they have more paths, path-actor would replace them all)"
+        self.report({"WARNING"} if skipped else {"INFO"}, msg)
+        return {"FINISHED"}
+
+
 class OG_OT_NavMeshShare(Operator):
     """The other actors on this navmesh use this actor's one instead
     (nav-mesh-actor link), so the navmesh is built once"""
@@ -1110,6 +1154,7 @@ class OG_OT_ClearActorLink(Operator):
 
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
+    OG_OT_PathShare,
     OG_OT_MarkNavMesh,
     OG_OT_UnmarkNavMesh,
     OG_OT_LinkNavMesh,

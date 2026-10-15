@@ -478,6 +478,10 @@ class OG_PT_ActorLinks(Panel):
                 and parts[0] == "ACTOR"
                 and _actor_has_links(parts[1]))
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "links")
+
     def draw(self, ctx):
         sel   = ctx.active_object
         etype = sel.name.split("_", 2)[1]
@@ -809,13 +813,8 @@ class OG_PT_ActorLauncherDoor(Panel):
             o for o in _level_objects(scene)
             if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
         ], key=lambda o: o.name)
-        spawns = sorted([
-            o for o in _level_objects(scene)
-            if o.name.startswith("SPAWN_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
-        ], key=lambda o: o.name)
-
         from ..collections import spawn_uid
-        all_cps = [(o, f"{level_name}-{spawn_uid(o)}") for o in cps + spawns]
+        all_cps = [(o, f"{level_name}-{spawn_uid(o)}") for o in cps]
 
         if cp_name:
             row = box.row(align=True)
@@ -1255,6 +1254,10 @@ class OG_PT_ActorWaypoints(Panel):
         return (len(parts) >= 3 and parts[0] == "ACTOR"
                 and _actor_uses_waypoints(parts[1]))
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "path")
+
     def draw(self, ctx):
         sel = ctx.active_object
         draw_path_panel(self.layout, ctx, sel, sel.name.split("_", 2)[1])
@@ -1289,6 +1292,12 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
             header_text = f"Path  ({n_legacy} legacy waypoint{'s' if n_legacy != 1 else ''})"
 
         layout.label(text=header_text, icon="ANIM")
+        if etype and not opts.get("lump"):      # red = a required path is missing
+            from ..required import missing as _missing
+            for m in _missing(sel, scene):
+                if m["panel"] == "path":
+                    w = layout.row(); w.alert = True
+                    w.label(text=f"Required — no {m['key']}", icon="ERROR")
 
         # If the new collection is empty and legacy _wp_NN empties exist,
         # offer a one-click migration. Skips Path B which stays on the
@@ -1321,6 +1330,18 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
 
         # Link a curve (selected / searched), or spawn an empty waypoint.
         _draw_path_add(layout, sel, scene, sources)
+
+        # Same path on other actors: share it (path-actor) like a nav-mesh
+        if etype and not opts.get("lump"):
+            from ..operators.links import path_users
+            others = path_users(scene, sel)
+            if others:
+                warn = layout.column(align=True)
+                warn.alert = True
+                warn.label(text=f"{len(others)} other actor(s) also use this path:", icon="ERROR")
+                warn.label(text="it is exported once per actor. Share it instead:")
+                layout.operator("og.path_share", text="Make other connected actors use this as path-actor",
+                                icon="LINKED").actor_name = sel.name
 
         # race-ring (path option "rings"): one ring per point, no path lump
         if etype and _db.panel_option(etype, "path", "rings", False):

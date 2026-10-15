@@ -475,6 +475,10 @@ class OG_PT_ActorFields(Panel):
         parts = sel.name.split("_", 2)
         return len(parts) >= 3 and parts[0] == "ACTOR"
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object)
+
     def draw(self, ctx):
         sel = ctx.active_object
         parts = sel.name.split("_", 2)

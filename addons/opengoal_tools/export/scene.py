@@ -583,8 +583,19 @@ def _cp_level_value(o, enum_attr, custom_attr):
     return val
 
 
+from ..properties import command_list_value
+
+
+def _cp_flags(o):
+    """The checkpoint's continue-flags, space-separated in bit order."""
+    from .. import db
+    on = set(getattr(o, "og_cp_flags", set()) or ())
+    return " ".join(f["id"] for f in db.continue_flags() if f["id"] in on)
+
+
 def collect_spawns(scene):
-    """Collect SPAWN_ empties into continue-point data dicts.
+    """Collect CHECKPOINT_ empties into continue-point data dicts ("start"
+    first: the level's first continue point).
 
     Each dict contains:
       name       — uid string (e.g. "start", "spawn1", or custom SPAWN_<name>)
@@ -609,9 +620,8 @@ def collect_spawns(scene):
         if o.name.endswith("_CAM"):
             continue
 
-        is_spawn      = o.name.startswith("SPAWN_")      and o.type == "EMPTY"
         is_checkpoint = o.name.startswith("CHECKPOINT_") and o.type == "EMPTY"
-        if not (is_spawn or is_checkpoint):
+        if not is_checkpoint:
             continue
 
         from ..collections import spawn_uid
@@ -694,9 +704,10 @@ def collect_spawns(scene):
             "cp_lev1":          _cp_level_value(o, "og_cp_lev1", "og_cp_lev1_custom"),
             "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
             "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
-            "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),
-            "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
+            "cp_flags":         _cp_flags(o),
+            "cp_load_commands": command_list_value(getattr(o, "og_cp_load_cmds", ())),
         })
+    out.sort(key=lambda d: d["name"] != "start")   # stable: start first
     return out
 
 

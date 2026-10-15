@@ -99,6 +99,7 @@ from .build import (
 from .properties import (
     OGPreferences, OGProperties,
     OGLumpRow, OG_OT_AddLumpRow, OG_OT_RemoveLumpRow,
+    OGCommandRow, OG_OT_CommandAdd, OG_OT_CommandRemove,
     OG_UL_LumpRows, OGActorLink, OGVolLink, OGAuditResult, OGGoalCodeRef,
     OGSpawnListRow, OGSpawnFavorite,
     OGWaypointSource, OGKnot, OGExtraPath, OGBattleLurker,
@@ -117,6 +118,8 @@ from . import plat_grid as _plat_grid
 from . import connect_neighbours as _connect_neighbours
 from . import distribute as _distribute
 from . import bake as _bake
+from . import level_settings as _level_settings
+from . import required as _required_mod
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -136,6 +139,9 @@ from .textures import (
 
 classes = (
     *_OPS_CLASSES,
+    OGCommandRow,
+    OG_OT_CommandAdd,
+    OG_OT_CommandRemove,
     OGLumpRow,
     OG_OT_AddLumpRow,
     OG_OT_RemoveLumpRow,
@@ -157,6 +163,8 @@ classes = (
     *_plat_grid.CLASSES,
     *_connect_neighbours.CLASSES,
     *_bake.CLASSES,
+    *_level_settings.CLASSES,
+    *_required_mod.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -205,6 +213,9 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
     _bake.register_props()   # needs OGBakeSettings registered
+    _level_settings.register_props()
+    from . import required as _required
+    _required.register_handlers()
 
     # Audit results — registered after OGAuditResult is in classes tuple.
     bpy.types.Scene.og_audit_results       = bpy.props.CollectionProperty(type=OGAuditResult)
@@ -331,9 +342,19 @@ def register():
     bpy.types.Object.og_vertex_export_etype  = bpy.props.StringProperty(name="Export As Entity", default="")
     bpy.types.Object.og_vertex_export_search = bpy.props.StringProperty(name="", default="")
 
-    # Checkpoint (continue-point) level/display settings.
-    # SPAWN_/CHECKPOINT_ empties export as continue-points; these drive which
-    # levels are resident (and displayed) when respawning at this point.
+    # Checkpoint (continue-point) settings. CHECKPOINT_ empties export as
+    # continue points; these drive which levels are resident (and displayed)
+    # when respawning at this point.
+    from .operators.spawn import _cp_name_get, _cp_name_set
+    bpy.types.Object.og_cp_name = bpy.props.StringProperty(
+        name="Name", get=_cp_name_get, set=_cp_name_set,
+        description="Checkpoint name: the continue point is <level>-<name> "
+                    "(\"start\" is where Build & Play spawns). Renames the object")
+    bpy.types.Object.og_cp_trigger = bpy.props.BoolProperty(
+        name="Trigger", default=False,
+        description="Add an invisible trigger that makes this the checkpoint when Jak enters its "
+                    "radius / volume. Off: a plain continue point (load boundaries, death, "
+                    "set-continue! choose it)")
     # Note: EnumProperty with a dynamic items callback can't take default= —
     # the first item ("self" / "none") is the effective default.
     bpy.types.Object.og_cp_lev0  = bpy.props.EnumProperty(
@@ -358,14 +379,12 @@ def register():
         name="Vis Nickname", default="",
         description="Vis nick set on respawn (blank = this level's nickname). "
                     "Used for music/menu context, not only visibility data")
-    bpy.types.Object.og_cp_flags = bpy.props.StringProperty(
-        name="Continue Flags", default="",
-        description="Advanced: space-separated continue-flags symbols "
-                    "(e.g. 'warp game-start'). Must exist in the build's enum")
-    bpy.types.Object.og_cp_load_commands = bpy.props.StringProperty(
-        name="Load Commands", default="",
-        description="Advanced: raw GOAL load-commands list, e.g. "
-                    "'((display foo display)). Blank = '()")
+    from . import db as _cdb
+    _flags = [(f["id"], f["label"], f["desc"], 1 << i) for i, f in enumerate(_cdb.continue_flags())]
+    bpy.types.Object.og_cp_flags = bpy.props.EnumProperty(
+        name="Continue Flags", items=_flags, options={"ENUM_FLAG"}, default=set(),
+        description="continue-flags of this continue point (most are for vanilla sequences)")
+    bpy.types.Object.og_cp_load_cmds = bpy.props.CollectionProperty(type=OGCommandRow)
 
     # Load boundary (LOADBND_ mesh) settings → static-load-boundary entries.
     bpy.types.Object.og_lb_closed = bpy.props.BoolProperty(
@@ -466,6 +485,9 @@ def unregister():
     _plat_grid.unregister_props()
     _distribute.unregister_props()
     _bake.unregister_props()
+    _level_settings.unregister_props()
+    from . import required as _required
+    _required.unregister_handlers()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr
@@ -490,7 +512,7 @@ def unregister():
               "og_actor_links","og_lump_rows","og_lump_rows_index","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
-              "og_cp_vis_nick","og_cp_flags","og_cp_load_commands",
+              "og_cp_vis_nick","og_cp_flags","og_cp_load_cmds","og_cp_name","og_cp_trigger",
               "og_cp_lev0_custom","og_cp_lev1_custom",
               "og_lb_closed","og_lb_player","og_lb_custom_flags",
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",

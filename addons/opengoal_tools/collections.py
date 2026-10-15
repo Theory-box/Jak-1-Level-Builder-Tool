@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES
+from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES
 
 # Mapping from collection custom-property keys to OGProperties attribute names.
 # Shared by _get_level_prop and _set_level_prop — defined once here.
@@ -19,7 +19,6 @@ _LEVEL_PROP_KEY_MAP = {
     "og_sound_bank_2":      "sound_bank_2",
     "og_music_bank":        "music_bank",
     "og_mood":              "mood",
-    "og_sky":               "sky",
     "og_fog_override_enabled": "fog_override_enabled",
     "og_fog_color":         "fog_color",
     "og_fog_start":         "fog_start",
@@ -74,7 +73,7 @@ _LEVEL_COL_DEFAULTS = {
     "og_actor_name_nick":   True,
     "og_include_enabled":   False,
     "og_include_text":      "",
-    "og_sky":               True,
+    "og_sky_source":        "village1",
     "og_fog_override_enabled": False,
     "og_fog_color":         (0.376, 0.502, 0.627),
     "og_fog_start":         25.0,
@@ -120,14 +119,12 @@ def free_object_name(prefix, n=0):
 
 
 def spawn_uid(o):
-    """Checkpoint / spawn uid of a SPAWN_ / CHECKPOINT_ empty: the name after
-    the prefix, without a leading "<level vis-nick>_" (objects are named
-    SPAWN_<nick>_start so two levels can each have a "start"). None for
-    other objects."""
-    if o.name.startswith("SPAWN_"):
-        rest, dflt = o.name[6:], "start"
-    elif o.name.startswith("CHECKPOINT_"):
-        rest, dflt = o.name[11:], "cp0"
+    """Checkpoint name of a CHECKPOINT_ empty: the object name after the
+    prefix, without a leading "<level vis-nick>_" (objects are named
+    CHECKPOINT_<nick>_start so two levels can each have a "start"). It's
+    exported as the continue point "<level>-<name>". None for other objects."""
+    if o.name.startswith("CHECKPOINT_"):
+        rest, dflt = o.name[11:], "start"
     else:
         return None
     head, sep, tail = rest.partition("_")
@@ -311,8 +308,8 @@ def _classify_object(obj):
                 return _col_path_for_entity(etype)
             return _COL_PATH_SPAWNABLE_PROPS
 
-        # Spawn / checkpoint empties and their CAM anchors
-        if name.startswith("SPAWN_") or name.startswith("CHECKPOINT_"):
+        # Checkpoint empties and their CAM anchors
+        if name.startswith("CHECKPOINT_"):
             return _COL_PATH_SPAWNS
 
         # Sound emitters
@@ -610,12 +607,6 @@ def _on_active_level_changed(self, context):
                 setattr(props, "mood", mood_val)
             except Exception:
                 pass
-        if hasattr(props, "sky"):
-            sky_val = bool(col.get("og_sky", _LEVEL_COL_DEFAULTS["og_sky"]))
-            try:
-                setattr(props, "sky", sky_val)
-            except Exception:
-                pass
         # Fog override — same pattern, six values to sync
         for attr, key in (
             ("fog_override_enabled", "og_fog_override_enabled"),
@@ -648,11 +639,17 @@ def _on_mood_changed(self, context):
         col["og_mood"] = self.mood
 
 
-def _on_sky_changed(self, context):
-    """Sky BoolProperty update callback: persist into active level collection."""
-    col = _active_level_col(context.scene)
-    if col is not None:
-        col["og_sky"] = bool(self.sky)
+def _get_sky_source_live(self):
+    """EnumProperty get: index of the active level's og_sky_source."""
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    val = str(col.get("og_sky_source", "village1")) if col is not None else "village1"
+    return SKY_SOURCE_VALUES.index(val) if val in SKY_SOURCE_VALUES else 0
+
+
+def _set_sky_source_live(self, value):
+    col = _active_level_col(bpy.context.scene) if bpy.context else None
+    if col is not None and 0 <= value < len(SKY_SOURCE_VALUES):
+        col["og_sky_source"] = SKY_SOURCE_VALUES[value]
 
 
 def _get_texture_source_live(self):

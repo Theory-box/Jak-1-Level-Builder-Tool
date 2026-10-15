@@ -134,16 +134,6 @@ The point about being able to work with and around existing custom task and leve
 
 ---
 
-## Level files clean up when changing level name (or at least a warning?)
-When you change a level name, then previous file names for that level will stay. It would be good if those were cleaned when changing names, or at least give a warning to the user to clean first, then change the name.
-
----
-
-## Blender clean up feature
-- Orphan node collections
-- Orphan preview meshes
-
----
 
 ## Warnings for required fields
 There's already a warning inside of a field when something is required but it's not always the most visible thing. Here's some changes I would like to see to help with this.
@@ -217,6 +207,15 @@ When multiple actors are using the same paths, have the same feature that warns 
 
 ---
 
+## Blender clean up feature
+When removing actors and such, sometimes an "orphan node collection" is left behind in blender. If possible those shouldn't exist if there's no object inside of them or if they don't serve any other purpose. They could also get cleaned by the "sort collection" in the clean option of levels.
+
+Same wiht preview meshes, deleting an actor with blender's delete function will leave a preview mesh behind, those could also get cleaned by the "sort collection" button.
+
+See "object control" after for more info too.
+
+---
+
 ## Object controls
 ### Duplication/Delete
 At the moment, you pretty much need to use the button "delete" and "duplicate" from the addon. Because if you don't, and use the blender functions/shortcut. It'll create some issues:
@@ -287,6 +286,36 @@ It'd have a general "filter exports" toggle. Which, only if it's on, would show 
 ---
 
 ## Second entity pass
+Based on `community-feedback/Actor Notes.md` and notes here
+
+---
+
+## Level files clean up when changing level name (or at least a warning?)
+When you change a level name, then previous file names for that level will stay. It would be good if those were cleaned when changing names, or at least give a warning to the user to clean first, then change the name.
+
+---
+
+## Better Linux support
+
+---
+
+## Custom art group/actor/camera implementation
+It is possible to create your own actor fully from scratch for opengoal even with custom art group and animation. The process can be a bit cumbersome both on the blender side and opengoal side.
+Let's first starth with researching the topic to see what's needed from the blender side as well as the opengoal code side of things.
+### Ideas for implementation
+#### Templates
+Since advanced actors will need some coding on the user's part. I'm thinking of having a few basic templates that could be used. Such as:
+- Art-group (would only export the art-group to be generated in game.gp as well as the skeleton description)
+- Basic Process-drawable (would create a child of process-drawable with the basic code and one idle state)
+- Platform (would be a child of plat with the custom model, maybe a few extra could be added too for more controllable platforms)
+- Camera animation (This would just create the art-group for a camera animation to be used by pov-camera)
+- Nav enemy (a child of nav-enemy with all its settings available in blender directly)
+#### Collection and menu setup
+These actors wouldn't be directly part of levels so a fully new side panel could be added for this under the "OpenGOAL" one called "Custom Actors". So all the tools related to this would be separated.
+
+This menu would be setup in a similar way to the "opengoal" panel, with a menu at the top to create and switch between different custom actors, a menu to export current/all custom actors, a setting menu for that specific actor where you choose the template type and all its other settings and other setting as needed, art-group for each art-group that'll be part of that new actor and its specific settings.
+
+When a new actor is created it'd create a new main collection for all custom actors and then a sub collection for that specific actor. As well as needed other collections inside.
 
 ---
 

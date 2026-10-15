@@ -33,8 +33,8 @@ class OG_PT_Lighting(Panel):
         # Writes :mood, :mood-func and :sky into level-info.gc on every export.
         box = layout.box()
         box.label(text="Level Lighting:", icon="LIGHT_SUN")
-        box.prop(props, "mood", text="Mood")
-        box.prop(props, "sky",  text="Has Sky")
+        hint = box.row(); hint.enabled = False
+        hint.label(text="Mood, sky, texture remap: Level > Settings > Visuals", icon="INFO")
 
         # ── Fog Override ───────────────────────────────────────────────────
         # When enabled the exporter injects a fog-control actor that overrides

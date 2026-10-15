@@ -46,7 +46,7 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
 )
-from ..properties import OGLumpRow, OG_UL_LumpRows
+from ..properties import OGLumpRow, OG_UL_LumpRows, draw_command_list
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
     _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
@@ -129,14 +129,13 @@ class OG_PT_LevelSettings(Panel):
         if col is None:
             return
 
-        # Editable fields (live-proxied to the active level collection)
+        s = col.og_level
+
+        # ── Base settings ──────────────────────────────────────────────
         layout.prop(props, "level_name")
-        layout.prop(props, "base_id")
-        layout.prop(props, "level_index")
+        layout.prop(s, "menu_name")
         layout.prop(props, "vis_nick_override")
-        layout.prop(props, "bottom_height")
-        layout.prop(props, "texture_source")
-        layout.prop(props, "actor_name_nick")
+        layout.prop(props, "level_index")
 
         # Derived / read-only info
         name = str(col.get("og_level_name", col.name))
@@ -158,29 +157,134 @@ class OG_PT_LevelSettings(Panel):
             w = layout.row(); w.alert = True
             w.label(text=f"Nickname '{nick_eff}' collides with another level", icon="ERROR")
 
-        # Always Include (export/includes.py)
-        box = layout.box()
-        box.prop(props, "include_enabled")
-        if props.include_enabled:
-            row = box.row(align=True)
-            row.prop_search(props, "include_text", bpy.data, "texts", text="")
-            row.operator("og.include_create", text="", icon="ADD")
-            row.operator("og.include_edit", text="", icon="TEXT")
-            row.operator("og.include_template", text="", icon="FILE_TEXT")
-            from ..export import includes as _inc
-            txt = bpy.data.texts.get(props.include_text) if props.include_text else None
-            if txt is None:
-                box.label(text="Pick or create an include text", icon="INFO")
-            elif not txt.as_string().strip():
-                box.operator("og.include_template", text="Insert Template", icon="FILE_TEXT")
-                box.label(text="Empty — Insert Template shows every key", icon="INFO")
-            else:
-                data, errs = _inc.parse(txt.as_string())
-                st = box.column(); st.scale_y = 0.8
-                st.label(text=_inc.summary(data), icon="CHECKMARK" if not errs else "INFO")
-                for e in errs[:4]:
-                    w = st.row(); w.alert = True; w.label(text=e, icon="ERROR")
+        # ── Sound & Music ──────────────────────────────────────────────
+        head, body = layout.panel("og_lvl_sound", default_closed=True)
+        head.label(text="Sound & Music", icon="SPEAKER")
+        if body is not None:
+            _draw_sound(body, props)
 
+        # ── Visuals ────────────────────────────────────────────────────
+        head, body = layout.panel("og_lvl_visuals", default_closed=True)
+        head.label(text="Visuals", icon="LIGHT_SUN")
+        if body is not None:
+            body.prop(props, "mood")
+            if props.mood == "custom":
+                body.prop(s, "mood_custom")
+            body.prop(s, "mood_func")
+            if s.mood_func == "CUSTOM":
+                body.prop(s, "mood_func_custom")
+            body.prop(s, "ocean")
+            if s.ocean == "CUSTOM":
+                body.prop(s, "ocean_custom")
+            body.prop(s, "sun_fade", slider=True)
+            body.prop(props, "sky_source")
+            if props.sky_source == "custom":
+                body.prop(s, "sky_custom")
+            body.prop(props, "texture_source")
+            hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
+            hint.label(text="Texture remap: Flut Flut eyes, water, dark eco pools,", icon="INFO")
+            hint.label(text="dying enemies (things drawn with generic textures)", icon="BLANK1")
+
+        # ── Gameplay ───────────────────────────────────────────────────
+        head, body = layout.panel("og_lvl_gameplay", default_closed=True)
+        head.label(text="Gameplay", icon="ARMATURE_DATA")
+        if body is not None:
+            _draw_checkpoint_list(body, scene)
+            body.prop(props, "bottom_height")
+            _draw_tasks(body, s)
+            body.prop(s, "wall_angle")
+            body.prop(s, "double_sided")
+            if s.double_sided:
+                w = body.row(); w.alert = True
+                w.label(text="Doubles the collision mesh", icon="ERROR")
+
+        # ── Others ─────────────────────────────────────────────────────
+        head, body = layout.panel("og_lvl_others", default_closed=True)
+        head.label(text="Others", icon="PREFERENCES")
+        if body is not None:
+            others = body
+            body.prop(s, "bsphere")
+            if s.bsphere is None:
+                hint = body.row(); hint.enabled = False; hint.scale_y = 0.7
+                hint.label(text="No sphere: computed from the checkpoints", icon="INFO")
+            body.prop(props, "base_id")
+            body.prop(props, "actor_name_nick")
+            ch, cb = body.panel("og_lvl_commands", default_closed=True)
+            ch.label(text="Commands", icon="CONSOLE")
+            if cb is not None:
+                draw_command_list(cb, s, "load_cmds", "Load Commands", owner="LEVEL")
+                draw_command_list(cb, s, "alt_load_cmds", "Alt Load Commands", owner="LEVEL")
+                cb.prop(s, "priority")
+                cb.prop(s, "wait_for_load")
+            # Always Include (export/includes.py)
+            box = others.box()
+            box.prop(props, "include_enabled")
+            if props.include_enabled:
+                row = box.row(align=True)
+                row.prop_search(props, "include_text", bpy.data, "texts", text="")
+                row.operator("og.include_create", text="", icon="ADD")
+                row.operator("og.include_edit", text="", icon="TEXT")
+                row.operator("og.include_template", text="", icon="FILE_TEXT")
+                from ..export import includes as _inc
+                txt = bpy.data.texts.get(props.include_text) if props.include_text else None
+                if txt is None:
+                    box.label(text="Pick or create an include text", icon="INFO")
+                elif not txt.as_string().strip():
+                    box.operator("og.include_template", text="Insert Template", icon="FILE_TEXT")
+                    box.label(text="Empty — Insert Template shows every key", icon="INFO")
+                else:
+                    data, errs = _inc.parse(txt.as_string())
+                    st = box.column(); st.scale_y = 0.8
+                    st.label(text=_inc.summary(data), icon="CHECKMARK" if not errs else "INFO")
+                    for e in errs[:4]:
+                        w = st.row(); w.alert = True; w.label(text=e, icon="ERROR")
+
+
+def _draw_sound(layout, props):
+    """Level music + sound banks (was the Music panel)."""
+    layout.prop(props, "music_bank", text="Music Bank")
+    b1 = props.sound_bank_1
+    b2 = props.sound_bank_2
+    col2 = layout.column(align=True)
+    col2.prop(props, "sound_bank_1", text="Sound Bank 1")
+    col2.prop(props, "sound_bank_2", text="Sound Bank 2")
+    if b1 != "none" and b1 == b2:
+        layout.label(text="Bank 1 and Bank 2 are the same", icon="ERROR")
+    n_common = len(SBK_SOUNDS.get("common", []))
+    n_level  = len(set(SBK_SOUNDS.get(b1, [])) | set(SBK_SOUNDS.get(b2, [])))
+    hint = layout.row(); hint.enabled = False
+    hint.label(text=f"{n_common} common  +  {n_level} level  =  {n_common + n_level} sounds", icon="INFO")
+
+
+def _draw_checkpoint_list(layout, scene):
+    """The level's checkpoints; clicking one selects it."""
+    from ..collections import _level_objects, spawn_uid
+    cps = sorted((o for o in _level_objects(scene)
+                  if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")),
+                 key=lambda o: (spawn_uid(o) != "start", o.name))
+    head = layout.row(align=True)
+    head.label(text=f"Checkpoints ({len(cps)})", icon="EMPTY_SINGLE_ARROW")
+    head.operator("og.spawn_checkpoint", text="", icon="ADD")
+    colm = layout.column(align=True)
+    for o in cps:
+        row = colm.row(align=True)
+        op = row.operator("og.select_and_frame", text=spawn_uid(o) or o.name,
+                          icon="RADIOBUT_ON" if o.select_get() else "RADIOBUT_OFF", depress=o.select_get())
+        op.obj_name = o.name
+    if not any(spawn_uid(o) == "start" for o in cps):
+        w = layout.row(); w.alert = True
+        w.label(text='No "start" checkpoint', icon="ERROR")
+
+
+def _draw_tasks(layout, s):
+    head = layout.row(align=True)
+    head.label(text=f"Tasks ({len(s.tasks)})" if s.tasks else "Tasks")
+    head.operator("og.level_task_add", text="", icon="ADD")
+    colm = layout.column(align=True)
+    for i, r in enumerate(s.tasks):
+        row = colm.row(align=True)
+        row.prop(r, "task", text="")
+        row.operator("og.level_task_remove", text="", icon="REMOVE").index = i
 
 
 class OG_PT_LevelManagerSub(Panel):
@@ -405,38 +509,6 @@ class OG_PT_CleanSub(Panel):
 
 
 
-class OG_PT_Music(Panel):
-    bl_label       = "🎵  Music"
-    bl_idname      = "OG_PT_music"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_level"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    def draw(self, ctx):
-        layout = self.layout
-        props  = ctx.scene.og_props
-
-        box = layout.box()
-        box.label(text="Level Music", icon="PLAY")
-        box.prop(props, "music_bank", text="Music Bank")
-
-        box2 = layout.box()
-        box2.label(text="Sound Banks  (max 2)", icon="SPEAKER")
-        b1 = props.sound_bank_1
-        b2 = props.sound_bank_2
-        col2 = box2.column(align=True)
-        col2.prop(props, "sound_bank_1", text="Bank 1")
-        col2.prop(props, "sound_bank_2", text="Bank 2")
-        if b1 != "none" and b1 == b2:
-            box2.label(text="⚠ Bank 1 and Bank 2 are the same", icon="ERROR")
-        n_common = len(SBK_SOUNDS.get("common", []))
-        n_level  = len(set(SBK_SOUNDS.get(b1, [])) | set(SBK_SOUNDS.get(b2, [])))
-        box2.label(text=f"{n_common} common  +  {n_level} level  =  {n_common + n_level} available", icon="INFO")
-
-
-
 class OG_OT_RunAudit(Operator):
     """Scan the active level for configuration errors, warnings, and info"""
     bl_idname  = "og.run_audit"
@@ -615,7 +687,6 @@ CLASSES = (
     OG_PT_DisableExport,
     OG_OT_ToggleSkipTree,
     OG_PT_CleanSub,
-    OG_PT_Music,
     OG_OT_RunAudit,
     OG_OT_AuditSelectObject,
     OG_PT_LevelAudit,
