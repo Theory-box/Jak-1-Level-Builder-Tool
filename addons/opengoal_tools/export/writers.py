@@ -1181,27 +1181,34 @@ def patch_game_gp(name, code_deps=None, scene=None):
         + extra_goal_src
     )
 
-    # Strip any previously written block for this level
-    txt = re.sub(r'\(build-custom-level "' + re.escape(name) + r'"\)\n', '', txt)
-    txt = re.sub(r'\(custom-level-cgo "[^"]*" "' + re.escape(name) + r'/[^"]+"\)\n', '', txt)
-    # FIX v0.5.0 (Bug 2): was r'/[^"]+\"[^)]*\)' — the \" was a literal
-    # backslash+quote so the regex never matched, leaving stale goal-src lines
-    # in game.gp across exports which caused duplicate-compile crashes in GOALC.
-    txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)[^\n]*\n', '', txt)
-    txt = re.sub(r'[^\n]*; og-include ' + re.escape(name) + r'\n', '', txt)
-
-    if correct_block in txt:
-        log("game.gp already correct"); return
-
-    for anchor in ['(build-custom-level "test-zone")', '(group-list "all-code"']:
-        if anchor in txt:
-            txt = txt.replace(anchor, correct_block + "\n" + anchor, 1)
-            break
+    # This level's lines (a previous block) are replaced where they are, so an
+    # unchanged level gives the same game.gp; a new level goes before the anchor.
+    # FIX v0.5.0 (Bug 2): the goal-src pattern was r'/[^"]+\"[^)]*\)' — the \"
+    # was a literal backslash+quote so it never matched, leaving stale goal-src
+    # lines in game.gp across exports which caused duplicate-compile crashes.
+    own = [re.compile(r'\(build-custom-level "' + re.escape(name) + r'"\)$'),
+           re.compile(r'\(custom-level-cgo "[^"]*" "' + re.escape(name) + r'/[^"]+"\)$'),
+           re.compile(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+"[^)]*\)'),
+           re.compile(r'.*; og-include ' + re.escape(name) + r'$')]
+    lines = txt.split("\n")
+    mine = [any(r.match(l) for r in own) for l in lines]
+    if any(mine):
+        at = mine.index(True)
+        kept = [l for l, m in zip(lines, mine) if not m]
+        txt = "\n".join(kept[:at] + correct_block.rstrip("\n").split("\n") + kept[at:])
     else:
-        txt += "\n" + correct_block
+        for anchor in ['(build-custom-level "test-zone")', '(group-list "all-code"']:
+            if anchor in txt:
+                txt = txt.replace(anchor, correct_block + "\n" + anchor, 1)
+                break
+        else:
+            txt += "\n" + correct_block
 
     if crlf:
         txt = txt.replace("\n", "\r\n")
+    # (mi) goes by file times: an unchanged game.gp must not be rewritten
+    if txt.encode("utf-8") == raw:
+        log("game.gp already correct"); return
     p.write_bytes(txt.encode("utf-8"))
     log(f"Patched game.gp  (extra goal-src: {[gc for _,gc,_ in (code_deps or []) if gc is not None]})")
 
