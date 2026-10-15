@@ -558,49 +558,58 @@ def _compile(state, scope):
     return True
 
 
+def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
+    """Write every file a level build needs (the GLB is exported first, on
+    the main thread): .jsonc, .gd, level code, and its entries in the shared
+    files (entity.gc nav-meshes, level-info.gc, load boundaries, game.gp).
+    Each file is only written when its content changed. Returns the level's
+    nav-mesh actors (navmesh=False: entity.gc left to the caller)."""
+    state = state if state is not None else {}
+    state["status"] = f"Collecting scene ({name})..."
+    # Apply engine patches (idempotent — only writes if needed)
+    _apply_engine_patches()
+    _clean_orphaned_vol_links(scene)
+    actors    = collect_actors(scene, depsgraph)
+    ambients  = collect_ambients(scene)
+    spawns    = collect_spawns(scene)
+    ags       = needed_ags(actors)
+    extras    = needed_extras_ags(actors)
+    tpages    = needed_tpages(actors)
+    code_deps = needed_code(actors)
+    collect_nav_mesh_geometry(scene, name)
+    cam_actors, trigger_actors = collect_cameras(scene)
+
+    if code_deps:
+        log(f"[code-deps] {code_deps}")
+
+    state["status"] = f"Writing files ({name})..."
+    base_id = int(_get_level_prop(scene, "og_base_id", 10000))
+    aggro_actors  = collect_aggro_triggers(scene)
+    custom_actors = collect_custom_triggers(scene)
+    # Fog override: append a synthetic fog-control actor to the JSONC and
+    # tell write_gc to emit the matching deftype.
+    has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
+    actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
+    write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+    write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
+    navmesh_actors = _collect_navmesh_actors(scene)
+    _lv_objs = _level_objects(scene)
+    has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
+    write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
+    if navmesh:
+        patch_entity_gc(navmesh_actors)
+    patch_level_info(name, spawns, scene)
+    patch_load_boundaries(name, collect_load_boundaries(scene), scene)
+    patch_game_gp(name, code_deps, scene=scene)
+    prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
+    return navmesh_actors
+
+
 def _bg_build(name, scene, depsgraph=None, boot_cp=None):
     state = _BUILD_STATE
     try:
-        state["status"] = "Collecting scene..."
         times = _file_times()
-        # Apply engine patches (idempotent — only writes if needed)
-        patched = _apply_engine_patches()
-        if patched:
-            state["status"] = "Applied engine patches, compiling..."
-        _clean_orphaned_vol_links(scene)
-        actors    = collect_actors(scene, depsgraph)
-        ambients  = collect_ambients(scene)
-        spawns    = collect_spawns(scene)
-        ags       = needed_ags(actors)
-        extras    = needed_extras_ags(actors)
-        tpages    = needed_tpages(actors)
-        code_deps = needed_code(actors)
-        collect_nav_mesh_geometry(scene, name)
-        cam_actors, trigger_actors = collect_cameras(scene)
-
-        if code_deps:
-            state["status"] = f"Injecting code for: {[o for o,_,_ in code_deps]}..."
-            log(f"[code-deps] {code_deps}")
-
-        state["status"] = "Writing files..."
-        base_id = int(_get_level_prop(scene, "og_base_id", 10000))
-        aggro_actors  = collect_aggro_triggers(scene)
-        custom_actors = collect_custom_triggers(scene)
-        # Fog override: append a synthetic fog-control actor to the JSONC and
-        # tell write_gc to emit the matching deftype.
-        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
-        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
-        write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
-        navmesh_actors = _collect_navmesh_actors(scene)
-        _lv_objs = _level_objects(scene)
-        has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
-        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
-        patch_entity_gc(navmesh_actors)
-        patch_level_info(name, spawns, scene)
-        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
-        patch_game_gp(name, code_deps, scene=scene)
-        prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
+        write_level_files(name, scene, depsgraph, state)
 
         _write_boot_cp(state, boot_cp)
         scope = _compile_scope(times)
@@ -612,6 +621,21 @@ def _bg_build(name, scene, depsgraph=None, boot_cp=None):
     finally:
         state["done"] = True
 
+
+
+def _bg_compile(times, boot_cp=None):
+    """(mi) for files already written (Export and compile all levels)."""
+    state = _BUILD_STATE
+    try:
+        _write_boot_cp(state, boot_cp)
+        scope = _compile_scope(times)
+        _restart_goalc_if_types_changed(state)
+        if _compile(state, scope):
+            state["ok"] = True; state["status"] = f"Build complete! ({scope})"
+    except Exception as e:
+        state["error"] = str(e)
+    finally:
+        state["done"] = True
 
 
 _PLAY_STATE = {"done":False, "error":None, "status":""}
@@ -782,35 +806,8 @@ def _bg_build_and_play(name, scene, depsgraph=None, boot_cp=None):
     state = _BUILD_PLAY_STATE
     try:
         # ── Phase 1: Build ────────────────────────────────────────────────────
-        state["status"] = "Collecting scene..."
         times = _file_times()
-        _clean_orphaned_vol_links(scene)
-        actors    = collect_actors(scene, depsgraph)
-        ambients  = collect_ambients(scene)
-        spawns    = collect_spawns(scene)
-        ags       = needed_ags(actors)
-        extras    = needed_extras_ags(actors)
-        tpages    = needed_tpages(actors)
-        code_deps = needed_code(actors)
-        cam_actors, trigger_actors = collect_cameras(scene)
-
-        state["status"] = "Writing level files..."
-        base_id = int(_get_level_prop(scene, "og_base_id", 10000))
-        aggro_actors  = collect_aggro_triggers(scene)
-        custom_actors = collect_custom_triggers(scene)
-        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
-        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
-        write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
-        navmesh_actors = _collect_navmesh_actors(scene)
-        _lv_objs = _level_objects(scene)
-        has_cps = bool([o for o in _lv_objs if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")])
-        write_gc(name, has_triggers=bool(trigger_actors), has_checkpoints=has_cps, has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
-        patch_entity_gc(navmesh_actors)
-        patch_level_info(name, spawns, scene)
-        patch_load_boundaries(name, collect_load_boundaries(scene), scene)
-        patch_game_gp(name, code_deps, scene=scene)
-        prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
+        write_level_files(name, scene, depsgraph, state)
 
         # ── Phase 2: Compile ──────────────────────────────────────────────────
         # Kill GK first — game must not be running during compile.

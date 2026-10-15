@@ -51,6 +51,7 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
     _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
     launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
+    write_level_files, patch_entity_gc, _bg_compile, _file_times,
 )
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
@@ -119,6 +120,72 @@ class OG_OT_ExportBuild(Operator):
     def cancel(self, ctx):
         ctx.window_manager.event_timer_remove(self._timer)
         ctx.workspace.status_text_set(None)
+
+def _check_name(op, name):
+    if not name:
+        op.report({"ERROR"}, "Enter a level name first"); return False
+    if len(name) > 10:
+        op.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return False
+    return True
+
+
+class OG_OT_ExportOnly(Operator):
+    bl_idname = "og.export_only"
+    bl_label  = "Only Export"
+    bl_description = "Export the GLB and write all of this level's files, without compiling"
+
+    def execute(self, ctx):
+        name = _lname(ctx)
+        if not _check_name(self, name):
+            return {"CANCELLED"}
+        try:
+            export_glb(ctx, name)
+            write_level_files(name, ctx.scene, ctx.evaluated_depsgraph_get())
+        except Exception as e:
+            self.report({"ERROR"}, f"Export failed: {e}"); return {"CANCELLED"}
+        self.report({"INFO"}, f"Exported {name} (not compiled)")
+        return {"FINISHED"}
+
+
+class OG_OT_ExportBuildAll(OG_OT_ExportBuild):
+    bl_idname = "og.export_build_all"
+    bl_label  = "Export & Compile All Levels"
+    bl_description = "Export every level in this .blend, then compile once with GOALC"
+
+    def execute(self, ctx):
+        from ..collections import _all_level_collections
+        props = ctx.scene.og_props
+        levels = _all_level_collections(ctx.scene)
+        if not levels:
+            self.report({"ERROR"}, "No level in this file"); return {"CANCELLED"}
+        prev = props.active_level
+        times = _file_times()
+        navmesh, done = [], []
+        try:
+            # the collectors read the active level: make each one active in turn
+            for col in levels:
+                props.active_level = col.name
+                name = _lname(ctx)
+                if not _check_name(self, name):
+                    return {"CANCELLED"}
+                export_glb(ctx, name)
+                navmesh += write_level_files(name, ctx.scene, ctx.evaluated_depsgraph_get(), navmesh=False)
+                done.append(name)
+            patch_entity_gc(navmesh)          # every level's nav-meshes, not only the last one's
+        except Exception as e:
+            self.report({"ERROR"}, f"Export of {col.name} failed: {e}"); return {"CANCELLED"}
+        finally:
+            if prev in {c.name for c in levels}:
+                props.active_level = prev
+        log(f"[build] exported {len(done)} level(s): {', '.join(done)}")
+        _BUILD_STATE.clear()
+        _BUILD_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
+        threading.Thread(target=_bg_compile, args=(times, _boot_cp(ctx)), daemon=True).start()
+        wm = ctx.window_manager
+        self._timer = wm.event_timer_add(0.5, window=ctx.window)
+        wm.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
 
 class OG_OT_Play(Operator):
     """Launch the game.
@@ -445,6 +512,8 @@ class OG_OT_BakeLighting(Operator):
 # ─── Classes to register ───────────────────────────────────────────────────
 CLASSES = (
     OG_OT_ExportBuild,
+    OG_OT_ExportOnly,
+    OG_OT_ExportBuildAll,
     OG_OT_Play,
     OG_OT_OpenFolder,
     OG_OT_OpenFile,

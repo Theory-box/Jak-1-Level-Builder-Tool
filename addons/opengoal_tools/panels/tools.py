@@ -168,6 +168,9 @@ class OG_PT_BuildPlay(Panel):
         col.operator("og.export_build",  text="⚙  Export & Compile",        icon="EXPORT")
         col.scale_y = 1.4
         col.operator("og.quick_export",   text="🔄  Quick Level Export",       icon="FILE_REFRESH")
+        row = col.row(align=True)
+        row.operator("og.export_only",       text="Only Export",               icon="FILE_TICK")
+        row.operator("og.export_build_all",  text="Export & Compile All",      icon="DOCUMENTS")
         col.scale_y = 1.8
         col.operator("og.play",          text="▶  Launch Game",              icon="PLAY")
         # Spawn dropdown — "none" means bare launch (debug, navigate manually).
