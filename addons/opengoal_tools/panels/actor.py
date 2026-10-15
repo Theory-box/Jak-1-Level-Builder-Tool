@@ -1317,6 +1317,18 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # Link a curve (selected / searched), or spawn an empty waypoint.
         _draw_path_add(layout, sel, scene, sources)
 
+        # Same path on other actors: share it (path-actor) like a nav-mesh
+        if etype and not opts.get("lump"):
+            from ..operators.links import path_users
+            others = path_users(scene, sel)
+            if others:
+                warn = layout.column(align=True)
+                warn.alert = True
+                warn.label(text=f"{len(others)} other actor(s) also use this path:", icon="ERROR")
+                warn.label(text="it is exported once per actor. Share it instead:")
+                layout.operator("og.path_share", text="Make other connected actors use this as path-actor",
+                                icon="LINKED").actor_name = sel.name
+
         # race-ring (path option "rings"): one ring per point, no path lump
         if etype and _db.panel_option(etype, "path", "rings", False):
             from .. import race_rings as _rr
