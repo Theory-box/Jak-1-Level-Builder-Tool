@@ -182,17 +182,21 @@ def level_summary(by_actor):
 
 
 def draw_level_count(layout, scene, row_scale=1.0):
-    """Next to Export & Compile: "N⚠" for the whole level (cached), only as
-    big as its text (row_scale: the row's scale_y, undone here)."""
+    """Next to Export & Compile: the level's warnings ("N⚠", cached) in one
+    column as wide as the text. One kind of warning takes the row's full
+    height; more kinds later split it (row_scale: unused, kept for callers)."""
     by_actor = level_missing(scene)
     n = sum(len(v) for v in by_actor.values())
-    if not n:
+    entries = [("og.required_level_popup", f"{n}⚠")] if n else []
+    if not entries:
         return
-    sub = layout.row(align=True)
-    sub.alert = True
-    sub.scale_y = 1.0 / row_scale
-    sub.ui_units_x = 1.2 + 0.4 * len(str(n))
-    sub.operator("og.required_level_popup", text=f"{n}⚠", emboss=False)
+    col = layout.column(align=True)
+    col.alert = True
+    col.ui_units_x = 1.2 + 0.4 * max(len(t) - 1 for _op, t in entries)
+    for op, text in entries:
+        r = col.row(align=True)
+        r.scale_y = 1.0 / len(entries)
+        r.operator(op, text=text, emboss=False)
 
 
 class OG_OT_RequiredLevelPopup(bpy.types.Operator):
