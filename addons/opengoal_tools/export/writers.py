@@ -108,11 +108,11 @@ def make_fog_actor_dict(spawns):
 
 
 # Addon-defined trigger types that are embedded per-level. Their names are
-# scoped to the level (e.g. checkpoint-trigger -> my-level-checkpoint-trigger)
+# scoped to the level (e.g. camera-trigger -> my-level-camera-trigger)
 # so two levels built with different addon versions / volume layouts can never
 # collide on a shared global type name in the same goalc image. camera-marker
 # and fog-control are intentionally left unscoped (stable, never layout-changed).
-_TRIGGER_ETYPES = ("camera-trigger", "checkpoint-trigger", "aggro-trigger", "vol-trigger")
+_TRIGGER_ETYPES = ("camera-trigger", "aggro-trigger", "vol-trigger")
 
 
 def _level_type_prefix(name):
@@ -131,10 +131,10 @@ def _level_type_prefix(name):
     return s
 
 
-def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
+def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_triggers=False, has_fog_override=False, scene=None):
     """Write obs.gc: always emits camera-marker type; if has_triggers also
-    emits camera-trigger type; if has_checkpoints emits checkpoint-trigger type;
-    if has_aggro_triggers emits aggro-trigger type;
+    emits camera-trigger type (checkpoint triggers are the shared lt-checkpoint,
+    level_tools.py); if has_aggro_triggers emits aggro-trigger type;
     if has_custom_triggers emits vol-trigger type (sends 'trigger/'untrigger to custom actors).
     If has_fog_override emits fog-control type (overrides *math-camera* fog
     values every frame from baked-in panel values).
@@ -167,7 +167,7 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         "",
     ]
 
-    if has_triggers or has_checkpoints or has_aggro_triggers or has_custom_triggers:
+    if has_triggers or has_aggro_triggers or has_custom_triggers:
         lines += [
             ";; point-in-planes? -- convex half-space test shared by all trigger volumes.",
             ";; Planes come from the 'vol res-lump (vector-vol): outward unit normals,",
@@ -247,92 +247,6 @@ def write_gc(name, has_triggers=False, has_checkpoints=False, has_aggro_triggers
         ]
         log(f"  [write_gc] camera-trigger type embedded")
 
-    if has_checkpoints:
-        lines += [
-            ";; checkpoint-trigger: sets continue point when Jak enters. Two modes:",
-            ";; convex volume (quote vol) planes (has-volume = 1) or sphere radius (default).",
-            ";; After firing it waits for exit, then re-arms.",
-            "(deftype checkpoint-trigger (process-drawable)",
-            "  ((cp-name     string)",
-            "   (cull-radius float)",
-            "   (radius      float)",
-            "   (use-vol     symbol)",
-            "   (was-near    symbol)",
-            "   (num-planes  int32)",
-            "   (planes      (inline-array vector)))",
-            "  :heap-base #x70",
-            "  (:states checkpoint-trigger-active checkpoint-trigger-wait-exit))",
-            "",
-            "(defstate checkpoint-trigger-wait-exit (checkpoint-trigger)",
-            "  :code",
-            "  (behavior ()",
-            "    (loop",
-            "      (when (and *target* (zero? (mod (-> *display* base-frame-counter) 4)))",
-            "        (let* ((pos  (-> *target* control trans))",
-            "               (dx   (- (-> pos x) (-> self root trans x)))",
-            "               (dy   (- (-> pos y) (-> self root trans y)))",
-            "               (dz   (- (-> pos z) (-> self root trans z)))",
-            "               (cr   (-> self cull-radius))",
-            "               (still-inside (and",
-            "                 (< (+ (* dx dx) (* dy dy) (* dz dz)) (* cr cr))",
-            "                 (if (-> self use-vol)",
-            "                   (point-in-planes? (-> self planes) (-> self num-planes) pos)",
-            "                   (let ((r (-> self radius)))",
-            "                     (< (+ (* dx dx) (* dy dy) (* dz dz)) (* r r)))))))",
-            "          (when (not still-inside)",
-            "            (format 0 \"[cp-trigger] ~A re-armed~%\" (-> self cp-name))",
-            "            (go checkpoint-trigger-active))))",
-            "      (suspend))))",
-            "",
-            "(defstate checkpoint-trigger-active (checkpoint-trigger)",
-            "  :code",
-            "  (behavior ()",
-            "    (loop",
-            "      (when (and *target* (zero? (mod (-> *display* base-frame-counter) 4)))",
-            "        (let* ((pos  (-> *target* control trans))",
-            "               (dx   (- (-> pos x) (-> self root trans x)))",
-            "               (dy   (- (-> pos y) (-> self root trans y)))",
-            "               (dz   (- (-> pos z) (-> self root trans z)))",
-            "               (cr   (-> self cull-radius))",
-            "               (near (< (+ (* dx dx) (* dy dy) (* dz dz)) (* cr cr)))",
-            "               (inside (and near",
-            "                 (if (-> self use-vol)",
-            "                   (point-in-planes? (-> self planes) (-> self num-planes) pos)",
-            "                   (let ((r (-> self radius)))",
-            "                     (< (+ (* dx dx) (* dy dy) (* dz dz)) (* r r)))))))",
-            "          (set! (-> self was-near) near)",
-            "          (when inside",
-            "            (format 0 \"[cp-trigger] fired -> ~A~%\" (-> self cp-name))",
-            "            (set-continue! *game-info* (-> self cp-name))",
-            "            (go checkpoint-trigger-wait-exit))))",
-            "      (suspend))))",
-            "",
-            "(defmethod init-from-entity! ((this checkpoint-trigger) (arg0 entity-actor))",
-            "  (set! (-> this root) (new (quote process) (quote trsqv)))",
-            "  (process-drawable-from-entity! this arg0)",
-            "  (set! (-> this cp-name)  (res-lump-struct arg0 (quote continue-name) string))",
-            "  (set! (-> this radius)   (res-lump-float  arg0 (quote radius) :default 12288.0))",
-            "  (set! (-> this use-vol)  (!= 0 (the int (res-lump-value arg0 (quote has-volume) uint128))))",
-            "  (set! (-> this was-near) #f)",
-            "  (let ((tag (new (quote static) (quote res-tag))))",
-            "    (let ((data (res-lump-data arg0 (quote vol) (inline-array vector) :tag-ptr (& tag))))",
-            "      (cond",
-            "        (data",
-            "         (set! (-> this planes) (the-as (inline-array vector) data))",
-            "         (set! (-> this num-planes) (the-as int (-> tag elt-count))))",
-            "        (else",
-            "         (set! (-> this planes) (the-as (inline-array vector) #f))",
-            "         (set! (-> this num-planes) 0)))))",
-            "  (set! (-> this cull-radius)",
-            "    (if (-> this use-vol)",
-            "      (res-lump-float arg0 (quote cull-radius) :default 122880.0)",
-            "      (* (-> this radius) 1.2)))",
-            "  (format 0 \"[cp-trigger] armed: ~A~%\" (-> this cp-name))",
-            "  (go checkpoint-trigger-active)",
-            "  (none))",
-            "",
-        ]
-        log(f"  [write_gc] checkpoint-trigger type embedded")
 
     if has_aggro_triggers:
         lines += [

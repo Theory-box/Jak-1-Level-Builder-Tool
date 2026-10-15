@@ -632,7 +632,7 @@ def collect_actors(scene, depsgraph=None):
     # CHECKPOINT_ empties with Trigger on (or a linked volume) export as two things:
     #   1. A continue-point record in level-info.gc (via collect_spawns) — the
     #      spawn data the engine uses on respawn.
-    #   2. A checkpoint-trigger actor in the JSONC (here) — an invisible entity
+    #   2. An lt-checkpoint actor in the JSONC (here, code in level_tools.py) — an invisible entity
     #      that calls set-continue! when Jak enters it.
     # Both are needed: the actor does the triggering, the continue-point holds
     # the spawn position. The actor's continue-name lump must match the
@@ -684,7 +684,7 @@ def collect_actors(scene, depsgraph=None):
             lump["vol"]         = ["vector-vol"] + planes
             out.append({
                 "trans":     [cx, cy, cz],
-                "etype":     "checkpoint-trigger",
+                "etype":     "lt-checkpoint",
                 "game_task": "(game-task none)",
                 "quat":      [0, 0, 0, 1],
                 "vis_id":    0,
@@ -697,7 +697,7 @@ def collect_actors(scene, depsgraph=None):
             lump["radius"] = ["meters", r]
             out.append({
                 "trans":     [gx, gy, gz],
-                "etype":     "checkpoint-trigger",
+                "etype":     "lt-checkpoint",
                 "game_task": "(game-task none)",
                 "quat":      [0, 0, 0, 1],
                 "vis_id":    0,
