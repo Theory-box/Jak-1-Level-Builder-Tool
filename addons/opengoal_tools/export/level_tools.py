@@ -46,6 +46,77 @@ def _patch(p, add_lines, before, label):
     return True
 
 
+# ── custom tasks: one-time engine changes (mod-base) ─────────────────────────
+_FIX = ";; og-level-tools fix"
+_TASK_H = ("engine", "game", "task", "game-task-h.gc")
+_SAVE = ("engine", "game", "game-save.gc")
+
+# game-save.gc: mod-base sizes the task arrays with (game-task max) but three
+# spots still assume 116 tasks. Each pair is (original, fixed); a fixed line
+# carries _FIX so it's only applied once.
+_SAVE_FIXES = (
+    # writing: the block after the fuel-cell times went at a fixed 928 (= 116 * 8)
+    # bytes, over the times of tasks 116+; place it after the real block size
+    ("(let ((v1-97 (&+ v1-96 928)))",
+     f"(let ((v1-97 (&+ v1-96 (+ -16 (logand -16 (+ (* 8 (the int (game-task max))) 31)))))) {_FIX}: was 928"),
+    # loading an older save shrank the task list for the session: keep it full
+    ("(set! (-> this task-perm-list length) s3-4)",
+     f"(set! (-> this task-perm-list length) (-> this task-perm-list allocated-length)) {_FIX}: was s3-4"),
+)
+# loading: only the first 32 fuel-cell times were read back (the one in the
+# fuel-cell-time case; other 32s are per-level arrays and stay)
+_FCT_OLD = """        (((game-save-elt fuel-cell-time))
+         (let ((v1-92 (min 32 (-> data elt-count))))"""
+_FCT_NEW = f"""        (((game-save-elt fuel-cell-time))
+         (let ((v1-92 (min (the int (game-task max)) (-> data elt-count)))) {_FIX}: was 32"""
+
+
+def _src(*parts):
+    return _goal_src().joinpath(*parts)
+
+
+def task_enum():
+    """({name: id} of game-task-h.gc's enum without max, its max value)."""
+    import re
+    txt = _src(*_TASK_H).read_text(encoding="utf-8", errors="replace")
+    ids = {m.group(1): int(m.group(2)) for m in re.finditer(r"^\s*\(([a-z0-9-]+)\s+(\d+)\)", txt, re.M)}
+    mx = ids.pop("max", None)
+    return ids, mx
+
+
+def ensure_task_engine(need_max):
+    """Raise (game-task max) to need_max (never lowers it, keeps other mods'
+    entries) and fix game-save.gc for more than 116 tasks. Only writes what
+    changed. Returns the changed file names."""
+    import re
+    changed = []
+    p = _src(*_TASK_H)
+    txt = p.read_text(encoding="utf-8")
+    ids, mx = task_enum()
+    want = max(int(need_max), (max(ids.values()) + 1) if ids else 0, mx or 0)
+    m = re.search(r"\(max\s*(\d*)\)\)", txt)
+    if m and (not m.group(1) or int(m.group(1)) != want):
+        txt = txt[:m.start()] + f"(max {want}))" + txt[m.end():]
+        _write_if_changed(p, txt) and changed.append(p.name)
+    p = _src(*_SAVE)
+    raw = p.read_bytes()
+    crlf = b"\r\n" in raw
+    s = raw.decode("utf-8").replace("\r\n", "\n")
+    s0 = s
+    for old, new in _SAVE_FIXES:
+        if old in s and _FIX not in s.split(old)[1].split("\n", 1)[0]:
+            s = s.replace(old, new, 1)
+    if _FCT_OLD in s:
+        s = s.replace(_FCT_OLD, _FCT_NEW, 1)
+    if s != s0:
+        if crlf:
+            s = s.replace("\n", "\r\n")
+        p.write_bytes(s.encode("utf-8"))
+        log(f"Patched {p.name}: save fixes for more than 116 tasks")
+        changed.append(p.name)
+    return changed
+
+
 def ensure_level_tools():
     """Write the shared lt-*.gc files and register them in game.gp / game.gd."""
     d = _goal_src() / LT_DIR
