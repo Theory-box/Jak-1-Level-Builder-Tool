@@ -795,15 +795,27 @@ def command_list_value(rows) -> str:
     return "'(" + "\n               ".join(cmds) + ")"
 
 
+_CMD_OWNERS = [("OBJECT", "Object", "The active object"), ("LEVEL", "Level", "The active level's settings")]
+
+
+def _cmd_owner(ctx, owner):
+    if owner == "LEVEL":
+        from .collections import _active_level_col
+        col = _active_level_col(ctx.scene)
+        return col.og_level if col is not None else None
+    return ctx.active_object
+
+
 class OG_OT_CommandAdd(bpy.types.Operator):
     """Add a command to the list"""
     bl_idname = "og.command_add"
     bl_label = "Add Command"
     bl_options = {"UNDO"}
     prop: StringProperty()
+    owner: EnumProperty(items=_CMD_OWNERS, default="OBJECT")
 
     def execute(self, ctx):
-        ob = ctx.active_object
+        ob = _cmd_owner(ctx, self.owner)
         if ob is None or not hasattr(ob, self.prop):
             return {"CANCELLED"}
         getattr(ob, self.prop).add()
@@ -817,9 +829,10 @@ class OG_OT_CommandRemove(bpy.types.Operator):
     bl_options = {"UNDO"}
     prop: StringProperty()
     index: IntProperty()
+    owner: EnumProperty(items=_CMD_OWNERS, default="OBJECT")
 
     def execute(self, ctx):
-        ob = ctx.active_object
+        ob = _cmd_owner(ctx, self.owner)
         if ob is None or not hasattr(ob, self.prop):
             return {"CANCELLED"}
         rows = getattr(ob, self.prop)
@@ -828,18 +841,20 @@ class OG_OT_CommandRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def draw_command_list(layout, ob, prop, label):
-    """A list of command rows with + / - buttons."""
+def draw_command_list(layout, ob, prop, label, owner="OBJECT"):
+    """A list of command rows with + / - buttons (owner: the active object,
+    or LEVEL = the active level's settings)."""
     rows = getattr(ob, prop)
     head = layout.row(align=True)
     head.label(text=f"{label} ({len(rows)})" if rows else label)
-    head.operator("og.command_add", text="", icon="ADD").prop = prop
+    op = head.operator("og.command_add", text="", icon="ADD")
+    op.prop = prop; op.owner = owner
     col = layout.column(align=True)
     for i, r in enumerate(rows):
         row = col.row(align=True)
         row.prop(r, "cmd", text="")
         op = row.operator("og.command_remove", text="", icon="REMOVE")
-        op.prop = prop; op.index = i
+        op.prop = prop; op.index = i; op.owner = owner
 
 
 # --- OGLumpRow ---

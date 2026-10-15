@@ -556,6 +556,15 @@ def _dumps_with_raw_lumps(data):
     return text
 
 
+def _collision_json(scene):
+    """automatic_wall_detection / _angle (-1 = off) and double_sided_collide."""
+    from .. import level_settings as _ls
+    st = _ls.settings(_active_level_col(scene)) if scene is not None else None
+    ang = float(st.wall_angle) if st is not None else 45.0
+    return {"automatic_wall_detection": ang >= 0.0, "automatic_wall_angle": ang if ang >= 0.0 else 45.0,
+            "double_sided_collide": bool(st.double_sided) if st is not None else False}
+
+
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
@@ -623,8 +632,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     data = {
         "long_name": name, "iso_name": _iso(name), "nickname": _effective_nick(scene, name),
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
-        "automatic_wall_detection": True, "automatic_wall_angle": 45.0,
-        "double_sided_collide": False, "base_id": base_id,
+        **_collision_json(scene), "base_id": base_id,
         "art_groups": _ag_names,
         "custom_models": [], "textures": _textures,
         "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
@@ -850,7 +858,17 @@ def patch_level_info(name, spawns, scene=None):
         _lindex  = 100
         _mood    = "village1"
         _sky_bool = True
-    _mood_func = MOOD_FUNC_OVERRIDES.get(_mood, _mood)
+    from .. import level_settings as _ls
+    _s = _ls.settings(_active_level_col(scene)) if scene is not None else None
+    _mood_func = _ls.mood_func_value(_s, MOOD_FUNC_OVERRIDES.get(_mood, _mood))
+    _ocean     = _ls.ocean_value(_s)
+    _sun_fade  = float(_s.sun_fade) if _s is not None else 1.0
+    _tasks     = _ls.tasks_value(_s)
+    from ..properties import command_list_value
+    _lcmds     = command_list_value(_s.load_cmds) if _s is not None else "'()"
+    _alt_lcmds = command_list_value(_s.alt_load_cmds) if _s is not None else "'()"
+    _priority  = int(_s.priority) if _s is not None else 100
+    _wait_load = "#t" if (_s is None or _s.wait_for_load) else "#f"
     _sky_val   = "#t" if _sky_bool else "#f"
 
     # ── Auto-compute bsphere from spawn positions ────────────────────────────
@@ -876,6 +894,7 @@ def patch_level_info(name, spawns, scene=None):
                        f" :w {bsphere_w})")
     else:
         bsphere_str = "(new 'static 'sphere :w 167772160000.0)"  # ~40km radius
+    bsphere_str = _ls.bsphere_value(_s) or bsphere_str     # a linked sphere empty wins
 
     block = (f"\n(define {name}\n"
              f"  (new 'static 'level-load-info\n"
@@ -888,21 +907,21 @@ def patch_level_info(name, spawns, scene=None):
              f"       :music-bank {_music_val}\n"
              f"       :ambient-sounds '()\n"
              f"       :mood '*{_mood}-mood*\n"
-             f"       :mood-func 'update-mood-{_mood_func}\n"
-             f"       :ocean #f\n"
+             f"       :mood-func {_mood_func}\n"
+             f"       :ocean {_ocean}\n"
              f"       :sky {_sky_val}\n"
-             f"       :sun-fade 1.0\n"
+             f"       :sun-fade {_sun_fade}\n"
              f"       :continues\n"
              f"       {_make_continues(name, spawns, _vnick)}\n"
-             f"       :tasks '()\n"
-             f"       :priority 100\n"
-             f"       :load-commands '()\n"
-             f"       :alt-load-commands '()\n"
+             f"       :tasks {_tasks}\n"
+             f"       :priority {_priority}\n"
+             f"       :load-commands {_lcmds}\n"
+             f"       :alt-load-commands {_alt_lcmds}\n"
              f"       :bsp-mask #xffffffffffffffff\n"
              f"       :bsphere {bsphere_str}\n"
              f"       :bottom-height (meters {_bot_h:.1f})\n"
              f"       :run-packages '()\n"
-             f"       :wait-for-load #t))\n"
+             f"       :wait-for-load {_wait_load}))\n"
              f"\n(cons! *level-load-list* '{name})\n")
     txt = p.read_text(encoding="utf-8")
     txt = re.sub(rf"\n\(define {re.escape(name)}\b.*?\(cons!.*?'{re.escape(name)}\)\n",
