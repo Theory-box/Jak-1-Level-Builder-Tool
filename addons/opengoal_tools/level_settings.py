@@ -47,6 +47,10 @@ class OGLevelSettings(bpy.types.PropertyGroup):
     menu_name: StringProperty(
         name="Menu Name", default="",
         description="Name shown in the game's menu and text popups (kept for the tasks / menu work; not exported yet)")
+    mood_custom: StringProperty(name="Mood", default="",
+                                description="Mood symbol, e.g. *village1-mood* (or just village1)")
+    sky_custom: StringProperty(name="Sky", default="",
+                               description="Level whose sky is used, as the .jsonc \"sky\" (e.g. village1)")
     mood_func: EnumProperty(name="Mood Function", items=MOOD_FUNC_ITEMS, default="AUTO",
                             description="update-mood-* function run every frame for the mood")
     mood_func_custom: StringProperty(name="Function", default="", description="e.g. update-mood-village1")
@@ -81,6 +85,27 @@ class OGLevelSettings(bpy.types.PropertyGroup):
 
 def settings(col):
     return col.og_level if col is not None else None
+
+
+def mood_name(col):
+    """The level's mood name (village1, or the custom one without *...-mood*)."""
+    m = str(col.get("og_mood", "village1") or "village1") if col is not None else "village1"
+    if m == "custom":
+        v = col.og_level.mood_custom.strip().lstrip("'")
+        if v.startswith("*") and v.endswith("-mood*"):
+            v = v[1:-len("-mood*")]
+        return v or "village1"
+    return m
+
+
+def mood_value(col):
+    """level-info :mood symbol."""
+    m = str(col.get("og_mood", "village1") or "village1") if col is not None else "village1"
+    if m == "custom":
+        v = col.og_level.mood_custom.strip().lstrip("'")
+        if v.startswith("*"):
+            return f"'{v}"
+    return f"'*{mood_name(col)}-mood*"
 
 
 def mood_func_value(s, mood_default):

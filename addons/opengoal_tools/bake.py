@@ -843,7 +843,8 @@ def draw_tod(layout, level_col):
         return
     from .versions import draw_feature_note
     draw_feature_note(box, "time_of_day")
-    mood = str(level_col.get("og_mood", "village1") or "village1")
+    from .level_settings import mood_name
+    mood = mood_name(level_col)
     if mood in FIXED_TIME_MOODS or mood in PARTLY_FIXED_MOODS:
         r = box.row(); r.alert = True
         r.label(text=(f"Mood '{mood}' uses a fixed time: time of day won't change in game" if mood in FIXED_TIME_MOODS

@@ -560,6 +560,9 @@ def texture_sources(scene):
     """(texture remap level, sky level) of the active level; "none" = not used."""
     remap = str(_get_level_prop(scene, "og_texture_source", "village1") or "none").strip().lower()
     sky = str(_get_level_prop(scene, "og_sky_source", "village1") or "none").strip().lower()
+    if sky == "custom":
+        col = _active_level_col(scene)
+        sky = (col.og_level.sky_custom.strip().lower() if col is not None else "") or "none"
     return remap or "none", sky or "none"
 
 
@@ -879,7 +882,9 @@ def patch_level_info(name, spawns, scene=None):
         _vnick     = _vis_ov if _vis_ov else _nick(name)
         _lindex    = int(_get_level_prop(scene, "og_level_index", 100))
         # Lighting (mood + sky)
-        _mood      = str(_get_level_prop(scene, "og_mood", "village1") or "village1")
+        from .. import level_settings as _lsm
+        _mood      = _lsm.mood_name(_active_level_col(scene))
+        _mood_sym  = _lsm.mood_value(_active_level_col(scene))
         _sky_bool  = texture_sources(scene)[1] != "none"
     else:
         _music_val = "#f"
@@ -888,6 +893,7 @@ def patch_level_info(name, spawns, scene=None):
         _vnick   = _nick(name)
         _lindex  = 100
         _mood    = "village1"
+        _mood_sym = "'*village1-mood*"
         _sky_bool = True
     from .. import level_settings as _ls
     _s = _ls.settings(_active_level_col(scene)) if scene is not None else None
@@ -937,7 +943,7 @@ def patch_level_info(name, spawns, scene=None):
              f"       :sound-banks {_sbanks_val}\n"
              f"       :music-bank {_music_val}\n"
              f"       :ambient-sounds '()\n"
-             f"       :mood '*{_mood}-mood*\n"
+             f"       :mood {_mood_sym}\n"
              f"       :mood-func {_mood_func}\n"
              f"       :ocean {_ocean}\n"
              f"       :sky {_sky_val}\n"

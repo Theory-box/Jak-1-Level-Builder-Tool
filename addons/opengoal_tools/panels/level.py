@@ -168,6 +168,8 @@ class OG_PT_LevelSettings(Panel):
         head.label(text="Visuals", icon="LIGHT_SUN")
         if body is not None:
             body.prop(props, "mood")
+            if props.mood == "custom":
+                body.prop(s, "mood_custom")
             body.prop(s, "mood_func")
             if s.mood_func == "CUSTOM":
                 body.prop(s, "mood_func_custom")
@@ -176,6 +178,8 @@ class OG_PT_LevelSettings(Panel):
                 body.prop(s, "ocean_custom")
             body.prop(s, "sun_fade", slider=True)
             body.prop(props, "sky_source")
+            if props.sky_source == "custom":
+                body.prop(s, "sky_custom")
             body.prop(props, "texture_source")
             hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
             hint.label(text="Texture remap: Flut Flut eyes, water, dark eco pools,", icon="INFO")

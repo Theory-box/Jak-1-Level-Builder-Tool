@@ -240,7 +240,9 @@ _SKY_LEVELS = ("training", "village1", "beach", "jungle", "misty", "firecanyon",
                "rolling", "sunkenb", "swamp", "ogre", "village3", "snow", "finalboss")
 SKY_SOURCE_ITEMS = [("none", "None (no sky)", "No sky (caves, interiors): :sky #f")] + [
     (v, label, f"Use {label}'s sky (its sky textures and texture page are added to the level)")
-    for v, label, _d in TEXTURE_SOURCE_ITEMS if v in _SKY_LEVELS]
+    for v, label, _d in TEXTURE_SOURCE_ITEMS if v in _SKY_LEVELS] + [
+    ("custom", "Custom", "Type a level name for the .jsonc \"sky\" (its texture pages aren't known: "
+                         "fill \"tpages\" with Always Include if needed)")]
 SKY_SOURCE_VALUES = [it[0] for it in SKY_SOURCE_ITEMS]
 
 
@@ -560,6 +562,7 @@ MOOD_LEVELS = [
     ("citadel",    "Citadel",           "Gol & Maia's Citadel",                             18),
     ("finalboss",  "Final Boss",        "Final Boss arena",                                 19),
     ("default",    "Default (fallback)", "Generic fallback — uses village1 fog/light/sun tables", 20),
+    ("custom",     "Custom",            "Type a mood (Level Settings > Visuals)",            21),
 ]
 
 # Most levels' mood-func name matches their mood ID. Beach is the only stock
