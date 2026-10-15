@@ -3614,6 +3614,24 @@
   // ── GameTasks_notes ─────────────────────────────────────────────
   "GameTasks_notes": "Curated 'common' subset of Jak 1 game tasks. The engine supports many more via the (game-task <name>) enum; this list is the set exposed in the oracle/pontoon alt-task picker. Full enum lives in goal_src/jak1/engine/game/task/game-task.gc — expand later if needed.",
 
+  // ── ContinueFlags ───────────────────────────────────────────────
+  // continue-flags of a continue point (engine/game/game-info-h.gc), in bit
+  // order. What each does is read in engine/target/target-death.gc (start).
+  "ContinueFlags": [
+    {"id": "contf00", "label": "contf00", "desc": "Unused by the game"},
+    {"id": "contf01", "label": "contf01", "desc": "Unused by the game"},
+    {"id": "warp", "label": "Warp", "desc": "Arrive through a warp gate (the warp-gate effect plays; village1/2/3 and training warps also set where the warp lands)"},
+    {"id": "demo", "label": "Demo", "desc": "Start the demo mode (target-demo)"},
+    {"id": "intro", "label": "Intro", "desc": "Play the game's intro sequence"},
+    {"id": "sage-intro", "label": "Sage Intro", "desc": "Play the green sage intro cutscene (needs the village1 sage, sage-23)"},
+    {"id": "sage-demo-convo", "label": "Sage Demo Convo", "desc": "Demo: sage conversation then misty (needs the village1 sage, sage-23)"},
+    {"id": "title", "label": "Title", "desc": "Go to the title screen"},
+    {"id": "contf08", "label": "contf08", "desc": "Unused by the game"},
+    {"id": "contf09", "label": "contf09", "desc": "Unused by the game"},
+    {"id": "game-start", "label": "Game Start", "desc": "With Warp: closes the intro task (the new-game start)"},
+    {"id": "sage-ecorocks", "label": "Sage Ecorocks", "desc": "Sage cutscene while the beach eco-rocks task needs its introduction (village1 only)"}
+  ],
+
   // ── PAT ─────────────────────────────────────────────────────────
   "PAT": {
     "surfaces": [

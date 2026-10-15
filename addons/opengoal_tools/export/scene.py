@@ -583,6 +583,13 @@ def _cp_level_value(o, enum_attr, custom_attr):
     return val
 
 
+def _cp_flags(o):
+    """The checkpoint's continue-flags, space-separated in bit order."""
+    from .. import db
+    on = set(getattr(o, "og_cp_flags", set()) or ())
+    return " ".join(f["id"] for f in db.continue_flags() if f["id"] in on)
+
+
 def collect_spawns(scene):
     """Collect CHECKPOINT_ empties into continue-point data dicts ("start"
     first: the level's first continue point).
@@ -694,7 +701,7 @@ def collect_spawns(scene):
             "cp_lev1":          _cp_level_value(o, "og_cp_lev1", "og_cp_lev1_custom"),
             "cp_disp1":         str(getattr(o, "og_cp_disp1", "off") or "off"),
             "cp_vis_nick":      str(getattr(o, "og_cp_vis_nick", "") or "").strip(),
-            "cp_flags":         str(getattr(o, "og_cp_flags", "") or "").strip(),
+            "cp_flags":         _cp_flags(o),
             "cp_load_commands": str(getattr(o, "og_cp_load_commands", "") or "").strip(),
         })
     out.sort(key=lambda d: d["name"] != "start")   # stable: start first

@@ -287,13 +287,22 @@ def _draw_continue_settings(layout, sel, scene):
         header, body = layout.panel("og_continue_advanced", default_closed=True)
         header.label(text="Advanced")
         if body is not None:
-            body.prop(sel, "og_cp_flags")
+            _draw_cp_flags(body, sel)
             body.prop(sel, "og_cp_load_commands")
     else:
         col = box.column(align=True)
         col.label(text="Advanced:", icon="TOOL_SETTINGS")
-        col.prop(sel, "og_cp_flags")
+        _draw_cp_flags(col, sel)
         col.prop(sel, "og_cp_load_commands")
+
+
+def _draw_cp_flags(layout, sel):
+    """continue-flags: a collapsed list of toggles (tooltips say what each does)."""
+    on = sel.og_cp_flags
+    header, body = layout.panel("og_cp_flags", default_closed=True)
+    header.label(text=f"Continue Flags ({len(on)} on)" if on else "Continue Flags")
+    if body is not None:
+        body.column(align=True).prop(sel, "og_cp_flags", expand=True)
 
 
 def _draw_selected_checkpoint(layout, sel, scene):

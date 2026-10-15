@@ -221,6 +221,11 @@ def orphan_etypes() -> list[dict]:
     return DB.get("OrphanEtypes", [])
 
 
+def continue_flags() -> list[dict]:
+    """continue-flags of a continue point, in bit order ({id, label, desc})."""
+    return DB.get("ContinueFlags", [])
+
+
 def all_sfx() -> list[dict]:
     return DB.get("AllSFX", [])
 

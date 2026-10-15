@@ -368,10 +368,11 @@ def register():
         name="Vis Nickname", default="",
         description="Vis nick set on respawn (blank = this level's nickname). "
                     "Used for music/menu context, not only visibility data")
-    bpy.types.Object.og_cp_flags = bpy.props.StringProperty(
-        name="Continue Flags", default="",
-        description="Advanced: space-separated continue-flags symbols "
-                    "(e.g. 'warp game-start'). Must exist in the build's enum")
+    from . import db as _cdb
+    _flags = [(f["id"], f["label"], f["desc"], 1 << i) for i, f in enumerate(_cdb.continue_flags())]
+    bpy.types.Object.og_cp_flags = bpy.props.EnumProperty(
+        name="Continue Flags", items=_flags, options={"ENUM_FLAG"}, default=set(),
+        description="continue-flags of this continue point (most are for vanilla sequences)")
     bpy.types.Object.og_cp_load_commands = bpy.props.StringProperty(
         name="Load Commands", default="",
         description="Advanced: raw GOAL load-commands list, e.g. "
