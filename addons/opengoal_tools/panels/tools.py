@@ -171,7 +171,7 @@ class OG_PT_BuildPlay(Panel):
         sub = row.row(align=True); sub.scale_x = 0.55
         sub.operator("og.export_build_all",  text="All levels")
         from ..required import draw_level_count
-        draw_level_count(row, ctx.scene)       # "N ⚠" missing required fields (cached)
+        draw_level_count(row, ctx.scene, row.scale_y)   # "N⚠" missing required fields (cached)
         col.scale_y = 1.4
         col.operator("og.quick_export",   text="🔄  Quick Level Export",       icon="FILE_REFRESH")
         col.operator("og.export_only",    text="Only Export",                  icon="FILE_TICK")

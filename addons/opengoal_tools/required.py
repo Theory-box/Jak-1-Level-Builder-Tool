@@ -115,7 +115,8 @@ def draw_header_count(layout, obj, panel=None):
         return
     row = layout.row(align=True)
     row.alert = True
-    op = row.operator("og.required_popup", text=f"{len(items)} ⚠", emboss=False)
+    row.ui_units_x = 1.2 + 0.4 * len(str(len(items)))     # as wide as "N⚠"
+    op = row.operator("og.required_popup", text=f"{len(items)}⚠", emboss=False)
     op.actor_name = obj.name
     op.panel = panel or ""
 
@@ -180,15 +181,18 @@ def level_summary(by_actor):
     return "\n".join(lines)
 
 
-def draw_level_count(layout, scene):
-    """Next to Export & Compile: "N ⚠" for the whole level (cached)."""
+def draw_level_count(layout, scene, row_scale=1.0):
+    """Next to Export & Compile: "N⚠" for the whole level (cached), only as
+    big as its text (row_scale: the row's scale_y, undone here)."""
     by_actor = level_missing(scene)
     n = sum(len(v) for v in by_actor.values())
     if not n:
         return
     sub = layout.row(align=True)
     sub.alert = True
-    sub.operator("og.required_level_popup", text=f"{n} ⚠")
+    sub.scale_y = 1.0 / row_scale
+    sub.ui_units_x = 1.2 + 0.4 * len(str(n))
+    sub.operator("og.required_level_popup", text=f"{n}⚠", emboss=False)
 
 
 class OG_OT_RequiredLevelPopup(bpy.types.Operator):
@@ -228,7 +232,8 @@ CLASSES = (OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
 
 
 # ── level-wide, cached ──────────────────────────────────────────────────────
-_CACHE = {"dirty": True, "by_actor": {}}
+_CACHE = {"dirty": True, "by_actor": {}, "t": 0.0}
+_MAX_AGE = 1.0      # s: some edits (link / path collections) send no depsgraph update
 
 
 def mark_dirty(*_a):
@@ -237,8 +242,11 @@ def mark_dirty(*_a):
 
 def level_missing(scene):
     """{actor name: missing list} for every actor of the active level with
-    something missing. Cached until the next edit."""
-    if _CACHE["dirty"]:
+    something missing. Cached until the next edit (or for at most _MAX_AGE:
+    link / path list edits don't always send a depsgraph update)."""
+    import time
+    now = time.monotonic()
+    if _CACHE["dirty"] or now - _CACHE["t"] > _MAX_AGE:
         from .collections import _level_objects
         res = {}
         objs = _level_objects(scene)
@@ -250,6 +258,7 @@ def level_missing(scene):
                 res[o.name] = m
         _CACHE["by_actor"] = res
         _CACHE["dirty"] = False
+        _CACHE["t"] = now
     return _CACHE["by_actor"]
 
 
@@ -262,7 +271,20 @@ def _on_depsgraph(scene, depsgraph):
     for u in depsgraph.updates:
         if not (u.is_updated_transform and not u.is_updated_geometry and not u.is_updated_shading):
             _CACHE["dirty"] = True
+            _redraw_sidebars()          # the Export & Compile count shows the new list
             return
+
+
+def _redraw_sidebars():
+    try:
+        for w in bpy.context.window_manager.windows:
+            for a in w.screen.areas:
+                if a.type == "VIEW_3D":
+                    for r in a.regions:
+                        if r.type == "UI":
+                            r.tag_redraw()
+    except Exception:
+        pass
 
 
 @bpy.app.handlers.persistent
