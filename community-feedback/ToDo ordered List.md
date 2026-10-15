@@ -207,7 +207,7 @@ If the user's version is too old. Keep the menu there but give a warning.
 
 ---
 
-## Baking options
+## Baking options (on main)
 ### Jak handling of vertex color for lighting
 There's some limits in terms of how Jak 1 handle vertex color for lighting
 - Limit range of lighting 
@@ -257,7 +257,7 @@ Vertex alpha can be used in Jak 1 to make part of meshes transparent without hav
 
 ---
 
-## Time of day implementation 
+## Time of day implementation (on main)
 Time of day for custom level has been merged as of https://github.com/open-goal/jak-project/commit/d04ac9d so I've moved this feature under the export settings.
 ### Enable and disabling time of day export
 Have an option in baking that's just a toggle to enable time of day export or not. If the option is off then the current behaviour is kept. If the option is turned on then a bunch of new panel will appear.
@@ -287,7 +287,7 @@ Once everything is set and an user press "bake" as they would before, the addon 
 
 ---
 
-## Ignore unedited files
+## Ignore unedited files (in progress)
 At the moment, every file is rebuilt everytime you click on the export button. The way the compiler work is by checking which files got edited since last time via the file edit time. Which means it'll always have to compile almost the whole game since it's editing files such as `game.gp` or `level-info.gc`.
 If only the level's .json, gd and glb were changed. Which is going to be a vast majority of edits. Then only the level needs to be compiled bringing the compile time down to a few seconds instead.
 How I think this solution could work would be to still generate all files but instead of directly modifying the final files, these could be in a buffer or temporary file that is then compared to the final file. If there's any difference, then the file can get replaced with the new edited file. If there's no changes, then it can be ignored.
