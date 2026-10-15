@@ -305,7 +305,11 @@ def _draw_cp_flags(layout, sel):
     header, body = layout.panel("og_cp_flags", default_closed=True)
     header.label(text=f"Continue Flags ({len(on)} on)" if on else "Continue Flags")
     if body is not None:
-        body.column(align=True).prop(sel, "og_cp_flags", expand=True)
+        from .. import db
+        col = body.column(align=True)
+        for f in db.continue_flags():
+            col.operator("og.toggle_continue_flag", text=f["label"], depress=f["id"] in on,
+                         icon="CHECKBOX_HLT" if f["id"] in on else "CHECKBOX_DEHLT").flag = f["id"]
 
 
 def _draw_selected_checkpoint(layout, sel, scene):
@@ -318,7 +322,10 @@ def _draw_selected_checkpoint(layout, sel, scene):
     if cam_obj:
         row = layout.row()
         row.label(text=f"✓ {cam_obj.name}", icon="CAMERA_DATA")
-        op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        sub = row.row(align=True)
+        op = sub.operator("og.select_and_frame", text="", icon="VIEWZOOM")
+        op.obj_name = cam_obj.name
+        op = sub.operator("og.delete_object", text="", icon="TRASH")
         op.obj_name = cam_obj.name
     else:
         layout.label(text="⚠ No camera anchor", icon="ERROR")

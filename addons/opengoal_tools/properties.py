@@ -368,16 +368,9 @@ def _launch_checkpoint_items(self, context):
     """Items for the og.play launch dropdown.
 
     Always offers "(none)" — bare GK launch, navigate manually. Then lists
-    every SPAWN_/CHECKPOINT_ empty in the active level as a continue-point
-    the launcher can spawn at directly. The continue-name format matches
-    what _make_continues in export/writers.py writes into level-info.gc:
-    "<level>-<uid>" where uid is the empty's suffix after SPAWN_/CHECKPOINT_.
-
-    SPAWN_ and CHECKPOINT_ are functionally the same thing (both become
-    continue-points); we don't distinguish in the dropdown.
-
-    If the level has no SPAWN_/CHECKPOINT_ empties, _make_continues still
-    emits a default "<level>-start" continue, so we always offer that too.
+    every checkpoint of the active level as a continue point the launcher
+    can spawn at directly ("<level>-<name>", as _make_continues writes it
+    into level-info.gc). Only existing checkpoints are listed.
     """
     from .collections import _active_level_col, _recursive_col_objects
     items = [("none", "(None — bare launch)", "Launch GK only; navigate via debug menu")]
@@ -405,12 +398,8 @@ def _launch_checkpoint_items(self, context):
         seen_uids.add(uid)
         spawn_uids.append(uid)
 
-    # Always offer the default "<level>-start" — _make_continues emits it
-    # when no SPAWN_/CHECKPOINT_ empties exist in the scene.
-    if "start" not in seen_uids:
-        spawn_uids.insert(0, "start")
-
-    for uid in sorted(spawn_uids):
+    # only the level's own checkpoints ("start" first)
+    for uid in sorted(spawn_uids, key=lambda u: (u != "start", u)):
         cp_name = f"{level_name}-{uid}"
         items.append((cp_name, cp_name, f"Spawn at continue-point {cp_name}"))
     return items

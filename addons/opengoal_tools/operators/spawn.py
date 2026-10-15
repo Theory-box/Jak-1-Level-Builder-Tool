@@ -122,6 +122,28 @@ def _cp_name_set(self, value):
                 e.target_name = new
 
 
+class OG_OT_ToggleContinueFlag(Operator):
+    bl_idname = "og.toggle_continue_flag"
+    bl_label = "Continue Flag"
+    bl_options = {"UNDO"}
+    flag: StringProperty()
+
+    @classmethod
+    def description(cls, ctx, props):
+        from .. import db
+        f = next((f for f in db.continue_flags() if f["id"] == props.flag), None)
+        return f"{props.flag}: {f['desc']}" if f else props.flag
+
+    def execute(self, ctx):
+        ob = ctx.active_object
+        if ob is None or not hasattr(ob, "og_cp_flags"):
+            return {"CANCELLED"}
+        on = set(ob.og_cp_flags)
+        on ^= {self.flag}
+        ob.og_cp_flags = on
+        return {"FINISHED"}
+
+
 class OG_OT_SpawnCheckpoint(Operator):
     bl_idname = "og.spawn_checkpoint"
     bl_label  = "Add Checkpoint"
@@ -234,6 +256,10 @@ class OG_OT_SpawnCamAnchor(Operator):
         o.parent = sel
         o.matrix_parent_inverse = sel.matrix_world.inverted()
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_SPAWNS)
+        # keep the checkpoint selected so its settings / position stay editable
+        o.select_set(False)
+        sel.select_set(True)
+        ctx.view_layer.objects.active = sel
         self.report({"INFO"}, f"Added {cam_name}")
         return {"FINISHED"}
 
@@ -1367,6 +1393,7 @@ override mesh."""
 
 
 CLASSES = (
+    OG_OT_ToggleContinueFlag,
     
     OG_OT_SpawnCheckpoint,
     OG_OT_SpawnLoadBoundary,
