@@ -13,7 +13,7 @@ from .data import (
     ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
     LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
-    TEXTURE_SOURCE_ITEMS,
+    TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
     _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _spawn_variant_cb,
@@ -32,7 +32,7 @@ from .collections import (
     _get_vis_nick_live, _set_vis_nick_live,
     _get_include_enabled_live, _set_include_enabled_live,
     _get_include_text_live, _set_include_text_live,
-    _on_mood_changed, _on_sky_changed,
+    _on_mood_changed, _get_sky_source_live, _set_sky_source_live,
     _get_texture_source_live, _set_texture_source_live,
     _get_actor_name_nick_live, _set_actor_name_nick_live,
     _on_fog_override_changed,
@@ -661,12 +661,15 @@ class OGProperties(PropertyGroup):
                                                       "(<nick>-babak-0) so they can't clash with vanilla actors or other "
                                                       "levels loaded at the same time"),
                                          get=_get_actor_name_nick_live, set=_set_actor_name_nick_live)
-    texture_source:         EnumProperty(name="Texture/Sky Source", items=TEXTURE_SOURCE_ITEMS,
+    texture_source:         EnumProperty(name="Texture Remap", items=TEXTURE_SOURCE_ITEMS,
                                          get=_get_texture_source_live, set=_set_texture_source_live,
-                                         description="Vanilla level to borrow textures + sky from. Use 'None' for any level streamed alongside another custom level — two co-resident levels sharing a source crash on load")
-    sky:                    BoolProperty(name="Has Sky", default=True,
-                                         update=_on_sky_changed,
-                                         description="When enabled the level renders a sky (TNG sky renderer). Disable for caves and interior levels")
+                                         description="Vanilla level whose texture remap table (and texture pages) the level uses: "
+                                                     "needed for things drawn with generic textures, e.g. Flut Flut eyes, water, "
+                                                     "dark eco pools, dying enemies. 'None' for a level streamed alongside another "
+                                                     "custom level (two co-resident levels sharing one crash on load)")
+    sky_source:             EnumProperty(name="Sky", items=SKY_SOURCE_ITEMS,
+                                         get=_get_sky_source_live, set=_set_sky_source_live,
+                                         description="Vanilla level whose sky is drawn. 'None' = no sky (caves, interiors)")
     # Fog Override — when enabled, exporter injects a fog-control actor that
     # overrides *math-camera* fog values every frame.  When disabled, the
     # active mood drives fog as normal.

@@ -3632,6 +3632,34 @@
     {"id": "sage-ecorocks", "label": "Sage Ecorocks", "desc": "Sage cutscene while the beach eco-rocks task needs its introduction (village1 only)"}
   ],
 
+  // ── TextureSlots ────────────────────────────────────────────────
+  // Each vanilla level's 5 texture-page slots [tfrag, pris, shrub, alpha, water]
+  // (its bsp texture-ids, as the level builder logs them; 0 = empty slot). The
+  // sky's page is the alpha slot. Used for the level .jsonc "tpages" when the
+  // texture remap and the sky are different levels.
+  "TextureSlots": {
+    "village1": [398, 400, 399, 401, 1470],
+    "village2": [919, 922, 920, 921, 1476],
+    "village3": [1208, 1210, 1209, 1194, 0],
+    "beach": [212, 214, 213, 215, 0],
+    "jungle": [385, 531, 386, 388, 765],
+    "misty": [516, 521, 518, 520, 0],
+    "rolling": [923, 926, 924, 925, 1353],
+    "snow": [710, 842, 711, 712, 0],
+    "training": [1309, 1311, 1310, 1308, 775],
+    "firecanyon": [815, 822, 854, 1123, 0],
+    "swamp": [358, 659, 629, 630, 0],
+    "sunken": [661, 663, 714, 662, 766],
+    "sunkenb": [163, 164, 166, 162, 764],
+    "ogre": [875, 967, 884, 1117, 0],
+    "maincave": [1313, 1315, 1314, 1312, 767],
+    "darkcave": [1306, 1307, 1305, 1304, 1352],
+    "robocave": [1318, 1319, 1317, 1316, 0],
+    "lavatube": [1338, 1340, 1339, 1337, 0],
+    "citadel": [1415, 1417, 1416, 1414, 0],
+    "finalboss": [1419, 1420, 634, 1418, 545]
+  },
+
   // ── PAT ─────────────────────────────────────────────────────────
   "PAT": {
     "surfaces": [

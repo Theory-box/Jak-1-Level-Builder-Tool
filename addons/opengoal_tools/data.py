@@ -209,9 +209,9 @@ GLOBAL_TPAGE_GOS = _collect_global_tpage_gos()
 # level — two co-resident levels sharing a source link the same tpage objects
 # and crash on load. Other entries borrow that vanilla level's textures + sky.
 TEXTURE_SOURCE_ITEMS = [
-    ("none",     "None (vertex colors)",
-     "Borrow no textures/sky. Required for any level streamed alongside another "
-     "custom level (loaded at the same time). Geometry shows its vertex colors."),
+    ("none",     "None",
+     "No texture remap. Required for any level streamed alongside another custom level "
+     "(loaded at the same time)."),
     ("village1", "Village1",         "Borrow Village1 textures + sky"),
     ("village2", "Village2",         "Borrow Village2 textures + sky"),
     ("village3", "Village3",         "Borrow Village3 textures + sky"),
@@ -234,6 +234,14 @@ TEXTURE_SOURCE_ITEMS = [
     ("finalboss", "Final Boss",      "Borrow Final Boss textures + sky"),
 ]
 TEXTURE_SOURCE_VALUES = [it[0] for it in TEXTURE_SOURCE_ITEMS]
+
+# Levels whose sky can be used (custom_assets/jak1/levels/test-zone/test-zone.jsonc)
+_SKY_LEVELS = ("training", "village1", "beach", "jungle", "misty", "firecanyon", "village2",
+               "rolling", "sunkenb", "swamp", "ogre", "village3", "snow", "finalboss")
+SKY_SOURCE_ITEMS = [("none", "None (no sky)", "No sky (caves, interiors): :sky #f")] + [
+    (v, label, f"Use {label}'s sky (its sky textures and texture page are added to the level)")
+    for v, label, _d in TEXTURE_SOURCE_ITEMS if v in _SKY_LEVELS]
+SKY_SOURCE_VALUES = [it[0] for it in SKY_SOURCE_ITEMS]
 
 
 def _build_tpage_filter_items():

@@ -34,7 +34,7 @@ class OG_PT_Lighting(Panel):
         box = layout.box()
         box.label(text="Level Lighting:", icon="LIGHT_SUN")
         box.prop(props, "mood", text="Mood")
-        box.prop(props, "sky",  text="Has Sky")
+        box.prop(props, "sky_source", text="Sky")
 
         # ── Fog Override ───────────────────────────────────────────────────
         # When enabled the exporter injects a fog-control actor that overrides

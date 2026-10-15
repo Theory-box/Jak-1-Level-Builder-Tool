@@ -556,6 +556,35 @@ def _dumps_with_raw_lumps(data):
     return text
 
 
+def texture_sources(scene):
+    """(texture remap level, sky level) of the active level; "none" = not used."""
+    remap = str(_get_level_prop(scene, "og_texture_source", "village1") or "none").strip().lower()
+    sky = str(_get_level_prop(scene, "og_sky_source", "village1") or "none").strip().lower()
+    return remap or "none", sky or "none"
+
+
+def texture_pages(scene):
+    """(the .jsonc "tpages", every texture page the level logs in).
+
+    The builder fills the level's 5 texture-page slots [tfrag, pris, shrub,
+    alpha, water] itself only when the texture remap and the sky are the same
+    level ("tpages": []). Otherwise they're written here: the remap level's
+    slots (or the sky level's when there's no remap) with the sky level's
+    page in the alpha slot."""
+    from .. import db as _sdb
+    remap, sky = texture_sources(scene)
+    if remap == "none" and sky == "none":
+        return [], []
+    if remap == sky:
+        return [], [t for t in (_sdb.texture_slots(remap) or []) if t]
+    slots = list(_sdb.texture_slots(remap if remap != "none" else sky) or [0, 0, 0, 0, 0])
+    if sky != "none":
+        sky_slots = _sdb.texture_slots(sky) or []
+        if len(sky_slots) > 3 and len(slots) > 3:
+            slots[3] = sky_slots[3]
+    return slots, [t for t in slots if t]
+
+
 def _collision_json(scene):
     """automatic_wall_detection / _angle (-1 = off) and double_sided_collide."""
     from .. import level_settings as _ls
@@ -581,13 +610,9 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # that level's tpages. Two co-resident (streamed) custom levels that borrow
     # the SAME source both try to link those tpage objects -> crash. So levels
     # streamed together must use distinct sources, or "none" (vertex colors only).
-    _src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
-    if _src in ("none", ""):
-        _tex_remap = _sky_src = "none"
-        _textures  = []
-    else:
-        _tex_remap = _sky_src = _src
-        _textures  = [[f"{_src}-vis-alpha"]]
+    _tex_remap, _sky_src = texture_sources(scene)
+    _textures = [[f"{_sky_src}-vis-alpha"]] if _sky_src != "none" else []   # the sky's textures
+    _tpages, _ = texture_pages(scene)
     from . import includes as _inc
     _incl, _incl_err = _inc.load(scene)
     # Built-in camera entities (OpenGOAL v0.3.4+). In legacy mode
@@ -635,7 +660,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         **_collision_json(scene), "base_id": base_id,
         "art_groups": _ag_names,
         "custom_models": [], "textures": _textures,
-        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": [],
+        "tex_remap": _tex_remap, "sky": _sky_src, "tpages": _tpages,
         "ambients": ambients,
         "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
                    for a in all_actors] + _incl["actors"],
@@ -692,7 +717,9 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     # custom levels crash when the second re-links an already-loaded tpage
     # (segfault right after <name>-obs, on tpage-398). So exclude every global
     # tpage from the DGO file list.
-    level_tpages = [f'  "{tp}"' for tp in (tpages or [])
+    _, _tex_ids = texture_pages(scene) if scene is not None else ([], [])
+    tpages = list(tpages or []) + [f"tpage-{t}.go" for t in _tex_ids if f"tpage-{t}.go" not in (tpages or [])]
+    level_tpages = [f'  "{tp}"' for tp in tpages
                     if tp not in GLOBAL_TPAGE_GOS]
     extras_lines = [f'  "{g}"' for g in (extras_ags or [])]
     # Always Include: code (.o) links with the actor code, everything else
@@ -849,7 +876,7 @@ def patch_level_info(name, spawns, scene=None):
         _lindex    = int(_get_level_prop(scene, "og_level_index", 100))
         # Lighting (mood + sky)
         _mood      = str(_get_level_prop(scene, "og_mood", "village1") or "village1")
-        _sky_bool  = bool(_get_level_prop(scene, "og_sky", True))
+        _sky_bool  = texture_sources(scene)[1] != "none"
     else:
         _music_val = "#f"
         _sbanks_val = "'()"
