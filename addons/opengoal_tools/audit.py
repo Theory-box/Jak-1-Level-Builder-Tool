@@ -387,30 +387,18 @@ def check_texture_sources(scene):
 
 def check_sound_banks(scene):
     """A sound (sound emitter, particle spawner) only plays if its bank is
-    loaded: common, or one of the level's two sound banks. Warn only; the
-    pick stays allowed (a bank can also be loaded another way)."""
-    from .collections import _get_level_prop, _level_objects
-    banks = {"common"} | {str(_get_level_prop(scene, k, "none") or "none").lower()
-                          for k in ("og_sound_bank_1", "og_sound_bank_2")}
-    where = {}
-    for bank, sounds in _db.bank_sfx().items():
-        for s in sounds:
-            where.setdefault(s, set()).add(bank)
+    loaded: common, or one of the level's two sound banks (required.py,
+    shared with the warnings next to Export & Compile). Warn only."""
+    from .collections import _level_objects
+    from .required import missing_bank, _sound_banks
+    banks = _sound_banks(scene)
+    loaded = banks[0]
     issues = []
     for o in _level_objects(scene):
-        snd = None
-        if o.name.startswith("AMBIENT_") and o.get("og_sound_name"):
-            snd = str(o["og_sound_name"])
-        elif _etype(o) == "part-spawner" and str(o.get("og_part_sound", "none")) not in ("", "none"):
-            snd = str(o["og_part_sound"])
-        if not snd:
-            continue
-        snd = snd.split("__")[0]
-        found = where.get(snd)
-        if found and not (found & banks):
+        for m in missing_bank(o, scene, banks):
             issues.append(_issue("WARNING",
-                f"{o.name}: sound '{snd}' is in the {' / '.join(sorted(found))} sound bank, which this level doesn't load "
-                f"(common + {' / '.join(sorted(banks - {'common', 'none'})) or 'no level banks'}). Set it as one of the "
+                f"{o.name}: sound '{m['sound']}' is in the {m['key']} sound bank, which this level doesn't load "
+                f"(common + {' / '.join(sorted(loaded - {'common', 'none'})) or 'no level banks'}). Set it as one of the "
                 f"level's sound banks or it won't play.", o.name))
     return issues
 

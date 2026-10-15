@@ -1,8 +1,10 @@
 """Required fields of actors, in one place: the panels' warning counts, the
 warning next to Export & Compile and the audit all use these.
 
-Required today: link slots marked "required" in the database, and required
-paths (the Path panel's "required" option: path, pathb ...). Results for the
+Required today: link slots marked "required" in the database, required
+paths (the Path panel's "required" option: path, pathb ...), and the sound
+bank of a sound emitter's / particle spawner's sound (actors' own sounds:
+see community-feedback/Actor Notes.md). Results for the
 whole level are cached and only recomputed after an edit (depsgraph update).
 """
 from __future__ import annotations
@@ -33,13 +35,49 @@ def _has_path(o, name, scene, names=None):
     return any(p.name.strip() == name and len(p.sources) for p in getattr(o, "og_extra_paths", ()))
 
 
-def missing(o, scene=None, names=None):
-    """Missing required fields of an actor: [{"panel": "links" | "path",
-    "key": lump name, "label": text}] (empty when nothing is missing)."""
+def _sound_banks(scene):
+    """(banks the level loads, {sound: banks it's in})."""
+    from .collections import _get_level_prop
+    loaded = {"common"} | {str(_get_level_prop(scene, k, "none") or "none").lower()
+                           for k in ("og_sound_bank_1", "og_sound_bank_2")}
+    where = {}
+    for bank, sounds in _db.bank_sfx().items():
+        for s in sounds:
+            where.setdefault(s, set()).add(bank)
+    return loaded, where
+
+
+def object_sound(o):
+    """The sound a sound emitter / particle spawner plays, else None."""
+    if o.name.startswith("AMBIENT_") and o.get("og_sound_name"):
+        return str(o["og_sound_name"]).split("__")[0]
+    if actor_etype(o) == "part-spawner" and str(o.get("og_part_sound", "none")) not in ("", "none"):
+        return str(o["og_part_sound"]).split("__")[0]
+    return None
+
+
+def missing_bank(o, scene, banks=None):
+    """[{"panel": "sound", ...}] when the object's sound is in a bank the level
+    doesn't load (common or one of its two sound banks)."""
+    snd = object_sound(o)
+    if not snd:
+        return []
+    loaded, where = banks or _sound_banks(scene)
+    found = where.get(snd)
+    if found and not (found & loaded):
+        b = " / ".join(sorted(found))
+        return [{"panel": "sound", "key": b, "sound": snd, "label": f"sound bank {b} (for {snd})"}]
+    return []
+
+
+def missing(o, scene=None, names=None, banks=None):
+    """Missing required fields of an actor (and the sound bank a sound
+    emitter / particle spawner needs): [{"panel": "links" | "path" | "sound",
+    "key": lump / bank name, "label": text}] (empty when nothing is missing)."""
+    scene = scene or bpy.context.scene
     et = actor_etype(o)
     if not et:
-        return []
-    scene = scene or bpy.context.scene
+        return missing_bank(o, scene, banks)
     out = []
     for slot in _actor_link_slots(et):
         lkey, sidx = slot[0], slot[1]
@@ -58,7 +96,7 @@ def missing(o, scene=None, names=None):
         for name in _db._path_required(et):
             if not _has_path(o, name, scene, names):
                 out.append({"panel": "path", "key": name, "label": f"{name} (path)"})
-    return out
+    return out + missing_bank(o, scene, banks)
 
 
 def summary(items, header="Missing"):
@@ -122,6 +160,9 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
                 if slot:
                     box.label(text=m["key"], icon="LINKED")
                     _draw_link_slot(box, ob, ctx.scene, et, slot[0], slot[1], slot[2], slot[3], True, sel_actors)
+            elif m["panel"] == "sound":
+                box.label(text=f"'{m['sound']}' is in the {m['key']} sound bank", icon="SPEAKER")
+                box.label(text="Load it: Level > Settings > Sound & Music", icon="INFO")
             elif m["panel"] == "path":
                 box.label(text=f"{m['key']}: no path", icon="ANIM")
                 if m["key"] == "path":
@@ -202,8 +243,9 @@ def level_missing(scene):
         res = {}
         objs = _level_objects(scene)
         wp = {ob.name for ob in objs if "_wp_" in ob.name}     # legacy waypoints, looked up once
+        banks = _sound_banks(scene)
         for o in objs:
-            m = missing(o, scene, wp)
+            m = missing(o, scene, wp, banks)
             if m:
                 res[o.name] = m
         _CACHE["by_actor"] = res
