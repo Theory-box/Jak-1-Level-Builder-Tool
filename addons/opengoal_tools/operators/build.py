@@ -78,11 +78,32 @@ def _booted_cp(ctx):
     return debug_continue_point() if modbase_spawn_on(ctx.scene) else None
 
 
-class OG_OT_ExportBuild(Operator):
+class _BuildWatch:
+    """Modal part shared by the compile operators: shows _BUILD_STATE in the
+    status bar until the build thread is done. (A plain mixin: subclassing a
+    registered Operator class broke the parent operator.)"""
+    _timer = None
+
+    def modal(self, ctx, event):
+        if event.type == "TIMER":
+            ctx.workspace.status_text_set("OpenGOAL: " + _BUILD_STATE.get("status","Working..."))
+            if _BUILD_STATE.get("done"):
+                ctx.window_manager.event_timer_remove(self._timer)
+                ctx.workspace.status_text_set(None)
+                if _BUILD_STATE.get("error"):
+                    self.report({"ERROR"}, _BUILD_STATE["error"]); return {"CANCELLED"}
+                self.report({"INFO"}, "Build complete!"); return {"FINISHED"}
+        return {"PASS_THROUGH"}
+
+    def cancel(self, ctx):
+        ctx.window_manager.event_timer_remove(self._timer)
+        ctx.workspace.status_text_set(None)
+
+
+class OG_OT_ExportBuild(_BuildWatch, Operator):
     bl_idname = "og.export_build"
     bl_label  = "Export & Build"
     bl_description = "Export GLB, write all level files, compile with GOALC"
-    _timer = None
 
     def execute(self, ctx):
         name = _lname(ctx)
@@ -106,20 +127,6 @@ class OG_OT_ExportBuild(Operator):
         wm.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
-    def modal(self, ctx, event):
-        if event.type == "TIMER":
-            ctx.workspace.status_text_set("OpenGOAL: " + _BUILD_STATE.get("status","Working..."))
-            if _BUILD_STATE.get("done"):
-                ctx.window_manager.event_timer_remove(self._timer)
-                ctx.workspace.status_text_set(None)
-                if _BUILD_STATE.get("error"):
-                    self.report({"ERROR"}, _BUILD_STATE["error"]); return {"CANCELLED"}
-                self.report({"INFO"}, "Build complete!"); return {"FINISHED"}
-        return {"PASS_THROUGH"}
-
-    def cancel(self, ctx):
-        ctx.window_manager.event_timer_remove(self._timer)
-        ctx.workspace.status_text_set(None)
 
 def _check_name(op, name):
     if not name:
@@ -147,7 +154,7 @@ class OG_OT_ExportOnly(Operator):
         return {"FINISHED"}
 
 
-class OG_OT_ExportBuildAll(OG_OT_ExportBuild):
+class OG_OT_ExportBuildAll(_BuildWatch, Operator):
     bl_idname = "og.export_build_all"
     bl_label  = "Export & Compile All Levels"
     bl_description = "Export every level in this .blend, then compile once with GOALC"
