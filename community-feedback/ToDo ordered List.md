@@ -62,6 +62,7 @@ Don't need to separate these two categories in the settings
 As there'll be a lot more settings by the end, they should have some sub category so they're in collapsing menus:
 - Base settings (not in a collapsing menu):
   - Name
+  - Menu Name (to be used for the ingame menu and text popup in game)
   - Vis Nickname
   - Level Index
 - Sound & Music (moving the Music menu inside of the Level Settings menu)
@@ -77,7 +78,7 @@ As there'll be a lot more settings by the end, they should have some sub categor
 - Gameplay
   - Checkpoints
   - Death Plane
-  - Tasks/Buzzer
+  - Tasks/Buzzer (this could be automated from the task menu instead but for now it should still have fields to indicate them manually)
   - Automatic Wall angle
   - Double Sided Collision
 - Others
@@ -90,6 +91,46 @@ As there'll be a lot more settings by the end, they should have some sub categor
 
 ## Tasks & Menu implementation
 Tasks are the system that set missions to specific resolutions. It's also what the power cell count is based on. Although not every task is equal to a power cell. They can also be used for other logic like level state changes that needs to be saved as well. The task code is also heavily interlaced with the menu so we should take of both at the same time.
+### Comments and question of Claude's research
+- The 116 hard coded limit is already fixed on mod-base builds so if mod-base is present, you don't need to edit those files. Make sure to check if all cases are covered.
+- The ID limit should be given as a warning if the user creates task ID above that number
+- Can a "shared list" be used for every task added in task-control by the addon. That way it's well separated and clean and wouldn't affect other changes in the files from users. (like for example, older custom tasks from levels not made with the addon)
+- For texts, ideally, the addon would be able to see if some values are already used, if not, it'd be nice if you can set the default startintg value, defaulting to `#xa00`
+- How many strings does the 9.9KB left represent?
+- For custom level implementation there's a few mods with multiple levels and tasks that can also be looked at:
+  - [The forgotten lands](https://github.com/Kuitar5/the-forgotten-lands)
+  - [Jak the chicken](https://github.com/my-opengoal-mods/OG-Jak-The-Chicken-Reborn)
+  - [Brume village](https://github.com/Cuttlefishthesage/BrumeVillage)
+### Addon implementation
+Have a main "task" menu. At the top you'd have an "enable custom tasks" checkbox which would unhide the rest of the menu and let you export it. Similar to Time of day.
+Under that you'd have a drop down menu that shows all levels from this blend file and an "all tasks" option. When a level is selected, it'd display only the tasks of that level. Or all the tasks in the blend file if "all tasks" are selected.
+
+Under that you'd have "Task list" as a collapsable sub-menu.
+This would show the list of tasks based on the selection at the top. With a button to add a new task at the bottom of that list.
+When a task is added, you'd have all of these options inside of a collapsable menu for each task:
+- task name 
+  - the name that'll get added to the game-task enum 
+  - Also added to the list of useable tasks in the addon for actors
+- task id 
+  - the number of the task
+  - makes it automatically start at 116/117 and increase per task
+  - if an user change that number to a higher number, make new tasks increase from the highest found task number
+- level 
+  - which level this task is in.
+  - If the filter had a selected level, it'd automatically fill this field
+  - This also makes it so the task appear in the menu of that level
+- Scout fly task
+  - Checkbox to let the game know if this is a buzzer task
+- Texts
+  - One string entry per level of completion of the task
+  - If a string is left empty, it use the closest string, looking further into completion
+  - If the users type an hex code like `#xb11` then this isn't used as direct string but will point toward that value. There could also be things such as`[level_name]` which would point toward the already existing level name string that gets added from the level settings.
+- Commands
+  - Any commands based settings for the tasks, I'm not 100% sure of everything that could be used here but it seems like the research has found a few things.
+
+Under the task list you'd have another submenu "task settings" which also would be saved per blend files.
+You could have things such as "starting task id", "starting string id". With default values based on not having any old custom levels but changeable so people can work around existing data.
+The point about being able to work with and around existing custom task and level that weren't made on this addon is very important and it'd also be important if someone has multiple blend files working on the same big project.
 
 ---
 
@@ -176,15 +217,39 @@ When multiple actors are using the same paths, have the same feature that warns 
 
 ---
 
+## Object controls
+### Duplication/Delete
+At the moment, you pretty much need to use the button "delete" and "duplicate" from the addon. Because if you don't, and use the blender functions/shortcut. It'll create some issues:
+- Deleting actors won't delete the preview mesh
+- Duplicating actors won't duplicate the preview mesh
+- Duplicating actors won't use the addon's naming schemes but blender's instead
+If all of this is possible to be fixed. It'd make working with the addon a lot more intuitive and faster for people that are used to blender
+### Object control menu
+At the moment, the object control buttons "frame"/"delete"/"duplicate" and the number of actors selected are sitting in the "Object settings" menu. While it's not the worst place for them. These buttons and info are about all of the actors selected, where the object settings are only for the active object.
+
+These should move into another Menu, outside of object settings called "Objects controls". That way it can be expended more. without taking space in object settings.
+
+### Feature of Object control
+The menu Should have the buttons at the very top of it. These buttons should work on anything that's selected, not just the opengoal specific object.
+
+Under the buttons, have the indication of what's selected `# (# Actors, # nav-mesh, # Curves, # Meshes, etc)`. This would also be a collapsed menu which, when opened, would list the whole selection within the categories.
+Next to each object and category, there would be two icons, a cursor and and a cross. The cursor would select just that object or category (aka all selected object inside of that category) and the cross would remove that object or category from the selection.
+
+It would then have submenu for other tools like some of the ones described under.
+
+---
+
 ## Exta tools
 ### Set to floor
+Sub menu in the object control
 - Find ground (ray cast from slightly above the current position to not miss if you're already on it or slightly under)
 - Set a distance from the ground (especially useful for floating orbs)
 - Align or not with the floor
 - Ability to affect multiple actors/object at once
 - Use center or bottom vertex (for meshes)
 ### Export selected actors/camera/checkpoint/load-boundary
-Useful to have, a button to export only the selected object definitions. Should be in the dev tools. 
+Sub menu in the object control
+Useful to have, a button to export only the selected object definitions.
 
 This would be useful for working on older levels that aren't setup with this addon so you can just create new actors and export just the definition to easily import them into older levels. This is also useful if you want to share information to another user so they can see how you setup one particular thing.
 
@@ -200,6 +265,24 @@ Here's how it could work for each:
   - give you the definition of the checkpoint as it would appear in level-info.gc
 - load-boundary
   - give you the definition of the load-boundary as it would appear in load-boundary-data.gc
+### Export filter
+A list of settings that allow you to disable/enable some part of the exporting process. This is mostly for advanced users for testing purposes or highly specific situations. Have a warning that activating the filters can break the compile & crash the game. These settings can be a submenu inside of the "build" part of the developers tools.
+
+It'd have a general "filter exports" toggle. Which, only if it's on, would show and make the actual filters functional. Here you could have:
+- Filter exports
+  - Level folder
+    - Geometry (GLB)
+    - Entities (.json)
+    - Load (.gd)
+    - Actor code (-obs.gc)
+  - Game.gp definition
+  - Nav-mesh (entity.gc)
+  - Task & Menu
+    - All the different task files
+  - Level-info
+    - Level settings
+      - Checkpoints
+  - Load Boundaries
 
 ---
 
