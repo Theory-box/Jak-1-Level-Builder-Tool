@@ -478,6 +478,10 @@ class OG_PT_ActorLinks(Panel):
                 and parts[0] == "ACTOR"
                 and _actor_has_links(parts[1]))
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "links")
+
     def draw(self, ctx):
         sel   = ctx.active_object
         etype = sel.name.split("_", 2)[1]
@@ -1249,6 +1253,10 @@ class OG_PT_ActorWaypoints(Panel):
         parts = sel.name.split("_", 2)
         return (len(parts) >= 3 and parts[0] == "ACTOR"
                 and _actor_uses_waypoints(parts[1]))
+
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "path")
 
     def draw(self, ctx):
         sel = ctx.active_object

@@ -119,6 +119,7 @@ from . import connect_neighbours as _connect_neighbours
 from . import distribute as _distribute
 from . import bake as _bake
 from . import level_settings as _level_settings
+from . import required as _required_mod
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -163,6 +164,7 @@ classes = (
     *_connect_neighbours.CLASSES,
     *_bake.CLASSES,
     *_level_settings.CLASSES,
+    *_required_mod.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
