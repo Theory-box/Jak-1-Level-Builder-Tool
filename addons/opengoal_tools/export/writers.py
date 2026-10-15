@@ -611,7 +611,11 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # the SAME source both try to link those tpage objects -> crash. So levels
     # streamed together must use distinct sources, or "none" (vertex colors only).
     _tex_remap, _sky_src = texture_sources(scene)
-    _textures = [[f"{_sky_src}-vis-alpha"]] if _sky_src != "none" else []   # the sky's textures
+    # The sky's textures. The builder only reads sky / tex_remap when the level
+    # has art groups or textures, so a remap with no sky brings its own
+    # -vis-alpha textures (water, eyes ... live there anyway).
+    _tex_src = _sky_src if _sky_src != "none" else _tex_remap
+    _textures = [[f"{_tex_src}-vis-alpha"]] if _tex_src != "none" else []
     _tpages, _ = texture_pages(scene)
     from . import includes as _inc
     _incl, _incl_err = _inc.load(scene)
