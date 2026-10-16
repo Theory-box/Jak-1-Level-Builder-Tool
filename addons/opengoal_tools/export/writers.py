@@ -142,6 +142,9 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
     assigned (and enabled) have their code appended after the addon's types.
     All types birth automatically via entity-actor.birth! — no nREPL needed.
     """
+    from ..export_filter import allowed as _allowed
+    if not _allowed("obs", scene):
+        return None
     d = _goal_src() / "levels" / name
     d.mkdir(parents=True, exist_ok=True)
     p = d / f"{name}-obs.gc"
@@ -598,6 +601,9 @@ def _collision_json(scene):
 
 
 def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene=None):
+    from ..export_filter import allowed as _allowed
+    if not _allowed("jsonc", scene):
+        return None
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     all_actors = list(actors) + (camera_actors or [])
     # Match the per-level type scoping done in write_gc: a trigger actor's etype
@@ -712,6 +718,9 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     to see two .gd files producing the same DGO and abort with
     'multiple ways to make output'.
     """
+    from ..export_filter import allowed as _allowed
+    if not _allowed("gd", scene):
+        return None
     d = _ldir(name); d.mkdir(parents=True, exist_ok=True)
     nick     = _effective_nick(scene, name)
     dgo_name = f"{nick.upper()}.DGO"
@@ -961,6 +970,21 @@ def patch_level_info(name, spawns, scene=None):
              f"       :wait-for-load {_wait_load}))\n"
              f"\n(cons! *level-load-list* '{name})\n")
     txt = p.read_text(encoding="utf-8")
+    from ..export_filter import allowed as _allowed
+    _keep_settings, _keep_cps = _allowed("level_settings", scene), _allowed("checkpoints", scene)
+    if not (_keep_settings or _keep_cps):
+        return
+    if not (_keep_settings and _keep_cps):
+        # one part filtered: that part comes from the level's current entry
+        _old = re.search(rf"\n\(define {re.escape(name)}\b.*?\(cons!.*?'{re.escape(name)}\)\n", txt, flags=re.DOTALL)
+        if _old:
+            _cont = re.compile(r":continues\n.*?\n       :tasks", re.DOTALL)
+            _old_c = _cont.search(_old.group(0)).group(0)
+            if _keep_settings:                       # new settings, old checkpoints
+                block = _cont.sub(lambda m: _old_c, block, count=1)
+            else:                                    # old settings, new checkpoints
+                _new_c = _cont.search(block).group(0)
+                block = _cont.sub(lambda m: _new_c, _old.group(0), count=1)
     txt = re.sub(rf"\n\(define {re.escape(name)}\b.*?\(cons!.*?'{re.escape(name)}\)\n",
                  "", txt, flags=re.DOTALL)
     marker = ";;;;; CUSTOM LEVELS"
@@ -1065,6 +1089,9 @@ def patch_load_boundaries(name, boundaries, scene=None):
     Appends a managed block (own static-lb-list + doarray) keyed by level name.
     Empty `boundaries` removes the block. Stock entries are never touched.
     """
+    from ..export_filter import allowed as _allowed
+    if not _allowed("load_boundaries", scene):
+        return None
     p = _load_boundary_data()
     if not p.exists():
         log(f"WARNING: {p} not found — skipping load boundaries")
@@ -1109,6 +1136,9 @@ def patch_game_gp(name, code_deps=None, scene=None):
     honor og_vis_nick_override so multi-level blends with colliding
     auto-derived nicks build cleanly.
     """
+    from ..export_filter import allowed as _allowed
+    if not _allowed("gamegp", scene):
+        return None
     p = _game_gp()
     if not p.exists(): log(f"WARNING: {p} not found"); return
     raw  = p.read_bytes()
@@ -1182,6 +1212,9 @@ def patch_game_gp(name, code_deps=None, scene=None):
     log(f"Patched game.gp  (extra goal-src: {[gc for _,gc,_ in (code_deps or []) if gc is not None]})")
 
 def export_glb(ctx, name):
+    from ..export_filter import allowed as _allowed
+    if not _allowed("glb", ctx.scene):
+        return None
     # The OG Boundary Viz modifier is viewport-only. Strip it from all
     # boundaries during geometry export and restore it afterwards (runs on the
     # main thread; restore is guaranteed via finally even on failure).

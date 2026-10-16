@@ -507,6 +507,8 @@ class OG_PT_DevTools(Panel):
                         else "This OpenGOAL predates built-in cameras (needs v0.3.4+)"),
                   icon="CHECKMARK" if builtin_cameras_supported() else "INFO")
         sub.label(text=f"Exporting cameras as: {camera_system(ctx.scene)}")
+        from ..export_filter import draw as _draw_filter
+        _draw_filter(box, ctx.scene)
 
         layout.separator()
 

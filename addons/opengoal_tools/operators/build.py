@@ -202,7 +202,7 @@ class OG_OT_ExportBuildAll(_BuildWatch, Operator):
                 export_glb(ctx, name)
                 navmesh += write_level_files(name, ctx.scene, ctx.evaluated_depsgraph_get(), navmesh=False)
                 done.append(name)
-            patch_entity_gc(navmesh)          # every level's nav-meshes, not only the last one's
+            patch_entity_gc(navmesh, ctx.scene)          # every level's nav-meshes, not only the last one's
         except Exception as e:
             self.report({"ERROR"}, f"Export of {col.name} failed: {e}"); return {"CANCELLED"}
         finally:
