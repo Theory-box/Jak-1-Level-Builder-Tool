@@ -76,17 +76,95 @@ def used_text_ids(group):
     return used
 
 
+_BLOCK_RE = re.compile(r";; og-level-tools tasks: (\S+) BEGIN\n(.*?);; og-level-tools tasks: \1 END", re.S)
+_ENTRY_RE = re.compile(r"^\s*\(([a-z0-9-]+)\s+(\d+)\)", re.M)
+
+
+def _task_h():
+    return _goal_src().joinpath("engine", "game", "task", "game-task-h.gc")
+
+
+def group_blocks():
+    """{group: {name: id}} of every task group block in game-task-h.gc."""
+    txt = _task_h().read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n")
+    return {m.group(1): {e.group(1): int(e.group(2)) for e in _ENTRY_RE.finditer(m.group(2))}
+            for m in _BLOCK_RE.finditer(txt)}
+
+
 def _other_group_tasks(group):
-    """{name: id} of task entries outside this group's block (vanilla, other
-    groups, other mods)."""
-    p = _goal_src().joinpath("engine", "game", "task", "game-task-h.gc")
-    txt = p.read_text(encoding="utf-8", errors="replace")
-    b, e = _BEGIN.format(g=group), _END.format(g=group)
-    if b in txt and e in txt:
-        txt = txt[:txt.index(b)] + txt[txt.index(e) + len(e):]
-    ids = {m.group(1): int(m.group(2)) for m in re.finditer(r"^\s*\(([a-z0-9-]+)\s+(\d+)\)", txt, re.M)}
+    """{name: id} of the game-task entries outside every task group block
+    (vanilla, other mods): these can't be replaced."""
+    txt = _task_h().read_text(encoding="utf-8", errors="replace").replace("\r\n", "\n")
+    txt = _BLOCK_RE.sub("", txt)
+    ids = {m.group(1): int(m.group(2)) for m in _ENTRY_RE.finditer(txt)}
     ids.pop("max", None)
     return ids
+
+
+def _rewrite(path, fn):
+    """Apply fn to a text file (LF inside, original line ends kept); write if changed."""
+    if not path.exists():
+        return False
+    raw = path.read_bytes()
+    crlf = b"\r\n" in raw
+    txt = raw.decode("utf-8")
+    new = fn(txt.replace("\r\n", "\n"))
+    if crlf:
+        new = new.replace("\n", "\r\n")
+    if new == txt:
+        return False
+    path.write_bytes(new.encode("utf-8"))
+    return True
+
+
+def _drop_entries(group, names):
+    """Remove entries from a group's block (the whole block once empty), in
+    game-task-h.gc and all-types.gc."""
+    def fn(txt):
+        m = re.search(re.escape(_BEGIN.format(g=group)) + r"\n(.*?)[ \t]*" + re.escape(_END.format(g=group)) + r"\n?", txt, re.S)
+        if not m:
+            return txt
+        lines = [l for l in m.group(1).split("\n") if l.strip() and not (_ENTRY_RE.match(l) and _ENTRY_RE.match(l).group(1) in names)]
+        start = txt.rfind("\n", 0, m.start()) + 1
+        if not lines:
+            return txt[:start] + txt[m.end():]
+        ind = txt[start:m.start()]
+        return txt[:m.start()] + _BEGIN.format(g=group) + "\n" + "\n".join(lines) + "\n" + ind + _END.format(g=group) + "\n" + txt[m.end():]
+    for p in (_task_h(), _data().joinpath(*_ALL_TYPES)):
+        if _rewrite(p, fn):
+            log(f"Patched {p.name}: removed {', '.join(sorted(names))} (task group {group})")
+
+
+def _unregister_task_file(group):
+    """Delete a group's lt-tasks file and its game.gp / game.gd lines."""
+    name = f"lt-tasks-{group}"
+    f = _goal_src() / LT_DIR / f"{name}.gc"
+    if f.exists():
+        f.unlink()
+        log(f"Removed {f.name}")
+    for p in (_game_gp(), _goal_src().joinpath(*_DGO_GAME)):
+        if _rewrite(p, lambda t: "".join(l for l in t.splitlines(True) if f"{name}." not in l)):
+            log(f"Patched {p.name}: removed {name}")
+
+
+def _unregister_texts(group):
+    f = _text_dir() / _text_json_name(group)
+    if f.exists():
+        f.unlink()
+        log(f"Removed {f.name}")
+    gp = _data() / "game" / "assets" / "jak1" / "game_text.gp"
+    if _rewrite(gp, lambda t: t.replace(f' "game/assets/jak1/text/{_text_json_name(group)}"', "")):
+        log(f"Patched {gp.name}: removed {_text_json_name(group)}")
+
+
+def remove_group(group, keep_text=False):
+    """Take a task group out of the game: enum block, task file, (texts)."""
+    names = set(group_blocks().get(group, {}))
+    if names:
+        _drop_entries(group, names)
+    _unregister_task_file(group)
+    if not keep_text:
+        _unregister_texts(group)
 
 
 def check(scene):
@@ -195,9 +273,52 @@ def _texts(scene, group):
             levels[colname] = (resolve(menu, None), menu)
         return levels[colname]
 
+    by_task = {t.name: t for t in tasks}
+    vt_by_id = {i: en for i, en in vt.values()}
+    slots = {}
+    busy = set()                               # [task:a] in a's own texts: no loop
+
+    def task_vals(t):
+        raw = [t.text_intro.strip(), t.text_reminder.strip(), t.text_resolution.strip()]
+        # empty: the next filled one further into completion, else the last filled one
+        filled = [x for x in raw if x]
+        fall = filled[-1] if filled else t.name.replace("-", " ").upper()
+        return [x or next((y for y in raw[k + 1:] if y), fall) for k, x in enumerate(raw)]
+
+    def task_slots(name):
+        if name not in slots and name in by_task and name not in busy:
+            busy.add(name)
+            t = by_task[name]
+            slots[name] = [resolve(x, t.level) for x in task_vals(t)]
+            busy.discard(name)
+        return slots.get(name)
+
+    def plain(raw, colname):
+        """The words of a field (references replaced by their words)."""
+        x = raw.strip()
+        m = ID_RE.fullmatch(x)
+        if m:
+            i = int(m.group(1), 16)
+            return vt_by_id.get(i) or next((k for k, v in strings.items() if v == i), "")
+
+        def sub(m):
+            if m.group(2):
+                return vt.get(m.group(2), (0, ""))[1]
+            if m.group(3):
+                n = m.group(3)
+                t = by_task.get(n)
+                if t is None or n in busy:
+                    return ""
+                busy.add(n)
+                words = plain(task_vals(t)[0], t.level)
+                busy.discard(n)
+                return words
+            return level_name(colname)[1] if colname is not None else ""
+        return VAR_RE.sub(sub, x)
+
     def resolve(raw, colname):
-        """Text id of a game text field: #x id, [level_name], [text:name], or
-        a string (references inside it replaced by their text)."""
+        """Text id of a game text field: #x id, [level_name], [text:name],
+        [task:name], or a string (references inside it replaced by their words)."""
         x = raw.strip()
         m = ID_RE.fullmatch(x)
         if m:
@@ -207,31 +328,22 @@ def _texts(scene, group):
             if m.group(2):
                 if m.group(2) in vt:
                     return vt[m.group(2)][0]
+            elif m.group(3):
+                ts = task_slots(m.group(3))
+                if ts:
+                    return ts[0]
             elif colname is not None:
                 lid = level_name(colname)[0]
                 if lid is not None:
                     return lid
-
-        def sub(m):
-            if m.group(2):
-                return vt.get(m.group(2), (0, ""))[1]
-            return level_name(colname)[1] if colname is not None else ""
-        return alloc(VAR_RE.sub(sub, x))
+        return alloc(plain(x, colname))
 
     for name in cols:                          # menu names first: their ids don't move
         if any(t.level == name for t in tasks):
             level_name(name)
 
-    slots = {}
     for t in tasks:
-        raw = [t.text_intro.strip(), t.text_reminder.strip(), t.text_resolution.strip()]
-        # empty: the next filled one further into completion, else the last filled one
-        filled = [x for x in raw if x]
-        fall = filled[-1] if filled else t.name.replace("-", " ").upper()
-        vals = []
-        for k, x in enumerate(raw):
-            vals.append(x or next((y for y in raw[k + 1:] if y), fall))
-        slots[t.name] = [resolve(x, t.level) for x in vals]
+        task_slots(t.name)
     from ..hints import hint_objects
     hints = {}
     for o, colname in hint_objects(scene):   # after the task texts: their ids don't move
@@ -373,7 +485,7 @@ _INSTALL = """
         (set! *level-task-data* (the-as (array level-tasks-info) pages))
         ;; remap: level-info :index - 1 -> page
         (let ((len (-> *level-task-data-remap* length)))
-          (dotimes (i np) (set! len (max len (-> *lt-<g>-page-levels* i))))
+          (dotimes (i np) (set! len (max len (+ (-> *lt-<g>-page-levels* i) 1))))  ; the save menu needs index < length
           (let ((remap (new 'global 'boxed-array int32 len)))
             (dotimes (i len)
               (set! (-> remap i) (if (< i (-> *level-task-data-remap* length)) (-> *level-task-data-remap* i) 0)))
@@ -407,8 +519,12 @@ def export_tasks(scene):
     from ..hints import hint_texts
     s = T.settings(scene)
     if not s.enabled or not len(s.tasks):
+        # no tasks: the group's files go (rebuilt on the next export with tasks)
+        group = T.group_name(scene)
+        if _task_h().exists():
+            remove_group(group, keep_text=bool(hint_texts(scene)))
         if hint_texts(scene):                 # hints only: just the texts
-            _write_texts(scene, T.group_name(scene))
+            _write_texts(scene, group)
         return []
     if feature_status("custom_tasks")[0] is not True:
         return ["custom tasks need mod-base (Tasks panel)"]
@@ -418,6 +534,19 @@ def export_tasks(scene):
             log(f"[tasks] {e}")
         return errs
     group = T.group_name(scene)
+    # names / ids another group used: replaced. That group's task file goes
+    # (it would no longer compile); its .blend needs exporting again.
+    mine_n = {t.name for t in s.tasks}
+    mine_i = {t.task_id for t in s.tasks}
+    for g, entries in group_blocks().items():
+        if g == group:
+            continue
+        taken = {n for n, i in entries.items() if n in mine_n or i in mine_i}
+        if taken:
+            log(f"[tasks] WARNING: replacing {', '.join(sorted(taken))} of task group '{g}' "
+                f"(its task file is removed: export its .blend again)")
+            _drop_entries(g, taken)
+            _unregister_task_file(g)
     ids, _mx = task_enum()
     need_max = max([t.task_id for t in s.tasks] + list(ids.values())) + 1
     # names in the enum (game code + level .jsonc), then max (+ mod-base save fixes)

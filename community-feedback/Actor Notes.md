@@ -73,6 +73,14 @@ actor itself; this file is the overview.
 snow-switch, snow fort gate, snow bumpers, sunken pipegame, gorge-pusher, swamp-tetherrock,
 sage-finalboss (finalboss-movies). Candidates for subtypes that use the actor's own task.
 
+## Custom tasks on actors (for the next actor pass)
+The task pickers list the .blend's custom tasks, but no actor was checked in
+game with one yet. To check with a custom task: fuel-cell, buzzer
+(buzzer-info: fly index + task), crates holding a cell or a fly, the oracle /
+pontoon / race-ring alternate tasks, and anything with a game-task panel. Look
+for: the cell / fly spawns, collecting it closes need-resolution / counts the
+fly for that task, and it stays collected after a save + reload.
+
 ## Sound bank requirements (for the next actor pass)
 The level only plays an actor's sounds when their sound bank is loaded (Level
 Settings > Sound & Music). The database knows which sounds are in which bank

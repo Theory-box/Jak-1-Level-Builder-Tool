@@ -35,7 +35,7 @@ SUPPORTED = set(" !\"%'()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 PAD_TAGS = ("<PAD_X>", "<PAD_CIRCLE>", "<PAD_SQUARE>", "<PAD_TRIANGLE>")
 
 ID_RE = re.compile(r"\s*#x([0-9a-fA-F]+)\s*")
-VAR_RE = re.compile(r"\[(level_name|text:([a-z0-9-]+))\]")
+VAR_RE = re.compile(r"\[(level_name|text:([a-z0-9-]+)|task:([a-z0-9-]+))\]")
 
 
 def _is_japanese(c):
@@ -82,12 +82,20 @@ def vanilla_texts():
 
 
 def unknown_refs(s):
-    """[text:<name>] references that name no game text."""
-    names = [m.group(2) for m in VAR_RE.finditer(str(s)) if m.group(2)]
-    if not names:
+    """[text:<name>] / [task:<name>] references that name no game text / no
+    task of this .blend."""
+    refs = [(m.group(2), m.group(3)) for m in VAR_RE.finditer(str(s)) if m.group(2) or m.group(3)]
+    if not refs:
         return []
-    vt = vanilla_texts()
-    return [n for n in names if n not in vt]
+    out = []
+    vt = vanilla_texts() if any(a for a, _b in refs) else {}
+    tasks = {t.name for t in bpy.context.scene.og_tasks.tasks} if any(b for _a, b in refs) else set()
+    for a, b in refs:
+        if a and a not in vt:
+            out.append(a)
+        elif b and b not in tasks:
+            out.append(f"task {b}")
+    return out
 
 
 def unsupported(s):
@@ -121,7 +129,7 @@ def draw_field(layout, owner, prop, text=None):
         w.label(text=f"May not show in game: {' '.join(bad)}", icon="ERROR")
     for n in unknown_refs(val):
         w = layout.row(); w.alert = True
-        w.label(text=f"No game text named '{n}'", icon="ERROR")
+        w.label(text=f"Not found: {n}", icon="ERROR")
 
 
 class OG_OT_GameTextHelp(bpy.types.Operator):
@@ -141,6 +149,7 @@ class OG_OT_GameTextHelp(bpy.types.Operator):
             col.label(text="Use an existing text:")
             col.label(text="   [level_name]   this level's Menu Name")
             col.label(text="   [text:name]   a game text by name (search button)")
+            col.label(text="   [task:name]   a custom task's Introduced text")
             col.label(text="   #xa00   a text id (the whole field)")
             col.label(text="Alone in the field: that same text. In a sentence: its English words.")
         ctx.window_manager.popup_menu(draw, title="Game Text", icon="QUESTION")
@@ -158,11 +167,16 @@ class OG_OT_PickGameText(bpy.types.Operator):
     bl_property = "text"
 
     def _items(self, context):
-        if not _TEXT_ITEMS:
-            items = [("[level_name]", "[level_name]  (this level's Menu Name)", "")]
-            for name, (i, en) in sorted(vanilla_texts().items(), key=lambda kv: kv[1][0]):
-                items.append((f"[text:{name}]", f"{name}  ·  {en[:60]}" if en else name, f"#x{i:x}"))
-            _TEXT_ITEMS[:] = [(a, b, c, k) for k, (a, b, c) in enumerate(items)]
+        items = [("[level_name]", "[level_name]  (this level's Menu Name)", "")]
+        for t in context.scene.og_tasks.tasks if context.scene.og_tasks.enabled else ():
+            if t.name:
+                items.append((f"[task:{t.name}]", f"task {t.name}  ·  {t.text_intro[:60]}", "A custom task's Introduced text"))
+        vt = vanilla_texts()
+        for name, (i, en) in sorted(vt.items(), key=lambda kv: kv[1][0]):
+            items.append((f"[text:{name}]", f"{name}  ·  {en[:60]}" if en else name, f"#x{i:x}"))
+        items = [(a, b, c, k) for k, (a, b, c) in enumerate(items)]
+        if items != _TEXT_ITEMS:
+            _TEXT_ITEMS[:] = items
         return _TEXT_ITEMS
 
     prop_key: bpy.props.StringProperty(options={"SKIP_SAVE", "HIDDEN"})

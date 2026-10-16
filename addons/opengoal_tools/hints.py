@@ -49,6 +49,9 @@ class OGHintCmd(bpy.types.PropertyGroup):
 
 class OGHint(bpy.types.PropertyGroup):
     text: StringProperty(name="Text", default="", description="Shown at the top of the screen (once per save)")
+    voice: StringProperty(name="Voice line", default="",
+                          description="Optional: a vanilla voice line (e.g. sksp0096) played instead of showing the text. "
+                                      "Names starting with sa / as play as a voicebox. Needs the game's Hints option on")
     radius: FloatProperty(name="Radius", default=10.0, min=0.5, max=500.0, unit="LENGTH", update=_radius_update,
                           description="Shown when the camera is this close")
     cmds: CollectionProperty(type=OGHintCmd)
@@ -103,8 +106,11 @@ def ambient_entry(o, text_ids):
         "name": o.name[8:].lower() or "hint",
         "type": "'hint",
         "text-id": ["uint32", tid],
-        "play-mode": "'notice",
     }
+    if h.voice.strip():
+        lump["sound-name"] = h.voice.strip().lower()   # no play-mode: voice (sidekick / voicebox)
+    else:
+        lump["play-mode"] = "'notice"
     if cmds:
         lump["cmds"] = ["int32"] + cmds
     return {"trans": [gx, gy, gz, h.radius], "bsphere": [gx, gy, gz, h.radius], "lump": lump}
@@ -181,6 +187,7 @@ class OG_PT_HintVolume(bpy.types.Panel):
         h = o.og_hint
         layout = self.layout
         draw_field(layout, h, "text")
+        layout.prop(h, "voice")
         layout.prop(h, "radius")
         box = layout.box()
         box.label(text=f"Commands ({len(h.cmds)})" if len(h.cmds) else "Commands", icon="CHECKMARK")
@@ -194,6 +201,9 @@ class OG_PT_HintVolume(bpy.types.Panel):
         for x in problems(o):
             w = layout.row(); w.alert = True
             w.label(text=x, icon="ERROR")
+        if h.voice.strip():
+            r = layout.row(); r.enabled = False; r.scale_y = 0.6
+            r.label(text="Voice line: plays the sound, the text isn't shown")
         for line in ("Shown once per save, when the camera is inside the radius.",
                      "Commands run in order: a failed If skips the hint,",
                      "Close commands run when it shows."):

@@ -279,10 +279,16 @@ def _draw_checkpoint_list(layout, scene):
 
 
 def _draw_tasks(layout, s):
+    from ..level_settings import auto_tasks
+    auto = auto_tasks(s)
     head = layout.row(align=True)
-    head.label(text=f"Tasks ({len(s.tasks)})" if s.tasks else "Tasks")
+    n = len(s.tasks) + len(auto)
+    head.label(text=f"Tasks ({n})" if n else "Tasks")
     head.operator("og.level_task_add", text="", icon="ADD")
     colm = layout.column(align=True)
+    for name, i in auto:
+        r = colm.row(); r.enabled = False
+        r.label(text=f"{name}  ({i}, custom task of this level)", icon="CHECKMARK")
     for i, r in enumerate(s.tasks):
         row = draw_task_pick(colm, r, "task")
         row.operator("og.level_task_remove", text="", icon="REMOVE").index = i
