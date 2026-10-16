@@ -175,4 +175,26 @@ class OG_PT_ObjectControls(Panel):
                 r.label(text=f"… +{len(objs) - _LIST_MAX} more")
 
 
-CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls)
+class OG_PT_SetToFloor(Panel):
+    bl_label = "Set to Floor"
+    bl_idname = "OG_PT_set_to_floor"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_floor
+        col = self.layout.column(align=True)
+        col.prop(s, "offset")
+        col.prop(s, "above")
+        self.layout.prop(s, "align")
+        self.layout.prop(s, "point", text="Meshes")
+        n = len([o for o in ctx.selected_objects if not o.get("og_preview_mesh")])
+        self.layout.operator("og.set_to_floor", text=f"Set {n} to Floor" if n else "Set to Floor", icon="TRIA_DOWN_BAR")
+        r = self.layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Ignores volumes, nav-meshes, previews and the selection", icon="INFO")
+
+
+CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls, OG_PT_SetToFloor)
