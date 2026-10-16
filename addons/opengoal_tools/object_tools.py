@@ -1,8 +1,8 @@
-"""Object Controls tools: Set to floor."""
+"""Object Controls tools: Set to floor, Export selected definitions."""
 from __future__ import annotations
 
 import bpy
-from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty
+from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty
 from mathutils import Vector, Matrix
 
 _SKIP_PREFIXES = ("VOL_", "LOADBND_")       # not ground
@@ -98,13 +98,73 @@ class OG_OT_SetToFloor(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGFloorSettings, OG_OT_SetToFloor)
+class OGExportDefsSettings(bpy.types.PropertyGroup):
+    path: StringProperty(name="Write to", subtype="FILE_PATH", default="",
+                         description="A text file (rewritten each export) or a folder (a new file each export). "
+                                     "Empty: clipboard only")
+
+
+def export_target(path, now=None):
+    """The file to write: the path itself, or a new dated file in a folder."""
+    import os
+    import time
+    p = bpy.path.abspath(path.strip())
+    if not p:
+        return None
+    if os.path.isdir(p) or p.endswith(("/", "\\")):
+        stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(now))
+        base = os.path.join(p, f"og-definitions-{stamp}")
+        f, n = base + ".txt", 1
+        while os.path.exists(f):
+            f, n = f"{base}-{n}.txt", n + 1
+        return f
+    return p
+
+
+class OG_OT_ExportSelectedDefs(bpy.types.Operator):
+    """Export the selected actors, cameras, checkpoints and load boundaries as the level files write
+them (with the art groups / code the actors need): to the clipboard and the file / folder set below"""
+    bl_idname = "og.export_selected_defs"
+    bl_label = "Export Selected Definitions"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return bool(ctx.selected_objects)
+
+    def execute(self, ctx):
+        import os
+        from .export.selected_defs import build
+        text, counts = build(ctx.scene, ctx.evaluated_depsgraph_get(), list(ctx.selected_objects))
+        if not counts:
+            self.report({"WARNING"}, "Nothing to export: select actors, cameras, checkpoints or load boundaries")
+            return {"CANCELLED"}
+        ctx.window_manager.clipboard = text
+        what = ", ".join(f"{n} {k}" for k, n in counts.items())
+        f = export_target(ctx.scene.og_export_defs.path)
+        if f:
+            try:
+                os.makedirs(os.path.dirname(f) or ".", exist_ok=True)
+                with open(f, "w", encoding="utf-8", newline="\n") as fh:
+                    fh.write(text)
+            except OSError as e:
+                self.report({"ERROR"}, f"Couldn't write {f}: {e}")
+                return {"CANCELLED"}
+            self.report({"INFO"}, f"Exported {what} to {f} (and the clipboard)")
+        else:
+            self.report({"INFO"}, f"Copied {what} to the clipboard")
+        return {"FINISHED"}
+
+
+CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGExportDefsSettings, OG_OT_ExportSelectedDefs)
 
 
 def register_props():
     bpy.types.Scene.og_floor = PointerProperty(type=OGFloorSettings)
+    bpy.types.Scene.og_export_defs = PointerProperty(type=OGExportDefsSettings)
 
 
 def unregister_props():
-    if hasattr(bpy.types.Scene, "og_floor"):
-        del bpy.types.Scene.og_floor
+    for p in ("og_floor", "og_export_defs"):
+        if hasattr(bpy.types.Scene, p):
+            delattr(bpy.types.Scene, p)

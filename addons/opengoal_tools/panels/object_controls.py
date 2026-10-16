@@ -197,4 +197,28 @@ class OG_PT_SetToFloor(Panel):
         r.label(text="Ignores volumes, nav-meshes, previews and the selection", icon="INFO")
 
 
-CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls, OG_PT_SetToFloor)
+class OG_PT_ExportDefinitions(Panel):
+    bl_label = "Export Selected Definitions"
+    bl_idname = "OG_PT_export_definitions"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        layout = self.layout
+        layout.prop(ctx.scene.og_export_defs, "path")
+        g = grouped(ctx.selected_objects)
+        n = sum(len(g.get(k, ())) for k in ("Actors", "Checkpoints", "Cameras", "Load boundaries"))
+        layout.operator("og.export_selected_defs", text=f"Export {n} Definition(s)" if n else "Export Definitions",
+                        icon="EXPORT")
+        for line in ("Actors / cameras: .jsonc entries + art groups / code (.gd)",
+                     "Checkpoints: level-info.gc · Load boundaries: load-boundary-data.gc",
+                     "Always copied to the clipboard; a file is rewritten, a folder gets a new file"):
+            r = layout.row(); r.enabled = False; r.scale_y = 0.7
+            r.label(text=line)
+
+
+CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
+           OG_PT_SetToFloor, OG_PT_ExportDefinitions)
