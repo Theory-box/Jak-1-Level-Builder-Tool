@@ -197,6 +197,30 @@ class OG_PT_SetToFloor(Panel):
         r.label(text="Ignores volumes, nav-meshes, previews and the selection", icon="INFO")
 
 
+class OG_PT_DistributeAlongCurve(Panel):
+    bl_label = "Distribute Along Curve"
+    bl_idname = "OG_PT_distribute_along_curve"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        from ..object_tools import distribute_targets
+        s = ctx.scene.og_distribute
+        layout = self.layout
+        layout.prop(s, "curve")
+        layout.prop(s, "method")
+        if s.method == "SPACING":
+            layout.prop(s, "spacing")
+        layout.prop(s, "align")
+        n = len(distribute_targets(ctx, s.curve))
+        layout.operator("og.distribute_along_curve", text=f"Distribute {n}" if n else "Distribute", icon="CURVE_PATH")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="In name order; selecting a curve picks it", icon="INFO")
+
+
 class OG_PT_ExportDefinitions(Panel):
     bl_label = "Export Selected Definitions"
     bl_idname = "OG_PT_export_definitions"
@@ -221,4 +245,4 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_ExportDefinitions)
+           OG_PT_SetToFloor, OG_PT_DistributeAlongCurve, OG_PT_ExportDefinitions)
