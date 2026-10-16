@@ -8,6 +8,8 @@ stops the hint; "Close" commands close a task's stage. The text goes in the
 """
 from __future__ import annotations
 
+import os
+
 import bpy
 from bpy.props import StringProperty, FloatProperty, EnumProperty, IntProperty, CollectionProperty, PointerProperty
 
@@ -141,6 +143,68 @@ check / close task stages"""
         return {"FINISHED"}
 
 
+_VOICES = {"key": None, "lines": []}
+_VOICE_ITEMS: list = []   # search-popup items must stay referenced
+
+
+def voice_lines():
+    """[(name, speaker, English subtitle)] of the game's voiced hints, from
+    OpenGOAL's subtitle files (cached until they change)."""
+    import json
+    from .export.paths import _data
+    d = _data() / "game" / "assets" / "jak1" / "subtitle"
+    lines_p, meta_p = d / "subtitle_lines_en-US.json", d / "subtitle_meta_en-US.json"
+    key = tuple(os.path.getmtime(p) if p.exists() else 0 for p in (lines_p, meta_p)) + (str(d),)
+    if key == _VOICES["key"]:
+        return _VOICES["lines"]
+    out = []
+    try:
+        lines = json.loads(lines_p.read_text(encoding="utf-8")).get("hints", {}) if lines_p.exists() else {}
+        meta = json.loads(meta_p.read_text(encoding="utf-8")).get("hints", {}) if meta_p.exists() else {}
+    except (OSError, ValueError):
+        lines, meta = {}, {}
+    for name, txt in lines.items():
+        spk = next((l.get("speaker", "") for l in meta.get(name, {}).get("lines", []) if l.get("speaker")), "")
+        out.append((name.lower(), spk, " ".join(txt) if isinstance(txt, list) else str(txt)))
+    out.sort()
+    _VOICES.update(key=key, lines=out)
+    return out
+
+
+def voice_text(name):
+    name = (name or "").strip().lower()
+    return next(((spk, t) for n, spk, t in voice_lines() if n == name), None)
+
+
+class OG_OT_PickVoiceLine(bpy.types.Operator):
+    """Pick a voice line (search by name, speaker or words)"""
+    bl_idname = "og.pick_voice_line"
+    bl_label = "Pick Voice Line"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_property = "line"
+
+    def _items(self, context):
+        items = [("", "(none: show the text)", "")]
+        items += [(n, f"{n}  ·  {spk}: {t[:70]}" if spk else f"{n}  ·  {t[:70]}", t) for n, spk, t in voice_lines()]
+        items = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        if items != _VOICE_ITEMS:
+            _VOICE_ITEMS[:] = items
+        return _VOICE_ITEMS
+
+    line: EnumProperty(name="Voice line", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        o = context.active_object
+        if not is_hint(o):
+            return {"CANCELLED"}
+        o.og_hint.voice = self.line
+        return {"FINISHED"}
+
+
 class OG_OT_HintCmdAdd(bpy.types.Operator):
     """Add a command: check a task's status before showing, or close one of its stages"""
     bl_idname = "og.hint_cmd_add"
@@ -187,7 +251,16 @@ class OG_PT_HintVolume(bpy.types.Panel):
         h = o.og_hint
         layout = self.layout
         draw_field(layout, h, "text")
-        layout.prop(h, "voice")
+        r = layout.row(align=True)
+        r.prop(h, "voice")
+        r.operator("og.pick_voice_line", text="", icon="VIEWZOOM")
+        vt = voice_text(h.voice) if h.voice.strip() else None
+        if vt:
+            r = layout.row(); r.enabled = False; r.scale_y = 0.7
+            r.label(text=(f"{vt[0]}: " if vt[0] else "") + vt[1][:90], icon="SPEAKER")
+        elif h.voice.strip():
+            w = layout.row(); w.alert = True
+            w.label(text="Not a known voice line", icon="ERROR")
         layout.prop(h, "radius")
         box = layout.box()
         box.label(text=f"Commands ({len(h.cmds)})" if len(h.cmds) else "Commands", icon="CHECKMARK")
@@ -211,7 +284,7 @@ class OG_PT_HintVolume(bpy.types.Panel):
             r.label(text=line)
 
 
-CLASSES = (OGHintCmd, OGHint, OG_OT_SpawnHint, OG_OT_HintCmdAdd, OG_OT_HintCmdRemove, OG_PT_HintVolume)
+CLASSES = (OGHintCmd, OGHint, OG_OT_SpawnHint, OG_OT_PickVoiceLine, OG_OT_HintCmdAdd, OG_OT_HintCmdRemove, OG_PT_HintVolume)
 
 
 def register_props():
