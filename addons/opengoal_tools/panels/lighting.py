@@ -18,7 +18,7 @@ from ..operators.build import _bakeable_meshes
 
 
 class OG_PT_Lighting(Panel):
-    bl_label       = "💡  Lighting"
+    bl_label       = "💡  Light Baking"
     bl_idname      = "OG_PT_lighting"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
@@ -29,35 +29,12 @@ class OG_PT_Lighting(Panel):
         layout = self.layout
         props  = ctx.scene.og_props
 
-        # ── Level Lighting (mood + sky) ────────────────────────────────────
-        # Writes :mood, :mood-func and :sky into level-info.gc on every export.
-        box = layout.box()
-        box.label(text="Level Lighting:", icon="LIGHT_SUN")
-        hint = box.row(); hint.enabled = False
-        hint.label(text="Mood, sky, texture remap: Level > Settings > Visuals", icon="INFO")
-
-        # ── Fog Override ───────────────────────────────────────────────────
-        # When enabled the exporter injects a fog-control actor that overrides
-        # *math-camera* fog values every frame.  When disabled, no fog-control
-        # is emitted -- mood drives fog with no leftovers.
-        fog_box = layout.box()
-        fog_box.label(text="Fog Override:", icon="MOD_FLUIDSIM")
-        fog_box.prop(props, "fog_override_enabled")
-        if props.fog_override_enabled:
-            sub = fog_box.column(align=True)
-            sub.prop(props, "fog_color")
-            sub.prop(props, "fog_start")
-            sub.prop(props, "fog_end")
-            sub.prop(props, "fog_max")
-            sub.prop(props, "fog_min")
-
-        layout.separator(factor=0.5)
+        # Mood, sky, texture remap and the fog override: Level > Settings > Visuals
 
         # ── Light baking: the Bake button first, then its settings ─────────
         sel = ctx.selected_objects
         targets = _bakeable_meshes(sel)
         skipped = len(sel) - len(targets)
-        layout.label(text="Light Baking:", icon="LIGHT")
         from ..collections import _active_level_col as _alc
         _lvc = _alc(ctx.scene)
         tod_n = 0

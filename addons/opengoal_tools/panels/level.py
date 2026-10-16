@@ -186,6 +186,17 @@ class OG_PT_LevelSettings(Panel):
             hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
             hint.label(text="Texture remap: Flut Flut eyes, water, dark eco pools,", icon="INFO")
             hint.label(text="dying enemies (things drawn with generic textures)", icon="BLANK1")
+            # Fog override: the exporter adds a fog-control actor that sets the
+            # camera fog every frame; off = the mood drives the fog
+            fog = body.box()
+            fog.prop(props, "fog_override_enabled")
+            if props.fog_override_enabled:
+                sub = fog.column(align=True)
+                sub.prop(props, "fog_color")
+                sub.prop(props, "fog_start")
+                sub.prop(props, "fog_end")
+                sub.prop(props, "fog_max")
+                sub.prop(props, "fog_min")
 
         # ── Gameplay ───────────────────────────────────────────────────
         head, body = layout.panel("og_lvl_gameplay", default_closed=True)

@@ -267,7 +267,7 @@ def _resubscribe(*_a):
 
 
 class OG_OT_EditDistributeCurve(bpy.types.Operator):
-    """Edit this curve: select it alone and switch to Edit Mode"""
+    """Edit this curve: make it the active object (the selection stays) and switch to Edit Mode"""
     bl_idname = "og.edit_distribute_curve"
     bl_label = "Edit Curve"
     bl_options = {"REGISTER", "UNDO"}
@@ -280,8 +280,6 @@ class OG_OT_EditDistributeCurve(bpy.types.Operator):
         c = ctx.scene.og_distribute.curve
         if ctx.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
-        for o in ctx.view_layer.objects:
-            o.select_set(False)
         if c.name not in ctx.view_layer.objects:
             self.report({"ERROR"}, f"{c.name} isn't in this view layer")
             return {"CANCELLED"}
