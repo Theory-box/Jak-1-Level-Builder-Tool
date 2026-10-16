@@ -116,8 +116,8 @@ class OGDistributeSettings(bpy.types.PropertyGroup):
                            description="The curve to put the objects on (set when a curve becomes the active object)")
     method: EnumProperty(name="Method", default="DISTANCE", items=[
         ("DISTANCE", "Distance", "The same distance along the curve between the objects, first to last end"),
-        ("POINTS", "Per segment", "The same share of each segment between two curve points, whatever its length "
-                                  "(how OpenGOAL moves along a path: the points joined by straight lines)"),
+        ("POINTS", "Per segment", "Along the curve, each segment between two curve points gets the same share of "
+                                  "the objects whatever its length: points close together pack the objects closer"),
         ("SPACING", "Fixed spacing", "One object every N meters from the curve's start (stops at its end)")])
     spacing: FloatProperty(name="Spacing", default=2.0, min=0.01, unit="LENGTH",
                            description="Distance between two objects along the curve")
@@ -165,8 +165,13 @@ def distribute_positions(curve, depsgraph, n, method, spacing=2.0):
     """[(position, tangent)] for n objects; fewer with Fixed spacing past the end."""
     smooth, ctrl, cyclic = curve_samples(curve, depsgraph)
     if method == "POINTS":
-        pts = list(ctrl) + ([ctrl[0]] if cyclic else [])
+        # Blender samples every segment between two curve points with the same
+        # number of steps (resolution), so equal steps through the samples give
+        # each segment the same share, along the curve's shape.
+        pts = list(smooth) + ([smooth[0]] if cyclic and len(smooth) > 1 else [])
         segs = len(pts) - 1
+        if segs < 1:
+            return [(pts[0], Vector((1, 0, 0)))] * n if pts else []
         out = []
         for i in range(n):
             u = (i * segs / n) if cyclic else (i * segs / (n - 1) if n > 1 else 0.0)
