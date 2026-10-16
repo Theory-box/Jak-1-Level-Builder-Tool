@@ -206,6 +206,16 @@ def _level_objects(scene, level_col=None, exclude_no_export=True):
     return _recursive_col_objects(level_col, exclude_no_export=exclude_no_export)
 
 
+def retarget_tasks(scene, old, new):
+    """Custom tasks store their level's collection name: follow a rename."""
+    n = 0
+    for t in getattr(getattr(scene, "og_tasks", None), "tasks", ()):
+        if old and t.level == old and old != new:
+            t.level = new
+            n += 1
+    return n
+
+
 def rename_sub_collections(level_col):
     """Give the level's own sub-collections (made by _ensure_sub_collection:
     they carry "skip_export") the level's current name: <name>.Geometry,
@@ -556,9 +566,11 @@ def _set_level_name_live(self, value):
     if not clean:
         return  # Refuse to blank the name
     clean = clean[:10]  # Silent cap; subpanel shows a warning if over
+    old = col.name
     col["og_level_name"] = clean
     col.name = clean
     rename_sub_collections(col)
+    retarget_tasks(bpy.context.scene, old, col.name)
     try:
         bpy.context.scene.og_props.active_level = col.name
     except Exception:

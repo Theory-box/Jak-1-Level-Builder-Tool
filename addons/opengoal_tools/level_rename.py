@@ -132,11 +132,13 @@ def before_export(scene, col, name):
     if col is None:
         return
     from .export.paths import log
-    from .collections import rename_sub_collections
+    from .collections import rename_sub_collections, retarget_tasks
     n = rename_sub_collections(col)          # sub-collections still named after an old name
     if n:
         log(f"[rename clean] {n} sub-collection(s) renamed to '{name}.…'")
     old = pending_old_name(col)
+    if old and retarget_tasks(scene, old, col.name):   # tasks still set to the old name
+        log(f"[rename clean] tasks of '{old}' now belong to '{col.name}'")
     if old and old != name:
         if getattr(scene.og_props, "og_clean_renamed", True):
             log(f"[rename clean] level renamed '{old}' -> '{name}': removing the old files")
