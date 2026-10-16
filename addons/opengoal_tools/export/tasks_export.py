@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 
+from ..game_text import game_text
 from .paths import _goal_src, _game_gp, _data, log
 from .level_tools import (_write_if_changed, _patch, task_enum, ensure_task_engine, LT_DIR, _TAG)
 
@@ -159,6 +160,7 @@ def _texts(scene, group):
     strings = {}            # string -> id (same string, same id)
 
     def alloc(text):
+        text = game_text(text)
         if text in strings:
             return strings[text]
         while nxt[0] in used:

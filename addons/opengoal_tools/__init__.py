@@ -121,6 +121,7 @@ from . import bake as _bake
 from . import level_settings as _level_settings
 from . import required as _required_mod
 from . import tasks as _tasks
+from . import game_text as _game_text
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -167,6 +168,7 @@ classes = (
     *_level_settings.CLASSES,
     *_required_mod.CLASSES,
     *_tasks.CLASSES,
+    *_game_text.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)

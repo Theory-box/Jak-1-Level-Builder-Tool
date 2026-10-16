@@ -46,6 +46,7 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
 )
+from ..game_text import draw_field
 from ..properties import OGLumpRow, OG_UL_LumpRows, draw_command_list
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
@@ -133,7 +134,7 @@ class OG_PT_LevelSettings(Panel):
 
         # ── Base settings ──────────────────────────────────────────────
         layout.prop(props, "level_name")
-        layout.prop(s, "menu_name")
+        draw_field(layout, s, "menu_name")
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "level_index")
 

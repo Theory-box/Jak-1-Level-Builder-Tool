@@ -18,6 +18,8 @@ import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty, EnumProperty,
                        PointerProperty, CollectionProperty)
 
+from .game_text import draw_field, unsupported
+
 ID_FIRST = 116          # first number after the vanilla tasks
 ID_LIMIT = 254          # game-task is a uint8 and needs room for max (255)
 TEXT_FIRST = 0xA00      # unused text ids (#xa00-#xeff); hints need < #x1000
@@ -187,6 +189,9 @@ def problems(scene=None):
         if not t.level:
             out.append((i, "no level"))
         per_level.setdefault(t.level, []).append(i)
+        bad = "".join(sorted(set(unsupported(t.text_intro) + unsupported(t.text_reminder) + unsupported(t.text_resolution))))
+        if bad:
+            out.append((i, f"texts: {' '.join(bad)} may not show in game"))
     for lv, idx in per_level.items():
         if lv and len(idx) > 8:
             out.append((-1, f"{lv}: {len(idx)} tasks, the progress menu shows 8 per level"))
@@ -300,9 +305,8 @@ def _draw_task(layout, s, i, t, issues):
     col.prop(t, "buzzer")
     tb = box.column(align=True)
     tb.label(text="Texts (menu name per completion)")
-    tb.prop(t, "text_intro")
-    tb.prop(t, "text_reminder")
-    tb.prop(t, "text_resolution")
+    for prop in ("text_intro", "text_reminder", "text_resolution"):
+        draw_field(tb, t, prop)
     tb.prop(t, "done_slot")
     hint = box.row(); hint.enabled = False; hint.scale_y = 0.7
     hint.label(text="Empty: the next filled one · #xb11: a text id · [level_name]", icon="INFO")
