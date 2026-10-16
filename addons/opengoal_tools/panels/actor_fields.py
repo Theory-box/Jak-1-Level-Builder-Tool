@@ -312,7 +312,7 @@ Alt+click: all selected actors with this setting"""
     def _items(self, context):
         from ..tasks import task_choices
         # the DB list (game-task-h.gc) already starts with none; custom tasks after it
-        items = [] if getattr(self, "data_path", "") else [("custom", "Custom…", "Type a task name or GOAL expression")]
+        items = [("custom", "Custom…", "Type a task name, number or (GOAL expression)")]
         items += [(v, lab if v in ("none", lab.split()[0]) else f"{lab}  ({v})", v)
                   for v, lab in task_choices(context.scene)]
         items = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
@@ -344,7 +344,11 @@ Alt+click: all selected actors with this setting"""
                 owner = None
             if owner is None:
                 return {"CANCELLED"}
-            setattr(owner, self.prop_key, self.task)
+            from ..tasks import is_custom_value
+            if self.task != "custom":
+                setattr(owner, self.prop_key, self.task)
+            elif not is_custom_value(getattr(owner, self.prop_key)):
+                setattr(owner, self.prop_key, "")          # empty = Custom: its text field shows
             for a in context.screen.areas if context.screen else ():
                 a.tag_redraw()
             return {"FINISHED"}

@@ -58,17 +58,28 @@ def is_hint(o):
     return o is not None and o.type == "EMPTY" and o.name.startswith(PREFIX)
 
 
+def hint_objects(scene):
+    """[(hint object, its level collection name)] with a text, in a stable order."""
+    from .collections import _all_level_collections
+    out = []
+    for col in _all_level_collections(scene):
+        for o in sorted(col.all_objects, key=lambda o: o.name):
+            if is_hint(o) and o.og_hint.text.strip():
+                out.append((o, col.name))
+    return out
+
+
 def hint_texts(scene):
-    """The level hints' texts (raw), in a stable order."""
-    from .export.scene import _level_objects
-    return [o.og_hint.text.strip() for o in sorted(_level_objects(scene), key=lambda o: o.name)
-            if is_hint(o) and o.og_hint.text.strip()]
+    return [o.og_hint.text for o, _c in hint_objects(scene)]
 
 
 def problems(o):
     out = []
     if not o.og_hint.text.strip():
         out.append("no text: the hint isn't exported")
+    from .game_text import unknown_refs
+    for n in unknown_refs(o.og_hint.text):
+        out.append(f"no game text named '{n}'")
     for i, c in enumerate(o.og_hint.cmds):
         if task_value(c.task) in (None, 0):
             out.append(f"command {i + 1}: pick a task")
@@ -77,9 +88,8 @@ def problems(o):
 
 def ambient_entry(o, text_ids):
     """The jsonc ambient of a hint, or None (no text)."""
-    from .game_text import game_text
     h = o.og_hint
-    tid = text_ids.get(game_text(h.text.strip()))
+    tid = text_ids.get(o.name)
     if tid is None:
         return None
     cmds = []

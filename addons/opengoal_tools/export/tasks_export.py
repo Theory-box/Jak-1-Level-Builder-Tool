@@ -19,7 +19,8 @@ from __future__ import annotations
 import json
 import re
 
-from ..game_text import game_text
+from ..game_text import game_text, vanilla_texts, ID_RE, VAR_RE
+from ..tasks import task_expr
 from .paths import _goal_src, _game_gp, _data, log
 from .level_tools import (_write_if_changed, _patch, task_enum, ensure_task_engine, LT_DIR, _TAG)
 
@@ -30,11 +31,11 @@ _ALL_TYPES = ("decompiler", "config", "jak1", "all-types.gc")
 
 _COND = {
     "ALWAYS": lambda st: "#t",
-    "STAGE_CLOSED": lambda st: f"(task-closed? (game-task {st.cond_task}) (task-status {st.cond_status}))",
-    "COMPLETE": lambda st: f"(task-complete? *game-info* (game-task {st.cond_task}))",
+    "STAGE_CLOSED": lambda st: f"(task-closed? {task_expr(st.cond_task)} (task-status {st.cond_status}))",
+    "COMPLETE": lambda st: f"(task-complete? *game-info* {task_expr(st.cond_task)})",
     "CELLS": lambda st: f"(>= (-> *game-info* fuel) {float(st.cond_value)})",
     "ORBS": lambda st: f"(>= (-> *game-info* money) {float(st.cond_value)})",
-    "FLIES": lambda st: f"(>= (buzzer-count *game-info* (game-task {st.cond_task})) {st.cond_value})",
+    "FLIES": lambda st: f"(>= (buzzer-count *game-info* {task_expr(st.cond_task)}) {st.cond_value})",
     "EXPR": lambda st: st.cond_expr.strip() or "#t",
 }
 
@@ -178,12 +179,48 @@ def _texts(scene, group):
         return tid
 
     tasks = list(s.tasks) if s.enabled else []
+    cols = {c.name: c for c in _all_level_collections(scene)}
+    vt = vanilla_texts()
     levels = {}
-    for col in _all_level_collections(scene):
-        if any(t.level == col.name for t in tasks):
+
+    def level_name(colname):
+        """(text id, string) of a level's Menu Name (allocated on first use)."""
+        if colname not in levels:
+            col = cols.get(colname)
+            if col is None:
+                return None, ""
             menu = (col.og_level.menu_name.strip() if hasattr(col, "og_level") else "") or \
-                str(col.get("og_level_name", col.name)).upper()
-            levels[col.name] = (alloc(menu), menu)
+                str(col.get("og_level_name", col.name))
+            levels[colname] = (None, menu)          # a menu name referencing [level_name] stays text
+            levels[colname] = (resolve(menu, None), menu)
+        return levels[colname]
+
+    def resolve(raw, colname):
+        """Text id of a game text field: #x id, [level_name], [text:name], or
+        a string (references inside it replaced by their text)."""
+        x = raw.strip()
+        m = ID_RE.fullmatch(x)
+        if m:
+            return int(m.group(1), 16)
+        m = VAR_RE.fullmatch(x)
+        if m:
+            if m.group(2):
+                if m.group(2) in vt:
+                    return vt[m.group(2)][0]
+            elif colname is not None:
+                lid = level_name(colname)[0]
+                if lid is not None:
+                    return lid
+
+        def sub(m):
+            if m.group(2):
+                return vt.get(m.group(2), (0, ""))[1]
+            return level_name(colname)[1] if colname is not None else ""
+        return alloc(VAR_RE.sub(sub, x))
+
+    for name in cols:                          # menu names first: their ids don't move
+        if any(t.level == name for t in tasks):
+            level_name(name)
 
     slots = {}
     for t in tasks:
@@ -194,33 +231,24 @@ def _texts(scene, group):
         vals = []
         for k, x in enumerate(raw):
             vals.append(x or next((y for y in raw[k + 1:] if y), fall))
-        ids = []
-        lvl_id, lvl_name = levels.get(t.level, (None, ""))
-        for x in vals:
-            m = re.fullmatch(r"#x([0-9a-fA-F]+)", x)
-            if m:
-                ids.append(int(m.group(1), 16))
-            elif x == "[level_name]" and lvl_id is not None:
-                ids.append(lvl_id)
-            else:
-                ids.append(alloc(x.replace("[level_name]", lvl_name)))
-        slots[t.name] = ids
-    from ..hints import hint_texts
-    for x in hint_texts(scene):              # after the task texts: their ids don't move
-        alloc(x)
-    return {v: k for k, v in strings.items()}, slots, {k: v[0] for k, v in levels.items()}
+        slots[t.name] = [resolve(x, t.level) for x in vals]
+    from ..hints import hint_objects
+    hints = {}
+    for o, colname in hint_objects(scene):   # after the task texts: their ids don't move
+        hints[o.name] = resolve(o.og_hint.text, colname)
+    return ({v: k for k, v in strings.items()}, slots,
+            {k: v[0] for k, v in levels.items() if v[0] is not None}, hints)
 
 
 def text_ids(scene):
-    """{game string: text id} of this .blend's text file (hints look theirs up)."""
+    """{hint object name: text id} (the hints look theirs up)."""
     from .. import tasks as T
-    strings = _texts(scene, T.group_name(scene))[0]
-    return {v: k for k, v in strings.items()}
+    return _texts(scene, T.group_name(scene))[3]
 
 
 def _write_texts(scene, group):
     """The group's text JSON (task names, menu names, hints) + its game_text.gp entry."""
-    strings, slots, level_text = _texts(scene, group)
+    strings, slots, level_text, _hints = _texts(scene, group)
     td = _text_dir()
     _write_if_changed(td / _text_json_name(group),
                       json.dumps({f"{k:x}": v for k, v in sorted(strings.items())}, indent=2, ensure_ascii=False) + "\n")

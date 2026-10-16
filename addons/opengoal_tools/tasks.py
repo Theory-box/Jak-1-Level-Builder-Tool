@@ -18,7 +18,7 @@ import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty, EnumProperty,
                        PointerProperty, CollectionProperty)
 
-from .game_text import draw_field, unsupported
+from .game_text import draw_field, unsupported, unknown_refs
 
 ID_FIRST = 116          # first number after the vanilla tasks
 ID_LIMIT = 254          # game-task is a uint8 and needs room for max (255)
@@ -207,11 +207,14 @@ def problems(scene=None):
         if not t.level:
             out.append((i, "no level"))
         for k, st in enumerate(t.stages):
-            if st.condition in TASK_CONDITIONS and task_value(st.cond_task, scene) in (None, 0):
+            if st.condition in TASK_CONDITIONS and not st.cond_task.strip().startswith("(") \
+                    and task_value(st.cond_task, scene) in (None, 0):
                 out.append((i, f"stage {k + 1}: condition has no task"))
             elif st.condition == "EXPR" and not st.cond_expr.strip():
                 out.append((i, f"stage {k + 1}: empty GOAL expression"))
         per_level.setdefault(t.level, []).append(i)
+        for n in unknown_refs(t.text_intro + t.text_reminder + t.text_resolution):
+            out.append((i, f"texts: no game text named '{n}'"))
         bad = "".join(sorted(set(unsupported(t.text_intro) + unsupported(t.text_reminder) + unsupported(t.text_resolution))))
         if bad:
             out.append((i, f"texts: {' '.join(bad)} may not show in game"))
@@ -246,34 +249,81 @@ def task_choices(scene=None):
     return out
 
 
+_GAME_ENUM = {"key": None, "ids": {}}
+
+
+def _game_enum():
+    """{name: number} of the install's game-task enum (other mods' tasks),
+    cached until game-task-h.gc changes."""
+    import os
+    try:
+        from .export.paths import _goal_src
+        from .export.level_tools import task_enum
+        p = _goal_src() / "engine" / "game" / "task" / "game-task-h.gc"
+        key = (str(p), os.path.getmtime(p))
+    except Exception:
+        return {}
+    if key != _GAME_ENUM["key"]:
+        _GAME_ENUM.update(key=key, ids=task_enum()[0])
+    return _GAME_ENUM["ids"]
+
+
 def task_value(name, scene=None):
-    """game-task number of a task name (vanilla or custom), None if unknown."""
+    """game-task number of a task (vanilla, custom, a number, or a name in the
+    install's game-task enum), None if unknown / an expression."""
     from . import db
+    name = (name or "").strip()
+    if name.isdigit():
+        return int(name)
     for t in db.game_tasks():
         if t["id"] == name:
             return t["value"]
     s = settings(scene)
-    if not s.enabled:
-        return None
-    return next((t.task_id for t in s.tasks if t.name == name), None)
+    if s.enabled:
+        v = next((t.task_id for t in s.tasks if t.name == name), None)
+        if v is not None:
+            return v
+    return _game_enum().get(name) if name and not name.startswith("(") else None
+
+
+def task_expr(name):
+    """GOAL expression of a task field: a name, a number, or (an expression)."""
+    name = (name or "").strip()
+    if name.startswith("("):
+        return name
+    if name.isdigit():
+        return f"(the-as game-task {name})"
+    return f"(game-task {name})"
+
+
+def is_custom_value(name, scene=None):
+    """A typed value (Custom...): not none and not one of the picker's tasks."""
+    return name != "none" and name not in dict(task_choices(scene))
 
 
 def task_label(name, scene=None):
-    if not name or name == "none":
+    if name == "none":
         return "None"
-    return dict(task_choices(scene)).get(name, f"{name} (?)")
+    if not name:
+        return "Custom…"
+    return dict(task_choices(scene)).get(name, "Custom…")
 
 
 def draw_task_pick(layout, owner, prop, text=""):
-    """The task search button for a string property holding a task name."""
-    row = layout.row(align=True)
+    """The task search button for a string property holding a task; Custom...
+    shows a text field for a task name, number or (GOAL expression)."""
+    col = layout.column(align=True)
+    row = col.row(align=True)
     if text:
         row.label(text=text)
-    op = row.operator("og.pick_task", text=task_label(getattr(owner, prop)), icon="VIEWZOOM")
+    val = getattr(owner, prop)
+    op = row.operator("og.pick_task", text=task_label(val), icon="VIEWZOOM")
     op.prop_key = prop
     op.id_name = owner.id_data.name
     op.id_kind = owner.id_data.bl_rna.identifier.upper()     # SCENE / OBJECT / COLLECTION
     op.data_path = owner.path_from_id()
+    if is_custom_value(val):
+        col.prop(owner, prop, text="Custom task")
     return row
 
 
