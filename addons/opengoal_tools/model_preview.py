@@ -162,11 +162,78 @@ def _reuse_or_import(ctx, glb_path: Path, mesh_name: str) -> bpy.types.Object | 
     if not glb_path.exists():
         return None
 
+    before = _data_snapshot()
     new_objs = _import_glb(ctx, glb_path)
     if not new_objs:
+        _drop_import_leftovers(before)
         return None
 
-    return _strip_and_keep_mesh(new_objs, glb_stem=mesh_name)
+    kept = _strip_and_keep_mesh(new_objs, glb_stem=mesh_name)
+    _drop_import_leftovers(before)
+    return kept
+
+
+# The glTF importer leaves things behind: a "glTF_not_exported" collection and
+# the mesh / armature data of the objects we delete (icospheres, armatures).
+_IMPORT_DATA = ("collections", "meshes", "armatures", "materials", "images")
+
+
+def _data_snapshot():
+    return {k: set(getattr(bpy.data, k)) for k in _IMPORT_DATA}
+
+
+def _drop_import_leftovers(before) -> None:
+    """Remove what the import created that nothing uses (empty new collections,
+    data blocks without users)."""
+    for c in [c for c in bpy.data.collections if c not in before["collections"]]:
+        if not c.all_objects and not c.children:
+            bpy.data.collections.remove(c)
+    for k in ("meshes", "armatures", "materials", "images"):
+        coll = getattr(bpy.data, k)
+        for d in [d for d in coll if d not in before[k]]:
+            if d.users == 0:
+                coll.remove(d)
+
+
+def clean_level(scene, level_col) -> dict:
+    """Sort & Clean: remove what the addon leaves behind. Returns counts:
+    previews  - preview meshes / ghosts whose actor is gone
+    collections - empty sub-collections of the level, empty unlinked
+                  collections, the importer's empty glTF_not_exported
+    data      - meshes / armatures / materials / images nobody uses"""
+    out = {"previews": 0, "collections": 0, "data": 0}
+    for o in [o for o in bpy.data.objects if _is_any_preview(o)]:
+        if o.parent is None or o.parent.name not in scene.objects:
+            bpy.data.objects.remove(o, do_unlink=True)
+            out["previews"] += 1
+
+    def empty_subs(col):
+        for ch in list(col.children):
+            empty_subs(ch)
+            if not ch.objects and not ch.children:
+                bpy.data.collections.remove(ch)
+                out["collections"] += 1
+    if level_col is not None:
+        empty_subs(level_col)
+    linked = set()
+
+    def walk(c):
+        linked.add(c)
+        for ch in c.children:
+            walk(ch)
+    for sc in bpy.data.scenes:
+        walk(sc.collection)
+    for c in list(bpy.data.collections):
+        if c.library is None and not c.all_objects and not c.children and \
+                (c not in linked or c.name.startswith("glTF_not_exported")):
+            bpy.data.collections.remove(c)
+            out["collections"] += 1
+    for k in ("meshes", "armatures", "materials", "images"):
+        coll = getattr(bpy.data, k)
+        for d in [d for d in coll if d.users == 0 and not d.use_fake_user and d.library is None]:
+            coll.remove(d)
+            out["data"] += 1
+    return out
 
 
 
