@@ -60,6 +60,9 @@ def remove_level_files(name):
             d.rmdir()
             msgs.append(f"Removed empty folder {d}")
     msgs += _strip_level_registrations(name)
+    # a running GOALC still knows the removed files: the next build restarts it
+    from .export import writers as _w
+    _w.TYPES_CHANGED = True
     for m in msgs:
         log(f"[rename clean] {m}")
     return msgs
@@ -129,6 +132,10 @@ def before_export(scene, col, name):
     if col is None:
         return
     from .export.paths import log
+    from .collections import rename_sub_collections
+    n = rename_sub_collections(col)          # sub-collections still named after an old name
+    if n:
+        log(f"[rename clean] {n} sub-collection(s) renamed to '{name}.…'")
     old = pending_old_name(col)
     if old and old != name:
         if getattr(scene.og_props, "og_clean_renamed", True):
