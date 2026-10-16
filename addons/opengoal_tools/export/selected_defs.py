@@ -45,9 +45,8 @@ def build(scene, depsgraph, objs):
         clean = [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS} for a in actors]
         text = _dumps_with_raw_lumps({"actors": clean})
         body = text[text.index("["):text.rindex("]") + 1]
-        body = "
-".join(l[2:] if l.startswith("  ") else l for l in body.split("
-"))   # list nested in {"actors": }
+        lines = body.split("\n")          # the list sat inside {"actors": ...}: one level less indent
+        body = "\n".join(l[2:] if l.startswith("  ") else l for l in lines)
         out += [";; ===== Actors: level .jsonc \"actors\" entries =====", body, "",
                 ";; .jsonc \"art_groups\":", json.dumps([g.replace(".go", "") for g in ags]), "",
                 ";; .gd files these actors need (code first, then tpages / art groups):"]
