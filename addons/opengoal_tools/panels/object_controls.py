@@ -210,7 +210,9 @@ class OG_PT_DistributeAlongCurve(Panel):
         from ..object_tools import distribute_targets
         s = ctx.scene.og_distribute
         layout = self.layout
-        layout.prop(s, "curve")
+        r = layout.row(align=True)
+        r.prop(s, "curve")
+        r.operator("og.edit_distribute_curve", text="", icon="EDITMODE_HLT")
         layout.prop(s, "method")
         if s.method == "SPACING":
             layout.prop(s, "spacing")
@@ -219,6 +221,35 @@ class OG_PT_DistributeAlongCurve(Panel):
         layout.operator("og.distribute_along_curve", text=f"Distribute {n}" if n else "Distribute", icon="CURVE_PATH")
         r = layout.row(); r.enabled = False; r.scale_y = 0.7
         r.label(text="In name order; selecting a curve picks it", icon="INFO")
+
+
+class OG_PT_ConvertEntities(Panel):
+    bl_label = "Convert Entities"
+    bl_idname = "OG_PT_convert_entities"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        from ..object_tools import convert_targets, target_label, _MODE_WORD
+        s = ctx.scene.og_convert
+        layout = self.layout
+        layout.prop(s, "mode")
+        if s.mode == "ALL":
+            box = layout.box(); box.alert = True
+            box.label(text="Meshes, curves ... in the selection are", icon="ERROR")
+            box.label(text="DELETED and replaced by actors!")
+        r = layout.row(align=True)
+        r.label(text="Target actor:")
+        r.operator("og.pick_convert_target", text=target_label(s.target) or "Pick…", icon="VIEWZOOM")
+        n = len(convert_targets(ctx, s.mode))
+        r = layout.row()
+        r.scale_y = 1.2
+        r.alert = s.mode == "ALL"
+        tgt = target_label(s.target) or "…"
+        r.operator("og.convert_entities", text=f"Convert {n} {_MODE_WORD[s.mode]} to {tgt}", icon="FILE_REFRESH")
 
 
 class OG_PT_ExportDefinitions(Panel):
@@ -245,4 +276,4 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_DistributeAlongCurve, OG_PT_ExportDefinitions)
+           OG_PT_SetToFloor, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

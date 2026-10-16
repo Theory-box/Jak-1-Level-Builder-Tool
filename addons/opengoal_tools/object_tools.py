@@ -1,5 +1,5 @@
-"""Object Controls tools: Set to floor, Distribute along curve, Export
-selected definitions."""
+"""Object Controls tools: Set to floor, Distribute along curve, Convert
+entities, Export selected definitions."""
 from __future__ import annotations
 
 import bpy
@@ -266,6 +266,189 @@ def _resubscribe(*_a):
     subscribe()
 
 
+class OG_OT_EditDistributeCurve(bpy.types.Operator):
+    """Edit this curve: select it alone and switch to Edit Mode"""
+    bl_idname = "og.edit_distribute_curve"
+    bl_label = "Edit Curve"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.scene.og_distribute.curve is not None
+
+    def execute(self, ctx):
+        c = ctx.scene.og_distribute.curve
+        if ctx.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        for o in ctx.view_layer.objects:
+            o.select_set(False)
+        if c.name not in ctx.view_layer.objects:
+            self.report({"ERROR"}, f"{c.name} isn't in this view layer")
+            return {"CANCELLED"}
+        c.hide_set(False)
+        c.select_set(True)
+        ctx.view_layer.objects.active = c
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+# ── Convert entities ─────────────────────────────────────────────────────────
+
+_SPECIAL = ("CHECKPOINT_", "AMBIENT_", "CAMERA_", "VOL_", "LOADBND_", "NAVMESH_")
+_HELPER_ENDS = ("_CAM", "_ALIGN", "_PIVOT", "_LOOKAT")
+
+
+def _convertible(o, mode):
+    """Is this selected object converted in this mode?"""
+    if o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"):
+        return False
+    n = o.name
+    if "_wp_" in n or "_wpb_" in n or n.startswith(_SPECIAL) or n.endswith(_HELPER_ENDS):
+        return False
+    if n.startswith("ACTOR_") and o.type == "EMPTY":
+        return True
+    if mode == "ACTORS":
+        return False
+    if o.type == "EMPTY":
+        return True
+    return mode == "ALL"
+
+
+def convert_targets(ctx, mode):
+    sel = [o for o in ctx.selected_objects if _convertible(o, mode)]
+    return [o for o in sel if o.parent not in sel]
+
+
+def _plain(v):
+    """A custom property value, detached from its owner (to copy it)."""
+    if hasattr(v, "to_dict"):
+        return v.to_dict()
+    if hasattr(v, "to_list"):
+        return v.to_list()
+    if isinstance(v, list):
+        return [_plain(x) for x in v]
+    return v
+
+
+def _repoint(old, new):
+    """Links / name references to `old` point at `new` (volume links, actor
+    links, string properties holding the name)."""
+    for o in bpy.data.objects:
+        for coll in ("og_vol_links", "og_actor_links"):
+            for e in getattr(o, coll, ()):
+                if getattr(e, "target_name", None) == old:
+                    e.target_name = new
+        for k in list(o.keys()):
+            if isinstance(o[k], str) and o[k] == old:
+                o[k] = new
+
+
+CONVERT_MODES = [("ACTORS", "Actors only", "Convert the selected actors"),
+                 ("ACTORS_EMPTIES", "Actors and empties", "Also turn plain empties into actors"),
+                 ("ALL", "All objects", "Also replace meshes, curves ... with actors: those objects are DELETED")]
+_MODE_WORD = {"ACTORS": "Actor(s)", "ACTORS_EMPTIES": "Actor(s) & Empties", "ALL": "Object(s)"}
+
+
+class OGConvertSettings(bpy.types.PropertyGroup):
+    mode: EnumProperty(name="Convert", items=CONVERT_MODES, default="ACTORS")
+    target: StringProperty(name="Target actor", default="", description="The actor type to convert to")
+
+
+_TARGET_ITEMS: list = []   # search-popup items must stay referenced
+
+
+class OG_OT_PickConvertTarget(bpy.types.Operator):
+    """Pick the actor type to convert to (search)"""
+    bl_idname = "og.pick_convert_target"
+    bl_label = "Target Actor"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_property = "etype"
+
+    def _items(self, context):
+        if not _TARGET_ITEMS:
+            from .spawn_items import get_spawn_index
+            items = sorted({(it.etype, f"{it.label}  ({it.etype})", it.category)
+                            for it in get_spawn_index().values() if it.etype}, key=lambda t: t[1].lower())
+            _TARGET_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        return _TARGET_ITEMS
+
+    etype: EnumProperty(name="Actor", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        context.scene.og_convert.target = self.etype
+        return {"FINISHED"}
+
+
+def target_label(etype):
+    from .data import ENTITY_DEFS
+    return ENTITY_DEFS.get(etype, {}).get("label", etype) if etype else ""
+
+
+class OG_OT_ConvertEntities(bpy.types.Operator):
+    """Turn the selection into actors of the target type: new names as if spawned, the properties that
+still apply are kept, previews updated. "All objects" deletes the converted meshes / curves"""
+    bl_idname = "og.convert_entities"
+    bl_label = "Convert Entities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        s = ctx.scene.og_convert
+        return ctx.mode == "OBJECT" and bool(s.target)
+
+    def execute(self, ctx):
+        from .data import ENTITY_DEFS
+        s = ctx.scene.og_convert
+        etype = s.target
+        if etype not in ENTITY_DEFS:
+            self.report({"ERROR"}, f"Unknown actor type '{etype}'")
+            return {"CANCELLED"}
+        objs = convert_targets(ctx, s.mode)
+        if not objs:
+            self.report({"WARNING"}, "Nothing to convert in the selection")
+            return {"CANCELLED"}
+        from .model_preview import _is_any_preview
+        props = ctx.scene.og_props
+        cursor = ctx.scene.cursor.location.copy()
+        old_type = props.entity_type
+        new_objs = []
+        try:
+            for src in objs:
+                old = src.name
+                for o in list(ctx.selected_objects):
+                    o.select_set(False)        # spawn links what's selected (auto-connect)
+                ctx.scene.cursor.location = src.matrix_world.translation
+                props.entity_type = etype
+                bpy.ops.og.spawn_entity()
+                new = ctx.view_layer.objects.active
+                new.rotation_euler = src.matrix_world.to_euler()
+                keep = {k: _plain(src[k]) for k in src.keys() if k != "_RNA_UI" and not k.startswith("og_preview")}
+                for k, v in keep.items():
+                    try:
+                        new[k] = v
+                    except (TypeError, ValueError) as e:
+                        print(f"[og convert] {old}.{k} not copied: {e}")
+                _repoint(old, new.name)
+                for c in [c for c in src.children if _is_any_preview(c)]:
+                    bpy.data.objects.remove(c, do_unlink=True)
+                bpy.data.objects.remove(src, do_unlink=True)
+                new_objs.append(new)
+        finally:
+            ctx.scene.cursor.location = cursor
+            try:
+                props.entity_type = old_type
+            except TypeError:
+                pass
+        for o in new_objs:
+            o.select_set(True)
+        self.report({"INFO"}, f"Converted {len(new_objs)} to {target_label(etype)}")
+        return {"FINISHED"}
+
+
 class OGExportDefsSettings(bpy.types.PropertyGroup):
     path: StringProperty(name="Write to", subtype="FILE_PATH", default="",
                          description="A text file (rewritten each export) or a folder (a new file each export). "
@@ -325,12 +508,14 @@ them (with the art groups / code the actors need): to the clipboard and the file
 
 
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
+           OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
            OGExportDefsSettings, OG_OT_ExportSelectedDefs)
 
 
 def register_props():
     bpy.types.Scene.og_floor = PointerProperty(type=OGFloorSettings)
     bpy.types.Scene.og_distribute = PointerProperty(type=OGDistributeSettings)
+    bpy.types.Scene.og_convert = PointerProperty(type=OGConvertSettings)
     bpy.types.Scene.og_export_defs = PointerProperty(type=OGExportDefsSettings)
     subscribe()
     if _resubscribe not in bpy.app.handlers.load_post:
@@ -341,6 +526,6 @@ def unregister_props():
     bpy.msgbus.clear_by_owner(_MSGBUS_OWNER)
     if _resubscribe in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(_resubscribe)
-    for p in ("og_floor", "og_distribute", "og_export_defs"):
+    for p in ("og_floor", "og_distribute", "og_convert", "og_export_defs"):
         if hasattr(bpy.types.Scene, p):
             delattr(bpy.types.Scene, p)
