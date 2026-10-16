@@ -200,16 +200,24 @@ def check_spawn_points(scene):
 # ---------------------------------------------------------------------------
 
 def check_duplicate_names(scene):
+    """Actors whose exported name clashes (the engine finds actors by name), and
+    Blender ".001" copies (exported as "<etype>-0.001")."""
+    import re
+    from .collections import actor_lump_name
     issues = []
     seen = {}
     for o in _actor_objs(scene):
-        seen[o.name] = seen.get(o.name, 0) + 1
-    for name, count in seen.items():
-        if count > 1:
+        seen.setdefault(actor_lump_name(o.name, scene), []).append(o.name)
+        if re.search(r"\.\d{3,}$", o.name):
+            issues.append(_issue("WARNING",
+                f"'{o.name}' has a Blender copy name: rename it (or duplicate with Shift+D / the addon's Duplicate).",
+                o.name))
+    for lump, objs in seen.items():
+        if len(objs) > 1:
             issues.append(_issue("ERROR",
-                f"Duplicate object name '{name}' ({count} objects). "
+                f"{len(objs)} actors export as '{lump}' ({', '.join(objs)}). "
                 "The engine resolves actors by name — duplicates cause wrong-entity lookups.",
-                name))
+                objs[0]))
     return issues
 
 

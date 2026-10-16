@@ -203,6 +203,8 @@ def _migrate_legacy_props(*_args):
 def register():
     _load_previews()
     _mp.register_handler()
+    from . import object_sync as _osync
+    _osync.register()
     _bviz.register_handler()
     from .operators.misc import register_water_handler
     register_water_handler()
@@ -484,6 +486,8 @@ def unregister():
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
+    from . import object_sync as _osync
+    _osync.unregister()
     _bviz.unregister_handler()
     from .operators.misc import unregister_water_handler
     unregister_water_handler()

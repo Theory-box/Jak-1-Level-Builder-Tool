@@ -559,17 +559,8 @@ def remove_all_previews(scene) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Orphan cleanup — auto-delete preview meshes when their parent is deleted
+# Depsgraph handler (previews of deleted actors: object_sync.py)
 # ---------------------------------------------------------------------------
-
-def _cleanup_orphans(names: list) -> None:
-    """Timer callback: remove any preview meshes that lost their parent.
-    Runs outside the depsgraph update so object removal is safe."""
-    for name in names:
-        obj = bpy.data.objects.get(name)
-        if obj and _is_any_preview(obj) and obj.parent is None:
-            bpy.data.objects.remove(obj, do_unlink=True)
-    return None  # don't repeat
 
 
 @bpy.app.handlers.persistent
@@ -582,15 +573,7 @@ def _on_depsgraph_update(scene, depsgraph):
     if objs or curves:
         race_rings.on_depsgraph(scene, depsgraph, objs, curves)
         distribute.on_depsgraph(scene, depsgraph, objs, curves)
-    orphans = [
-        o.name for o in scene.objects
-        if _is_any_preview(o) and o.parent is None
-    ]
-    if orphans:
-        bpy.app.timers.register(
-            lambda: _cleanup_orphans(orphans),
-            first_interval=0.0,
-        )
+    # previews whose actor was deleted: object_sync (only when objects are removed)
 
 
 def register_handler() -> None:
