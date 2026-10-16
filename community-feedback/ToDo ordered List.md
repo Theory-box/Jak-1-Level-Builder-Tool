@@ -290,15 +290,15 @@ Based on `community-feedback/Actor Notes.md` and notes here
 
 ---
 
-## Level files clean up when changing level name (or at least a warning?)
+## Level files clean up when changing level name (or at least a warning?) (in progress)
 When you change a level name, then previous file names for that level will stay. It would be good if those were cleaned when changing names, or at least give a warning to the user to clean first, then change the name.
 
 ---
 
-## Bake menu small changes
+## Bake menu small changes (in progress)
 - Rename it to "Light Baking" and remove the "Light baking" label inside.
 - Remove the "Level Lighting" info
-- Move the "Fog Overide" to the level settings > Visuals (at the bottom of it)
+- Move the "Fog Override" to the level settings > Visuals (at the bottom of it)
 
 ---
 
