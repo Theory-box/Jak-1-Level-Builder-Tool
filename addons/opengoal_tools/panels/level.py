@@ -46,6 +46,8 @@ from ..build import (
     _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
 )
+from ..game_text import draw_field
+from ..tasks import draw_task_pick
 from ..properties import OGLumpRow, OG_UL_LumpRows, draw_command_list
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
@@ -133,7 +135,7 @@ class OG_PT_LevelSettings(Panel):
 
         # ── Base settings ──────────────────────────────────────────────
         layout.prop(props, "level_name")
-        layout.prop(s, "menu_name")
+        draw_field(layout, s, "menu_name")
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "level_index")
 
@@ -277,13 +279,18 @@ def _draw_checkpoint_list(layout, scene):
 
 
 def _draw_tasks(layout, s):
+    from ..level_settings import auto_tasks
+    auto = auto_tasks(s)
     head = layout.row(align=True)
-    head.label(text=f"Tasks ({len(s.tasks)})" if s.tasks else "Tasks")
+    n = len(s.tasks) + len(auto)
+    head.label(text=f"Tasks ({n})" if n else "Tasks")
     head.operator("og.level_task_add", text="", icon="ADD")
     colm = layout.column(align=True)
+    for name, i in auto:
+        r = colm.row(); r.enabled = False
+        r.label(text=f"{name}  ({i}, custom task of this level)", icon="CHECKMARK")
     for i, r in enumerate(s.tasks):
-        row = colm.row(align=True)
-        row.prop(r, "task", text="")
+        row = draw_task_pick(colm, r, "task")
         row.operator("og.level_task_remove", text="", icon="REMOVE").index = i
 
 

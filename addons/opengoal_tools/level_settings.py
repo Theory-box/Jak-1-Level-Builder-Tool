@@ -31,12 +31,8 @@ OCEAN_ITEMS = [
 ]
 
 
-def _task_items(self, ctx):
-    return [(t["id"], t["label"], f"(game-task {t['id']}) = {t['value']}") for t in _db.game_tasks()]
-
-
 class OGTaskRow(bpy.types.PropertyGroup):
-    task: EnumProperty(name="Task", items=_task_items, description="A game task of this level")
+    task: StringProperty(name="Task", default="none", description="A game task of this level (vanilla or custom)")
 
 
 def _bsphere_poll(self, ob):
@@ -126,12 +122,26 @@ def ocean_value(s):
     return f"'*ocean-map-{s.ocean}*"
 
 
+def auto_tasks(s):
+    """[(name, id)] of the custom tasks set to this level (added to its tasks)."""
+    from .tasks import settings
+    col = s.id_data if s is not None else None
+    ts = settings()
+    if col is None or not ts.enabled:
+        return []
+    return [(t.name, t.task_id) for t in ts.tasks if t.name and t.level == col.name]
+
+
 def tasks_value(s):
-    if s is None or not s.tasks:
+    """level-info :tasks: the custom tasks of the level, then the listed ones."""
+    if s is None:
         return "'()"
-    vals = {t["id"]: t["value"] for t in _db.game_tasks()}
-    nums = [str(vals[r.task]) for r in s.tasks if r.task in vals and vals[r.task]]
-    return f"'({' '.join(nums)})" if nums else "'()"
+    from .tasks import task_value
+    nums = [i for _n, i in auto_tasks(s)]
+    for v in (task_value(r.task) for r in s.tasks):
+        if v and v not in nums:
+            nums.append(v)
+    return f"'({' '.join(str(n) for n in nums)})" if nums else "'()"
 
 
 def bsphere_value(s):

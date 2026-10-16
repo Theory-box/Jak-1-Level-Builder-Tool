@@ -31,6 +31,11 @@ FEATURES = {
         "release": False, "jak-project": False, "mod-base": True,
         "probe": "mod_settings",
     },
+    "custom_tasks": {
+        "label": "Custom tasks (needs mod-base: its task code uses (game-task max))",
+        "release": False, "jak-project": False, "mod-base": True,
+        "probe": "task_max_enum",
+    },
     "time_of_day": {
         "label": "Time of day",
         "release": "0.3.8", "jak-project": "d04ac9d", "mod-base": "3a0aadf",
@@ -163,6 +168,13 @@ def _probe(name):
         return builtin_cameras_supported()
     if name == "mod_settings":
         return mod_settings_path().exists()
+    if name == "task_max_enum":
+        from .paths_core import data
+        p = data() / "goal_src" / "jak1" / "engine" / "game" / "game-info.gc"
+        try:
+            return "(the int (game-task max))" in p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
     return None
 
 

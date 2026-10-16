@@ -201,6 +201,46 @@ def collect_custom_triggers(scene):
             log(f"  [vol-trigger] {vol.name} → {entry.target_name} (lump: {target_lump_name})")
     return out
 
+def collect_task_triggers(scene):
+    """lt-task-trigger actors: one per VOL_ mesh with task actions. Lump
+    'actions = int32 triples (task number, task-status, 0 close / 1 open)."""
+    from ..tasks import task_value, status_value
+    out = []
+    for vol in _level_objects(scene):
+        if vol.type != "MESH" or not vol.name.startswith("VOL_") or not len(vol.og_vol_task_actions):
+            continue
+        acts = []
+        for a in vol.og_vol_task_actions:
+            t = task_value(a.task, scene)
+            if not t:
+                log(f"  [WARNING] task-trigger {vol.name}: an action has no task — skipped")
+                continue
+            acts += [t, status_value(a.status), 0 if a.action == "CLOSE" else 1]
+        if not acts:
+            continue
+        planes, cull_r = _vol_planes(vol)
+        if not planes:
+            log(f"  [WARNING] task-trigger {vol.name}: no usable faces (needs a closed convex mesh) — skipped")
+            continue
+        xmin, xmax, ymin, ymax, zmin, zmax, cx, cy, cz, rad = _vol_aabb(vol)
+        out.append({
+            "trans":     [cx, cy, cz],
+            "etype":     "lt-task-trigger",
+            "game_task": "(game-task none)",
+            "quat":      [0, 0, 0, 1],
+            "vis_id":    0,
+            "bsphere":   [cx, cy, cz, rad],
+            "lump": {
+                "name":        f"tasktrig-{len(out)}",
+                "cull-radius": ["meters", cull_r],
+                "vol":         ["vector-vol"] + planes,
+                "actions":     ["int32"] + acts,
+            },
+        })
+        log(f"  [task-trigger] {vol.name}: {len(acts) // 3} action(s)")
+    return out
+
+
 def _camera_game_quat(cam_obj, scene):
     """Game-space camera quaternion for a CAMERA_ object.
 
@@ -794,7 +834,9 @@ def collect_load_boundaries(scene):
 
 
 def collect_ambients(scene):
+    from ..hints import is_hint, ambient_entry
     out = []
+    text_ids = None
     for o in _level_objects(scene):
         if not (o.name.startswith("AMBIENT_") and o.type == "EMPTY"):
             continue
@@ -858,16 +900,14 @@ def collect_ambients(scene):
                     "effect-name": ["symbol", bank],
                 },
             })
-        else:
-            # Legacy hint emitter — unchanged behaviour
-            out.append({
-                "trans":   [gx, gy, gz, 10.0],
-                "bsphere": [gx, gy, gz, 15.0],
-                "lump": {
-                    "name":      o.name[8:].lower() or "ambient",
-                    "type":      "'hint",
-                    "text-id":   ["enum-uint32", "(text-id fuel-cell)"],
-                    "play-mode": "'notice",
-                },
-            })
+        elif is_hint(o):
+            # Hint volume (Level Flow): its text id comes from the .blend's text file
+            if text_ids is None:
+                from .tasks_export import text_ids as _ids
+                text_ids = _ids(scene)
+            e = ambient_entry(o, text_ids)
+            if e is None:
+                log(f"  [WARNING] hint {o.name}: no text — skipped")
+            else:
+                out.append(e)
     return out

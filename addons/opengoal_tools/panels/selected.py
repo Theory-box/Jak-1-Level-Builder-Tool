@@ -452,7 +452,7 @@ def _draw_selected_volume(layout, sel, scene):
     box.label(text=f"Links ({n})", icon="LINKED")
 
     if n == 0:
-        box.label(text="Not linked", icon="INFO")
+        box.label(text="Not linked" + (" (task actions only)" if len(sel.og_vol_task_actions) else ""), icon="INFO")
     else:
         col = box.column(align=True)
         for entry in links:
@@ -494,6 +494,9 @@ def _draw_selected_volume(layout, sel, scene):
 
     if n > 0:
         layout.operator("og.unlink_volume", text="Clear All Links", icon="X")
+
+    from ..tasks import draw_vol_task_actions
+    draw_vol_task_actions(layout, sel)
 
 
 

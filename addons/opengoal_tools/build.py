@@ -12,7 +12,7 @@ from .collections import _get_level_prop, _level_objects, _active_level_col
 from .export import (
     collect_actors, collect_ambients, collect_spawns, collect_cameras,
     collect_load_boundaries,
-    collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers,
+    collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers, collect_task_triggers,
     needed_ags, needed_extras_ags, needed_code, write_jsonc, write_gd, write_gc,
     make_fog_actor_dict,
     patch_level_info, patch_load_boundaries, patch_game_gp, export_glb,
@@ -622,7 +622,7 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     # tell write_gc to emit the matching deftype.
     has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
     actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-    write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+    write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
     write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
     navmesh_actors = _collect_navmesh_actors(scene)
     _lv_objs = _level_objects(scene)
@@ -635,6 +635,11 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     patch_load_boundaries(name, collect_load_boundaries(scene), scene)
     patch_game_gp(name, code_deps, scene=scene)
     prune_orphaned_levels()  # self-heal: drop registrations for any level whose files were deleted
+    # custom tasks of the .blend (Tasks panel; only written when changed)
+    from .export.tasks_export import export_tasks
+    errs = export_tasks(scene)
+    if errs:
+        raise RuntimeError("Tasks: " + "; ".join(errs[:3]))
     return navmesh_actors
 
 
@@ -802,7 +807,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         custom_actors = collect_custom_triggers(scene)
         has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
         actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors, base_id, scene=scene)
+        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
         write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
         _lv_objs = _level_objects(scene)
         from .export.level_tools import ensure_level_tools

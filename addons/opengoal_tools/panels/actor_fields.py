@@ -292,32 +292,40 @@ def _draw_task_field(layout, obj, field):
     key = field["key"]
     label = field.get("label", key)
     cur = obj.get(key, field.get("default", "none")) or "none"
-    names = {"none": "None", "custom": "Custom…"}
-    names.update({t["id"]: t["label"] for t in _db.game_tasks()})
+    from ..tasks import task_label
     row = layout.row(align=True)
     row.label(text=f"{label}:")
-    op = row.operator("og.pick_task", text=names.get(cur, cur), icon="VIEWZOOM")
+    op = row.operator("og.pick_task", text="Custom…" if cur == "custom" else task_label(cur), icon="VIEWZOOM")
     op.prop_key = key
     if cur == "custom":
         _prop_row(layout, obj, key + "_custom", "  Custom task:", "")
 
 
 class OG_OT_PickTask(Operator):
-    """Pick a game task (search by name), or Custom to type one. Alt+click: all selected actors with this setting"""
+    """Pick a game task (search by name): vanilla tasks and this .blend's custom tasks.
+Alt+click: all selected actors with this setting"""
     bl_idname   = "og.pick_task"
     bl_label    = "Pick Game Task"
     bl_options  = {"REGISTER", "UNDO"}
     bl_property = "task"
 
     def _items(self, context):
-        # the DB list (game-task-h.gc) already starts with none
-        items = [("custom", "Custom…", "Type a custom task name")]
-        items += [(t["id"], t["label"] if t["id"] == "none" else f"{t['label']}  ({t['id']})", t["id"])
-                  for t in _db.game_tasks()]
-        _TASK_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        from ..tasks import task_choices
+        # the DB list (game-task-h.gc) already starts with none; custom tasks after it
+        items = [("custom", "Custom…", "Type a task name, number or (GOAL expression)")]
+        items += [(v, lab if v in ("none", lab.split()[0]) else f"{lab}  ({v})", v)
+                  for v, lab in task_choices(context.scene)]
+        items = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        if items != _TASK_ITEMS:
+            _TASK_ITEMS[:] = items
         return _TASK_ITEMS
 
     prop_key: StringProperty(options={"SKIP_SAVE"})
+    # set for a property of a property group (draw_task_pick): the owner is
+    # scene/object <id_name> . <data_path>; else the active actor's custom prop
+    data_path: StringProperty(options={"SKIP_SAVE", "HIDDEN"})
+    id_name: StringProperty(options={"SKIP_SAVE", "HIDDEN"})
+    id_kind: StringProperty(options={"SKIP_SAVE", "HIDDEN"})
     all_selected: BoolProperty(options={"SKIP_SAVE", "HIDDEN"})
     task:     bpy.props.EnumProperty(name="Task", items=_items)
 
@@ -327,6 +335,23 @@ class OG_OT_PickTask(Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        if self.data_path:
+            ids = {"SCENE": bpy.data.scenes, "COLLECTION": bpy.data.collections}.get(self.id_kind, bpy.data.objects)
+            idb = ids.get(self.id_name)
+            try:
+                owner = idb.path_resolve(self.data_path) if idb is not None else None
+            except ValueError:
+                owner = None
+            if owner is None:
+                return {"CANCELLED"}
+            from ..tasks import is_custom_value
+            if self.task != "custom":
+                setattr(owner, self.prop_key, self.task)
+            elif not is_custom_value(getattr(owner, self.prop_key)):
+                setattr(owner, self.prop_key, "")          # empty = Custom: its text field shows
+            for a in context.screen.areas if context.screen else ():
+                a.tag_redraw()
+            return {"FINISHED"}
         obj = context.active_object
         if obj is None or not self.prop_key:
             return {"CANCELLED"}

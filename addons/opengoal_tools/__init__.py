@@ -120,6 +120,9 @@ from . import distribute as _distribute
 from . import bake as _bake
 from . import level_settings as _level_settings
 from . import required as _required_mod
+from . import tasks as _tasks
+from . import game_text as _game_text
+from . import hints as _hints
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -165,6 +168,9 @@ classes = (
     *_bake.CLASSES,
     *_level_settings.CLASSES,
     *_required_mod.CLASSES,
+    *_tasks.CLASSES,
+    *_game_text.CLASSES,
+    *_hints.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -214,6 +220,8 @@ def register():
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
     _bake.register_props()   # needs OGBakeSettings registered
     _level_settings.register_props()
+    _tasks.register_props()
+    _hints.register_props()
     from . import required as _required
     _required.register_handlers()
 
@@ -486,6 +494,8 @@ def unregister():
     _distribute.unregister_props()
     _bake.unregister_props()
     _level_settings.unregister_props()
+    _tasks.unregister_props()
+    _hints.unregister_props()
     from . import required as _required
     _required.unregister_handlers()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)

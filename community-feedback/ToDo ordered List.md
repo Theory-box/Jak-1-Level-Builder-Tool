@@ -4,7 +4,7 @@ Once a feature is part of a release, it'll get removed from here.
 
 ---
 
-## Checkpoint/spawn (in progress)
+## Checkpoint/spawn (on main)
 ### Merge spawn and checkpoint
 - There's no reasons to have checkpoint and spawn as two different actors. They both act the same.
 - Instead you could have a name input when spawning checkpoints and if there's no checkpoint yet in the level, have it set as `start` then if there's a start already, `cp#` with the number automatically going up like it already do when spawning checkpoints. This also allow uses to directly change the name
@@ -34,7 +34,7 @@ Also there should be an option on checkpoint to simply not spawn use this custom
 
 ---
 
-## Adding missing level settings: (in progress)
+## Adding missing level settings: (on main)
 Don't need to separate these two categories in the settings
 ### For level-info.gc
 - music/sound-banks (already exist, just move it inside of the level settings)
@@ -89,7 +89,7 @@ As there'll be a lot more settings by the end, they should have some sub categor
 
 ---
 
-## Tasks & Menu implementation
+## Tasks & Menu implementation (in progress)
 Tasks are the system that set missions to specific resolutions. It's also what the power cell count is based on. Although not every task is equal to a power cell. They can also be used for other logic like level state changes that needs to be saved as well. The task code is also heavily interlaced with the menu so we should take of both at the same time.
 ### Comments and question of Claude's research
 - The 116 hard coded limit is already fixed on mod-base builds so if mod-base is present, you don't need to edit those files. Make sure to check if all cases are covered.
@@ -135,7 +135,7 @@ The point about being able to work with and around existing custom task and leve
 ---
 
 
-## Warnings for required fields
+## Warnings for required fields (on main)
 There's already a warning inside of a field when something is required but it's not always the most visible thing. Here's some changes I would like to see to help with this.
 ### Recolor of warnings
 At the moment, a required field doesn't have a color to indicate itself. The only color is on unexpected types when linking actors.
@@ -202,7 +202,7 @@ To fix this, while still keeping the option there. Those panels that aren't spec
 
 ---
 
-## Give the same link feature of navmesh to paths
+## Give the same link feature of navmesh to paths (on main)
 When multiple actors are using the same paths, have the same feature that warns the user and allows you to move all other actors to a path-actor connected to the selected actor from one button. 
 
 ---
