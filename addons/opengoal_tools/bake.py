@@ -857,6 +857,7 @@ def draw_tod(layout, level_col):
         row = col.row(align=True)
         row.prop(t, "show", text="", emboss=False, icon="TRIA_DOWN" if (t.show and t.enabled) else "TRIA_RIGHT")
         row.prop(t, "enabled", text=f"{l}  ({a})")
+        op = row.operator("og.show_bake_attr", text="", icon="HIDE_OFF"); op.attr = a
         if not (t.show and t.enabled):
             continue
         r = col.row(align=True)
@@ -912,6 +913,34 @@ def _new_sun(level_col, key):
     o.location = (0.0, 0.0, 20.0)
     col.objects.link(o)
     return o
+
+
+class OG_OT_ShowBakeAttr(bpy.types.Operator):
+    """Show this bake on the selected meshes: makes it their active color attribute
+(viewport Solid shading with Attribute color shows it)"""
+    bl_idname = "og.show_bake_attr"
+    bl_label = "Show Bake"
+    bl_options = {"REGISTER", "UNDO"}
+    attr: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        meshes = [o for o in ctx.selected_objects if o.type == "MESH"]
+        done = 0
+        for o in meshes:
+            cas = o.data.color_attributes
+            if self.attr in cas:
+                cas.active_color = cas[self.attr]
+                done += 1
+        if not meshes:
+            self.report({"WARNING"}, "Select the meshes to show")
+            return {"CANCELLED"}
+        missing = len(meshes) - done
+        self.report({"WARNING"} if missing else {"INFO"},
+                    f"{self.attr} shown on {done} mesh(es)" + (f"; {missing} not baked for it" if missing else ""))
+        for a in ctx.screen.areas if ctx.screen else ():
+            if a.type == "VIEW_3D":
+                a.tag_redraw()
+        return {"FINISHED"}
 
 
 class OG_OT_TodNewLights(bpy.types.Operator):
@@ -1055,7 +1084,7 @@ class OG_OT_BakeCurveRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGTodTime, OGBakeSettings, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
+CLASSES = (OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
            OG_OT_TodDefaultSuns, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 
