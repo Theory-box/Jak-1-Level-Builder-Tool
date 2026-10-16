@@ -135,6 +135,8 @@ class OG_PT_LevelSettings(Panel):
 
         # ── Base settings ──────────────────────────────────────────────
         layout.prop(props, "level_name")
+        from ..level_rename import draw_name_warning
+        draw_name_warning(layout, col)
         draw_field(layout, s, "menu_name")
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "level_index")
@@ -186,6 +188,17 @@ class OG_PT_LevelSettings(Panel):
             hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
             hint.label(text="Texture remap: Flut Flut eyes, water, dark eco pools,", icon="INFO")
             hint.label(text="dying enemies (things drawn with generic textures)", icon="BLANK1")
+            # Fog override: the exporter adds a fog-control actor that sets the
+            # camera fog every frame; off = the mood drives the fog
+            fog = body.box()
+            fog.prop(props, "fog_override_enabled")
+            if props.fog_override_enabled:
+                sub = fog.column(align=True)
+                sub.prop(props, "fog_color")
+                sub.prop(props, "fog_start")
+                sub.prop(props, "fog_end")
+                sub.prop(props, "fog_max")
+                sub.prop(props, "fog_min")
 
         # ── Gameplay ───────────────────────────────────────────────────
         head, body = layout.panel("og_lvl_gameplay", default_closed=True)
@@ -349,10 +362,11 @@ class OG_OT_SortLevelObjects(Operator):
     Objects that can't be classified are left in place with a warning.
     """
     bl_idname   = "og.sort_level_objects"
-    bl_label    = "Sort Collection Objects"
+    bl_label    = "Sort & Clean"
     bl_options  = {"REGISTER", "UNDO"}
 
     def execute(self, ctx):
+        from ..model_preview import clean_level, _is_any_preview
         scene     = ctx.scene
         level_col = _active_level_col(scene)
         if level_col is None:
@@ -368,7 +382,8 @@ class OG_OT_SortLevelObjects(Operator):
         for obj in all_objs:
             target_path = _classify_object(obj)
             if target_path is None:
-                skipped.append(obj.name)
+                if not _is_any_preview(obj):
+                    skipped.append(obj.name)
                 continue
 
             # Find where the object currently lives within the level
@@ -401,6 +416,13 @@ class OG_OT_SortLevelObjects(Operator):
                 log(f"  [sort] {m}")
         else:
             self.report({"INFO"}, "Everything already sorted")
+
+        c = clean_level(scene, level_col)
+        cleaned = [f"{n} {k}" for k, n in (("preview(s)", c["previews"]), ("empty collection(s)", c["collections"]),
+                                          ("unused data block(s)", c["data"])) if n]
+        if cleaned:
+            log(f"[clean] removed {', '.join(cleaned)}")
+            self.report({"INFO"}, ("Sorted " + str(len(moved)) + " object(s); " if moved else "") + "removed " + ", ".join(cleaned))
 
         if skipped:
             self.report({"WARNING"}, f"Could not classify {len(skipped)} object(s): {', '.join(skipped[:5])}")
@@ -510,9 +532,9 @@ class OG_PT_CleanSub(Panel):
 
     def draw(self, ctx):
         layout = self.layout
-        layout.operator("og.sort_level_objects",
-                        text="Sort Collection Objects",
-                        icon="SORTSIZE")
+        layout.operator("og.sort_level_objects", text="Sort & Clean", icon="SORTSIZE")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Sorts objects; removes orphan previews, empty collections, unused data")
 
 
 

@@ -1,0 +1,529 @@
+"""Object Controls tools: Set to floor, Distribute along curve, Convert
+entities, Export selected definitions."""
+from __future__ import annotations
+
+import bpy
+from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty
+from mathutils import Vector, Matrix
+
+_SKIP_PREFIXES = ("VOL_", "LOADBND_")       # not ground
+
+
+class OGFloorSettings(bpy.types.PropertyGroup):
+    offset: FloatProperty(name="Distance", default=0.0, unit="LENGTH",
+                          description="Height above the ground (e.g. floating orbs)")
+    align: BoolProperty(name="Align to floor", default=False,
+                        description="Tilt the object so its up axis follows the ground's slope")
+    point: EnumProperty(name="Mesh point", default="BOTTOM",
+                        items=[("BOTTOM", "Lowest vertex", "Meshes: their lowest point touches the ground"),
+                               ("ORIGIN", "Origin", "Meshes: their origin touches the ground (like empties)")],
+                        description="Which point of a mesh is put on the ground")
+    above: FloatProperty(name="Search from above", default=1.0, min=0.0, unit="LENGTH",
+                         description="The ray starts this far above the object, so one slightly under the ground still finds it")
+
+
+def _bottom_drop(o, point):
+    """Distance from the origin down to the point that goes on the ground."""
+    if o.type != "MESH" or point == "ORIGIN" or not o.data.vertices:
+        return 0.0
+    mw = o.matrix_world
+    return o.matrix_world.translation.z - min((mw @ v.co).z for v in o.data.vertices)
+
+
+def _ignored(scene):
+    def ignore(hit):
+        return bool(hit.name.startswith(_SKIP_PREFIXES) or hit.name.startswith("NAVMESH_") or hit.get("og_navmesh")
+                    or hit.get("og_preview_mesh") or hit.get("og_waypoint_preview_mesh"))
+    return ignore
+
+
+def find_floor(scene, depsgraph, start, skip, max_hits=32):
+    """(location, normal) of the first ground below `start`, skipping objects
+    in `skip` and helpers (volumes, previews ...). None if nothing below."""
+    ignore = _ignored(scene)
+    origin = Vector(start)
+    for _ in range(max_hits):
+        ok, loc, normal, _i, hit, _m = scene.ray_cast(depsgraph, origin, Vector((0, 0, -1)))
+        if not ok:
+            return None
+        if hit in skip or (hit.parent is not None and hit.parent in skip) or ignore(hit):
+            origin = loc - Vector((0, 0, 1e-4))
+            continue
+        return loc, normal
+    return None
+
+
+class OG_OT_SetToFloor(bpy.types.Operator):
+    """Put the selected objects on the ground below them (Object Controls > Set to Floor settings)"""
+    bl_idname = "og.set_to_floor"
+    bl_label = "Set to Floor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return bool(ctx.selected_objects) and ctx.mode == "OBJECT"
+
+    def execute(self, ctx):
+        s = ctx.scene.og_floor
+        dg = ctx.evaluated_depsgraph_get()
+        objs = [o for o in ctx.selected_objects
+                if not (o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"))]
+        objs = [o for o in objs if o.parent not in objs]          # children move with their parent
+        skip = set(ctx.selected_objects)
+        moved, missed = 0, []
+        for o in objs:
+            drop = _bottom_drop(o, s.point)
+            pos = o.matrix_world.translation.copy()
+            start = Vector((pos.x, pos.y, pos.z - drop + s.above))
+            hit = find_floor(ctx.scene, dg, start, skip)
+            if hit is None:
+                missed.append(o.name)
+                continue
+            loc, normal = hit
+            mw = o.matrix_world.copy()
+            if s.align:
+                q = Vector((0, 0, 1)).rotation_difference(normal)
+                # keep the current turn around Z, tilt to the slope
+                yaw = Matrix.Rotation(mw.to_euler().z, 4, "Z")
+                rot = q.to_matrix().to_4x4() @ yaw
+                scale = Matrix.Diagonal(mw.to_scale().to_4d())
+                mw = rot @ scale
+            new = loc + (normal if s.align else Vector((0, 0, 1))) * (s.offset + drop)
+            mw.translation = new
+            o.matrix_world = mw
+            moved += 1
+        if missed:
+            self.report({"WARNING"}, f"No ground below {len(missed)} object(s): {', '.join(missed[:5])}")
+        else:
+            self.report({"INFO"}, f"{moved} object(s) set to the floor")
+        return {"FINISHED"}
+
+
+# ── Distribute along curve ───────────────────────────────────────────────────
+
+def _is_curve(self, ob):
+    return ob.type == "CURVE"
+
+
+AXES = [("NONE", "No Align", "Keep the objects' rotation"),
+        ("X", "X", "The object's X axis follows the curve"), ("Y", "Y", "The object's Y axis follows the curve"),
+        ("Z", "Z", "The object's Z axis follows the curve"), ("-X", "-X", "The object's -X axis follows the curve"),
+        ("-Y", "-Y", "The object's -Y axis follows the curve"), ("-Z", "-Z", "The object's -Z axis follows the curve")]
+
+
+class OGDistributeSettings(bpy.types.PropertyGroup):
+    curve: PointerProperty(name="Curve", type=bpy.types.Object, poll=_is_curve,
+                           description="The curve to put the objects on (set when a curve becomes the active object)")
+    method: EnumProperty(name="Method", default="DISTANCE", items=[
+        ("DISTANCE", "Distance", "The same distance along the curve between the objects, first to last end"),
+        ("POINTS", "Per segment", "Along the curve, each segment between two curve points gets the same share of "
+                                  "the objects whatever its length: points close together pack the objects closer"),
+        ("SPACING", "Fixed spacing", "One object every N meters from the curve's start (stops at its end)")])
+    spacing: FloatProperty(name="Spacing", default=2.0, min=0.01, unit="LENGTH",
+                           description="Distance between two objects along the curve")
+    align: EnumProperty(name="Align", items=AXES, default="NONE",
+                        description="Turn the objects so this axis follows the curve (up stays up)")
+
+
+def _polyline(points, cyclic):
+    """(points, cumulative lengths) of a polyline (closed: back to the start)."""
+    pts = list(points) + ([points[0]] if cyclic and len(points) > 1 else [])
+    acc = [0.0]
+    for a, b in zip(pts, pts[1:]):
+        acc.append(acc[-1] + (b - a).length)
+    return pts, acc
+
+
+def _at_length(pts, acc, s):
+    """(position, tangent) at arc length s of a polyline."""
+    s = max(0.0, min(s, acc[-1]))
+    for i in range(1, len(pts)):
+        if acc[i] >= s or i == len(pts) - 1:
+            seg = acc[i] - acc[i - 1]
+            t = (s - acc[i - 1]) / seg if seg > 0 else 0.0
+            d = pts[i] - pts[i - 1]
+            return pts[i - 1] + d * t, (d.normalized() if d.length else Vector((1, 0, 0)))
+    return pts[0], Vector((1, 0, 0))
+
+
+def curve_samples(curve, depsgraph):
+    """(smooth points, control points, cyclic) of a curve's first spline, world space."""
+    mw = curve.matrix_world
+    sp = curve.data.splines[0]
+    if sp.type == "BEZIER":
+        ctrl = [mw @ p.co for p in sp.bezier_points]
+    else:
+        ctrl = [mw @ Vector(p.co[:3]) for p in sp.points]
+    ev = curve.evaluated_get(depsgraph)
+    me = ev.to_mesh()
+    smooth = [mw @ v.co for v in me.vertices] if me is not None else []
+    ev.to_mesh_clear()
+    return smooth or ctrl, ctrl, bool(sp.use_cyclic_u)
+
+
+def distribute_positions(curve, depsgraph, n, method, spacing=2.0):
+    """[(position, tangent)] for n objects; fewer with Fixed spacing past the end."""
+    smooth, ctrl, cyclic = curve_samples(curve, depsgraph)
+    if method == "POINTS":
+        # Blender samples every segment between two curve points with the same
+        # number of steps (resolution), so equal steps through the samples give
+        # each segment the same share, along the curve's shape.
+        pts = list(smooth) + ([smooth[0]] if cyclic and len(smooth) > 1 else [])
+        segs = len(pts) - 1
+        if segs < 1:
+            return [(pts[0], Vector((1, 0, 0)))] * n if pts else []
+        out = []
+        for i in range(n):
+            u = (i * segs / n) if cyclic else (i * segs / (n - 1) if n > 1 else 0.0)
+            k = min(int(u), segs - 1)
+            t = u - k
+            d = pts[k + 1] - pts[k]
+            out.append((pts[k] + d * t, d.normalized() if d.length else Vector((1, 0, 0))))
+        return out
+    pts, acc = _polyline(smooth, cyclic)
+    total = acc[-1]
+    if method == "SPACING":
+        return [_at_length(pts, acc, i * spacing) for i in range(n) if i * spacing <= total + 1e-6]
+    step = total / n if cyclic else (total / (n - 1) if n > 1 else 0.0)
+    return [_at_length(pts, acc, i * step) for i in range(n)]
+
+
+def _natural(name):
+    import re
+    return [(0, int(t), "") if t.isdigit() else (1, 0, t) for t in re.split(r"(\d+)", name)]
+
+
+class OG_OT_DistributeAlongCurve(bpy.types.Operator):
+    """Put the selected objects along the curve (Object Controls > Distribute Along Curve settings),
+in name order"""
+    bl_idname = "og.distribute_along_curve"
+    bl_label = "Distribute Along Curve"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.mode == "OBJECT" and ctx.scene.og_distribute.curve is not None
+
+    def execute(self, ctx):
+        s = ctx.scene.og_distribute
+        curve = s.curve
+        if curve is None or not curve.data.splines:
+            self.report({"ERROR"}, "Pick a curve with points")
+            return {"CANCELLED"}
+        objs = distribute_targets(ctx, curve)
+        if not objs:
+            self.report({"WARNING"}, "Select the objects to distribute")
+            return {"CANCELLED"}
+        objs.sort(key=lambda o: _natural(o.name))
+        dg = ctx.evaluated_depsgraph_get()
+        placed = distribute_positions(curve, dg, len(objs), s.method, s.spacing)
+        for o, (pos, tan) in zip(objs, placed):
+            mw = o.matrix_world.copy()
+            if s.align != "NONE":
+                axis = s.align
+                up = "Y" if axis.endswith("Z") else "Z"
+                q = tan.to_track_quat(axis, up)
+                mw = q.to_matrix().to_4x4() @ Matrix.Diagonal(mw.to_scale().to_4d())
+            mw.translation = pos
+            o.matrix_world = mw
+        left = len(objs) - len(placed)
+        if left:
+            self.report({"WARNING"}, f"{left} object(s) didn't fit on the curve with this spacing")
+        else:
+            self.report({"INFO"}, f"{len(placed)} object(s) distributed")
+        return {"FINISHED"}
+
+
+def distribute_targets(ctx, curve=None):
+    """The selected objects to distribute: not the curve, not previews,
+    not children of other selected objects."""
+    sel = [o for o in ctx.selected_objects if o is not curve and o.type != "CURVE"
+           and not (o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"))]
+    return [o for o in sel if o.parent not in sel]
+
+
+def _on_active_change():
+    """A curve becoming the active object fills Distribute's curve."""
+    ctx = bpy.context
+    ob = getattr(ctx, "active_object", None)
+    sc = getattr(ctx, "scene", None)
+    if ob is not None and ob.type == "CURVE" and sc is not None and hasattr(sc, "og_distribute") \
+            and sc.og_distribute.curve is not ob:
+        sc.og_distribute.curve = ob
+
+
+_MSGBUS_OWNER = object()
+
+
+def subscribe():
+    bpy.msgbus.clear_by_owner(_MSGBUS_OWNER)
+    bpy.msgbus.subscribe_rna(key=(bpy.types.LayerObjects, "active"), owner=_MSGBUS_OWNER, args=(),
+                             notify=_on_active_change)
+
+
+@bpy.app.handlers.persistent
+def _resubscribe(*_a):
+    subscribe()
+
+
+class OG_OT_EditDistributeCurve(bpy.types.Operator):
+    """Edit this curve: make it the active object (the selection stays) and switch to Edit Mode"""
+    bl_idname = "og.edit_distribute_curve"
+    bl_label = "Edit Curve"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.scene.og_distribute.curve is not None
+
+    def execute(self, ctx):
+        c = ctx.scene.og_distribute.curve
+        if ctx.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        if c.name not in ctx.view_layer.objects:
+            self.report({"ERROR"}, f"{c.name} isn't in this view layer")
+            return {"CANCELLED"}
+        c.hide_set(False)
+        c.select_set(True)
+        ctx.view_layer.objects.active = c
+        bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+# ── Convert entities ─────────────────────────────────────────────────────────
+
+_SPECIAL = ("CHECKPOINT_", "AMBIENT_", "CAMERA_", "VOL_", "LOADBND_", "NAVMESH_")
+_HELPER_ENDS = ("_CAM", "_ALIGN", "_PIVOT", "_LOOKAT")
+
+
+def _convertible(o, mode):
+    """Is this selected object converted in this mode?"""
+    if o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"):
+        return False
+    n = o.name
+    if "_wp_" in n or "_wpb_" in n or n.startswith(_SPECIAL) or n.endswith(_HELPER_ENDS):
+        return False
+    if n.startswith("ACTOR_") and o.type == "EMPTY":
+        return True
+    if mode == "ACTORS":
+        return False
+    if o.type == "EMPTY":
+        return True
+    return mode == "ALL"
+
+
+def convert_targets(ctx, mode):
+    sel = [o for o in ctx.selected_objects if _convertible(o, mode)]
+    return [o for o in sel if o.parent not in sel]
+
+
+def _plain(v):
+    """A custom property value, detached from its owner (to copy it)."""
+    if hasattr(v, "to_dict"):
+        return v.to_dict()
+    if hasattr(v, "to_list"):
+        return v.to_list()
+    if isinstance(v, list):
+        return [_plain(x) for x in v]
+    return v
+
+
+def _repoint(old, new):
+    """Links / name references to `old` point at `new` (volume links, actor
+    links, string properties holding the name)."""
+    for o in bpy.data.objects:
+        for coll in ("og_vol_links", "og_actor_links"):
+            for e in getattr(o, coll, ()):
+                if getattr(e, "target_name", None) == old:
+                    e.target_name = new
+        for k in list(o.keys()):
+            if isinstance(o[k], str) and o[k] == old:
+                o[k] = new
+
+
+CONVERT_MODES = [("ACTORS", "Actors only", "Convert the selected actors"),
+                 ("ACTORS_EMPTIES", "Actors and empties", "Also turn plain empties into actors"),
+                 ("ALL", "All objects", "Also replace meshes, curves ... with actors: those objects are DELETED")]
+_MODE_WORD = {"ACTORS": "Actor(s)", "ACTORS_EMPTIES": "Actor(s) & Empties", "ALL": "Object(s)"}
+
+
+class OGConvertSettings(bpy.types.PropertyGroup):
+    mode: EnumProperty(name="Convert", items=CONVERT_MODES, default="ACTORS")
+    target: StringProperty(name="Target actor", default="", description="The actor type to convert to")
+
+
+_TARGET_ITEMS: list = []   # search-popup items must stay referenced
+
+
+class OG_OT_PickConvertTarget(bpy.types.Operator):
+    """Pick the actor type to convert to (search)"""
+    bl_idname = "og.pick_convert_target"
+    bl_label = "Target Actor"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_property = "etype"
+
+    def _items(self, context):
+        if not _TARGET_ITEMS:
+            from .spawn_items import get_spawn_index
+            items = sorted({(it.etype, f"{it.label}  ({it.etype})", it.category)
+                            for it in get_spawn_index().values() if it.etype}, key=lambda t: t[1].lower())
+            _TARGET_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+        return _TARGET_ITEMS
+
+    etype: EnumProperty(name="Actor", items=_items)
+
+    def invoke(self, context, event):
+        context.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        context.scene.og_convert.target = self.etype
+        return {"FINISHED"}
+
+
+def target_label(etype):
+    from .data import ENTITY_DEFS
+    return ENTITY_DEFS.get(etype, {}).get("label", etype) if etype else ""
+
+
+class OG_OT_ConvertEntities(bpy.types.Operator):
+    """Turn the selection into actors of the target type: new names as if spawned, the properties that
+still apply are kept, previews updated. "All objects" deletes the converted meshes / curves"""
+    bl_idname = "og.convert_entities"
+    bl_label = "Convert Entities"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        s = ctx.scene.og_convert
+        return ctx.mode == "OBJECT" and bool(s.target)
+
+    def execute(self, ctx):
+        from .data import ENTITY_DEFS
+        s = ctx.scene.og_convert
+        etype = s.target
+        if etype not in ENTITY_DEFS:
+            self.report({"ERROR"}, f"Unknown actor type '{etype}'")
+            return {"CANCELLED"}
+        objs = convert_targets(ctx, s.mode)
+        if not objs:
+            self.report({"WARNING"}, "Nothing to convert in the selection")
+            return {"CANCELLED"}
+        from .model_preview import _is_any_preview
+        props = ctx.scene.og_props
+        cursor = ctx.scene.cursor.location.copy()
+        old_type = props.entity_type
+        new_objs = []
+        try:
+            for src in objs:
+                old = src.name
+                for o in list(ctx.selected_objects):
+                    o.select_set(False)        # spawn links what's selected (auto-connect)
+                ctx.scene.cursor.location = src.matrix_world.translation
+                props.entity_type = etype
+                bpy.ops.og.spawn_entity()
+                new = ctx.view_layer.objects.active
+                new.rotation_euler = src.matrix_world.to_euler()
+                keep = {k: _plain(src[k]) for k in src.keys() if k != "_RNA_UI" and not k.startswith("og_preview")}
+                for k, v in keep.items():
+                    try:
+                        new[k] = v
+                    except (TypeError, ValueError) as e:
+                        print(f"[og convert] {old}.{k} not copied: {e}")
+                _repoint(old, new.name)
+                for c in [c for c in src.children if _is_any_preview(c)]:
+                    bpy.data.objects.remove(c, do_unlink=True)
+                bpy.data.objects.remove(src, do_unlink=True)
+                new_objs.append(new)
+        finally:
+            ctx.scene.cursor.location = cursor
+            try:
+                props.entity_type = old_type
+            except TypeError:
+                pass
+        for o in new_objs:
+            o.select_set(True)
+        self.report({"INFO"}, f"Converted {len(new_objs)} to {target_label(etype)}")
+        return {"FINISHED"}
+
+
+class OGExportDefsSettings(bpy.types.PropertyGroup):
+    path: StringProperty(name="Write to", subtype="FILE_PATH", default="",
+                         description="A text file (rewritten each export) or a folder (a new file each export). "
+                                     "Empty: clipboard only")
+
+
+def export_target(path, now=None):
+    """The file to write: the path itself, or a new dated file in a folder."""
+    import os
+    import time
+    p = bpy.path.abspath(path.strip())
+    if not p:
+        return None
+    if os.path.isdir(p) or p.endswith(("/", "\\")):
+        stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(now))
+        base = os.path.join(p, f"og-definitions-{stamp}")
+        f, n = base + ".txt", 1
+        while os.path.exists(f):
+            f, n = f"{base}-{n}.txt", n + 1
+        return f
+    return p
+
+
+class OG_OT_ExportSelectedDefs(bpy.types.Operator):
+    """Export the selected actors, cameras, checkpoints and load boundaries as the level files write
+them (with the art groups / code the actors need): to the clipboard and the file / folder set below"""
+    bl_idname = "og.export_selected_defs"
+    bl_label = "Export Selected Definitions"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return bool(ctx.selected_objects)
+
+    def execute(self, ctx):
+        import os
+        from .export.selected_defs import build
+        text, counts = build(ctx.scene, ctx.evaluated_depsgraph_get(), list(ctx.selected_objects))
+        if not counts:
+            self.report({"WARNING"}, "Nothing to export: select actors, cameras, checkpoints or load boundaries")
+            return {"CANCELLED"}
+        ctx.window_manager.clipboard = text
+        what = ", ".join(f"{n} {k}" for k, n in counts.items())
+        f = export_target(ctx.scene.og_export_defs.path)
+        if f:
+            try:
+                os.makedirs(os.path.dirname(f) or ".", exist_ok=True)
+                with open(f, "w", encoding="utf-8", newline="\n") as fh:
+                    fh.write(text)
+            except OSError as e:
+                self.report({"ERROR"}, f"Couldn't write {f}: {e}")
+                return {"CANCELLED"}
+            self.report({"INFO"}, f"Exported {what} to {f} (and the clipboard)")
+        else:
+            self.report({"INFO"}, f"Copied {what} to the clipboard")
+        return {"FINISHED"}
+
+
+CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
+           OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs)
+
+
+def register_props():
+    bpy.types.Scene.og_floor = PointerProperty(type=OGFloorSettings)
+    bpy.types.Scene.og_distribute = PointerProperty(type=OGDistributeSettings)
+    bpy.types.Scene.og_convert = PointerProperty(type=OGConvertSettings)
+    bpy.types.Scene.og_export_defs = PointerProperty(type=OGExportDefsSettings)
+    subscribe()
+    if _resubscribe not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(_resubscribe)       # msgbus subscriptions are cleared on file load
+
+
+def unregister_props():
+    bpy.msgbus.clear_by_owner(_MSGBUS_OWNER)
+    if _resubscribe in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(_resubscribe)
+    for p in ("og_floor", "og_distribute", "og_convert", "og_export_defs"):
+        if hasattr(bpy.types.Scene, p):
+            delattr(bpy.types.Scene, p)

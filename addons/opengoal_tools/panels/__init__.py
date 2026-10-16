@@ -21,6 +21,7 @@
 
 from .level import CLASSES as _LEVEL_CLASSES
 from .spawn import CLASSES as _SPAWN_CLASSES
+from .object_controls import CLASSES as _OBJECT_CONTROLS_CLASSES
 from .selected import CLASSES as _SELECTED_CLASSES
 from .actor import CLASSES as _ACTOR_CLASSES
 from .actor_fields import CLASSES as _ACTOR_FIELDS_CLASSES
@@ -32,6 +33,7 @@ from .imports import CLASSES as _IMPORTS_CLASSES
 ALL_CLASSES = (
     *_LEVEL_CLASSES,
     *_SPAWN_CLASSES,
+    *_OBJECT_CONTROLS_CLASSES,
     *_SELECTED_CLASSES,
     *_ACTOR_FIELDS_CLASSES,
     *_ACTOR_CLASSES,

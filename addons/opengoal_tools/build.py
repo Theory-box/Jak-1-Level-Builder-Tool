@@ -435,7 +435,7 @@ _BUILD_STATE = {"done":False, "status":"", "error":None, "ok":False}
 
 
 
-def patch_entity_gc(navmesh_actors):
+def patch_entity_gc(navmesh_actors, scene=None):
     """
     Patch engine/entity/entity.gc to add custom-nav-mesh-check-and-setup.
 
@@ -447,6 +447,9 @@ def patch_entity_gc(navmesh_actors):
 
     Safe to call repeatedly — old injected code is stripped before re-injecting.
     """
+    from .export_filter import allowed as _allowed
+    if not _allowed("navmesh", scene):   # scene: from the build thread (no bpy.context there)
+        return None
     p = _entity_gc()
     if not p.exists():
         log(f"WARNING: entity.gc not found at {p}")
@@ -630,7 +633,7 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     ensure_level_tools()              # shared lt-checkpoint (checkpoint triggers)
     write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
     if navmesh:
-        patch_entity_gc(navmesh_actors)
+        patch_entity_gc(navmesh_actors, scene)
     patch_level_info(name, spawns, scene)
     patch_load_boundaries(name, collect_load_boundaries(scene), scene)
     patch_game_gp(name, code_deps, scene=scene)

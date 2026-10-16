@@ -207,7 +207,7 @@ When multiple actors are using the same paths, have the same feature that warns 
 
 ---
 
-## Blender clean up feature
+## Blender clean up feature (in progress)
 When removing actors and such, sometimes an "orphan node collection" is left behind in blender. If possible those shouldn't exist if there's no object inside of them or if they don't serve any other purpose. They could also get cleaned by the "sort collection" in the clean option of levels.
 
 Same wiht preview meshes, deleting an actor with blender's delete function will leave a preview mesh behind, those could also get cleaned by the "sort collection" button.
@@ -216,7 +216,7 @@ See "object control" after for more info too.
 
 ---
 
-## Object controls
+## Object controls (in progress)
 ### Duplication/Delete
 At the moment, you pretty much need to use the button "delete" and "duplicate" from the addon. Because if you don't, and use the blender functions/shortcut. It'll create some issues:
 - Deleting actors won't delete the preview mesh
@@ -238,7 +238,7 @@ It would then have submenu for other tools like some of the ones described under
 
 ---
 
-## Exta tools
+## Exta tools (in progress)
 ### Set to floor
 Sub menu in the object control
 - Find ground (ray cast from slightly above the current position to not miss if you're already on it or slightly under)
@@ -292,6 +292,13 @@ Based on `community-feedback/Actor Notes.md` and notes here
 
 ## Level files clean up when changing level name (or at least a warning?)
 When you change a level name, then previous file names for that level will stay. It would be good if those were cleaned when changing names, or at least give a warning to the user to clean first, then change the name.
+
+---
+
+## Bake menu small changes
+- Rename it to "Light Baking" and remove the "Light baking" label inside.
+- Remove the "Level Lighting" info
+- Move the "Fog Overide" to the level settings > Visuals (at the bottom of it)
 
 ---
 

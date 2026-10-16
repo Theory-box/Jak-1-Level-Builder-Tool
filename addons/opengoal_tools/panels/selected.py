@@ -755,18 +755,7 @@ class OG_PT_SelectedObject(Panel):
             layout.label(text="Select an object to inspect", icon="INFO")
             return
 
-        # ── Multi-select actor actions (operate on ALL selected actors) ──────
-        actor_sel = [o for o in ctx.selected_objects
-                     if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
-        if actor_sel:
-            n = len(actor_sel)
-            layout.label(text=f"{n} actor{'s' if n != 1 else ''} selected", icon="OBJECT_DATA")
-            row = layout.row(align=True)
-            row.operator("view3d.view_selected", text="Frame", icon="VIEWZOOM")
-            row.operator("og.duplicate_entity", text="Duplicate", icon="COPYDOWN")
-            row.operator("og.delete_selected", text="Delete", icon="TRASH")
-            layout.separator(factor=0.5)
-
+        # Frame / Duplicate / Delete for the selection: Object Controls panel
         if not _og_managed_object(sel):
             layout.label(text=sel.name, icon="OBJECT_DATA")
             layout.label(text="Not an OpenGOAL-managed object", icon="INFO")
@@ -800,16 +789,6 @@ class OG_PT_SelectedObject(Panel):
             layout.label(text=name, icon="MOD_MESHDEFORM" if (sel.get("og_navmesh") or name.startswith("NAVMESH_")) else "MESH_DATA")
         else:
             layout.label(text=name, icon="OBJECT_DATA")
-
-        # Single-object actions for non-actor managed objects (actors use the
-        # multi-select buttons above).
-        if not (name.startswith("ACTOR_") and "_wp_" not in name):
-            layout.separator(factor=0.3)
-            row = layout.row(align=True)
-            op = row.operator("og.select_and_frame", text="Frame", icon="VIEWZOOM")
-            op.obj_name = name
-            op = row.operator("og.delete_object", text="Delete", icon="TRASH")
-            op.obj_name = name
 
 
 

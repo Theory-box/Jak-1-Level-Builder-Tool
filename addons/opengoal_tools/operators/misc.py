@@ -112,7 +112,7 @@ class OG_OT_DeleteObject(Operator):
         # Remove preview mesh children (model previews parented to this actor)
         _mp.remove_preview(obj)
         # Also delete associated _CAM, _ALIGN, _PIVOT, _LOOK_AT empties for cameras
-        suffixes = ["_CAM", "_ALIGN", "_PIVOT", "_LOOK_AT"]
+        suffixes = ["_CAM", "_ALIGN", "_PIVOT", "_LOOKAT"]
         for suf in suffixes:
             associated = ctx.scene.objects.get(self.obj_name + suf)
             if associated:
@@ -132,7 +132,7 @@ def _delete_og_managed(ctx, obj):
         if o.type == "MESH" and o.name.startswith("VOL_"):
             _vol_remove_link_to(o, name)
     _mp.remove_preview(obj)
-    for suf in ("_CAM", "_ALIGN", "_PIVOT", "_LOOK_AT"):
+    for suf in ("_CAM", "_ALIGN", "_PIVOT", "_LOOKAT"):
         assoc = scene.objects.get(name + suf)
         if assoc:
             bpy.data.objects.remove(assoc, do_unlink=True)

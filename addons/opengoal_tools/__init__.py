@@ -123,6 +123,9 @@ from . import required as _required_mod
 from . import tasks as _tasks
 from . import game_text as _game_text
 from . import hints as _hints
+from . import object_tools as _object_tools
+from . import export_filter as _export_filter
+from . import level_rename as _level_rename
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -171,6 +174,9 @@ classes = (
     *_tasks.CLASSES,
     *_game_text.CLASSES,
     *_hints.CLASSES,
+    *_object_tools.CLASSES,
+    *_export_filter.CLASSES,
+    *_level_rename.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -203,6 +209,8 @@ def _migrate_legacy_props(*_args):
 def register():
     _load_previews()
     _mp.register_handler()
+    from . import object_sync as _osync
+    _osync.register()
     _bviz.register_handler()
     from .operators.misc import register_water_handler
     register_water_handler()
@@ -222,6 +230,8 @@ def register():
     _level_settings.register_props()
     _tasks.register_props()
     _hints.register_props()
+    _object_tools.register_props()
+    _export_filter.register_props()
     from . import required as _required
     _required.register_handlers()
 
@@ -484,6 +494,8 @@ def unregister():
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()
+    from . import object_sync as _osync
+    _osync.unregister()
     _bviz.unregister_handler()
     from .operators.misc import unregister_water_handler
     unregister_water_handler()
@@ -496,6 +508,8 @@ def unregister():
     _level_settings.unregister_props()
     _tasks.unregister_props()
     _hints.unregister_props()
+    _object_tools.unregister_props()
+    _export_filter.unregister_props()
     from . import required as _required
     _required.unregister_handlers()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)

@@ -206,6 +206,43 @@ def _level_objects(scene, level_col=None, exclude_no_export=True):
     return _recursive_col_objects(level_col, exclude_no_export=exclude_no_export)
 
 
+def rename_sub_collections(level_col):
+    """Give the level's own sub-collections (made by _ensure_sub_collection:
+    they carry "skip_export") the level's current name: <name>.Geometry,
+    <name>.Spawnables.Enemies ... After a rename they still had the old
+    prefix, so the export made new empty ones (no geometry exported). A new
+    empty one already made that way is merged into the old one. Returns how
+    many were renamed."""
+    prefix = str(level_col.get("og_level_name", level_col.name))
+    count = 0
+
+    def fix(parent, parent_name):
+        nonlocal count
+        for ch in list(parent.children):
+            try:
+                if "skip_export" not in ch.keys() or "." not in ch.name:
+                    continue
+            except ReferenceError:              # an empty duplicate merged away just before
+                continue
+            seg = ch.name.rsplit(".", 1)[1] if parent is not level_col else ch.name.split(".", 1)[1]
+            want = f"{parent_name}.{seg}"
+            if ch.name != want:
+                dup = next((c for c in parent.children if c.name == want), None) or bpy.data.collections.get(want)
+                if dup is not None and dup is not ch:
+                    for o in list(dup.objects):          # what the wrong export put in it
+                        if o.name not in ch.objects:
+                            ch.objects.link(o)
+                    for c in list(dup.children):
+                        if c.name not in ch.children:
+                            ch.children.link(c)
+                    bpy.data.collections.remove(dup)
+                ch.name = want
+                count += 1
+            fix(ch, want)
+    fix(level_col, prefix)
+    return count
+
+
 def _ensure_sub_collection(level_col, *path):
     """Find or create nested sub-collections under a level collection.
 
@@ -521,6 +558,7 @@ def _set_level_name_live(self, value):
     clean = clean[:10]  # Silent cap; subpanel shows a warning if over
     col["og_level_name"] = clean
     col.name = clean
+    rename_sub_collections(col)
     try:
         bpy.context.scene.og_props.active_level = col.name
     except Exception:

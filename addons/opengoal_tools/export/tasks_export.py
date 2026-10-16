@@ -514,6 +514,9 @@ _INSTALL = """
 def export_tasks(scene):
     """Write the group's task files (only what changed). Returns problems
     (nothing written when there are any) or []."""
+    from ..export_filter import allowed as _allowed
+    if not _allowed("tasks", scene):
+        return []
     from .. import tasks as T
     from ..versions import feature_status
     from ..hints import hint_texts
