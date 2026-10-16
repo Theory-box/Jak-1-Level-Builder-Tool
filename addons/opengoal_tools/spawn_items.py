@@ -151,6 +151,16 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         icon="EMPTY_SINGLE_ARROW",
     ),
     SpawnItem(
+        spawn_id="special:hint",
+        label="Hint",
+        category="Level Flow",
+        description="A text shown at the top of the screen when the camera gets close "
+                    "(once per save). Commands can check a task's stage first and "
+                    "close task stages when it shows.",
+        operator="og.spawn_hint",
+        icon="QUESTION",
+    ),
+    SpawnItem(
         spawn_id="special:load_boundary",
         label="Load Boundary",
         category="Level Flow",

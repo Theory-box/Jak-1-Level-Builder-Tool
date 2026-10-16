@@ -53,6 +53,7 @@ from .scene import (
     _camera_aabb_to_planes,
     collect_aggro_triggers,
     collect_custom_triggers,
+    collect_task_triggers,
     collect_cameras,
     collect_spawns,
     collect_load_boundaries,

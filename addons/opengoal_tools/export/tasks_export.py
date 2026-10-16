@@ -30,12 +30,19 @@ _ALL_TYPES = ("decompiler", "config", "jak1", "all-types.gc")
 
 _COND = {
     "ALWAYS": lambda st: "#t",
-    "STAGE_CLOSED": lambda st: (f"(task-closed? (game-task {st.cond_task.strip()}) (task-status {st.cond_status}))"
-                                if st.cond_task.strip() else "#t"),
-    "CELLS": lambda st: f"(>= (the int (the float (send-event *target* 'query 'pickup (pickup-type fuel-cell)))) {st.cond_value})",
-    "ORBS": lambda st: (f"(and *target* (>= (the-as float (send-event *target* 'query 'pickup (pickup-type money))) "
-                        f"{float(st.cond_value)}))"),
+    "STAGE_CLOSED": lambda st: f"(task-closed? (game-task {st.cond_task}) (task-status {st.cond_status}))",
+    "COMPLETE": lambda st: f"(task-complete? *game-info* (game-task {st.cond_task}))",
+    "CELLS": lambda st: f"(>= (-> *game-info* fuel) {float(st.cond_value)})",
+    "ORBS": lambda st: f"(>= (-> *game-info* money) {float(st.cond_value)})",
+    "FLIES": lambda st: f"(>= (buzzer-count *game-info* (game-task {st.cond_task})) {st.cond_value})",
+    "EXPR": lambda st: st.cond_expr.strip() or "#t",
 }
+
+
+def condition(st):
+    """The stage's condition as GOAL (with Not)."""
+    c = _COND.get(st.condition, _COND["ALWAYS"])(st)
+    return f"(not {c})" if st.cond_not else c
 
 
 def _text_dir():
@@ -89,7 +96,7 @@ def check(scene):
     group = T.group_name(scene)
     others = _other_group_tasks(group)
     by_id = {v: k for k, v in others.items()}
-    out = [m for i, m in T.problems(scene) if "limit" in m or "used twice" in m or "no name" in m or "vanilla" in m]
+    out = [m for i, m in T.problems(scene) if "limit" in m or "used twice" in m or "no name" in m or "condition" in m or "expression" in m or "vanilla" in m]
     for t in s.tasks:
         if t.name in others:
             out.append(f"task name '{t.name}' is already a game-task ({others[t.name]})")
@@ -170,15 +177,16 @@ def _texts(scene, group):
         strings[text] = tid
         return tid
 
+    tasks = list(s.tasks) if s.enabled else []
     levels = {}
     for col in _all_level_collections(scene):
-        if any(t.level == col.name for t in s.tasks):
+        if any(t.level == col.name for t in tasks):
             menu = (col.og_level.menu_name.strip() if hasattr(col, "og_level") else "") or \
                 str(col.get("og_level_name", col.name)).upper()
             levels[col.name] = (alloc(menu), menu)
 
     slots = {}
-    for t in s.tasks:
+    for t in tasks:
         raw = [t.text_intro.strip(), t.text_reminder.strip(), t.text_resolution.strip()]
         # empty: the next filled one further into completion, else the last filled one
         filled = [x for x in raw if x]
@@ -197,7 +205,36 @@ def _texts(scene, group):
             else:
                 ids.append(alloc(x.replace("[level_name]", lvl_name)))
         slots[t.name] = ids
+    from ..hints import hint_texts
+    for x in hint_texts(scene):              # after the task texts: their ids don't move
+        alloc(x)
     return {v: k for k, v in strings.items()}, slots, {k: v[0] for k, v in levels.items()}
+
+
+def text_ids(scene):
+    """{game string: text id} of this .blend's text file (hints look theirs up)."""
+    from .. import tasks as T
+    strings = _texts(scene, T.group_name(scene))[0]
+    return {v: k for k, v in strings.items()}
+
+
+def _write_texts(scene, group):
+    """The group's text JSON (task names, menu names, hints) + its game_text.gp entry."""
+    strings, slots, level_text = _texts(scene, group)
+    td = _text_dir()
+    _write_if_changed(td / _text_json_name(group),
+                      json.dumps({f"{k:x}": v for k, v in sorted(strings.items())}, indent=2, ensure_ascii=False) + "\n")
+    gp = _data() / "game" / "assets" / "jak1" / "game_text.gp"
+    if gp.exists():
+        txt = gp.read_text(encoding="utf-8")
+        entry = f'"game/assets/jak1/text/{_text_json_name(group)}"'
+        if entry not in txt:
+            new = txt.replace('"game/assets/jak1/text/game_custom_text_en-US.json"',
+                              f'"game/assets/jak1/text/game_custom_text_en-US.json" {entry}', 1)
+            if new != txt:
+                gp.write_text(new, encoding="utf-8")
+                log(f"Patched {gp.name}: {_text_json_name(group)}")
+    return slots, level_text
 
 
 def _counts(scene, level_col):
@@ -240,7 +277,7 @@ def generate_gc(scene, group, slots, level_text):
         L.append("      (new 'static 'boxed-array :type task-cstage")
         for st in t.stages:
             flags = " ".join(f for f, on in (("has-entity", st.has_entity), ("closed-by-default", st.closed_by_default)) if on)
-            cond = _COND.get(st.condition, _COND["ALWAYS"])(st)
+            cond = condition(st)
             L.append(f"        (new 'static 'task-cstage :game-task (game-task {t.name}) :status (task-status {st.status})"
                      f" :flags (task-flags {flags})")
             L.append(f"             :condition (lambda :behavior process-taskable ((arg0 task-control)) {cond}))")
@@ -339,8 +376,11 @@ def export_tasks(scene):
     (nothing written when there are any) or []."""
     from .. import tasks as T
     from ..versions import feature_status
+    from ..hints import hint_texts
     s = T.settings(scene)
     if not s.enabled or not len(s.tasks):
+        if hint_texts(scene):                 # hints only: just the texts
+            _write_texts(scene, T.group_name(scene))
         return []
     if feature_status("custom_tasks")[0] is not True:
         return ["custom tasks need mod-base (Tasks panel)"]
@@ -361,21 +401,7 @@ def export_tasks(scene):
     if at.exists():
         _put_enum_block(at, group, block)
         _set_all_types_max(at, mx)
-    # texts
-    strings, slots, level_text = _texts(scene, group)
-    td = _text_dir()
-    _write_if_changed(td / _text_json_name(group),
-                      json.dumps({f"{k:x}": v for k, v in sorted(strings.items())}, indent=2, ensure_ascii=False) + "\n")
-    gp = _data() / "game" / "assets" / "jak1" / "game_text.gp"
-    if gp.exists():
-        txt = gp.read_text(encoding="utf-8")
-        entry = f'"game/assets/jak1/text/{_text_json_name(group)}"'
-        if entry not in txt:
-            new = txt.replace('"game/assets/jak1/text/game_custom_text_en-US.json"',
-                              f'"game/assets/jak1/text/game_custom_text_en-US.json" {entry}', 1)
-            if new != txt:
-                gp.write_text(new, encoding="utf-8")
-                log(f"Patched {gp.name}: {_text_json_name(group)}")
+    slots, level_text = _write_texts(scene, group)
     # the task file + its registration (game.gp goal-src, game.gd object)
     name = f"lt-tasks-{group}"
     _write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", generate_gc(scene, group, slots, level_text))

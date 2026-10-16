@@ -31,12 +31,8 @@ OCEAN_ITEMS = [
 ]
 
 
-def _task_items(self, ctx):
-    return [(t["id"], t["label"], f"(game-task {t['id']}) = {t['value']}") for t in _db.game_tasks()]
-
-
 class OGTaskRow(bpy.types.PropertyGroup):
-    task: EnumProperty(name="Task", items=_task_items, description="A game task of this level")
+    task: StringProperty(name="Task", default="none", description="A game task of this level (vanilla or custom)")
 
 
 def _bsphere_poll(self, ob):
@@ -129,8 +125,8 @@ def ocean_value(s):
 def tasks_value(s):
     if s is None or not s.tasks:
         return "'()"
-    vals = {t["id"]: t["value"] for t in _db.game_tasks()}
-    nums = [str(vals[r.task]) for r in s.tasks if r.task in vals and vals[r.task]]
+    from .tasks import task_value
+    nums = [str(v) for v in (task_value(r.task) for r in s.tasks) if v]
     return f"'({' '.join(nums)})" if nums else "'()"
 
 

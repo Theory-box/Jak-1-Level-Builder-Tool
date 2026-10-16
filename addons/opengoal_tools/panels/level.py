@@ -47,6 +47,7 @@ from ..build import (
     _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
 )
 from ..game_text import draw_field
+from ..tasks import draw_task_pick
 from ..properties import OGLumpRow, OG_UL_LumpRows, draw_command_list
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
@@ -283,8 +284,7 @@ def _draw_tasks(layout, s):
     head.operator("og.level_task_add", text="", icon="ADD")
     colm = layout.column(align=True)
     for i, r in enumerate(s.tasks):
-        row = colm.row(align=True)
-        row.prop(r, "task", text="")
+        row = draw_task_pick(colm, r, "task")
         row.operator("og.level_task_remove", text="", icon="REMOVE").index = i
 
 

@@ -165,7 +165,7 @@ def check_volumes(scene):
     objects = scene.objects
     for vol in _vol_objs(scene):
         links = getattr(vol, "og_vol_links", [])
-        if len(links) == 0:
+        if len(links) == 0 and not len(getattr(vol, "og_vol_task_actions", ())):
             issues.append(_issue("WARNING",
                 f"Trigger volume '{vol.name}' has no links. "
                 "It will export as dead weight.", vol.name))

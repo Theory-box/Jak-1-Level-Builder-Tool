@@ -34,10 +34,14 @@ STATUS_ITEMS = [  # task-status (task-control-h.gc), in order
 ]
 CONDITION_ITEMS = [
     ("ALWAYS", "Always", "#t: the stage is available once the previous ones are closed"),
-    ("STAGE_CLOSED", "Task stage closed", "Another task's stage is closed (task-closed?)"),
+    ("STAGE_CLOSED", "Task stage closed", "A task's stage is closed (task-closed?)"),
+    ("COMPLETE", "Task complete", "A task's power cell is collected (task-complete?)"),
     ("CELLS", "Power cells ≥", "The player has at least N power cells"),
     ("ORBS", "Orbs ≥", "The player has at least N orbs"),
+    ("FLIES", "Scout flies ≥", "At least N scout flies of a task (its level's fly task) collected"),
+    ("EXPR", "GOAL expression", "Any GOAL expression (true / false), e.g. (task-known? (game-task jungle-eggtop))"),
 ]
+TASK_CONDITIONS = ("STAGE_CLOSED", "COMPLETE", "FLIES")    # the ones that name a task
 DONE_ITEMS = [
     ("0", "Introduced text", "Shown in the menu once the task is complete"),
     ("1", "Reminder text", "Shown in the menu once the task is complete"),
@@ -102,9 +106,13 @@ class OGTaskStage(bpy.types.PropertyGroup):
     has_entity: BoolProperty(name="Saved", default=True,
                              description="Closing this stage is saved (task-flags has-entity)")
     condition: EnumProperty(name="Condition", items=CONDITION_ITEMS, default="ALWAYS")
-    cond_task: StringProperty(name="Task", default="", description="Task whose stage must be closed (name)")
+    cond_not: BoolProperty(name="Not", default=False,
+                           description="Invert the condition: the stage counts while it is NOT met "
+                                       "(e.g. on need-hint: the task stays hidden until it is met)")
+    cond_task: StringProperty(name="Task", default="none", description="The task the condition looks at")
     cond_status: EnumProperty(name="Stage", items=STATUS_ITEMS, default="need-resolution")
     cond_value: IntProperty(name="Count", default=1, min=0, max=10000)
+    cond_expr: StringProperty(name="Expression", default="", description="GOAL expression, true when the stage can be current")
 
 
 class OGTask(bpy.types.PropertyGroup):
@@ -126,6 +134,16 @@ class OGTask(bpy.types.PropertyGroup):
                             description="Which text the menu shows once the task is complete")
     stages: CollectionProperty(type=OGTaskStage)
     expanded: BoolProperty(default=True)
+
+
+class OGVolTaskAction(bpy.types.PropertyGroup):
+    """A trigger volume's task action (Object.og_vol_task_actions): close or
+    open a stage of a task when Jak enters the volume."""
+    action: EnumProperty(name="Action", items=[("CLOSE", "Close", "Close the stage (close-specific-task!)"),
+                                               ("OPEN", "Open", "Open the stage again (open-specific-task!)")],
+                         default="CLOSE")
+    status: EnumProperty(name="Stage", items=STATUS_ITEMS, default="need-hint")
+    task: StringProperty(name="Task", default="none")
 
 
 class OGTaskSettings(bpy.types.PropertyGroup):
@@ -188,6 +206,11 @@ def problems(scene=None):
             out.append((i, f"ID {t.task_id} is a vanilla task's number (custom tasks start at {ID_FIRST})"))
         if not t.level:
             out.append((i, "no level"))
+        for k, st in enumerate(t.stages):
+            if st.condition in TASK_CONDITIONS and task_value(st.cond_task, scene) in (None, 0):
+                out.append((i, f"stage {k + 1}: condition has no task"))
+            elif st.condition == "EXPR" and not st.cond_expr.strip():
+                out.append((i, f"stage {k + 1}: empty GOAL expression"))
         per_level.setdefault(t.level, []).append(i)
         bad = "".join(sorted(set(unsupported(t.text_intro) + unsupported(t.text_reminder) + unsupported(t.text_resolution))))
         if bad:
@@ -201,10 +224,57 @@ def problems(scene=None):
     return out
 
 
+def status_value(status):
+    """task-status number (need-hint = 2 ... need-resolution = 7)."""
+    return [x[0] for x in STATUS_ITEMS].index(status) + 2
+
+
 def task_items(scene=None):
     """(id, name) of this .blend's tasks, for the actors' task pickers."""
     s = settings(scene)
     return [(t.task_id, t.name) for t in s.tasks if t.name]
+
+
+def task_choices(scene=None):
+    """[(value, label)] of every pickable task: the vanilla ones (DB, none
+    first) then this .blend's custom tasks."""
+    from . import db
+    out = [(t["id"], t["label"]) for t in db.game_tasks()]
+    s = settings(scene)
+    if s.enabled:
+        out += [(t.name, f"{t.name}  (custom {t.task_id})") for t in s.tasks if t.name]
+    return out
+
+
+def task_value(name, scene=None):
+    """game-task number of a task name (vanilla or custom), None if unknown."""
+    from . import db
+    for t in db.game_tasks():
+        if t["id"] == name:
+            return t["value"]
+    s = settings(scene)
+    if not s.enabled:
+        return None
+    return next((t.task_id for t in s.tasks if t.name == name), None)
+
+
+def task_label(name, scene=None):
+    if not name or name == "none":
+        return "None"
+    return dict(task_choices(scene)).get(name, f"{name} (?)")
+
+
+def draw_task_pick(layout, owner, prop, text=""):
+    """The task search button for a string property holding a task name."""
+    row = layout.row(align=True)
+    if text:
+        row.label(text=text)
+    op = row.operator("og.pick_task", text=task_label(getattr(owner, prop)), icon="VIEWZOOM")
+    op.prop_key = prop
+    op.id_name = owner.id_data.name
+    op.id_kind = owner.id_data.bl_rna.identifier.upper()     # SCENE / OBJECT / COLLECTION
+    op.data_path = owner.path_from_id()
+    return row
 
 
 # ── operators ───────────────────────────────────────────────────────────────
@@ -281,6 +351,59 @@ class OG_OT_TaskStageRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_VolTaskActionAdd(bpy.types.Operator):
+    """Add a task action: when Jak enters this volume, close / open a task's stage"""
+    bl_idname = "og.vol_task_action_add"
+    bl_label = "Add Task Action"
+    bl_options = {"UNDO"}
+    vol_name: StringProperty()
+
+    def execute(self, ctx):
+        o = bpy.data.objects.get(self.vol_name)
+        if o is None:
+            return {"CANCELLED"}
+        o.og_vol_task_actions.add()
+        return {"FINISHED"}
+
+
+class OG_OT_VolTaskActionRemove(bpy.types.Operator):
+    """Remove this task action"""
+    bl_idname = "og.vol_task_action_remove"
+    bl_label = "Remove Task Action"
+    bl_options = {"UNDO"}
+    vol_name: StringProperty()
+    index: IntProperty()
+
+    def execute(self, ctx):
+        o = bpy.data.objects.get(self.vol_name)
+        if o is None or not 0 <= self.index < len(o.og_vol_task_actions):
+            return {"CANCELLED"}
+        o.og_vol_task_actions.remove(self.index)
+        return {"FINISHED"}
+
+
+def draw_vol_task_actions(layout, vol):
+    """Trigger volume panel: its task actions."""
+    box = layout.box()
+    acts = vol.og_vol_task_actions
+    box.label(text=f"Task actions ({len(acts)})" if len(acts) else "Task actions", icon="CHECKMARK")
+    for i, a in enumerate(acts):
+        col = box.column(align=True)
+        r = col.row(align=True)
+        r.prop(a, "action", text="")
+        r.prop(a, "status", text="")
+        op = r.operator("og.vol_task_action_remove", text="", icon="X")
+        op.vol_name = vol.name; op.index = i
+        draw_task_pick(col, a, "task", "of")
+        if task_value(a.task) in (None, 0):
+            w = col.row(); w.alert = True
+            w.label(text="Pick a task", icon="ERROR")
+    box.operator("og.vol_task_action_add", text="Add Task Action", icon="ADD").vol_name = vol.name
+    if len(acts):
+        h = box.row(); h.enabled = False; h.scale_y = 0.7
+        h.label(text="Runs each time Jak enters the volume", icon="INFO")
+
+
 # ── panel ───────────────────────────────────────────────────────────────────
 
 def _draw_task(layout, s, i, t, issues):
@@ -320,16 +443,25 @@ def _draw_task(layout, s, i, t, issues):
             op = r.operator("og.task_stage_remove", text="", icon="REMOVE")
             op.index = i; op.stage = k
             r = sb.row(align=True)
+            r.prop(st, "cond_not", toggle=True)
             r.prop(st, "condition", text="")
+            if st.condition in TASK_CONDITIONS:
+                draw_task_pick(sb, st, "cond_task", "Task:")
             if st.condition == "STAGE_CLOSED":
-                r.prop(st, "cond_task", text="")
-                r.prop(st, "cond_status", text="")
-            elif st.condition in ("CELLS", "ORBS"):
-                r.prop(st, "cond_value", text="")
+                sb.prop(st, "cond_status", text="Stage")
+            elif st.condition in ("CELLS", "ORBS", "FLIES"):
+                sb.prop(st, "cond_value", text="At least")
+            elif st.condition == "EXPR":
+                sb.prop(st, "cond_expr", text="")
             r = sb.row(align=True)
             r.prop(st, "closed_by_default", toggle=True)
             r.prop(st, "has_entity", toggle=True)
         body.operator("og.task_stage_add", text="Add Stage", icon="ADD").index = i
+        for line in ("The menu shows the first open stage whose condition is true;",
+                     "a false condition skips it. Hide a task until something",
+                     "happens: need-hint stage with Not + that condition."):
+            h = body.row(); h.enabled = False; h.scale_y = 0.6
+            h.label(text=line)
 
 
 def draw_tasks(layout, ctx):
@@ -380,14 +512,17 @@ class OG_PT_Tasks(bpy.types.Panel):
         draw_tasks(self.layout, ctx)
 
 
-CLASSES = (OGTaskStage, OGTask, OGTaskSettings, OG_OT_TaskAdd, OG_OT_TaskRemove,
+CLASSES = (OGVolTaskAction, OG_OT_VolTaskActionAdd, OG_OT_VolTaskActionRemove, OGTaskStage, OGTask, OGTaskSettings, OG_OT_TaskAdd, OG_OT_TaskRemove,
            OG_OT_TaskStageAdd, OG_OT_TaskStageRemove, OG_PT_Tasks)
 
 
 def register_props():
     bpy.types.Scene.og_tasks = PointerProperty(type=OGTaskSettings)
+    bpy.types.Object.og_vol_task_actions = CollectionProperty(type=OGVolTaskAction)
 
 
 def unregister_props():
     if hasattr(bpy.types.Scene, "og_tasks"):
         del bpy.types.Scene.og_tasks
+    if hasattr(bpy.types.Object, "og_vol_task_actions"):
+        del bpy.types.Object.og_vol_task_actions

@@ -103,7 +103,7 @@ class OG_PT_AmbientEmitter(Panel):
         # Only sound emitters (AMBIENT_snd*), not music zones (AMBIENT_mus*)
         return (sel is not None
                 and sel.name.startswith("AMBIENT_")
-                and not sel.name.startswith("AMBIENT_mus"))
+                and not sel.name.startswith(("AMBIENT_mus", "AMBIENT_hint")))
 
     def draw(self, ctx):
         _draw_selected_emitter(self.layout, ctx.active_object)
