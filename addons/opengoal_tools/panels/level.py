@@ -135,6 +135,8 @@ class OG_PT_LevelSettings(Panel):
 
         # ── Base settings ──────────────────────────────────────────────
         layout.prop(props, "level_name")
+        from ..level_rename import draw_name_warning
+        draw_name_warning(layout, col)
         draw_field(layout, s, "menu_name")
         layout.prop(props, "vis_nick_override")
         layout.prop(props, "level_index")

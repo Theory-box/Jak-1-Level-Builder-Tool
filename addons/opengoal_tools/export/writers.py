@@ -1212,6 +1212,9 @@ def patch_game_gp(name, code_deps=None, scene=None):
     log(f"Patched game.gp  (extra goal-src: {[gc for _,gc,_ in (code_deps or []) if gc is not None]})")
 
 def export_glb(ctx, name):
+    # every export starts here (main thread): clean a renamed level's old files first
+    from ..level_rename import before_export
+    before_export(ctx.scene, _active_level_col(ctx.scene), name)
     from ..export_filter import allowed as _allowed
     if not _allowed("glb", ctx.scene):
         return None

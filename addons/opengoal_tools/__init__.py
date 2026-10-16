@@ -125,6 +125,7 @@ from . import game_text as _game_text
 from . import hints as _hints
 from . import object_tools as _object_tools
 from . import export_filter as _export_filter
+from . import level_rename as _level_rename
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -175,6 +176,7 @@ classes = (
     *_hints.CLASSES,
     *_object_tools.CLASSES,
     *_export_filter.CLASSES,
+    *_level_rename.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)

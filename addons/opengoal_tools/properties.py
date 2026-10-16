@@ -523,6 +523,12 @@ class OGProperties(PropertyGroup):
         default="AUTO",
     )
     og_cam_show_flags: BoolProperty(name="Camera flags", default=False)
+    og_clean_renamed: BoolProperty(
+        name="Clean renamed levels",
+        description="When a level's name changed since its last export, the next export removes the old name's "
+                    "files and build entries (and points this .blend's references at the new name)",
+        default=True,
+    )
     og_ignore_game_gd: BoolProperty(
         name="Ignore game.gd files",
         description="Don't add code / art group files that are already in GAME.CGO (game.gd) to the level's .gd or .jsonc — they're always loaded. "

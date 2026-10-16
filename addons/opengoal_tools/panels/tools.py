@@ -499,6 +499,9 @@ class OG_PT_DevTools(Panel):
         layout.label(text="Build", icon="MODIFIER")
         box = layout.box()
         box.prop(props, "og_ignore_game_gd")
+        box.prop(props, "og_clean_renamed")
+        from ..level_rename import draw_leftovers
+        draw_leftovers(box, ctx.scene)
         from ..export.scene import builtin_cameras_supported, camera_system
         row = box.row(align=True)
         row.prop(props, "og_camera_system")
