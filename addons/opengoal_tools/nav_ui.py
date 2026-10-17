@@ -342,6 +342,9 @@ are left out, the result is merged, raised a little and reduced to the game's li
         sc_s = ctx.scene.og_navgen               # the panel keeps the last settings
         sc_s.slope, sc_s.lift, sc_s.reduce = self.slope, self.lift, self.reduce
         src = ctx.active_object
+        # a redo (Adjust Last Operation) runs right after an undo, before the
+        # scene is evaluated: world matrices are still identity until then
+        ctx.view_layer.update()
         mw = src.matrix_world.copy()
         rot = mw.to_3x3()
         # the nav-mesh gets the source's transform (same origin / rotation / scale);
