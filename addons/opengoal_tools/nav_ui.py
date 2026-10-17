@@ -237,6 +237,21 @@ def nav_tri_count(obj):
     return len(obj.data.loop_triangles)
 
 
+def decimate_nav_mesh(obj, ratio):
+    """One collapse-decimate pass (materials kept)."""
+    import bpy as _b
+    mod = obj.modifiers.new("og_nav_decimate", "DECIMATE")
+    mod.decimate_type = "COLLAPSE"
+    mod.ratio = ratio
+    new = _b.data.meshes.new_from_object(obj.evaluated_get(_b.context.evaluated_depsgraph_get()))
+    obj.modifiers.remove(mod)
+    old = obj.data
+    obj.data = new
+    if old.users == 0:
+        _b.data.meshes.remove(old)
+    return nav_tri_count(obj)
+
+
 def reduce_nav_mesh(obj, target=NAV_TARGET):
     """Collapse-decimate a mesh until it has <= target triangles (materials kept)."""
     import bpy as _b
@@ -276,6 +291,32 @@ are left out, the result is merged, raised a little and reduced to the game's li
     bl_label = "Make Nav-Mesh"
     bl_options = {"REGISTER", "UNDO"}
 
+    # the Adjust Last Operation panel (bottom left): change and see the result
+    slope: bpy.props.FloatProperty(name="Max slope", default=0.785398, min=0.0, max=1.5708, subtype="ANGLE",
+                                   description="Faces steeper than this are left out (walls)")
+    lift: bpy.props.FloatProperty(name="Height", default=0.03, min=0.0, max=0.5, unit="LENGTH",
+                                  description="Raised this much above the faces so they don't overlap")
+    reduce: bpy.props.BoolProperty(name="Reduce to the limit", default=True,
+                                   description="Simplify the result to the game's 255 triangles if it has more")
+    decimate: bpy.props.FloatProperty(name="Decimate", default=1.0, min=0.01, max=1.0, subtype="FACTOR",
+                                      description="Simplify the result (1 = keep every triangle), also under the limit")
+    result: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, ctx, event):
+        s = ctx.scene.og_navgen                  # start from the panel's settings
+        self.slope, self.lift, self.reduce = s.slope, s.lift, s.reduce
+        return self.execute(ctx)
+
+    def draw(self, ctx):
+        col = self.layout.column()
+        col.prop(self, "slope")
+        col.prop(self, "lift")
+        col.prop(self, "decimate", slider=True)
+        col.prop(self, "reduce")
+        r = col.row(); r.alert = self.result > 255
+        r.label(text=f"Result: {self.result} triangles" + (" (the game allows 255)" if self.result > 255 else ""),
+                icon="MESH_DATA")
+
     @classmethod
     def poll(cls, ctx):
         o = ctx.active_object
@@ -288,7 +329,9 @@ are left out, the result is merged, raised a little and reduced to the game's li
     def execute(self, ctx):
         import bmesh, math
         from mathutils import Vector
-        s = ctx.scene.og_navgen
+        s = self
+        sc_s = ctx.scene.og_navgen               # the panel keeps the last settings
+        sc_s.slope, sc_s.lift, sc_s.reduce = self.slope, self.lift, self.reduce
         src = ctx.active_object
         mw = src.matrix_world
         rot = mw.to_3x3()
@@ -328,7 +371,10 @@ are left out, the result is merged, raised a little and reduced to the game's li
         ctx.scene.collection.objects.link(nm)
         from .operators.links import _link_navmesh
         _link_navmesh(ctx.scene, nm, [])
+        if self.decimate < 1.0:
+            decimate_nav_mesh(nm, self.decimate)
         n = reduce_nav_mesh(nm) if s.reduce else nav_tri_count(nm)
+        self.result = n
         for o in ctx.selected_objects:
             o.select_set(False)
         nm.select_set(True)
