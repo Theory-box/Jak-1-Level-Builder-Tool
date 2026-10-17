@@ -75,6 +75,8 @@ class OG_OT_MarkNavMesh(Operator):
                 if not o.name.startswith("NAVMESH_"):
                     o.name = "NAVMESH_" + o.name
                 _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_NAVMESHES)
+                from ..nav_ui import ensure_nav_materials
+                ensure_nav_materials(o)
                 count += 1
         self.report({"INFO"}, f"Tagged {count} object(s) as navmesh geometry")
         return {"FINISHED"}
@@ -135,6 +137,8 @@ def _link_navmesh(scene, nm, actors):
     if not nm.name.startswith("NAVMESH_"):
         nm.name = "NAVMESH_" + nm.name
     _link_object_to_sub_collection(scene, nm, *_COL_PATH_NAVMESHES)
+    from ..nav_ui import ensure_nav_materials
+    ensure_nav_materials(nm)
     for a in actors:
         a["og_navmesh_link"] = nm.name
     return nm

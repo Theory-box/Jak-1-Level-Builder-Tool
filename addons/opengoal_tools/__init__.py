@@ -68,7 +68,7 @@ from .collections import (
 )
 from .export import (
     # Navmesh geometry
-    _navmesh_compute, _navmesh_to_goal,
+    nav_compute, _navmesh_to_goal,
     # Core collect / write pipeline
     _canonical_actor_objects, _collect_navmesh_actors,
     _camera_aabb_to_planes, collect_aggro_triggers, collect_cameras,
@@ -126,6 +126,7 @@ from . import hints as _hints
 from . import object_tools as _object_tools
 from . import export_filter as _export_filter
 from . import level_rename as _level_rename
+from . import nav_ui as _nav_ui
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -177,6 +178,7 @@ classes = (
     *_object_tools.CLASSES,
     *_export_filter.CLASSES,
     *_level_rename.CLASSES,
+    *_nav_ui.CLASSES,
 )
 
 # COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
@@ -231,6 +233,7 @@ def register():
     _tasks.register_props()
     _hints.register_props()
     _object_tools.register_props()
+    _nav_ui.register_props()
     _export_filter.register_props()
     from . import required as _required
     _required.register_handlers()
@@ -509,6 +512,7 @@ def unregister():
     _tasks.unregister_props()
     _hints.unregister_props()
     _object_tools.unregister_props()
+    _nav_ui.unregister_props()
     _export_filter.unregister_props()
     from . import required as _required
     _required.unregister_handlers()

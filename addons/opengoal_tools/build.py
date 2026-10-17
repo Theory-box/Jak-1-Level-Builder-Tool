@@ -10,6 +10,7 @@ from pathlib import Path
 from .data import needed_tpages
 from .collections import _get_level_prop, _level_objects, _active_level_col
 from .export import (
+    write_nav_gc, nav_system, tfl_nav_present,
     collect_actors, collect_ambients, collect_spawns, collect_cameras,
     collect_load_boundaries,
     collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers, collect_task_triggers,
@@ -437,12 +438,12 @@ _BUILD_STATE = {"done":False, "status":"", "error":None, "ok":False}
 
 def patch_entity_gc(navmesh_actors, scene=None):
     """
-    Patch engine/entity/entity.gc to add custom-nav-mesh-check-and-setup.
+    Patch engine/entity/entity.gc to add lt-aid-nav-setup (the current nav-mesh system).
 
     navmesh_actors: list of (actor_aid, mesh_data) tuples.
 
     Adds/replaces:
-      1. A (defun custom-nav-mesh-check-and-setup ...) with one case per actor.
+      1. A (defun lt-aid-nav-setup ...) with one case per actor.
       2. A call to it at the top of (defmethod birth! entity-actor ...).
 
     Safe to call repeatedly — old injected code is stripped before re-injecting.
@@ -469,8 +470,29 @@ def patch_entity_gc(navmesh_actors, scene=None):
         txt,
         flags=re.DOTALL,
     )
-    # Strip old birth! injection line
-    txt = re.sub(r"  \(custom-nav-mesh-check-and-setup this\)\n", "", txt)
+    # Strip old birth! injection line (either system)
+    txt = re.sub(r"  \((?:custom-nav-mesh-check-and-setup|lt-custom-nav-setup|lt-aid-nav-setup) this\)\n", "", txt)
+
+    # custom-nav system: a fixed hook to lt-nav-mesh.gc's setup (the meshes are
+    # in each level's -nav.gc), or nothing when TFL's own hook is installed
+    if nav_system(scene) == "CUSTOM":
+        if not tfl_nav_present():
+            block = ("\n;; [OpenGOAL Tools] BEGIN custom-nav-mesh\n"
+                     ";; custom-nav system: the setup is in levels/level-tools/lt-nav-mesh.gc\n"
+                     "(define-extern lt-custom-nav-setup (function entity-actor none))\n"
+                     ";; [OpenGOAL Tools] END custom-nav-mesh\n")
+            BIRTH = "(defmethod birth! ((this entity-actor))"
+            if BIRTH not in txt:
+                log("WARNING: entity.gc birth! marker not found — cannot hook custom-nav")
+                return
+            txt = txt.replace(BIRTH, block + "\n" + BIRTH, 1)
+            txt = txt.replace("  (let* ((entity-type (-> this etype))",
+                              "  (lt-custom-nav-setup this)\n  (let* ((entity-type (-> this etype))", 1)
+        out = txt.replace("\n", "\r\n") if crlf else txt
+        if out.encode("utf-8") != raw:
+            p.write_bytes(out.encode("utf-8"))
+            log("Patched entity.gc: custom-nav hook" + (" (TFL's own hook used)" if tfl_nav_present() else ""))
+        return
 
     if not navmesh_actors:
         # Nothing to inject — just clean file
@@ -485,23 +507,18 @@ def patch_entity_gc(navmesh_actors, scene=None):
         "",
         ";; [OpenGOAL Tools] BEGIN custom-nav-mesh",
 
-        "(defun custom-nav-mesh-check-and-setup ((this entity-actor))",
+        ";; own name: mod-base's entity.gc already has a custom-nav-mesh-check-and-setup",
+        "(defun lt-aid-nav-setup ((this entity-actor))",
         "  (case (-> this aid)",
     ]
     for aid, mesh in navmesh_actors:
         lines.append(_navmesh_to_goal(mesh, aid))
     lines += [
         "  )",
-        "  ;; Manually init the nav-mesh without calling entity-nav-login.",
-        "  ;; entity-nav-login calls update-route-table which writes back to the route",
-        "  ;; array — but our mesh is 'static (read-only GAME.CGO memory), so that",
-        "  ;; write would segfault. Instead we just set up the user-list engine.",
+        "  ;; the real login: user list (nav-max-users), line-of-sight routes and",
+        "  ;; the actor's nav-mesh-sphere lump (like The Forgotten Lands)",
         "  (when (nonzero? (-> this nav-mesh))",
-        "    (when (zero? (-> (-> this nav-mesh) user-list))",
-        "      (set! (-> (-> this nav-mesh) user-list)",
-        "            (new 'loading-level 'engine 'nav-engine 32))",
-        "    )",
-        "  )",
+        "    (entity-nav-login this))",
         "  (none)",
         ")",
         ";; [OpenGOAL Tools] END custom-nav-mesh",
@@ -522,7 +539,7 @@ def patch_entity_gc(navmesh_actors, scene=None):
     CALL_MARKER = "  (let* ((entity-type (-> this etype))"
     txt = txt.replace(
         CALL_MARKER,
-        "  (custom-nav-mesh-check-and-setup this)\n" + CALL_MARKER,
+        "  (lt-aid-nav-setup this)\n" + CALL_MARKER,
         1,
     )
 
@@ -626,6 +643,7 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
     actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
     write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
+    write_nav_gc(name, scene)          # custom-nav system: the level's -nav.gc
     write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
     navmesh_actors = _collect_navmesh_actors(scene)
     _lv_objs = _level_objects(scene)
@@ -811,6 +829,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
         actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
         write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
+        write_nav_gc(name, scene)
         write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
         _lv_objs = _level_objects(scene)
         from .export.level_tools import ensure_level_tools

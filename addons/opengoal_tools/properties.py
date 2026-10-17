@@ -523,6 +523,14 @@ class OGProperties(PropertyGroup):
         default="AUTO",
     )
     og_cam_show_flags: BoolProperty(name="Camera flags", default=False)
+    og_navmesh_system: EnumProperty(
+        name="Nav-mesh system",
+        items=[("AID", "Current (entity.gc)", "Each linked actor gets its mesh by actor id in entity.gc (rebuilt every export)"),
+               ("CUSTOM", "custom-nav (TFL)", "The Forgotten Lands' way: each level's meshes in <level>-nav.gc, actors pick one "
+                                             "with a 'custom-nav' lump; entity.gc gets a fixed hook once")],
+        default="AID",
+        description="How nav-meshes are exported",
+    )
     og_clean_renamed: BoolProperty(
         name="Clean renamed levels",
         description="When a level's name changed since its last export, the next export removes the old name's "

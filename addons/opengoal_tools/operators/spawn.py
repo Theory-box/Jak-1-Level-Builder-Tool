@@ -317,8 +317,8 @@ class OG_OT_SpawnEntity(Operator):
         if _db.nav_unsafe(etype):
             o["og_nav_radius"] = ctx.scene.og_props.nav_radius
             self.report({"WARNING"},
-                f"Added {o.name}  —  nav-mesh workaround will be applied on export. "
-                f"Enemy will idle/notice but won't pathfind without a real navmesh.")
+                f"Added {o.name}  —  link it to a nav-mesh: "
+                f"without one it idles / notices but won't pathfind.")
         elif _db.needs_pathb(etype):
             self.report({"WARNING"},
                 f"Added {o.name}  —  needs two paths: 'path' and 'pathb' "

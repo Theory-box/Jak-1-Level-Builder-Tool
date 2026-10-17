@@ -686,9 +686,12 @@ def _draw_selected_navmesh(layout, sel):
     try:
         sel.data.calc_loop_triangles()
         tc = len(sel.data.loop_triangles)
-        layout.label(text=f"{tc} triangles", icon="MESH_DATA")
+        r = layout.row(); r.alert = tc > 255
+        r.label(text=f"{tc} triangles" + (" (the game allows 255)" if tc > 255 else ""), icon="MESH_DATA")
     except Exception:
         pass
+    from ..nav_ui import draw_nav_extras
+    draw_nav_extras(layout, sel)
 
 
 

@@ -44,7 +44,8 @@ from .volumes import (
     _clean_orphaned_vol_links,
 )
 from .navmesh import (
-    _navmesh_compute,
+    nav_compute, nav_tris, nav_mesh_static, nav_spheres, NAV_MATERIALS,
+    nav_system, tfl_nav_present, nav_symbol, level_nav_meshes, nav_actor_lumps, write_nav_gc, nav_gc_path, nav_gc_deps,
     _navmesh_to_goal,
     _collect_navmesh_actors,
     collect_nav_mesh_geometry,
