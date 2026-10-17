@@ -470,6 +470,14 @@ def patch_entity_gc(navmesh_actors, scene=None):
         txt,
         flags=re.DOTALL,
     )
+    # switching systems (the other hook was in): a running GOALC won't compile it
+    _had = ("custom" if "(lt-custom-nav-setup this)" in txt else
+            "aid" if "(lt-aid-nav-setup this)" in txt else "")
+    _want = "custom" if nav_system(scene) == "CUSTOM" else ("aid" if navmesh_actors else "")
+    if _had and _want and _had != _want:
+        from .export import writers as _w
+        _w.TYPES_CHANGED = True
+        log(f"[navmesh] nav-mesh system changed ({_had} -> {_want}): GOALC restarts")
     # Strip old birth! injection line (either system)
     txt = re.sub(r"  \((?:custom-nav-mesh-check-and-setup|lt-custom-nav-setup|lt-aid-nav-setup) this\)\n", "", txt)
 

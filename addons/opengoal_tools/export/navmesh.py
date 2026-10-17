@@ -54,10 +54,10 @@ from .predicates import (
 # ── nav-mesh core (shared by both nav-mesh systems) ──────────────────────────
 # (appended to export/navmesh.py by patch_nav1.py)
 
-NAV_MATERIALS = (                      # (name, pat bits, viewport colour)
-    ("NAV Walk", 0, (0.25, 0.8, 0.3, 1.0)),
-    ("NAV Jump", 1, (1.0, 0.55, 0.1, 1.0)),
-    ("NAV Special", 2, (0.2, 0.45, 1.0, 1.0)),
+NAV_MATERIALS = (                      # (name, pat bits, colour of the game's nav viewer)
+    ("NAV Walk", 0, "#0080FF"),
+    ("NAV Jump", 1, "#1B7679"),
+    ("NAV Special", 2, "#199459"),
 )
 _NAV_PAT = {n: p for n, p, _c in NAV_MATERIALS}
 NAV_LIMIT = 255                        # u8 indices, #xff = no neighbour
