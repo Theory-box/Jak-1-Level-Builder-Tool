@@ -9,6 +9,32 @@ Based on `community-feedback/Actor Notes.md` and notes here
 
 ---
 
+## Import from files feature
+A feature that would let you import a text file and the addon would create actors, checkpoint, navmesh, paths, etc, based on those definitions.
+### UI Panel
+Use the already existing `import` menu. Divide it for the 3D model import, move the texturing menu inside there and then also have an actor sections. Like this:
+- Import
+  - Game 3D models
+  - Game textures
+  - From GOAL files
+
+The import from files would just be an input to search for files. Or a button to import text copied in the clickboard.
+Once text is loaded, it should show a list of all object found, organised by categories. And allow you to select/deselect which ones you want. With a select/deselect all button and then an import button when you've made your choice.
+Select all objects that were imported.
+### Available to import
+- Custom level Json / exported actor list from the game
+  - Actors (Fill every field in the actor based on the definition in the json, if a field doesn't exist, add it as custom lump)
+  - Paths (automatically made from the path definition of the actors and automatically linked)
+  - Volumes (same as paths)
+  - Ambients
+  - Camera
+- Entity.gc / nav file
+  - navmesh (as mesh with the materials assigned already)
+- level-info.gc
+  - checkpoints
+
+---
+
 ## Better Linux support
 
 ---
