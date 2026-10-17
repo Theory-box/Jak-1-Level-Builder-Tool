@@ -21,6 +21,23 @@ def _level_name(scene):
     return str(col.get("og_level_name", col.name)) if col is not None else "level"
 
 
+def _aid_entries(scene, mesh_names):
+    """[(aid, mesh data)] of the actors linked to these meshes (current
+    system: aid = base id + place in the export order, like the export)."""
+    from ..collections import _level_objects, _get_level_prop
+    from .predicates import _canonical_actor_objects
+    from .navmesh import nav_compute, nav_tris
+    base = int(_get_level_prop(scene, "og_base_id", 10000))
+    out = []
+    for i, o in enumerate(_canonical_actor_objects(scene, objects=_level_objects(scene))):
+        nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
+        if nm is not None and nm.name in mesh_names:
+            m = nav_compute(nav_tris(nm))
+            if m is not None:
+                out.append((base + i + 1, m))
+    return out
+
+
 def build(scene, depsgraph, objs):
     """(text, {kind: count}) for the selected objects."""
     from ..collections import actor_lump_name, spawn_uid
@@ -70,6 +87,34 @@ def build(scene, depsgraph, objs):
             counts["checkpoints"] = len(sp)
             out += [";; ===== Checkpoints: level-info.gc continue-points (inside :continues '( ... )) =====",
                     _make_continues(name, sp)[2:-1], ""]
+
+    meshes = []
+    for o in objs:
+        nm = o if (o.type == "MESH" and (o.get("og_navmesh") or o.name.startswith("NAVMESH_"))) else \
+            scene.objects.get(o.get("og_navmesh_link", "") or "")
+        if nm is not None and nm not in meshes:
+            meshes.append(nm)
+    if meshes:
+        from .navmesh import nav_system, nav_symbol, nav_compute, nav_tris, nav_mesh_static, _navmesh_to_goal
+        counts["nav-meshes"] = len(meshes)
+        if nav_system(scene) == "CUSTOM":
+            out.append(";; ===== Nav-meshes (custom-nav): a level's <level>-nav.gc, or TFL's tfl-nav-mesh.gc =====")
+            for nm in meshes:
+                mesh = nav_compute(nav_tris(nm))
+                if mesh is None:
+                    continue
+                sym = nav_symbol(name, nm)
+                out += [f";; actors using it: \"custom-nav\": [\"symbol\", \"{sym}\"]",
+                        f";; in tfl-nav-mesh.gc, add  ({sym} *nav-{sym}*)  to *custom-nav-list*",
+                        f"(define *nav-{sym}*", "  " + nav_mesh_static(mesh, indent="    ").replace("\n", "\n  ") + ")",
+                        ";; in a level's -nav.gc (joins the list when the level loads):",
+                        f"(unless (custom-nav<-name '{sym})",
+                        f"  (set! *custom-nav-list* (cons '({sym} *nav-{sym}*) *custom-nav-list*)))", ""]
+        else:
+            out.append(";; ===== Nav-meshes (current system): entries of the (case (-> this aid)) in entity.gc =====")
+            entries = _aid_entries(scene, {nm.name for nm in meshes})
+            out += [_navmesh_to_goal(m, aid) for aid, m in entries] or [";; (no actor linked to these meshes)"]
+            out.append("")
 
     lbs = {n[8:] for n in names if n.startswith("LOADBND_")}
     if lbs:

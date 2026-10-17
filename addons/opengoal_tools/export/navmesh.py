@@ -189,6 +189,19 @@ def nav_compute(tris, full=True):
             others = [p for p in edge_to[(min(ea, eb), max(ea, eb))] if p != pi]
             nb.append(others[0] if others else 0xFF)
         adj.append(tuple(nb))
+    parts, seen = 0, [False] * N                    # islands: parts no edge joins
+    for s0 in range(N):
+        if seen[s0]:
+            continue
+        parts += 1
+        stack = [s0]; seen[s0] = True
+        while stack:
+            cur = stack.pop()
+            for nb in adj[cur]:
+                if nb != 0xFF and not seen[nb]:
+                    seen[nb] = True; stack.append(nb)
+    if parts > 1:
+        problems.append(f"{parts} separate parts: enemies can't path from one to another")
     if not full:
         return {"poly_count": N, "vertex_count": V, "problems": problems, "flipped": flipped}
 

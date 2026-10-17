@@ -740,6 +740,8 @@ def _draw_selected_mesh_navtag(layout, obj):
     else:
         box.label(text="Not tagged as navmesh", icon="DOT")
         box.operator("og.mark_navmesh", text="Mark as NavMesh", icon="CHECKMARK")
+        from ..nav_ui import draw_nav_generate
+        draw_nav_generate(layout, obj)
 
 
 

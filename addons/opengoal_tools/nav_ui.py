@@ -210,18 +210,178 @@ def draw_nav_extras(layout, nm):
     if not all(n in names for n, _p, _c in NAV_MATERIALS):
         r.operator("og.nav_materials", text="Add Nav Materials", icon="MATERIAL")
     r.operator("og.nav_wire", text="", icon="SHADING_WIRE" if nm.display_type != "WIRE" else "SHADING_SOLID").mesh = nm.name
+    if nav_tri_count(nm) > 255:
+        w = box.row(); w.alert = True
+        w.operator("og.nav_reduce", text="Reduce to 255 Triangles", icon="MOD_DECIM").mesh = nm.name
     h = box.row(); h.enabled = False; h.scale_y = 0.7
     h.label(text="Edit Mode: faces on NAV Jump = gaps enemies jump (NAV Special: sharkey / yakow)")
     draw_nav_spheres(layout, nm)
 
 
-CLASSES = (OGNavSphere, OG_OT_NavMaterials, OG_OT_NavWire, OG_OT_NavSphereAdd, OG_OT_NavSpherePick, OG_OT_NavSphereRemove)
+# ── make a nav-mesh from faces / reduce one ──────────────────────────────────
+
+class OGNavGenSettings(bpy.types.PropertyGroup):
+    slope: bpy.props.FloatProperty(name="Max slope", default=0.785398, min=0.0, max=1.5708, subtype="ANGLE",
+                                   description="Faces steeper than this are left out (walls)")
+    lift: bpy.props.FloatProperty(name="Height", default=0.03, min=0.0, max=0.5, unit="LENGTH",
+                                  description="Raised this much above the faces so they don't overlap")
+    reduce: bpy.props.BoolProperty(name="Reduce to the limit", default=True,
+                                   description="Simplify the result to the game's 255 triangles if it has more")
+
+
+NAV_TARGET = 250       # under the game's 255, room for the triangulation
+
+
+def nav_tri_count(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def reduce_nav_mesh(obj, target=NAV_TARGET):
+    """Collapse-decimate a mesh until it has <= target triangles (materials kept)."""
+    import bpy as _b
+    for _ in range(8):
+        n = nav_tri_count(obj)
+        if n <= target:
+            return n
+        mod = obj.modifiers.new("og_nav_reduce", "DECIMATE")
+        mod.decimate_type = "COLLAPSE"
+        mod.ratio = max(0.01, target / n * 0.98)
+        dg = _b.context.evaluated_depsgraph_get()
+        new = _b.data.meshes.new_from_object(obj.evaluated_get(dg))
+        obj.modifiers.remove(mod)
+        old = obj.data
+        obj.data = new
+        if old.users == 0:
+            _b.data.meshes.remove(old)
+    return nav_tri_count(obj)
+
+
+def _gen_faces(obj):
+    """(bmesh, faces) to build from: the selected faces in Edit Mode, else all."""
+    import bmesh
+    if obj.mode == "EDIT":
+        bm = bmesh.from_edit_mesh(obj.data)
+        bm.verts.index_update()
+        return bm, [f for f in bm.faces if f.select]
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    return bm, list(bm.faces)
+
+
+class OG_OT_NavFromFaces(bpy.types.Operator):
+    """Make a nav-mesh from this mesh's floor faces (the selected faces in Edit Mode): steep faces
+are left out, the result is merged, raised a little and reduced to the game's limit"""
+    bl_idname = "og.nav_from_faces"
+    bl_label = "Make Nav-Mesh"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        o = ctx.active_object
+        if o is None or o.type != "MESH":
+            return False
+        if o.mode == "EDIT":
+            return o.data.total_face_sel > 0
+        return len(o.data.polygons) > 0
+
+    def execute(self, ctx):
+        import bmesh, math
+        from mathutils import Vector
+        s = ctx.scene.og_navgen
+        src = ctx.active_object
+        mw = src.matrix_world
+        rot = mw.to_3x3()
+        bm, faces = _gen_faces(src)
+        up = math.cos(s.slope)
+        out = bmesh.new()
+        vmap = {}
+        kept = 0
+        for f in faces:
+            n = (rot @ f.normal).normalized()
+            if n.z < up:
+                continue
+            vs = []
+            for v in f.verts:
+                if v.index not in vmap:
+                    vmap[v.index] = out.verts.new((mw @ v.co) + Vector((0, 0, s.lift)))
+                vs.append(vmap[v.index])
+            try:
+                out.faces.new(vs)
+                kept += 1
+            except ValueError:
+                pass
+        if src.mode != "EDIT":
+            bm.free()
+        if not kept:
+            out.free()
+            self.report({"WARNING"}, "No floor faces (all steeper than the max slope)")
+            return {"CANCELLED"}
+        bmesh.ops.remove_doubles(out, verts=out.verts, dist=0.01)
+        bmesh.ops.triangulate(out, faces=out.faces)
+        me = bpy.data.meshes.new(f"{src.name}_nav")
+        out.to_mesh(me)
+        out.free()
+        if src.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        nm = bpy.data.objects.new(f"{src.name}_nav", me)
+        ctx.scene.collection.objects.link(nm)
+        from .operators.links import _link_navmesh
+        _link_navmesh(ctx.scene, nm, [])
+        n = reduce_nav_mesh(nm) if s.reduce else nav_tri_count(nm)
+        for o in ctx.selected_objects:
+            o.select_set(False)
+        nm.select_set(True)
+        ctx.view_layer.objects.active = nm
+        self.report({"WARNING"} if n > 255 else {"INFO"},
+                    f"{nm.name}: {n} triangles from {kept} face(s)" + (" (over the game's 255: Reduce it)" if n > 255 else ""))
+        return {"FINISHED"}
+
+
+class OG_OT_NavReduce(bpy.types.Operator):
+    """Simplify this nav-mesh to the game's limit (255 triangles); jump / special faces keep their material"""
+    bl_idname = "og.nav_reduce"
+    bl_label = "Reduce Nav-Mesh"
+    bl_options = {"REGISTER", "UNDO"}
+    mesh: StringProperty()
+
+    def execute(self, ctx):
+        nm = bpy.data.objects.get(self.mesh)
+        if nm is None:
+            return {"CANCELLED"}
+        if nm.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+        n = reduce_nav_mesh(nm)
+        self.report({"INFO"}, f"{nm.name}: {n} triangles")
+        return {"FINISHED"}
+
+
+def draw_nav_generate(layout, obj):
+    """Object Settings > NavMesh, for a mesh: make a nav-mesh from its faces."""
+    s = bpy.context.scene.og_navgen
+    box = layout.box()
+    box.label(text="Make a nav-mesh from faces", icon="MOD_MESHDEFORM")
+    col = box.column(align=True)
+    col.prop(s, "slope")
+    col.prop(s, "lift")
+    box.prop(s, "reduce")
+    edit = obj.mode == "EDIT"
+    box.operator("og.nav_from_faces", text="From Selected Faces" if edit else "From All Faces", icon="ADD")
+    if edit and obj.data.total_face_sel == 0:
+        h = box.row(); h.enabled = False; h.scale_y = 0.7
+        h.label(text="Select faces first")
+
+
+CLASSES = (OGNavSphere, OGNavGenSettings, OG_OT_NavFromFaces, OG_OT_NavReduce, OG_OT_NavMaterials, OG_OT_NavWire, OG_OT_NavSphereAdd, OG_OT_NavSpherePick, OG_OT_NavSphereRemove)
 
 
 def register_props():
     bpy.types.Object.og_nav_spheres = CollectionProperty(type=OGNavSphere)
+    bpy.types.Scene.og_navgen = PointerProperty(type=OGNavGenSettings)
 
 
 def unregister_props():
     if hasattr(bpy.types.Object, "og_nav_spheres"):
         del bpy.types.Object.og_nav_spheres
+    if hasattr(bpy.types.Scene, "og_navgen"):
+        del bpy.types.Scene.og_navgen
