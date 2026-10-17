@@ -237,14 +237,27 @@ def nav_tri_count(obj):
     return len(obj.data.loop_triangles)
 
 
-def decimate_nav_mesh(obj, ratio):
-    """One collapse-decimate pass (materials kept)."""
+def _apply_decimate(obj, ratio):
+    """One collapse-decimate pass applied to the mesh (materials kept). It runs
+    on a temporary object in the scene's own collection (a nav-mesh in a
+    hidden / excluded collection evaluates to nothing); an empty result never
+    replaces the mesh."""
     import bpy as _b
-    mod = obj.modifiers.new("og_nav_decimate", "DECIMATE")
+    sc = _b.context.scene
+    tmp = _b.data.objects.new("og_nav_decimate_tmp", obj.data)
+    sc.collection.objects.link(tmp)
+    mod = tmp.modifiers.new("og_nav_decimate", "DECIMATE")
     mod.decimate_type = "COLLAPSE"
-    mod.ratio = ratio
-    new = _b.data.meshes.new_from_object(obj.evaluated_get(_b.context.evaluated_depsgraph_get()))
-    obj.modifiers.remove(mod)
+    mod.ratio = max(0.01, min(1.0, ratio))
+    try:
+        _b.context.view_layer.update()
+        dg = _b.context.evaluated_depsgraph_get()
+        new = _b.data.meshes.new_from_object(tmp.evaluated_get(dg), preserve_all_data_layers=True, depsgraph=dg)
+    finally:
+        _b.data.objects.remove(tmp, do_unlink=True)
+    if not len(new.polygons):
+        _b.data.meshes.remove(new)
+        return nav_tri_count(obj)
     old = obj.data
     obj.data = new
     if old.users == 0:
@@ -252,23 +265,19 @@ def decimate_nav_mesh(obj, ratio):
     return nav_tri_count(obj)
 
 
+def decimate_nav_mesh(obj, ratio):
+    """One collapse-decimate pass (materials kept)."""
+    return _apply_decimate(obj, ratio)
+
+
 def reduce_nav_mesh(obj, target=NAV_TARGET):
     """Collapse-decimate a mesh until it has <= target triangles (materials kept)."""
-    import bpy as _b
     for _ in range(8):
         n = nav_tri_count(obj)
         if n <= target:
             return n
-        mod = obj.modifiers.new("og_nav_reduce", "DECIMATE")
-        mod.decimate_type = "COLLAPSE"
-        mod.ratio = max(0.01, target / n * 0.98)
-        dg = _b.context.evaluated_depsgraph_get()
-        new = _b.data.meshes.new_from_object(obj.evaluated_get(dg))
-        obj.modifiers.remove(mod)
-        old = obj.data
-        obj.data = new
-        if old.users == 0:
-            _b.data.meshes.remove(old)
+        if _apply_decimate(obj, target / n * 0.98) >= n:
+            break                        # nothing changed: stop
     return nav_tri_count(obj)
 
 
