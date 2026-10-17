@@ -337,13 +337,17 @@ are left out, the result is merged, raised a little and reduced to the game's li
 
     def execute(self, ctx):
         import bmesh, math
-        from mathutils import Vector
+        from mathutils import Matrix, Vector
         s = self
         sc_s = ctx.scene.og_navgen               # the panel keeps the last settings
         sc_s.slope, sc_s.lift, sc_s.reduce = self.slope, self.lift, self.reduce
         src = ctx.active_object
-        mw = src.matrix_world
+        mw = src.matrix_world.copy()
         rot = mw.to_3x3()
+        # the nav-mesh gets the source's transform (same origin / rotation / scale);
+        # the lift is along world Z, so it goes through the inverse
+        own = mw if abs(mw.determinant()) > 1e-12 else Matrix.Identity(4)
+        inv = own.inverted()
         bm, faces = _gen_faces(src)
         up = math.cos(s.slope)
         out = bmesh.new()
@@ -356,7 +360,7 @@ are left out, the result is merged, raised a little and reduced to the game's li
             vs = []
             for v in f.verts:
                 if v.index not in vmap:
-                    vmap[v.index] = out.verts.new((mw @ v.co) + Vector((0, 0, s.lift)))
+                    vmap[v.index] = out.verts.new(inv @ ((mw @ v.co) + Vector((0, 0, s.lift))))
                 vs.append(vmap[v.index])
             try:
                 out.faces.new(vs)
@@ -377,6 +381,7 @@ are left out, the result is merged, raised a little and reduced to the game's li
         if src.mode == "EDIT":
             bpy.ops.object.mode_set(mode="OBJECT")
         nm = bpy.data.objects.new(f"{src.name}_nav", me)
+        nm.matrix_world = own
         ctx.scene.collection.objects.link(nm)
         from .operators.links import _link_navmesh
         _link_navmesh(ctx.scene, nm, [])
