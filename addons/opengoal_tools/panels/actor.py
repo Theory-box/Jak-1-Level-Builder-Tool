@@ -190,6 +190,10 @@ class OG_PT_ActorNavMesh(Panel):
         parts = sel.name.split("_", 2)
         return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_uses_navmesh(parts[1])
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "nav")
+
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object

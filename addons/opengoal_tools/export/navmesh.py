@@ -123,9 +123,10 @@ def _bvh(polys, rel, pad_xz=1.0, pad_y=5.0):
     return nodes
 
 
-def nav_compute(tris):
+def nav_compute(tris, full=True):
     """Merged vertices, triangles (facing up), adjacency, route table, node tree
-    and problems for a nav-mesh. tris: nav_tris() output."""
+    and problems for a nav-mesh. tris: nav_tris() output. full=False stops
+    after the checks (no route table / nodes: cheap, for the warnings)."""
     EPS = 0.01
     verts, problems = [], []
     grid = {}
@@ -188,6 +189,8 @@ def nav_compute(tris):
             others = [p for p in edge_to[(min(ea, eb), max(ea, eb))] if p != pi]
             nb.append(others[0] if others else 0xFF)
         adj.append(tuple(nb))
+    if not full:
+        return {"poly_count": N, "vertex_count": V, "problems": problems, "flipped": flipped}
 
     INF = 1 << 30
 
@@ -266,6 +269,15 @@ def nav_mesh_static(mesh, indent="  "):
         L.append(f"{I}  (new 'static 'vector4ub :data (new 'static 'array uint8 4 {' '.join(hx(x) for x in b)}))")
     L[-1] += "))"
     return "\n".join(L)
+
+
+def nav_issues(nav_obj):
+    """Problems of a nav-mesh object for the warnings (no triangles, over 255
+    triangles / vertices, zero-area, 3+ triangles on an edge, only jump faces)."""
+    if nav_obj is None or nav_obj.type != "MESH":
+        return []
+    m = nav_compute(nav_tris(nav_obj), full=False)
+    return ["no triangles"] if m is None else m["problems"]
 
 
 def nav_spheres(nav_obj):

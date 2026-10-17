@@ -4939,7 +4939,8 @@
         {
           "panel": "path",
           "show-panel": true,
-          "linear-only": true
+          "linear-only": true,
+          "required": true
         },
         {
           "panel": "visibility",
