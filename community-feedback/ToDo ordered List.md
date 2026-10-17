@@ -45,11 +45,34 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 ---
 
 ## Switch Nav-mesh feature to TFL implementation 
+While this isn't implemented in mod-base yet, this does not mean it's not useable if the addon just create the files and changes. 
+### Research
+You can check on https://github.com/Kuitar5/the-forgotten-lands/ how it works. Here's a few pointers:
+- [tfl-nav-mesh.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/main/goal_src/jak1/engine/mods/tfl-nav-mesh.gc)
+  - Where the custom nav-mesh are defined. They're mostly similar to how they're defined in the other, mod-base way.
+  - Where the list of nav-mesh is defined
+  - Where the setup is made
+- [entity.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/engine/entity/entity.gc#L842)
+  - Where `custom-nav-mesh-check-and-setup` is called
+- [Any level .json](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/custom_assets/jak1/levels/energy-bay/energy-bay.jsonc#L801)
+  - `custom-nav` lump to select from the list of nav-mesh
+- [game.gp](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/game.gp#L2066)
 (when it's implemented on mod-base)
-- Make it not conflict if you already have mod-base (should come for free with that implementation since each nav-mesh is separated)
-- add jump feature. (done through materials?)
-- add nav-sphere
-- Ability to connect other actors to a nav-mesh so they block pathing (like crates)
+  - Not forgoting to add the new file in here so it compiles.
+You can have a look around see if there's other things I missed.
+### Advantages
+The main advantage is a cleaner approach, not changing the base files much, each nav-mesh is sparated, you don't need to set it by aid so it's more understandable in the level's json too. As it's a differen file, it doesn't need to compile as much other files when making changes on nav-meshes.
+### Setup for the addon
+As with camera, makes this a settings but default to current implementation, this will only be the default once mod-base has been updated to it.
+### Additional nav-mesh features
+These features should be available regardless of which nav-mesh implementation is selected
 
+We need a way to set some faces as "jump" (written as `:pat 1` in the nav-mesh definition, you can also check if there's more than that and what they do).
+My idea is to have some special navigation materials which automatically get added as slots onto nav-mesh meshes in blender. Then users can switch to edit mode, select the faces they want as jump and change them however they want.
+If you have a better idea you can propose it.
+
+Nav-sphere are also not implemented correctly. At the moment the addon export one nav-sphere per nav-mesh. But no nav-sphere should be exported by default. Those serves to set areas that the enemies will avoid. As it's easier to sometimes put a nav-sphere to block an area than complexifying the nav-mesh itself as there's a vertex limit.
+
+Add a collapsable menu at the bottom of nav-mesh for nav-sphere. Where you can add them by searching for empties or by directly adding one from the menu. The sphere then use the scaling of the sphere times the size of the empty and its position to write down all the nav-sphere definitions.
 
 ---
