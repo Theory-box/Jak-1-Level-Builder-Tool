@@ -17,8 +17,11 @@ LT_CHECKPOINT_GC = ';;-*-Lisp-*-\n(in-package goal)\n;; lt-checkpoint.gc -- shar
 LT_TASK_TRIGGER_GC = ";;-*-Lisp-*-\n(in-package goal)\n;; lt-task-trigger.gc -- shared code of OpenGOAL Level Tools (written by the addon).\n;; lt-task-trigger: a trigger volume's task actions. When Jak enters its convex\n;; volume it closes / opens task stages ('actions: task, status, 0 close / 1 open\n;; per action), once per entry. Compiled once (game.gp), loaded with the game.\n\n(deftype lt-task-trigger (process-drawable)\n  ((cull-radius float)\n   (inside      symbol)\n   (num-planes  int32)\n   (planes      (inline-array vector))\n   (num-actions int32)\n   (actions     (pointer int32)))\n  :heap-base #x70\n  (:states lt-task-trigger-active))\n\n(defstate lt-task-trigger-active (lt-task-trigger)\n  :code\n  (behavior ()\n    (loop\n      (when (and *target* (zero? (mod (-> *display* base-frame-counter) 4)))\n        (let* ((pos (-> *target* control trans))\n               (dx  (- (-> pos x) (-> self root trans x)))\n               (dy  (- (-> pos y) (-> self root trans y)))\n               (dz  (- (-> pos z) (-> self root trans z)))\n               (cr  (-> self cull-radius))\n               (inside (and (< (+ (* dx dx) (* dy dy) (* dz dz)) (* cr cr))\n                            (lt-point-in-planes? (-> self planes) (-> self num-planes) pos))))\n          (when (and inside (not (-> self inside)))\n            (dotimes (i (-> self num-actions))\n              (let ((task   (the-as game-task (-> self actions (* i 3))))\n                    (status (the-as task-status (-> self actions (+ (* i 3) 1)))))\n                (if (zero? (-> self actions (+ (* i 3) 2)))\n                  (close-specific-task! task status)\n                  (open-specific-task! task status)))))\n          (set! (-> self inside) inside)))\n      (suspend))))\n\n(defmethod init-from-entity! ((this lt-task-trigger) (arg0 entity-actor))\n  (set! (-> this root) (new (quote process) (quote trsqv)))\n  (process-drawable-from-entity! this arg0)\n  (set! (-> this inside) #f)\n  (set! (-> this cull-radius) (res-lump-float arg0 (quote cull-radius) :default 122880.0))\n  (let ((tag (new (quote static) (quote res-tag))))\n    (let ((data (res-lump-data arg0 (quote vol) (inline-array vector) :tag-ptr (& tag))))\n      (set! (-> this planes) (the-as (inline-array vector) data))\n      (set! (-> this num-planes) (if data (the-as int (-> tag elt-count)) 0))))\n  (let ((tag (new (quote static) (quote res-tag))))\n    (let ((data (res-lump-data arg0 (quote actions) (pointer int32) :tag-ptr (& tag))))\n      (set! (-> this actions) data)\n      (set! (-> this num-actions) (if data (/ (the-as int (-> tag elt-count)) 3) 0))))\n  (go lt-task-trigger-active)\n  (none))\n"
 
 # name -> code; DEPS: the goal-src dependencies (lt-task-trigger uses lt-checkpoint's plane test)
-FILES = {"lt-checkpoint": LT_CHECKPOINT_GC, "lt-task-trigger": LT_TASK_TRIGGER_GC}
-DEPS = {"lt-task-trigger": ("process-drawable", "task-control", "lt-checkpoint")}
+LT_NAV_MESH_GC = ';;-*-Lisp-*-\n(in-package goal)\n;; lt-nav-mesh.gc -- shared code of OpenGOAL Level Tools (written by the addon).\n;; custom-nav nav-meshes, the same way as The Forgotten Lands\' tfl-nav-mesh.gc:\n;; each level\'s <level>-nav.gc defines its meshes and adds them to\n;; *custom-nav-list*; an actor\'s \'custom-nav symbol lump picks one at birth.\n\n(define *custom-nav-list* \'())\n\n(defun custom-nav<-name ((nav-name symbol))\n  (dotimes (i (length *custom-nav-list*))\n    (let* ((map (the pair (ref *custom-nav-list* i)))\n           (name (the symbol (car map)))\n           (mesh (the symbol (cadr map))))\n      (when (= name nav-name)\n        (return (the nav-mesh (-> mesh value))))))\n  (the nav-mesh #f))\n\n(defun lt-custom-nav-setup ((e entity-actor))\n  "Called from entity-actor birth!: the actor\'s custom-nav mesh, then the nav login."\n  (let ((name (res-lump-struct e \'custom-nav symbol)))\n    (when name\n      (let ((nav (custom-nav<-name name)))\n        (cond\n          ((and nav (type-type? (-> (the basic nav) type) nav-mesh))\n           ;; the actor that sets spheres resets the mesh\'s old ones (like TFL)\n           (when (res-lump-struct e \'nav-mesh-sphere (inline-array nav-sphere))\n             (set! (-> nav static-sphere) (the (inline-array nav-sphere) 0))\n             (set! (-> nav static-sphere-count) 0))\n           (set! (-> e nav-mesh) nav)\n           (entity-nav-login e))\n          (else\n           (format 0 "ERROR: custom-nav ~A: no nav-mesh with that name (is its level\'s -nav.gc built?)~%" name))))))\n  (none))\n'
+
+FILES = {"lt-checkpoint": LT_CHECKPOINT_GC, "lt-task-trigger": LT_TASK_TRIGGER_GC, "lt-nav-mesh": LT_NAV_MESH_GC}
+DEPS = {"lt-task-trigger": ("process-drawable", "task-control", "lt-checkpoint"),
+        "lt-nav-mesh": ("process-drawable",)}
 
 
 def _write_if_changed(p, text):
@@ -122,15 +125,29 @@ def ensure_task_engine(need_max):
 
 
 def ensure_level_tools():
-    """Write the shared lt-*.gc files and register them in game.gp / game.gd."""
+    """Write the shared lt-*.gc files and register them in game.gp / game.gd.
+    lt-nav-mesh is left out (and removed) when the install has The Forgotten
+    Lands' tfl-nav-mesh.gc: that one has the same list and lookup."""
     d = _goal_src() / LT_DIR
-    for name, text in FILES.items():
+    files = dict(FILES)
+    if (_goal_src() / "engine" / "mods" / "tfl-nav-mesh.gc").exists():
+        files.pop("lt-nav-mesh")
+        f = d / "lt-nav-mesh.gc"
+        if f.exists():
+            f.unlink()
+        for p in (_game_gp(), _goal_src() / "dgos" / "game.gd"):
+            if p.exists():
+                t = p.read_text(encoding="utf-8")
+                n = "".join(l for l in t.splitlines(True) if "lt-nav-mesh." not in l)
+                if n != t:
+                    p.write_text(n, encoding="utf-8")
+    for name, text in files.items():
         _write_if_changed(d / f"{name}.gc", text)
     gp = _game_gp()
     if gp.exists():
         _patch(gp, [f'(goal-src "{LT_DIR}/{n}.gc" {" ".join(chr(34) + d + chr(34) for d in DEPS.get(n, ("process-drawable",)))}) {_TAG}'
-                    for n in FILES],
+                    for n in files],
                '(group-list "all-code"', "level-tools goal-src")
     gd = _goal_src() / "dgos" / "game.gd"
     if gd.exists():
-        _patch(gd, [f'  "{n}.o" {_TAG.replace(";", ";;", 1)}' for n in FILES], " ))", "level-tools objects")
+        _patch(gd, [f'  "{n}.o" {_TAG.replace(";", ";;", 1)}' for n in files], " ))", "level-tools objects")

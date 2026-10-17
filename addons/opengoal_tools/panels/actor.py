@@ -190,6 +190,10 @@ class OG_PT_ActorNavMesh(Panel):
         parts = sel.name.split("_", 2)
         return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_uses_navmesh(parts[1])
 
+    def draw_header(self, ctx):
+        from ..required import draw_header_count
+        draw_header_count(self.layout, ctx.active_object, "nav")
+
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
@@ -222,14 +226,15 @@ class OG_PT_ActorNavMesh(Panel):
             op = layout.row().operator("og.link_navmesh_to", text=f"Link → {m.name}", icon="LINKED")
             op.actor_name = sel.name; op.target_name = m.name
         _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
-        nav_r = float(sel.get("og_nav_radius", 6.0))
-        layout.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
         if _db.can_jump(sel.name.split("_", 2)[1]):
             r = layout.row(); r.enabled = False
             r.label(text="Can jump (usable as a battlecontroller lurker)", icon="CHECKMARK")
         if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
             layout.separator()
             _draw_panel_fields(layout, sel, "nav-mesh")
+        if nm_obj is not None:
+            from ..nav_ui import draw_nav_spheres
+            draw_nav_spheres(layout, nm_obj)
 
 
 

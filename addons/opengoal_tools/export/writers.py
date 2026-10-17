@@ -688,6 +688,9 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} camera/trigger actors"
             f" + {len(cameras)} built-in cameras)")
 
+from .navmesh import nav_gc_path as _nav_gc_path, nav_gc_deps as _nav_gc_deps
+
+
 def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     """Write .gd file.
 
@@ -751,6 +754,7 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
     # generated battlecontroller) need their parent type already loaded.
     files = (
         code_o
+        + ([f'  "{name}-nav.o"'] if _nav_gc_path(name).exists() else [])
         + [f'  "{name}-obs.o"']
         + inc_o
         + level_tpages
@@ -1177,6 +1181,7 @@ def patch_game_gp(name, code_deps=None, scene=None):
         f'(build-custom-level "{name}")\n'
         f'(custom-level-cgo "{dgo}" "{name}/{nick}.gd")\n'
         f'(goal-src "levels/{name}/{name}-obs.gc" {_obs_deps})\n'
+        + (f'(goal-src "levels/{name}/{name}-nav.gc" {_nav_gc_deps()})\n' if _nav_gc_path(name).exists() else "")
         + extra_goal_src
     )
 

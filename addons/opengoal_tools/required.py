@@ -92,6 +92,11 @@ def missing(o, scene=None, names=None, banks=None):
             filled = bool(e and e.target_name and scene.objects.get(e.target_name))
         if not filled:
             out.append({"panel": "links", "key": lkey, "slot": sidx, "label": f"{lkey} ({label})" if label != lkey else lkey})
+    nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
+    if nm is not None:                                # the linked nav-mesh's problems
+        from .export.navmesh import nav_issues
+        for issue in nav_issues(nm):
+            out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}"})
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
             if not _has_path(o, name, scene, names):
@@ -108,7 +113,7 @@ def summary(items, header="Missing"):
 
 def draw_header_count(layout, obj, panel=None):
     """Panel header: "N ⚠" when the actor misses required fields (panel =
-    "links" / "path" / None for all). Hover lists them, click opens a popup
+    "links" / "path" / "nav" / None for all). Hover lists them, click opens a popup
     to fill them in."""
     items = [m for m in missing(obj) if panel is None or m["panel"] == panel]
     if not items:
@@ -164,6 +169,8 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
             elif m["panel"] == "sound":
                 box.label(text=f"'{m['sound']}' is in the {m['key']} sound bank", icon="SPEAKER")
                 box.label(text="Load it: Level > Settings > Sound & Music", icon="INFO")
+            elif m["panel"] == "nav":
+                box.label(text=f"{m['key']}: {m['label'][len('nav-mesh: '):]}", icon="MOD_MESHDEFORM")
             elif m["panel"] == "path":
                 box.label(text=f"{m['key']}: no path", icon="ANIM")
                 if m["key"] == "path":

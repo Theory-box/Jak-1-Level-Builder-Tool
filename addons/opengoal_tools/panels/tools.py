@@ -500,6 +500,7 @@ class OG_PT_DevTools(Panel):
         box = layout.box()
         box.prop(props, "og_ignore_game_gd")
         box.prop(props, "og_clean_renamed")
+        box.prop(props, "og_navmesh_system")
         from ..level_rename import draw_leftovers
         draw_leftovers(box, ctx.scene)
         from ..export.scene import builtin_cameras_supported, camera_system

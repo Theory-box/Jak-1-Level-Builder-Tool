@@ -686,9 +686,16 @@ def _draw_selected_navmesh(layout, sel):
     try:
         sel.data.calc_loop_triangles()
         tc = len(sel.data.loop_triangles)
-        layout.label(text=f"{tc} triangles", icon="MESH_DATA")
+        r = layout.row(); r.alert = tc > 255
+        r.label(text=f"{tc} triangles" + (" (the game allows 255)" if tc > 255 else ""), icon="MESH_DATA")
     except Exception:
         pass
+    from ..export.navmesh import nav_issues
+    for issue in nav_issues(sel):
+        w = layout.row(); w.alert = True
+        w.label(text=issue, icon="ERROR")
+    from ..nav_ui import draw_nav_extras
+    draw_nav_extras(layout, sel)
 
 
 
@@ -733,6 +740,8 @@ def _draw_selected_mesh_navtag(layout, obj):
     else:
         box.label(text="Not tagged as navmesh", icon="DOT")
         box.operator("og.mark_navmesh", text="Mark as NavMesh", icon="CHECKMARK")
+        from ..nav_ui import draw_nav_generate
+        draw_nav_generate(layout, obj)
 
 
 

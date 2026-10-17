@@ -253,6 +253,8 @@ def collect_actors(scene, depsgraph=None):
         if _v.type == "MESH" and _v.name.startswith("VOL_"):
             for _tn in _vol_link_targets(_v):
                 vol_by_target.setdefault(_tn, _v)
+    from .navmesh import nav_actor_lumps
+    _nav_lumps = nav_actor_lumps(scene, str(_get_level_prop(scene, "og_level_name", "") or ""))
     for o in _canonical_actor_objects(scene, objects=level_objs):
         p = o.name.split("_", 2)
         etype, uid = p[1], p[2]
@@ -306,19 +308,9 @@ def collect_actors(scene, depsgraph=None):
             path_knots, _kn = _pm.manual_knots(path_knots, [k.value for k in o.og_path_knots])
             log(f"  [path-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
 
-        # ── Nav-enemy workaround (nav_safe=False) ────────────────────────────
-        # These extend nav-enemy. Without a real navmesh they idle forever.
-        # Inject nav-mesh-sphere so the engine doesn't dereference null.
-        # entity.gc is also patched separately with a real navmesh if linked.
-        if _schema_db.nav_unsafe(etype):
-            nav_r = float(o.get("og_nav_radius", 6.0))
-            if path_pts:
-                first = path_pts[0]
-                lump["nav-mesh-sphere"] = ["vector4m", [first[0], first[1], first[2], nav_r]]
-                log(f"  [nav+path] {o.name}  {len(path_pts)} waypoints  sphere r={nav_r}m")
-            else:
-                lump["nav-mesh-sphere"] = ["vector4m", [gx, gy, gz, nav_r]]
-                log(f"  [nav-workaround] {o.name}  sphere r={nav_r}m  (no waypoints - will idle)")
+        # ── Nav-mesh: custom-nav name (custom-nav system) + the mesh's spheres ─
+        for _nk, _nv in _nav_lumps.get(o.name, {}).items():
+            lump[_nk] = _nv
 
         # ── Path lump (DB "path" panel) ───────────────────────────────────────
         # Any actor with the path panel exports its waypoints/curves as 'path'
