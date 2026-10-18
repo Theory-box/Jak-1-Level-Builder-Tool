@@ -20,6 +20,7 @@ from ..operators.build import _bakeable_meshes
 class OG_PT_Lighting(Panel):
     bl_label       = "💡  Light Baking"
     bl_idname      = "OG_PT_lighting"
+    bl_order = 5
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"

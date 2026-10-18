@@ -148,6 +148,7 @@ class OG_PT_VertexExport(Panel):
 class OG_PT_BuildPlay(Panel):
     bl_label       = "▶  Build & Play"
     bl_idname      = "OG_PT_build_play"
+    bl_order = 0
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -435,6 +436,7 @@ class OG_OT_BlendPathsFromPrefs(Operator):
 class OG_PT_DevTools(Panel):
     bl_label       = "🔧  Developer Tools"
     bl_idname      = "OG_PT_dev_tools"
+    bl_order = 8
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -449,7 +451,23 @@ class OG_PT_DevTools(Panel):
         row.operator("og.clean_level_files",  text="🗑  Clean Files",  icon="TRASH")
         layout.separator(factor=0.5)
 
-        # Paths
+        # Paths (closed sub-menu): the paths, this .blend's folders
+        head, body = layout.panel("og_dev_paths", default_closed=True)
+        head.label(text="Paths", icon="PREFERENCES")
+        if body:
+            self._paths(body, ctx)
+        # Addon settings (closed sub-menu): launch timing, build settings, versions
+        head, body = layout.panel("og_dev_settings", default_closed=True)
+        head.label(text="Addon Settings", icon="SETTINGS")
+        if body:
+            self._settings(body, ctx)
+        # Quick Open (closed sub-menu)
+        head, body = layout.panel("og_dev_quick_open", default_closed=True)
+        head.label(text="Quick Open", icon="FILE_FOLDER")
+        if body:
+            self._quick_open(body, _lname(ctx), ctx.scene)
+
+    def _paths(self, layout, ctx):
         layout.label(text="Paths", icon="PREFERENCES")
         box = layout.box()
         gk_ok = _gk().exists()
@@ -477,13 +495,7 @@ class OG_PT_DevTools(Panel):
         from ..properties import draw_db_status
         draw_db_status(box)
 
-        # Versions — Blender / OpenGOAL and the features they support
-        layout.label(text="Versions", icon="INFO")
-        from ..versions import draw_versions
-        draw_versions(layout)
-
-        layout.separator()
-
+    def _settings(self, layout, ctx):
         # Launch Timing — tune for slower / faster machines. Default 4s
         # boot wait + 1s listener wait works on the dev machine; user
         # bumps boot wait if Launch Game hangs at "Waiting for version".
@@ -496,7 +508,7 @@ class OG_PT_DevTools(Panel):
         layout.separator()
 
         # Build — what goes into the level's .gd / .jsonc
-        layout.label(text="Build", icon="MODIFIER")
+        layout.label(text="Build Settings", icon="MODIFIER")
         box = layout.box()
         box.prop(props, "og_ignore_game_gd")
         box.prop(props, "og_clean_renamed")
@@ -516,10 +528,10 @@ class OG_PT_DevTools(Panel):
 
         layout.separator()
 
-        # Quick Open — nested here
-        layout.label(text="Quick Open", icon="FILE_FOLDER")
-        name = _lname(ctx)
-        self._quick_open(layout, name, ctx.scene)
+        # Versions — Blender / OpenGOAL and the features they support
+        layout.label(text="Versions", icon="INFO")
+        from ..versions import draw_versions
+        draw_versions(layout)
 
     def _btn(self, layout, label, icon, path, is_file=False):
         p = Path(path) if path else None

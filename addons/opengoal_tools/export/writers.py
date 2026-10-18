@@ -530,7 +530,7 @@ def _deftypes(text: str) -> list[str]:
 
 # Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
 # that are not part of the level format — never written to the .jsonc.
-_INTERNAL_ACTOR_KEYS = ("_db_etype", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "_export_as", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
 
 
 def _dumps_with_raw_lumps(data):
@@ -612,6 +612,8 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     from .battlecontroller import GEN_PREFIX as _BC_GEN
     from .subtypes import ETYPES as _SUBTYPES
     for _a in all_actors:
+        if _a.get("_export_as"):
+            continue                                  # an Export as etype is written as typed
         if _a.get("etype") in _TRIGGER_ETYPES + _SUBTYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
             _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors

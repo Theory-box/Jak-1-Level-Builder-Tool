@@ -752,6 +752,7 @@ def _draw_selected_mesh_navtag(layout, obj):
 class OG_PT_SelectedObject(Panel):
     bl_label       = "🔍  Object Settings"
     bl_idname      = "OG_PT_selected_object"
+    bl_order = 4
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -1060,6 +1061,14 @@ def _draw_lump_panel(layout, obj):
     """Draw the Custom Lumps assisted-entry list for an ACTOR_ empty."""
     rows   = obj.og_lump_rows
     index  = obj.og_lump_rows_index
+
+    # Export as: another etype for this actor (a custom child type ...)
+    layout.prop(obj, "og_export_as", icon="EXPORT")
+    if obj.og_export_as.strip():
+        sub = layout.row()
+        sub.enabled = False
+        sub.label(text=f"Exported as {obj.og_export_as.strip()}, settings of {obj.name.split('_', 2)[1]}", icon="INFO")
+    layout.separator(factor=0.5)
 
     # Column header labels
     hdr = layout.row(align=True)

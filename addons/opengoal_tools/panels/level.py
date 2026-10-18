@@ -78,6 +78,7 @@ _AUDIT_SEVERITY_LABEL = {
 class OG_PT_Level(Panel):
     bl_label       = "⚙  Level"
     bl_idname      = "OG_PT_level"
+    bl_order = 1
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -111,6 +112,7 @@ class OG_PT_Level(Panel):
 # ---------------------------------------------------------------------------
 
 class OG_PT_LevelSettings(Panel):
+    bl_order       = 1
     bl_label       = "⚙  Settings"
     bl_idname      = "OG_PT_level_settings"
     bl_space_type  = "VIEW_3D"
@@ -314,30 +316,12 @@ class OG_PT_LevelManagerSub(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_level"
+    bl_order       = 0
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
+        # the active level is picked in the drop-down at the top of the Level panel
         layout = self.layout
-        scene  = ctx.scene
-        levels = _all_level_collections(scene)
-        active = _active_level_col(scene)
-
-        if not levels:
-            layout.label(text="No levels in this file")
-
-        for col in levels:
-            lname     = col.get("og_level_name", col.name)
-            is_active = (active is not None and col.name == active.name)
-
-            row = layout.row(align=True)
-            # Checkbox appearance via toggle operator — depress=is_active gives filled look
-            op = row.operator("og.set_active_level",
-                              text=lname,
-                              icon="CHECKBOX_HLT" if is_active else "CHECKBOX_DEHLT",
-                              depress=is_active)
-            op.col_name = col.name
-
-        layout.separator(factor=0.4)
         row = layout.row(align=True)
         row.operator("og.create_level",               text="Add Level",       icon="ADD")
         row.operator("og.assign_collection_as_level", text="Assign Existing", icon="OUTLINER_COLLECTION")
@@ -438,6 +422,7 @@ class OG_PT_CollectionProperties(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_level"
+    bl_order       = 2
     bl_options     = {"DEFAULT_CLOSED"}
 
     @classmethod
@@ -445,7 +430,10 @@ class OG_PT_CollectionProperties(Panel):
         return _active_level_col(ctx.scene) is not None
 
     def draw(self, ctx):
-        pass  # sub-panels draw the content
+        layout = self.layout
+        layout.operator("og.sort_level_objects", text="Sort & Clean", icon="SORTSIZE")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Sorts objects; removes orphan previews, empty collections, unused data")
 
 
 
@@ -517,27 +505,6 @@ class OG_OT_ToggleSkipTree(Operator):
 
 
 
-class OG_PT_CleanSub(Panel):
-    bl_label       = "🧹  Clean"
-    bl_idname      = "OG_PT_clean_sub"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_collection_props"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        return _active_level_col(ctx.scene) is not None
-
-    def draw(self, ctx):
-        layout = self.layout
-        layout.operator("og.sort_level_objects", text="Sort & Clean", icon="SORTSIZE")
-        r = layout.row(); r.enabled = False; r.scale_y = 0.7
-        r.label(text="Sorts objects; removes orphan previews, empty collections, unused data")
-
-
-
 class OG_OT_RunAudit(Operator):
     """Scan the active level for configuration errors, warnings, and info"""
     bl_idname  = "og.run_audit"
@@ -595,6 +562,7 @@ class OG_PT_LevelAudit(Panel):
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_level"
+    bl_order       = 3
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw_header(self, ctx):
@@ -665,7 +633,38 @@ class OG_OT_CleanLevelFiles(Operator):
     Removes: obs.gc, .jsonc, .glb, .gd — forces a clean compile without stale cached data."""
     bl_idname = "og.clean_level_files"
     bl_label  = "Clean Level Files"
-    bl_description = "Delete generated level files to force a clean rebuild (obs.gc, jsonc, glb, gd)"
+    bl_description = "Delete generated level files to force a clean rebuild (obs.gc, jsonc, glb, gd): asks first, listing them"
+
+    @staticmethod
+    def targets(name):
+        # goal_src obs.gc — the one that causes stale compile errors; custom_assets files
+        obs_gc = _goal_src() / "levels" / name / f"{name}-obs.gc"
+        assets = _ldir(name)
+        out = [obs_gc, assets / f"{name}.jsonc", assets / f"{name}.glb"]
+        # .gd is named after the effective nick (override or auto) - remove any.
+        if assets.exists():
+            out += sorted(assets.glob("*.gd"))
+        return out
+
+    def invoke(self, ctx, event):
+        if not _lname(ctx):
+            self.report({"ERROR"}, "No level name set")
+            return {"CANCELLED"}
+        return ctx.window_manager.invoke_props_dialog(self, width=420, title="Clean Level Files",
+                                                      confirm_text="Delete")
+
+    def draw(self, ctx):
+        name = _lname(ctx)
+        have = [p for p in self.targets(name) if p.exists()]
+        col = self.layout.column(align=True)
+        if not have:
+            col.label(text=f"No generated files of '{name}' to delete", icon="INFO")
+            return
+        col.label(text="These files will be deleted:", icon="TRASH")
+        for p in have:
+            col.label(text=str(p), icon="FILE")
+        col.separator()
+        col.label(text="The next build writes them again.", icon="INFO")
 
     def execute(self, ctx):
         name = _lname(ctx)
@@ -675,21 +674,7 @@ class OG_OT_CleanLevelFiles(Operator):
 
         deleted = []
         skipped = []
-
-        # goal_src obs.gc — the one that causes stale compile errors
-        obs_gc = _goal_src() / "levels" / name / f"{name}-obs.gc"
-        # custom_assets files
-        assets = _ldir(name)
-        targets = [
-            obs_gc,
-            assets / f"{name}.jsonc",
-            assets / f"{name}.glb",
-        ]
-        # .gd is named after the effective nick (override or auto) - remove any.
-        if assets.exists():
-            targets += sorted(assets.glob("*.gd"))
-
-        for p in targets:
+        for p in self.targets(name):
             if p.exists():
                 p.unlink()
                 deleted.append(p.name)
@@ -715,7 +700,6 @@ CLASSES = (
     OG_PT_CollectionProperties,
     OG_PT_DisableExport,
     OG_OT_ToggleSkipTree,
-    OG_PT_CleanSub,
     OG_OT_RunAudit,
     OG_OT_AuditSelectObject,
     OG_PT_LevelAudit,
