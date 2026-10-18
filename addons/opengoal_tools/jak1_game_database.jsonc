@@ -10288,6 +10288,7 @@
       "shape": "CUBE",
       "description": "Edited (subtypes/assistant-lavatube-end.gc): the actor's own task (Game Task panel; none = vanilla village4-button). She shows while the task is at need-reward-speech and plays her resolution when Jak comes near (closing that stage).",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: she shows and plays her resolution by the actor's task (Game Task panel). N: she shows and plays her resolution once Jak holds N cells (once, saved), no task needed.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
         {"panel": "game-task", "description": "Her task: she shows and talks while it's at need-reward-speech."}
       ]
     },
@@ -10424,6 +10425,7 @@
       "shape": "CUBE",
       "description": "Edited (subtypes/assistant-firecanyon.gc): a cell-gate NPC with the actor's own task (Game Task panel; none = vanilla firecanyon-assistant). Hidden until the task reaches need-reward-speech (custom task: e.g. a Cells condition), voicing the 'need 20 cells' hint within 15 m; then talking plays her resolution (without its level commands) and closes the stage.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: she shows and talks by the actor's task (Game Task panel). N: she shows and talks once Jak holds N cells (once, saved), no task needed.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
         {"panel": "game-task", "description": "Her task: hidden until its need-reward-speech stage opens."}
       ]
     },
@@ -10470,8 +10472,9 @@
     },
     {
       "etype": "sage-villagec",
+      "edited": "sage-villagec",
       "label": "Sage (Volcanic Crater)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "sage-village3.o",
       "art_group": [
@@ -10482,19 +10485,28 @@
       "tpage_group": "Village3",
       "glb": "levels/village3/sage-village3-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: invisible until vanilla village3-button need-hint is closed, hidden again once the sages are kidnapped; the talk prompt only shows when Jak is at vanilla world X < 1117 m and Z > -3497 m; auto-plays its intro when village3-button is at need-introduction, which dereferences its alt-actor (assistant-villagec) without a check."
+      "description": "Edited (subtypes/sage-villagec.gc): a talker with the actor's own task (Game Task panel; none = vanilla cave-dark-crystals). Each stage plays the cutscene picked in Actor Settings (introduction closes need-introduction, reminder replays, reward speech closes it); at need-resolution talking gives the task's cell. Always shown, talks from anywhere; Keira (alt-actor) is optional. The introduction with Gol and Maia spawns them for the cutscene.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_talk_intro", "label": "Introduction", "type": "enum", "default": "intro", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-intro", "type": "int32"}, "write_if": "always", "note": "Played while the task is at need-introduction (closes it)."}, {"key": "og_talk_reminder", "label": "Reminder", "type": "enum", "default": "reminder-dark-eco", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-reminder", "type": "int32"}, "write_if": "always", "note": "Played at need-reminder (replays)."}, {"key": "og_talk_reward", "label": "Reward speech", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-reward", "type": "int32"}, "write_if": "always", "note": "Played at need-reward-speech (closes it)."}]},
+        {"panel": "game-task", "description": "Its stages pick the cutscene (Actor Settings); at need-resolution talking gives the cell."}
+      ]
     },
     {
       "etype": "assistant-villagec",
+      "edited": "assistant-villagec",
       "label": "Keira (Volcanic Crater)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-village3.o",
       "art_group": "assistant-village3-ag.go",
       "tpage_group": "Village3",
       "glb": "levels/village3/assistant-village3-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: only visible after vanilla village3-button need-introduction is closed and before the sages are kidnapped, and its talk prompt only shows when Jak is at vanilla world Z < -3478 m. Talking would play assistant-village3-reminder."
+      "description": "Edited (subtypes/assistant-villagec.gc): a talker with the actor's own task (Game Task panel; none = vanilla assistant-village3). Her one cutscene (assistant-village3-reminder) plays at the stages picked in Actor Settings (introduction closes need-introduction, reminder replays, reward speech closes it); at need-resolution talking gives the task's cell. Always shown, talks from anywhere.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_talk_intro", "label": "Introduction", "type": "enum", "default": "reminder", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-intro", "type": "int32"}, "write_if": "always", "note": "Played while the task is at need-introduction (closes it)."}, {"key": "og_talk_reminder", "label": "Reminder", "type": "enum", "default": "reminder", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-reminder", "type": "int32"}, "write_if": "always", "note": "Played at need-reminder (replays)."}, {"key": "og_talk_reward", "label": "Reward speech", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-reward", "type": "int32"}, "write_if": "always", "note": "Played at need-reward-speech (closes it)."}]},
+        {"panel": "game-task", "description": "Its stages pick the cutscene (Actor Settings); at need-resolution talking gives the cell."}
+      ]
     },
     {
       "etype": "sequenceA-village1",

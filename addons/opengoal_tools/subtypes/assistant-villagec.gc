@@ -1,0 +1,48 @@
+;; Keira (Volcanic Crater) for custom levels: a talker with the actor's own task.
+;; Vanilla shows her only between village3-button's need-introduction and the
+;; kidnapping and talks only at a fixed vanilla Z. Here (Game Task panel; none =
+;; vanilla assistant-village3) she's always shown, talks from anywhere and plays her
+;; one cutscene (assistant-village3-reminder) at the stages picked in Blender
+;; (talk-intro / talk-reminder / talk-reward lumps: 0 = play it, -1 = no cutscene):
+;; introduction -> closes need-introduction, reminder -> replays, reward speech ->
+;; closes it; need-resolution: she gives the task's cell (process-taskable).
+(deftype __TYPE__ (assistant-villagec)
+  ((talk-intro    int32)
+   (talk-reminder int32)
+   (talk-reward   int32)))
+
+(defun __TYPE__-anim ((i int))
+  (if (zero? i)
+    (new 'static 'spool-anim :name "assistant-village3-reminder" :index 4 :parts 3 :command-list '())
+    #f))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (set! (-> this talk-message) (text-id press-to-talk-to-assistant))
+  (let ((a (the-as basic #f)))
+    (case (current-status (-> this tasks))
+      (((task-status unknown) (task-status need-hint) (task-status need-introduction))
+       (set! a (the-as basic (__TYPE__-anim (-> this talk-intro))))
+       (if arg0 (close-status! (-> this tasks) (task-status need-introduction))))
+      (((task-status need-reminder-a) (task-status need-reminder))
+       (set! (-> this skippable) #t)
+       (set! a (the-as basic (__TYPE__-anim (-> this talk-reminder)))))
+      (((task-status need-reward-speech))
+       (set! a (the-as basic (__TYPE__-anim (-> this talk-reward))))
+       (if arg0 (close-current! (-> this tasks)))))
+    (if a a (the-as basic (get-art-elem this)))))
+
+(defmethod should-display? ((this __TYPE__))
+  #t)
+
+(defmethod target-above-threshold? ((this __TYPE__))
+  (the-as symbol *target*))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *assistant-village3-sg* 3 31 (new 'static 'vector :w 4096.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task assistant-village3) task))))
+  (set! (-> this talk-intro) (the-as int (res-lump-value arg0 'talk-intro int :default (the-as uint128 0))))
+  (set! (-> this talk-reminder) (the-as int (res-lump-value arg0 'talk-reminder int :default (the-as uint128 0))))
+  (set! (-> this talk-reward) (the-as int (res-lump-value arg0 'talk-reward int :default (the-as uint128 -1))))
+  (process-taskable-method-42 this)
+  (none))

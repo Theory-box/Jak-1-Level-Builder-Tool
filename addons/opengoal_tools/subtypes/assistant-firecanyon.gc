@@ -2,12 +2,22 @@
 ;; - her task is the actor's own (Game Task panel); none = vanilla firecanyon-assistant.
 ;;   It stays hidden (voicing the "need cells" hint within 15 m) until the task
 ;;   reaches need-reward-speech, then talking plays her resolution and closes it.
+;; - or by cell count (cell-count lump > 0, Actor Settings): hidden (with the hint)
+;;   until Jak holds that many cells, then talking plays her resolution once (saved
+;;   as the actor's complete status). The voiced hint still says 20.
 ;; - her resolution cutscene plays without its level commands (vanilla: want-levels
 ;;   village1 firecanyon, which unloads the custom level mid-cutscene).
 (deftype __TYPE__ (assistant-firecanyon)
   ((strip-src basic 8)
    (strip-dst basic 8)
-   (strip-cnt int32)))
+   (strip-cnt int32)
+   (cell-count int32)))
+
+(defun __TYPE__-done? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defun __TYPE__-cells? ((this __TYPE__))
+  (>= (-> *game-info* fuel) (the float (-> this cell-count))))
 
 (defun __TYPE__-level-cmd? ((cmd object))
   (or (= cmd 'want-levels) (= cmd 'display-level) (= cmd 'want-force-vis)
@@ -33,7 +43,19 @@
       (set! (-> n command-list) (the-as pair out))
       n)))
 
+(defmethod should-display? ((this __TYPE__))
+  (if (> (-> this cell-count) 0)
+    (and (__TYPE__-cells? this) (not (__TYPE__-done? this)))
+    (call-parent-method this)))
+
 (defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (when (> (-> this cell-count) 0)                  ; cell count: her resolution, once
+    (if arg0 (process-entity-status! this (entity-perm-status complete) #t))
+    (return (the-as basic
+      (new 'static 'spool-anim :name "assistant-firecanyon-resolution" :index 13 :parts 11
+           :command-list '((151 joint "cameraB") (346 joint "camera") (346 shadow self #f) (461 joint "cameraB")
+                           (546 joint "camera") (636 joint "cameraB") (696 joint "camera") (822 joint "cameraB")
+                           (962 joint "camera") (1268 shadow self #t))))))
   (let ((a (call-parent-method this arg0)))
     (cond
       ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
@@ -56,7 +78,9 @@
       (when (and (cond
                    ((and *target* (>= 61440.0 (vector-vector-distance (-> self root trans) (-> *target* control trans)))) #t)
                    (else (set-time! (-> self state-time)) #f))
-                 (and (not (task-complete? *game-info* (current-task (-> self tasks))))
+                 (and (if (> (-> self cell-count) 0)
+                        (not (__TYPE__-done? self))
+                        (not (task-complete? *game-info* (current-task (-> self tasks)))))
                       (not (movie?))
                       (not (level-hint-displayed?))
                       (not (and *cheat-mode* (cpad-hold? 0 l3)))
@@ -68,6 +92,7 @@
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   ;; vanilla init with the actor's task (a go in init doesn't return: no call-parent-method)
   (set! (-> this strip-cnt) 0)
+  (set! (-> this cell-count) (the-as int (res-lump-value arg0 'cell-count int :default (the-as uint128 0))))
   (process-taskable-method-40 this arg0 *assistant-firecanyon-sg* 3 29 (new 'static 'vector :w 4096.0) 5)
   (let ((task (-> arg0 extra perm task)))
     (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task firecanyon-assistant) task))))

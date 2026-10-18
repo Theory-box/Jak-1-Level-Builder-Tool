@@ -1,0 +1,138 @@
+;; The Sage (Volcanic Crater) for custom levels: a talker with the actor's own task.
+;; Vanilla picks his cutscenes by vanilla tasks (village3-button, cave-dark-crystals,
+;; snow-ram), shows only between village3-button's need-hint and the kidnapping, talks
+;; only at fixed vanilla coordinates and crashes without a linked Keira.
+;; Here (Game Task panel; none = vanilla cave-dark-crystals):
+;; - each stage plays the cutscene picked in Blender (talk-intro / talk-reminder /
+;;   talk-reward lumps, -1 = none): 0 introduction (with Gol and Maia), 1 introduction
+;;   dark eco, 2 introduction rams, 3 reminder dark eco, 4 reminder rams
+;;   introduction -> closes need-introduction, reminder -> replays, reward speech ->
+;;   closes it; need-resolution: he gives the task's cell (process-taskable)
+;; - always shown, talks from anywhere, the alt-actor (Keira) is optional
+(deftype __TYPE__ (sage-villagec)
+  ((talk-intro    int32)
+   (talk-reminder int32)
+   (talk-reward   int32)))
+
+(defun __TYPE__-anim ((this __TYPE__) (i int))
+  "Cutscene i of the sage (see the header), #f for none."
+  (case i
+    ((0) (new 'static
+             'spool-anim
+             :name "sage-village3-introduction"
+             :index 8
+             :parts 58
+             :command-list
+             '((206 joint "cameraB")
+              (268 joint "camera")
+              (321 joint "cameraB")
+              (415 joint "camera")
+              (502 joint "cameraB")
+              (655 joint "camera")
+              (864 joint "cameraB")
+              (958 joint "camera")
+              (1178 joint "cameraB")
+              (1295 joint "camera")
+              (1377 joint "cameraB")
+              (1683 joint "camera")
+              (2066 joint "cameraB")
+              (2209 joint "camera")
+              (2389 joint "cameraB")
+              (2707 joint "camera")
+              (2769 joint "cameraB")
+              (2901 joint "camera")
+              (3021 joint "cameraB")
+              (3158 joint "camera")
+              (3301 joint "cameraB")
+              (3533 joint "camera")
+              (3632 joint "cameraB")
+              (3692 joint "camera")
+              (3780 joint "cameraB")
+              (3818 joint "camera")
+              (4188 joint "cameraB")
+              (4324 joint "camera")
+              (4462 joint "cameraB")
+              (4542 joint "camera"))))
+    ((1) (new 'static
+             'spool-anim
+             :name "sage-village3-introduction-dark-eco"
+             :index 4
+             :parts 9
+             :command-list
+             '((111 joint "cameraB") (189 joint "camera") (455 joint "cameraB") (638 joint "camera") (753 joint "cameraB"))))
+    ((2) (new 'static
+             'spool-anim
+             :name "sage-village3-introduction-rams"
+             :index 6
+             :parts 6
+             :command-list
+             '((155 joint "cameraB") (370 joint "camera"))))
+    ((3) (new 'static 'spool-anim :name "sage-village3-reminder-1-dark-eco" :index 5 :parts 2 :command-list '()))
+    ((4) (new 'static 'spool-anim :name "sage-village3-reminder-1-rams" :index 7 :parts 3 :command-list '()))
+    (else #f)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (set! (-> this talk-message) (text-id press-to-talk-to-sage))
+  (let ((a (the-as basic #f)))
+    (case (current-status (-> this tasks))
+      (((task-status unknown) (task-status need-hint) (task-status need-introduction))
+       (if (not arg0) (set! (-> this will-talk) #t))
+       (set! a (the-as basic (__TYPE__-anim this (-> this talk-intro))))
+       (when arg0
+         (close-status! (-> this tasks) (task-status need-introduction))
+         (when (zero? (-> this talk-intro))          ; Gol and Maia come along
+           (if (-> this assistant) (send-event (-> this assistant extra process) 'clone (process->handle this)))
+           (set! (-> this evilbro)
+                (ppointer->handle (manipy-spawn (-> this root trans) (-> this entity) *evilbro-village3-sg* #f :to this)))
+          (send-event (handle->process (-> this evilbro)) 'anim-mode 'clone-anim)
+          (send-event (handle->process (-> this evilbro)) 'blend-shape #t)
+          (send-event (handle->process (-> this evilbro)) 'center-joint 3)
+          (set! (-> this evilsis)
+                (ppointer->handle (manipy-spawn (-> this root trans) (-> this entity) *evilsis-village3-sg* #f :to this)))
+          (send-event (handle->process (-> this evilsis)) 'anim-mode 'clone-anim)
+          (send-event (handle->process (-> this evilsis)) 'blend-shape #t)
+          (send-event (handle->process (-> this evilsis)) 'center-joint 3)
+          (set! (-> this draw bounds w) 40960.0))))
+      (((task-status need-reminder-a) (task-status need-reminder))
+       (set! (-> this skippable) #t)
+       (set! a (the-as basic (__TYPE__-anim this (-> this talk-reminder)))))
+      (((task-status need-reward-speech))
+       (set! a (the-as basic (__TYPE__-anim this (-> this talk-reward))))
+       (if arg0 (close-current! (-> this tasks)))))
+    (if a a (the-as basic (get-art-elem this)))))
+
+(defmethod target-above-threshold? ((this __TYPE__))
+  (the-as symbol *target*))
+
+(defmethod should-display? ((this __TYPE__))
+  #t)
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :trans
+    (behavior ()
+      ((-> (method-of-type process-taskable idle) trans))))
+
+(defstate play-anim (__TYPE__)
+  :virtual #t
+  :exit
+    (behavior ()
+      (set! (-> self draw bounds w) 10240.0)
+      (if (-> self assistant) (send-event (-> self assistant extra process) 'end-mode))
+      (let ((a0-2 (handle->process (-> self evilbro)))) (if a0-2 (deactivate a0-2)))
+      (let ((a0-6 (handle->process (-> self evilsis)))) (if a0-6 (deactivate a0-6)))
+      ((-> (method-of-type process-taskable play-anim) exit))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *sage-village3-sg* 3 40 (new 'static 'vector :w 8192.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task cave-dark-crystals) task))))
+  (set! (-> this assistant) (entity-actor-lookup arg0 'alt-actor 0))
+  (set! (-> this evilbro) (the-as handle #f))
+  (set! (-> this evilsis) (the-as handle #f))
+  (set! (-> this talk-intro) (the-as int (res-lump-value arg0 'talk-intro int :default (the-as uint128 0))))
+  (set! (-> this talk-reminder) (the-as int (res-lump-value arg0 'talk-reminder int :default (the-as uint128 3))))
+  (set! (-> this talk-reward) (the-as int (res-lump-value arg0 'talk-reward int :default (the-as uint128 -1))))
+  (set! (-> this sound-flava) (music-flava sage))
+  (process-taskable-method-42 this)
+  (none))

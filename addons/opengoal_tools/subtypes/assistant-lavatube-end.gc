@@ -4,20 +4,46 @@
 ;;   when Jak comes near (it closes that stage), like vanilla on Jak's first
 ;;   arrival in the Citadel. Vanilla also hid her once the green sage was freed;
 ;;   that check is gone.
-(deftype __TYPE__ (assistant-lavatube-end) ())
+;; - or by cell count (cell-count lump > 0, Actor Settings): she shows once Jak holds
+;;   that many cells and plays her resolution once (saved as the actor's complete status).
+(deftype __TYPE__ (assistant-lavatube-end)
+  ((cell-count int32)))
+
+(defun __TYPE__-done? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (cond
+    ((> (-> this cell-count) 0)
+     (if arg0 (process-entity-status! this (entity-perm-status complete) #t))
+     (the-as basic
+       (new 'static 'spool-anim :name "assistant-lavatube-end-resolution" :index 4 :parts 11
+            :command-list '((61 joint "cameraB") (151 joint "camera") (226 joint "cameraB") (273 joint "camera")
+                            (316 joint "cameraB") (451 joint "camera") (651 joint "cameraB") (786 joint "camera")
+                            (888 joint "cameraB") (1011 joint "camera") (1011 shadow target #f) (1140 shadow target #t)
+                            (1191 joint "cameraB")))))
+    (else (call-parent-method this arg0))))
 
 (defstate idle (__TYPE__)
   :virtual #t
   :enter
     (behavior ()
       ((-> (method-of-type process-taskable idle) enter))
-      (if (= (current-status (-> self tasks)) (task-status need-reward-speech)) (send-event self 'play-anim))))
+      (if (if (> (-> self cell-count) 0)
+            (not (__TYPE__-done? self))
+            (= (current-status (-> self tasks)) (task-status need-reward-speech)))
+        (send-event self 'play-anim))))
 
 (defmethod should-display? ((this __TYPE__))
-  (first-any (-> this tasks) #t)
-  (= (current-status (-> this tasks)) (task-status need-reward-speech)))
+  (cond
+    ((> (-> this cell-count) 0)
+     (and (>= (-> *game-info* fuel) (the float (-> this cell-count))) (not (__TYPE__-done? this))))
+    (else
+     (first-any (-> this tasks) #t)
+     (= (current-status (-> this tasks)) (task-status need-reward-speech)))))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this cell-count) (the-as int (res-lump-value arg0 'cell-count int :default (the-as uint128 0))))
   (process-taskable-method-40 this arg0 *assistant-lavatube-end-sg* 3 29 (new 'static 'vector :w 4096.0) 5)
   (let ((task (-> arg0 extra perm task)))
     (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task village4-button) task))))
