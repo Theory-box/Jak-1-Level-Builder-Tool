@@ -105,12 +105,17 @@ def _actor_name(a, i):
 def _json_entries(data, source):
     """Entries of a custom level .jsonc (dict) or a game entities .json (list)."""
     out = []
+    if isinstance(data, dict) and "trans" in data:
+        data = [data]                           # one copied entry
     if isinstance(data, dict):
         groups = (("ACTORS", data.get("actors")), ("AMBIENTS", data.get("ambients")), ("CAMERAS", data.get("cameras")))
     elif isinstance(data, list):
-        acts = [e for e in data if isinstance(e, dict) and "etype" in e]
-        ambs = [e for e in data if isinstance(e, dict) and "etype" not in e and "trans" in e]
-        groups = (("ACTORS", acts), ("AMBIENTS", ambs))
+        # loose entries: actors have an etype, ambients a lump "type", cameras neither
+        ents = [e for e in data if isinstance(e, dict) and "trans" in e]
+        lt = lambda e: isinstance(e.get("lump"), dict) and "type" in e["lump"]
+        groups = (("ACTORS", [e for e in ents if "etype" in e]),
+                  ("AMBIENTS", [e for e in ents if "etype" not in e and lt(e)]),
+                  ("CAMERAS", [e for e in ents if "etype" not in e and not lt(e)]))
     else:
         groups = ()
     for cat, items in groups:
@@ -154,17 +159,43 @@ def _goal_entries(text, source):
     return out
 
 
-def parse_text(text, source):
-    """Entries found in a file's / the clipboard's text (JSON first, else GOAL)."""
-    from .export.includes import strip_jsonc
-    s = text.lstrip("\ufeff")
-    js = strip_jsonc(s)
-    if js.lstrip()[:1] in ("{", "["):
+def _json_values(js):
+    """The JSON values of (comment-stripped) text: the whole text, a copied
+    part of a list / object (entries with commas between them, an
+    "actors": [...] key), or JSON blocks between other text (the Export
+    Selected Definitions file)."""
+    t = js.strip().rstrip(",")
+    for cand in (t, "[" + t + "]", "{" + t + "}"):
         try:
-            return _json_entries(json.loads(js), source)
+            return [json.loads(cand)]
         except ValueError:
             pass
-    return _goal_entries(s, source)
+    out, dec, i = [], json.JSONDecoder(), 0
+    for m in re.finditer(r"^[ \t]*[\[{]", js, re.M):
+        if m.start() < i:
+            continue
+        j = m.end() - 1
+        try:
+            v, end = dec.raw_decode(js, j)
+        except ValueError:
+            continue
+        out.append(v)
+        i = end
+    return out
+
+
+def parse_text(text, source):
+    """Entries found in a file's / the clipboard's text: JSON (whole or in
+    parts) and GOAL forms."""
+    from .export.includes import strip_jsonc
+    s = text.lstrip("\ufeff")
+    out = []
+    if "{" in s or "[" in s:
+        for v in _json_values(strip_jsonc(s)):
+            out += _json_entries(v, source)
+    if "(new 'static" in s:
+        out += _goal_entries(s, source)
+    return out
 
 
 # ── List state ───────────────────────────────────────────────────────────────
