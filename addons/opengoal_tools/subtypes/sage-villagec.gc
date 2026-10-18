@@ -9,10 +9,25 @@
 ;;   introduction -> closes need-introduction, reminder -> replays, reward speech ->
 ;;   closes it; need-resolution: he gives the task's cell (process-taskable)
 ;; - always shown, talks from anywhere, the alt-actor (Keira) is optional
+;; - or by cell count (cell-count lump > 0, Actor Settings): no task; hidden until Jak
+;;   holds that many cells, then the introduction plays once (saved as the actor's
+;;   complete status), then the reminder.
 (deftype __TYPE__ (sage-villagec)
   ((talk-intro    int32)
    (talk-reminder int32)
-   (talk-reward   int32)))
+   (talk-reward   int32)
+   (cell-count    int32)))
+
+(defun __TYPE__-done? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defun __TYPE__-status ((this __TYPE__))
+  "The stage: the task's, or by cell count introduction until it has played, then reminder."
+  (cond
+    ((<= (-> this cell-count) 0) (current-status (-> this tasks)))
+    ((__TYPE__-done? this) (task-status need-reminder))
+    (else (task-status need-introduction))))
+
 
 (defun __TYPE__-anim ((this __TYPE__) (i int))
   "Cutscene i of the sage (see the header), #f for none."
@@ -74,12 +89,13 @@
 (defmethod play-anim! ((this __TYPE__) (arg0 symbol))
   (set! (-> this talk-message) (text-id press-to-talk-to-sage))
   (let ((a (the-as basic #f)))
-    (case (current-status (-> this tasks))
+    (case (__TYPE__-status this)
       (((task-status unknown) (task-status need-hint) (task-status need-introduction))
        (if (not arg0) (set! (-> this will-talk) #t))
        (set! a (the-as basic (__TYPE__-anim this (-> this talk-intro))))
        (when arg0
-         (close-status! (-> this tasks) (task-status need-introduction))
+         (if (> (-> this cell-count) 0) (process-entity-status! this (entity-perm-status complete) #t)
+             (close-status! (-> this tasks) (task-status need-introduction)))
          (when (zero? (-> this talk-intro))          ; Gol and Maia come along
            (if (-> this assistant) (send-event (-> this assistant extra process) 'clone (process->handle this)))
            (set! (-> this evilbro)
@@ -105,13 +121,66 @@
   (the-as symbol *target*))
 
 (defmethod should-display? ((this __TYPE__))
-  #t)
+  (or (<= (-> this cell-count) 0) (>= (-> *game-info* fuel) (the float (-> this cell-count)))))
 
+;; idle: vanilla process-taskable idle, with __TYPE__-status (the cell-count stage)
+;; deciding whether Jak can talk
 (defstate idle (__TYPE__)
   :virtual #t
   :trans
     (behavior ()
-      ((-> (method-of-type process-taskable idle) trans))))
+      (when (time-elapsed? (-> self state-time) (seconds 0.2))
+        (logior! (-> self mask) (process-mask actor-pause))
+        (process-entity-status! self (entity-perm-status bit-3) #f))
+      (cond
+        ((not *target*))
+        ((not (-> self will-talk))
+         (if (>= (- (-> *display* game-frame-counter) (-> self last-talk)) (seconds 10)) (set! (-> self will-talk) #t)))
+        ((begin
+           (process-taskable-method-46 self)
+           (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
+                          (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
+                (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
+                ;; og:preserve-this
+                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) 32768.0)
+                (= (-> *level* loading-level) (-> *level* level-default))
+                (not (movie?))
+                (not (level-hint-displayed?))
+                (none-reserved? *art-control*)
+                (not *progress-process*)
+                (and (not (handle->process (-> *game-info* other-camera-handle))) (close-anim-file! self))))
+         (first-any (-> self tasks) #t)
+         (when (target-above-threshold? self)
+           (case (__TYPE__-status self)
+             (((task-status need-hint)
+               (task-status need-introduction)
+               (task-status need-reminder)
+               (task-status need-reminder-a)
+               (task-status need-reward-speech))
+              (kill-current-level-hint '() '(sidekick voicebox ambient) 'exit)
+              (level-hint-surpress!)
+              (hide-hud)
+              (when (and (hud-hidden?) (can-grab-display? self))
+                (let ((gp-1 (new 'stack 'font-context *font-default-matrix* 32 140 0.0 (font-color default) (font-flags shadow kerning))))
+                  (let ((v1-57 gp-1)) (set! (-> v1-57 width) (the float 440)))
+                  (let ((v1-58 gp-1)) (set! (-> v1-58 height) (the float 60)))
+                  (let ((v1-59 gp-1)) (set! (-> v1-59 scale) 0.9))
+                  (set! (-> gp-1 flags) (font-flags shadow kerning middle-vert large))
+                  (print-game-text (lookup-text! *common-text* (-> self talk-message) #f) gp-1 #f 128 22))
+                (when (and (cpad-pressed? 0 circle) (process-grab? *target*))
+                  (logclear! (-> *cpad-list* cpads 0 button0-abs 0) (pad-buttons circle))
+                  (logclear! (-> *cpad-list* cpads 0 button0-rel 0) (pad-buttons circle))
+                  (send-event *target* 'trans 'save (-> self old-target-pos))
+                  (go-virtual play-anim))))))))
+      (if (= (-> *level* loading-level) (-> *level* level-default)) (process-taskable-method-33 self))
+      (draw-npc-shadow self)
+      (when (and (-> self been-kicked)
+                 (and (not *progress-process*) (process-grab? *target*) (not (handle->process (-> *game-info* other-camera-handle)))))
+        (set! (-> self been-kicked) #f)
+        (send-event *target* 'trans 'save (-> self old-target-pos))
+        (go-virtual play-anim))
+      ((-> self cur-trans-hook))))
+
 
 (defstate play-anim (__TYPE__)
   :virtual #t
@@ -133,6 +202,7 @@
   (set! (-> this talk-intro) (the-as int (res-lump-value arg0 'talk-intro int :default (the-as uint128 0))))
   (set! (-> this talk-reminder) (the-as int (res-lump-value arg0 'talk-reminder int :default (the-as uint128 3))))
   (set! (-> this talk-reward) (the-as int (res-lump-value arg0 'talk-reward int :default (the-as uint128 -1))))
+  (set! (-> this cell-count) (the-as int (res-lump-value arg0 'cell-count int :default (the-as uint128 0))))
   (set! (-> this sound-flava) (music-flava sage))
   (process-taskable-method-42 this)
   (none))
