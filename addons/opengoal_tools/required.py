@@ -124,13 +124,47 @@ def actor_banks_missing(et, scene, banks=None):
     return sorted(groups.items())
 
 
-def soft(o, scene=None, banks=None):
+def trigger_senders(scene, objects=None):
+    """{actor name: [sender names]}: actors an actor link sends 'trigger to
+    (a link slot that accepts "event:trigger", e.g. a button's notify list)."""
+    from .collections import _level_objects
+    out = {}
+    for s in (objects if objects is not None else _level_objects(scene)):
+        et = actor_etype(s)
+        if not et:
+            continue
+        slots = {(sl[0], sl[1]) for sl in _actor_link_slots(et) if any(str(a).startswith("event:trigger") for a in (sl[3] or []))}
+        if not slots:
+            continue
+        for e in getattr(s, "og_actor_links", ()):
+            if (e.lump_key, e.slot_index) in slots or (e.lump_key, 0) in slots:
+                out.setdefault(e.target_name, []).append(s.name)
+    return out
+
+
+def _needs_trigger(o, et):
+    """DB "needs_trigger": true, or {"unless_field": key} (that field set = it runs on its own)."""
+    v = (_db.find_actor(et) or {}).get("needs_trigger")
+    if isinstance(v, dict) and v.get("unless_field"):
+        try:
+            return not float(o.get(v["unless_field"], 0) or 0)
+        except (TypeError, ValueError):
+            return True
+    return bool(v)
+
+
+def soft(o, scene=None, banks=None, senders=None):
     """Soft warnings of an actor: [{"panel", "key", "label"}]."""
     scene = scene or bpy.context.scene
     et = actor_etype(o)
     if not et:
         return []
     out = []
+    if _needs_trigger(o, et):
+        snd = (senders if senders is not None else trigger_senders(scene)).get(o.name)
+        if not snd:
+            out.append({"panel": "links", "key": "trigger",
+                        "label": "nothing sends it 'trigger: it stays put (link it from a button's notify list)"})
     for choice, snds in actor_banks_missing(et, scene, banks):   # silent sounds
         b = " / ".join(choice)
         more = f" +{len(snds) - 3}" if len(snds) > 3 else ""
@@ -347,12 +381,13 @@ def level_missing(scene):
         objs = _level_objects(scene)
         wp = {ob.name for ob in objs if "_wp_" in ob.name}     # legacy waypoints, looked up once
         banks = _sound_banks(scene)
+        senders = trigger_senders(scene, objs)
         sres = {}
         for o in objs:
             m = missing(o, scene, wp, banks)
             if m:
                 res[o.name] = m
-            s = soft(o, scene, banks)
+            s = soft(o, scene, banks, senders)
             if s:
                 sres[o.name] = s
         _CACHE["by_actor"] = res

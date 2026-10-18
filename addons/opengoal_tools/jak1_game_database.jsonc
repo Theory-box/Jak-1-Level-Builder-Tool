@@ -11646,6 +11646,7 @@
     },
     {
       "etype": "citb-exit-plat",
+      "needs_trigger": true,
       "sounds": ["elev-loop"],
       "label": "Exit Platform (Citadel)",
       "category": "Platforms",
@@ -12083,6 +12084,7 @@
     },
     {
       "etype": "wall-plat",
+      "needs_trigger": {"unless_field": "og_sync_period"},
       "sounds": ["wall-plat"],
       "label": "Wall Platform",
       "category": "Platforms",
@@ -12638,6 +12640,7 @@
     },
     {
       "etype": "citb-drop-plat",
+      "needs_trigger": true,
       "label": "Drop Platforms (citadel)",
       "description": "A grid of coloured platforms that rise when it gets a 'trigger (link it from a button or a trigger volume) and drop after a while or when Jak walks away; stepping on one colour drops the others of that colour. Set the grid size and each platform in the Platforms panel (random when not set).",
       "category": "Platforms",
@@ -17500,6 +17503,7 @@
     },
     {
       "etype": "swampgate",
+      "needs_trigger": true,
       "sounds": ["pole-down", "pole-up"],
       "label": "Swamp Spike Gate",
       "category": "Buttons and Doors",
