@@ -258,11 +258,13 @@ def _task_into(o, key, task):
         o[key + "_custom"] = task
 
 
-def apply_fields(o, etype, lumps):
-    """Set the actor's DB fields from its typed lumps; returns the lump keys
-    they took (the rest goes to links / paths / custom rows)."""
+def apply_fields(o, etype, lumps, fields=None):
+    """Set the actor's DB fields (or these fields) from its typed lumps;
+    returns the lump keys they took (the rest goes to links / paths / custom
+    rows)."""
     from . import db
-    fields = db.inherited_fields(etype) + db.trait_fields(etype)
+    if fields is None:
+        fields = db.inherited_fields(etype) + db.trait_fields(etype)
     took = set()
     by_key = {}
     for f in fields:

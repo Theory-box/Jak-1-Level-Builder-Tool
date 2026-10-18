@@ -135,7 +135,13 @@ def _json_entries(data, source):
                 lump = e.get("lump") if isinstance(e.get("lump"), dict) else {}
                 name = str(lump.get("name") or f"{cat.lower()[:-1]}-{i}")
                 t = lump.get("type", "")
-                info = str(t[-1] if isinstance(t, list) else t)
+                info = str(t[-1] if isinstance(t, list) else t).lstrip("'")
+                if cat == "AMBIENTS":
+                    from .goal_import_ambients import SUPPORTED
+                    if info not in SUPPORTED:
+                        out.append({"cat": cat, "name": name, "info": f"{info} (no addon object for it)", "data": e,
+                                    "source": source, "pick": False})
+                        continue
             out.append({"cat": cat, "name": name, "info": info, "data": e, "source": source})
     return out
 
@@ -343,7 +349,7 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
         by_cat = {}
         for e in picked:
             by_cat.setdefault(e["cat"], []).append(e)
-        made, later = [], []
+        made, later, skipped = [], [], []
         for cat, label, _i in CATEGORIES:
             items = by_cat.get(cat)
             if not items:
@@ -352,7 +358,11 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
             if fn is None:
                 later.append(f"{len(items)} {label.lower()}")
                 continue
-            made += fn(ctx, items)
+            got = fn(ctx, items)
+            if isinstance(got, tuple):
+                got, sk = got
+                skipped += sk
+            made += got
         if made:
             for o in ctx.selected_objects:
                 o.select_set(False)
@@ -360,9 +370,11 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
                 o.select_set(True)
             ctx.view_layer.objects.active = made[0]
         msg = f"{len(made)} object(s) imported"
+        if skipped:
+            msg += f"; skipped {len(skipped)} (nothing to make them from): {', '.join(skipped[:5])}"
         if later:
             msg += f"; not importable yet: {', '.join(later)}"
-        self.report({"WARNING"} if later else {"INFO"}, msg)
+        self.report({"WARNING"} if later or skipped else {"INFO"}, msg)
         return {"FINISHED"}
 
 
@@ -371,8 +383,18 @@ def _import_actors(ctx, entries):
     return import_actors(ctx, entries)
 
 
-# category -> fn(ctx, entries) -> [objects made]
-IMPORTERS = {"ACTORS": _import_actors}
+def _import_ambients(ctx, entries):
+    from .goal_import_ambients import import_ambients
+    return import_ambients(ctx, entries)
+
+
+def _import_cameras(ctx, entries):
+    from .goal_import_cameras import import_cameras
+    return import_cameras(ctx, entries)
+
+
+# category -> fn(ctx, entries) -> [objects made] or ([objects made], [skipped names])
+IMPORTERS = {"ACTORS": _import_actors, "AMBIENTS": _import_ambients, "CAMERAS": _import_cameras}
 
 
 # ── UI ───────────────────────────────────────────────────────────────────────
