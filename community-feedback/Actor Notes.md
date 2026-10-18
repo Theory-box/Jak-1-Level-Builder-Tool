@@ -90,19 +90,16 @@ Export & Compile and as audit warnings) are setups that work but make an actor d
   join two walkable areas (enemies stop at them)
 Add more per actor during the actor checks.
 
-## Sound bank requirements (for the next actor pass)
-The level only plays an actor's sounds when their sound bank is loaded (Level
-Settings > Sound & Music). The database knows which sounds are in which bank
-(BankSFX) but not which sounds each actor plays, so only sound emitters and
-particle spawner sounds get a "needs bank X" warning today. To warn for actors:
-1. For each actor, list the sounds its code plays: `sound-play` /
-   `ambient-sound` / `sound-play-by-name` calls in its .gc files (and the
-   sounds of the particle groups it spawns).
-2. Map each sound to its bank(s) through BankSFX ("common" sounds need no bank).
-3. Store the result per actor in the database, e.g. `"sound_banks": ["swamp"]`
-   (inherited from parents like the other panel data).
-4. The required-fields check then reports "needs the swamp bank" for actors
-   whose banks aren't loaded (audit + the warnings next to Export & Compile).
+## Sound bank requirements (DB "sounds")
+Each actor record lists the sounds it plays that aren't in the common bank (`"sounds"`,
+101 actors). They come from its code (sound-play / sound specs / its particle groups'
+sounds, following the helper functions its states call and its parent types, from the
+game's goal_src; `tools/scan_sounds.py`) and from its art groups (animation effect sounds,
+e.g. babak-roar, lurkbat-wing: most enemy sounds). Which bank holds each sound comes from
+BankSFX; a sound in several banks needs any one of them. When the level loads none of
+them: a soft warning "sound bank X not loaded: no ...". Rerun the scan (and
+tools/sound_db.py) when actors are added. Art strings are matched against the
+known sound names, so an animation / joint named like a sound can give a false one.
 
 ## Older notes from the earlier passes
 - gnawer: orb vertex list + vanilla cell / camera positions.

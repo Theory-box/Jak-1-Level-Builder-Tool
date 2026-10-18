@@ -108,13 +108,34 @@ def missing(o, scene=None, names=None, banks=None):
     return out + missing_bank(o, scene, banks)
 
 
-def soft(o, scene=None):
+def actor_banks_missing(et, scene, banks=None):
+    """[(bank choices, [sounds])] for the actor's sounds (DB "sounds": the ones
+    its code and art play that aren't in common) whose bank the level doesn't
+    load. A sound in several banks needs any one of them."""
+    snds = (_db.find_actor(et) or {}).get("sounds") or []
+    if not snds:
+        return []
+    loaded, where = banks or _sound_banks(scene)
+    groups = {}
+    for x in snds:
+        b = where.get(x)
+        if b and not (b & loaded):
+            groups.setdefault(tuple(sorted(b)), []).append(x)
+    return sorted(groups.items())
+
+
+def soft(o, scene=None, banks=None):
     """Soft warnings of an actor: [{"panel", "key", "label"}]."""
     scene = scene or bpy.context.scene
     et = actor_etype(o)
     if not et:
         return []
     out = []
+    for choice, snds in actor_banks_missing(et, scene, banks):   # silent sounds
+        b = " / ".join(choice)
+        more = f" +{len(snds) - 3}" if len(snds) > 3 else ""
+        out.append({"panel": "sound", "key": b, "sound": snds[0],
+                    "label": f"sound bank {b} not loaded: no {', '.join(snds[:3])}{more}"})
     if _db.panel_exports(et, "nav-mesh") and _db.nav_unsafe(et):
         nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
         if nm is None and not _actor_get_link(o, "nav-mesh-actor", 0):
@@ -331,7 +352,7 @@ def level_missing(scene):
             m = missing(o, scene, wp, banks)
             if m:
                 res[o.name] = m
-            s = soft(o, scene)
+            s = soft(o, scene, banks)
             if s:
                 sres[o.name] = s
         _CACHE["by_actor"] = res

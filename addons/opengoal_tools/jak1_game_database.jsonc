@@ -5659,6 +5659,7 @@
     },
     {
       "etype": "mistycannon",
+      "sounds": ["cannon-charge", "cannon-shot", "fuse", "sack-land", "telescope"],
       "label": "Misty Cannon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5830,6 +5831,7 @@
     },
     {
       "etype": "lurkercrab",
+      "sounds": ["crab-slide", "lurkercrab-dies", "shell-down", "shell-up", "snap"],
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
@@ -5844,6 +5846,7 @@
     },
     {
       "etype": "lurkerpuppy",
+      "sounds": ["lurkerdog-bite", "lurkerdog-dies", "lurkerdog-idle", "puppy-bark"],
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Lurker Puppy",
       "category": "Enemies",
@@ -5856,6 +5859,7 @@
     },
     {
       "etype": "hopper",
+      "sounds": ["frog-dies", "frog-idle", "frogspeak"],
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5869,6 +5873,7 @@
     },
     {
       "etype": "aphid",
+      "sounds": ["aphid-dies", "aphid-roar", "aphid-spike-in", "aphid-spike-out", "aphid-step"],
       "label": "Aphid",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5880,6 +5885,7 @@
     },
     {
       "etype": "swamp-rat",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "panels": [
         {
           "panel": "nav-mesh",
@@ -5915,6 +5921,7 @@
     },
     {
       "etype": "kermit",
+      "sounds": ["kermit-dies", "kermit-letgo", "kermit-shoot", "kermit-speak1", "kermit-speak2", "kermit-stretch"],
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": false}],
@@ -5929,6 +5936,7 @@
     },
     {
       "etype": "snow-bunny",
+      "sounds": ["snow-bunny1", "snow-bunny2"],
       "label": "Snow Bunny Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5968,6 +5976,7 @@
     },
     {
       "etype": "citb-bunny",
+      "sounds": ["snow-bunny1", "snow-bunny2"],
       "label": "Citadel Bunny Lurker",
       "category": "Enemies",
       "parent": "snow-bunny",
@@ -5988,6 +5997,7 @@
     },
     {
       "etype": "double-lurker",
+      "sounds": ["splita-charge", "splita-dies", "splita-roar", "splita-spot", "splita-taunt", "splitb-breathin", "splitb-dies", "splitb-roar", "splitb-spot", "splitb-taunt"],
       "label": "Double Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -6001,6 +6011,7 @@
     },
     {
       "etype": "bonelurker",
+      "sounds": ["bone-bigswing", "bone-freehead", "bone-helmet", "bone-smallswing", "bone-stepl", "bone-stepr"],
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -6014,6 +6025,7 @@
     },
     {
       "etype": "muse",
+      "sounds": ["muse-taunt-1", "muse-taunt-2"],
       "edited": "muse",
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
@@ -6036,6 +6048,7 @@
     },
     {
       "etype": "baby-spider",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "spider-step"],
       "panels": [
         {
           "panel": "nav-mesh",
@@ -6101,6 +6114,7 @@
     },
     {
       "etype": "green-eco-lurker",
+      "sounds": ["blob-dies", "blob-jump", "blob-out", "blob-roar"],
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Green Eco Lurker",
       "category": "Enemies",
@@ -6113,6 +6127,7 @@
     },
     {
       "etype": "lurkerworm",
+      "sounds": ["worm-bite", "worm-dies", "worm-rise1", "worm-sink"],
       "label": "Lurker Worm",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6148,6 +6163,7 @@
     },
     {
       "etype": "junglesnake",
+      "sounds": ["snake-bite", "snake-idle", "snake-rattle"],
       "label": "Jungle Snake",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6180,6 +6196,7 @@
     },
     {
       "etype": "swamp-bat",
+      "sounds": ["bat-celebrate", "lurkbat-dies", "lurkbat-idle", "lurkbat-wing"],
       "label": "Swamp Bat",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6209,6 +6226,7 @@
     },
     {
       "etype": "yeti",
+      "sounds": ["ice-monster2", "ice-monster3"],
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6316,6 +6334,7 @@
     },
     {
       "etype": "puffer",
+      "sounds": ["puffer-change", "puffer-wing"],
       "label": "Puffer",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6556,6 +6575,7 @@
     },
     {
       "etype": "mother-spider",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "lay-eggs", "mom-spid-dies", "mom-spid-grunt", "spider-step"],
       "label": "Mother Spider",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6717,6 +6737,7 @@
     },
     {
       "etype": "gnawer",
+      "sounds": ["gnawer-chew", "gnawer-crawl", "gnawer-dies", "gnawer-taunt"],
       "label": "Gnawer",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6838,6 +6859,7 @@
     },
     {
       "etype": "driller-lurker",
+      "sounds": ["drill-hit", "drill-idle", "drill-idle2", "drill-stop", "drlurker-roar"],
       "label": "Driller Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6916,6 +6938,7 @@
     },
     {
       "etype": "dark-crystal",
+      "sounds": ["crystal-explode"],
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -6980,6 +7003,7 @@
     },
     {
       "etype": "cavecrusher",
+      "sounds": ["crush-click"],
       "label": "Cave Crusher (robocave)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -6991,6 +7015,7 @@
     },
     {
       "etype": "quicksandlurker",
+      "sounds": ["mud-lurk-laugh", "mudlurker-dies", "qsl-fire"],
       "label": "Quicksand Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7037,6 +7062,7 @@
     },
     {
       "etype": "ram",
+      "sounds": ["ice-monster1", "ice-monster3", "ramboss-laugh", "ramboss-yell", "set-ram", "slam-crash"],
       "label": "Ram",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7162,6 +7188,7 @@
     },
     {
       "etype": "ram-boss",
+      "sounds": ["ice-monster1", "ice-monster3", "ramboss-laugh", "ramboss-yell"],
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -7179,6 +7206,7 @@
     },
     {
       "etype": "lightning-mole",
+      "sounds": ["get-mole", "mole-taunt-1", "mole-taunt-2"],
       "edited": "lightning-mole",
       "label": "Lightning Mole",
       "category": "Interactive Objects",
@@ -7318,6 +7346,7 @@
     },
     {
       "etype": "ice-cube",
+      "sounds": ["ice-explode", "ice-monster1", "ice-monster2", "ice-monster4", "ice-spike-in", "ice-spike-out", "ice-stop"],
       "label": "Ice Cube",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -7363,6 +7392,7 @@
     },
     {
       "etype": "fireboulder",
+      "sounds": ["boulder-splash", "v2ogre-boulder"],
       "edited": "fireboulder",
       "label": "Fire Boulder",
       "category": "Obstacles",
@@ -7397,6 +7427,7 @@
     },
     {
       "etype": "dark-plant",
+      "sounds": ["darkvine-grow", "darkvine-kill", "darkvine-move", "plant-dies", "plant-move"],
       "edited": "dark-plant",
       "label": "Dark Plant",
       "category": "Interactive Objects",
@@ -7470,6 +7501,7 @@
     },
     {
       "etype": "ogreboss",
+      "sounds": ["hits-head", "ogre-boulder", "ogre-dies", "ogre-fires", "ogre-grunt1", "ogre-grunt2", "ogre-grunt3", "ogre-roar2", "ogre-roar3", "ogre-walk", "ogreboss-out", "rock-in-lava"],
       "edited": "ogreboss",
       "label": "Klaww (Ogre Boss)",
       "category": "Bosses",
@@ -7641,6 +7673,7 @@
     },
     {
       "etype": "plant-boss",
+      "sounds": ["aphid-dies", "aphid-roar", "aphid-step", "plant-chomp", "plant-eye", "plant-fall", "plant-laugh", "plant-ouch", "plant-recover", "plant-roar"],
       "label": "Plant Boss",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7705,6 +7738,7 @@
     },
     {
       "etype": "robotboss",
+      "sounds": ["bfg-buzz", "bfg-fire", "bfg-fizzle", "blob-dies", "blob-roar", "dark-eco-buzz", "dark-eco-fire", "eco-torch", "explod-bfg", "explod-eye", "explosion2", "red-buzz", "red-fire", "robo-servo2", "robo-servo3", "robo-servo5", "robo-servo6", "robo-servo9", "robo-yell"],
       "edited": "robotboss",
       "label": "Precursor Robot Boss",
       "category": "Bosses",
@@ -7928,6 +7962,7 @@
     },
     {
       "etype": "assistant",
+      "sounds": ["welding-loop"],
       "edited": "assistant",
       "label": "Keira (Sage's Hut)",
       "category": "NPCs",
@@ -7953,6 +7988,7 @@
     },
     {
       "etype": "bird-lady-beach",
+      "sounds": ["egg-crack"],
       "label": "Bird Lady (Beach, Flut Flut hatch)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7972,6 +8008,7 @@
     },
     {
       "etype": "seagullflock",
+      "sounds": ["seagull-takeoff"],
       "label": "Seagull Flock",
       "category": "NPCs",
       "parent": "process",
@@ -10156,6 +10193,7 @@
     },
     {
       "etype": "assistant-bluehut",
+      "sounds": ["welding-loop"],
       "label": "Keira (Blue Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10493,6 +10531,7 @@
     },
     {
       "etype": "yakow",
+      "sounds": ["yakow-grazing", "yakow-idle", "yakow-kicked"],
       "label": "Yakow",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -10562,6 +10601,7 @@
     },
     {
       "etype": "flutflut",
+      "sounds": ["flut-death"],
       "panels": [
         {
           "panel": "game-task",
@@ -10681,6 +10721,7 @@
     },
     {
       "etype": "fisher",
+      "sounds": ["fish-miss"],
       "label": "Fisherman",
       "category": "Hidden",
       "parent": "process-taskable",
@@ -10774,6 +10815,7 @@
     },
     {
       "etype": "sculptor",
+      "sounds": ["hammer-tap"],
       "label": "Sculptor",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10789,6 +10831,7 @@
     },
     {
       "etype": "billy",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "label": "Billy (rat game)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10848,6 +10891,7 @@
     },
     {
       "etype": "pelican",
+      "sounds": ["pelican-flap", "pelican-gulp"],
       "label": "Pelican",
       "category": "Hidden",
       "parent": "process-drawable",
@@ -10880,6 +10924,7 @@
     },
     {
       "etype": "seagull",
+      "sounds": ["seagull-takeoff"],
       "label": "Seagull",
       "category": "Hidden",
       "parent": "process-drawable",
@@ -10895,6 +10940,7 @@
     },
     {
       "etype": "robber",
+      "sounds": ["robber-flap"],
       "label": "Robber (Lurker)",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -11503,6 +11549,7 @@
     },
     {
       "etype": "citb-rotatebox",
+      "sounds": ["assembly-moves"],
       "label": "Rotate Box (Citadel)",
       "category": "Platforms",
       "parent": "citb-base-plat",
@@ -11513,6 +11560,7 @@
     },
     {
       "etype": "citb-donut",
+      "sounds": ["rotate-plat"],
       "label": "Spinning Donut (Citadel)",
       "category": "Platforms",
       "parent": "citb-base-plat",
@@ -11552,6 +11600,7 @@
     },
     {
       "etype": "silodoor",
+      "sounds": ["silo-moves"],
       "label": "Silo Door (Final Boss)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11597,6 +11646,7 @@
     },
     {
       "etype": "citb-exit-plat",
+      "sounds": ["elev-loop"],
       "label": "Exit Platform (Citadel)",
       "category": "Platforms",
       "parent": "plat-button",
@@ -11639,6 +11689,7 @@
     },
     {
       "etype": "plat-button",
+      "sounds": ["elev-loop"],
       "label": "Button Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11889,6 +11940,7 @@
     },
     {
       "etype": "snow-log",
+      "sounds": ["snow-spat-long", "snow-spat-short"],
       "label": "Snow Log",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11942,6 +11994,7 @@
     },
     {
       "etype": "snow-spatula",
+      "sounds": ["snow-spat-long", "snow-spat-short"],
       "label": "Snow Spatula",
       "category": "Platforms",
       "parent": "baseplat",
@@ -11972,6 +12025,7 @@
     },
     {
       "etype": "plat-flip",
+      "sounds": ["plat-flip"],
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12029,6 +12083,7 @@
     },
     {
       "etype": "wall-plat",
+      "sounds": ["wall-plat"],
       "label": "Wall Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12138,6 +12193,7 @@
     },
     {
       "etype": "teetertotter",
+      "sounds": ["teeter-launch", "teeter-rockland", "teeter-wobble"],
       "label": "Teeter Totter",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12160,6 +12216,7 @@
     },
     {
       "etype": "wedge-plat",
+      "sounds": ["plat-flip"],
       "label": "Wedge Platform",
       "category": "Platforms",
       "parent": "baseplat",
@@ -12214,6 +12271,7 @@
     },
     {
       "etype": "wedge-plat-outer",
+      "sounds": ["plat-flip"],
       "label": "Wedge Platform Outer",
       "category": "Platforms",
       "parent": "wedge-plat",
@@ -12797,6 +12855,7 @@
     },
     {
       "etype": "spike",
+      "sounds": ["magma-rock"],
       "label": "Spike",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -12953,6 +13012,7 @@
     },
     {
       "etype": "lurkerm-tall-sail",
+      "sounds": ["lurkerm-squeak"],
       "label": "Sail (Tall)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12965,6 +13025,7 @@
     },
     {
       "etype": "precurbridge",
+      "sounds": ["pc-bridge"],
       "label": "Precursor Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12977,6 +13038,7 @@
     },
     {
       "etype": "grottopole",
+      "sounds": ["dirt-crumble", "grotto-pole-hit"],
       "label": "Grotto Pole",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -13029,6 +13091,7 @@
     },
     {
       "etype": "windmill-one",
+      "sounds": ["gears-rumble"],
       "label": "Windmill Cog Wheel",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -13243,6 +13306,7 @@
     },
     {
       "etype": "villageb-ogreboss",
+      "sounds": ["v2ogre-roar1", "v2ogre-roar2"],
       "label": "Klaww (Village 2 Backdrop)",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13563,6 +13627,7 @@
     },
     {
       "etype": "swamp-rock",
+      "sounds": ["rock-break"],
       "label": "Swamp Rock",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13687,6 +13752,7 @@
     },
     {
       "etype": "swamp-spike",
+      "sounds": ["pole-down", "pole-up"],
       "label": "Swamp Spike (Swamp)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -13722,6 +13788,7 @@
     },
     {
       "etype": "whirlpool",
+      "sounds": ["whirlpool"],
       "label": "Whirlpool",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -13829,6 +13896,7 @@
     },
     {
       "etype": "balloonlurker",
+      "sounds": ["propeller"],
       "label": "Balloon Lurker",
       "category": "Enemies",
       "parent": "rigid-body-platform",
@@ -13887,6 +13955,7 @@
     },
     {
       "etype": "darkvine",
+      "sounds": ["darkvine-down", "darkvine-move", "darkvine-up"],
       "label": "Dark Vine",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -13901,6 +13970,7 @@
     },
     {
       "etype": "junglefish",
+      "sounds": ["lurkerfish-bite", "lurkerfish-dies"],
       "label": "Jungle Fish",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -13931,6 +14001,7 @@
     },
     {
       "etype": "peeper",
+      "sounds": ["get-mole", "mole-taunt-1", "mole-taunt-2"],
       "label": "Peeper",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13947,6 +14018,7 @@
     },
     {
       "etype": "cave-trap",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "spider-step"],
       "label": "Cave Spider Trap",
       "description": "Spawns baby spiders from its linked eggs / vents (max 8 alive) when Jak is within 46 m. The spiders use the trap's own nav-mesh, path (patrol) and activation settings. Also sets the vanilla cave-spider-tunnel task hint.",
       "category": "Enemies",
@@ -14021,6 +14093,7 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -14459,6 +14532,7 @@
     },
     {
       "etype": "ecoventrock",
+      "sounds": ["cannon-shot"],
       "panels": [
         {
           "panel": "game-task",
@@ -14939,6 +15013,7 @@
     },
     {
       "etype": "ogre-isle",
+      "sounds": ["rock-in-lava"],
       "label": "Klaww Platform Isles",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -15019,6 +15094,7 @@
     },
     {
       "etype": "ogre-step",
+      "sounds": ["rock-in-lava"],
       "label": "Klaww Step",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -15121,6 +15197,7 @@
     },
     {
       "etype": "citb-disc",
+      "sounds": ["rotate-plat"],
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15324,6 +15401,7 @@
     },
     {
       "etype": "darkecobarrel",
+      "sounds": ["lav-dark-eco"],
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
       "parent": "darkecobarrel-base",
@@ -15422,6 +15500,7 @@
     },
     {
       "etype": "caveelevator",
+      "sounds": ["cavelevator"],
       "label": "Cave Elevator",
       "description": "Moves along a baked animation (the path can't be edited). Cycling modes use the Sync period; the one-way mode starts when Jak touches it.",
       "category": "Platforms",
@@ -15491,6 +15570,7 @@
     },
     {
       "etype": "caveflamepots",
+      "sounds": ["hot-flame"],
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -15574,6 +15654,7 @@
     },
     {
       "etype": "cavetrapdoor",
+      "sounds": ["trapdoor"],
       "label": "Cave Trap Door",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15607,6 +15688,7 @@
     },
     {
       "etype": "cavespatula",
+      "sounds": ["spatula"],
       "label": "Cave Spatula Plat",
       "category": "Hidden",
       "parent": "process-drawable",
@@ -15642,6 +15724,7 @@
     },
     {
       "etype": "cavespatulatwo",
+      "sounds": ["spatula"],
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15676,6 +15759,7 @@
     },
     {
       "etype": "ogre-bridge",
+      "sounds": ["bridge-appears", "bridge-breaks", "rock-in-lava"],
       "label": "Klaww Drawbridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15737,6 +15821,7 @@
     },
     {
       "etype": "mis-bone-bridge",
+      "sounds": ["bonebridge-fall"],
       "label": "Bone Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15792,6 +15877,7 @@
     },
     {
       "etype": "breakaway-mid",
+      "sounds": ["falling-bones"],
       "label": "Breakaway Plat",
       "category": "Platforms",
       "parent": "breakaway",
@@ -16879,6 +16965,7 @@
     },
     {
       "etype": "springbox",
+      "sounds": ["trampoline"],
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -16914,6 +17001,7 @@
     },
     {
       "etype": "spiderwebs",
+      "sounds": ["web-tramp"],
       "label": "Spider Web (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -17013,6 +17101,7 @@
     },
     {
       "etype": "minertall",
+      "sounds": ["bird"],
       "label": "Miner (Tall)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -17411,6 +17500,7 @@
     },
     {
       "etype": "swampgate",
+      "sounds": ["pole-down", "pole-up"],
       "label": "Swamp Spike Gate",
       "category": "Buttons and Doors",
       "parent": "swamp-spike",
@@ -17679,6 +17769,7 @@
     },
     {
       "etype": "snow-fort-gate",
+      "sounds": ["lodge-close", "lodge-door-mov"],
       "label": "Snow Fort Gate",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17831,6 +17922,7 @@
     },
     {
       "etype": "accordian",
+      "sounds": ["accordian-pump"],
       "label": "Accordion Machine",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -17939,6 +18031,7 @@
     },
     {
       "etype": "balloon",
+      "sounds": ["cool-balloon"],
       "label": "Balloon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18016,6 +18109,7 @@
     },
     {
       "etype": "logtrap",
+      "sounds": ["logtrap1", "logtrap2"],
       "label": "Log Trap (jungle)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18194,6 +18288,7 @@
     },
     {
       "etype": "keg-conveyor",
+      "sounds": ["keg-conveyor"],
       "label": "Keg Conveyor (misty)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18251,6 +18346,7 @@
     },
     {
       "etype": "citb-firehose",
+      "sounds": ["eco-torch"],
       "label": "Fire Hose (citadel)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18285,6 +18381,7 @@
     },
     {
       "etype": "fishermans-boat",
+      "sounds": ["boat-engine"],
       "label": "Fisherman's Boat",
       "category": "Hidden",
       "parent": "rigid-body-platform",
@@ -18341,6 +18438,7 @@
     },
     {
       "etype": "harvester",
+      "sounds": ["rope-stretch"],
       "label": "Eco Harvester",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18369,6 +18467,7 @@
     },
     {
       "etype": "periscope",
+      "sounds": ["beam-connect", "eco-tower-rise", "eco-tower-stop", "site-moves"],
       "label": "Periscope (eco beam)",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18556,6 +18655,7 @@
     },
     {
       "etype": "race-ring",
+      "sounds": ["close-racering"],
       "edited": "race-ring",
       "label": "Race Ring",
       "category": "Interactive Objects",
@@ -18799,6 +18899,7 @@
     },
     {
       "etype": "citb-generator",
+      "sounds": ["sagecage-open"],
       "label": "Citadel Generator",
       "category": "Interactive Objects",
       "parent": "process-drawable",
