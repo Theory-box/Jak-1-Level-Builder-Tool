@@ -10405,15 +10405,19 @@
     },
     {
       "etype": "assistant-firecanyon",
+      "edited": "assistant-firecanyon",
       "label": "Keira (Fire Canyon)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-firecanyon.o",
       "art_group": "assistant-firecanyon-ag.go",
       "tpage_group": "Firecanyon",
       "glb": "levels/firecanyon/assistant-firecanyon-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: task firecanyon-assistant is hard-coded; invisible until Jak holds 20 cells (below that she voices the 'need 20 cells' hint within 15 m). Her resolution cutscene starts with (want-levels village1 firecanyon), which unloads the custom level mid-cutscene, taking her with it. A subtype stripping that command would make her a working 20-cell gate NPC."
+      "description": "Edited (subtypes/assistant-firecanyon.gc): a cell-gate NPC with the actor's own task (Game Task panel; none = vanilla firecanyon-assistant). Hidden until the task reaches need-reward-speech (custom task: e.g. a Cells condition), voicing the 'need 20 cells' hint within 15 m; then talking plays her resolution (without its level commands) and closes the stage.",
+      "panels": [
+        {"panel": "game-task", "description": "Her task: hidden until its need-reward-speech stage opens."}
+      ]
     },
     {
       "etype": "evilbro",

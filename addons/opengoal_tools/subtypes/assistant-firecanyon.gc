@@ -1,0 +1,76 @@
+;; Keira (Fire Canyon) for custom levels: the 20-cell gate NPC.
+;; - her task is the actor's own (Game Task panel); none = vanilla firecanyon-assistant.
+;;   It stays hidden (voicing the "need cells" hint within 15 m) until the task
+;;   reaches need-reward-speech, then talking plays her resolution and closes it.
+;; - her resolution cutscene plays without its level commands (vanilla: want-levels
+;;   village1 firecanyon, which unloads the custom level mid-cutscene).
+(deftype __TYPE__ (assistant-firecanyon)
+  ((strip-src basic 8)
+   (strip-dst basic 8)
+   (strip-cnt int32)))
+
+(defun __TYPE__-level-cmd? ((cmd object))
+  (or (= cmd 'want-levels) (= cmd 'display-level) (= cmd 'want-force-vis)
+      (= cmd 'want-force-inside) (= cmd 'want-vis) (= cmd 'save)))
+
+(defun __TYPE__-strip ((anim spool-anim))
+  (let ((rev '())
+        (out '())
+        (it (-> anim command-list)))
+    (while (not (null? it))
+      (if (not (__TYPE__-level-cmd? (car (cdr (car it)))))
+        (set! rev (cons (car it) rev)))
+      (set! it (cdr it)))
+    (while (not (null? rev))
+      (set! out (cons (car rev) out))
+      (set! rev (cdr rev)))
+    (let ((n (new 'global 'spool-anim)))
+      (set! (-> n name) (-> anim name))
+      (set! (-> n index) (-> anim index))
+      (set! (-> n parts) (-> anim parts))
+      (set! (-> n priority) (-> anim priority))
+      (set! (-> n owner) (-> anim owner))
+      (set! (-> n command-list) (the-as pair out))
+      n)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (let ((a (call-parent-method this arg0)))
+    (cond
+      ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
+      (else
+       (dotimes (i (-> this strip-cnt))
+         (if (= (-> this strip-src i) a) (return (-> this strip-dst i))))
+       (let ((n (__TYPE__-strip (the-as spool-anim a))))
+         (when (< (-> this strip-cnt) 8)
+           (set! (-> this strip-src (-> this strip-cnt)) a)
+           (set! (-> this strip-dst (-> this strip-cnt)) n)
+           (+! (-> this strip-cnt) 1))
+         n)))))
+
+;; the hint while hidden: the actor's task instead of firecanyon-assistant
+(defstate hidden (__TYPE__)
+  :virtual #t
+  :trans
+    (behavior ()
+      ((-> (method-of-type process-taskable hidden) trans))
+      (when (and (cond
+                   ((and *target* (>= 61440.0 (vector-vector-distance (-> self root trans) (-> *target* control trans)))) #t)
+                   (else (set-time! (-> self state-time)) #f))
+                 (and (not (closed? (-> self tasks) (current-task (-> self tasks)) (task-status need-reward-speech)))
+                      (not (movie?))
+                      (not (level-hint-displayed?))
+                      (not (and *cheat-mode* (cpad-hold? 0 l3)))
+                      (not (time-elapsed? (-> self state-time) (seconds 10)))))
+        (hide-hud)
+        (kill-current-level-hint '() '(sidekick voicebox) 'exit)
+        (level-hint-spawn (text-id firecanyon-need-cells) "asstvb09" (the-as entity #f) *entity-pool* (game-task none)))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this strip-cnt) 0)
+  (call-parent-method this arg0)
+  (let ((task (-> arg0 extra perm task)))
+    (when (!= task (game-task none))
+      (set! (-> this tasks) (get-task-control task))
+      (first-any (-> this tasks) #t)
+      (process-taskable-method-42 this)))
+  (none))
