@@ -123,7 +123,14 @@ def _json_entries(data, source):
             if not isinstance(e, dict):
                 continue
             if cat == "ACTORS":
-                name, info = _actor_name(e, i), str(e.get("etype", ""))
+                from . import db
+                from .goal_import_actors import resolve_etype
+                et = resolve_etype(e)
+                name, info = _actor_name(e, i), et
+                if not db.find_actor(et):
+                    out.append({"cat": cat, "name": name, "info": f"{et} (not in the database)", "data": e,
+                                "source": source, "pick": False})
+                    continue
             else:
                 lump = e.get("lump") if isinstance(e.get("lump"), dict) else {}
                 name = str(lump.get("name") or f"{cat.lower()[:-1]}-{i}")
@@ -234,10 +241,16 @@ def _add_entries(ctx, entries, source):
     for j, e in enumerate(entries):
         r = st.rows.add()
         r.cat, r.name, r.info, r.source, r.index = e["cat"], e["name"], e["info"], source, len(keep) + j
+        r.pick = e.get("pick", True)
 
 
 def entry(row):
     return _ENTRIES[row.index] if row.index < len(_ENTRIES) else None
+
+
+def all_entries():
+    """Every loaded entry (actor links look up their targets in all of them)."""
+    return list(_ENTRIES)
 
 
 # ── Operators ────────────────────────────────────────────────────────────────
@@ -318,6 +331,10 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
 
     @classmethod
     def poll(cls, ctx):
+        from .collections import _active_level_col
+        if _active_level_col(ctx.scene) is None:
+            cls.poll_message_set("Create or pick a level first: the objects go into the active level")
+            return False
         return any(r.pick for r in _state(ctx).rows)
 
     def execute(self, ctx):
@@ -349,8 +366,13 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# category -> fn(ctx, entries) -> [objects made]; filled in step by step
-IMPORTERS = {}
+def _import_actors(ctx, entries):
+    from .goal_import_actors import import_actors
+    return import_actors(ctx, entries)
+
+
+# category -> fn(ctx, entries) -> [objects made]
+IMPORTERS = {"ACTORS": _import_actors}
 
 
 # ── UI ───────────────────────────────────────────────────────────────────────

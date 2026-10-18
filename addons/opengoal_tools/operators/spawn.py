@@ -263,6 +263,72 @@ class OG_OT_SpawnCamAnchor(Operator):
         self.report({"INFO"}, f"Added {cam_name}")
         return {"FINISHED"}
 
+def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, preview=True):
+    """A new ACTOR_<etype>_<n> empty at location (in its level sub-collection):
+    DB look (shape, size, colour, rotation offset / locks), the variant and its
+    default values, every field's default, field drivers and the model
+    preview. name: the uid part (<n>); taken -> <name>-1, -2 ... Used by
+    Add Entity and the GOAL file import."""
+    from ..collections import free_object_name
+    info = ENTITY_DEFS.get(etype, {})
+    if name:
+        base = f"ACTOR_{etype}_{name}"
+        o_name = base if base not in bpy.data.objects else free_object_name(base + "-", 1)
+    else:
+        n = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
+        o_name = free_object_name(f"ACTOR_{etype}_", n)
+    o = bpy.data.objects.new(o_name, None)
+    o.empty_display_type = info.get("shape", "SPHERE")
+    o.location = location
+    o.show_name = True
+    o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
+    o.color = _db.actor_color(etype)                       # category color
+    # DB rotation: the starting offset first, then the axis locks
+    _rot = _db.rotation_offset(etype)
+    if _rot:
+        o.rotation_euler = [math.radians(a) for a in _rot]
+    o.lock_rotation = _db.rotation_lock(etype)
+    ctx.scene.collection.objects.link(o)
+    _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
+    # Variant selection -> the actor's variant field (crate types, bridge variants, ...)
+    _vf = _db.variant_field(etype)
+    if _vf and variant:
+        o[_vf["key"]] = variant
+        from ..data import spawn_sub_field
+        _sf = spawn_sub_field(etype, variant)
+        if _sf and variant_sub:
+            o[_sf["key"]] = variant_sub
+    # The selected variant's default field values (e.g. crate contents per
+    # type), before the generic default seeding below.
+    for _vk, _vv in _db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("defaults", {}).items():
+        o[_vk] = _vv
+    if _db.nav_unsafe(etype):
+        o["og_nav_radius"] = ctx.scene.og_props.nav_radius
+    # Seed default custom props from the DB so UI fields render: every exported
+    # field of the actor's panels; won't overwrite props already set above.
+    for _f in [f for f in _db.inherited_fields(etype) if not _db._field_is_output_only(f)]:
+        _k = _f.get("key")
+        if _k and _k not in o:
+            _dv = _db.field_default(_f, etype)
+            if _dv is not None:
+                o[_k] = _dv
+        if _k and _f.get("type") == "color" and _k in o:   # Blender colour picker
+            o.id_properties_ui(_k).update(subtype="COLOR", min=0.0, max=1.0, soft_min=0.0, soft_max=1.0)
+    # DB field drivers (e.g. launcher spring height -> arrow length)
+    from ..utils import apply_db_drivers
+    apply_db_drivers(o, etype)
+    if preview:
+        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
+        if _prefs and _prefs.preferences.preview_models:
+            try:
+                if not _mp.attach_preview(ctx, etype, o):
+                    o["_og_no_preview"] = True
+            except Exception as e:
+                # Never fail the spawn over a preview failure
+                log(f"model_preview: {e}")
+    return o
+
+
 class OG_OT_SpawnEntity(Operator):
     bl_idname = "og.spawn_entity"
     bl_label  = "Add Entity"
@@ -279,43 +345,12 @@ class OG_OT_SpawnEntity(Operator):
         if hasattr(props, "entity_type"):
             try: props.entity_type = etype
             except Exception: pass
-        info  = ENTITY_DEFS.get(etype, {})
-        shape = info.get("shape", "SPHERE")
         pre_sel = list(ctx.selected_objects)
-        from ..collections import free_object_name
-        n     = len([o for o in _level_objects(ctx.scene) if o.name.startswith(f"ACTOR_{etype}_")])
-        bpy.ops.object.empty_add(type=shape, location=ctx.scene.cursor.location)
-        o = ctx.active_object
-        o.name = free_object_name(f"ACTOR_{etype}_", n)
-        o.show_name = True
-        o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
-        o.color = _db.actor_color(etype)                       # category color
-        # DB rotation: the starting offset first, then the axis locks
-        _rot = _db.rotation_offset(etype)
-        if _rot:
-            import math as _m
-            o.rotation_euler = [_m.radians(a) for a in _rot]
-        o.lock_rotation = _db.rotation_lock(etype)
-        _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
-        # Pre-spawn variant selection -> the actor's variant field (any variant
-        # actor: crate types, bridge variants, ...).
-        _vf = _db.variant_field(etype)
-        if _vf:
-            _sv = getattr(ctx.scene.og_props, "spawn_variant", "")
-            if _sv and _sv != "NONE":
-                o[_vf["key"]] = _sv
-                from ..data import spawn_sub_field
-                _sf = spawn_sub_field(etype, _sv)
-                _ss = getattr(ctx.scene.og_props, "spawn_variant_sub", "")
-                if _sf and _ss and _ss != "NONE":
-                    o[_sf["key"]] = _ss
-        # Apply the selected variant's default field values (e.g. crate contents
-        # per type). Runs before the generic default seeding below, which then
-        # fills any field the variant didn't set.
-        for _vk, _vv in _db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("defaults", {}).items():
-            o[_vk] = _vv
+        sv = getattr(ctx.scene.og_props, "spawn_variant", "")
+        ss = getattr(ctx.scene.og_props, "spawn_variant_sub", "")
+        o = make_actor(ctx, etype, ctx.scene.cursor.location,
+                       variant=sv if sv and sv != "NONE" else None, variant_sub=ss if ss and ss != "NONE" else None)
         if _db.nav_unsafe(etype):
-            o["og_nav_radius"] = ctx.scene.og_props.nav_radius
             self.report({"WARNING"},
                 f"Added {o.name}  —  link it to a nav-mesh: "
                 f"without one it idles / notices but won't pathfind.")
@@ -331,32 +366,9 @@ class OG_OT_SpawnEntity(Operator):
             self.report({"INFO"}, f"Added {o.name}  (prop — idle animation only, no AI/combat)")
         else:
             self.report({"INFO"}, f"Added {o.name}")
-
-        # ---- Seed default custom props from the DB so UI fields render ------
-        # One loop over every exported field of the actor's panels (custom,
-        # sync, activation, spawner ...). Won't overwrite props already set above.
-        for _f in [f for f in _db.inherited_fields(etype) if not _db._field_is_output_only(f)]:
-            _k = _f.get("key")
-            if _k and _k not in o:
-                _dv = _db.field_default(_f, etype)
-                if _dv is not None:
-                    o[_k] = _dv
-            if _k and _f.get("type") == "color" and _k in o:   # Blender colour picker
-                o.id_properties_ui(_k).update(subtype="COLOR", min=0.0, max=1.0, soft_min=0.0, soft_max=1.0)
-        # DB field drivers (e.g. launcher spring height -> arrow length)
-        from ..utils import apply_db_drivers
-        apply_db_drivers(o, etype)
-
-        # ---- Model preview ------------------------------------------------
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                attached = _mp.attach_preview(ctx, etype, o)
-                if not attached and ENTITY_DEFS.get(etype, {}).get("glb"):
-                    self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
-            except Exception as e:
-                # Never crash the spawn operator over a preview failure
-                log(f"model_preview: {e}")
+        if ENTITY_DEFS.get(etype, {}).get("glb") and o.get("_og_no_preview"):
+            self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
+        o.pop("_og_no_preview", None)
 
         for msg in auto_connect(ctx, o, etype, pre_sel):
             self.report({"INFO"}, msg)
