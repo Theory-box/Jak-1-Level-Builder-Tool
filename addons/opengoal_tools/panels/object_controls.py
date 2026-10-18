@@ -135,6 +135,7 @@ class OG_OT_DeleteSelection(Operator):
 class OG_PT_ObjectControls(Panel):
     bl_label = "🎛  Object Controls"
     bl_idname = "OG_PT_object_controls"
+    bl_order = 3
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "OpenGOAL"

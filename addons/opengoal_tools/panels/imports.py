@@ -73,6 +73,7 @@ class OG_PT_Import(Panel):
     """Parent panel: Game 3D Models, Game Textures, From GOAL Files."""
     bl_label       = "📥  Import"
     bl_idname      = "OG_PT_import"
+    bl_order = 7
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"

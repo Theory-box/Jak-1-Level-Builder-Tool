@@ -24,6 +24,7 @@ from ..spawn_items import (
 class OG_PT_Spawn(Panel):
     bl_label       = "➕  Spawn Objects"
     bl_idname      = "OG_PT_spawn"
+    bl_order = 2
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
@@ -81,14 +82,15 @@ class OG_PT_Spawn(Panel):
         )
 
         # ── Dynamic settings (only when an item is selected) ─────────────
+        # The Spawn button sits under the selected item's name (no selection:
+        # under the list, disabled by its poll)
         selected = get_selected_spawn_item(ctx.scene)
         if selected is not None:
             _draw_dynamic_settings(layout, ctx, selected)
-
-        # ── Spawn button (always rendered; poll disables when no selection) ─
-        spawn_row = layout.row()
-        spawn_row.scale_y = 1.6
-        spawn_row.operator("og.spawn_selected", icon="ADD")
+        else:
+            spawn_row = layout.row()
+            spawn_row.scale_y = 1.6
+            spawn_row.operator("og.spawn_selected", icon="ADD")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -216,6 +218,9 @@ def _draw_dynamic_settings(layout, ctx, item):
     box = layout.box()
     header = box.row(align=True)
     header.label(text=item.label, icon=item.icon)
+    spawn_row = box.row()
+    spawn_row.scale_y = 1.6
+    spawn_row.operator("og.spawn_selected", icon="ADD")
 
     if item.description:
         col = box.column(align=True)

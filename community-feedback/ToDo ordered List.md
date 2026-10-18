@@ -5,14 +5,18 @@ Once a feature is part of a release, it'll get removed from here.
 ---
 
 ## Second entity pass
-Based on `community-feedback/Actor Notes.md` and notes here
+Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
 ### nav-enemy
 Change the info to "Nav-enemy, needs navmesh and path"
 Remove the "sphere radius" selection before spawning
+### database driven edited actors
+If an actor is using special edited code that are set in special files in the addon. The link should be done in the database. There should also be folder you can point to in the addon path settings with other custom codes. So they're easy to select and add. Also you should be able to set if an actor code will go into the level's -obs or in another file that then could be reused between different levels
+### Hidden/not added entities
+Actors that have been skipped because they have hard coded tasks or positions should be made into edited actors instead of just being ignored. (most NPCs probably need to be edited so they can have custom tasks)
 
 ---
 
-## Import from files feature (in progress)
+## Import from files feature (in main)
 A feature that would let you import a text file and the addon would create actors, checkpoint, navmesh, paths, etc, based on those definitions.
 ### UI Panel
 Use the already existing `import` menu. Divide it for the 3D model import, move the texturing menu inside there and then also have an actor sections. Like this:
@@ -38,14 +42,14 @@ Select all objects that were imported.
 
 ---
 
-## Export as another entity
+## Export as another entity (in main)
 Useful tool to have, especially if users make custom actors that are child of another entity, would be an option where you can write down the etype that would be exported. All it'd do would just be changing the etype in the actor export. The rest of the actor would export as if nothing had changed. 
 That way, if someone has made a custom version of an existing actor, they can just spawn that existing actor then change the "export as" option and it'd use their custom actor directly.
 It can just be one extra field at the top of custom lump in the actor settings so it's not too much in the way as that'd be a feature that's not used that often  
 
 ---
 
-## Small UI changes 
+## Small UI changes (in main)
 ### Main panel re-organisation
 Not sure what the default order is right now since I've moved them a lot in my testing file but here's what the default order should be:
 - Build & Play

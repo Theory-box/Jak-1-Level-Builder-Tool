@@ -553,6 +553,7 @@ def draw_tasks(layout, ctx):
 class OG_PT_Tasks(bpy.types.Panel):
     bl_label = "✔  Tasks"
     bl_idname = "OG_PT_tasks"
+    bl_order = 6
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "OpenGOAL"

@@ -587,6 +587,11 @@ def collect_actors(scene, depsgraph=None):
             _lc, _lag, _ltp = _bc.lurker_assets(o)
             _out_ag = ([_out_ag] if _out_ag else []) + [g for g in _lag if g != _out_ag] or None
             _extra = {"extra_code": _lc, "extra_tpages": _ltp}
+        # Custom Lumps > Export as: another etype, everything else unchanged
+        _export_as = str(getattr(o, "og_export_as", "") or "").strip()
+        if _export_as:
+            _out_etype = _export_as
+            log(f"  [export-as] {o.name}  etype {_export_as}")
         out.append({
             "trans":     [gx, gy, gz],
             "etype":     _out_etype,
@@ -597,6 +602,7 @@ def collect_actors(scene, depsgraph=None):
             "lump":      lump,
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
+            "_export_as": bool(_export_as),   # write_jsonc: no level prefix
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _var_code,   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],
