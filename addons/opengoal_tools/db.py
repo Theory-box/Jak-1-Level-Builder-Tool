@@ -253,7 +253,10 @@ def parent_chain(etype: str) -> list[dict]:
     Example: parent_chain('plat-eco') → [plat, baseplat, process-drawable]"""
     chain: list[dict] = []
     actor = find_actor(etype)
-    current = actor.get("parent") if actor else None
+    if actor:
+        current = actor.get("parent")
+    else:                                   # a custom type: the custom-actor parent
+        current = "custom-actor" if etype and find_parent(etype) is None else None
     seen: set[str] = set()
     while current and current not in seen:
         seen.add(current)

@@ -7,8 +7,10 @@
 # never touches them.
 #
 # Structure:
-#   OG_PT_Import         — parent panel (setup flow or Rescan header)
-#     └ OG_PT_ImportSearch — name search + filtered list
+#   OG_PT_Import           — parent panel
+#     ├ OG_PT_ImportSearch — Game 3D Models: setup flow, then name search + list
+#     ├ OG_PT_Texturing    — Game Textures (textures.py)
+#     └ OG_PT_ImportGoal   — From GOAL Files (goal_import.py)
 #
 # (An OG_PT_ImportLevels subpanel was prototyped but removed — the Search
 # subpanel covers level-folder browsing well enough via substring match.
@@ -68,13 +70,7 @@ def _draw_setup(layout, ctx):
 
 
 class OG_PT_Import(Panel):
-    """Parent panel.
-
-    When GLBs are available: shows the Rescan button and lets the subpanels
-    do the work.
-    When no GLBs are available: shows the first-time setup flow inline; the
-    subpanels are hidden via their own poll() so the UI stays clean.
-    """
+    """Parent panel: Game 3D Models, Game Textures, From GOAL Files."""
     bl_label       = "📥  Import"
     bl_idname      = "OG_PT_import"
     bl_space_type  = "VIEW_3D"
@@ -83,36 +79,27 @@ class OG_PT_Import(Panel):
     bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
-        layout = self.layout
-        cache  = get_glb_cache()
-        if not cache:
-            _draw_setup(layout, ctx)
-            return
-        # Normal mode — children handle the listings, header just has Rescan.
-        row = layout.row(align=True)
-        row.operator("og.rescan_glbs", icon="FILE_REFRESH", text="Rescan")
+        pass
 
 
 class OG_PT_ImportSearch(Panel):
-    """Generic search: type a substring, see matching GLBs, click to import."""
-    bl_label       = "🔍  Search GLBs"
+    """Game 3D models: type a substring, see matching GLBs, click to import
+    (the first-time setup flow until GLBs are found)."""
+    bl_label       = "🧊  Game 3D Models"
     bl_idname      = "OG_PT_import_search"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
     bl_parent_id   = "OG_PT_import"
     bl_order       = 0
-
-    @classmethod
-    def poll(cls, ctx):
-        # Hide while the parent panel is in setup mode; show once GLBs
-        # are available. get_glb_cache() is cheap after the first call —
-        # _SCAN_DONE short-circuits the file walk.
-        return bool(get_glb_cache())
+    bl_options     = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
         layout = self.layout
         props  = ctx.scene.og_props
+        if not get_glb_cache():
+            _draw_setup(layout, ctx)
+            return
 
         # Search field + collapse toggle. Blender redraws automatically
         # when the StringProperty changes, so the filter is live as you
@@ -123,6 +110,7 @@ class OG_PT_ImportSearch(Panel):
         row.prop(props, "glb_search_filter", text="", icon="VIEWZOOM")
         eye = "HIDE_OFF" if props.glb_results_show else "HIDE_ON"
         row.prop(props, "glb_results_show", text="", icon=eye, toggle=True)
+        row.operator("og.rescan_glbs", icon="FILE_REFRESH", text="")
 
         cache = get_glb_cache()
 
@@ -169,7 +157,25 @@ class OG_PT_ImportSearch(Panel):
             op.glb_name = key
 
 
+class OG_PT_ImportGoal(Panel):
+    """From GOAL files: actors, ambients, cameras, nav-meshes and checkpoints
+    from level definition files or copied text."""
+    bl_label       = "📄  From GOAL Files"
+    bl_idname      = "OG_PT_import_goal"
+    bl_space_type  = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_import"
+    bl_order       = 2
+    bl_options     = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        from ..goal_import import draw_goal_import
+        draw_goal_import(self.layout, ctx)
+
+
 CLASSES = (
     OG_PT_Import,
     OG_PT_ImportSearch,
+    OG_PT_ImportGoal,
 )

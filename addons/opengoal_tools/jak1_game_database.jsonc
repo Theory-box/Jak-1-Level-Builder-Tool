@@ -4855,6 +4855,16 @@
       "description": "Root of every actor with an entity: generic actor links (entity-actor lookups work for any of them)."
     },
     {
+      "etype": "custom-actor",
+      "parent": "process",
+      "panels": [
+        {"panel": "path", "show-panel": true},
+        {"panel": "nav-mesh", "show-panel": true},
+        {"panel": "volume", "show-panel": true}
+      ],
+      "description": "Parent of every etype the database doesn't have (Spawn Custom Type, imported actors of other types): path, nav-mesh and volume links, the rest as custom lumps."
+    },
+    {
       "etype": "process-drawable",
       "parent": "process",
       "panels": [

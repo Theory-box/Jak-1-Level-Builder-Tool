@@ -127,6 +127,7 @@ from . import object_tools as _object_tools
 from . import export_filter as _export_filter
 from . import level_rename as _level_rename
 from . import nav_ui as _nav_ui
+from . import goal_import as _goal_import
 
 from .utils import _preview_collections, _load_previews, _unload_previews
 from . import model_preview as _mp
@@ -164,8 +165,9 @@ classes = (
     OGBattleLurker,
     OGPreferences, OGProperties,
     OG_UL_LumpRows,
-    *TEXTURING_CLASSES,
     *_PANELS_CLASSES,
+    *TEXTURING_CLASSES,              # its panel sits in the Import panel
+    *_goal_import.CLASSES,
     *_VERSION_CLASSES,
     *_plat_grid.CLASSES,
     *_connect_neighbours.CLASSES,
@@ -234,6 +236,7 @@ def register():
     _hints.register_props()
     _object_tools.register_props()
     _nav_ui.register_props()
+    _goal_import.register_props()
     _export_filter.register_props()
     from . import required as _required
     _required.register_handlers()
@@ -447,6 +450,11 @@ def register():
         name="Fwd Level 0", items=_lb_level_items)
     bpy.types.Object.og_lb_fwd_lev1 = bpy.props.EnumProperty(
         name="Fwd Level 1", items=_lb_level_items)
+    for _d in ("fwd", "bwd"):
+        for _i in (0, 1):
+            setattr(bpy.types.Object, f"og_lb_{_d}_lev{_i}_custom", bpy.props.StringProperty(
+                name=f"Level {_i} Name", default="",
+                description=f"Level symbol for level {_i} (used when it's set to Custom)"))
     bpy.types.Object.og_lb_fwd_disp = bpy.props.EnumProperty(
         name="Fwd Display", items=LB_DISP_ITEMS, default="display")
     bpy.types.Object.og_lb_fwd_name = bpy.props.StringProperty(
@@ -513,6 +521,7 @@ def unregister():
     _hints.unregister_props()
     _object_tools.unregister_props()
     _nav_ui.unregister_props()
+    _goal_import.unregister_props()
     _export_filter.unregister_props()
     from . import required as _required
     _required.unregister_handlers()
@@ -546,6 +555,7 @@ def unregister():
               "og_lb_top","og_lb_bot","og_lb_flip","og_lb_wireframe",
               "og_lb_fwd_cmd","og_lb_fwd_lev0","og_lb_fwd_lev1","og_lb_fwd_disp","og_lb_fwd_name",
               "og_lb_bwd_cmd","og_lb_bwd_lev0","og_lb_bwd_lev1","og_lb_bwd_disp","og_lb_bwd_name",
+              "og_lb_fwd_lev0_custom","og_lb_fwd_lev1_custom","og_lb_bwd_lev0_custom","og_lb_bwd_lev1_custom",
               "og_waypoint_sources","og_waypoint_sources_index", "og_movie_pos", "og_bc_lurkers",
               "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
               "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
