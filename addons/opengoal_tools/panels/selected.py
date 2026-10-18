@@ -189,9 +189,6 @@ def _draw_selected_actor(layout, sel, scene):
             else:
                 box.label(text="Shift-select a mesh to link", icon="INFO")
 
-        nav_r = float(sel.get("og_nav_radius", 6.0))
-        box.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
-
     # ── Sync (DB "sync" panel) ───────────────────────────────────────────
     elif _db.has_panel(etype, "sync"):
         _draw_platform_settings(layout, sel, scene)

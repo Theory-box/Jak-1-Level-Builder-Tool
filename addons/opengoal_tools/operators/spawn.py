@@ -303,8 +303,6 @@ def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, 
     # type), before the generic default seeding below.
     for _vk, _vv in _db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("defaults", {}).items():
         o[_vk] = _vv
-    if _db.nav_unsafe(etype):
-        o["og_nav_radius"] = ctx.scene.og_props.nav_radius
     # Seed default custom props from the DB so UI fields render: every exported
     # field of the actor's panels; won't overwrite props already set above.
     for _f in [f for f in _db.inherited_fields(etype) if not _db._field_is_output_only(f)]:
@@ -1268,7 +1266,7 @@ class OG_OT_SpawnSelected(Operator):
           custom_name    — props.custom_type_name must be non-empty
           target_context — active object must be a SPAWN_/CHECKPOINT_ empty
                            (not a _CAM child)
-        Other pre_spawn_fields (nav_radius, crate_type, music_*, sfx_sound,
+        Other pre_spawn_fields (nav_info, crate_type, music_*, sfx_sound,
         ambient_radius) have sensible defaults and don't require validation.
         """
         props = ctx.scene.og_props

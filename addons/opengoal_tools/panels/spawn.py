@@ -137,10 +137,8 @@ def _draw_field_variant(layout, ctx, item):
         layout.prop(ctx.scene.og_props, "spawn_variant_sub", text=f.get("label", "Option"))
 
 
-def _draw_field_nav_radius(layout, ctx, item):
-    box = layout.box()
-    box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
-    box.prop(ctx.scene.og_props, "nav_radius", text="Sphere radius (m)")
+def _draw_field_nav_info(layout, ctx, item):
+    layout.label(text="Nav-enemy, needs navmesh and path", icon="ERROR")
 
 
 def _draw_field_sfx_sound(layout, ctx, item):
@@ -194,7 +192,7 @@ def _draw_field_target_context(layout, ctx, item):
 FIELD_DRAWERS = {
     "crate_type":     _draw_field_crate_type,
     "variant":        _draw_field_variant,
-    "nav_radius":     _draw_field_nav_radius,
+    "nav_info":       _draw_field_nav_info,
     "sfx_sound":      _draw_field_sfx_sound,
     "ambient_radius": _draw_field_ambient_radius,
     "music_bank":     _draw_field_music_bank,
@@ -232,7 +230,7 @@ def _draw_dynamic_settings(layout, ctx, item):
     if item.etype is not None:
         if _db.needs_pathb(item.etype):
             box.label(text="Needs 2 paths (path + pathb)", icon="INFO")
-        elif _db.needs_path(item.etype):
+        elif _db.needs_path(item.etype) and not _db.nav_unsafe(item.etype):   # nav-enemies: their own note
             box.label(text="Needs waypoints to patrol", icon="INFO")
         elif _db.is_prop(item.etype):
             box.label(text="Prop — idle animation only", icon="INFO")

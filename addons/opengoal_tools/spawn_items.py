@@ -290,7 +290,7 @@ def build_spawn_index() -> dict[str, SpawnItem]:
         if _db.actor_has_variant(etype):
             pre_fields.append("variant")
         if _db.nav_unsafe(etype):
-            pre_fields.append("nav_radius")
+            pre_fields.append("nav_info")
 
         idx[f"entity:{etype}"] = SpawnItem(
             spawn_id=f"entity:{etype}",
