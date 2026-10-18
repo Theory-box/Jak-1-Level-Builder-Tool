@@ -317,20 +317,14 @@ class OG_OT_ApplyTexture(Operator):
 # ---------------------------------------------------------------------------
 
 class OG_PT_Texturing(Panel):
-    bl_label       = "🎨  Texturing"
+    bl_label       = "🎨  Game Textures"
     bl_idname      = "OG_PT_texturing"
     bl_space_type  = "VIEW_3D"
     bl_region_type = "UI"
     bl_category    = "OpenGOAL"
+    bl_parent_id   = "OG_PT_import"
+    bl_order       = 1
     bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        # Show when at least one mesh is selected (object mode)
-        # or when editing a mesh (edit mode)
-        if ctx.mode == "EDIT_MESH":
-            return ctx.active_object is not None and ctx.active_object.type == "MESH"
-        return any(o.type == "MESH" for o in ctx.selected_objects)
 
     def draw(self, ctx):
         layout = self.layout
@@ -414,10 +408,13 @@ class OG_PT_Texturing(Panel):
                     box.label(text=f"Source: {tpage}", icon="TEXTURE")
                     break
 
-            if ctx.mode == "EDIT_MESH":
-                box.operator("og.apply_texture", text="Apply to Selected Faces", icon="CHECKMARK")
-            else:
-                box.operator("og.apply_texture", text="Apply to Selected", icon="CHECKMARK")
+            ok = (ctx.active_object is not None and ctx.active_object.type == "MESH") if ctx.mode == "EDIT_MESH"                 else any(o.type == "MESH" for o in ctx.selected_objects)
+            r = box.row()
+            r.enabled = ok
+            r.operator("og.apply_texture", text="Apply to Selected Faces" if ctx.mode == "EDIT_MESH" else "Apply to Selected",
+                       icon="CHECKMARK")
+            if not ok:
+                box.label(text="Select a mesh to apply it", icon="INFO")
         else:
             layout.label(text="Click a texture to select it.", icon="INFO")
 
