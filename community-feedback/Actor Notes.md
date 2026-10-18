@@ -81,15 +81,14 @@ pontoon / race-ring alternate tasks, and anything with a game-task panel. Look
 for: the cell / fly spawns, collecting it closes need-resolution / counts the
 fly for that task, and it stays collected after a save + reload.
 
-## Soft warnings (for the next actor pass)
-Required-field warnings (the "N ⚠" counts) are for things that break the game
-or the build. Some setups only make an actor do nothing useful; those could
-be a second, softer kind of warning (another colour / its own count) to go
-through actor by actor. Examples so far:
-- a nav-enemy with no nav-mesh linked: it idles / notices Jak but can't
-  pathfind (no crash, uses the engine's default mesh)
-- jump (gap) faces that don't connect two walkable areas: enemies stop at them
-Decide per actor which missing setups are soft, and where the soft count shows.
+## Soft warnings (required.py soft())
+Required-field warnings (the red "N⚠" counts) are for things that break the game or the
+build. Soft warnings (a yellow triangle count next to them, in the panel headers, next to
+Export & Compile and as audit warnings) are setups that work but make an actor do less:
+- a nav-enemy with no nav-mesh linked: it idles / notices Jak but can't pathfind
+- its nav-mesh: separate parts (enemies can't path between them), jump areas that don't
+  join two walkable areas (enemies stop at them)
+Add more per actor during the actor checks.
 
 ## Sound bank requirements (for the next actor pass)
 The level only plays an actor's sounds when their sound bank is loaded (Level

@@ -691,10 +691,12 @@ def _draw_selected_navmesh(layout, sel):
         r.label(text=f"{tc} triangles" + (" (the game allows 255)" if tc > 255 else ""), icon="MESH_DATA")
     except Exception:
         pass
-    from ..export.navmesh import nav_issues
+    from ..export.navmesh import nav_issues, nav_soft_issues
     for issue in nav_issues(sel):
         w = layout.row(); w.alert = True
         w.label(text=issue, icon="ERROR")
+    for issue in nav_soft_issues(sel):        # soft: works, enemies can't use all of it
+        layout.label(text=issue, icon="INFO")
     from ..nav_ui import draw_nav_extras
     draw_nav_extras(layout, sel)
 

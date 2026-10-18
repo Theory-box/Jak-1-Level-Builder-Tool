@@ -189,21 +189,37 @@ def nav_compute(tris, full=True):
             others = [p for p in edge_to[(min(ea, eb), max(ea, eb))] if p != pi]
             nb.append(others[0] if others else 0xFF)
         adj.append(tuple(nb))
-    parts, seen = 0, [False] * N                    # islands: parts no edge joins
-    for s0 in range(N):
-        if seen[s0]:
-            continue
-        parts += 1
-        stack = [s0]; seen[s0] = True
-        while stack:
-            cur = stack.pop()
-            for nb in adj[cur]:
-                if nb != 0xFF and not seen[nb]:
-                    seen[nb] = True; stack.append(nb)
+    # soft problems (it works, but enemies can't use all of it)
+    soft = []
+
+    def regions(keep):
+        """Connected groups of the triangles keep() picks: [group id per triangle] (-1 = not picked), count."""
+        rid, n = [-1] * N, 0
+        for s0 in range(N):
+            if rid[s0] >= 0 or not keep(s0):
+                continue
+            stack = [s0]; rid[s0] = n
+            while stack:
+                cur = stack.pop()
+                for nb in adj[cur]:
+                    if nb != 0xFF and rid[nb] < 0 and keep(nb):
+                        rid[nb] = n; stack.append(nb)
+            n += 1
+        return rid, n
+    _all, parts = regions(lambda i: True)            # islands: parts no edge joins
     if parts > 1:
-        problems.append(f"{parts} separate parts: enemies can't path from one to another")
+        soft.append(f"{parts} separate parts: enemies can't path from one to another")
+    walk, _nw = regions(lambda i: not pats[i] & 1)
+    jump, nj = regions(lambda i: bool(pats[i] & 1))
+    dead = 0
+    for j in range(nj):                              # a jump area should join two walkable areas
+        touch = {walk[nb] for i in range(N) if jump[i] == j for nb in adj[i] if nb != 0xFF and walk[nb] >= 0}
+        if len(touch) < 2:
+            dead += 1
+    if dead and any(not p & 1 for p in pats):
+        soft.append(f"{dead} jump area(s) not joining two walkable areas: enemies stop at them")
     if not full:
-        return {"poly_count": N, "vertex_count": V, "problems": problems, "flipped": flipped}
+        return {"poly_count": N, "vertex_count": V, "problems": problems, "soft": soft, "flipped": flipped}
 
     INF = 1 << 30
 
@@ -240,7 +256,7 @@ def nav_compute(tris, full=True):
     vec4ubs = [tuple(route_bytes[i * 4:(i + 1) * 4]) for i in range(n4)]
     return {"origin": (ox, oy, oz), "bounds_r": bounds_r, "verts_rel": rel, "polys": polys,
             "pats": pats, "adj": adj, "vec4ubs": vec4ubs, "poly_count": N, "vertex_count": V,
-            "nodes": _bvh(polys, rel), "flipped": flipped, "problems": problems}
+            "nodes": _bvh(polys, rel), "flipped": flipped, "problems": problems, "soft": soft}
 
 
 def nav_mesh_static(mesh, indent="  "):
@@ -291,6 +307,15 @@ def nav_issues(nav_obj):
         return []
     m = nav_compute(nav_tris(nav_obj), full=False)
     return ["no triangles"] if m is None else m["problems"]
+
+
+def nav_soft_issues(nav_obj):
+    """Soft problems of a nav-mesh object (it works, enemies can't use all of
+    it): separate parts, jump areas that don't join two walkable areas."""
+    if nav_obj is None or nav_obj.type != "MESH":
+        return []
+    m = nav_compute(nav_tris(nav_obj), full=False)
+    return [] if m is None else m["soft"]
 
 
 def nav_spheres(nav_obj):
