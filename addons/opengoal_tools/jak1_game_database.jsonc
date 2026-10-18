@@ -6014,6 +6014,7 @@
     },
     {
       "etype": "muse",
+      "edited": "muse",
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "label": "Muse",
@@ -7178,6 +7179,7 @@
     },
     {
       "etype": "lightning-mole",
+      "edited": "lightning-mole",
       "label": "Lightning Mole",
       "category": "Interactive Objects",
       "parent": "fleeing-nav-enemy",
@@ -7361,6 +7363,7 @@
     },
     {
       "etype": "fireboulder",
+      "edited": "fireboulder",
       "label": "Fire Boulder",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -7394,6 +7397,7 @@
     },
     {
       "etype": "dark-plant",
+      "edited": "dark-plant",
       "label": "Dark Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -7427,6 +7431,7 @@
     },
     {
       "etype": "happy-plant",
+      "edited": "happy-plant",
       "label": "Happy Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -7465,6 +7470,7 @@
     },
     {
       "etype": "ogreboss",
+      "edited": "ogreboss",
       "label": "Klaww (Ogre Boss)",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7699,6 +7705,7 @@
     },
     {
       "etype": "robotboss",
+      "edited": "robotboss",
       "label": "Precursor Robot Boss",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7879,6 +7886,7 @@
     },
     {
       "etype": "sage-finalboss",
+      "edited": "sage-finalboss",
       "label": "Final Boss Sage (ending cutscenes)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7901,6 +7909,7 @@
     },
     {
       "etype": "sage",
+      "edited": "sage",
       "label": "Samos (Sage's Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7919,6 +7928,7 @@
     },
     {
       "etype": "assistant",
+      "edited": "assistant",
       "label": "Keira (Sage's Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10696,6 +10706,7 @@
     },
     {
       "etype": "explorer",
+      "edited": "explorer",
       "label": "Uncle (Explorer)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10708,6 +10719,7 @@
     },
     {
       "etype": "geologist",
+      "edited": "geologist",
       "label": "Geologist",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10749,6 +10761,7 @@
     },
     {
       "etype": "gambler",
+      "edited": "gambler",
       "label": "Gambler",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -13152,6 +13165,7 @@
     },
     {
       "etype": "mayorgears",
+      "edited": "mayorgears",
       "label": "Mayor's Gears",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13770,6 +13784,7 @@
     },
     {
       "etype": "warp-gate-switch",
+      "edited": "warp-gate-switch",
       "label": "Warp Gate Switch",
       "category": "Buttons and Doors",
       "parent": "basebutton",
@@ -15845,6 +15860,7 @@
     },
     {
       "etype": "water-anim",
+      "edited": "water-anim",
       "label": "Water Anim",
       "category": "Hidden",
       "parent": "water-vol",
@@ -16968,6 +16984,7 @@
     },
     {
       "etype": "minershort",
+      "edited": "minershort",
       "label": "Miner (Short)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -18539,6 +18556,7 @@
     },
     {
       "etype": "race-ring",
+      "edited": "race-ring",
       "label": "Race Ring",
       "category": "Interactive Objects",
       "parent": "process-drawable",

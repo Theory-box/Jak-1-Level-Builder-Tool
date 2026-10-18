@@ -116,9 +116,14 @@ particle spawner sounds get a "needs bank X" warning today. To warn for actors:
 - eco door "starts open" (needs a subtype per door type); sun-iris-door scale-factor from the Blender scale.
 - lumps that should become fields; Blender 5 collision export.
 
-## Level subtypes and patches (addons/opengoal_tools/subtypes)
-Each file's header says why. Child types are exported as `<level>-<etype>`; files without
-`(deftype __TYPE__` are patches (the actor keeps its etype).
+## Edited actors (addons/opengoal_tools/subtypes, export/edited.py)
+An actor's DB record names its default edited file (`"edited": "<file stem>"`); each file's
+header says why. Child types are exported as `<level>-<stem>` (in the level's -obs.gc) or
+`lt-<stem>` (Shared file: `goal_src/levels/level-tools/edited/lt-<stem>.gc`, compiled once,
+listed in each using level's .gd); files without `(deftype __TYPE__` are patches (the actor
+keeps its etype). Per actor, GOAL Code > Code picks the default, Vanilla, or a file of the
+Custom code folder (Preferences / this .blend's folders; `;; edits: <etype>` header = which
+actors it's for, `;; place: shared` = default place).
 
 | File | What it changes |
 |---|---|

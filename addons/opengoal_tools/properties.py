@@ -194,6 +194,10 @@ class OGPreferences(AddonPreferences):
         subtype="DIR_PATH",
         default="",
     )
+    custom_code_path: StringProperty(
+        name="Custom code folder", subtype="DIR_PATH", default="",
+        description="A folder of your own edited-actor .gc files (__TYPE__ for the type name, "
+                    "';; edits: <etype>' for the actors they're for); picked in an actor's GOAL Code")
     db_override_path: StringProperty(
         name="Database override",
         description=(
@@ -342,6 +346,9 @@ class OGPreferences(AddonPreferences):
             col.separator()
             col.label(text="Decompiler output (leave blank to auto-detect):")
             col.prop(self, "decompiler_path", text="")
+            col.separator()
+            col.label(text="Custom code folder (edited actors):")
+            col.prop(self, "custom_code_path", text="")
 
         layout.separator()
         layout.prop(self, "preview_models")
@@ -508,6 +515,10 @@ class OGProperties(PropertyGroup):
     og_blend_decompiler_path: StringProperty(
         name="Decompiler output", subtype="DIR_PATH", default="",
         description="decompiler_out/jak1/ for this project. Blank = <data>/decompiler_out/jak1",
+    )
+    og_blend_code_path: StringProperty(
+        name="Custom code folder", subtype="DIR_PATH", default="",
+        description="Edited-actor .gc files for this project (GOAL Code > Code). Blank = preferences",
     )
     og_blend_db_override_path: StringProperty(
         name="Database override", subtype="FILE_PATH", default="",

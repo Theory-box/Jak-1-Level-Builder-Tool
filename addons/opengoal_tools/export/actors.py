@@ -587,6 +587,18 @@ def collect_actors(scene, depsgraph=None):
             _lc, _lag, _ltp = _bc.lurker_assets(o)
             _out_ag = ([_out_ag] if _out_ag else []) + [g for g in _lag if g != _out_ag] or None
             _extra = {"extra_code": _lc, "extra_tpages": _ltp}
+        # GOAL Code > Code: an edited child type (obs: <level>-<stem>, written
+        # by write_jsonc; shared: lt-<stem>); a patch keeps the etype
+        from . import edited as _ed
+        _edrec = _ed.resolve(o, etype)
+        _edited_obs = _edited_o = None
+        if _edrec is not None:
+            if _ed.place(scene, _edrec) == "shared":
+                _edited_o = f"lt-{_edrec['stem']}.o"
+                if _edrec["child"]:
+                    _out_etype = f"lt-{_edrec['stem']}"
+            elif _edrec["child"]:
+                _edited_obs = _edrec["stem"]
         # Custom Lumps > Export as: another etype, everything else unchanged
         _export_as = str(getattr(o, "og_export_as", "") or "").strip()
         if _export_as:
@@ -602,7 +614,9 @@ def collect_actors(scene, depsgraph=None):
             "lump":      lump,
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
-            "_export_as": bool(_export_as),   # write_jsonc: no level prefix
+            "_export_as": bool(_export_as) or _out_etype.startswith("lt-"),   # write_jsonc: no level prefix
+            "_edited_obs": None if _export_as else _edited_obs,   # write_jsonc: <level>-<stem>
+            "_edited_o": _edited_o,             # needed_code: a shared edited file's .o
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _var_code,   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],

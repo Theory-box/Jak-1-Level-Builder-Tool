@@ -317,6 +317,9 @@ def register():
     # Each ACTOR_ empty holds a list of (key, ltype, value) assisted lump entries.
     bpy.types.Object.og_lump_rows          = bpy.props.CollectionProperty(type=OGLumpRow)
     bpy.types.Object.og_lump_rows_index    = bpy.props.IntProperty(name="Active Lump Row", default=0)
+    bpy.types.Object.og_edited_code        = bpy.props.StringProperty(
+        name="Code", default="",
+        description="Edited code of this actor: blank = the database's, vanilla, or <source>:<file>")
     bpy.types.Object.og_export_as          = bpy.props.StringProperty(
         name="Export as", default="",
         description="Export this actor with another etype (e.g. your own child type of it); everything "
@@ -550,7 +553,7 @@ def unregister():
     for a in ("set_invisible","set_collision","ignore","noedge","noentity",
               "nolineofsight","nocamera","collide_material","collide_event","collide_mode",
               "enable_custom_weights","copy_eye_draws","copy_mod_draws","og_vol_links",
-              "og_actor_links","og_lump_rows","og_lump_rows_index","og_export_as","og_goal_code_ref",
+              "og_actor_links","og_lump_rows","og_lump_rows_index","og_export_as","og_edited_code","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
               "og_cp_vis_nick","og_cp_flags","og_cp_load_cmds","og_cp_name","og_cp_trigger",

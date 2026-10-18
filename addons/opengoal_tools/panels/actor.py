@@ -1506,6 +1506,87 @@ def _legacy_wps(actor_obj, scene):
 
 
 
+_EDITED_ITEMS: list = []
+
+
+def _edited_items(self, ctx):
+    o = ctx.active_object if ctx else None
+    if o is None or not o.name.startswith("ACTOR_"):
+        _EDITED_ITEMS[:] = [("", "Default", "")]
+        return _EDITED_ITEMS
+    from ..export.edited import choices
+    _EDITED_ITEMS[:] = [(i or "__default__", l, d, n) for n, (i, l, d) in enumerate(choices(o.name.split("_", 2)[1]))]
+    return _EDITED_ITEMS
+
+
+class OG_OT_EditedCodePick(bpy.types.Operator):
+    """Pick this actor's edited code: the database's, vanilla, or a file of your Custom code folder"""
+    bl_idname = "og.edited_code_pick"
+    bl_label = "Pick Code"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    pick: bpy.props.EnumProperty(name="Code", items=_edited_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        v = "" if self.pick == "__default__" else self.pick
+        for o in [ctx.active_object] + [x for x in ctx.selected_objects if x is not ctx.active_object]:
+            if o is not None and o.name.startswith("ACTOR_") and o.name.split("_", 2)[1] == ctx.active_object.name.split("_", 2)[1]:
+                o.og_edited_code = v
+        return {"FINISHED"}
+
+
+class OG_OT_EditedPlace(bpy.types.Operator):
+    """Where this code file goes: the level's -obs.gc (its own type per level) or a shared file
+    every level that uses it loads (one lt- type for all levels). Applies to every actor using the file"""
+    bl_idname = "og.edited_place"
+    bl_label = "Code Place"
+    bl_options = {"REGISTER", "UNDO"}
+    file_id: bpy.props.StringProperty()
+    place: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        d = dict(ctx.scene.get("og_edited_place", {}))
+        d[self.file_id] = self.place
+        ctx.scene["og_edited_place"] = d
+        return {"FINISHED"}
+
+
+def draw_edited_code(layout, ctx, o):
+    """GOAL Code > Code: the actor's edited code file and where it goes."""
+    from ..export import edited as ed
+    etype = o.name.split("_", 2)[1]
+    rec = ed.resolve(o, etype)
+    sel = o.og_edited_code
+    label = ("Vanilla" if sel == "vanilla" else (f"{rec['stem']}.gc" if rec else "Vanilla")) + \
+        ("" if sel else "  (default)")
+    row = layout.row(align=True)
+    row.label(text="Code", icon="SCRIPT")
+    row.operator("og.edited_code_pick", text=label, icon="DOWNARROW_HLT")
+    if rec is None:
+        return
+    pl = ed.place(ctx.scene, rec)
+    row = layout.row(align=True)
+    for p, txt in (("obs", "Level (-obs)"), ("shared", "Shared file")):
+        op = row.operator("og.edited_place", text=txt, depress=(pl == p))
+        op.file_id, op.place = rec["id"], p
+    sub = layout.column(align=True)
+    sub.enabled = False
+    sub.scale_y = 0.8
+    if rec["child"]:
+        tn = f"lt-{rec['stem']}" if pl == "shared" else f"<level>-{rec['stem']}"
+        sub.label(text=f"Exports as {tn}" + (" (in the level's -obs.gc)" if pl == "obs" else
+                                            f" ({ed.SHARED_DIR}/lt-{rec['stem']}.gc)"), icon="INFO")
+    else:
+        sub.label(text=f"A patch: the actor keeps its etype ({etype})", icon="INFO")
+    if rec["source"] == "custom":
+        sub.label(text=str(rec["path"]), icon="FILE")
+    layout.separator()
+
+
 class OG_PT_ActorGoalCode(Panel):
     """Per-actor custom GOAL code injection.
 
@@ -1543,6 +1624,7 @@ class OG_PT_ActorGoalCode(Panel):
         layout = self.layout
         sel    = ctx.active_object
         ref    = sel.og_goal_code_ref
+        draw_edited_code(layout, ctx, sel)
 
         if ref.text_block is None:
             # ── No block assigned ───────────────────────────────────────────
@@ -1670,5 +1752,7 @@ CLASSES = (
     OG_UL_PathKnots,
     OG_UL_WaypointSources,
     *sorted(_ACTOR_SUBPANELS, key=_actor_panel_rank),   # stable: ties keep listed order
+    OG_OT_EditedCodePick,
+    OG_OT_EditedPlace,
     OG_PT_ActorGoalCode,
 )
