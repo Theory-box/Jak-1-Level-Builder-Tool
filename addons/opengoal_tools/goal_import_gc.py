@@ -99,7 +99,58 @@ def _level_choice(o, attr, custom_attr, lev, src_level, none_value):
         setattr(o, custom_attr, lev)
 
 
+LAST_CHECKPOINTS = {}    # continue-point name -> object name of the last checkpoint import
+
+
 def import_checkpoints(ctx, entries):
+    """Continue-points first, then the triggers (lt-checkpoint actors) onto them."""
+    triggers = [e for e in entries if e.get("trigger_of") is not None]
+    made = _import_continue_points(ctx, [e for e in entries if e.get("trigger_of") is None])
+    skipped = []
+    for e in triggers:
+        o = _checkpoint_for(ctx, e["trigger_of"])
+        if o is None:
+            skipped.append(f"{e['name']} (no checkpoint {e['trigger_of']})")
+            continue
+        made += _add_trigger(ctx, o, e["data"])
+    return made, skipped
+
+
+def _checkpoint_for(ctx, cont_name):
+    from .collections import spawn_uid, _level_objects, _get_level_prop
+    n = LAST_CHECKPOINTS.get(cont_name)
+    if n and n in bpy.data.objects:
+        return bpy.data.objects[n]
+    lv = str(_get_level_prop(ctx.scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+    return next((o for o in _level_objects(ctx.scene) if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")
+                 and f"{lv}-{spawn_uid(o)}" == cont_name), None)
+
+
+def _add_trigger(ctx, o, d):
+    """Trigger on, the sphere radius or the volume (a VOL_ linked to the checkpoint)."""
+    from .goal_import_actors import make_volume, _ltype, _scalars, _scalars_list
+    lump = d.get("lump") or {}
+    o.og_cp_trigger = True
+    r = lump.get("radius")
+    if r is not None:
+        v = _scalars(r)
+        if v:
+            o["og_checkpoint_radius"] = float(v[0]) if _ltype(r) else float(v[0]) / M
+    vv = lump.get("vol")
+    if vv is None:
+        return []
+    planes = _scalars_list(vv) if _ltype(vv) else [[a, b, c, w / M] for a, b, c, w in vv]
+    vol = make_volume(ctx, planes, f"VOL_{o.name[11:]}")
+    if vol is None:
+        return []
+    from .export import _vol_links, _rename_vol_for_links
+    en = _vol_links(vol).add()
+    en.target_name = o.name
+    _rename_vol_for_links(vol)
+    return [vol]
+
+
+def _import_continue_points(ctx, entries):
     from .goal_import import static_fields
     from .collections import _link_object_to_sub_collection, _COL_PATH_SPAWNS, spawn_uid, _level_objects
     from .operators.spawn import _cp_clean, _cp_object_name
@@ -120,6 +171,7 @@ def import_checkpoints(ctx, entries):
         used.add(uid)
         t = [v / M for v in _vec(sf.get("trans"))]
         o = bpy.data.objects.new(_cp_object_name(ctx.scene, uid), None)
+        LAST_CHECKPOINTS[e["name"]] = o.name
         o.empty_display_type = "CONE"
         o.empty_display_size = 1.2
         o.color = (1.0, 0.85, 0.0, 1.0)

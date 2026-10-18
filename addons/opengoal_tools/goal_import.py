@@ -123,15 +123,21 @@ def _json_entries(data, source):
         for i, e in enumerate(items or ()):
             if not isinstance(e, dict):
                 continue
+            if cat == "ACTORS" and e.get("etype") == "lt-checkpoint":
+                # a checkpoint's trigger (the export's lt-checkpoint actor): joins its checkpoint
+                lump = e.get("lump") if isinstance(e.get("lump"), dict) else {}
+                cn = lump.get("continue-name")
+                cn = cn[-1] if isinstance(cn, list) else cn
+                out.append({"cat": "CHECKPOINTS", "name": f"{cn} trigger", "info": "trigger", "data": e,
+                            "trigger_of": str(cn or ""), "source": source})
+                continue
             if cat == "ACTORS":
                 from . import db
                 from .goal_import_actors import resolve_etype
                 et = resolve_etype(e)
                 name, info = _actor_name(e, i), et
                 if not db.find_actor(et):
-                    out.append({"cat": cat, "name": name, "info": f"{et} (not in the database)", "data": e,
-                                "source": source, "pick": False})
-                    continue
+                    info = f"{et} (custom actor)"
             else:
                 lump = e.get("lump") if isinstance(e.get("lump"), dict) else {}
                 name = str(lump.get("name") or f"{cat.lower()[:-1]}-{i}")

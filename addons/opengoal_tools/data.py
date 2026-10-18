@@ -603,8 +603,18 @@ for _actor in _db.all_actors_including_orphans():
     ]
 
 
+_CUSTOM_LINK_DEFS: list = []
+
+
 def _actor_link_slots(etype):
-    return ACTOR_LINK_DEFS.get(etype, [])
+    if etype in ACTOR_LINK_DEFS:
+        return ACTOR_LINK_DEFS[etype]
+    if etype and etype not in ENTITY_DEFS:          # custom types: the custom-actor parent's slots
+        if not _CUSTOM_LINK_DEFS:
+            _CUSTOM_LINK_DEFS[:] = [(s["lump_key"], s["slot"], s["label"], s["accepts"], s["required"])
+                                    for s in _db.link_slots(etype)]
+        return _CUSTOM_LINK_DEFS
+    return []
 
 
 def _actor_has_links(etype):

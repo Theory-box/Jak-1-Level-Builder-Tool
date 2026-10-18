@@ -281,15 +281,16 @@ def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, 
     o.empty_display_type = info.get("shape", "SPHERE")
     o.location = location
     o.show_name = True
-    o.empty_display_size = _db.empty_size(etype) or 1.0   # DB "empty_size" (actor / parent / category)
-    o.color = _db.actor_color(etype)                       # category color
+    custom = _is_custom_type(etype)
+    o.empty_display_size = 0.5 if custom else (_db.empty_size(etype) or 1.0)   # DB "empty_size" (actor / parent / category)
+    o.color = (0.6, 1.0, 0.2, 1.0) if custom else _db.actor_color(etype)      # category color; custom types yellow-green
     # DB rotation: the starting offset first, then the axis locks
     _rot = _db.rotation_offset(etype)
     if _rot:
         o.rotation_euler = [math.radians(a) for a in _rot]
     o.lock_rotation = _db.rotation_lock(etype)
     ctx.scene.collection.objects.link(o)
-    _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity(etype))
+    _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity("evilplant" if custom else etype))
     # Variant selection -> the actor's variant field (crate types, bridge variants, ...)
     _vf = _db.variant_field(etype)
     if _vf and variant:
@@ -1187,21 +1188,10 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
                 "Use the normal Spawn sub-panels to place it, or choose a different name.")
             return {"CANCELLED"}
 
-        n = len([o for o in _level_objects(ctx.scene)
-                 if o.name.startswith(f"ACTOR_{etype}_")])
-
-        bpy.ops.object.empty_add(type="SPHERE", location=ctx.scene.cursor.location)
-        o = ctx.active_object
-        o.name               = f"ACTOR_{etype}_{n}"
-        o.show_name          = True
-        o.empty_display_size = 0.5
-        # Distinctive yellow-green colour so custom types stand out from built-ins
-        o.color = (0.6, 1.0, 0.2, 1.0)
-
-        # Link into the level collection (Props sub-collection is the best fit
-        # for a generic unknown type — no AI, no navmesh assumed)
-        _link_object_to_sub_collection(
-            ctx.scene, o, *_col_path_for_entity("evilplant"))  # reuse Props path
+        # yellow-green, in Props; the custom-actor parent gives it the path,
+        # nav-mesh and volume panels
+        o = make_actor(ctx, etype, ctx.scene.cursor.location, preview=False)
+        select_only(ctx, o)
 
         self.report({"INFO"},
             f"Spawned '{o.name}' — open the GOAL Code panel to assign a code block, "
