@@ -1,0 +1,127 @@
+;; The energy hub (Lava Tube) for custom levels: place it on an energybase,
+;; shoot the 5 energy balls with yellow eco to stop it; then it sends 'stop to
+;; alt-actor 0, 'open to alt-actor 1 and closes its task.
+;; - its task is the actor's own (Game Task panel); none = vanilla lavatube-balls
+;; - works with fewer than 3 alt-actors (vanilla: the empty slots were left
+;;   unset and written through every frame, which crashed the game)
+;; Its arms still check the vanilla lavatube-balls task: with that task closed
+;; in the save they spawn without balls.
+(deftype __TYPE__ (energyhub)
+  ((edit-task game-task))
+  (:states
+   __TYPE__-idle
+   __TYPE__-stop))
+
+(defun __TYPE__-task ((this __TYPE__))
+  (if (= (-> this edit-task) (game-task none)) (game-task lavatube-balls) (-> this edit-task)))
+
+(defstate __TYPE__-stop (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('flash) (set! (-> self palette-val) 1.9921875))))
+  :enter
+    (behavior ()
+      (set! (-> self rotation-speed target) 0.0)
+      (set! (-> self rotation-speed accel) 0.0005)
+      (let ((a1-0 (new 'stack-no-clear 'event-message-block)))
+        (set! (-> a1-0 from) self)
+        (set! (-> a1-0 num-params) 0)
+        (set! (-> a1-0 message) 'stop)
+        (let ((t9-0 send-event-function)
+              (v1-1 (-> self alts 0)))
+          (t9-0 (if v1-1 (-> v1-1 extra process)) a1-0)))
+      (let ((a1-1 (new 'stack-no-clear 'event-message-block)))
+        (set! (-> a1-1 from) self)
+        (set! (-> a1-1 num-params) 0)
+        (set! (-> a1-1 message) 'open)
+        (let ((t9-1 send-event-function)
+              (v1-5 (-> self alts 1)))
+          (t9-1 (if v1-5 (-> v1-5 extra process)) a1-1)))
+      (close-specific-task! (__TYPE__-task self) (task-status need-resolution))
+      (level-hint-spawn (text-id lavatube-balls-resolution) "sksp0378" (the-as entity #f) *entity-pool* (game-task none))
+      (if (nonzero? (-> self sound)) (stop! (-> self sound))))
+  :trans
+    (behavior ()
+      (update! (-> self rotation-speed) 0.0)
+      (energyhub-trans)
+      (energyhub-set-lava-height -122880.0)
+      (if (< (-> self rotation-speed value) 0.3) (go energyhub-stopped)))
+  :code
+    (behavior ()
+      (loop
+        (suspend)
+        (let* ((f30-0 1.0)
+               (f28-0 0.25)
+               (v1-1 (/ (the-as int (rand-uint31-gen *random-generator*)) 256))
+               (v1-2 (the-as number (logior #x3f800000 v1-1)))
+               (f0-4 (+ f30-0 (* f28-0 (+ -1.0 (the-as float v1-2))))))
+          (ja :num! (loop! f0-4)))))
+  :post ja-post)
+
+(defstate __TYPE__-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('flash) (set! (-> self palette-val) 1.9921875))))
+  :trans
+    (behavior ()
+      (if (nonzero? (-> self sound)) (update! (-> self sound)))
+      (let ((gp-0 0))
+        (dotimes (s5-0 5)
+          (let* ((s4-0 (handle->process (-> self arm s5-0)))
+                 (v1-10 (if (and (nonzero? s4-0) (type-type? (-> s4-0 type) energyarm)) (the-as energyarm s4-0))))
+            (if (and v1-10 (handle->process (-> v1-10 ball))) (+! gp-0 1))))
+        (cond
+          ((zero? gp-0) (energyhub-set-lava-height -122880.0) (go __TYPE__-stop))
+          ((= gp-0 1) (set! (-> self rotation-speed target) 1.8) (energyhub-set-lava-height -129024.0))
+          ((= gp-0 2) (set! (-> self rotation-speed target) 1.6) (energyhub-set-lava-height -135168.0))
+          ((= gp-0 3) (set! (-> self rotation-speed target) 1.4) (energyhub-set-lava-height -141312.0))
+          ((= gp-0 4) (set! (-> self rotation-speed target) 1.2) (energyhub-set-lava-height -147456.0))
+          (else (set! (-> self rotation-speed target) 1.0) (energyhub-set-lava-height -151552.0))))
+      (update! (-> self rotation-speed-offset))
+      (update! (-> self rotation-speed) (-> self rotation-speed-offset value))
+      (energyhub-trans))
+  :code
+    (behavior ()
+      (loop
+        (suspend)
+        (let* ((f30-0 1.0)
+               (f28-0 0.25)
+               (v1-1 (/ (the-as int (rand-uint31-gen *random-generator*)) 256))
+               (v1-2 (the-as number (logior #x3f800000 v1-1)))
+               (f0-4 (+ f30-0 (* f28-0 (+ -1.0 (the-as float v1-2))))))
+          (ja :num! (loop! f0-4)))))
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *energyhub-sg* '())
+  (set! (-> this sound) (new 'process 'ambient-sound arg0 (-> this root trans)))
+  (dotimes (i 3)
+    (set! (-> this alts i) (the-as entity-actor #f)))
+  (set! (-> this edit-task) (-> arg0 extra perm task))
+  (let ((s5-1 (entity-actor-count (-> this entity) 'alt-actor)))
+    (dotimes (s4-0 (min 3 s5-1))
+      (set! (-> this alts s4-0) (entity-actor-lookup (-> this entity) 'alt-actor s4-0))))
+  (quaternion->matrix (-> this rot-mat-init) (-> this root quat))
+  (let ((f30-0 13107.2)
+        (s5-2 (new 'stack-no-clear 'vector))
+        (s4-1 (new 'stack-no-clear 'matrix)))
+    (set-vector! s5-2 0.0 2457.6 -24576.0 1.0)
+    (matrix-rotate-y! s4-1 f30-0)
+    (dotimes (s3-0 5)
+      (set! (-> this arm s3-0) (ppointer->handle (process-spawn energyarm s5-2 (* (the float s3-0) f30-0) :to this)))
+      (vector-matrix*! s5-2 s5-2 s4-1)))
+  (set! (-> this root pause-adjust-distance) 245760.0)
+  (set! (-> this y-rotation) 0.0)
+  (set! (-> this x-rotation) 0.0)
+  (set-params! (-> this rotation-speed-offset) 300 600 0.25)
+  (set! (-> this palette-val) 0.0)
+  (cond
+    ((task-closed? (__TYPE__-task this) (task-status need-resolution))
+     (set-params! (-> this rotation-speed) 0.0 0.01 0.1 0.9)
+     (go energyhub-stopped))
+    (else (set-params! (-> this rotation-speed) 1.0 0.01 0.1 0.9) (go __TYPE__-idle)))
+  (none))

@@ -7976,15 +7976,19 @@
     },
     {
       "etype": "bird-lady",
+      "edited": "bird-lady",
       "label": "Bird Lady (Village)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "bird-lady.o",
       "art_group": "bird-lady-ag.go",
       "tpage_group": "Beach",
       "glb": "levels/beach/bird-lady-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: her beach-flutflut introduction starts with 'want-levels village1 beach' (unloads the custom level), and she only offers to talk while Jak is at game Z < -20 m (hard-coded). Removed once beach-flutflut's reminder stage is closed. Needs a subtype: drop level-load commands, target-above-threshold? -> #t."
+      "description": "Edited (subtypes/bird-lady.gc): the actor's own task (Game Task panel; none = vanilla beach-flutflut). Talking plays her introduction (closes need-introduction) without its level commands, then her two reminders; she talks from anywhere (vanilla: only at game Z < -20 m) and is removed once the task's need-reminder stage is closed.",
+      "panels": [
+        {"panel": "game-task", "description": "Her task: introduction closes need-introduction, removed once need-reminder is closed."}
+      ]
     },
     {
       "etype": "bird-lady-beach",
@@ -10273,15 +10277,19 @@
     },
     {
       "etype": "assistant-lavatube-end",
+      "edited": "assistant-lavatube-end",
       "label": "Keira (Citadel entrance)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-citadel.o",
       "art_group": "assistant-lavatube-end-ag.go",
       "tpage_group": "Citadel",
       "glb": "levels/citadel/assistant-lavatube-end-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: tied to the vanilla task village4-button. She only shows while that task sits at need-reward-speech (vanilla: Jak's first arrival in the Citadel, before its warp-gate button is pressed) and the green sage isn't freed; then she auto-plays assistant-lavatube-end-resolution. On a normal save the task sits at its first 'unknown' stage, so she stays invisible. Spawns safely (no lumps / links); a subtype dropping the should-display gate would make her usable."
+      "description": "Edited (subtypes/assistant-lavatube-end.gc): the actor's own task (Game Task panel; none = vanilla village4-button). She shows while the task is at need-reward-speech and plays her resolution when Jak comes near (closing that stage).",
+      "panels": [
+        {"panel": "game-task", "description": "Her task: she shows and talks while it's at need-reward-speech."}
+      ]
     },
     {
       "etype": "red-sagecage",
@@ -10777,10 +10785,12 @@
     },
     {
       "etype": "warrior",
+      "edited": "warrior",
       "label": "Warrior",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
+        {"panel": "game-task", "description": "His task: the cell he gives for the orbs."},
         {
           "panel": "actor-link",
           "slots": [
@@ -10802,7 +10812,7 @@
       "tpage_group": "Village2",
       "glb": "levels/village2/warrior-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: leaving any of his cutscenes sends to (entity-by-type allpontoons) with no null check, so talking crashes without an allpontoons actor. Vanilla village2-warrior-money (90 orbs, gives its cell). Needs a subtype: guard the allpontoons lookups."
+      "description": "Edited (subtypes/warrior.gc): an orb trade with the actor's own task (Game Task panel; none = vanilla village2-warrior-money): introduction, reminder, then he takes 90 orbs (money-task-inc) for the task's cell. His alt-actors are born and sent 'die after the trade (vanilla: the pontoons). Works without an allpontoons actor (vanilla: talking crashed)."
     },
     {
       "etype": "gambler",
@@ -13393,8 +13403,9 @@
     },
     {
       "etype": "energyhub",
+      "edited": "energyhub",
       "label": "Energy Hub",
-      "category": "Hidden",
+      "category": "Visuals",
       "parent": "process-drawable",
       "code": "lavatube-energy.o",
       "art_group": [
@@ -13405,8 +13416,9 @@
       "tpage_group": "Lavatube",
       "glb": "levels/lavatube/energyhub-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: crashed the game in a custom level. Spinning hub (place it on an energybase) that spawns 5 arms, each holding an energy ball; shoot all balls with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and resolves the vanilla lavatube-balls task. Every frame it also holds alt-actor 2's model at 1.25x X/Z scale and fades lava palette 2. Likely crash cause: when fewer than 3 alt-actors are linked, the empty slots are 0 (not #f). Each frame the hub then writes through that 0 pointer.",
+      "description": "Edited (subtypes/energyhub.gc): spinning hub (place it on an energybase) with 5 arms holding energy balls; shoot them all with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and closes the actor's task (Game Task panel; none = vanilla lavatube-balls) need-resolution. Alt-actor 2: held at 1.25x X/Z scale while the hub turns, lava palette faded. Works with fewer than 3 alt-actors (vanilla crashed). Its arms still check vanilla lavatube-balls: closed in the save = no balls.",
       "panels": [
+        {"panel": "game-task", "description": "Closed (need-resolution) when all balls are shot."},
         {
           "panel": "actor-link",
           "slots": [

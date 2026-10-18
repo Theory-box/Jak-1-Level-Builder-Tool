@@ -1,0 +1,75 @@
+;; The Warrior (village2) for custom levels: an orb trade.
+;; - his task is the actor's own (Game Task panel); none = vanilla
+;;   village2-warrior-money. Introduction, reminder, then the trade: the orbs
+;;   (money-task-inc, 90) for the task's cell; his alt-actors are born and sent 'die
+;;   (vanilla: the pontoons he blocked).
+;; - works without an allpontoons actor (vanilla: talking crashed without one)
+(deftype __TYPE__ (warrior) ())
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (with-pp
+    (set! (-> this talk-message) (text-id press-to-talk))
+    (case (current-status (-> this tasks))
+      (((task-status need-hint) (task-status need-introduction))
+       (if arg0 (close-status! (-> this tasks) (task-status need-introduction)))
+       (new 'static
+            'spool-anim
+            :name "warrior-introduction"
+            :index 6
+            :parts 29
+            :command-list
+            '((125 joint "cameraB")
+             (260 joint "camera")
+             (574 joint "cameraB")
+             (918 joint "camera")
+             (1174 joint "cameraB")
+             (1174 shadow self #f)
+             (1301 joint "camera")
+             (1301 shadow self #t)
+             (2025 joint "cameraB")
+             (2322 joint "camera")
+             (2560 joint "cameraB"))))
+      (((task-status need-reminder))
+       (set! (-> this skippable) #t)
+       (new 'static 'spool-anim :name "warrior-reminder-1" :index 7 :parts 3 :command-list '()))
+      (((task-status need-reward-speech))
+       (cond
+         (arg0
+          (set! (-> this cell-for-task) (current-task (-> this tasks)))
+          (close-current! (-> this tasks))
+          (send-event *target* 'get-pickup 5 (- (-> *GAME-bank* money-task-inc)))
+          (let ((pt (entity-by-type allpontoons))) (if pt (send-event (-> pt extra process) 'clone (process->handle this))))
+          (dotimes (s5-2 (entity-actor-count (-> this entity) 'alt-actor))
+            (entity-birth-no-kill (entity-actor-lookup (-> this entity) 'alt-actor s5-2))
+            (let ((s4-2 (new 'stack-no-clear 'event-message-block)))
+              (set! (-> s4-2 from) pp)
+              (set! (-> s4-2 num-params) 0)
+              (set! (-> s4-2 message) 'die)
+              (let ((s3-0 send-event-function)
+                    (v1-25 (entity-actor-lookup (-> this entity) 'alt-actor s5-2)))
+                (s3-0 (if v1-25 (-> v1-25 extra process)) s4-2)))))
+         (else (set! (-> this will-talk) #t) (set! (-> this talk-message) (text-id press-to-trade-money))))
+       (new 'static 'spool-anim :name "warrior-resolution" :index 8 :parts 6 :command-list '((508 blackout 10) (511 blackout 0))))
+      (else
+       (if arg0
+         (format 0
+                 "ERROR: <GMJ>: ~S playing anim for task status ~S~%"
+                 (-> this name)
+                 (task-status->string (current-status (-> this tasks)))))
+       (-> this draw art-group data 5)))))
+
+(defstate play-anim (__TYPE__)
+  :virtual #t
+  :exit
+    (behavior ()
+      (let ((pt (entity-by-type allpontoons))) (if pt (send-event (-> pt extra process) 'end-mode)))
+      ((-> (method-of-type process-taskable play-anim) exit))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *warrior-sg* 3 33 (new 'static 'vector :y -4096.0 :w 10240.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task village2-warrior-money) task))))
+  (set! (-> this sound-flava) (music-flava warrior))
+  (set! (-> this draw light-index) (the-as uint 3))
+  (process-taskable-method-42 this)
+  (none))

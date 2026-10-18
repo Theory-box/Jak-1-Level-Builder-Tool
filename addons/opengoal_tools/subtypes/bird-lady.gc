@@ -1,0 +1,64 @@
+;; The Bird Lady (village) for custom levels.
+;; - her task is the actor's own (Game Task panel); none = vanilla beach-flutflut.
+;;   Talking plays her introduction (closes need-introduction), then her reminders.
+;;   Removed once the task's need-reminder stage is closed (like vanilla).
+;; - she talks from anywhere (vanilla: only while Jak is at game Z < -20 m)
+;; - her introduction plays without its level commands (vanilla: want-levels village1
+;;   beach / display-level beach, which unload the custom level mid-cutscene)
+(deftype __TYPE__ (bird-lady)
+  ((strip-src basic 8)
+   (strip-dst basic 8)
+   (strip-cnt int32)))
+
+(defun __TYPE__-level-cmd? ((cmd object))
+  (or (= cmd 'want-levels) (= cmd 'display-level) (= cmd 'want-force-vis)
+      (= cmd 'want-force-inside) (= cmd 'want-vis) (= cmd 'save)))
+
+(defun __TYPE__-strip ((anim spool-anim))
+  (let ((rev '())
+        (out '())
+        (it (-> anim command-list)))
+    (while (not (null? it))
+      (if (not (__TYPE__-level-cmd? (car (cdr (car it)))))
+        (set! rev (cons (car it) rev)))
+      (set! it (cdr it)))
+    (while (not (null? rev))
+      (set! out (cons (car rev) out))
+      (set! rev (cdr rev)))
+    (let ((n (new 'global 'spool-anim)))
+      (set! (-> n name) (-> anim name))
+      (set! (-> n index) (-> anim index))
+      (set! (-> n parts) (-> anim parts))
+      (set! (-> n priority) (-> anim priority))
+      (set! (-> n owner) (-> anim owner))
+      (set! (-> n command-list) (the-as pair out))
+      n)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (let ((a (call-parent-method this arg0)))
+    (cond
+      ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
+      (else
+       (dotimes (i (-> this strip-cnt))
+         (if (= (-> this strip-src i) a) (return (-> this strip-dst i))))
+       (let ((n (__TYPE__-strip (the-as spool-anim a))))
+         (when (< (-> this strip-cnt) 8)
+           (set! (-> this strip-src (-> this strip-cnt)) a)
+           (set! (-> this strip-dst (-> this strip-cnt)) n)
+           (+! (-> this strip-cnt) 1))
+         n)))))
+
+(defmethod target-above-threshold? ((this __TYPE__))
+  (the-as symbol *target*))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this strip-cnt) 0)
+  (process-taskable-method-40 this arg0 *bird-lady-sg* 3 51 (new 'static 'vector :y 4096.0 :w 4096.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task beach-flutflut) task))))
+  (set! (-> this sound-flava) (music-flava birdlady))
+  (set! (-> this draw light-index) (the-as uint 4))
+  (if (closed? (-> this tasks) (current-task (-> this tasks)) (task-status need-reminder))
+    (cleanup-for-death this)
+    (go (method-of-object this idle)))
+  (none))

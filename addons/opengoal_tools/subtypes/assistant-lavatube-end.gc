@@ -1,0 +1,26 @@
+;; Keira (end of Lava Tube) for custom levels.
+;; - her task is the actor's own (Game Task panel); none = vanilla village4-button.
+;;   She shows while the task is at need-reward-speech and plays her resolution
+;;   when Jak comes near (it closes that stage), like vanilla on Jak's first
+;;   arrival in the Citadel. Vanilla also hid her once the green sage was freed;
+;;   that check is gone.
+(deftype __TYPE__ (assistant-lavatube-end) ())
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :enter
+    (behavior ()
+      ((-> (method-of-type process-taskable idle) enter))
+      (if (= (current-status (-> self tasks)) (task-status need-reward-speech)) (send-event self 'play-anim))))
+
+(defmethod should-display? ((this __TYPE__))
+  (first-any (-> this tasks) #t)
+  (= (current-status (-> this tasks)) (task-status need-reward-speech)))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *assistant-lavatube-end-sg* 3 29 (new 'static 'vector :w 4096.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task village4-button) task))))
+  (first-any (-> this tasks) #t)
+  (process-taskable-method-42 this)
+  (none))
