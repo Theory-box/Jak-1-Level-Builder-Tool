@@ -6,10 +6,13 @@ Once a feature is part of a release, it'll get removed from here.
 
 ## Second entity pass
 Based on `community-feedback/Actor Notes.md` and notes here
+### nav-enemy
+Change the info to "Nav-enemy, needs navmesh and path"
+Remove the "sphere radius" selection before spawning
 
 ---
 
-## Import from files feature
+## Import from files feature (in progress)
 A feature that would let you import a text file and the addon would create actors, checkpoint, navmesh, paths, etc, based on those definitions.
 ### UI Panel
 Use the already existing `import` menu. Divide it for the 3D model import, move the texturing menu inside there and then also have an actor sections. Like this:
@@ -39,6 +42,37 @@ Select all objects that were imported.
 Useful tool to have, especially if users make custom actors that are child of another entity, would be an option where you can write down the etype that would be exported. All it'd do would just be changing the etype in the actor export. The rest of the actor would export as if nothing had changed. 
 That way, if someone has made a custom version of an existing actor, they can just spawn that existing actor then change the "export as" option and it'd use their custom actor directly.
 It can just be one extra field at the top of custom lump in the actor settings so it's not too much in the way as that'd be a feature that's not used that often  
+
+---
+
+## Small UI changes 
+### Main panl re-organisation
+Not sure what the default order is right now since I've moved them a lot but here's what the default order should be:
+- Build & Play
+- Level
+- Spawn Objects
+- Obects Control
+- Object Settings
+- Light Baking
+- Tasks
+- Import
+- Developer Tools
+### Level
+- Move the `Level Manager` sub menu at the top. And remove the selection of levels inside of it. THere's already a drop down menu for levels at the top of the main panel
+- In `Collections` Move the `sort & Clean` button outside of the `Clean` sub menu and put it at the top of the Collection menu
+### Spawn Objects
+- Move the `Spawn` button right under the name of the seleted actor
+### Developer Tools
+At the moment, this panel is a long list so we should have a few sub menu that are collapsed for a cleaner UI:
+- Paths & Versions
+  - Paths
+  - Use this .blend's folders
+  - Versions
+- Addon settings
+  - Launch Timing
+  - Build Settings
+- Quick Open
+The "clean file" button can stay at the top, without being in a sub menu. When pressing it, it should open a popup telling you which files will be deleted/edited and then confirm with a "delete" and "cancel" button.
 
 ---
 
