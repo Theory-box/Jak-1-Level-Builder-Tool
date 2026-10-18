@@ -46,8 +46,8 @@ It can just be one extra field at the top of custom lump in the actor settings s
 ---
 
 ## Small UI changes 
-### Main panl re-organisation
-Not sure what the default order is right now since I've moved them a lot but here's what the default order should be:
+### Main panel re-organisation
+Not sure what the default order is right now since I've moved them a lot in my testing file but here's what the default order should be:
 - Build & Play
 - Level
 - Spawn Objects
@@ -58,19 +58,19 @@ Not sure what the default order is right now since I've moved them a lot but her
 - Import
 - Developer Tools
 ### Level
-- Move the `Level Manager` sub menu at the top. And remove the selection of levels inside of it. THere's already a drop down menu for levels at the top of the main panel
+- Move the `Level Manager` sub menu at the top. And remove the selection of levels inside of it. There's already a drop down menu for levels at the top of the main panel
 - In `Collections` Move the `sort & Clean` button outside of the `Clean` sub menu and put it at the top of the Collection menu
 ### Spawn Objects
 - Move the `Spawn` button right under the name of the seleted actor
 ### Developer Tools
 At the moment, this panel is a long list so we should have a few sub menu that are collapsed for a cleaner UI:
-- Paths & Versions
+- Paths
   - Paths
   - Use this .blend's folders
-  - Versions
 - Addon settings
   - Launch Timing
   - Build Settings
+  - Versions
 - Quick Open
 The "clean file" button can stay at the top, without being in a sub menu. When pressing it, it should open a popup telling you which files will be deleted/edited and then confirm with a "delete" and "cancel" button.
 
