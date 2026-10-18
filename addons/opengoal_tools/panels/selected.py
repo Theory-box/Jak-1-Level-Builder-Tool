@@ -379,8 +379,12 @@ def _draw_selected_load_boundary(layout, sel, scene):
         cmd = getattr(sel, prefix + "_cmd", "none")
         if cmd in ("load", "display", "force-vis"):
             b.prop(sel, prefix + "_lev0", text="Level 0")
+            if getattr(sel, prefix + "_lev0") == "custom":
+                b.prop(sel, prefix + "_lev0_custom", text="Name 0")
         if cmd == "load":
             b.prop(sel, prefix + "_lev1", text="Level 1")
+            if getattr(sel, prefix + "_lev1") == "custom":
+                b.prop(sel, prefix + "_lev1_custom", text="Name 1")
         if cmd == "display":
             b.prop(sel, prefix + "_disp", text="Mode")
         if cmd in ("vis", "checkpt"):

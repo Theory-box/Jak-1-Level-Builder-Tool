@@ -612,6 +612,9 @@ def actor_uid(name, etype):
     return re.sub(r"[^\w.-]", "_", name) or "0"
 
 
+LAST_ACTORS = {}       # lump name -> object name of the last actor import (nav-mesh links)
+
+
 def import_actors(ctx, entries):
     from . import db
     from .data import _actor_set_link
@@ -641,6 +644,7 @@ def import_actors(ctx, entries):
             g = mathutils.Quaternion((q[3], q[0], q[1], q[2])).to_matrix()
             o.rotation_euler = (_R.transposed() @ g @ _R).to_euler()
         by_lump[e["name"]] = o
+        LAST_ACTORS[e["name"]] = o.name
         if task and task != "none" and any(f.get("key") == "og_game_task" for f in db.inherited_fields(etype)):
             _task_into(o, "og_game_task", task)
         took = apply_fields(o, etype, lumps)

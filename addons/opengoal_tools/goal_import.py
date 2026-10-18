@@ -22,6 +22,7 @@ CATEGORIES = (
     ("CAMERAS", "Cameras", "OUTLINER_OB_CAMERA"),
     ("NAVMESHES", "Nav-meshes", "MOD_TRIANGULATE"),
     ("CHECKPOINTS", "Checkpoints", "EMPTY_SINGLE_ARROW"),
+    ("BOUNDARIES", "Load boundaries", "MOD_EDGESPLIT"),
 )
 _CAT_LABEL = {c: l for c, l, _i in CATEGORIES}
 
@@ -142,14 +143,33 @@ def _json_entries(data, source):
                         out.append({"cat": cat, "name": name, "info": f"{info} (no addon object for it)", "data": e,
                                     "source": source, "pick": False})
                         continue
-            out.append({"cat": cat, "name": name, "info": info, "data": e, "source": source})
+            ent = {"cat": cat, "name": name, "info": info, "data": e, "source": source}
+            if cat == "ACTORS" and isinstance(data, dict) and "aid" not in e:
+                ent["aid"] = int(data.get("base_id", 10000)) + i + 1   # a level .jsonc: base id + its place
+            out.append(ent)
     return out
 
 
+_LB_BLOCK = re.compile(r";; ===== OG CUSTOM BOUNDARIES: (\S+) =====(.*?);; ===== END OG CUSTOM BOUNDARIES: \1 =====", re.S)
+
+
 def _goal_entries(text, source):
-    """Nav-meshes (entity.gc case entries, custom-nav defines) and
-    continue-points (level-info.gc) of GOAL text."""
+    """Nav-meshes (entity.gc case entries, custom-nav defines), continue-points
+    (level-info.gc) and load boundaries (load-boundary-data.gc: a custom
+    level's block says which level it is) of GOAL text."""
     out = []
+    if "static-load-boundary" in text:
+        blocks = [(m.group(1), m.group(2)) for m in _LB_BLOCK.finditer(text)]
+        rest = _LB_BLOCK.sub("", text)
+        for level, body in blocks + [(None, rest)]:
+            n = 0
+            for top in read_sexprs(body):
+                for f in _walk(top):
+                    if isinstance(f, list) and f and f[0] == "static-load-boundary":
+                        n += 1
+                        out.append({"cat": "BOUNDARIES", "name": f"{level or 'boundary'}-{n}",
+                                    "info": level or "", "data": f, "level": level, "source": source})
+        text = rest
     forms = read_sexprs(text)
     for top in forms:
         # custom-nav: (define *nav-sym* (new 'static 'nav-mesh ...))
@@ -167,8 +187,11 @@ def _goal_entries(text, source):
                 out.append({"cat": "NAVMESHES", "name": f"aid {aid}", "info": "entity.gc", "data": f[1][2],
                             "aid": aid, "source": source})
             elif is_new_static(f, "continue-point"):
-                name = _unstring(static_fields(f).get("name", "")) or "continue-point"
-                out.append({"cat": "CHECKPOINTS", "name": name, "info": "", "data": f, "source": source})
+                sf = static_fields(f)
+                name = _unstring(sf.get("name", "")) or "continue-point"
+                lev = sf.get("level")
+                lev = lev[1] if isinstance(lev, list) and lev[0] == "quote" else lev
+                out.append({"cat": "CHECKPOINTS", "name": name, "info": str(lev or ""), "data": f, "source": source})
     return out
 
 
@@ -206,7 +229,7 @@ def parse_text(text, source):
     if "{" in s or "[" in s:
         for v in _json_values(strip_jsonc(s)):
             out += _json_entries(v, source)
-    if "(new 'static" in s:
+    if "(new 'static" in s or "static-load-boundary" in s:
         out += _goal_entries(s, source)
     return out
 
@@ -224,7 +247,7 @@ class OGImportRow(bpy.types.PropertyGroup):
 class OGGoalImport(bpy.types.PropertyGroup):
     filepath: StringProperty(name="File", subtype="FILE_PATH",
                              description="A level .jsonc, a game entities .json (decompiler_out/jak1/entities), "
-                                         "an entity.gc / <level>-nav.gc or a level-info.gc")
+                                         "an entity.gc / <level>-nav.gc, a level-info.gc or a load-boundary-data.gc")
     rows: CollectionProperty(type=OGImportRow)
     active: IntProperty()
 
@@ -393,8 +416,17 @@ def _import_cameras(ctx, entries):
     return import_cameras(ctx, entries)
 
 
+def _import_gc(fn):
+    def run(ctx, entries):
+        from . import goal_import_gc
+        return getattr(goal_import_gc, fn)(ctx, entries)
+    return run
+
+
 # category -> fn(ctx, entries) -> [objects made] or ([objects made], [skipped names])
-IMPORTERS = {"ACTORS": _import_actors, "AMBIENTS": _import_ambients, "CAMERAS": _import_cameras}
+IMPORTERS = {"ACTORS": _import_actors, "AMBIENTS": _import_ambients, "CAMERAS": _import_cameras,
+             "NAVMESHES": _import_gc("import_navmeshes"), "CHECKPOINTS": _import_gc("import_checkpoints"),
+             "BOUNDARIES": _import_gc("import_boundaries")}
 
 
 # ── UI ───────────────────────────────────────────────────────────────────────

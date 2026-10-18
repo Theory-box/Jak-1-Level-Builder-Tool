@@ -100,7 +100,8 @@ def _lb_level_items(self, context):
     # Boundary command level args: none / this level / any project level.
     return [("none", "(None)", "No level (#f)"),
             ("self", "(This level)", "The level this boundary belongs to")] \
-        + _cp_level_items_base(context)
+        + _cp_level_items_base(context) \
+        + [("custom", "Custom\u2026", "Type a level name below (e.g. a vanilla level)")]
 
 def _on_root_path_changed(self, context):
     """Scan the new root once (result cached for the panel) and auto-pick an
