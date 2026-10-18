@@ -15707,9 +15707,10 @@
     },
     {
       "etype": "cavespatula",
+      "edited": "cavespatula",
       "sounds": ["spatula"],
       "label": "Cave Spatula Plat",
-      "category": "Hidden",
+      "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
@@ -15739,7 +15740,7 @@
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
       "shape": "CUBE",
-      "description": "Only works in a level named darkcave: elsewhere its art group (cavespatula) doesn't exist and it goes into an art error. Hidden from the spawn list."
+      "description": "Edited (subtypes/cavespatula.gc): the spinning cave spatula platform, always with its Dark Cave look (vanilla used it only in a level named darkcave; the other model has no art group, so it went into an art error)."
     },
     {
       "etype": "cavespatulatwo",
