@@ -35,6 +35,13 @@ Select all objects that were imported.
 
 ---
 
+## Export as another entity
+Useful tool to have, especially if users make custom actors that are child of another entity, would be an option where you can write down the etype that would be exported. All it'd do would just be changing the etype in the actor export. The rest of the actor would export as if nothing had changed. 
+That way, if someone has made a custom version of an existing actor, they can just spawn that existing actor then change the "export as" option and it'd use their custom actor directly.
+It can just be one extra field at the top of custom lump in the actor settings so it's not too much in the way as that'd be a feature that's not used that often  
+
+---
+
 ## Better Linux support
 
 ---
