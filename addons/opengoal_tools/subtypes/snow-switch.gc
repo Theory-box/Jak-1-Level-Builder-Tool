@@ -1,0 +1,103 @@
+;; The snow switch for custom levels: holds its task's cell; taking it presses the
+;; switch, which sends 'notice to its linked actors (actor-link: the fort gate).
+;; - pressed already when its own task is complete (vanilla: when snow-ball was)
+;; - no gear camera: vanilla flew a camera to fixed Snowy Mountain coordinates
+(deftype __TYPE__ (snow-switch) ()
+  (:states
+   __TYPE__-activate
+   __TYPE__-idle-up))
+
+(defbehavior __TYPE__-event-handler __TYPE__ ((arg0 process) (arg1 int) (arg2 symbol) (arg3 event-message-block))
+  (local-vars (v0-0 object))
+  (case arg2
+    (('notify)
+     (cond
+       ((= (-> arg0 type) fuel-cell)
+        (when (= (-> arg3 param 0) 'pickup)
+          (set! (-> self pressed?) #t)
+          (process-entity-status! self (entity-perm-status bit-3) #t)
+          (logclear! (-> self mask) (process-mask actor-pause))
+          (go __TYPE__-activate)))
+       ((= (-> arg0 type) snowcam) (if (= (-> arg3 param 0) 'die) (go snow-switch-idle-down)))))
+    (('query) (return (-> self pressed?)) v0-0)))
+
+(defstate __TYPE__-idle-up (__TYPE__)
+  :event __TYPE__-event-handler
+  :code
+    (behavior ()
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend))))
+
+(defstate __TYPE__-activate (__TYPE__)
+  :event __TYPE__-event-handler
+  :exit
+    (behavior ()
+      (process-entity-status! self (entity-perm-status bit-3) #f)
+      (logior! (-> self mask) (process-mask actor-pause)))
+  :trans rider-trans
+  :code
+    (behavior ()
+      (local-vars (v1-1 symbol))
+      (until v1-1
+        (suspend)
+        (set! v1-1 (or (not *target*) (not (logtest? (-> *target* state-flags) (state-flags grabbed))))))
+      (sound-play "prec-button1" :pitch -1)
+      0
+      (let ((gp-2 #f))
+        (loop
+          (let ((s5-1 (new 'stack-no-clear 'vector))
+                (f0-1 (+ -1433.6 (-> self orig-trans y))))
+            (set! (-> s5-1 quad) (-> self root trans quad))
+            (cond
+              ((= (-> s5-1 y) f0-1) (when (not gp-2) (set! gp-2 #t) (send-to-all (-> self link) 'notice)))
+              (else
+               (set! (-> s5-1 y) (seek-with-smooth (-> self root trans y) f0-1 (* 6144.0 (seconds-per-frame)) 0.2 204.8))
+               (move-to-point! (-> self root) s5-1))))
+          (suspend))))
+  :post rider-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this pressed?) #f)
+  (set! (-> this fcell-handle) (the-as handle #f))
+  (set! (-> this link) (new 'process 'actor-link-info this))
+  (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))
+    (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
+    (set! (-> s4-0 reaction) default-collision-reaction)
+    (set! (-> s4-0 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+    (alloc-riders s4-0 1)
+    (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind ground-object))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid rider-plat-sticky))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set! (-> s3-0 transform-index) 3)
+      (set-vector! (-> s3-0 local-sphere) 0.0 0.0 0.0 8192.0)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this root) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *snow-switch-sg* '())
+  (logior! (-> this skel status) (janim-status inited))
+  (ja-channel-push! 1 0)
+  (let ((s5-1 (-> this skel root-channel 0)))
+    (joint-control-channel-group-eval! s5-1 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
+    (set! (-> s5-1 frame-num) 0.0))
+  (transform-post)
+  (set! (-> this orig-trans quad) (-> this root trans quad))
+  (let ((s5-2 (task-complete? *game-info* (-> this entity extra perm task))))
+    (set! (-> this pressed?) s5-2)
+    (when (not s5-2)
+      (let ((a0-17 (new 'stack-no-clear 'vector)))
+        (set! (-> a0-17 quad) (-> this orig-trans quad))
+        (+! (-> a0-17 y) 12288.0)
+        (set! (-> this fcell-handle)
+              (ppointer->handle (birth-pickup-at-point a0-17
+                                                       (pickup-type fuel-cell)
+                                                       (the float (-> this entity extra perm task))
+                                                       #f
+                                                       this
+                                                       (the-as fact-info #f))))))
+    (if s5-2 (go snow-switch-idle-down) (go __TYPE__-idle-up)))
+  (none))

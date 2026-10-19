@@ -1,0 +1,41 @@
+;; The gorge pusher (Precursor Basin) for custom levels: a pusher that moves from
+;; max-frame to min-frame once its task's need-introduction stage is closed (the
+;; actor's task, Game Task panel; none = vanilla rolling-race, the race intro).
+(deftype __TYPE__ (gorge-pusher) ()
+  (:states
+   __TYPE__-idle))
+
+(defun __TYPE__-open? ((this __TYPE__))
+  (let ((t (-> this entity extra perm task)))
+    (task-closed? (if (= t (game-task none)) (game-task rolling-race) t) (task-status need-introduction))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :trans rider-trans
+  :code
+    (behavior ()
+      (loop
+        (if (__TYPE__-open? self)
+          (ja :num! (seek! (-> self min-frame)))
+          (ja :num! (seek! (-> self max-frame))))
+        (suspend)))
+  :post rider-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (pusher-base-init)
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *pusher-sg* '())
+  (set! (-> this max-frame) (res-lump-float arg0 'max-frame :default 1.0))
+  (set! (-> this max-frame) (* (-> this max-frame) (the float (ja-num-frames 0))))
+  (set! (-> this min-frame) (res-lump-float arg0 'min-frame))
+  (set! (-> this min-frame) (* (-> this min-frame) (the float (ja-num-frames 0))))
+  (cond
+    ((__TYPE__-open? this)
+     (let ((v1-6 (-> this skel root-channel 0)))
+       (set! (-> v1-6 num-func) num-func-identity)
+       (set! (-> v1-6 frame-num) (-> this min-frame))))
+    (else
+     (let ((v1-10 (-> this skel root-channel 0)))
+       (set! (-> v1-10 num-func) num-func-identity)
+       (set! (-> v1-10 frame-num) (-> this max-frame)))))
+  (go __TYPE__-idle)
+  (none))

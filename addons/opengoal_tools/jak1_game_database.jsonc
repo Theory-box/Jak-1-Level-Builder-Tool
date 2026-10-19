@@ -7939,7 +7939,10 @@
       "tpage_group": "Final",
       "glb": "levels/finalboss/green-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden; plays the ending cutscenes once the robot boss is beaten (link it as the robot's slot 5): Daxter's sacrifice, then the outros and the credits (which end the game like vanilla). Cutscenes play around it, so place it like vanilla: from the robot (unrotated) X -228 m, Y -138 m, Z +59.5 m. Exported as a level subtype (subtypes/sage-finalboss.gc). Uses the vanilla finalboss-movies task."
+      "description": "Exported as a level subtype (subtypes/sage-finalboss.gc): the final boss ending cutscenes with the actor's own task (Game Task panel; none = vanilla finalboss-movies; a custom task needs the same stages, each cutscene closes the next). Jak returns relative to the sage, no fixed Final Boss position; restarts at the current continue point without all cells; the final door steps are skipped without a final door. The credits end the game like vanilla.",
+      "panels": [
+        {"panel": "game-task", "description": "Each ending cutscene closes the next stage (same stages as finalboss-movies)."}
+      ]
     },
     {
       "etype": "sage",
@@ -17571,6 +17574,7 @@
     },
     {
       "etype": "gorge-pusher",
+      "edited": "gorge-pusher",
       "label": "Gorge Pusher (rolling)",
       "category": "Buttons and Doors",
       "parent": "pusher-base",
@@ -17578,8 +17582,9 @@
       "art_group": "pusher-ag.go",
       "glb": "levels/rolling/pusher-lod0.glb",
       "shape": "CUBE",
-      "description": "Pusher held at its blocking position until the vanilla rolling-race task is introduced, then at its open position.",
+      "description": "Edited (subtypes/gorge-pusher.gc): a pusher that moves from max-frame to min-frame once its task's need-introduction stage is closed (the actor's task; none = vanilla rolling-race, the race introduction).",
       "panels": [
+        {"panel": "game-task", "description": "It moves once this task's need-introduction is closed."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -17615,6 +17620,7 @@
     },
     {
       "etype": "sunken-pipegame",
+      "edited": "sunken-pipegame",
       "label": "Pipe Game (sunken)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17628,8 +17634,9 @@
       ],
       "glb": "levels/sunken/generic-button-lod0.glb",
       "shape": "CUBE",
-      "description": "Spawns 3 buttons at fixed world offsets (-7.5 / 0 / +7.5 m X, +1.25 m Z). Path points 1-6 = jar / far pairs for left, middle, right. Prizes are vanilla: sunken-pipe cell + 2 sunken-buzzer flies.",
+      "description": "Edited (subtypes/sunken-pipegame.gc): spawns 3 buttons at fixed offsets (-7.5 / 0 / +7.5 m X, +1.25 m Z); path points 1-6 = jar / far pairs for left, middle, right. Prizes: the actor's task's cell (none = vanilla sunken-pipe) and scout flies 1 and 2 of the Scout fly task (none = vanilla sunken-buzzer).",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_pipe_fly_task", "label": "Scout fly task", "type": "task", "default": "none", "note": "The middle / right prizes are flies 1 and 2 of this task (vanilla sunken-buzzer).", "lump": {"key": "fly-task", "type": "enum-uint32"}}]},
         {
           "panel": "path",
           "show-panel": true,
@@ -17648,6 +17655,7 @@
     },
     {
       "etype": "snow-bumper",
+      "edited": "snow-bumper",
       "label": "Snow Bumper",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17655,7 +17663,7 @@
       "art_group": "snow-bumper-ag.go",
       "glb": "levels/snow/snow-bumper-lod0.glb",
       "shape": "CUBE",
-      "description": "Shoves Jak within 5 m; stomp it to switch it off. Chain bumpers with next / prev: the last one down gives its task's cell.",
+      "description": "Edited (subtypes/snow-bumper.gc): knock all the linked bumpers down (next / prev actor chain); the last one gives the task's cell. Its progress (which bumper gives the cell, the need-hint it closes) is in its own task (vanilla: snow-bumpers).",
       "panels": [
         {
           "panel": "game-task"
@@ -17773,6 +17781,7 @@
     },
     {
       "etype": "snow-switch",
+      "edited": "snow-switch",
       "label": "Snow Fort Switch",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17783,7 +17792,7 @@
       ],
       "glb": "levels/snow/snow-switch-lod0.glb",
       "shape": "CUBE",
-      "description": "Holds its task's cell (unless vanilla snow-ball is done); taking it sends 'notice to the linked actors (fort gate). Its camera is at a fixed vanilla position.",
+      "description": "Edited (subtypes/snow-switch.gc): holds its task's cell; taking it presses the switch, which sends 'notice to its linked actors (the fort gate). Already pressed when its own task is complete (vanilla: when snow-ball was). No gear camera (vanilla flew one to fixed Snowy Mountain coordinates).",
       "panels": [
         {
           "panel": "game-task"
@@ -17807,6 +17816,7 @@
     },
     {
       "etype": "snow-fort-gate",
+      "edited": "snow-fort-gate",
       "sounds": ["lodge-close", "lodge-door-mov"],
       "label": "Snow Fort Gate",
       "category": "Buttons and Doors",
@@ -17815,7 +17825,11 @@
       "art_group": "snow-fort-gate-ag.go",
       "glb": "levels/snow/snow-fort-gate-lod0.glb",
       "shape": "CUBE",
-      "description": "Opens on 'notice (snow fort switch): slides 34.5 m down and 8 m along world +Z whatever its rotation. Starts open if the vanilla snow-ball task is done."
+      "description": "Edited (subtypes/snow-fort-gate.gc): opens when it gets 'notice (link the snow switch to it). While closed, Daxter's hint plays near it and closes its task's need-hint (Game Task panel; vanilla snow-fort). Open from the start once the 'Open when complete' task is done (vanilla: snow-ball).",
+      "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_fort_open_task", "label": "Open when complete", "type": "task", "default": "none", "note": "Already open when this task is complete (vanilla snow-ball). None: closed until the switch.", "lump": {"key": "open-task", "type": "enum-uint32"}}]},
+        {"panel": "game-task", "description": "Its need-hint stage is closed by the hint near the closed gate."}
+      ]
     },
     {
       "etype": "snow-eggtop",
@@ -18350,10 +18364,12 @@
     },
     {
       "etype": "swamp-tetherrock",
+      "edited": "swamp-tetherrock",
       "label": "Swamp Tether Rock",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_tether_rock_camera", "label": "Rock camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "Looks at the rock as it breaks (vanilla camera-18x). None: the normal camera.", "lump": {"key": "rock-camera", "type": "string"}}, {"key": "og_tether_arm_camera", "label": "Arm camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "After the last rock: looks at the blimp's arm sinking. None: the normal camera.", "lump": {"key": "arm-camera", "type": "string"}}, {"key": "og_tether_blimp_rp", "label": "Blimp rope point", "type": "int", "default": 8, "min": 0, "max": 15, "note": "Which point of the blimp its rope ties to (vanilla rocks: 10, 6, 7, 9).", "lump": {"key": "blimp-rp", "type": "int32"}, "write_if": "always"}]},
         {
           "panel": "game-task",
           "description": "Task this actor is tied to (its saved state, the cell it gives)."
@@ -18380,7 +18396,7 @@
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
-      "description": "Only works with the vanilla swamp-tether-1..4 tasks: when broken it looks up the vanilla 'camera-18x' entities for that task (missing ones crash), and counts breaks in vanilla swamp-tether-1."
+      "description": "Edited (subtypes/swamp-tetherrock.gc): shoot it with yellow eco; it gives its task's cell and lets go of the blimp. Its cameras and rope point come from Actor Settings (vanilla: from its vanilla swamp-tether-1..4 task, crashing on missing camera-18x entities)."
     },
     {
       "etype": "citb-firehose",

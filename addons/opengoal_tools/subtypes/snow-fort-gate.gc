@@ -1,0 +1,70 @@
+;; The snow fort gate for custom levels: opens when it gets 'notice (the snow switch
+;; links to it), with its Daxter hint when Jak is near while it's closed.
+;; - its task (Game Task panel): the hint closes its need-hint stage (vanilla: snow-fort)
+;; - open from the start once the "open when complete" task is done (Actor Settings,
+;;   open-task lump; vanilla: snow-ball). None: closed until the switch.
+(deftype __TYPE__ (snow-fort-gate) ()
+  (:states
+   __TYPE__-idle-closed))
+
+(defun __TYPE__-task ((this __TYPE__))
+  (-> this entity extra perm task))
+
+(defun __TYPE__-open-task ((this __TYPE__))
+  (the-as game-task (res-lump-value (-> this entity) 'open-task uint :default (the-as uint128 0))))
+
+(defstate __TYPE__-idle-closed (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('notice) (go snow-fort-gate-activate))))
+  :trans
+    (behavior ()
+      (when (and *target* (>= 61440.0 (vector-vector-distance (-> self root trans) (-> *target* control trans))))
+        (level-hint-spawn (text-id snow-fort-hint) "sksp0345" (the-as entity #f) *entity-pool* (game-task none))
+        (if (!= (__TYPE__-task self) (game-task none))
+          (close-specific-task! (__TYPE__-task self) (task-status need-hint)))))
+  :code
+    (behavior ()
+      (ja :group! snow-fort-gate-idle-ja :num! min)
+      (set! (-> self root trans quad) (-> self closed-trans quad))
+      (transform-post)
+      (suspend)
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
+    (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind ground-object))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set! (-> s3-0 transform-index) 0)
+      (set-vector! (-> s3-0 local-sphere) 0.0 61440.0 0.0 99123.2)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this root) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *snow-fort-gate-sg* '())
+  (set! (-> this part) (create-launch-control (-> *part-group-id-table* 512) this))
+  (set! (-> this part2) (create-launch-control (-> *part-group-id-table* 513) this))
+  (set! (-> this part3) (create-launch-control (-> *part-group-id-table* 514) this))
+  (set! (-> this open-trans quad) (-> this root trans quad))
+  (set! (-> this closed-trans quad) (-> this open-trans quad))
+  (+! (-> this open-trans y) -141312.0)
+  (+! (-> this open-trans z) 32768.0)
+  (set! (-> this sound) (new 'process 'ambient-sound (static-sound-spec "lodge-door-mov" :fo-max 80) (-> this open-trans)))
+  (ja-channel-push! 1 0)
+  (let ((s5-1 (-> this skel root-channel 0)))
+    (joint-control-channel-group-eval! s5-1 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
+    (set! (-> s5-1 frame-num) 0.0))
+  (cond
+    ((and (!= (__TYPE__-open-task this) (game-task none)) (task-complete? *game-info* (__TYPE__-open-task this)))
+     (set! (-> this root trans quad) (-> this open-trans quad))
+     (transform-post)
+     (go snow-fort-gate-idle-open))
+    (else (set! (-> this root trans quad) (-> this closed-trans quad)) (transform-post) (go __TYPE__-idle-closed)))
+  (none))
