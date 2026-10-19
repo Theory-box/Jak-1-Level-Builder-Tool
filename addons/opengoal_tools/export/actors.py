@@ -193,10 +193,20 @@ def _computed_lumps(o, etype):
                 dx = round(dl.x * 4096, 2)
                 dy = round(dl.z * 4096, 2)
                 dz = round(-dl.y * 4096, 2)
-                tkey = lp.get("pairs_with")
-                t    = float(o.get(tkey, -1.0)) if tkey else -1.0
-                fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
+                if lp.get("w") == "yaw":     # W = the object's facing (Z rotation), game angle units
+                    import math as _m
+                    fw = round(dest_obj.matrix_world.to_euler("XYZ").z * 65536.0 / (2 * _m.pi), 3)
+                else:
+                    tkey = lp.get("pairs_with")
+                    t    = float(o.get(tkey, -1.0)) if tkey else -1.0
+                    fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
                 out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+        # an object's entity name (e.g. a built-in camera's) from a linked object
+        elif f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "string":
+            dest_name = str(o.get(f["key"], "") or "").strip()
+            if dest_name and bpy.data.objects.get(dest_name):
+                from ..collections import actor_lump_name
+                out[lp["key"]] = ["string", actor_lump_name(dest_name)]
         # flags bitfield: prop bits + link-derived bits
         elif isinstance(lb, dict) and lb.get("key") == "flags":
             have_flags = True

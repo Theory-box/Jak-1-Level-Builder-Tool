@@ -10747,11 +10747,14 @@
     },
     {
       "etype": "fisher",
+      "edited": "fisher",
       "sounds": ["fish-miss"],
       "label": "Fisherman",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (empty)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
+        {"panel": "game-task", "description": "The cell for winning the minigame."},
         {
           "panel": "path",
           "required": true
@@ -10769,7 +10772,7 @@
       "tpage_group": "Jungle",
       "glb": "levels/jungle/fisher-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: the jungle-fishgame introduction starts with 'want-levels village1 jungle' (unloads the custom level), and the minigame moves Jak to fixed jungle coordinates and looks for camera entity camera-152. The fish run down its path (net at path point 6.5). Needs a subtype."
+      "description": "Edited (subtypes/fisher.gc): the fishing minigame with the actor's own task (Game Task panel; none = vanilla jungle-fishgame). Introduction without its level commands; Jak stands at the linked Fishing spot empty and the linked Minigame camera is used (vanilla: fixed jungle coordinates and camera-152). The fish run down the fisher's path (net at path point 6.5); catching enough gives the task's cell."
     },
     {
       "etype": "explorer",
