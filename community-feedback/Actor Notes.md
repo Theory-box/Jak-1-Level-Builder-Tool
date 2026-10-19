@@ -81,6 +81,11 @@ pontoon / race-ring alternate tasks, and anything with a game-task panel. Look
 for: the cell / fly spawns, collecting it closes need-resolution / counts the
 fly for that task, and it stays collected after a save + reload.
 
+## Enemy drops (for the enemies pass)
+Killing an enemy drops its eco (green eco pills for most): nav-enemies and some others
+can drop other things. Give them the pickup picker (what they drop / how many), like
+the crate contents, where their code reads it (fact-info pickup-type / pickup-amount).
+
 ## Soft warnings (required.py soft())
 Required-field warnings (the red "N⚠" counts) are for things that break the game or the
 build. Soft warnings (a yellow triangle count next to them, in the panel headers, next to

@@ -448,11 +448,7 @@ def _draw_field(layout, obj, field, actor_info=None):
             op = row.operator("og.init_color_field", text="Set colour", icon="COLOR")
             op.prop_key = field["key"]
     elif ftype == "object_ref":
-        # Simple text input for object name. A proper picker would need
-        # a typed PointerProperty; not worth adding for a few fields.
-        row = layout.row(align=True)
-        row.label(text=f"{label}:")
-        row.prop(obj, f'["{field["key"]}"]', text="")
+        _draw_object_ref(layout, obj, field, label)
     else:
         # float / int / string — _prop_row handles all three
         _prop_row(layout, obj, field["key"], f"{label}:",
@@ -551,7 +547,124 @@ class OG_PT_ActorFields(Panel):
 
 
 # Exported registry for __init__.py
+# ── object reference fields: pick an object from a list, or add an empty ─────
+
+def _objref_kind(field):
+    """The object type an object_ref field takes: its "pick" option (EMPTY /
+    CAMERA), else EMPTY."""
+    return str(field.get("pick", "EMPTY")).upper()
+
+
+def _objref_ok(o, kind):
+    if kind == "CAMERA":
+        return o.type == "CAMERA" and o.name.startswith("CAMERA_")
+    return o.type == kind
+
+
+def _draw_object_ref(layout, obj, field, label):
+    key = field["key"]
+    kind = _objref_kind(field)
+    name = str(obj.get(key, "") or "")
+    box = layout.box()
+    box.label(text=label, icon="OUTLINER_OB_CAMERA" if kind == "CAMERA" else "EMPTY_AXIS")
+    row = box.row(align=True)
+    tgt = bpy.data.objects.get(name) if name else None
+    if tgt is not None:
+        row.label(text=tgt.name, icon="CHECKMARK")
+        row.operator("og.select_and_frame", text="", icon="VIEWZOOM").obj_name = tgt.name
+        op = row.operator("og.objref_set", text="", icon="X")
+        op.prop_key, op.value = key, ""
+    elif name:
+        row.alert = True
+        row.label(text=f"missing: {name}", icon="ERROR")
+        op = row.operator("og.objref_set", text="", icon="X")
+        op.prop_key, op.value = key, ""
+    row = box.row(align=True)
+    op = row.operator("og.objref_pick", text="Pick" if tgt is None else "Change", icon="VIEWZOOM")
+    op.prop_key, op.kind = key, kind
+    if kind == "EMPTY":
+        op = row.operator("og.objref_add_empty", text="Add Empty at Cursor", icon="ADD")
+        op.prop_key, op.label = key, label
+
+
+_OBJREF_ITEMS: list = []
+
+
+def _objref_items(self, ctx):
+    _OBJREF_ITEMS[:] = [(o.name, o.name, "", "OUTLINER_OB_CAMERA" if self.kind == "CAMERA" else "EMPTY_AXIS", i)
+                        for i, o in enumerate(sorted((o for o in ctx.scene.objects if _objref_ok(o, self.kind)
+                                                      and not o.name.startswith(("ACTOR_", "AMBIENT_"))),
+                                                     key=lambda o: o.name))] or [("", "(none in the scene)", "", "ERROR", 0)]
+    return _OBJREF_ITEMS
+
+
+class OG_OT_ObjrefPick(Operator):
+    """Pick the object for this field (search)"""
+    bl_idname = "og.objref_pick"
+    bl_label = "Pick Object"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    prop_key: StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+    kind: StringProperty(default="EMPTY", options={"HIDDEN", "SKIP_SAVE"})
+    pick: bpy.props.EnumProperty(name="Object", items=_objref_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or not self.pick:
+            return {"CANCELLED"}
+        o[self.prop_key] = self.pick
+        return {"FINISHED"}
+
+
+class OG_OT_ObjrefSet(Operator):
+    """Clear this field"""
+    bl_idname = "og.objref_set"
+    bl_label = "Clear"
+    bl_options = {"REGISTER", "UNDO"}
+    prop_key: StringProperty()
+    value: StringProperty()
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        o[self.prop_key] = self.value
+        return {"FINISHED"}
+
+
+class OG_OT_ObjrefAddEmpty(Operator):
+    """Add an empty at the 3D cursor (in the actor's collection) and link it to this field"""
+    bl_idname = "og.objref_add_empty"
+    bl_label = "Add Empty"
+    bl_options = {"REGISTER", "UNDO"}
+    prop_key: StringProperty()
+    label: StringProperty()
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None:
+            return {"CANCELLED"}
+        import re as _re
+        base = o.name[6:] if o.name.startswith("ACTOR_") else o.name
+        e = bpy.data.objects.new(f"{base}_{_re.sub(r'[^A-Za-z0-9]+', '_', self.label).strip('_').lower() or 'point'}", None)
+        e.empty_display_type = "SINGLE_ARROW"
+        e.empty_display_size = 1.0
+        e.show_name = True
+        e.location = ctx.scene.cursor.location
+        for c in o.users_collection:
+            c.objects.link(e)
+        o[self.prop_key] = e.name
+        return {"FINISHED"}
+
+
 CLASSES = (
+    OG_OT_ObjrefPick,
+    OG_OT_ObjrefSet,
+    OG_OT_ObjrefAddEmpty,
     OG_OT_PickTask,
     OG_OT_PickEnumField,
     OG_OT_SetActorEnumField,

@@ -10753,7 +10753,7 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (empty)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
+        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (empty)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
         {"panel": "game-task", "description": "The cell for winning the minigame."},
         {
           "panel": "path",
