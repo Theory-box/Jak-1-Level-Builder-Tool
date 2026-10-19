@@ -80,6 +80,11 @@ The "clean file" button can stay at the top, without being in a sub menu. When p
 
 ---
 
+## Level Orb count
+At the moment, the orb count on the level seems to be calculated from orbs and crates with orb content. However, it does not seem to count orb-cache, pickup-spawner and probably any other actor that might spawn orbs. Most of those should be detected but it's still possible the count might not be correct so a way to enter it manually should be possible. Have an "orb count" settings in Level > Settings > Gameplay. If left blank, it'll auto calculate, if not, it'll use the number written down.
+
+---
+
 ## Better Linux support
 
 ---
