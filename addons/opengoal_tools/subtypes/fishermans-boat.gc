@@ -1,0 +1,294 @@
+;; The fisherman's boat for custom levels: stand on it and press circle to ride it along
+;; its path; at the end, ride it back along pathb (none: path backwards). Vanilla forced
+;; it to the Sandover dock, floated it on the ocean and loaded misty / village1 on the way.
+;; Here it's kinematic: it sits at its path's height (the waterline), bobs, and Jak is
+;; held on deck for the ride. Options (Actor Settings):
+;; - Ride camera (ride-camera lump, a linked CAMERA_): the camera during the ride. None:
+;;   the normal camera.
+;; - Ride cutscene (ride-movie lump): instead of sailing, the vanilla ride cutscene plays
+;;   (ride-to-misty out, ride-to-village1 back, its own camera; load boundaries are off
+;;   meanwhile) and the boat ends at the end of the leg.
+;; - Speed (speed lump, meters per second).
+;; The boat's actor task (Game Task panel) must be complete before it can be used (none =
+;; always; vanilla: jungle-fishgame). Which end it's at is saved (perm user-int8 0).
+(deftype __TYPE__ (fishermans-boat)
+  ((paths      path-control 2)
+   (leg        path-control)
+   (rev        symbol)
+   (at-end     symbol)
+   (ride-movie symbol)
+   (dist       float)
+   (leg-length float)
+   (speed      float)
+   (bob-phase  float))
+  (:states
+   __TYPE__-docked
+   __TYPE__-riding
+   __TYPE__-movie))
+
+(defmethod relocate ((this __TYPE__) (offset int))
+  (dotimes (v1-0 2)
+    (if (nonzero? (-> this paths v1-0)) (&+! (-> this paths v1-0) offset)))
+  (call-parent-method this offset))
+
+(defun __TYPE__-point ((p path-control) (d float) (rev symbol) (pos vector) (dir vector))
+  "Position and heading at distance d along p (from its end when rev)."
+  (let ((n (-> p curve num-cverts)))
+    (cond
+      ((< n 2) (set! (-> pos quad) (-> p cverts 0 quad)) (set-vector! dir 0.0 0.0 1.0 1.0))
+      ((type-type? (-> p type) curve-control)
+       (let ((u (fmax 0.0 (fmin 1.0 (/ d (path-distance p))))))
+         (if rev (set! u (- 1.0 u)))
+         (eval-path-curve! p pos u 'interp)
+         (path-control-method-14 p dir u)
+         (if rev (vector-negate! dir dir))))
+      (else
+       (let ((left d)
+             (done #f))
+         (dotimes (i (+ n -1))
+           (when (not done)
+             (let* ((a (-> p cverts (if rev (- (+ n -1) i) i)))
+                    (b (-> p cverts (if rev (- (+ n -2) i) (+ i 1))))
+                    (len (vector-vector-distance a b)))
+               (when (or (<= left len) (= i (+ n -2)))
+                 (vector-lerp! pos a b (if (< 0.0 len) (fmax 0.0 (fmin 1.0 (/ left len))) 0.0))
+                 (vector-! dir b a)
+                 (set! done #t))
+               (set! left (- left len)))))))))
+  (set! (-> dir y) 0.0)
+  (vector-normalize! dir 1.0)
+  pos)
+
+(defun __TYPE__-set-leg ((this __TYPE__))
+  "The next ride: path from its start, else pathb (none: path backwards)."
+  (cond
+    ((not (-> this at-end)) (set! (-> this leg) (-> this paths 0)) (set! (-> this rev) #f))
+    ((logtest? (-> this paths 1 flags) (path-control-flag not-found)) (set! (-> this leg) (-> this paths 0)) (set! (-> this rev) #t))
+    (else (set! (-> this leg) (-> this paths 1)) (set! (-> this rev) #f)))
+  (set! (-> this leg-length) (path-distance (-> this leg)))
+  (set! (-> this anim)
+        (if (-> this at-end)
+          (new 'static
+               'spool-anim
+               :name "fishermans-boat-ride-to-village1"
+               :index 16
+               :parts 3
+               :command-list
+               '((0 shadow target #f) (0 shadow sidekick #f) (459 blackout 20) (459 shadow target #t)))
+          (new 'static
+               'spool-anim
+               :name "fishermans-boat-ride-to-misty"
+               :index 15
+               :parts 3
+               :command-list
+               '((0 shadow target #f) (0 shadow sidekick #f) (459 blackout 20) (459 shadow target #t)))))
+  0)
+
+(defun __TYPE__-arrived ((this __TYPE__))
+  "Docked at the other end: saved, next leg."
+  (set! (-> this at-end) (not (-> this at-end)))
+  (let ((v1-2 (-> this entity extra perm)))
+    (logior! (-> v1-2 status) (entity-perm-status user-set-from-cstage))
+    (set! (-> v1-2 user-int8 0) (if (-> this at-end) 1 0)))
+  (__TYPE__-set-leg this))
+
+(defbehavior __TYPE__-float __TYPE__ ()
+  "Bob on the waterline (dock-point = where it is, without the bob)."
+  (+! (-> self bob-phase) (* 2.0 (seconds-per-frame)))
+  (set! (-> self root-overlay trans quad) (-> self dock-point quad))
+  (+! (-> self root-overlay trans y) (* 491.52 (sin (* 10430.378 (-> self bob-phase)))))
+  0)
+
+(defbehavior __TYPE__-wave __TYPE__ ((arg0 vector) (arg1 float) (arg2 float))
+  (let ((gp-0 (new 'stack-no-clear 'vector)))
+    (set! (-> gp-0 quad) (-> arg0 quad))
+    (set! (-> gp-0 y) (-> self dock-point y))
+    (set! (-> *part-id-table* 2896 init-specs 4 initial-valuef) (+ 24576.0 arg1))
+    (set! (-> *part-id-table* 2896 init-specs 19 initial-valuef) (+ 49152.0 arg1))
+    (set! (-> *part-id-table* 2896 init-specs 1 initial-valuef) (* 0.0000036621095 arg2))
+    (set! (-> *part-id-table* 2896 init-specs 2 initial-valuef) (/ arg2 10))
+    (launch-particles :system *sp-particle-system-3d* (-> *part-id-table* 2896) gp-0))
+  0)
+
+(defbehavior __TYPE__-post __TYPE__ ()
+  (cond
+    ((-> self ignition)
+     (seek! (-> self propeller spin-rate) 196608.0 (* 131072.0 (seconds-per-frame)))
+     (let* ((s5-0 (-> self node-list data 3 bone transform))
+            (s4-0 (new 'stack-no-clear 'vector))
+            (f30-0 (vector-y-angle (-> s5-0 vector 2))))
+       (vector-matrix*! s4-0 (new 'static 'vector :z 40960.0 :w 1.0) s5-0)
+       (__TYPE__-wave s4-0 f30-0 81920.0)
+       (vector-matrix*! s4-0 (new 'static 'vector :x 20480.0 :z -8192.0 :w 1.0) s5-0)
+       (__TYPE__-wave s4-0 f30-0 81920.0)
+       (vector-matrix*! s4-0 (new 'static 'vector :x -20480.0 :z -8192.0 :w 1.0) s5-0)
+       (__TYPE__-wave s4-0 f30-0 81920.0)))
+    (else (seek! (-> self propeller spin-rate) 0.0 218.45334)))
+  (fishermans-boat-play-sounds)
+  (rider-post)
+  0)
+
+(defbehavior __TYPE__-use? __TYPE__ ()
+  "Jak on deck, the task done: press circle to ride (Jak is grabbed)."
+  (let ((task (-> self entity extra perm task)))
+    (when (and *target*
+               (nonzero? (-> self root-overlay riders num-riders))
+               (or (= task (game-task none)) (task-complete? *game-info* task))
+               (not (level-hint-displayed?))
+               (time-elapsed? (-> self state-time) (seconds 2))
+               (or (not (-> self ride-movie)) (file-status *art-control* (-> self anim name) 0)))
+      (hide-hud)
+      (level-hint-surpress!)
+      (kill-current-level-hint '() '(sidekick voicebox) 'exit)
+      (when (and (hud-hidden?) (can-grab-display? self) (= *kernel-boot-message* 'play))
+        (let ((s5-1 (new 'stack 'font-context *font-default-matrix* 32 160 0.0 (font-color default) (font-flags shadow kerning))))
+          (let ((v1-17 s5-1)) (set! (-> v1-17 width) (the float 440)))
+          (let ((v1-18 s5-1)) (set! (-> v1-18 height) (the float 80)))
+          (set! (-> s5-1 flags) (font-flags shadow kerning large))
+          (print-game-text (lookup-text! *common-text* (text-id press-to-use) #f) s5-1 #f 128 22))
+        (and (cpad-pressed? 0 circle) (process-grab? *target*))))))
+
+(defstate __TYPE__-docked (__TYPE__)
+  :enter
+    (behavior ()
+      (set-time! (-> self state-time))
+      (set! (-> self ignition) #f))
+  :trans
+    (behavior ()
+      (rider-trans)
+      (when (__TYPE__-use?)
+        (if (-> self ride-movie) (go __TYPE__-movie) (go __TYPE__-riding)))
+      (__TYPE__-float)
+      (if (-> self ride-movie) (spool-push *art-control* (-> self anim name) 0 self -99.0)))
+  :code
+    (behavior ()
+      (ja-channel-set! 1)
+      (ja :group! fishermans-boat-idle-ja)
+      (loop
+        (suspend)))
+  :post __TYPE__-post)
+
+(defstate __TYPE__-riding (__TYPE__)
+  :enter
+    (behavior ()
+      (set! (-> self dist) 0.0)
+      (set! (-> self ignition) #t)
+      (let ((cam (res-lump-struct (-> self entity) 'ride-camera string)))
+        (if cam (camera-change-to cam 0 #f))))
+  :exit
+    (behavior ()
+      (set! (-> self ignition) #f)
+      (if (res-lump-struct (-> self entity) 'ride-camera string) (camera-change-to (the-as string 'base) 0 #f))
+      (if *target* (process-release? *target*)))
+  :trans
+    (behavior ()
+      (rider-trans)
+      ;; ease in / out over the first and last 8 m
+      (let ((f0-1 (fmax 0.15 (fmin 1.0 (/ (fmin (-> self dist) (- (-> self leg-length) (-> self dist))) (meters 8))))))
+        (+! (-> self dist) (* f0-1 (-> self speed) (seconds-per-frame))))
+      (let ((s5-0 (new 'stack-no-clear 'vector))
+            (gp-0 (new 'stack-no-clear 'quaternion)))
+        (__TYPE__-point (-> self leg) (fmin (-> self dist) (-> self leg-length)) (-> self rev) (-> self dock-point) s5-0)
+        (forward-up-nopitch->quaternion gp-0 s5-0 *up-vector*)
+        (quaternion-slerp! (-> self root-overlay quat) (-> self root-overlay quat) gp-0 (fmin 1.0 (* 2.0 (seconds-per-frame)))))
+      (__TYPE__-float)
+      (when (>= (-> self dist) (-> self leg-length))
+        (__TYPE__-arrived self)
+        (go __TYPE__-docked)))
+  :code
+    (behavior ()
+      (loop
+        (suspend)))
+  :post __TYPE__-post)
+
+(defstate __TYPE__-movie (__TYPE__)
+  :exit
+    (behavior ()
+      (remove-setting! 'border-mode))
+  :code
+    (behavior ()
+      (set! (-> self propeller enable) #f)
+      ;; the cutscene carries Jak and the camera far off (toward vanilla Misty): no
+      ;; load boundaries meanwhile, or they load / drop levels
+      (set-setting! 'border-mode #f 0.0 0)
+      (when (send-event *target* 'clone-anim self)
+        (send-event (ppointer->process (-> *target* sidekick)) 'matrix 'play-anim)
+        (send-event *target* 'blend-shape #t)
+        (let ((v1-20 (process-spawn othercam self 5 #f #t :to self))) (send-event (ppointer->process v1-20) 'mask 2048))
+        (set! (-> self draw force-lod) 0)
+        (ja-play-spooled-anim (-> self anim)
+                              (the-as art-joint-anim fishermans-boat-idle-ja)
+                              (the-as art-joint-anim #f)
+                              (the-as (function process-drawable symbol) false-func))
+        (set! (-> self draw force-lod) -1)
+        (send-event *target* 'blend-shape #f)
+        (ja-channel-set! 1)
+        (ja :group! fishermans-boat-idle-ja)
+        ;; at the end of the leg (vanilla: where the cutscene ended, at misty / village1)
+        (let ((s5-0 (new 'stack-no-clear 'vector)))
+          (__TYPE__-point (-> self leg) (-> self leg-length) (-> self rev) (-> self dock-point) s5-0)
+          (forward-up-nopitch->quaternion (-> self root-overlay quat) s5-0 *up-vector*))
+        (__TYPE__-arrived self)
+        (__TYPE__-float)
+        (transform-post)
+        (when *target*
+          (let ((gp-1 (new 'stack-no-clear 'transformq)))
+            (vector+! (-> gp-1 trans) (-> self root-overlay trans) (new 'static 'vector :y 16384.0 :w 1.0))
+            (quaternion-copy! (-> gp-1 quat) (-> self root-overlay quat))
+            (set-vector! (-> gp-1 scale) 1.0 1.0 1.0 1.0)
+            (send-event *target* 'trans 'restore gp-1))
+          (send-event *target* 'end-mode)
+          (update-transforms! (-> self root-overlay))
+          (move-to-ground (-> *target* control) 4096.0 40960.0 #t (-> *target* control root-prim collide-with))
+          (logior! (-> *target* control status) (cshape-moving-flags onsurf onground tsurf))
+          (suspend)
+          (send-event *camera* 'teleport)
+          ;; boundaries back on once the camera is back near Jak, starting from there
+          ;; (else its jump from the cutscene's end crosses them)
+          (let ((s5-1 (current-time)))
+            (until (or (time-elapsed? s5-1 (seconds 3)) (< (vector-vector-distance (camera-pos) (target-pos 0)) (meters 40)))
+              (suspend)))
+          (set! (-> *load-boundary-target* 0 quad) (-> (camera-pos) quad))
+          (set! (-> *load-boundary-target* 1 quad) (-> (target-pos 0) quad))))
+      (set! (-> self propeller enable) #t)
+      (apply-settings *setting-control*)
+      (go __TYPE__-docked))
+  :post
+    (behavior ()
+      (ja-post)
+      (fishermans-boat-play-sounds)))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (stack-size-set! (-> this main-thread) 512)
+  (logior! (-> this mask) (process-mask platform))
+  (rigid-body-platform-method-30 this)
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *fishermans-boat-sg* '())
+  (logclear! (-> this mask) (process-mask actor-pause movie))
+  (set! (-> this draw origin-joint-index) (the-as uint 3))
+  (set! (-> this paths 0) (new 'process 'curve-control this 'path -1000000000.0))
+  (set! (-> this paths 1) (new 'process 'curve-control this 'pathb -1000000000.0))
+  (set! (-> this propeller) (new 'process 'joint-mod-spinner this 4 (new 'static 'vector :z -1.0 :w 1.0) 0.0))
+  (set! (-> this ignition) #f)
+  (set! (-> this engine-thrust) 0.0)
+  (set! (-> this engine-sound-envelope) 0.0)
+  (set! (-> this engine-sound-id) (new 'static 'sound-id))
+  (set! (-> this speed) (res-lump-float arg0 'speed :default 61440.0))
+  (set! (-> this ride-movie) (nonzero? (res-lump-value arg0 'ride-movie uint128)))
+  (set! (-> this at-end) (= (-> arg0 extra perm user-int8 0) 1))
+  (set! (-> this bob-phase) 0.0)
+  (cond
+    ((logtest? (-> this paths 0 flags) (path-control-flag not-found))
+     (set! (-> this dock-point quad) (-> this root-overlay trans quad))
+     (set! (-> this leg) (-> this paths 0))
+     (set! (-> this leg-length) 0.0))
+    (else
+     (__TYPE__-set-leg this)
+     ;; at its end: the end of path, else path's start; facing the next leg
+     (let ((s5-0 (new 'stack-no-clear 'vector)))
+       (__TYPE__-point (-> this paths 0) (if (-> this at-end) (path-distance (-> this paths 0)) 0.0) #f (-> this dock-point) s5-0)
+       (__TYPE__-point (-> this leg) 0.0 (-> this rev) (new 'stack-no-clear 'vector) s5-0)
+       (forward-up-nopitch->quaternion (-> this root-overlay quat) s5-0 *up-vector*))))
+  (set! (-> this root-overlay trans quad) (-> this dock-point quad))
+  (go __TYPE__-docked)
+  (none))

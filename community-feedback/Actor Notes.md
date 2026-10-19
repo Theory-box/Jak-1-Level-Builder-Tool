@@ -21,22 +21,11 @@ actor itself; this file is the overview.
 ## Hidden (can't work as-is; reason in the DB description)
 | Actor | Why |
 |---|---|
-| energyhub | Crashes in a custom level (even with its 3 links preset to #f); energybase works alone |
 | energylava | Its art group doesn't exist |
 | citb-chains | process-hidden, draws nothing |
 | powercellalt | No init-from-entity!, only spawned by the 100-cell door cutscene |
-| cavespatula | Only works in a level named darkcave |
-| snow-ball | Needs two keyed paths (1.0 / 2.0) above 200 m; the exporter writes one path per name |
-| fishermans-boat | Forced to the Sandover dock, loads vanilla levels |
 | seagull | Only spawned by a Seagull Flock |
-| bird-lady | Intro unloads the level (want-levels) and talks only at a fixed Z; needs a subtype |
-| fisher | Intro unloads the level, minigame moves Jak to fixed jungle coords, wants camera-152 |
-| warrior | Talking crashes without an allpontoons actor; needs a subtype guard |
-| pelican | Reads 8 time-keyed paths; exporter writes one; wants camera-215 |
-| assistant-firecanyon | Cutscene unloads the level; the cutscene-strip subtype would fix it |
-| assistant-lavatube-end | Gated on vanilla village4-button stage |
 | green-sagecage | Vanilla Citadel story: fixed Z trigger, want-levels citadel finalboss |
-| sage-villagec / assistant-villagec | Talk only at vanilla coordinates, gated on village3 progress |
 | evilbro / evilsis | Need an "intro" tpage group (INT.DGO tpage-1454..1457) |
 | sequenceA-village1 / B / C, finalbosscam | Not placeable entities |
 
@@ -54,11 +43,9 @@ actor itself; this file is the overview.
 - **sage-finalboss**: uses the vanilla finalboss-movies task; the credits end the game like vanilla.
 - **Caged sages** (red / blue / yellow): the rescue cutscene only plays if the actor is named
   `<colour>-sagecage-1` (hard-coded process name).
-- **billy**: needs 3 rat paths (path / pathb / pathc keyed 0 / 1 / 2); the exporter writes one. Needs a subtype.
 - **yakow**: herding can't finish (the pen is a nav-mesh poly flag the nav-mesh export doesn't write).
 - **oracle**: trades and cells work, no speech (picks its cutscene by vanilla level name).
 - **swamp-blimp**: floats away without a tether rock; tether rocks need vanilla swamp-tether tasks / cameras.
-- **swamp-tetherrock**: vanilla swamp-tether-1..4 tasks only (looks up camera-18x).
 - **gondola**: rides to vanilla village3 / snow.
 - **pistons**: only move when the gondola sends 'update.
 - **windmill-sail**: vanilla jungle-lurkerm sets its speed; no sound fields yet.
@@ -69,9 +56,11 @@ actor itself; this file is the overview.
 - **muse**: path of 11+ points (add more if it gets stuck).
 - **lightning-mole**: needs a path and a nav-mesh; chain moles with next / prev (no loop).
 
-## Vanilla hard-coded tasks still used
-snow-switch, snow fort gate, snow bumpers, sunken pipegame, gorge-pusher, swamp-tetherrock,
-sage-finalboss (finalboss-movies). Candidates for subtypes that use the actor's own task.
+## Keyed paths
+The game can key several values of one lump by time ('path at 0 / 1 / 2 ...), but a custom
+level's .jsonc holds one res tag per lump name (build_level). Actors that read keyed paths
+are edited to read named paths instead (billy, pelican, snow-ball); a path keyframe set in
+Blender only changes the one tag's time.
 
 ## Custom tasks on actors (for the next actor pass)
 The task pickers list the .blend's custom tasks, but no actor was checked in
@@ -140,3 +129,13 @@ actors it's for, `;; place: shared` = default place).
 | sage / assistant / gambler / geologist / minershort | cutscenes without the level-unloading commands |
 | explorer | talks from anywhere |
 | mayorgears | turns always / once / until its task is complete |
+| assistant-firecanyon / assistant-lavatube-end / sage-villagec / assistant-villagec / bird-lady | own task or a cell count, no level-unloading commands, talk from anywhere |
+| warrior | no crash without allpontoons |
+| fisher | own task, minigame spot / camera from Blender |
+| energyhub | no crash, own task |
+| cavespatula | works outside darkcave |
+| snow-switch / snow-fort-gate / snow-bumper / sunken-pipegame / gorge-pusher / swamp-tetherrock | own tasks instead of the vanilla ones, cameras from Blender |
+| billy | own task, named paths path / pathb / pathc, no Boggy Swamp kill lists |
+| pelican | named paths (path, dive, to-nest, from-nest, spit, dive-b, to-nest-b, run-away), dive camera from Blender, no fixed camera spot |
+| snow-ball | named paths path / pathb, shrinks at its track's end (not below 200 m), no junction timing |
+| fishermans-boat | kinematic boat: path out, pathb back (or path backwards), ride camera or the vanilla ride cutscenes (load boundaries off meanwhile), task gate, saved end |

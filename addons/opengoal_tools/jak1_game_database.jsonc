@@ -10865,6 +10865,7 @@
     },
     {
       "etype": "billy",
+      "edited": "billy",
       "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "label": "Billy (rat game)",
       "category": "NPCs",
@@ -10882,8 +10883,9 @@
       "tpage_group": "Swamp",
       "glb": "levels/swamp/billy-lod0.glb",
       "shape": "CUBE",
-      "description": "Billy and his pet Farthy (a clone-anim manipy). Task swamp-billy is hard-coded. Talk: billy-introduction cutscene (puts snack props along path 0, offset X -10 m / Z +5 m), then later talks ask to play; accepting moves Jak to the linked Jak-spot actor and starts the rat-shooting game: snacks along path 0, rats spawn at random points of path 1 and walk to random points of path 2 (rats use Billy's nav-mesh). Win: resolution cutscene gives the swamp-billy cell (at movie-pos). Lose: replay prompt. Vanilla reads all three paths from the one 'path' lump at keyframes 0/1/2, which a .jsonc lump can't hold (one entry per name): needs a level subtype reading path / pathb / pathc. Without paths 1/2 the rats spawn at the world origin and the game never ends.",
+      "description": "Edited (subtypes/billy.gc): Billy and his pet Farthy, with the actor's own task (Game Task panel; none = vanilla swamp-billy). Talk: billy-introduction cutscene (puts snack props along path, offset X -10 m / Z +5 m), then later talks ask to play; accepting moves Jak to the linked Jak-spot actor and starts the rat-shooting game: snacks on the points of path, rats spawn at random points of pathb and walk to random points of pathc (rats use Billy's nav-mesh). Win: resolution cutscene gives the task's cell (at movie-pos). Lose: replay prompt. Vanilla keyed the three as 'path keyframes 0/1/2 (one res tag per lump name in a custom level); the edited one reads named paths. The vanilla Boggy Swamp kill lists are gone.",
       "panels": [
+        {"panel": "game-task", "description": "Its cell is the rat game's prize; need-introduction closes after the introduction."},
         {
           "panel": "movie-pos",
           "description": "Where the swamp-billy cell plays its pickup animation after the win (cone = facing). Not set: at Jak."
@@ -10925,11 +10927,13 @@
     },
     {
       "etype": "pelican",
+      "edited": "pelican",
       "sounds": ["pelican-flap", "pelican-gulp"],
       "label": "Pelican",
-      "category": "Hidden",
+      "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_pelican_camera", "label": "Dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "Shows the dive when Jak comes near (vanilla camera-215). None: the normal camera.", "lump": {"key": "dive-camera", "type": "string"}}]},
         {
           "panel": "game-task",
           "description": "beach-pelican: the cell in its nest / the one it drops."
@@ -10938,10 +10942,7 @@
           "panel": "movie-pos",
           "description": "[0] the cell in the nest, [1] the cell it drops when hit (cone = facing)."
         },
-        {
-          "panel": "path",
-          "required": true
-        }
+        {"panel": "path", "required": ["path", "dive", "to-nest", "from-nest", "spit", "dive-b", "to-nest-b", "run-away"], "paths": ["path", "dive", "to-nest", "from-nest", "spit", "dive-b", "to-nest-b", "run-away"], "description": "path: the circle (8+ points; it dives between points 7 and 8 once Jak is near). dive: the swoop (6+ points; the cell floats halfway between points 5 and 6, grabbed past point 4.8). to-nest: to the nest (ends there). from-nest: off the nest (starts at point 2), its end is where dive-b starts. spit: the spat cell lands at its last point. dive-b / to-nest-b: the second dive and return. run-away: flies off once the cell is taken."}
       ],
       "code": [
         "beach-obs.o",
@@ -10954,7 +10955,7 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/pelican-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: reads 8 separate 'path' lumps keyed by time 1-8 (circle, dives, to / from nest, spit); the exporter writes one path, so every flight uses the same curve. Also wants camera entity camera-215."
+      "description": "Edited (subtypes/pelican.gc): circles on path holding the cell; when Jak comes within 20 m of the cell, the dive camera shows it diving (dive path) and grabbing the cell, then flying to its nest (to-nest). Hit it on the nest: it spits the cell to the last point of spit and flies off (from-nest, then dives again on dive-b / to-nest-b). Take the cell: it flies away on run-away and is gone. Place the actor at the nest (the spit cutscene's camera is at the actor). Vanilla keyed the eight flights as 'path keyframes 1-8 and used camera-215 and a fixed camera spot."
     },
     {
       "etype": "seagull",
@@ -18323,20 +18324,18 @@
     },
     {
       "etype": "snow-ball",
+      "edited": "snow-ball",
       "label": "Snow Ball (Snowy)",
-      "category": "Hidden",
+      "category": "Obstacles",
       "parent": "process",
       "panels": [
-        {
-          "panel": "path",
-          "required": true
-        }
+        {"panel": "path", "required": ["path"], "paths": ["path", "pathb"], "description": "path: a ball track (it starts there; first point under the ground looks best, it rises out). pathb (optional): a second track, balls pick one at random."}
       ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
       "code": "snow-ball.o",
       "tpage_group": "Snow",
-      "description": "Needs two paths keyed at 1.0 and 2.0 and placed above 200 m (it shrinks below that). Not supported by the exporter yet: the .jsonc holds one 'path' per name."
+      "description": "Edited (subtypes/snow-ball.gc): rolling snow balls spawned every 1.5 - 5.5 s on path, or at random on path / pathb (never three times the same in a row). A ball rises out of the ground over the first 5 % of its track, bounces until 90 %, shrinks over the last 15 m and goes at the end. Hitting Jak knocks him aside. Vanilla keyed its two tracks as 'path keyframes 1 / 2 and shrank balls below 200 m height; it timed spawns around where its two tracks crossed (custom tracks: only the spawn delay spaces them)."
     },
     {
       "etype": "keg-conveyor",
@@ -18435,16 +18434,21 @@
     },
     {
       "etype": "fishermans-boat",
+      "edited": "fishermans-boat",
       "sounds": ["boat-engine"],
       "label": "Fisherman's Boat",
-      "category": "Hidden",
+      "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "fishermans-boat-ag.go",
       "tpage_group": "Village1",
       "code": "fishermans-boat.o",
-      "is_prop": true,
       "shape": "CUBE",
-      "description": "Not usable in a custom level: its position is forced to the vanilla Sandover dock and riding it loads vanilla misty / village1 and their continue points."
+      "description": "Edited (subtypes/fishermans-boat.gc): stand on the boat and press circle: it sails along path (Jak held on deck), docks at its end; ride it back along pathb (none: path backwards). It sits at the path's height (put the path on the waterline) and bobs. Ride camera: a linked CAMERA_ during the ride (none: the normal camera). Ride cutscene: the vanilla ride cutscenes play instead (out: to Misty, back: to Sandover; their own camera), then the boat is at the leg's end. Usable once its task is complete (none: always). Which end it's at is saved. Vanilla was forced to the Sandover dock, floated on the ocean and loaded misty / village1.",
+      "panels": [
+        {"panel": "path", "required": ["path"], "paths": ["path", "pathb"], "description": "path: the ride out (the boat starts at its first point; on the waterline). pathb (optional): the ride back, from path's end to its start. None: path backwards."},
+        {"panel": "game-task", "description": "Usable once this task is complete (vanilla jungle-fishgame). None: always."},
+        {"panel": "custom-fields", "fields": [{"key": "og_boat_camera", "label": "Ride camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The camera during the ride. None: the normal camera.", "lump": {"key": "ride-camera", "type": "string"}}, {"key": "og_boat_movie", "label": "Ride cutscene", "type": "bool", "default": false, "note": "Play the vanilla ride cutscenes (to Misty / to Sandover) instead of sailing; the boat ends at the leg's end.", "lump": {"key": "ride-movie", "type": "uint32"}, "write_if": "if_true"}, {"key": "og_boat_speed", "label": "Speed (m/s)", "type": "float", "default": 15.0, "min": 1.0, "max": 60.0, "note": "Top speed; it eases in and out over the first and last 8 m.", "lump": {"key": "speed", "type": "meters"}}]}
+      ]
     },
     {
       "etype": "scarecrow-a",
