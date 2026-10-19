@@ -651,7 +651,7 @@ class OG_OT_ObjrefAddEmpty(Operator):
         import re as _re
         base = o.name[6:] if o.name.startswith("ACTOR_") else o.name
         e = bpy.data.objects.new(f"{base}_{_re.sub(r'[^A-Za-z0-9]+', '_', self.label).strip('_').lower() or 'point'}", None)
-        e.empty_display_type = "SINGLE_ARROW"
+        e.empty_display_type = "ARROWS"           # shows its rotation (facing)
         e.empty_display_size = 1.0
         e.show_name = True
         e.location = ctx.scene.cursor.location

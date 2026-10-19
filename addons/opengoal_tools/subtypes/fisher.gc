@@ -43,6 +43,12 @@
       n)))
 
 (defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  ;; a task with no reward-speech stage: after the minigame it's at need-resolution;
+  ;; play the resolution there too and give its cell
+  (when (= (current-status (-> this tasks)) (task-status need-resolution))
+    (if arg0 (set! (-> this cell-for-task) (current-task (-> this tasks))))
+    (return (the-as basic (new 'static 'spool-anim :name "fisher-resolution" :index 9 :parts 4
+                                :command-list '((188 blackout 10) (199 blackout 0))))))
   (let ((a (call-parent-method this arg0)))
     (cond
       ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
@@ -86,9 +92,11 @@
   (the-as symbol *target*))
 
 (defbehavior __TYPE__-place-jak __TYPE__ ()
-  "Keep Jak (and his net) on the fishing spot."
+  "Keep Jak (and his net) on the fishing spot, facing its way."
   (when (and *target* (-> self has-stand))
     (set! (-> *target* control trans quad) (-> self stand quad))
+    (set-yaw-angle-clear-roll-pitch! (-> *target* control) (-> self stand-yaw))   ; vanilla's fishing state sets its own
+    (rot->dir-targ! (-> *target* control))
     (let ((m (-> *target* manipy)))
       (if m (set! (-> (the-as process-drawable (-> m 0)) root trans quad) (-> self stand quad))))))
 
