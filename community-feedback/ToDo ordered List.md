@@ -85,6 +85,131 @@ At the moment, the orb count on the level seems to be calculated from orbs and c
 
 ---
 
+## Export selected definition options
+At the moment, when exporting definition. The addon adds comments to the text and format it in a way that might be annoying to just paste back into your level files.
+Here's a few options to help with those things:
+- On/Off for "Add comments"
+- Drop Down menu for formating:
+  - Bracket & category (Would add the name of the category in front, ex: `"actors":` before the first bracket for each category)
+  - Bracket (current way it exports actors/ambients/cameras)
+  - No Brackets (remove the main emcompassing brackets at the start and end of categories, so you can just paste it directly in between other entities in the file)
+- Identation offset (at the moment when copying cameras/actors, the indentation is off by one, this can either be defaulted to be one extra indentation or just give the user control here so they can select what they want, but default it to 1)
+
+Also make sure to remove any extra lines at the top and bottom of the file, especially if you're using the "no bracket" so it perfectly fit when pasting into a file without having to edit it after or pasting it first in another text file to copy only what you need.
+
+---
+
+## Make the "view" buttons for time of day also set the render color
+At the moment, the view button next to time of day will change which color attribute is selected but it won't change which one is set for render. Doing the later one as well would allow you to show it in textured mode too if the user has combined their material to show the effect of the lighting on the textures too.
+
+---
+
+## Optimising light baking
+At the moment, when baking multiple objects, the addon/blender have to start 8 different renders per objects. The more object you have, the crazier the time to complete this get. 
+### Test on a complex scene
+Here some tests I just ran on an existing level, which is a very complexe scene (4.5m trianges as it's 4 levels in one file, many light sources)
+I used 4 stone walls, totalling 22k triangles:
+
+1 bake per object 
+- 128 samples:
+  - 1:35
+  - 1:32
+  - 1:31
+  - 1:29
+1 bake of 4 separated objects 
+- 128 samples:
+  - 5:53
+1 bake of 1 combined objects:
+- 128 samples:
+  - 1:38
+- 64 samples:
+  - 1:33
+
+As you can see, each object baked take about the same time, even if they're all 4 combined into a single object. Considering my levels are in the hundred of objects, this can easily create bakes that could last 10+ hours. I also experienced a crash trying to start a render of a full level during the night.
+### Problems with combining
+The obvious solution would be to combine all meshes that need to be baked into one. However this comes with some issues:
+- You lose all separated objects so controlling them becomes harder as you'd need to select all the vertex inside of everything
+- By losing all objects you lose their object propeties:
+  - Individual origins
+  - Their positions, rotations, scale
+  - Their custom properties, which include the collision properties whish is very important to keep. While users can use materials to set those, it's very useful to be able to use both.
+### Potential solution
+After thinking for a bit, I came up with a solution, let me see if it's doable or if there's a better approach than this.
+
+- First, for each object, instead of combining them, you separate the whole mesh from them. Which leave us with two objects:
+  - The original object, which now has no mesh inside, but has kept all of its properties
+  - The separated object, which contain the mesh
+- Secondly, we combine all of those separate objects together, but not the original objects
+  - While combining them, for each object that get merged, a vertex group (or another attribute) is created and is named the same as the name of the ORIGINAL OBJECT (not the separated object itself)
+- Third, bake that singular combined mesh, and nothing else. This should be a lot quicker than separate bakes for each objects
+- Fourth, the combined mesh get separate using by their vertex group (or the other attribute) and merged back into the original mesh of the same name from the attribute.
+
+This should both allow for a much quicker bake but also let the user keep all of his original objects. This should also be an option that's off by default that users needs to turn on if they want. "Combine all meshes during light baking (Speed up baking on large scenes)"
+
+---
+
+## Copy lighting/color attribute from nearby
+Something that doesn't always give a great result in the light baking is things like grass. Because they're vertical from the ground, the way light will hit those planes won't be the same as how they hit the ground under them. As such, the lighting might be drastically different on them.
+Something I've done in the past is to manually paint them, using the vertex color from the grass under them.
+I'm trying to automate this process.
+### Implementation
+New sub menu in `Objects controls` called  `Copy vertex lighting from closest`.
+With one drop down menu at the top:
+- Copy from selected to active
+- Copy from any geometry to selected
+Then the button to copy
+
+---
+
+## Quantisation for vertex color
+The Palette of colors for vertex lighting is limited, especially for the darker part. So when something is in the shadow but has some color tint, it can come out as weird colored spots in game. 
+If we could have the same quantisation of color in blender it'd make it easier to see end results more clearly and then adapt them as another option in the vertex light baking. Maybe even with some sub options to decolor very dark areas or other useful ways to control lighting
+
+---
+
+## Copy Worlds/Collection
+Buttons to copy the world and collection used for time of day from another level in the blend file. Makes it quicker to setup multiple levels that use the same lighting. This should set the collections and worlds to the exact same ones, not make copies of them.
+
+---
+
+## Adding curve "fit 0.25 to 1.0"
+Adding a light curve in the light baking curve preset that's similar to the fit 0.25 to 0.75 but with 0.25 to 1.0
+
+---
+
+## Actor/jak Light custom actor
+Something I did in TFL is having some areas that affect the light on jak and other actors. However, the way worked was fit inside of the mood function. This comes with a lot of limitation and create a lot of extra code in there which wouldn't be needed if it was a single actor that did it with all its settings in the entity lump. You can check TFL's `goal_src/jak1/engine/gfx/mood/mood.gc` to see how it was done.
+This actor code should be added to common/game.gd if the user uses it and not just per level's -obs.
+### Implementation in the addon
+Added in the "effect" category. Called "Actor Light" (etype `lt_actor_light`). When added it'd give you a sphere empty which size will be driven by the max distance the actor light will affect actors/jak.
+Here's all the settings and what they'd do:
+- `Min Distance` in meters (default 5m), the distance at which the light has full effect.
+- `Max Distance` in meters (default 10m), the distance at which the light start having an effect. 
+  - The strength of the effect is then calculated depending on the distance of the actor to the Actor Light using the min and max distance. (from the max intensity to 0 intensity)
+- `Key Color` as a color picker (default to white), to choose the color that'll affect the Key lighting of the actor
+- `Key Intensity` as a float value (default to 1.0), to choose the intensity of the key lighting
+- The direction of the key light would be using the rotation of the actor. The default position would mean the light comes from straight ahead, then rotating would change that. Using the Z axis of the Actor Light in blender to determine the direction of the light, using the `quat` of the actor.
+  - In the object properties, viewport display, the axis could be turned on automatically to so there's a nice visual on the direction of the light 
+- `Ambient Color` as a color picker (default to white), to choose the color that'll affect the ambient lighting of the actor
+- `Ambient Intensity` as a float value (default to 0.5), to choose the intensity of the ambient lighting
+- `Affect Jak`, On/Off checkbox (default on), if off, the actor light would only affect the actors in `alt-actor` and not jak. 
+- `Cylinder Mode`, On/off checkbox (default off), if this setting is on, the distance check would only be done on the x/z plane (in game), ignoring the height.
+- `Mode`:
+  - `Default on`
+    - `On timer`, in seconds (default 1.0), The time it takes to go from 0.0 to max intensity when the actor light turns on
+    - `Off timer`, in seconds (default 1.0), The time it takes to go from max to 0.0 intensity when the actor light turns off
+  - `Default off`
+    - also gets the timers
+  - `Time of day`
+    - `Time on`, in hours (default 18.0), time of day when it turns on
+    - `Time off`, in hours (default 8.0), time of day when it turns off
+    - Also gets the timers for how long it takes to turn on and off
+- `Volume`, not required, if a volume is added, the actor/jak is only affected when inside of that volume. If there's no volume, then it just uses the distances set above.
+- `alt-actor`, the actors that get affected by the lighting as well as jak. Allow multiple. Maybe we can set a maximum if this is heavy on the computing.
+- `trigger-actor`, if this actor is dead, the light goes off, The `trigger-actor` can also send an on and off signal to turn the actor light on and off.
+
+---
+
 ## Better Linux support
 
 ---
