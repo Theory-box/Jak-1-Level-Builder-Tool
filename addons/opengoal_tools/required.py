@@ -1,7 +1,8 @@
 """Required fields of actors, in one place: the panels' warning counts, the
 warning next to Export & Compile and the audit all use these.
 
-Required today: link slots marked "required" in the database, required
+Required today: schema task/object-reference fields and link slots marked
+"required" in the database, required
 paths (the Path panel's "required" option: path, pathb ...), and the sound
 bank of a sound emitter's / particle spawner's sound (actors' own sounds:
 see community-feedback/Actor Notes.md). Results for the
@@ -83,6 +84,24 @@ def missing(o, scene=None, names=None, banks=None):
     if not et:
         return missing_bank(o, scene, banks)
     out = []
+    # Required schema fields work for custom actors too; no per-etype rules.
+    get = _db.prop_getter(o)
+    for field in _db.inherited_fields(et):
+        key = field.get("key")
+        if not key or not field.get("required"):
+            continue
+        if field.get("type") == "object_ref":
+            name = str(get(key, "") or "")
+            target = scene.objects.get(name)
+            kind = field.get("pick", "EMPTY")
+            valid = target is not None and (target.name.startswith("CAMERA_") if kind == "CAMERA" else target.type == "EMPTY")
+        elif field.get("type") == "task":
+            valid = _db.task_expression(get, key) is not None
+        else:
+            continue
+        if not valid:
+            out.append({"panel": "game-task" if key == "og_game_task" else "custom-fields",
+                        "key": key, "label": field.get("label", key)})
     for slot in _actor_link_slots(et):
         lkey, sidx = slot[0], slot[1]
         label = slot[2] if len(slot) > 2 else lkey

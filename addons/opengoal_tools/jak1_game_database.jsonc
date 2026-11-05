@@ -10398,7 +10398,7 @@
     {
       "etype": "green-sagecage",
       "label": "Green Sage (Citadel, caged)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "citb-sage",
       "code": [
         "citadel-part.o",
@@ -10406,14 +10406,35 @@
       ],
       "art_group": [
         "green-sagecage-ag.go",
-        "citb-sagecage-ag.go",
-        "evilbro-citadel-ag.go",
-        "evilsis-citadel-ag.go"
+        "citb-sagecage-ag.go"
       ],
       "tpage_group": "Citadel",
       "glb": "levels/citadel/green-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: drives the vanilla Citadel story. Its intro auto-plays only when Jak's world Z < -4595 m (vanilla coordinate), closes the other sages' need-hint and sets continue 'citadel-elevator'. Its pre-boss outro runs want-levels citadel finalboss (unloads the custom level), kills ~60 vanilla actors by name, and ends with start 'play at continue 'citadel-elevator' (vanilla Citadel). The cell -> cutscene hook is by name 'green-sagecage-1'. Same beam-target crash as the other sages without alt-actor."
+      "description": "Edited rescue-only Green Sage. Open plays his rescue animation once and advances his own task; saved per actor. No fixed-world intro, pre-boss movie, vanilla actor cleanup, level loads or continue teleport. Optional beam target; missing target no longer crashes. Does not use the vanilla named fuel-cell hook: send open from your puzzle.",
+      "edited": "green-sagecage",
+      "reacts_to": [
+        "open"
+      ],
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Optional beam target",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "assistant-firecanyon",
@@ -10435,7 +10456,7 @@
     {
       "etype": "evilbro",
       "label": "Gol (Misty ending)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "evilbro.o",
       "art_group": [
@@ -10444,7 +10465,7 @@
       ],
       "glb": "levels/intro/evilbro-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden until an 'intro' tpage group (INT.DGO tpage-1454..1457) exists: no addon tpage group carries the intro Gol / Maia textures. Behaviour otherwise works: task leaving-misty is hard-coded; talking plays the evilbro-misty-end cutscene (Gol and Maia; Maia clones it from the linked evilsis) and can be replayed. The alt-actor must be an evilsis: without it, talking dereferences #f.",
+      "description": "Edited Gol: plays the Misty ending with linked Maia. His assigned task introduction is closed; task none does not change the vanilla story task. Intro texture pages are included. Link Maia for the complete scene; missing links no longer crash.",
       "panels": [
         {
           "panel": "actor-link",
@@ -10459,19 +10480,43 @@
               "required": true
             }
           ]
+        },
+        {
+          "panel": "game-task"
         }
+      ],
+      "edited": "evilbro",
+      "tpage_group": "Intro",
+      "tpages": [
+        "tpage-1454.go",
+        "tpage-1455.go",
+        "tpage-1456.go",
+        "tpage-1457.go"
       ]
     },
     {
       "etype": "evilsis",
       "label": "Maia (Misty ending)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "evilbro.o",
       "art_group": "evilsis-ag.go",
       "glb": "levels/intro/evilsis-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden until an 'intro' tpage group exists (see evilbro). Never talks; idles and clones Gol's cutscene when an evilbro links to her."
+      "description": "Edited Maia: idles and clones linked Gol during the Misty ending. Does not initiate conversation. Uses her assigned task controller, falling back to leaving-misty when none; intro texture pages included.",
+      "edited": "evilsis",
+      "tpage_group": "Intro",
+      "tpages": [
+        "tpage-1454.go",
+        "tpage-1455.go",
+        "tpage-1456.go",
+        "tpage-1457.go"
+      ],
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
     },
     {
       "etype": "sage-villagec",
@@ -19026,6 +19071,610 @@
       ]
     },
     {
+      "etype": "citb-stair-plat",
+      "label": "Rising Stair Platform (Citadel)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "citb-plat.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "plat-citb-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/plat-citb-lod0.glb",
+      "edited": "citb-stair-plat",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited: waits hidden below its placed height, then rises on trigger. Rise distance and delay are configurable. Activation is saved per actor; it stays raised after reload. No vanilla sage tasks or world-height fade.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_stair_rise",
+              "label": "Rise distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "rise-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.1
+            },
+            {
+              "key": "og_stair_delay",
+              "label": "Delay (s)",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "delay",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "silostep",
+      "label": "Silo Step (Misty)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "misty-warehouse.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "silostep-ag.go",
+      "tpage_group": "Misty",
+      "glb": "levels/misty/silostep-lod0.glb",
+      "edited": "silostep",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger",
+        "trigger-rise"
+      ],
+      "sounds": [
+        "arena-steps"
+      ],
+      "description": "Edited: trigger raises the step and its linked following steps, without a fixed camera or the Misty Warehouse task. Distance is a fraction of its built-in animation, not meters. Raised position is saved per actor.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_silostep_distance",
+              "label": "Rise animation fraction",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "distance",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.0,
+              "max": 1.0
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Following steps (trigger-rise)",
+              "accepts": [
+                "silostep"
+              ],
+              "required": false,
+              "allow-multiple": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "reflector-mirror",
+      "sounds": ["mirror-smash"],
+      "label": "Breakable Beam Mirror",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "jungle-mirrors.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "reflector-mirror-ag.go",
+      "tpage_group": "Jungle",
+      "glb": "levels/jungle/reflector-mirror-lod0.glb",
+      "edited": "reflector-mirror",
+      "sounds": [
+        "eco-beam",
+        "mirror-smash"
+      ],
+      "description": "Edited: punch or spin to break the mirror and send stop to its linked receivers (e.g. accordian). Beam endpoint comes from an empty. Broken state is saved. No fixed camera, vanilla task updates, or forced player grab.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_mirror_beam_end",
+              "label": "Beam endpoint (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-end",
+                "type": "vector"
+              },
+              "note": "None: endpoint at the mirror origin."
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Receives stop when broken",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citadelcam",
+      "label": "Trigger Relay (Citadel)",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "shape": "CUBE",
+      "edited": "citadelcam",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited invisible relay: receives trigger and forwards it to every linked receiver after birthing it. Optional completed-task gate. No vanilla sage requirements or Citadel camera movie. Cyclic relay links must be avoided.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_relay_gate_task",
+              "label": "Require completed task",
+              "type": "task",
+              "default": "none",
+              "lump": {
+                "key": "gate-task",
+                "type": "enum-uint32"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Trigger receivers",
+              "accepts": [
+                "event:trigger"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "precursor-arm",
+      "label": "Precursor Tether Arm",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "swamp-blimp.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "precursor-arm-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/precursor-arm-lod0.glb",
+      "edited": "precursor-arm",
+      "reacts_to": [
+        "arm-sink-evt"
+      ],
+      "description": "Edited: the swamp blimp tether arm, positioned at its base/waterline. Works without a task. On arm-sink-evt it sinks, closing its assigned task if any. Splash height follows its placed origin. Link from the blimp first, followed by tether rocks.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "lrocklrg",
+      "label": "Seagull Avalanche Rock",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "beach-rocks.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "lrocklrg-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/lrocklrg-lod0.glb",
+      "edited": "lrocklrg",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger",
+        "loading"
+      ],
+      "description": "Edited: the seagull flock rock. Loading preloads its falling animation; trigger plays it without the vanilla camera or player grab. No task: saves the fallen state. Assigned task: gives its cell at the fallen rock and restores it if uncollected on reload. Uses the original large avalanche animation; leave room around it.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "allpontoons",
+      "label": "Pontoon Cutscene Helper",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": [
+        "village2-obs.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "allpontoons-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/allpontoons-lod0.glb",
+      "description": "Vanilla helper, intentionally invisible while idle. Its clone event takes a process handle and plays the pontoon cutscene animation; it is not a walkable pontoon bridge. The edited warrior no longer requires this helper. Use pontoon actors for a bridge.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "helix-button",
+      "label": "Helix Floor Button",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "helix-button-ag.go",
+      "tpage_group": "Sunkenb",
+      "glb": "levels/sunkenb/helix-button-lod0.glb",
+      "edited": "helix-button",
+      "sounds": [
+        "prec-button8",
+        "maindoor"
+      ],
+      "description": "Edited: standing on it depresses the button, closes the linked door and starts the linked rising dark eco. Optional task cell above the button; no fixed camera or forced player movement. Button and door reset on level reload.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Rising eco controller",
+              "accepts": [
+                "helix-water"
+              ],
+              "required": true
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Slide door",
+              "accepts": [
+                "helix-slide-door"
+              ],
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "helix-slide-door",
+      "label": "Helix Slide Door",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "helix-slide-door-ag.go",
+      "tpage_group": "Sunkenb",
+      "glb": "levels/sunkenb/helix-slide-door-lod0.glb",
+      "edited": "helix-slide-door",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited: starts open and closes on trigger (from a Helix Button or trigger volume). Starts open again after level reload. Does not overwrite the vanilla Sunken singleton."
+    },
+    {
+      "etype": "helix-water",
+      "label": "Rising Helix Dark Eco",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "water-anim-sunken-dark-eco-ag.go",
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/water-anim-sunken-dark-eco-helix-room-lod0.glb",
+      "edited": "helix-water",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger",
+        "reset",
+        "notify"
+      ],
+      "texture_sources": [
+        "sunken",
+        "sunkenb"
+      ],
+      "texture_note": "the dark eco surface",
+      "description": "Edited: dark eco rises from the placed height by Rise distance at Rise speed after trigger. Reset/notify lowers it immediately. Link a volume that covers the full rising column; set its initial water surface to the placed height. Uses Sunken look 40 at its vanilla size. Optional submerged actors are consumed bottom to top. The dark-eco child is spawned automatically; do not place it separately.",
+      "panels": [
+        {
+          "panel": "volume"
+        },
+        {
+          "panel": "water",
+          "fields": [
+            {
+              "key": "og_water_liquid",
+              "default": "dark-eco"
+            },
+            {
+              "key": "og_water_ripple",
+              "default": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_helix_rise",
+              "label": "Rise distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "rise-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.0
+            },
+            {
+              "key": "og_helix_speed",
+              "label": "Rise speed (m/s)",
+              "type": "float",
+              "default": 2.0,
+              "lump": {
+                "key": "rise-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.01
+            },
+            {
+              "key": "og_helix_look",
+              "type": "int",
+              "default": 40,
+              "show-field": false,
+              "const": 40,
+              "lump": {
+                "key": "look",
+                "type": "int32"
+              },
+              "write_if": "always"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Submerged actors, ordered bottom to top",
+              "accepts": [
+                "babak",
+                "ecovent",
+                "launcher"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "flutflutegg",
+      "sounds": ["egg-crack", "egg-hit", "sack-land"],
+      "label": "Flut Flut Egg",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "wobbler.o",
+        "beach-obs.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "flutflutegg-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/flutflutegg-lod0.glb",
+      "edited": "flutflutegg",
+      "description": "Edited: punch/spin it along its placed direction; after Push distance it falls and hatches on the ground. Uses its own task (assign the same custom task to the Bird Lady). No fixed Beach camera or coordinates. Hatch position sets the broken egg location on reload; without one it restores at its spawn point. No task makes a standalone breakable egg.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_egg_fall_distance",
+              "label": "Push distance before falling (m)",
+              "type": "float",
+              "default": 5.0,
+              "lump": {
+                "key": "fall-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.01
+            },
+            {
+              "key": "og_egg_hatch_pos",
+              "label": "Hatch position on reload (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "hatch-pos",
+                "type": "vector"
+              },
+              "note": "Place at the expected landing point to restore the broken egg correctly after reload."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "gorge-start",
+      "label": "Race Start (custom course)",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "rolling-obs.o"
+      ],
+      "shape": "ARROWS",
+      "art_group": "rolling-start-ag.go",
+      "tpage_group": "Rolling",
+      "glb": "levels/rolling/rolling-start-lod0.glb",
+      "edited": "gorge-start",
+      "reacts_to": [
+        "aborted"
+      ],
+      "description": "Edited: vanilla timer/record HUD with placed start position/facing and a linked finish empty. Both gates extend above their origin, so place at ground height. Cross start front to back to race; cross the finish facing its forward side. Requires an assigned task and finish empty; otherwise disabled. Beating the record closes the task need-reminder stage; use its NPC for the reward. No vanilla abort planes. Return through start to restart, or send aborted to cancel.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "fields": [
+            {
+              "key": "og_game_task",
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_race_finish",
+              "label": "Finish gate (empty)",
+              "type": "object_ref",
+              "default": "",
+              "required": true,
+              "lump": {
+                "key": "finish-pos",
+                "type": "vector",
+                "w": "yaw"
+              }
+            },
+            {
+              "key": "og_race_radius",
+              "label": "Gate half-width/height (m)",
+              "type": "float",
+              "default": 14.0,
+              "lump": {
+                "key": "gate-radius",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.1
+            },
+            {
+              "key": "og_race_record",
+              "label": "Initial record time (s)",
+              "type": "float",
+              "default": 45.0,
+              "lump": {
+                "key": "record-time",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "exit-chamber",
+      "sounds": ["chamber-move", "submerge", "surface"],
+      "label": "Exit Chamber Ride",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "sun-iris-door.o",
+        "sun-exit-chamber.o"
+      ],
+      "shape": "CUBE",
+      "art_group": [
+        "exit-chamber-ag.go",
+        "sun-iris-door-ag.go",
+        "generic-button-ag.go"
+      ],
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/exit-chamber-lod0.glb",
+      "edited": "exit-chamber",
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited self-contained ride: the built-in button toggles the original rise/dive animation; door and button are spawned automatically. No five-charger puzzle, fixed camera, or Sunken/Village level loads. The animation has its original long travel relative to the placed transform: leave ample room. Optional task cell starts on the chamber; its end position is saved per actor.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
       "etype": "test-actor",
       "label": "Test Actor",
       "category": "Debug",
@@ -19037,65 +19686,6 @@
 
   // ── OrphanEtypes ────────────────────────────────────────────────
   "OrphanEtypes": [
-    {
-      "etype": "helix-button",
-      "label": "Helix Button",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Helix water controller",
-              "accepts": [
-                "helix-water"
-              ],
-              "required": true
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "Helix slide door",
-              "accepts": [
-                "helix-slide-door"
-              ],
-              "required": true
-            }
-          ]
-        }
-      ],
-      "spawnable": false
-    },
-    {
-      "etype": "helix-water",
-      "label": "Helix Water",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Helix buttons",
-              "accepts": [
-                "helix-button"
-              ],
-              "required": true,
-              "allow-multiple": true
-            }
-          ]
-        }
-      ],
-      "spawnable": false,
-      "reacts_to": [
-        "trigger"
-      ]
-    },
     {
       "etype": "rolling-lightning-mole",
       "label": "Rolling Lightning Mole",

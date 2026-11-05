@@ -1,0 +1,174 @@
+;; Custom race with the vanilla timer/record HUD. Start gate uses the placed
+;; position/facing; finish-pos is an empty (position + yaw), gate-radius controls
+;; both gates, record-time is the initial target in seconds. Uses its own task.
+;; No vanilla abort planes or fixed end banner. Returning through the start gate
+;; restarts; an aborted event cancels. Missing task/finish disables it safely.
+;; Beating the record closes need-reminder; the task's NPC supplies the reward.
+;; edits: gorge-start
+
+(deftype __TYPE__ (gorge-start) ()
+  (:states __TYPE__-gorge-start-idle __TYPE__-gorge-start-race-aborted
+           __TYPE__-gorge-start-race-finished __TYPE__-gorge-start-racing
+           __TYPE__-gorge-start-ready __TYPE__-disabled))
+
+(defstate __TYPE__-disabled (__TYPE__)
+  :code (behavior () (loop (suspend))))
+
+(defbehavior __TYPE__-gorge-start-launch-start-banner __TYPE__ ()
+  (the-as handle
+          (when #t
+            (when (not (handle->process (-> self start-banner)))
+              (let ((gp-0 (new 'stack-no-clear 'vector)))
+                (set! (-> gp-0 quad) (-> self root trans quad))
+                (let ((v0-1 (ppointer->handle (process-spawn rolling-start gp-0 (y-angle (-> self root)) :to self))))
+                  (set! (-> self start-banner) (the-as handle v0-1))
+                  v0-1))))))
+
+(defstate __TYPE__-gorge-start-idle (__TYPE__)
+  :enter
+    (behavior ()
+      (logior! (-> self mask) (process-mask actor-pause))
+      (process-entity-status! self (entity-perm-status bit-3) #f))
+  :exit
+    (behavior ()
+      (logclear! (-> self mask) (process-mask actor-pause))
+      (process-entity-status! self (entity-perm-status bit-3) #t))
+  :trans
+    (behavior ()
+      (__TYPE__-gorge-start-launch-start-banner)
+      (gorge-trans))
+  :code
+    (behavior ()
+      (loop
+        (suspend)
+        (seekl! (-> self timer-pos-offset) 100 (the int (* 5.0 (-> *display* time-adjust-ratio))))
+        (when (= (-> self timer-pos-offset) 100)
+          (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'enable)
+          (send-event (ppointer->process (-> *hud-parts* money)) 'enable))
+        (if (gorge-in-front self) (go __TYPE__-gorge-start-ready)))))
+
+(defstate __TYPE__-gorge-start-race-aborted (__TYPE__)
+  :trans
+    (behavior ()
+      (gorge-trans))
+  :code
+    (behavior ()
+      (set-time! (-> self state-time))
+      (until (time-elapsed? (-> self state-time) (seconds 3))
+        (seekl! (-> self timer-pos-offset) 100 (the int (* 5.0 (-> *display* time-adjust-ratio))))
+        (when (= (-> self timer-pos-offset) 100)
+          (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'enable)
+          (send-event (ppointer->process (-> *hud-parts* money)) 'enable))
+        (when (< (mod (-> *display* real-frame-counter) 90) 60)
+          (let ((gp-0 (new 'stack 'font-context *font-default-matrix* 156 80 0.0 (font-color red) (font-flags shadow kerning))))
+            (let ((v1-20 gp-0)) (set! (-> v1-20 width) (the float 200)))
+            (let ((v1-21 gp-0)) (set! (-> v1-21 height) (the float 50)))
+            (set! (-> gp-0 flags) (font-flags shadow kerning middle middle-vert large))
+            (print-game-text (lookup-text! *common-text* (text-id race-aborted) #f) gp-0 #f 128 22)))
+        (suspend)
+        (if (gorge-in-front self) (go __TYPE__-gorge-start-ready)))
+      (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'enable)
+      (send-event (ppointer->process (-> *hud-parts* money)) 'enable)
+      (go __TYPE__-gorge-start-idle)))
+
+(defstate __TYPE__-gorge-start-race-finished (__TYPE__)
+  :trans
+    (behavior ()
+      (gorge-trans))
+  :code
+    (behavior ()
+      (gorge-start-draw-time #t #t)
+      (suspend)
+      (set-time! (-> self state-time))
+      (until (time-elapsed? (-> self state-time) (seconds 3))
+        (seekl! (-> self timer-pos-offset) 100 (the int (* 3.0 (-> *display* time-adjust-ratio))))
+        (when (= (-> self timer-pos-offset) 100)
+          (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'enable)
+          (send-event (ppointer->process (-> *hud-parts* money)) 'enable))
+        (gorge-start-draw-time #t #f)
+        (suspend)
+        (if (gorge-in-front self) (go __TYPE__-gorge-start-ready)))
+      (go __TYPE__-gorge-start-idle)))
+
+(defstate __TYPE__-gorge-start-racing (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('finished) (go __TYPE__-gorge-start-race-finished))
+        (('aborted) (go __TYPE__-gorge-start-race-aborted))))
+  :enter
+    (behavior ()
+      (send-event (handle->process (-> self start-banner)) 'break)
+      (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'disable)
+      (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'hide)
+      (send-event (ppointer->process (-> *hud-parts* money)) 'disable)
+      (send-event (ppointer->process (-> *hud-parts* money)) 'hide)
+      (race-time-read (-> self record-time) (-> self tasks) (the-as time-frame (the int (* 300.0 (res-lump-float (-> self entity) 'record-time :default 45.0)))))
+      (let ((pos (res-lump-struct (-> self entity) 'finish-pos vector))
+            (point (new 'stack-no-clear 'vector))
+            (dir (new 'stack-no-clear 'vector)))
+        (set! (-> point quad) (-> pos quad))
+        (set! (-> point w) 1.0)
+        (set-vector! dir (sin (-> pos w)) 0.0 (cos (-> pos w)) 0.0)
+        (set! (-> self end-banner)
+              (ppointer->handle (process-spawn rolling-start point (-> pos w) :to self)))
+        (process-spawn gorge-finish point dir
+          (res-lump-float (-> self entity) 'gate-radius :default (meters 14)) :to self))
+      (sleep (-> self ticker) (seconds 6000))
+      (set-setting! 'sound-flava #f 40.0 (music-flava rolling-gorge)))
+  :exit
+    (behavior ()
+      (let ((child (-> self child)))
+        (while child
+          (let ((next (-> child 0 brother)))
+            (when (not (or (= child (-> self start-banner process)) (= child (-> self end-banner process))))
+              (deactivate (-> child 0)))
+            (set! child next))))
+      (send-event (handle->process (-> self end-banner)) 'break-and-die)
+      (send-event (handle->process (-> self start-banner)) 'unbreak)
+      (remove-setting! 'sound-flava))
+  :trans gorge-trans
+  :code
+    (behavior ()
+      (set! (-> self state-time) (-> *display* game-frame-counter))
+      (loop
+        (seconds->race-time (-> self this-time) (- (-> *display* game-frame-counter) (-> self state-time)))
+        (seekl! (-> self timer-pos-offset) 0 (the int (* 5.0 (-> *display* time-adjust-ratio))))
+        (completed? (-> self ticker))
+        (gorge-start-draw-time #f #f)
+        (suspend)
+        (if (or (not *target*) (gorge-in-front self)) (go __TYPE__-gorge-start-ready)))))
+
+(defstate __TYPE__-gorge-start-ready (__TYPE__)
+  :trans gorge-trans
+  :code
+    (behavior ()
+      (loop
+        (suspend)
+        (seekl! (-> self timer-pos-offset) 100 (the int (* 5.0 (-> *display* time-adjust-ratio))))
+        (when (= (-> self timer-pos-offset) 100)
+          (send-event (ppointer->process (-> *hud-parts* fuel-cell)) 'enable)
+          (send-event (ppointer->process (-> *hud-parts* money)) 'enable))
+        (gorge-start-draw-time #f #f)
+        (cond
+          ((gorge-in-front self))
+          ((gorge-behind self) (go __TYPE__-gorge-start-racing))
+          (else (go __TYPE__-gorge-start-idle))))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (the-as collide-shape-moving (new 'process 'trsqv)))
+  (process-drawable-from-entity! this arg0)
+  (let ((a0-3 (new 'stack-no-clear 'vector)))
+    (set! (-> a0-3 quad) (-> this root trans quad))
+    (+! (-> a0-3 y) -8192.0)
+    (gorge-init a0-3 (vector-z-quaternion! (new 'stack-no-clear 'vector) (-> this root quat))
+      (res-lump-float arg0 'gate-radius :default (meters 14)) (meters 10)))
+  (when (or (= (-> this entity extra perm task) (game-task none))
+            (not (res-lump-struct arg0 'finish-pos vector)))
+    (go __TYPE__-disabled))
+  (set! (-> this tasks) (get-task-control (-> this entity extra perm task)))
+  (set! (-> this start-banner) (the-as handle #f))
+  (set! (-> this end-banner) (the-as handle #f))
+  (set! (-> this timer-pos-offset) 100)
+  (go __TYPE__-gorge-start-idle)
+  (none))

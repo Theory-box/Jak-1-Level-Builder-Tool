@@ -1,0 +1,59 @@
+;; Citadel stairs: rise to the placed height on trigger, with a configurable
+;; travel distance and delay. Vanilla used the three sage tasks and a world-Y
+;; fade; this version saves activation per entity and fades relative to its rise.
+;; edits: citb-stair-plat
+
+(deftype __TYPE__ (citb-stair-plat) ())
+
+(defmethod citb-base-plat-method-22 ((this __TYPE__))
+  (initialize-skeleton this *plat-citb-sg* '())
+  (set! (-> this rise-height) (-> this root trans y))
+  (set! (-> this idle-height) (- (-> this rise-height) (res-lump-float (-> this entity) 'rise-distance :default (meters 20))))
+  (set! (-> this root trans y) (-> this idle-height))
+  (set! (-> this rise) #f)
+  (set! (-> this delay) (the-as time-frame (the int (* 300.0 (res-lump-float (-> this entity) 'delay :default 1.0)))))
+  (let ((f0-7 1.5))
+    (set-vector! (-> this root scale) f0-7 f0-7 f0-7 1.0)
+    (set! (-> this root root-prim local-sphere w) (* (-> this root root-prim local-sphere w) f0-7))
+    (set! (-> this draw bounds w) (* (-> this draw bounds w) f0-7)))
+  0
+  (none))
+
+(defstate citb-base-plat-idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger) (logclear! (-> self mask) (process-mask actor-pause)) (let ((v0-0 #t)) (process-entity-status! self (entity-perm-status complete) #t) (set! (-> self rise) v0-0) v0-0))))
+  :trans #f
+  :code
+    (behavior ()
+      (logior! (-> self draw status) (draw-status hidden))
+      (while (not (-> self rise))
+        (suspend))
+      (logclear! (-> self draw status) (draw-status hidden))
+      (set-vector! (-> self draw color-mult) 0.0 0.0 0.0 1.0)
+      (set-time! (-> self state-time))
+      (while (not (time-elapsed? (-> self state-time) (-> self delay)))
+        (ja-post)
+        (suspend))
+      (set-time! (-> self state-time))
+      (loop
+        (let ((f30-0 (- 1.0 (* 0.0011111111 (the float (- (current-time) (-> self state-time)))))))
+          (when (< f30-0 0.0)
+            (set! (-> self root trans y) (-> self rise-height))
+            (go-virtual citb-base-plat-active))
+          (set! (-> self root trans y) (lerp (-> self rise-height) (-> self idle-height) (* f30-0 f30-0))))
+        (let ((f0-12 (fmax 0.0 (fmin 1.0 (/ (- (-> self root trans y) (-> self idle-height)) (fmax 1.0 (- (-> self rise-height) (-> self idle-height))))))))
+          (set! (-> self draw color-mult x) f0-12)
+          (set! (-> self draw color-mult y) f0-12)
+          (set! (-> self draw color-mult z) f0-12))
+        (transform-post)
+        (suspend)))
+  :post #f)
+
+(defmethod citb-base-plat-method-24 ((this __TYPE__))
+  (if (logtest? (-> this entity extra perm status) (entity-perm-status complete))
+    (go (method-of-object this citb-base-plat-active))
+    (go (method-of-object this citb-base-plat-idle)))
+  (none))

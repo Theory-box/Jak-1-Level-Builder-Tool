@@ -1,0 +1,65 @@
+;; Rising helix dark eco: start at the placed height, with rise-distance and
+;; rise-speed from Blender. No singleton globals, music change, or speed tied to
+;; Jak's height. Reset/notify returns it to the start. The linked alt actors are
+;; consumed in order as the surface passes them (place links bottom to top).
+;; The child helix-dark-eco shares this entity's look 40 and volume/water lumps.
+;; edits: helix-water
+
+(deftype __TYPE__ (helix-water) ()
+  (:states __TYPE__-helix-water-idle __TYPE__-helix-water-activated))
+
+(defstate __TYPE__-helix-water-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger) (go __TYPE__-helix-water-activated))
+        (('reset) (go __TYPE__-helix-water-idle))))
+  :code
+    (behavior ()
+      (set! (-> self root trans y) (-> self start-y))
+      (set! (-> self last-alt-actor-consumed) -1)
+      (set! (-> self transv-y) 9216.0)
+      (suspend)
+      (send-event (ppointer->process (-> self dark-eco)) 'move-to (-> self root trans))
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend)))
+  :post ja-post)
+
+(defstate __TYPE__-helix-water-activated (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('notify 'reset) (go __TYPE__-helix-water-idle))))
+  :trans
+    (behavior ()
+      (seek! (-> self root scale y) 0.8 (* 0.667 (seconds-per-frame)))
+      (set! (-> self transv-y) (res-lump-float (-> self entity) 'rise-speed :default (meters 2)))
+      (+! (-> self root trans y) (* (-> self transv-y) (seconds-per-frame)))
+      (if (< (-> self end-y) (-> self root trans y)) (set! (-> self root trans y) (-> self end-y)))
+      (send-event (ppointer->process (-> self dark-eco)) 'move-to (-> self root trans))
+      (helix-water-method-21 self))
+  :code
+    (behavior ()
+      (send-event (ppointer->process (-> self dark-eco)) 'trigger)
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend)))
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this last-alt-actor-consumed) -1)
+  (set! (-> this transv-y) 9216.0)
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (set! (-> this start-y) (-> this root trans y))
+  (set! (-> this end-y) (+ (res-lump-float arg0 'rise-distance :default (meters 20)) (-> this start-y)))
+  (set-vector! (-> this root scale) 1.0 0.8 1.0 1.0)
+  (let ((s4-0 (entity-actor-count arg0 'alt-actor)))
+    (set! (-> this alt-actors) (new 'process 'boxed-array entity-actor s4-0))
+    (dotimes (s3-0 s4-0)
+      (set! (-> this alt-actors s3-0) (entity-actor-lookup arg0 'alt-actor s3-0))))
+  (set! (-> this root trans y) (-> this start-y))
+  (set! (-> this dark-eco) (process-spawn helix-dark-eco :init water-vol-init-by-other (-> this entity) :to this))
+  (go __TYPE__-helix-water-idle)
+  (none))

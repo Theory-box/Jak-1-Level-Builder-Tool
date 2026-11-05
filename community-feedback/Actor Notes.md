@@ -5,17 +5,32 @@ actor itself; this file is the overview.
 
 ---
 
-## Not done yet (no DB record, or record still missing a feature)
-- **helix-button**: needs helix-water and helix-slide-door records (rising dark eco room, Sunken).
-- **helix-water / helix-dark-eco** (water look 40): rises on 'trigger, Sunken-specific, uses an alt-actor list.
-- **reflector-mirror**: the eye-beam mirror between periscopes (Jungle); it sends 'stop to the accordian.
-- **flutflutegg**, **gorge-start**, **exit-chamber** (+ exit-chamber-button): not added.
-- **precursor-arm** (swamp-arm task): the swamp blimp's link 0; no record.
-- **lrocklrg / beach-rock**: seagull flock target and a 'trigger receiver; no record.
-- **allpontoons**: the warrior needs one (crashes without); no record.
-- **'trigger receivers without a record**: helix-slide-door, silostep, citb-stair-plat, citb-drop-plat,
-  citadelcam, beach-rock. Add `"reacts_to": ["trigger"]` when they get one (button notify list).
-- **citb-drop-plat**: needs a specific UI to be intuitive.
+## Second entity pass: ready for runtime testing
+The following now have database records and separate edited GOAL files. Compiler and
+Blender export checks pass; in-game behavior, previews, and save/reload still need testing.
+- **citb-stair-plat / silostep**: triggerable stairs; configurable rise/delay on Citadel stairs,
+  linked silo steps; no vanilla task or camera gate. **citb-drop-plat** already had its grid UI.
+- **reflector-mirror**: configurable beam endpoint; breaking it sends stop to linked receivers.
+- **citadelcam**: invisible trigger relay with optional completed-task gate, no movie.
+- **precursor-arm / lrocklrg**: own optional tasks and placement; rock rewards spawn at its joint.
+  `beach-rock` is the base type, not a separate model to place.
+- **allpontoons**: visible in the picker as an invisible cutscene helper, not a walkable bridge.
+  Edited warrior already handles a missing helper safely.
+- **helix-button / helix-water / helix-slide-door**: linked rising-eco setup. Place the water
+  controller at its starting height, set water height to match, and give it a volume covering
+  the full rise. Use Sunken/Sunkenb texture source. It resets on level reload. The water creates
+  `helix-dark-eco` itself; do not place that child separately.
+- **flutflutegg**: own task, rotation, fall distance and optional hatch/reload position.
+- **gorge-start**: required own task and finish Empty; configurable gate radius/record time.
+  Completing the race advances its task; use a task-aware reward actor for the cell.
+- **exit-chamber**: ride-only version, initially unlocked; original ride animation and optional
+  own-task cell. No five-charger puzzle, world positioning, or forced level transitions.
+  The chamber creates its own button and iris door.
+- **evilbro / evilsis**: NPC records, Intro tpages 1454–1457, own task support; link Gol to Maia.
+- **green-sagecage**: rescue-only, receives open, advances its own task once, optional beam target.
+  No pre-boss story sequence. Saved completion restores cage bars disabled.
+
+## Not done yet
 - **Particles** (part-spawner, level -part files): planned feature, see the to-do list.
 
 ## Hidden (can't work as-is; reason in the DB description)
@@ -25,8 +40,6 @@ actor itself; this file is the overview.
 | citb-chains | process-hidden, draws nothing |
 | powercellalt | No init-from-entity!, only spawned by the 100-cell door cutscene |
 | seagull | Only spawned by a Seagull Flock |
-| green-sagecage | Vanilla Citadel story: fixed Z trigger, want-levels citadel finalboss |
-| evilbro / evilsis | Need an "intro" tpage group (INT.DGO tpage-1454..1457) |
 | sequenceA-village1 / B / C, finalbosscam | Not placeable entities |
 
 ## Working, with limits
@@ -45,7 +58,7 @@ actor itself; this file is the overview.
   `<colour>-sagecage-1` (hard-coded process name).
 - **yakow**: herding can't finish (the pen is a nav-mesh poly flag the nav-mesh export doesn't write).
 - **oracle**: trades and cells work, no speech (picks its cutscene by vanilla level name).
-- **swamp-blimp**: floats away without a tether rock; tether rocks need vanilla swamp-tether tasks / cameras.
+- **swamp-blimp**: floats away without a tether rock; edited tether rocks now use their own tasks / cameras.
 - **gondola**: rides to vanilla village3 / snow.
 - **pistons**: only move when the gondola sends 'update.
 - **windmill-sail**: vanilla jungle-lurkerm sets its speed; no sound fields yet.
@@ -86,7 +99,7 @@ Add more per actor during the actor checks.
 
 ## Sound bank requirements (DB "sounds")
 Each actor record lists the sounds it plays that aren't in the common bank (`"sounds"`,
-101 actors). They come from its code (sound-play / sound specs / its particle groups'
+actors with non-common sounds). They come from its code (sound-play / sound specs / its particle groups'
 sounds, following the helper functions its states call and its parent types, from the
 game's goal_src; `tools/scan_sounds.py`) and from its art groups (animation effect sounds,
 e.g. babak-roar, lurkbat-wing: most enemy sounds). Which bank holds each sound comes from

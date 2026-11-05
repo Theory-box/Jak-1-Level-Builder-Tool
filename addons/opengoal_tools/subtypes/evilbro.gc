@@ -1,0 +1,28 @@
+;; evilbro: own task (none retains the vanilla idle/task controller). Gol's
+;; movie closes only the explicitly assigned task's introduction. Linked Maia
+;; is checked before clone/end-mode events. Intro texture pages are in the DB.
+;; edits: evilbro
+
+(deftype __TYPE__ (evilbro) ())
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (cond
+    (arg0
+     (when (!= (-> this entity extra perm task) (game-task none)) (close-specific-task! (-> this entity extra perm task) (task-status need-introduction)))
+     (when (and (-> this evilsis) (-> this evilsis extra process)) (send-event (-> this evilsis extra process) 'clone (process->handle this))))
+    (else (set! (-> this will-talk) #t)))
+  (the-as basic (new 'static 'spool-anim :name "evilbro-misty-end" :index 5 :parts 9 :command-list '())))
+
+(defstate play-anim (__TYPE__)
+  :virtual #t
+  :exit
+    (behavior ()
+      (when (and (-> self evilsis) (-> self evilsis extra process)) (send-event (-> self evilsis extra process) 'end-mode))
+      ((-> (method-of-type process-taskable play-anim) exit))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *evilbro-intro-sg* 3 40 (new 'static 'vector :w 4096.0) 5)
+  (set! (-> this tasks) (get-task-control (if (= (-> arg0 extra perm task) (game-task none)) (game-task leaving-misty) (-> arg0 extra perm task))))
+  (set! (-> this evilsis) (entity-actor-lookup arg0 'alt-actor 0))
+  (process-taskable-method-42 this)
+  (none))

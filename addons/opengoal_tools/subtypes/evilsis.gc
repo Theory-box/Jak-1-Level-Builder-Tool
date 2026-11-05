@@ -1,0 +1,12 @@
+;; evilsis: own task (none retains the vanilla idle/task controller). Gol's
+;; movie closes only the explicitly assigned task's introduction. Linked Maia
+;; is checked before clone/end-mode events. Intro texture pages are in the DB.
+;; edits: evilsis
+
+(deftype __TYPE__ (evilsis) ())
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *evilsis-intro-sg* 3 0 (new 'static 'vector :w 4096.0) 5)
+  (set! (-> this tasks) (get-task-control (if (= (-> arg0 extra perm task) (game-task none)) (game-task leaving-misty) (-> arg0 extra perm task))))
+  (process-taskable-method-42 this)
+  (none))

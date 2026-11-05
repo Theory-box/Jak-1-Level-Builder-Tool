@@ -167,4 +167,17 @@ def ensure_shared(scene, objects):
         lines.append(f'(goal-src "{SHARED_DIR}/lt-{r["stem"]}.gc" {" ".join(chr(34) + d + chr(34) for d in deps)}) {_TAG}')
     gp = _game_gp()
     if lines and gp.exists():
+        # Dependencies can change when the database or custom header changes.
+        # Replace our previous registration by source path, not by whole line:
+        # appending a second goal-src for one output makes GOALC reject game.gp.
+        text = gp.read_text(encoding="utf-8")
+        for line in lines:
+            source = line.split('"', 2)[1]
+            pattern = re.compile(r'^[ \t]*\(goal-src "' + re.escape(source)
+                                 + r'"[^\n]*\) ' + re.escape(_TAG) + r'[^\n]*$', re.M)
+            matches = list(pattern.finditer(text))
+            if matches:
+                first = matches[0].start()
+                text = pattern.sub(lambda m: line if m.start() == first else "", text)
+        _write_if_changed(gp, text)
         _patch(gp, lines, '(group-list "all-code"', "shared edited actors")

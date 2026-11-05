@@ -174,7 +174,8 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
                 liq = lp["liquids"].get(get(lp.get("liquid_key"), _resolve_default(lf, etype) if lf else "water"),
                                         lp["liquids"].get("water", {}))
                 bits = list(liq.get("flags", []))
-                if lp.get("ripple_key") and get(lp["ripple_key"], False):
+                rf = next((x for x in fields if x.get("key") == lp.get("ripple_key")), None)
+                if lp.get("ripple_key") and get(lp["ripple_key"], _resolve_default(rf, etype) if rf else False):
                     bits.append("wt20")
                 flags = "(water-flags %s)" % " ".join(bits)
                 attack = liq.get("attack")

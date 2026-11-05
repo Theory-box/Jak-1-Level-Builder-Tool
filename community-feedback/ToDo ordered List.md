@@ -5,6 +5,8 @@ Once a feature is part of a release, it'll get removed from here.
 ---
 
 ## Second entity pass
+Continuation status: new actor records and edited files implemented; static/Blender export
+validation complete, runtime acceptance pending. See Actor Notes and session-notes/entity-pass-2.md.
 Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
 ### nav-enemy
 Change the info to "Nav-enemy, needs navmesh and path"

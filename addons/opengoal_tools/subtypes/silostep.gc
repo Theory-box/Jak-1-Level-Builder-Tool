@@ -1,0 +1,56 @@
+;; Silo step: either trigger event raises it directly, without camera-160 or
+;; the misty-warehouse task. Linked steps are raised together. The vanilla rise
+;; state saves completion per entity and restores its raised position on reload.
+;; edits: silostep
+
+(deftype __TYPE__ (silostep) ()
+  (:states __TYPE__-silostep-idle __TYPE__-activate))
+
+(defstate __TYPE__-silostep-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger 'trigger-rise) (go __TYPE__-activate))))
+  :code
+    (behavior ()
+      (ja :group! silostep-idle-ja :num! min)
+      (transform-post)
+      (loop (suspend)))
+  :post ja-post)
+
+(defstate __TYPE__-activate (__TYPE__)
+  :code
+    (behavior ()
+      (sound-play "arena-steps")
+      (send-to-all-after (-> self link) 'trigger-rise)
+      (go silostep-rise #f))
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (logior! (-> this mask) (process-mask movie-subject))
+  (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))
+    (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
+    (set! (-> s4-0 reaction) default-collision-reaction)
+    (set! (-> s4-0 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+    (alloc-riders s4-0 1)
+    (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind ground-object))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set! (-> s3-0 transform-index) 4)
+      (set-vector! (-> s3-0 local-sphere) 0.0 4096.0 0.0 18432.0)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this root) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *silostep-sg* '())
+  (set! (-> this anim-limit)
+        (* (res-lump-float arg0 'distance :default 1.0)
+           (the float (+ (-> (the-as art-joint-anim (-> this draw art-group data 2)) data 0 length) -1))))
+  (set! (-> this link) (new 'process 'actor-link-info this))
+  (if (and (-> this entity) (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+    (go silostep-rise #t)
+    (go __TYPE__-silostep-idle))
+  (none))
