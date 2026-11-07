@@ -5,7 +5,7 @@
 ;;   open-task lump; vanilla: snow-ball). None: closed until the switch.
 (deftype __TYPE__ (snow-fort-gate) ()
   (:states
-   __TYPE__-idle-closed))
+   __TYPE__-idle-closed __TYPE__-activate))
 
 (defun __TYPE__-task ((this __TYPE__))
   (-> this entity extra perm task))
@@ -17,9 +17,13 @@
   :event
     (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
       (case message
-        (('notice) (go snow-fort-gate-activate))))
+        (('notice) (go __TYPE__-activate))))
   :trans
     (behavior ()
+      (let ((previous (entity-actor-lookup (-> self entity) 'prev-actor 0)))
+        (when previous
+          (let ((proc (-> previous extra process)))
+            (when (or (logtest? (-> previous extra perm status) (entity-perm-status complete)) (and proc (send-event proc 'query))) (go __TYPE__-activate)))))
       (when (and *target* (>= 61440.0 (vector-vector-distance (-> self root trans) (-> *target* control trans))))
         (level-hint-spawn (text-id snow-fort-hint) "sksp0345" (the-as entity #f) *entity-pool* (game-task none))
         (if (!= (__TYPE__-task self) (game-task none))
@@ -33,6 +37,16 @@
       (loop
         (logior! (-> self mask) (process-mask sleep-code))
         (suspend))))
+
+(defstate __TYPE__-activate (__TYPE__)
+  :code (behavior ()
+    (process-entity-status! self (entity-perm-status complete) #t)
+    (let ((next (entity-actor-lookup (-> self entity) 'next-actor 0)))
+      (when next
+        (entity-birth-no-kill next)
+        (suspend)
+        (when (-> next extra process) (send-event (-> next extra process) 'notice))))
+    (go snow-fort-gate-activate)))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
@@ -62,7 +76,7 @@
     (joint-control-channel-group-eval! s5-1 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
     (set! (-> s5-1 frame-num) 0.0))
   (cond
-    ((and (!= (__TYPE__-open-task this) (game-task none)) (task-complete? *game-info* (__TYPE__-open-task this)))
+    ((or (logtest? (-> this entity extra perm status) (entity-perm-status complete)) (and (!= (__TYPE__-open-task this) (game-task none)) (task-complete? *game-info* (__TYPE__-open-task this))))
      (set! (-> this root trans quad) (-> this open-trans quad))
      (transform-post)
      (go snow-fort-gate-idle-open))

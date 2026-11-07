@@ -398,15 +398,9 @@ class OG_OT_LinkChainSelected(Operator):
         if len(chain) < 2:
             self.report({"WARNING"}, "Select 2 or more actors to chain")
             return {"CANCELLED"}
-        n = 0
-        for i, o in enumerate(chain):
-            et = o.name.split("_", 2)[1]
-            keys = {(s["lump_key"], s.get("slot", 0)) for s in _db.link_slots(et)}
-            if i + 1 < len(chain) and ("next-actor", 0) in keys:
-                _actor_set_link(o, "next-actor", 0, chain[i + 1].name); n += 1
-            if i > 0 and ("prev-actor", 0) in keys:
-                _actor_set_link(o, "prev-actor", 0, chain[i - 1].name); n += 1
-        self.report({"INFO"}, f"Chained {len(chain)} actors ({n} links): "
+        from ..link_order import apply_order
+        apply_order(ctx.scene, [o.name for o in chain])
+        self.report({"INFO"}, f"Chained {len(chain)} actors: "
                               f"{chain[0].name} → … → {chain[-1].name}")
         return {"FINISHED"}
 

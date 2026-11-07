@@ -123,7 +123,8 @@ def missing(o, scene=None, names=None, banks=None):
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
             if not _has_path(o, name, scene, names):
-                out.append({"panel": "path", "key": name, "label": f"{name} (path)"})
+                help_text = _db.panel_option(et, "path", "path_help", {}).get(name, "")
+                out.append({"panel": "path", "key": name, "label": f"{name}: {help_text}" if help_text else f"{name} (path)"})
     return out + missing_bank(o, scene, banks)
 
 
@@ -222,8 +223,8 @@ def draw_header_count(layout, obj, panel=None):
     sitems = [m for m in soft(obj) if panel is None or m["panel"] == panel]
     if sitems:                                           # soft: yellow triangle, no red
         row = layout.row(align=True)
-        row.ui_units_x = 1.6 + 0.4 * len(str(len(sitems)))
-        op = row.operator("og.required_popup", text=str(len(sitems)), icon="ERROR", emboss=False)
+        row.ui_units_x = 1.2 + 0.4 * len(str(len(sitems)))
+        op = row.operator("og.required_popup", text=f"{len(sitems)}⚠", emboss=False)
         op.actor_name = obj.name
         op.panel = panel or ""
         op.soft = True
@@ -286,11 +287,16 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
             elif m["panel"] == "nav":
                 box.label(text=f"{m['key']}: {m['label'][len('nav-mesh: '):]}", icon="MOD_MESHDEFORM")
             elif m["panel"] == "path":
-                box.label(text=f"{m['key']}: no path", icon="ANIM")
+                box.label(text=f"Missing {m['label']}", icon="ANIM")
                 if m["key"] == "path":
                     _draw_path_add(box, ob, ctx.scene, ob.og_waypoint_sources)
                 else:
                     box.label(text="Add it in the Path panel (Add Path)", icon="INFO")
+            elif m["panel"] in ("game-task", "custom-fields"):
+                from .panels.actor_fields import _draw_field
+                field = next((f for f in _db.inherited_fields(et) if f.get("key") == m["key"]), None)
+                if field:
+                    _draw_field(box, ob, field)
 
 
 def soft_summary(items):
@@ -314,7 +320,7 @@ def draw_level_count(layout, scene, row_scale=1.0):
     by_actor = level_missing(scene)
     n = sum(len(v) for v in by_actor.values())
     ns = sum(len(v) for v in level_soft(scene).values())
-    entries = ([(False, f"{n}⚠")] if n else []) + ([(True, str(ns))] if ns else [])
+    entries = ([(False, f"{n}⚠")] if n else []) + ([(True, f"{ns}⚠")] if ns else [])
     if not entries:
         return
     col = layout.column(align=True)
@@ -323,7 +329,7 @@ def draw_level_count(layout, scene, row_scale=1.0):
         r = col.row(align=True)
         r.scale_y = 1.0 / len(entries)
         r.alert = not is_soft                                # required red, soft a yellow triangle
-        op = r.operator("og.required_level_popup", text=text, icon="ERROR" if is_soft else "NONE", emboss=False)
+        op = r.operator("og.required_level_popup", text=text, emboss=False)
         op.soft = is_soft
 
 

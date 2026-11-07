@@ -116,6 +116,7 @@ from .panels import ALL_CLASSES as _PANELS_CLASSES
 from .versions import CLASSES as _VERSION_CLASSES
 from . import plat_grid as _plat_grid
 from . import connect_neighbours as _connect_neighbours
+from . import link_order as _link_order
 from . import distribute as _distribute
 from . import bake as _bake
 from . import level_settings as _level_settings
@@ -171,6 +172,7 @@ classes = (
     *_VERSION_CLASSES,
     *_plat_grid.CLASSES,
     *_connect_neighbours.CLASSES,
+    *_link_order.CLASSES,
     *_bake.CLASSES,
     *_level_settings.CLASSES,
     *_required_mod.CLASSES,
@@ -230,6 +232,7 @@ def register():
             pass
         bpy.utils.register_class(cls)
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
+    _link_order.register_props()
     _bake.register_props()   # needs OGBakeSettings registered
     _level_settings.register_props()
     _tasks.register_props()
@@ -522,6 +525,7 @@ def unregister():
     unregister_texturing()
     _plat_grid.unregister_props()
     _distribute.unregister_props()
+    _link_order.unregister_props()
     _bake.unregister_props()
     _level_settings.unregister_props()
     _tasks.unregister_props()

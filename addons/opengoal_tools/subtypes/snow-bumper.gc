@@ -6,7 +6,7 @@
   (:states
    __TYPE__-active-close-idle
    __TYPE__-active-far-idle
-   __TYPE__-deactivate))
+   __TYPE__-deactivate __TYPE__-spawn-fuel-cell))
 
 (defstate __TYPE__-active-far-idle (__TYPE__)
   :trans
@@ -90,7 +90,7 @@
       (apply-all (-> self link) actor-link-subtask-complete-hook (& sv-16))
       (when sv-16
         (save-reminder (get-task-control (-> self entity extra perm task)) (-> self bumper-id) 0)
-        (go snow-bumper-spawn-fuel-cell))
+        (go __TYPE__-spawn-fuel-cell))
       (go snow-bumper-inactive-idle))
   :post rider-post)
 
@@ -150,7 +150,24 @@
     ((and (-> this entity) (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
      (if (and (= (get-reminder (get-task-control (-> this entity extra perm task)) 0) (-> this bumper-id))
               (not (task-complete? *game-info* (-> this entity extra perm task))))
-       (go snow-bumper-spawn-fuel-cell)
+       (go __TYPE__-spawn-fuel-cell)
        (go snow-bumper-inactive-idle)))
     (else (go __TYPE__-active-far-idle)))
   (none))
+
+(defstate __TYPE__-spawn-fuel-cell (__TYPE__)
+  :code
+    (behavior ()
+      (ja-channel-set! 1)
+      (ja :group! snow-bumper-collapse-ja :num! max)
+      (transform-post)
+      (if (not (task-complete? *game-info* (-> self entity extra perm task)))
+        (birth-pickup-at-point (-> self root trans)
+                               (pickup-type fuel-cell)
+                               (the float (-> self entity extra perm task))
+                               #f
+                               self
+                               (the-as fact-info #f)))
+      (until (not (-> self child))
+        (suspend))
+      (go snow-bumper-inactive-idle)))

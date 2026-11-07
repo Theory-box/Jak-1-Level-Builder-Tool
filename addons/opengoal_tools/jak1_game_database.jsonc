@@ -10973,12 +10973,31 @@
     {
       "etype": "pelican",
       "edited": "pelican",
-      "sounds": ["pelican-flap", "pelican-gulp"],
+      "sounds": [
+        "pelican-flap",
+        "pelican-gulp"
+      ],
       "label": "Pelican",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_pelican_camera", "label": "Dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "Shows the dive when Jak comes near (vanilla camera-215). None: the normal camera.", "lump": {"key": "dive-camera", "type": "string"}}]},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_pelican_camera",
+              "label": "Dive camera",
+              "type": "object_ref",
+              "pick": "CAMERA",
+              "default": "",
+              "note": "Shows the dive when Jak comes near (vanilla camera-215). None: the normal camera.",
+              "lump": {
+                "key": "dive-camera",
+                "type": "string"
+              }
+            }
+          ]
+        },
         {
           "panel": "game-task",
           "description": "beach-pelican: the cell in its nest / the one it drops."
@@ -10987,7 +11006,40 @@
           "panel": "movie-pos",
           "description": "[0] the cell in the nest, [1] the cell it drops when hit (cone = facing)."
         },
-        {"panel": "path", "required": ["path", "dive", "to-nest", "from-nest", "spit", "dive-b", "to-nest-b", "run-away"], "paths": ["path", "dive", "to-nest", "from-nest", "spit", "dive-b", "to-nest-b", "run-away"], "description": "path: the circle (8+ points; it dives between points 7 and 8 once Jak is near). dive: the swoop (6+ points; the cell floats halfway between points 5 and 6, grabbed past point 4.8). to-nest: to the nest (ends there). from-nest: off the nest (starts at point 2), its end is where dive-b starts. spit: the spat cell lands at its last point. dive-b / to-nest-b: the second dive and return. run-away: flies off once the cell is taken."}
+        {
+          "panel": "path",
+          "required": [
+            "path",
+            "dive",
+            "to-nest",
+            "from-nest",
+            "spit",
+            "dive-b",
+            "to-nest-b",
+            "run-away"
+          ],
+          "paths": [
+            "path",
+            "dive",
+            "to-nest",
+            "from-nest",
+            "spit",
+            "dive-b",
+            "to-nest-b",
+            "run-away"
+          ],
+          "description": "path: Circling route; the dive starts around points 7-8. dive: Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8. to-nest: Fly from the first dive back to the nest. from-nest: Leave the nest after Jak hits it. spit: The last point is where the spat-out cell lands. dive-b: Dive to recover the dropped cell. to-nest-b: Return to the nest after the second dive. run-away: Escape route after the task is complete.",
+          "path_help": {
+            "path": "Circling route; the dive starts around points 7-8.",
+            "dive": "Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8.",
+            "to-nest": "Fly from the first dive back to the nest.",
+            "from-nest": "Leave the nest after Jak hits it.",
+            "spit": "The last point is where the spat-out cell lands.",
+            "dive-b": "Dive to recover the dropped cell.",
+            "to-nest-b": "Return to the nest after the second dive.",
+            "run-away": "Escape route after the task is complete."
+          }
+        }
       ],
       "code": [
         "beach-obs.o",
@@ -17769,6 +17821,10 @@
               "group": "bump"
             }
           ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing)."
         }
       ]
     },
@@ -17857,13 +17913,21 @@
               "required": true
             }
           ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing). With no Empty, use the switch top at the actor origin.",
+          "default_height": 0.0
         }
       ]
     },
     {
       "etype": "snow-fort-gate",
       "edited": "snow-fort-gate",
-      "sounds": ["lodge-close", "lodge-door-mov"],
+      "sounds": [
+        "lodge-close",
+        "lodge-door-mov"
+      ],
       "label": "Snow Fort Gate",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17873,8 +17937,49 @@
       "shape": "CUBE",
       "description": "Edited (subtypes/snow-fort-gate.gc): opens when it gets 'notice (link the snow switch to it). While closed, Daxter's hint plays near it and closes its task's need-hint (Game Task panel; vanilla snow-fort). Open from the start once the 'Open when complete' task is done (vanilla: snow-ball).",
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_fort_open_task", "label": "Open when complete", "type": "task", "default": "none", "note": "Already open when this task is complete (vanilla snow-ball). None: closed until the switch.", "lump": {"key": "open-task", "type": "enum-uint32"}}]},
-        {"panel": "game-task", "description": "Its need-hint stage is closed by the hint near the closed gate."}
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_fort_open_task",
+              "label": "Open when complete",
+              "type": "task",
+              "default": "none",
+              "note": "Already open when this task is complete (vanilla snow-ball). None: closed until the switch.",
+              "lump": {
+                "key": "open-task",
+                "type": "enum-uint32"
+              }
+            }
+          ]
+        },
+        {
+          "panel": "game-task",
+          "description": "Its need-hint stage is closed by the hint near the closed gate."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous switch / gate",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next gate",
+              "accepts": [
+                "snow-fort-gate"
+              ],
+              "required": false
+            }
+          ]
+        }
       ]
     },
     {
@@ -18480,7 +18585,9 @@
     {
       "etype": "fishermans-boat",
       "edited": "fishermans-boat",
-      "sounds": ["boat-engine"],
+      "sounds": [
+        "boat-engine"
+      ],
       "label": "Fisherman's Boat",
       "category": "Platforms",
       "parent": "rigid-body-platform",
@@ -18490,10 +18597,65 @@
       "shape": "CUBE",
       "description": "Edited (subtypes/fishermans-boat.gc): stand on the boat and press circle: it sails along path (Jak held on deck), docks at its end; ride it back along pathb (none: path backwards). It sits at the path's height (put the path on the waterline) and bobs. Ride camera: a linked CAMERA_ during the ride (none: the normal camera). Ride cutscene: the vanilla ride cutscenes play instead (out: to Misty, back: to Sandover; their own camera), then the boat is at the leg's end. Usable once its task is complete (none: always). Which end it's at is saved. Vanilla was forced to the Sandover dock, floated on the ocean and loaded misty / village1.",
       "panels": [
-        {"panel": "path", "required": ["path"], "paths": ["path", "pathb"], "description": "path: the ride out (the boat starts at its first point; on the waterline). pathb (optional): the ride back, from path's end to its start. None: path backwards."},
-        {"panel": "game-task", "description": "Usable once this task is complete (vanilla jungle-fishgame). None: always."},
-        {"panel": "custom-fields", "fields": [{"key": "og_boat_camera", "label": "Ride camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The camera during the ride. None: the normal camera.", "lump": {"key": "ride-camera", "type": "string"}}, {"key": "og_boat_movie", "label": "Ride cutscene", "type": "bool", "default": false, "note": "Play the vanilla ride cutscenes (to Misty / to Sandover) instead of sailing; the boat ends at the leg's end.", "lump": {"key": "ride-movie", "type": "uint32"}, "write_if": "if_true"}, {"key": "og_boat_speed", "label": "Speed (m/s)", "type": "float", "default": 15.0, "min": 1.0, "max": 60.0, "note": "Top speed; it eases in and out over the first and last 8 m.", "lump": {"key": "speed", "type": "meters"}}]}
-      ]
+        {
+          "panel": "path",
+          "required": [
+            "path"
+          ],
+          "paths": [
+            "path",
+            "pathb"
+          ],
+          "description": "path: the ride out (the boat starts at its first point; on the waterline). pathb (optional): the ride back, from path's end to its start. None: path backwards."
+        },
+        {
+          "panel": "game-task",
+          "description": "Usable once this task is complete (vanilla jungle-fishgame). None: always."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_boat_camera",
+              "label": "Ride camera",
+              "type": "object_ref",
+              "pick": "CAMERA",
+              "default": "",
+              "note": "The camera during the ride. None: the normal camera.",
+              "lump": {
+                "key": "ride-camera",
+                "type": "string"
+              }
+            },
+            {
+              "key": "og_boat_movie",
+              "label": "Ride cutscene",
+              "type": "bool",
+              "default": false,
+              "note": "Play the vanilla ride cutscenes (to Misty / to Sandover) instead of sailing; the boat ends at the leg's end.",
+              "lump": {
+                "key": "ride-movie",
+                "type": "uint32"
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_boat_speed",
+              "label": "Speed (m/s)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "max": 60.0,
+              "note": "Top speed; it eases in and out over the first and last 8 m.",
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              }
+            }
+          ]
+        }
+      ],
+      "glb": "levels/village1/fishermans-boat-lod0.glb"
     },
     {
       "etype": "scarecrow-a",
@@ -19585,12 +19747,12 @@
       "shape": "ARROWS",
       "art_group": "rolling-start-ag.go",
       "tpage_group": "Rolling",
-      "glb": "levels/rolling/rolling-start-lod0.glb",
+      "glb": "levels/rolling/rolling-start-whole-lod0.glb",
       "edited": "gorge-start",
       "reacts_to": [
         "aborted"
       ],
-      "description": "Edited: vanilla timer/record HUD with placed start position/facing and a linked finish empty. Both gates extend above their origin, so place at ground height. Cross start front to back to race; cross the finish facing its forward side. Requires an assigned task and finish empty; otherwise disabled. Beating the record closes the task need-reminder stage; use its NPC for the reward. No vanilla abort planes. Return through start to restart, or send aborted to cancel.",
+      "description": "Edited: vanilla timer/record HUD with placed start position/facing and a linked finish empty. Both gates extend above their origin, so place at ground height. Cross start front to back to race; cross the finish facing its forward side. Requires an assigned task and finish empty; otherwise disabled. Beating the record closes the task need-reminder stage; use its NPC for the reward, or enable Direct cell reward to spawn at the finish and fly to Movie Position. Uncollected direct rewards respawn after reload. No vanilla abort planes. Return through start to restart, or send aborted to cancel.",
       "panels": [
         {
           "panel": "game-task",
@@ -19639,14 +19801,33 @@
               },
               "write_if": "always",
               "min": 0.1
+            },
+            {
+              "key": "og_race_direct_cell",
+              "label": "Direct cell reward",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "direct-cell",
+                "type": "uint32"
+              },
+              "write_if": "always"
             }
           ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing)."
         }
       ]
     },
     {
       "etype": "exit-chamber",
-      "sounds": ["chamber-move", "submerge", "surface"],
+      "sounds": [
+        "chamber-move",
+        "submerge",
+        "surface"
+      ],
       "label": "Exit Chamber Ride",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -19665,12 +19846,62 @@
       "glb": "levels/sunken/exit-chamber-lod0.glb",
       "edited": "exit-chamber",
       "reacts_to": [
-        "trigger"
+        "trigger",
+        "open",
+        "notify"
       ],
-      "description": "Edited self-contained ride: the built-in button toggles the original rise/dive animation; door and button are spawned automatically. No five-charger puzzle, fixed camera, or Sunken/Village level loads. The animation has its original long travel relative to the placed transform: leave ample room. Optional task cell starts on the chamber; its end position is saved per actor.",
+      "description": "External trigger/open unlocks the door without starting a ride; its built-in button travels. Optional path replaces animated travel; the chamber keeps its placed rotation and returns along the path backwards. Travel time applies to each path leg, excluding door closing. No path keeps the original animation. A linked CAMERA_ controls the ride view. Starts closed optionally; vanilla charger notify messages also unlock after all five chargers activate. Saved unlock and endpoint belong to this entity.",
       "panels": [
         {
           "panel": "game-task"
+        },
+        {
+          "panel": "path",
+          "required": false,
+          "paths": [
+            "path"
+          ],
+          "description": "Optional world-space route for the chamber origin. Two or more points; it starts at the first point and returns along the same route. No path: original animated ride."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_chamber_closed",
+              "label": "Starts closed",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "starts-closed",
+                "type": "uint32"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_chamber_time",
+              "label": "Path travel time (s)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.1,
+              "lump": {
+                "key": "travel-time",
+                "type": "float"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_chamber_camera",
+              "label": "Ride camera",
+              "type": "object_ref",
+              "pick": "CAMERA",
+              "default": "",
+              "lump": {
+                "key": "ride-camera",
+                "type": "string"
+              },
+              "note": "Used during either ride mode, then returns to base camera."
+            }
+          ]
         }
       ]
     },

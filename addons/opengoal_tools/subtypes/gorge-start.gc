@@ -3,13 +3,27 @@
 ;; both gates, record-time is the initial target in seconds. Uses its own task.
 ;; No vanilla abort planes or fixed end banner. Returning through the start gate
 ;; restarts; an aborted event cancels. Missing task/finish disables it safely.
-;; Beating the record closes need-reminder; the task's NPC supplies the reward.
+;; Beating the record closes need-reminder. Optional direct-cell spawns at the
+;; finish, uses movie-pos, and restores an uncollected reward after reload.
 ;; edits: gorge-start
 
-(deftype __TYPE__ (gorge-start) ()
+(deftype __TYPE__ (gorge-start) ((reward handle))
   (:states __TYPE__-gorge-start-idle __TYPE__-gorge-start-race-aborted
            __TYPE__-gorge-start-race-finished __TYPE__-gorge-start-racing
            __TYPE__-gorge-start-ready __TYPE__-disabled))
+
+(defbehavior __TYPE__-reward __TYPE__ ()
+  (when (and (nonzero? (res-lump-value (-> self entity) 'direct-cell uint128))
+             (logtest? (-> self entity extra perm status) (entity-perm-status complete))
+             (not (task-complete? *game-info* (-> self entity extra perm task)))
+             (not (handle->process (-> self reward))))
+    (let ((pos (new 'stack-no-clear 'vector)))
+      (set! (-> pos quad) (-> (res-lump-struct (-> self entity) 'finish-pos vector) quad))
+      (set! (-> pos w) 1.0)
+      (set! (-> self reward) (ppointer->handle
+        (birth-pickup-at-point pos (pickup-type fuel-cell)
+          (the float (-> self entity extra perm task)) #f self (the-as fact-info #f))))))
+  (none))
 
 (defstate __TYPE__-disabled (__TYPE__)
   :code (behavior () (loop (suspend))))
@@ -77,7 +91,10 @@
       (gorge-trans))
   :code
     (behavior ()
+      (when (race-time-less-than (-> self this-time) (-> self record-time))
+        (process-entity-status! self (entity-perm-status complete) #t))
       (gorge-start-draw-time #t #t)
+      (__TYPE__-reward)
       (suspend)
       (set-time! (-> self state-time))
       (until (time-elapsed? (-> self state-time) (seconds 3))
@@ -121,7 +138,7 @@
       (let ((child (-> self child)))
         (while child
           (let ((next (-> child 0 brother)))
-            (when (not (or (= child (-> self start-banner process)) (= child (-> self end-banner process))))
+            (when (not (or (= child (-> self start-banner process)) (= child (-> self end-banner process)) (= child (-> self reward process))))
               (deactivate (-> child 0)))
             (set! child next))))
       (send-event (handle->process (-> self end-banner)) 'break-and-die)
@@ -167,6 +184,8 @@
             (not (res-lump-struct arg0 'finish-pos vector)))
     (go __TYPE__-disabled))
   (set! (-> this tasks) (get-task-control (-> this entity extra perm task)))
+  (set! (-> this reward) (the-as handle #f))
+  (__TYPE__-reward)
   (set! (-> this start-banner) (the-as handle #f))
   (set! (-> this end-banner) (the-as handle #f))
   (set! (-> this timer-pos-offset) 100)

@@ -1,4 +1,6 @@
-;; Exit chamber as a self-contained ride, not the five-charger story puzzle.
+;; Exit chamber: optional timed world-space path, otherwise animated travel.
+;; External trigger/open unlocks; only the child button starts the ride.
+;; Optional starts-closed and ride-camera; charger notifications can unlock it.
 ;; Its button and iris door are spawned and moved by the chamber. The original
 ;; rise/dive animations are relative to the placed transform (keep ample space).
 ;; Removed Sunken/Village level loads and the fixed camera sequence/cell position.
@@ -6,17 +8,98 @@
 ;; The button is a managed child, not a separately placed actor.
 ;; edits: exit-chamber
 
-(deftype __TYPE__ (exit-chamber) ()
-  (:states __TYPE__-exit-chamber-idle-in-sunken
+(deftype __TYPE__ (exit-chamber)
+  ((route path-control)
+   (path-time float)
+   (path-progress float)
+   (path-end symbol))
+  (:states __TYPE__-locked __TYPE__-path-idle __TYPE__-path-ride
+           __TYPE__-exit-chamber-idle-in-sunken
            (__TYPE__-exit-chamber-idle-in-village symbol)
            __TYPE__-exit-chamber-rise __TYPE__-exit-chamber-lower))
+
+
+(defmethod relocate ((this __TYPE__) (offset int))
+  (if (-> this route) (&+! (-> this route) offset))
+  (call-parent-method this offset))
+
+(defun __TYPE__-camera ((this __TYPE__) (enabled symbol))
+  (let ((cam (res-lump-struct (-> this entity) 'ride-camera string)))
+    (when cam (camera-change-to (if enabled cam (the-as string 'base)) 0 #f)))
+  (none))
+
+(defun __TYPE__-path-point ((p path-control) (u float) (pos vector))
+  (cond
+    ((type-type? (-> p type) curve-control) (eval-path-curve! p pos u 'interp))
+    (else
+      (let ((left (* u (path-distance p))) (done #f) (n (-> p curve num-cverts)))
+        (dotimes (i (+ n -1))
+          (when (not done)
+            (let* ((a (-> p cverts i)) (b (-> p cverts (+ i 1))) (len (vector-vector-distance a b)))
+              (when (or (<= left len) (= i (+ n -2)))
+                (vector-lerp! pos a b (if (> len 0.0) (fmax 0.0 (fmin 1.0 (/ left len))) 0.0))
+                (set! done #t))
+              (-! left len)))))))
+  (set! (-> pos w) 1.0)
+  (none))
+
+(defstate __TYPE__-locked (__TYPE__)
+  :event (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+    (case message
+      (('trigger 'open)
+        (if (-> self route) (go __TYPE__-path-idle) (go __TYPE__-exit-chamber-idle-in-sunken)))
+      (('notify)
+        (let ((index (the int (-> block param 1))))
+          (when (and (>= index 1) (<= index 5))
+            (case (-> block param 0)
+              ((1) (logior! (-> self chargers-active) (ash 1 index)))
+              ((2) (logclear! (-> self chargers-active) (ash 1 index))))
+            (when (= (-> self chargers-active) 62)
+              (if (-> self route) (go __TYPE__-path-idle) (go __TYPE__-exit-chamber-idle-in-sunken))))))))
+  :code (behavior () (loop (suspend)))
+  :post ja-post)
+
+(defstate __TYPE__-path-idle (__TYPE__)
+  :event (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+    (case message
+      (('trigger) (when (= proc (ppointer->process (-> self button))) (go __TYPE__-path-ride)))))
+  :enter (behavior ()
+    (set! (-> self move-player?) #f)
+    (logior! (-> self entity extra perm status) (entity-perm-status user-set-from-cstage))
+    (set! (-> self entity extra perm user-int8 1) (if (-> self path-end) 2 1))
+    (when (-> self door) (send-event (ppointer->process (-> self door)) 'trigger))
+    (when (-> self button) (send-event (ppointer->process (-> self button)) 'untrigger)))
+  :trans rider-trans
+  :code (behavior () (loop (suspend)))
+  :post (behavior () (rider-post) (exit-chamber-method-23 self #t)))
+
+(defstate __TYPE__-path-ride (__TYPE__)
+  :enter (behavior ()
+    (set! (-> self move-player?) #t)
+    (set! (-> self path-progress) 0.0)
+    (__TYPE__-camera self #t)
+    (when (-> self door) (send-event (ppointer->process (-> self door)) 'untrigger)))
+  :exit (behavior ()
+    (set! (-> self move-player?) #f)
+    (__TYPE__-camera self #f))
+  :code (behavior ()
+    (set-time! (-> self state-time))
+    (until (time-elapsed? (-> self state-time) (seconds 1)) (suspend))
+    (until (>= (-> self path-progress) 1.0)
+      (+! (-> self path-progress) (/ (seconds-per-frame) (-> self path-time)))
+      (let ((u (fmin 1.0 (-> self path-progress))))
+        (__TYPE__-path-point (-> self route) (if (-> self path-end) (- 1.0 u) u) (-> self root trans)))
+      (suspend))
+    (set! (-> self path-end) (not (-> self path-end)))
+    (go __TYPE__-path-idle))
+  :post (behavior () (transform-post) (exit-chamber-method-23 self #t)))
 
 (defstate __TYPE__-exit-chamber-idle-in-sunken (__TYPE__)
   :event
     (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
       (local-vars (v0-1 object))
       (case message
-        (('trigger) (go __TYPE__-exit-chamber-rise) (return #t) v0-1)
+        (('trigger) (when (= proc (ppointer->process (-> self button))) (go __TYPE__-exit-chamber-rise)))
         (('notify)
          (when (and (= (-> proc type) fuel-cell) (= (-> block param 0) 'pickup))
            (let ((a0-5 (handle->process (-> self fcell-handle))))
@@ -45,7 +128,7 @@
   :event
     (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
       (case message
-        (('trigger) (go __TYPE__-exit-chamber-lower))
+        (('trigger) (when (= proc (ppointer->process (-> self button))) (go __TYPE__-exit-chamber-lower)))
         (('notify)
          (when (and (= (-> proc type) fuel-cell) (= (-> block param 0) 'pickup))
            (let ((a0-5 (handle->process (-> self fcell-handle))))
@@ -98,7 +181,9 @@
 (defstate __TYPE__-exit-chamber-rise (__TYPE__)
   :enter
     (behavior ()
+      (__TYPE__-camera self #t)
       (set! (-> self move-player?) #f))
+  :exit (behavior () (__TYPE__-camera self #f))
   :trans
     (behavior ()
       (if (not (-> self move-player?)) (rider-trans)))
@@ -174,9 +259,11 @@
 (defstate __TYPE__-exit-chamber-lower (__TYPE__)
   :enter
     (behavior ()
+      (__TYPE__-camera self #t)
       (set! (-> self move-player?) #t)
       (let ((v1-2 (handle->process (-> self fcell-handle))))
         (if v1-2 (clear-collide-with-as (-> (the-as fuel-cell v1-2) root)))))
+  :exit (behavior () (__TYPE__-camera self #f))
   :trans
     (behavior ()
       (if (not (-> self move-player?)) (rider-trans))
@@ -224,7 +311,6 @@
       (set-time! (-> self state-time))
       (until (time-elapsed? (-> self state-time) (seconds 3))
         (suspend))
-      (set-continue! *game-info* "sunkenb-start")
       (go __TYPE__-exit-chamber-idle-in-sunken))
   :post
     (behavior ()
@@ -236,7 +322,7 @@
   (process-entity-status! this (entity-perm-status bit-7) #t)
   (set! (-> this move-player?) #f)
   (set! (-> this move-fcell?) #f)
-  (set! (-> this play-assistant-message?) #t)
+  (set! (-> this play-assistant-message?) #f)
   (set! (-> this wave-scale) 0.0)
   (set! (-> this fcell-handle) (the-as handle #f))
   (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-others))))
@@ -260,8 +346,19 @@
   (logior! (-> this skel status) (janim-status inited))
   (logclear! (-> this mask) (process-mask actor-pause))
   (set! (-> this part) (create-launch-control (-> *part-group-id-table* 620) this))
+  (set! (-> this route) (new 'process 'curve-control this 'path -1000000000.0))
+  (set! (-> this path-time) (fmax 0.1 (res-lump-float arg0 'travel-time :default 10.0)))
+  (set! (-> this path-end) (= (-> this entity extra perm user-int8 1) 2))
+  (when (or (logtest? (-> this route flags) (path-control-flag not-found)) (< (-> this route curve num-cverts) 2))
+    (set! (-> this route) (the-as path-control #f)))
+  (when (-> this route)
+    (__TYPE__-path-point (-> this route) (if (-> this path-end) 1.0 0.0) (-> this root trans)))
   (ja-channel-set! 1)
-  (let ((s4-1 (if (= (-> this entity extra perm user-int8 1) 2) 2 1)))
+  (let ((s4-1 (cond
+                ((= (-> this entity extra perm user-int8 1) 2) 2)
+                ((or (= (-> this entity extra perm user-int8 1) 1)
+                     (zero? (res-lump-value arg0 'starts-closed uint128))) 1)
+                (else 0))))
     (let ((s2-0 #f)
           (s3-1 (new 'stack-no-clear 'matrix)))
       (let ((a0-17 (-> this entity extra perm))) (set! (-> this move-fcell?) (nonzero? (-> a0-17 user-int8 0))))
@@ -272,7 +369,7 @@
            (let ((s1-0 (-> this skel root-channel 0)))
              (joint-control-channel-group-eval! s1-0 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
              (set! (-> s1-0 frame-num) 0.0)))
-          ((= v1-35 1)
+          ((or (= v1-35 1) (-> this route))
            (set! (-> this chargers-active) (the-as uint 62))
            (let ((s1-1 (-> this skel root-channel 0)))
              (joint-control-channel-group-eval! s1-1 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
@@ -311,7 +408,8 @@
     (exit-chamber-method-23 this #t)
     (set! (-> this move-player?) #f)
     (cond
-      ((zero? s4-1) (go exit-chamber-charger-puzzle))
+      ((zero? s4-1) (go __TYPE__-locked))
+      ((-> this route) (go __TYPE__-path-idle))
       ((= s4-1 1) (go __TYPE__-exit-chamber-idle-in-sunken))
       ((= s4-1 2) (go __TYPE__-exit-chamber-idle-in-village #t))))
   (none))

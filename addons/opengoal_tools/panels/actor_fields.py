@@ -431,6 +431,13 @@ def _draw_field(layout, obj, field, actor_info=None):
     label = field.get("label", field["key"])
     default = _resolve_default(field, obj, actor_info)
 
+    if field.get("required"):
+        from ..required import missing
+        if any(m["key"] == field["key"] for m in missing(obj)):
+            warning = layout.row()
+            warning.alert = True
+            warning.label(text=f"Required: {label}", icon="ERROR")
+
     if ftype == "enum":
         _draw_enum_field(layout, obj, field)
     elif ftype == "task":

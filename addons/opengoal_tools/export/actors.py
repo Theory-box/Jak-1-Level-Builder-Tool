@@ -398,6 +398,12 @@ def collect_actors(scene, depsgraph=None):
             if _mp_list:
                 lump["movie-pos"] = ["movie-pos"] + [movie_pos_vector(e) for e in _mp_list]
                 log(f"  [movie-pos] {o.name}  {len(_mp_list)} position(s)")
+            else:
+                height = _schema_db.panel_option(etype, "movie-pos", "default_height", None)
+                if height is not None:
+                    pos = movie_pos_vector(o)
+                    pos[1] += float(height) * o.matrix_world.to_scale().z
+                    lump["movie-pos"] = ["movie-pos", pos]
 
         # ── Platform grid panel (citb-drop-plat): 'count + 'plat-type ──────────
         if _schema_db.panel_exports(etype, "plat-grid"):
