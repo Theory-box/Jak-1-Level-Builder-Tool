@@ -10801,11 +10801,14 @@
       "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
-        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (empty)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
+        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (Jak face negative Y)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). Place around 2.5m above Net path point and 5m ahead. None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
         {"panel": "game-task", "description": "The cell for winning the minigame."},
         {
           "panel": "path",
-          "required": true
+          "required": true,
+          "path_help": {
+            "path": "Fish path (Net at position 6.5)"
+          }
         }
       ],
       "code": "fisher.o",
@@ -10937,7 +10940,8 @@
         },
         {
           "panel": "nav-mesh",
-          "show-panel": true
+          "show-panel": true,
+          "required": true
         },
         {
           "panel": "path",
@@ -10952,7 +10956,12 @@
             "pathc"
           ],
           "linear-only": true,
-          "description": "path: snack spots (one Farthy snack per point). pathb: rat spawn points. pathc: rat waypoints (random points they wander to). Needs the billy subtype (vanilla keys all three as 'path' keyframes 0/1/2)."
+          "description": "path: snack spots (one Farthy snack per point). pathb: rat spawn points. pathc: rat waypoints (random points they wander to). Needs the billy subtype (vanilla keys all three as 'path' keyframes 0/1/2).",
+          "path_help": {
+            "path": "Snack spots. (one Farthy snack per point)",
+            "pathb": "Rats spawn points",
+            "pathc": "Rats waypoints (random points they wander to)"
+          }
         },
         {
           "panel": "actor-link",
@@ -13545,8 +13554,7 @@
               "slot": 0,
               "label": "Base (sent 'stop when all balls are shot)",
               "accepts": [
-                "energybase",
-                "any"
+                "energybase"
               ],
               "required": true
             },
@@ -13555,17 +13563,17 @@
               "slot": 1,
               "label": "Door (sent 'open when all balls are shot)",
               "accepts": [
-                "energydoor",
-                "any"
+                "energydoor"
               ],
-              "required": true
+              "required": true,
+              "allow-multiple": true
             },
             {
               "lump_key": "alt-actor",
               "slot": 2,
               "label": "Lava (model held at 1.25x X/Z scale every frame; must be a drawable actor)",
               "accepts": [
-                "any"
+                "water-anim"
               ],
               "required": true
             }
@@ -13830,7 +13838,7 @@
               "slot": 0,
               "label": "Precursor arm (sinks when the blimp leaves; never holds it down)",
               "accepts": [
-                "any"
+                "precursor-arm"
               ],
               "required": true
             },
@@ -18545,6 +18553,7 @@
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
+      "glb": "levels/village2/swamp-tetherrock-lod0.glb",
       "description": "Edited (subtypes/swamp-tetherrock.gc): shoot it with yellow eco; it gives its task's cell and lets go of the blimp. Its cameras and rope point come from Actor Settings (vanilla: from its vanilla swamp-tether-1..4 task, crashing on missing camera-18x entities)."
     },
     {
@@ -19526,6 +19535,11 @@
       "art_group": "helix-button-ag.go",
       "tpage_group": "Sunkenb",
       "glb": "levels/sunkenb/helix-button-lod0.glb",
+      "offset": [
+                    0,
+                    0,
+                    -6.5
+                  ],
       "edited": "helix-button",
       "sounds": [
         "prec-button8",

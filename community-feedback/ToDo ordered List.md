@@ -101,6 +101,74 @@ Also make sure to remove any extra lines at the top and bottom of the file, espe
 
 ---
 
+## Path additions
+### Add an "add curve" option
+There's already buttons to add waypoints dirrectly, There could be buttons to add a curve too as well. Instead of having to create one before and then link it. That way it'd automatically be linked too. Have both options like the waypoint where the first one add it on the 3D cursor and then "at actor position" to add it on at the actor's position.
+
+When adding the curve, it should spawn the bottom left menu with things to adjust such as:
+- Curve Type (list):
+  - NURBS (default)
+  - POLY
+  - Bézier
+- Curve Shape (list):
+  - Circle
+  - Straight line
+  - Single point
+    - An issue with NURBS and having a single point is that it'll automatically change the Order U to 2 (4 is the default and how opengoal works too). So if the addon is able to change that behaviour and keep it at 4, that'd be best
+  - Half circle
+- Number of points (integer) (depending on the shape and curve type this option would be visible or hidden)
+  - NURBS
+    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
+    - Straight line (visible, Default to 4 points at a minimum)
+    - Single point (hidden)
+    - Half circle (hidden, same as circle)
+  - POLY
+    - Circle (visible, Default to 8, can be as low as 3 or as high as the max amount of points in a path, adding more points just make a regular polygon of that number of point, estimating a circle)
+    - Straight line (visible, Default to 2 points at a minimum)
+    - Single point (hidden)
+    - Half circle (visible, same as circle, default to 4)
+  - Bézier
+    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
+    - Straight line (visible, Default to 2 points at a minimum)
+    - Single point (hidden)
+    - Half circle (hidden, same as circle)
+- Cyclic (on/off button) (shows for all curve type, is on or off by default depending on the curve shape:)
+  - Circle (ON by default)
+  - Straight line (OFF by default)
+  - Single point (OFF by default)
+  - Half circle (OFF by default)
+- Endpoints (only show for NURBS is on or off by default depending on the shape:)
+  - Circle (OFF by default)
+  - Straight line (ON by default)
+  - Single point (ON by default)
+  - Half circle (ON by default)
+- Size (in meters)
+  - size of the diameter for circle/half circle (default 2m)
+  - length of the line for straight line (default 2m)
+  - doesn't show for single point
+- Rotation
+  - X/Y/Z values, defaulting to all 0 which means all curves are flat on blender's XY plane
+
+The curve would then automatically be linked in the path menu of the actor where it was created from and be named to have the name of the actor+name of the path (path/patha/pathb/etc)+ numerical values in case there's multiple ones.
+### Add edit button for curve/waypoints
+Add a button inbetween the "frame" and "delete" buttons to the right to "edit curve/waypoint" which would select the curve, and then automatically switch to edit mode on it. 
+If it's a waypoint (empty), it'd just select it and stay in object mode.
+### Add collection for path curves
+Make a collection for curve linked where they'd automatically go to when added as path and allow the collection sorter button to sort the connected curve as path to also move those to their collection 
+
+---
+
+## Camera variant to spawn as the view instead of 3D cursor
+Add a drop down menu to select the spot a camera should spawn at:
+- 3D cursor (aligned view)
+  - Current behaviour where the camera spawn at the 3D cursor and is aligned view
+- 3D cursor (default view)
+  - Spawn at the 3D cursor but default the rotation to 0,0,0
+- Viewport View
+  - Spawn the camera at the current view in the viewport
+
+---
+
 ## Make the "view" buttons for time of day also set the render color
 At the moment, the view button next to time of day will change which color attribute is selected but it won't change which one is set for render. Doing the later one as well would allow you to show it in textured mode too if the user has combined their material to show the effect of the lighting on the textures too.
 
