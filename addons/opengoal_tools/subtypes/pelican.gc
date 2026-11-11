@@ -16,7 +16,9 @@
 ;;   spit-camera    the spit, looking at the cell (none: the vanilla cutscene camera,
 ;;                  turned with the pelican)
 ;;   dive-b-camera  the second dive and its way back to the nest
-;; The spit cutscene no longer teleports the camera to a fixed Sentinel Beach spot.
+;; The spit cutscene no longer teleports the camera to a fixed Sentinel Beach spot; the
+;; real cell is thrown during it (no clone cell). Return time (return-time lump, s):
+;; how long it takes off the nest before diving back for the spat cell (vanilla 20).
 ;; The cell is the actor's task (Game Task panel).
 (deftype __TYPE__ (pelican)
   ((spit-pos vector :inline)
@@ -288,6 +290,28 @@
                    (the-as (function pelican int) zero-func)))
   :post pelican-post)
 
+(defun __TYPE__-spit-tick ((arg0 process-drawable))
+  "During the spit cutscene: after 0.6 s the held cell is released and thrown in an arc
+from the beak to the spit spot (0.67 s). #t once it has landed."
+  (let* ((this (the-as __TYPE__ arg0))
+         (gp-0 (handle->process (-> this fuel-cell)))
+         (f30-0 (/ (+ (the float (- (current-time) (-> this state-time))) -180.0) 200.0)))
+    (cond
+      ((not gp-0) #t)
+      ((< f30-0 0.0) #f)
+      (else
+       (when (not (-> this state-object))
+         (set! (-> this state-object) #t)
+         (send-event gp-0 'release)
+         (send-event gp-0 'draw #t)
+         (if (-> this cam-on) (send-event *camera* 'change-target gp-0)))
+       (let ((s5-0 (new 'stack-no-clear 'vector))
+             (f30-1 (fmin 1.0 f30-0)))
+         (vector-lerp! s5-0 (-> this state-vector1) (-> this spit-pos) f30-1)
+         (+! (-> s5-0 y) (* 49152.0 f30-1 (- 1.0 f30-1)))
+         (send-event gp-0 'trans s5-0))
+       (>= f30-0 1.0)))))
+
 (defstate __TYPE__-spit (__TYPE__)
   :event
     (-> __TYPE__-circle event)
@@ -303,6 +327,7 @@
         (when (< 409.6 (vector-length s5-0))
           (vector-normalize! s5-0 1.0)
           (forward-up-nopitch->quaternion (-> self root quat) s5-0 *up-vector*)))
+      (set! (-> self state-object) #f)
       ;; the beak, where the cell leaves from
       (set! (-> self state-vector1 quad) (-> self root trans quad))
       (+! (-> self state-vector1 y) 12288.0)
@@ -317,21 +342,23 @@
               (let ((t9-4 (method-of-type othercam activate)))
                 (t9-4 (the-as othercam s5-1) (-> gp-1 process 0) 'othercam (the-as pointer #x70004000)))
               (run-now-in-process s5-1 othercam-init-by-other (-> gp-1 process 0) 4 #f #t))))
-        (let ((s4-0 (ppointer->handle (process-spawn fuel-cell :init fuel-cell-init-as-clone (process->handle self) 0 :to self))))
-          (until v1-21
-            (suspend)
-            (set! v1-21 (or (not *target*) (process-grab? *target*))))
-          (if (handle->process gp-1) (send-event (-> gp-1 process 0) 'anim-mode 'clone-anim))
-          (if s3-0 (__TYPE__-camera-on 'spit-camera (handle->process s4-0)))
-          (ja-play-spooled-anim (new 'static 'spool-anim :name "pelican-spit-ext" :index 11 :parts 2 :command-list '())
-                                (the-as art-joint-anim pelican-sleep-ja)
-                                (the-as art-joint-anim #f)
-                                (the-as (function process-drawable symbol) false-func))
-          (until v1-31
-            (suspend)
-            (set! v1-31 (or (not *target*) (process-release? *target*))))
-          (if (handle->process gp-1) (deactivate (-> gp-1 process 0)))
-          (if (handle->process s4-0) (deactivate (-> s4-0 process 0)))))
+        (until v1-21
+          (suspend)
+          (set! v1-21 (or (not *target*) (process-grab? *target*))))
+        (if (handle->process gp-1) (send-event (-> gp-1 process 0) 'anim-mode 'clone-anim))
+        (if s3-0 (__TYPE__-camera-on 'spit-camera (handle->process (-> self fuel-cell))))
+        ;; the real cell is thrown during the cutscene (no clone cell in the beak)
+        (set-time! (-> self state-time))
+        (ja-play-spooled-anim (new 'static 'spool-anim :name "pelican-spit-ext" :index 11 :parts 2 :command-list '())
+                              (the-as art-joint-anim pelican-sleep-ja)
+                              (the-as art-joint-anim #f)
+                              (the-as (function process-drawable symbol) __TYPE__-spit-tick))
+        (until (__TYPE__-spit-tick self)
+          (suspend))
+        (until v1-31
+          (suspend)
+          (set! v1-31 (or (not *target*) (process-release? *target*))))
+        (if (handle->process gp-1) (deactivate (-> gp-1 process 0))))
       (process-spawn-function process
         (lambda :behavior pelican ()
           (while (or (-> *setting-control* current ambient) (-> *setting-control* current movie) (-> *setting-control* current hint))
@@ -342,18 +369,6 @@
         self)
       (let ((gp-3 (handle->process (-> self fuel-cell))))
         (when gp-3
-          (send-event gp-3 'release)
-          (send-event gp-3 'draw #t)
-          (if (-> self cam-on) (send-event *camera* 'change-target gp-3))
-          ;; thrown in an arc from the beak to the spit spot
-          (let ((s5-3 (new 'stack-no-clear 'vector))
-                (f30-0 0.0))
-            (while (< f30-0 1.0)
-              (set! f30-0 (fmin 1.0 (+ f30-0 (* 1.5 (seconds-per-frame)))))
-              (vector-lerp! s5-3 (-> self state-vector1) (-> self spit-pos) f30-0)
-              (+! (-> s5-3 y) (* 49152.0 f30-0 (- 1.0 f30-0)))
-              (send-event gp-3 'trans s5-3)
-              (suspend)))
           (send-event gp-3
                       'event-hook
                       (lambda :behavior pelican ((arg0 process) (arg1 int) (arg2 symbol) (arg3 event-message-block))
@@ -366,6 +381,7 @@
                                                              (the-as fact-info #f))))
                             (when v1-7
                               (set! (-> (the-as collectable (-> v1-7 0)) collect-timeout) 0)
+                              (send-event (ppointer->process v1-7) 'movie-pos -1)   ; plays where it's caught
                               0))
                           (deactivate self))))
           (suspend-for (seconds 1))))
@@ -421,7 +437,8 @@
       (set! (-> self path) (-> self path-from-nest0))
       (set! (-> self path-pos) 0.0)
       (set! (-> self path-max) (the float (+ (-> self path curve num-cverts) -1)))
-      (set! (-> self path-speed) (/ (* 300.0 (-> self path-max)) (the float (-> *PELICAN-bank* from-nest-time))))
+      (set! (-> self path-speed) (/ (* 300.0 (-> self path-max))
+                                    (* 300.0 (res-lump-float (-> self entity) 'return-time :default 20.0))))
       (let ((s5-0 (-> self state-vector)))
         (eval-path-curve-div! (-> self path) s5-0 (-> self path-pos) 'interp)
         (set! (-> self state-float 0)
