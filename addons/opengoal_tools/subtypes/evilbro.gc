@@ -1,14 +1,38 @@
-;; evilbro: own task (none retains the vanilla idle/task controller). Gol's
-;; movie closes only the explicitly assigned task's introduction. Linked Maia
-;; is checked before clone/end-mode events. Intro texture pages are in the DB.
+;; evilbro (Gol) for custom levels: plays the evilbro-misty-end cutscene with Maia (the
+;; linked evilsis, alt-actor 0). Play mode (play-mode lump):
+;;   0 Talk (vanilla): talk to him while his task isn't done; his task's
+;;     need-introduction closes (none = vanilla leaving-misty).
+;;   1 Once the task is done: hidden until his task is complete, then plays by itself
+;;     once Jak comes within Play distance (play-dist lump); saved, hidden after.
+;;   2 When triggered: hidden until it gets 'trigger (button notify list ...), then
+;;     plays by itself once Jak comes within Play distance; saved, hidden after.
+;; Maia shows / hides with him (he tells the linked evilsis each frame).
 ;; edits: evilbro
 
-(deftype __TYPE__ (evilbro) ())
+(deftype __TYPE__ (evilbro)
+  ((mode      int32)
+   (triggered symbol)
+   (play-dist float)))
+
+(defun __TYPE__-played? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defmethod should-display? ((this __TYPE__))
+  (case (-> this mode)
+    ((1) (and (task-complete? *game-info* (current-task (-> this tasks))) (not (__TYPE__-played? this))))
+    ((2) (and (-> this triggered) (not (__TYPE__-played? this))))
+    (else #t)))
+
+(defbehavior __TYPE__-tell-sis __TYPE__ ()
+  (if (and (-> self evilsis) (-> self evilsis extra process))
+    (send-event (-> self evilsis extra process) 'bro-display (should-display? self)))
+  0)
 
 (defmethod play-anim! ((this __TYPE__) (arg0 symbol))
   (cond
     (arg0
-     (when (!= (-> this entity extra perm task) (game-task none)) (close-specific-task! (-> this entity extra perm task) (task-status need-introduction)))
+     (if (and (zero? (-> this mode)) (!= (-> this entity extra perm task) (game-task none)))
+       (close-specific-task! (-> this entity extra perm task) (task-status need-introduction)))
      (when (and (-> this evilsis) (-> this evilsis extra process)) (send-event (-> this evilsis extra process) 'clone (process->handle this))))
     (else (set! (-> this will-talk) #t)))
   (the-as basic (new 'static 'spool-anim :name "evilbro-misty-end" :index 5 :parts 9 :command-list '())))
@@ -18,11 +42,44 @@
   :exit
     (behavior ()
       (when (and (-> self evilsis) (-> self evilsis extra process)) (send-event (-> self evilsis extra process) 'end-mode))
+      (if (nonzero? (-> self mode)) (process-entity-status! self (entity-perm-status complete) #t))
       ((-> (method-of-type process-taskable play-anim) exit))))
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger) (set! (-> self triggered) #t))
+        (else ((-> (method-of-type process-taskable idle) event) proc argc message block))))
+  :trans
+    (behavior ()
+      (__TYPE__-tell-sis)
+      (if (and (nonzero? (-> self mode))
+               (should-display? self)
+               *target*
+               (< (vector-vector-distance (-> self root trans) (target-pos 0)) (-> self play-dist)))
+        (set! (-> self been-kicked) #t))
+      ((-> (method-of-type process-taskable idle) trans))))
+
+(defstate hidden (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger) (set! (-> self triggered) #t))
+        (else (process-taskable-hide-handler proc argc message block))))
+  :trans
+    (behavior ()
+      (__TYPE__-tell-sis)
+      ((-> (method-of-type process-taskable hidden) trans))))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (process-taskable-method-40 this arg0 *evilbro-intro-sg* 3 40 (new 'static 'vector :w 4096.0) 5)
   (set! (-> this tasks) (get-task-control (if (= (-> arg0 extra perm task) (game-task none)) (game-task leaving-misty) (-> arg0 extra perm task))))
   (set! (-> this evilsis) (entity-actor-lookup arg0 'alt-actor 0))
+  (set! (-> this mode) (the-as int (res-lump-value arg0 'play-mode int :default (the-as uint128 0))))
+  (set! (-> this play-dist) (res-lump-float arg0 'play-dist :default (meters 10)))
+  (set! (-> this triggered) #f)
   (process-taskable-method-42 this)
   (none))

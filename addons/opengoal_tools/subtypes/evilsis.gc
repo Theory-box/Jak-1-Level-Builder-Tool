@@ -1,11 +1,34 @@
-;; evilsis: own task (none retains the vanilla idle/task controller). Gol's
-;; movie closes only the explicitly assigned task's introduction. Linked Maia
-;; is checked before clone/end-mode events. Intro texture pages are in the DB.
+;; evilsis (Maia) for custom levels: link her from Gol (evilbro, his alt-actor 0). She
+;; shows / hides with him (his Play mode), and plays her part of his cutscene. Her own
+;; task only matters for saving (none = vanilla leaving-misty).
 ;; edits: evilsis
 
-(deftype __TYPE__ (evilsis) ())
+(deftype __TYPE__ (evilsis)
+  ((shown symbol)))
+
+(defmethod should-display? ((this __TYPE__))
+  (-> this shown))
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('bro-display)
+         (set! (-> self shown) (the-as symbol (-> block param 0)))
+         (if (not (-> self shown)) (go-virtual hidden)))
+        (else ((-> (method-of-type process-taskable idle) event) proc argc message block)))))
+
+(defstate hidden (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('bro-display) (set! (-> self shown) (the-as symbol (-> block param 0))))
+        (else (process-taskable-hide-handler proc argc message block)))))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this shown) #f)
   (process-taskable-method-40 this arg0 *evilsis-intro-sg* 3 0 (new 'static 'vector :w 4096.0) 5)
   (set! (-> this tasks) (get-task-control (if (= (-> arg0 extra perm task) (game-task none)) (game-task leaving-misty) (-> arg0 extra perm task))))
   (process-taskable-method-42 this)

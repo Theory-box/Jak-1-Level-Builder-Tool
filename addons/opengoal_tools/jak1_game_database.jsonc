@@ -10462,6 +10462,7 @@
     },
     {
       "etype": "evilbro",
+      "reacts_to": ["trigger"],
       "label": "Gol (Misty ending)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10472,8 +10473,9 @@
       ],
       "glb": "levels/intro/evilbro-lod0.glb",
       "shape": "CUBE",
-      "description": "Edited Gol: plays the Misty ending with linked Maia. His assigned task introduction is closed; task none does not change the vanilla story task. Intro texture pages are included. Link Maia for the complete scene; missing links no longer crash.",
+      "description": "Edited (subtypes/evilbro.gc): Gol plays the evilbro-misty-end cutscene with Maia (link evilsis as alt-actor). Play mode: Talk (vanilla, while his task isn't done; closes its need-introduction), Once the task is done (hidden until his task is complete, then plays by itself when Jak comes within Play distance) or When triggered (hidden until 'trigger, then the same). The automatic modes play once (saved) and hide both after. Maia shows / hides with him.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_evil_mode", "label": "Play mode", "type": "enum", "default": "talk", "write_if": "always", "lump": {"key": "play-mode", "type": "int32"}, "choices": [{"value": "talk", "label": "Talk (vanilla: while the task isn't done)", "lump_value": 0}, {"value": "task-done", "label": "By itself once the task is done", "lump_value": 1}, {"value": "trigger", "label": "By itself when triggered", "lump_value": 2}], "note": "Automatic modes: Gol and Maia stay hidden until then, play once when Jak comes near (saved) and hide after."}, {"key": "og_evil_dist", "label": "Play distance (m)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "play-dist", "type": "meters"}, "write_if": "always", "note": "Automatic modes: how near Jak has to be."}]},
         {
           "panel": "actor-link",
           "slots": [
@@ -10510,7 +10512,7 @@
       "art_group": "evilsis-ag.go",
       "glb": "levels/intro/evilsis-lod0.glb",
       "shape": "CUBE",
-      "description": "Edited Maia: idles and clones linked Gol during the Misty ending. Does not initiate conversation. Uses her assigned task controller, falling back to leaving-misty when none; intro texture pages included.",
+      "description": "Edited (subtypes/evilsis.gc): Maia; link her from Gol (evilbro alt-actor). She shows / hides with him (his Play mode) and plays her part of his cutscene.",
       "edited": "evilsis",
       "tpage_group": "Intro",
       "tpages": [
