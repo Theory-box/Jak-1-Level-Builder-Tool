@@ -4,13 +4,43 @@
 ;; here they are three named paths: path (snack spots), pathb (rat spawn points),
 ;; pathc (rat waypoints). The vanilla Boggy Swamp kill lists (its cutscenes and the
 ;; game killed swamp-blimp-3, eco-164 ... by name) are gone.
+;; Its own flow, whatever the task's stages (vanilla needed swamp-billy's need-reminder-a /
+;; need-reminder / need-reward-speech): introduction while need-hint / need-introduction is
+;; open; after it, talking asks to play; a win (saved, perm user-int8 1) plays the
+;; resolution and gives the task's cell (at movie-pos).
+;; During the game the view turns around View angle (view-angle lump, the way an actor
+;; rotated by it faces; vanilla 205 deg) by up to Angle range (view-range, vanilla 60 deg)
+;; each side (vanilla cam-billy had both fixed).
 (deftype __TYPE__ (billy) ()
   (:states
+   __TYPE__-done
    __TYPE__-playing))
 
-(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+(define-perm *__TYPE__-view-angle* float 37319.11)
+(define-perm *__TYPE__-view-range* float 10922.667)
+
+(defun __TYPE__-won? ((this __TYPE__))
+  (= (-> this entity extra perm user-int8 1) 1))
+
+(defun __TYPE__-intro? ((this __TYPE__))
   (case (current-status (-> this tasks))
-    (((task-status need-hint) (task-status need-introduction))
+    (((task-status need-hint) (task-status need-introduction)) #t)
+    (else #f)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (cond
+    ((__TYPE__-won? this)
+     (when arg0
+       (set! (-> this cell-for-task) (current-task (-> this tasks)))
+       (if (= (-> this cell-for-task) (game-task none)) (set! (-> this cell-for-task) (-> this entity extra perm task))))
+     (new 'static
+          'spool-anim
+          :name "billy-resolution"
+          :index 9
+          :parts 2
+          :command-list
+          '()))
+    ((__TYPE__-intro? this)
      (when arg0
        (set! (-> this blend-on-exit) (the-as art-joint-anim #t))
        (close-status! (-> this tasks) (task-status need-introduction))
@@ -35,7 +65,7 @@
            (1148 blackout 0)
            (1518 blackout 10)
            (1521 blackout 0))))
-    (((task-status need-reminder-a) (task-status need-reminder))
+    (else
      (set! (-> this skippable) #t)
      (set! (-> this blend-on-exit) (the-as art-joint-anim #t))
      (set! (-> this will-talk) #t)
@@ -45,25 +75,156 @@
           :index 8
           :parts 2
           :command-list
-          '()))
-    (((task-status need-reward-speech))
-     (when arg0
-       (set! (-> this cell-for-task) (current-task (-> this tasks)))
-       (close-current! (-> this tasks)))
-     (new 'static
-          'spool-anim
-          :name "billy-resolution"
-          :index 9
-          :parts 2
-          :command-list
-          '()))
-    (else
-     (if arg0
-       (format 0
-               "ERROR: <GMJ>: ~S playing anim for task status ~S~%"
-               (-> this name)
-               (task-status->string (current-status (-> this tasks)))))
-     (-> this draw art-group data 3))))
+          '()))))
+
+(defmethod process-taskable-method-38 ((this __TYPE__))
+  "After talking: the cell after the win, else past the introduction: ask to play."
+  (cond
+    ((nonzero? (-> this cell-for-task)) (call-parent-method this))
+    ((and (not (__TYPE__-won? this)) (not (__TYPE__-intro? this))) (go (method-of-object this query)))
+    (else (call-parent-method this)))
+  (none))
+
+(defmethod get-accept-anim ((this __TYPE__) (arg0 symbol))
+  (new 'static 'spool-anim :name "billy-accept" :index 6 :parts 3 :command-list '()))
+
+(defstate __TYPE__-cam (camera-slave)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('teleport) #f)
+        (else (cam-standard-event-handler proc argc message block))))
+  :enter
+    (behavior ()
+      (when (not (-> self enter-has-run))
+        (let ((v1-3 (vector-float*! (new-stack-vector0) (-> *camera* local-down) (-> *camera* target-height))))
+          (vector-! (-> self trans) (-> *camera* tpos-curr) v1-3))
+        (set! (-> self blend-from-type) (the-as uint 0))
+        (set! (-> self blend-to-type) (the-as uint 0))
+        0)
+      (set! (-> self fov) 9830.4)
+      (matrix-rotate-y! (the-as matrix (-> self tracking)) *__TYPE__-view-angle*))
+  :exit
+    (behavior ()
+      '())
+  :trans
+    (behavior ()
+      (if (not (logtest? (-> *camera* master-options) 2)) (go cam-free-floating)))
+  :code
+    (behavior ()
+      (loop
+        (when (not (paused?))
+          (let ((s5-0 (vector-reset! (new-stack-vector0)))
+                (s4-0 (vector-reset! (new-stack-vector0)))
+                (s3-0 (vector-reset! (new-stack-vector0)))
+                (s2-0 (new-stack-vector0))
+                (gp-0 (new-stack-matrix0)))
+            0.0
+            (when *camera-read-analog*
+              (let ((f1-0 (analog-input-horizontal-first ;; og:preserve-this changed for pc port
+                            (the-as int (+ (-> *cpad-list* cpads 0 rightx) -256 (-> *cpad-list* cpads 0 leftx)))
+                            (the-as float 0.0)
+                            (the-as float 48.0)
+                            (the-as float 110.0)
+                            (the-as float -1.0))))
+                (set! (-> s5-0 y) (- (-> s5-0 y) (* (- f1-0) (* (-> *display* time-adjust-ratio) (-> *CAM_BILLY-bank* rot-speed))))) ;; og:preserve-this changed for high fps
+                ))
+            (cond
+              ((< (* (-> *display* time-adjust-ratio) (-> *CAM_BILLY-bank* rot-speed)) (-> s5-0 y)) ;; og:preserve-this changed for high fps
+               (set! (-> s5-0 y) (* (-> *display* time-adjust-ratio) (-> *CAM_BILLY-bank* rot-speed))) ;; og:preserve-this changed for high fps
+               )
+              ((< (-> s5-0 y) (- (* (-> *display* time-adjust-ratio) (-> *CAM_BILLY-bank* rot-speed)))) ;; og:preserve-this changed for high fps
+               (set! (-> s5-0 y) (- (* (-> *display* time-adjust-ratio) (-> *CAM_BILLY-bank* rot-speed)))) ;; og:preserve-this changed for high fps
+               ))
+            (set! (-> s3-0 x) (sin *__TYPE__-view-angle*))
+            (set! (-> s3-0 z) (cos *__TYPE__-view-angle*))
+            (set! (-> s4-0 x) (-> s3-0 z))
+            (set! (-> s4-0 z) (- (-> s3-0 x)))
+            (vector-flatten! s2-0 (-> self tracking inv-mat vector 2) (-> *camera* local-down))
+            (vector-normalize! s2-0 (the-as float 1.0))
+            (let ((f0-14 (acos (vector-dot (-> self tracking inv-mat vector 2) s3-0))))
+              (if (< (vector-dot (-> self tracking inv-mat vector 2) s4-0) 0.0) (set! f0-14 (- f0-14)))
+              (let ((f0-18 (cond
+                             ((and (< 0.0 f0-14) (< 0.0 (-> s5-0 y))) (fmin (-> s5-0 y) (fmax 0.0 (* 0.5 (- *__TYPE__-view-range* f0-14)))))
+                             ((and (< f0-14 0.0) (< (-> s5-0 y) 0.0)) (fmax (-> s5-0 y) (fmin 0.0 (* 0.5 (- (- *__TYPE__-view-range*) f0-14)))))
+                             (else (-> s5-0 y)))))
+                (matrix-axis-angle! gp-0 (-> *camera* local-down) f0-18)))
+            (vector-matrix*! (-> self tracking inv-mat vector 2) (-> self tracking inv-mat vector 2) gp-0))
+          (set! (-> self tracking inv-mat vector 2 y) 0.0)
+          (vector-normalize! (-> self tracking inv-mat vector 2) (cos (-> *CAM_BILLY-bank* tilt-degrees)))
+          (set! (-> self tracking inv-mat vector 2 y) (sin (-> *CAM_BILLY-bank* tilt-degrees)))
+          (vector-cross! (the-as vector (-> self tracking)) (-> self tracking inv-mat vector 2) (-> *camera* local-down))
+          (vector-normalize! (the-as vector (-> self tracking)) (the-as float 1.0))
+          (vector-cross! (-> self tracking inv-mat vector 1)
+                         (-> self tracking inv-mat vector 2)
+                         (the-as vector (-> self tracking))))
+        (vector--float*! (-> self trans) (-> *camera* tpos-curr) (-> *camera* local-down) (-> *camera* target-height))
+        (suspend))))
+
+(defstate __TYPE__-done (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('billy-rat-needs-destination)
+         (let* ((gp-0 proc)
+                (v1-2 (if (and (nonzero? gp-0) (type-type? (-> gp-0 type) billy-rat)) gp-0)))
+           (when v1-2
+             (set! (-> (the-as billy-rat v1-2) dest-type) (the-as uint 1))
+             (get-random-point (-> self path-waypts) (-> (the-as billy-rat v1-2) destination)))))))
+  :enter
+    (behavior ()
+      (init! (-> self query)
+             (lookup-text! *common-text* (text-id play-again?) #f)
+             40
+             150
+             30
+             #f
+             (lookup-text! *common-text* (text-id quit) #f))
+      (ja-channel-set! 1)
+      (ja :group! (get-art-elem self))
+      (send-event *target* 'end-mode)
+      (when (and (handle->process (-> self offending-rat)) (zero? (-> self num-snacks)))
+        (send-event *camera* 'change-target (handle->process (-> self offending-rat)))
+        (send-event *camera* 'change-state cam-standoff 0)
+        (send-event *camera* 'set-standoff-height 0.0)
+        (send-event *camera* 'set-standoff-dist 20480.0)
+        (send-event *camera* 'set-standoff-height 16384.0)
+        (send-event *camera-combiner* 'stop-tracking)
+        (send-event *camera-combiner* 'start-tracking (ppointer->process (-> *camera* slave 0)))
+        (let ((a0-24 (get-reminder (-> self tasks) 0))) (save-reminder (-> self tasks) (seekl a0-24 255 1) 0))
+        (let ((f0-2 (rand-float-gen)))
+          (cond
+            ((< 0.75 f0-2) (play-ambient (-> self ambient) "BIL-TA04" #t (the-as vector #f)))
+            ((< 0.5 f0-2) (play-ambient (-> self ambient) "BIL-TA05" #t (the-as vector #f)))
+            ((< 0.25 f0-2) (play-ambient (-> self ambient) "BIL-TA4A" #t (the-as vector #f)))
+            (else (play-ambient (-> self ambient) "BIL-TA5A" #t (the-as vector #f)))))))
+  :exit
+    (behavior ()
+      (billy-kill-all-but-farthy)
+      (send-event *camera* 'change-target *target*)
+      (send-event *camera* 'change-state *camera-base-mode* 0))
+  :trans
+    (behavior ()
+      (cond
+        ((> (-> self num-snacks) 0)
+         (when (process-grab? *target*)
+           (let ((v1-2 (-> self entity extra perm)))
+             (logior! (-> v1-2 status) (entity-perm-status user-set-from-cstage))
+             (set! (-> v1-2 user-int8 1) 1))
+           (go-virtual play-anim)))
+        ((< (-> self num-snacks) 0) (go-virtual idle))
+        (else
+         (process-grab? *target*)
+         (when (and *target* (logtest? (-> *target* state-flags) (state-flags grabbed)))
+           (let ((gp-0 (get-response (-> self query))))
+             (cond
+               ((and (= gp-0 'yes) (process-release? *target*)) (go-virtual enter-playing))
+               ((= gp-0 'no) (go-virtual play-reject)))))))
+      (spool-push *art-control* "billy-reject" 0 self -99.0))
+  :code process-taskable-anim-loop
+  :post
+    (behavior ()
+      (ja-post)))
 
 (defstate __TYPE__-playing (__TYPE__)
   :event
@@ -133,6 +294,8 @@
       (clear-collide-with-as (-> self root))
       (init! (-> self query) (the-as string #f) 40 150 25 #t (lookup-text! *common-text* (text-id quit) #f))
       (set-time! (-> self wave-start-time))
+      (set! *__TYPE__-view-angle* (res-lump-float (-> self entity) 'view-angle :default 37319.11))
+      (set! *__TYPE__-view-range* (res-lump-float (-> self entity) 'view-range :default 10922.667))
       (set! (-> self num-snacks) 0)
       (set! (-> self num-rats) 0)
       (set! (-> self current-wave) 0)
@@ -144,12 +307,19 @@
       (backup-load-state-and-set-cmds *load-state* '()))
   :exit
     (behavior ()
+      (when (send-event *camera* 'query-state __TYPE__-cam)
+        (send-event *camera* 'no-intro)
+        (send-event *camera* 'force-blend 0)
+        (camera-change-to (the-as string 'base) 0 #f))
       (restore-collide-with-as (-> self root))
       (restore-load-state-and-cleanup *load-state*)
       (set! (-> *ACTOR-bank* birth-max) 1000)
       (remove-setting! 'music))
   :trans
     (behavior ()
+      (when (send-event *camera* 'query-state cam-billy)
+        (send-event *camera* 'no-intro)
+        (send-event *camera* 'change-state __TYPE__-cam 0))
       (spool-push *art-control* "billy-resolution" 0 self -99.0)
       (spool-push *art-control* "billy-reject" 0 self -99.0))
   :code
@@ -159,7 +329,7 @@
         (if (or (zero? (-> self num-snacks))
                 (and (zero? (-> self num-rats)) (-> self passed-last-stage))
                 (and *cheat-mode* (cpad-pressed? 1 x)))
-          (go billy-done))
+          (go __TYPE__-done))
         (suspend)))
   :post
     (behavior ()
