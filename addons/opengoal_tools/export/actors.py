@@ -188,12 +188,17 @@ def _computed_lumps(o, etype):
         if f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "vector":
             dest_name = o.get(f["key"], "")
             dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
-            if dest_obj:
-                dl = dest_obj.matrix_world.translation   # world position (it may be parented)
+            fb = lp.get("fallback")   # "forward": no object -> fallback_m metres ahead of the actor
+            if dest_obj or fb == "forward":
+                if dest_obj:
+                    dl = dest_obj.matrix_world.translation   # world position (it may be parented)
+                else:                                        # game +Z = Blender -Y, rotated
+                    from mathutils import Vector as _V
+                    dl = o.matrix_world @ _V((0.0, -float(lp.get("fallback_m", 100.0)) / max(o.scale.y, 1e-6), 0.0))
                 dx = round(dl.x * 4096, 2)
                 dy = round(dl.z * 4096, 2)
                 dz = round(-dl.y * 4096, 2)
-                if lp.get("w") == "yaw":     # W = the object's facing (Z rotation), game angle units
+                if lp.get("w") == "yaw" and dest_obj:   # W = the object's facing (Z rotation), game angle units
                     import math as _m
                     fw = round(dest_obj.matrix_world.to_euler("XYZ").z * 65536.0 / (2 * _m.pi), 3)
                 else:

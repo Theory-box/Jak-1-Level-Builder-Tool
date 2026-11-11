@@ -18760,7 +18760,8 @@
               "slot": 0,
               "label": "Beam source (powered once it is complete)",
               "accepts": [
-                "any"
+                "reflector-origin",
+                "periscope"
               ],
               "required": true
             },
@@ -18770,8 +18771,7 @@
               "label": "Aim at (its position + its Height)",
               "accepts": [
                 "periscope",
-                "reflector-end",
-                "any"
+                "reflector-end"
               ],
               "required": false
             }
@@ -18822,45 +18822,17 @@
               "group": "peri-rot"
             },
             {
-              "key": "og_peri_ex",
-              "label": "X (m)",
-              "type": "float",
-              "default": 0.0,
+              "key": "og_peri_beam_end",
+              "label": "Beam end (no next actor)",
+              "type": "object_ref",
+              "default": "",
               "lump": {
                 "key": "alt-vector",
-                "type": "meters",
-                "slot": 0
+                "type": "vector",
+                "fallback": "forward",
+                "fallback_m": 100.0
               },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end",
-              "group_label": "Beam End (no next actor)",
-              "group_note": "Game axes."
-            },
-            {
-              "key": "og_peri_ey",
-              "label": "Up (m)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "alt-vector",
-                "type": "meters",
-                "slot": 1
-              },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end"
-            },
-            {
-              "key": "og_peri_ez",
-              "label": "Z (m, = -Blender Y)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "alt-vector",
-                "type": "meters",
-                "slot": 2
-              },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end"
+              "note": "Where the beam is aimed when nothing is linked as next actor. None: 100 m ahead of the periscope (vanilla crashed without one)."
             }
           ]
         }
@@ -18883,7 +18855,7 @@
               "slot": 0,
               "label": "Blocker (the beam starts once it is complete)",
               "accepts": [
-                "any"
+                "reflector-mirror"
               ],
               "required": true
             },
