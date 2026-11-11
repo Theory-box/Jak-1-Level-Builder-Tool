@@ -362,6 +362,18 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         attached = True
         meshes.append(mesh_obj)
 
+    # DB "preview_copies": more copies of the model at these offsets (Blender m, in
+    # the actor's space; e.g. the pipe game's side buttons)
+    for _c in ((_db.find_actor(etype) or {}).get("preview_copies") or []) if meshes else []:
+        dup = meshes[0].copy()
+        dup.name = f"{actor_empty.name}_preview"
+        dup.location = (float(_c[0]), float(_c[1]), float(_c[2]))
+        dup.parent = actor_empty
+        dup.matrix_parent_inverse = mathutils.Matrix()
+        dup[_PREVIEW_PROP] = True
+        preview_col.objects.link(dup)
+        meshes.append(dup)
+
     _apply_db_display(etype, actor_empty, meshes)
     return attached
 
