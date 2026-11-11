@@ -280,6 +280,32 @@ Here's all the settings and what they'd do:
 
 ---
 
+## Extra boot mode
+Drop down selection, under the spawn options in the "Build and play" menu.
+### Debug Mode
+Current way the game boots. Make this the default option
+### Debug Mode (attached debugger)
+Whent he game crashes as you boot in the level, it's a bit annoying to setup the debugger yourself. If this option is selected then the game would start with debugger by doing these commands:
+- task run-game 
+  - this boot the game paused, waiting for the repl to send a test-play command to start, so you can catch crashes that happen on boot, might only be available in a dev environement, maybe there's just arguments you can set when starting gk for this too
+- then in the repl:
+  - (mi)
+  - (lt)
+  - (dbgc)
+  - (test-play)
+### Retail Mode
+Starts the game in Retail Mode so you can test things out of debug
+
+---
+
+## Project settings
+New sub menu in the "level" tab. These are settings that are relevant to the whole project, not a specific level:
+- `Retail Boot Checkpoint`: The checkpoint that loads when you boot in retail mode. Leave blank to not change it. Otherwise a menu with all base game checkpoints and the custom one from this blend file + custom option to write down anything.
+- `New Game Checkpoint`: Same as above.
+- `Discord RPC Status`: the status that show when you play this mod, in `goal_src/jak1/pc/pckernel.gc`. String input that's empty by default, if empty it shouldn't change what's set in the file.
+
+---
+
 ## Better Linux support
 
 ---
