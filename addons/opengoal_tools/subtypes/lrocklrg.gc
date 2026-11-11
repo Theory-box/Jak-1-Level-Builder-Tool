@@ -1,10 +1,21 @@
 ;; Seagull avalanche rock: trigger/loading events and the original animation,
 ;; without the fixed othercam movie or a cloned cell following vanilla joints.
 ;; Task none gives a repeatably placeable rock with saved completion; an assigned
-;; task gives its cell at the fallen rock and restores an uncollected cell.
+;; task gives its cell at movie-pos 0 (else at the fallen rock) and restores an uncollected cell.
 ;; edits: lrocklrg
 
 (deftype __TYPE__ (lrocklrg) ())
+
+(defun __TYPE__-cell ((this __TYPE__))
+  "Its task's cell: at movie-pos 0 (and plays there), else at the fallen rock's vanilla joint."
+  (let ((s5-0 (new 'stack-no-clear 'vector))
+        (v1-0 (res-lump-struct (-> this entity) 'movie-pos vector)))
+    (cond
+      (v1-0 (set! (-> s5-0 quad) (-> v1-0 quad)) (set! (-> s5-0 w) 1.0))
+      (else (ja-post) (vector<-cspace! s5-0 (-> this node-list data 8))))
+    (let ((v1-6 (birth-pickup-at-point s5-0 (pickup-type fuel-cell) (the float (the-as int (-> this entity extra perm task))) #f this (the-as fact-info #f))))
+      (if v1-6 (send-event (ppointer->process v1-6) 'movie-pos 0))))
+  0)
 
 (defstate falling (__TYPE__)
   :virtual #t
@@ -43,11 +54,7 @@
       (process-entity-status! self (entity-perm-status complete) #t)
       (when (!= (-> self entity extra perm task) (game-task none))
         (close-specific-task! (-> self entity extra perm task) (task-status need-reminder))
-        (let ((pos (new 'stack-no-clear 'vector)))
-          (ja-post)
-          (vector<-cspace! pos (-> self node-list data 8))
-          (birth-pickup-at-point pos (pickup-type fuel-cell)
-            (the float (the-as int (-> self entity extra perm task))) #f self (the-as fact-info #f))))
+        (__TYPE__-cell self))
       (set! (-> self draw bounds w) 20480.0)
       (go-virtual fallen))
   :post transform-post)
@@ -86,15 +93,7 @@
           (get-task-status (-> this entity extra perm task)))
     (((task-status invalid)) (go (method-of-object this fallen)))
     (((task-status need-resolution))
-     (let ((s5-0 (new 'stack-no-clear 'vector)))
-       (ja-post)
-       (vector<-cspace! s5-0 (-> this node-list data 8))
-       (birth-pickup-at-point s5-0
-                              (pickup-type fuel-cell)
-                              (the float (the-as int (-> this entity extra perm task)))
-                              #f
-                              this
-                              (the-as fact-info #f)))
+     (__TYPE__-cell this)
      (go (method-of-object this fallen)))
     (else (go (method-of-object this idle))))
   (none))

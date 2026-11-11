@@ -8015,6 +8015,7 @@
     },
     {
       "etype": "seagullflock",
+      "edited": "seagullflock",
       "sounds": ["seagull-takeoff"],
       "label": "Seagull Flock",
       "category": "NPCs",
@@ -8029,9 +8030,10 @@
       "glb": "levels/beach/seagull-lod0.glb",
       "shape": "CUBE",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_flock_blackout", "label": "Blackout at the rock", "type": "bool", "default": false, "lump": {"key": "blackout", "type": "uint32"}, "write_if": "if_true", "note": "The vanilla 2 s black screen while the birds jump to the rock. Off: no black screen."}]},
         {
           "panel": "game-task",
-          "description": "beach-seagull (the flock also closes beach-seagull's reminder itself; its save state keeps how far they were chased)."
+          "description": "Its need-reminder is closed when the birds reach the end (vanilla beach-seagull). None: no task. Its save state keeps how far they were chased."
         },
         {
           "panel": "path",
@@ -8045,14 +8047,14 @@
               "slot": 0,
               "label": "Rock to drop (gets 'loading, then 'trigger; the flock waits until it is complete)",
               "accepts": [
-                "any"
+                "lrocklrg"
               ],
               "required": false
             }
           ]
         }
       ],
-      "description": "21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (vanilla lrocklrg). With no rock linked they wait at the end for good (no crash)."
+      "description": "Edited (subtypes/seagullflock.gc): 21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (lrocklrg). Its own task's need-reminder closes then (vanilla: beach-seagull). Blackout option: the vanilla 2 s black screen hiding the birds' jump to the rock. With no rock linked they wait at the end for good (no crash)."
     },
     {
       "etype": "part-spawner",
@@ -19437,8 +19439,9 @@
         "trigger",
         "loading"
       ],
-      "description": "Edited: the seagull flock rock. Loading preloads its falling animation; trigger plays it without the vanilla camera or player grab. No task: saves the fallen state. Assigned task: gives its cell at the fallen rock and restores it if uncollected on reload. Uses the original large avalanche animation; leave room around it.",
+      "description": "Edited (subtypes/lrocklrg.gc): the seagull flock rock. Loading preloads its falling animation; trigger plays it without the vanilla camera or player grab. No task: saves the fallen state. Assigned task: gives its cell at movie-pos 0 (else at the fallen rock) and restores it if uncollected on reload. Uses the original large avalanche animation; leave room around it.",
       "panels": [
+        {"panel": "movie-pos", "description": "[0] where its cell appears and plays its pickup. Not set: at the fallen rock."},
         {
           "panel": "game-task"
         }
