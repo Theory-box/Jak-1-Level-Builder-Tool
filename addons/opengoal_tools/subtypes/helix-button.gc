@@ -3,8 +3,8 @@
 ;; water can link the button instead (its prev-actor): each press counts up perm
 ;; user-int8 0, which the edited water watches. Both links are optional.
 ;; Its task's cell (none = no cell) floats above the button like vanilla and is given
-;; when Jak presses it (at movie-pos 0, else at Jak). Door camera (door-camera lump):
-;; the first press plays the vanilla qbert-show-door-open camera shot, from the button.
+;; when Jak presses it (at movie-pos 0, else at Jak). No vanilla door camera shot (its
+;; angles only fit Sunken's room and the eco could rise over Jak meanwhile).
 ;; Uses its own task instead of sunken-slide. The puzzle resets when the level reloads.
 ;; edits: helix-button
 
@@ -57,19 +57,6 @@
           (until v1-7
             (suspend)
             (set! v1-7 (or (not *target*) (not (logtest? (-> *target* state-flags) (state-flags grabbed))))))))
-      (when (and (-> self first-press) (nonzero? (res-lump-value (-> self entity) 'door-camera uint128)))
-        (let ((v1-11 (process-spawn sunkencam
-                                    :init
-                                    pov-camera-init-by-other
-                                    (-> self spawn-trans)
-                                    *sunkencam-sg*
-                                    "qbert-show-door-open"
-                                    0
-                                    #f
-                                    '()
-                                    :to
-                                    self)))
-          (set! (-> (the-as (pointer sunkencam) v1-11) 0 seq) (the-as uint 2))))
       (when (-> self my-water) (entity-birth-no-kill (-> self my-water)))
       (when (-> self my-door) (entity-birth-no-kill (-> self my-door)))
       (suspend)

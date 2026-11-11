@@ -10465,7 +10465,7 @@
       "etype": "evilbro",
       "reacts_to": ["trigger"],
       "label": "Gol (Misty ending)",
-      "category": "NPCs",
+      "category": "Hidden",
       "parent": "process-taskable",
       "code": "evilbro.o",
       "art_group": [
@@ -10507,7 +10507,7 @@
     {
       "etype": "evilsis",
       "label": "Maia (Misty ending)",
-      "category": "NPCs",
+      "category": "Hidden",
       "parent": "process-taskable",
       "code": "evilbro.o",
       "art_group": "evilsis-ag.go",
@@ -19500,10 +19500,7 @@
         "helix-water.o"
       ],
       "shape": "CUBE",
-      "art_group": [
-        "helix-button-ag.go",
-        "sunkencam-ag.go"
-      ],
+      "art_group": "helix-button-ag.go",
       "tpage_group": "Sunkenb",
       "glb": "levels/sunkenb/helix-button-lod0.glb",
       "offset": [
@@ -19516,7 +19513,7 @@
         "prec-button8",
         "maindoor"
       ],
-      "description": "Edited (subtypes/helix-button.gc): standing on it depresses the button, closes the linked door and starts the linked rising eco (or the water that has it as Started by). Its task's cell floats above it like vanilla and is given when Jak presses it (at movie-pos 0). Door camera option: the vanilla camera shot on the first press. No forced player movement. Button and door reset on level reload.",
+      "description": "Edited (subtypes/helix-button.gc): standing on it depresses the button, closes the linked door and starts the linked rising eco (or the water that has it as Started by). Its task's cell floats above it like vanilla and is given when Jak presses it (at movie-pos 0). No forced player movement. Button and door reset on level reload.",
       "panels": [
         {
           "panel": "game-task"
@@ -19545,23 +19542,6 @@
                 "helix-slide-door"
               ],
               "required": false
-            }
-          ]
-        },
-        {
-          "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_helix_door_cam",
-              "label": "Door camera (first press)",
-              "type": "bool",
-              "default": false,
-              "lump": {
-                "key": "door-camera",
-                "type": "uint32"
-              },
-              "write_if": "if_true",
-              "note": "The first press plays the vanilla camera shot of the door closing (qbert-show-door-open), placed from the button."
             }
           ]
         }
@@ -19643,6 +19623,23 @@
               "lump": {},
               "write_if": "always",
               "choices": [
+                {
+                  "value": "look-40",
+                  "id": "look-40",
+                  "label": "40 (Sunken) (dark eco) sunken-dark-eco-helix-room (vanilla helix)",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-helix-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 40,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
                 {
                   "value": "flat",
                   "id": "flat",
