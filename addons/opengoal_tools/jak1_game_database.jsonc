@@ -19474,23 +19474,30 @@
         "helix-water.o"
       ],
       "shape": "CUBE",
-      "art_group": "helix-button-ag.go",
+      "art_group": [
+        "helix-button-ag.go",
+        "sunkencam-ag.go"
+      ],
       "tpage_group": "Sunkenb",
       "glb": "levels/sunkenb/helix-button-lod0.glb",
       "offset": [
-                    0,
-                    0,
-                    -6.5
-                  ],
+        0,
+        0,
+        -6.5
+      ],
       "edited": "helix-button",
       "sounds": [
         "prec-button8",
         "maindoor"
       ],
-      "description": "Edited: standing on it depresses the button, closes the linked door and starts the linked rising dark eco. Optional task cell above the button; no fixed camera or forced player movement. Button and door reset on level reload.",
+      "description": "Edited (subtypes/helix-button.gc): standing on it depresses the button, closes the linked door and starts the linked rising eco (or the water that has it as Started by). Its task's cell floats above it like vanilla and is given when Jak presses it (at movie-pos 0). Door camera option: the vanilla camera shot on the first press. No forced player movement. Button and door reset on level reload.",
       "panels": [
         {
           "panel": "game-task"
+        },
+        {
+          "panel": "movie-pos",
+          "description": "[0] where its cell plays its pickup. Not set: at Jak."
         },
         {
           "panel": "actor-link",
@@ -19498,11 +19505,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Rising eco controller",
+              "label": "Rising eco (or link this button as the water's Started by)",
               "accepts": [
                 "helix-water"
               ],
-              "required": true
+              "required": false
             },
             {
               "lump_key": "alt-actor",
@@ -19511,7 +19518,24 @@
               "accepts": [
                 "helix-slide-door"
               ],
-              "required": true
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_helix_door_cam",
+              "label": "Door camera (first press)",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "door-camera",
+                "type": "uint32"
+              },
+              "write_if": "if_true",
+              "note": "The first press plays the vanilla camera shot of the door closing (qbert-show-door-open), placed from the button."
             }
           ]
         }
@@ -19553,7 +19577,6 @@
       "tpage_group": "Sunken",
       "glb": "levels/sunken/water-anim-sunken-dark-eco-helix-room-lod0.glb",
       "edited": "helix-water",
-      "needs_trigger": true,
       "reacts_to": [
         "trigger",
         "reset",
@@ -19564,7 +19587,7 @@
         "sunkenb"
       ],
       "texture_note": "the dark eco surface",
-      "description": "Edited: dark eco rises from the placed height by Rise distance at Rise speed after trigger. Reset/notify lowers it immediately. Link a volume that covers the full rising column; set its initial water surface to the placed height. Uses Sunken look 40 at its vanilla size. Optional submerged actors are consumed bottom to top. The dark-eco child is spawned automatically; do not place it separately.",
+      "description": "Edited (subtypes/helix-water.gc): rises from the placed height by Rise distance after a trigger, a press of its Started by button or one linking it. Speed: fixed, or by Jak's height above the surface (vanilla: slow when he's close, catching up when he's far; checkboxes). Any water look and liquid (dark eco: the vanilla dark eco pool). Reset / notify lowers it at once. Link a volume covering the whole rise; set its initial surface to the placed height. Linked submerged actors are removed once the surface passes them (babak / launcher die; eco vents and others vanish), in any order.",
       "panels": [
         {
           "panel": "volume"
@@ -19585,6 +19608,858 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {
+              "key": "og_helix_look_variant",
+              "label": "Look",
+              "type": "enum",
+              "default": "look-40",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "value": "flat",
+                  "id": "flat",
+                  "label": "No look (invisible, flat surface)",
+                  "props": {
+                    "og_water_look": -1
+                  }
+                },
+                {
+                  "value": "look-0",
+                  "id": "look-0",
+                  "label": "0 (Sunken) (electric water, on / off) sunken-big-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-big-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 0,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-1",
+                  "id": "look-1",
+                  "label": "1 (Sunken) (electric water, on / off) sunken-first-room-from-entrance",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-first-room-from-entrance-lod0.glb",
+                  "props": {
+                    "og_water_look": 1,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-2",
+                  "id": "look-2",
+                  "label": "2 (Sunken) (electric water) sunken-qbert-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-qbert-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 2,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-3",
+                  "id": "look-3",
+                  "label": "3 (Sunken) (electric water, on / off) sunken-first-right-branch",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-first-right-branch-lod0.glb",
+                  "props": {
+                    "og_water_look": 3,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-4",
+                  "id": "look-4",
+                  "label": "4 (Sunken) (water) sunken-circular-with-bullys",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-circular-with-bullys-lod0.glb",
+                  "props": {
+                    "og_water_look": 4,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-5",
+                  "id": "look-5",
+                  "label": "5 (Sunken) (electric water, on / off) sunken-hall-with-one-whirlpool",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-with-one-whirlpool-lod0.glb",
+                  "props": {
+                    "og_water_look": 5,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-6",
+                  "id": "look-6",
+                  "label": "6 (Sunken) (electric water, on / off) sunken-hall-with-three-whirlpools",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-with-three-whirlpools-lod0.glb",
+                  "props": {
+                    "og_water_look": 6,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-7",
+                  "id": "look-7",
+                  "label": "7 (Sunkenb) (electric water) sunken-start-of-helix-slide",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-start-of-helix-slide-lod0.glb",
+                  "props": {
+                    "og_water_look": 7,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-8",
+                  "id": "look-8",
+                  "label": "8 (Sunken) (electric water) sunken-room-above-exit-chamber",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-room-above-exit-chamber-lod0.glb",
+                  "props": {
+                    "og_water_look": 8,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-9",
+                  "id": "look-9",
+                  "label": "9 (Sunken) (electric water) sunken-hall-before-big-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-before-big-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 9,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-10",
+                  "id": "look-10",
+                  "label": "10 (Sunken) (dark eco) sunken-dark-eco-qbert",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-qbert-lod0.glb",
+                  "props": {
+                    "og_water_look": 10,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-11",
+                  "id": "look-11",
+                  "label": "11 (Sunken) (electric water) sunken-short-piece",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-short-piece-lod0.glb",
+                  "props": {
+                    "og_water_look": 11,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-12",
+                  "id": "look-12",
+                  "label": "12 (Sunken) (electric water) sunken-big-room-upper-water",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-big-room-upper-water-lod0.glb",
+                  "props": {
+                    "og_water_look": 12,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-13",
+                  "id": "look-13",
+                  "label": "13 (Sunken) (dark eco) sunken-dark-eco-platform-room",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-platform-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 13,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-14",
+                  "id": "look-14",
+                  "label": "14 (Maincave) (water) maincave-water-with-crystal",
+                  "art_group": "water-anim-maincave-water-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-water-with-crystal-lod0.glb",
+                  "props": {
+                    "og_water_look": 14,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "maincave-obs.o"
+                  ],
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-15",
+                  "id": "look-15",
+                  "label": "15 (Maincave) (dark eco) maincave-center-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-center-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 15,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-16",
+                  "id": "look-16",
+                  "label": "16 (Maincave) (dark eco) maincave-lower-right-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-lower-right-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 16,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-17",
+                  "id": "look-17",
+                  "label": "17 (Maincave) (dark eco) maincave-mid-right-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-mid-right-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 17,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-18",
+                  "id": "look-18",
+                  "label": "18 (Maincave) (dark eco) maincave-lower-left-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-lower-left-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 18,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-19",
+                  "id": "look-19",
+                  "label": "19 (Maincave) (dark eco) maincave-mid-left-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-mid-left-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 19,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-20",
+                  "id": "look-20",
+                  "label": "20 (Robocave) (dark eco) robocave-main-pool",
+                  "art_group": "water-anim-robocave-ag.go",
+                  "glb": "levels/robocave/water-anim-robocave-main-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 20,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "robocave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-21",
+                  "id": "look-21",
+                  "label": "21 (Misty) (mud) misty-mud-by-arena",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-by-arena-lod0.glb",
+                  "props": {
+                    "og_water_look": 21,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-22",
+                  "id": "look-22",
+                  "label": "22 (Misty) (mud) misty-mud-above-skeleton",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skeleton-lod0.glb",
+                  "props": {
+                    "og_water_look": 22,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-23",
+                  "id": "look-23",
+                  "label": "23 (Misty) (mud) misty-mud-behind-skeleton",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-behind-skeleton-lod0.glb",
+                  "props": {
+                    "og_water_look": 23,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-24",
+                  "id": "look-24",
+                  "label": "24 (Misty) (mud) misty-mud-above-skull-back",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skull-back-lod0.glb",
+                  "props": {
+                    "og_water_look": 24,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-25",
+                  "id": "look-25",
+                  "label": "25 (Misty) (mud) misty-mud-above-skull-front",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skull-front-lod0.glb",
+                  "props": {
+                    "og_water_look": 25,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-26",
+                  "id": "look-26",
+                  "label": "26 (Misty) (mud) misty-mud-other-near-skull",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-other-near-skull-lod0.glb",
+                  "props": {
+                    "og_water_look": 26,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-27",
+                  "id": "look-27",
+                  "label": "27 (Misty) (mud) misty-mud-near-skull",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-near-skull-lod0.glb",
+                  "props": {
+                    "og_water_look": 27,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-28",
+                  "id": "look-28",
+                  "label": "28 (Misty) (mud) misty-mud-under-spine",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-under-spine-lod0.glb",
+                  "props": {
+                    "og_water_look": 28,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-29",
+                  "id": "look-29",
+                  "label": "29 (Misty) (mud) misty-mud-by-dock",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-by-dock-lod0.glb",
+                  "props": {
+                    "og_water_look": 29,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-30",
+                  "id": "look-30",
+                  "label": "30 (Misty) (mud) misty-mud-island-near-dock",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-island-near-dock-lod0.glb",
+                  "props": {
+                    "og_water_look": 30,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-31",
+                  "id": "look-31",
+                  "label": "31 (Misty) (mud) misty-mud-lonely-island",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-lonely-island-lod0.glb",
+                  "props": {
+                    "og_water_look": 31,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-32",
+                  "id": "look-32",
+                  "label": "32 (Misty) (dark eco) misty-dark-eco-pool",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-dark-eco-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 32,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "misty"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-33",
+                  "id": "look-33",
+                  "label": "33 (Ogre) (lava) ogre-lava",
+                  "art_group": "water-anim-ogre-ag.go",
+                  "glb": "levels/ogre/water-anim-ogre-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 33,
+                    "og_water_liquid": "lava",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "ogre-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-34",
+                  "id": "look-34",
+                  "label": "34 (Jungle) (water) jungle-river",
+                  "art_group": "water-anim-jungle-ag.go",
+                  "glb": "levels/jungle/water-anim-jungle-river-lod0.glb",
+                  "props": {
+                    "og_water_look": 34,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "jungle-obs.o"
+                  ],
+                  "texture_sources": [
+                    "jungle"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-35",
+                  "id": "look-35",
+                  "label": "35 (Village3) (lava) village3-lava",
+                  "art_group": "water-anim-village3-ag.go",
+                  "glb": "levels/village3/water-anim-village3-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 35,
+                    "og_water_liquid": "lava",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village3-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-36",
+                  "id": "look-36",
+                  "label": "36 (Training) (water) training-lake",
+                  "art_group": "water-anim-training-ag.go",
+                  "glb": "levels/training/water-anim-training-lake-lod0.glb",
+                  "props": {
+                    "og_water_look": 36,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "training-obs.o"
+                  ],
+                  "texture_sources": [
+                    "training"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-37",
+                  "id": "look-37",
+                  "label": "37 (Darkcave) (water) darkcave-water-with-crystal",
+                  "art_group": "water-anim-darkcave-ag.go",
+                  "glb": "levels/darkcave/water-anim-darkcave-water-with-crystal-lod0.glb",
+                  "props": {
+                    "og_water_look": 37,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "maincave-obs.o"
+                  ],
+                  "texture_sources": [
+                    "darkcave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-38",
+                  "id": "look-38",
+                  "label": "38 (Rolling) (deep water) rolling-water-back",
+                  "art_group": "water-anim-rolling-ag.go",
+                  "glb": "levels/rolling/water-anim-rolling-water-back-lod0.glb",
+                  "props": {
+                    "og_water_look": 38,
+                    "og_water_liquid": "water-swim-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "rolling-obs.o"
+                  ],
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-39",
+                  "id": "look-39",
+                  "label": "39 (Rolling) (deep water) rolling-water-front",
+                  "art_group": "water-anim-rolling-ag.go",
+                  "glb": "levels/rolling/water-anim-rolling-water-front-lod0.glb",
+                  "props": {
+                    "og_water_look": 39,
+                    "og_water_liquid": "water-swim-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "rolling-obs.o"
+                  ],
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-41",
+                  "id": "look-41",
+                  "label": "41 (Finalboss) (dark eco) finalboss-dark-eco-pool",
+                  "art_group": "water-anim-finalboss-ag.go",
+                  "glb": "levels/finalboss/water-anim-finalboss-dark-eco-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 41,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "finalboss"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-42",
+                  "id": "look-42",
+                  "label": "42 (Lavatube) (hot lava) lavatube-energy-lava",
+                  "art_group": "water-anim-lavatube-ag.go",
+                  "glb": "levels/lavatube/water-anim-lavatube-energy-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 42,
+                    "og_water_liquid": "lava-heat",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "lavatube-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-43",
+                  "id": "look-43",
+                  "label": "43 (Village1) (shallow water) village1-rice-paddy",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-lod0.glb",
+                  "props": {
+                    "og_water_look": 43,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-44",
+                  "id": "look-44",
+                  "label": "44 (Village1) (shallow water) village1-fountain",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-fountain-lod0.glb",
+                  "props": {
+                    "og_water_look": 44,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-45",
+                  "id": "look-45",
+                  "label": "45 (Village1) (shallow water) village1-rice-paddy-mid",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-mid-lod0.glb",
+                  "props": {
+                    "og_water_look": 45,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-46",
+                  "id": "look-46",
+                  "label": "46 (Village1) (shallow water) village1-rice-paddy-top",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-top-lod0.glb",
+                  "props": {
+                    "og_water_look": 46,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-47",
+                  "id": "look-47",
+                  "label": "47 (Village2) (shallow water) village2-bucket",
+                  "art_group": "water-anim-village2-ag.go",
+                  "glb": "levels/village2/water-anim-village2-bucket-lod0.glb",
+                  "props": {
+                    "og_water_look": 47,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village2-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village2"
+                  ],
+                  "texture_note": "the look's water surface"
+                }
+              ],
+              "note": "The surface's look (and its liquid preset). Dark eco liquid: the vanilla dark eco pool; other liquids: plain water."
+            },
+            {
+              "key": "og_water_look",
+              "label": "Look index",
+              "type": "int",
+              "default": 40,
+              "show-field": false,
+              "lump": {
+                "key": "look",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            },
             {
               "key": "og_helix_rise",
               "label": "Rise distance (m)",
@@ -19607,19 +20482,86 @@
                 "type": "meters"
               },
               "write_if": "always",
-              "min": 0.01
+              "min": 0.01,
+              "note": "The speed with both Jak-height options off (or the end an option is off for)."
             },
             {
-              "key": "og_helix_look",
-              "type": "int",
-              "default": 40,
-              "show-field": false,
-              "const": 40,
-              "lump": {
-                "key": "look",
-                "type": "int32"
+              "key": "og_helix_slow",
+              "label": "Slow down when Jak is close",
+              "type": "bool",
+              "default": true,
+              "lump_bit": {
+                "key": "speed-opts",
+                "type": "uint32",
+                "bit_value": 1
               },
-              "write_if": "always"
+              "group": "helix-speed",
+              "group_label": "Speed by Jak's height (vanilla)",
+              "group_note": "Jak at most Close distance above the surface: Slow speed; Far distance or more: Catch-up speed; a blend in between. Off: Rise speed there."
+            },
+            {
+              "key": "og_helix_catch",
+              "label": "Catch up when Jak is far",
+              "type": "bool",
+              "default": true,
+              "lump_bit": {
+                "key": "speed-opts",
+                "type": "uint32",
+                "bit_value": 2
+              },
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_slow_speed",
+              "label": "Slow speed (m/s)",
+              "type": "float",
+              "default": 0.875,
+              "min": 0.0,
+              "lump": {
+                "key": "slow-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_fast_speed",
+              "label": "Catch-up speed (m/s)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {
+                "key": "fast-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_near",
+              "label": "Close distance (m)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.0,
+              "lump": {
+                "key": "near-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_far",
+              "label": "Far distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "min": 0.0,
+              "lump": {
+                "key": "far-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
             }
           ]
         },
@@ -19627,9 +20569,18 @@
           "panel": "actor-link",
           "slots": [
             {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Started by (e.g. the helix button)",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": false
+            },
+            {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Submerged actors, ordered bottom to top",
+              "label": "Submerged actors (removed once the surface passes them)",
               "accepts": [
                 "babak",
                 "ecovent",

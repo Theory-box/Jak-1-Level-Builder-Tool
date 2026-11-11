@@ -1,12 +1,66 @@
-;; Rising helix dark eco: start at the placed height, with rise-distance and
-;; rise-speed from Blender. No singleton globals, music change, or speed tied to
-;; Jak's height. Reset/notify returns it to the start. The linked alt actors are
-;; consumed in order as the surface passes them (place links bottom to top).
-;; The child helix-dark-eco shares this entity's look 40 and volume/water lumps.
+;; Rising helix dark eco: start at the placed height, rise by rise-distance after a
+;; trigger. No singleton globals or music change. Reset/notify returns it to the start.
+;; - Look / liquid: any water look (look lump) and liquid (water panel). Dark eco (its
+;;   attack-event) spawns the vanilla dark eco pool child; other liquids a water-anim.
+;; - Speed: rise-speed, or by Jak's height above the surface (vanilla): at most
+;;   near-dist above it, slow-speed (speed-opts bit 0); far-dist or more, fast-speed
+;;   (bit 1); in between, a blend.
+;; - Started by (prev-actor, optional): rises when that actor is pressed again (its perm
+;;   user-int8 0 count, the edited helix button) or becomes complete. The button can also
+;;   link the water itself (its alt-actor 0).
+;; - Submerged actors (alt-actor): any order; once the surface passes one, babak /
+;;   launcher die, anything else (e.g. eco vents) is hidden and loses its collision.
 ;; edits: helix-water
 
-(deftype __TYPE__ (helix-water) ()
+(deftype __TYPE__ (helix-water)
+  ((consumed     uint32)
+   (opts         uint32)
+   (base-speed   float)
+   (slow-speed   float)
+   (fast-speed   float)
+   (near-dist    float)
+   (far-dist     float)
+   (starter      entity-actor)
+   (starter-mark int32))
   (:states __TYPE__-helix-water-idle __TYPE__-helix-water-activated))
+
+(defun __TYPE__-starter-mark ((this __TYPE__))
+  "The starter's press count (+ 128 once complete); -1 without one."
+  (let ((e (-> this starter)))
+    (if e
+      (+ (-> e extra perm user-int8 0) (if (logtest? (-> e extra perm status) (entity-perm-status complete)) 128 0))
+      -1)))
+
+(defmethod helix-water-method-21 ((this __TYPE__))
+  "Remove every linked actor the surface has passed, in any order."
+  (dotimes (s5-0 (min 32 (-> this alt-actors length)))
+    (when (not (logtest? (-> this consumed) (ash 1 s5-0)))
+      (let* ((v1-5 (-> this alt-actors s5-0))
+             (s4-0 (if v1-5 (-> v1-5 extra process)))
+             (a0-3 (if (and (nonzero? s4-0) (type-type? (-> s4-0 type) process-drawable)) (the-as process-drawable s4-0))))
+        (when (and a0-3 (< (-> a0-3 root trans y) (-> this root trans y)))
+          (logior! (-> this consumed) (ash 1 s5-0))
+          (case (-> a0-3 type)
+            ((babak launcher) (send-event a0-3 'instant-death))
+            (else
+             ;; switched off for good (deactivating would let the entity respawn it)
+             (send-event a0-3 'show-particles #f)
+             (if (and (nonzero? (-> a0-3 root)) (type-type? (-> a0-3 root type) collide-shape))
+               (clear-collide-with-as (the-as collide-shape (-> a0-3 root))))
+             (if (nonzero? (-> a0-3 draw)) (logior! (-> a0-3 draw status) (draw-status hidden)))))))))
+  #f)
+
+(defbehavior __TYPE__-speed __TYPE__ ()
+  "Rise speed: fixed, or slower / faster by Jak's height above the surface."
+  (cond
+    ((zero? (logand (-> self opts) 3)) (set! (-> self transv-y) (-> self base-speed)))
+    ((and *target* (not (logtest? (-> *target* state-flags) (state-flags grabbed))))
+     (let ((f0-1 (- (-> (target-pos 0) y) (-> self root trans y))))
+       (set! (-> self transv-y)
+             (lerp (if (logtest? (-> self opts) 1) (-> self slow-speed) (-> self base-speed))
+                   (if (logtest? (-> self opts) 2) (-> self fast-speed) (-> self base-speed))
+                   (fmax 0.0 (fmin 1.0 (/ (- f0-1 (-> self near-dist)) (fmax 4096.0 (- (-> self far-dist) (-> self near-dist)))))))))))
+  0)
 
 (defstate __TYPE__-helix-water-idle (__TYPE__)
   :event
@@ -17,12 +71,13 @@
   :code
     (behavior ()
       (set! (-> self root trans y) (-> self start-y))
-      (set! (-> self last-alt-actor-consumed) -1)
-      (set! (-> self transv-y) 9216.0)
+      (set! (-> self consumed) (the-as uint 0))
+      (set! (-> self transv-y) (-> self base-speed))
+      (set! (-> self starter-mark) (__TYPE__-starter-mark self))
       (suspend)
       (send-event (ppointer->process (-> self dark-eco)) 'move-to (-> self root trans))
       (loop
-        (logior! (-> self mask) (process-mask sleep-code))
+        (if (and (-> self starter) (!= (__TYPE__-starter-mark self) (-> self starter-mark))) (go __TYPE__-helix-water-activated))
         (suspend)))
   :post ja-post)
 
@@ -34,7 +89,7 @@
   :trans
     (behavior ()
       (seek! (-> self root scale y) 0.8 (* 0.667 (seconds-per-frame)))
-      (set! (-> self transv-y) (res-lump-float (-> self entity) 'rise-speed :default (meters 2)))
+      (__TYPE__-speed)
       (+! (-> self root trans y) (* (-> self transv-y) (seconds-per-frame)))
       (if (< (-> self end-y) (-> self root trans y)) (set! (-> self root trans y) (-> self end-y)))
       (send-event (ppointer->process (-> self dark-eco)) 'move-to (-> self root trans))
@@ -49,17 +104,28 @@
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (set! (-> this last-alt-actor-consumed) -1)
-  (set! (-> this transv-y) 9216.0)
+  (set! (-> this consumed) (the-as uint 0))
   (set! (-> this root) (new 'process 'trsqv))
   (process-drawable-from-entity! this arg0)
   (set! (-> this start-y) (-> this root trans y))
   (set! (-> this end-y) (+ (res-lump-float arg0 'rise-distance :default (meters 20)) (-> this start-y)))
+  (set! (-> this base-speed) (res-lump-float arg0 'rise-speed :default (meters 2)))
+  (set! (-> this slow-speed) (res-lump-float arg0 'slow-speed :default 3584.0))
+  (set! (-> this fast-speed) (res-lump-float arg0 'fast-speed :default 16384.0))
+  (set! (-> this near-dist) (res-lump-float arg0 'near-dist :default (meters 10)))
+  (set! (-> this far-dist) (res-lump-float arg0 'far-dist :default (meters 20)))
+  (set! (-> this opts) (the-as uint (res-lump-value arg0 'speed-opts uint :default (the-as uint128 0))))
+  (set! (-> this transv-y) (-> this base-speed))
+  (set! (-> this starter) (entity-actor-lookup arg0 'prev-actor 0))
   (set-vector! (-> this root scale) 1.0 0.8 1.0 1.0)
   (let ((s4-0 (entity-actor-count arg0 'alt-actor)))
     (set! (-> this alt-actors) (new 'process 'boxed-array entity-actor s4-0))
     (dotimes (s3-0 s4-0)
       (set! (-> this alt-actors s3-0) (entity-actor-lookup arg0 'alt-actor s3-0))))
   (set! (-> this root trans y) (-> this start-y))
-  (set! (-> this dark-eco) (process-spawn helix-dark-eco :init water-vol-init-by-other (-> this entity) :to this))
+  (set! (-> this dark-eco)
+        (if (= (res-lump-struct arg0 'attack-event symbol) 'dark-eco-pool)
+          (process-spawn helix-dark-eco :init water-vol-init-by-other (-> this entity) :to this)
+          (the-as (pointer helix-dark-eco) (process-spawn water-anim :init water-vol-init-by-other (-> this entity) :to this))))
   (go __TYPE__-helix-water-idle)
   (none))

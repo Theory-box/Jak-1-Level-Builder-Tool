@@ -1,10 +1,15 @@
-;; Helix floor button without Sunken's scripted camera/player movements.
-;; Standing on it closes the linked slide door and starts the linked rising eco.
-;; Its optional task cell is collectible normally above the button. Uses its own
-;; task instead of sunken-slide. The puzzle resets when the level reloads.
+;; Helix floor button without Sunken's scripted player movements. Standing on it closes
+;; the linked slide door (alt-actor 1) and starts the linked rising eco (alt-actor 0); the
+;; water can link the button instead (its prev-actor): each press counts up perm
+;; user-int8 0, which the edited water watches. Both links are optional.
+;; Its task's cell (none = no cell) floats above the button like vanilla and is given
+;; when Jak presses it (at movie-pos 0, else at Jak). Door camera (door-camera lump):
+;; the first press plays the vanilla qbert-show-door-open camera shot, from the button.
+;; Uses its own task instead of sunken-slide. The puzzle resets when the level reloads.
 ;; edits: helix-button
 
-(deftype __TYPE__ (helix-button) ()
+(deftype __TYPE__ (helix-button)
+  ((first-press symbol))
   (:states __TYPE__-helix-button-startup __TYPE__-helix-button-idle-up
            __TYPE__-helix-button-quick-activate __TYPE__-helix-button-idle-down))
 
@@ -15,9 +20,11 @@
         (let ((a0-1 (new 'stack-no-clear 'vector)))
           (set! (-> a0-1 quad) (-> self root trans quad))
           (+! (-> a0-1 y) 30720.0)
-          (set! (-> self fcell-handle)
-                (ppointer->handle (birth-pickup-at-point a0-1 (pickup-type fuel-cell)
-                  (the float (-> self entity extra perm task)) #f self (-> self fact))))))
+          (let ((v1-7 (birth-pickup-at-point a0-1 (pickup-type fuel-cell) (the float (-> self entity extra perm task)) #f self (-> self fact))))
+            (set! (-> self fcell-handle) (ppointer->handle v1-7))
+            (when v1-7
+              (send-event (ppointer->process v1-7) 'movie-pos 0)
+              (clear-collide-with-as (-> (the-as collectable (-> v1-7 0)) root))))))
       (go __TYPE__-helix-button-idle-up)))
 
 (defstate __TYPE__-helix-button-idle-up (__TYPE__)
@@ -27,11 +34,9 @@
         (('touch)
          (when *target*
            (when (logtest? (-> *target* control status) (cshape-moving-flags onsurf))
-             (cond
-               ((and (and (-> self entity) (logtest? (-> self entity extra perm status) (entity-perm-status complete)))
-                     (not (handle->process (-> self fcell-handle))))
-                (go __TYPE__-helix-button-quick-activate))
-               (else (process-entity-status! self (entity-perm-status complete) #t) (go __TYPE__-helix-button-quick-activate))))))))
+             (set! (-> self first-press) (not (and (-> self entity) (logtest? (-> self entity extra perm status) (entity-perm-status complete)))))
+             (process-entity-status! self (entity-perm-status complete) #t)
+             (go __TYPE__-helix-button-quick-activate))))))
   :code
     (behavior ()
       (loop
@@ -42,6 +47,29 @@
   :trans rider-trans
   :code
     (behavior ()
+      (local-vars (v1-7 symbol))
+      (let ((v1-0 (-> self entity extra perm)))
+        (set! (-> v1-0 user-int8 0) (logand (+ (-> v1-0 user-int8 0) 1) 127)))
+      ;; the cell, given like vanilla when Jak presses the button
+      (let ((a0-1 (handle->process (-> self fcell-handle))))
+        (when a0-1
+          (send-event a0-1 'pickup)
+          (until v1-7
+            (suspend)
+            (set! v1-7 (or (not *target*) (not (logtest? (-> *target* state-flags) (state-flags grabbed))))))))
+      (when (and (-> self first-press) (nonzero? (res-lump-value (-> self entity) 'door-camera uint128)))
+        (let ((v1-11 (process-spawn sunkencam
+                                    :init
+                                    pov-camera-init-by-other
+                                    (-> self spawn-trans)
+                                    *sunkencam-sg*
+                                    "qbert-show-door-open"
+                                    0
+                                    #f
+                                    '()
+                                    :to
+                                    self)))
+          (set! (-> (the-as (pointer sunkencam) v1-11) 0 seq) (the-as uint 2))))
       (when (-> self my-water) (entity-birth-no-kill (-> self my-water)))
       (when (-> self my-door) (entity-birth-no-kill (-> self my-door)))
       (suspend)
@@ -52,15 +80,15 @@
         (set! (-> a1-3 num-params) 0)
         (set! (-> a1-3 message) 'trigger)
         (let ((t9-5 send-event-function)
-              (v1-7 (-> self my-door)))
-          (t9-5 (if v1-7 (-> v1-7 extra process)) a1-3)))
+              (v1-17 (-> self my-door)))
+          (t9-5 (if v1-17 (-> v1-17 extra process)) a1-3)))
       (let ((a1-4 (new 'stack-no-clear 'event-message-block)))
         (set! (-> a1-4 from) self)
         (set! (-> a1-4 num-params) 0)
         (set! (-> a1-4 message) 'trigger)
         (let ((t9-6 send-event-function)
-              (v1-11 (-> self my-water)))
-          (t9-6 (if v1-11 (-> v1-11 extra process)) a1-4)))
+              (v1-21 (-> self my-water)))
+          (t9-6 (if v1-21 (-> v1-21 extra process)) a1-4)))
       (set! (-> self root transv quad) (the-as uint128 0))
       (let ((gp-2 5))
         (until (<= gp-2 0)
@@ -89,6 +117,7 @@
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (set! (-> this fcell-handle) (the-as handle #f))
+  (set! (-> this first-press) #f)
   (set! (-> this my-water) (entity-actor-lookup arg0 'alt-actor 0))
   (set! (-> this my-door) (entity-actor-lookup arg0 'alt-actor 1))
   (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-others))))
