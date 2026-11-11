@@ -7995,6 +7995,7 @@
     },
     {
       "etype": "bird-lady-beach",
+      "edited": "bird-lady-beach",
       "sounds": ["egg-crack"],
       "label": "Bird Lady (Beach, Flut Flut hatch)",
       "category": "NPCs",
@@ -8011,7 +8012,11 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/bird-lady-beach-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Invisible until beach-flutflut is at its reward speech (vanilla: the flut flut egg was pushed off the cliff). Then she plays the hatching cutscene (with the flut flut and egg) and gives the beach-flutflut cell."
+      "description": "Edited (subtypes/bird-lady-beach.gc): link the Flut Flut egg (alt-actor): she appears once it has fallen and broken and her task isn't done; talking plays the hatching cutscene (flut flut and egg) and gives the cell. Task: her own, else the egg's, else vanilla beach-flutflut. With no egg linked: vanilla, shown at the task's need-reward-speech.",
+      "panels": [
+        {"panel": "game-task", "description": "Her task (none: the linked egg's). Talking gives its cell."},
+        {"panel": "actor-link", "slots": [{"lump_key": "alt-actor", "slot": 0, "label": "Flut Flut egg", "accepts": ["flutflutegg"], "required": false, "soft": "no Flut Flut egg linked: she only appears at her task's need-reward-speech (vanilla)"}]}
+      ]
     },
     {
       "etype": "seagullflock",
@@ -20611,8 +20616,11 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/flutflutegg-lod0.glb",
       "edited": "flutflutegg",
-      "description": "Edited: punch/spin it along its placed direction; after Push distance it falls and hatches on the ground. Uses its own task (assign the same custom task to the Bird Lady). No fixed Beach camera or coordinates. Hatch position sets the broken egg location on reload; without one it restores at its spawn point. No task makes a standalone breakable egg.",
+      "soft_linked_by": {"etype": "bird-lady-beach", "lump_key": "alt-actor", "unless": "og_egg_spill", "label": "no Bird Lady (Beach) links this egg and Spill cell is off: its cell never comes"},
+      "description": "Edited (subtypes/flutflutegg.gc): punch / spin it toward its Hatch position empty (none: the way it faces); after Push distance it falls, its task's need-reminder closes, and it cracks on landing. Then the Bird Lady (Beach) linking it plays the hatching cutscene and gives the cell, or with Spill cell the egg breaks open and its cell comes out (movie-pos 0, else at the egg). No fixed Beach camera or coordinates. No task: a standalone breakable egg.",
       "panels": [
+        {"panel": "movie-pos", "description": "[0] Spill cell: where the cell comes out and plays its pickup. Not set: at the egg."},
+        {"panel": "custom-fields", "fields": [{"key": "og_egg_spill", "label": "Spill cell", "type": "bool", "default": false, "lump": {"key": "spill-cell", "type": "uint32"}, "write_if": "if_true", "note": "The egg breaks open on landing and its task's cell comes out (no Bird Lady needed)."}]},
         {
           "panel": "game-task"
         },
@@ -20633,14 +20641,14 @@
             },
             {
               "key": "og_egg_hatch_pos",
-              "label": "Hatch position on reload (empty)",
+              "label": "Hatch position (empty)",
               "type": "object_ref",
               "default": "",
               "lump": {
                 "key": "hatch-pos",
                 "type": "vector"
               },
-              "note": "Place at the expected landing point to restore the broken egg correctly after reload."
+              "note": "Where it lands: it's pushed toward this point and restored here on reload. None: pushed the way it faces."
             }
           ]
         }

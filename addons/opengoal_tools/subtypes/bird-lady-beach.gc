@@ -1,0 +1,50 @@
+;; Bird Lady (Beach, Flut Flut hatch) for custom levels. Link the Flut Flut egg as her
+;; alt-actor: she appears once the egg has fallen and broken (its complete status) and
+;; her task isn't done, then talking plays the hatching cutscene (with the flut flut and
+;; egg) and gives the task's cell. Her task: her own (Game Task panel), else the linked
+;; egg's, else vanilla beach-flutflut. With no egg linked: vanilla (shown at the task's
+;; need-reward-speech). Any stage layout works.
+;; edits: bird-lady-beach
+(deftype __TYPE__ (bird-lady-beach) ())
+
+(defun __TYPE__-egg ((this __TYPE__))
+  (entity-actor-lookup (-> this entity) 'alt-actor 0))
+
+(defmethod should-display? ((this __TYPE__))
+  (let ((egg (__TYPE__-egg this)))
+    (if egg
+      (and (logtest? (-> egg extra perm status) (entity-perm-status complete))
+           (not (task-complete? *game-info* (current-task (-> this tasks)))))
+      (= (current-status (-> this tasks)) (task-status need-reward-speech)))))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (cond
+    ((should-display? this)
+     (when arg0
+       (set! (-> this cell-for-task) (current-task (-> this tasks)))
+       (if (not (__TYPE__-egg this)) (close-current! (-> this tasks)))
+       (set! (-> this flutflut)
+             (ppointer->handle (manipy-spawn (-> this root trans) (-> this entity) *flutflut-naked-sg* #f :to this)))
+       (send-event (handle->process (-> this flutflut)) 'anim-mode 'clone-anim)
+       (send-event (handle->process (-> this flutflut)) 'blend-shape #t)
+       (set! (-> this egg)
+             (ppointer->handle (manipy-spawn (-> this root trans) (-> this entity) *flutflutegg-sg* #f :to this)))
+       (send-event (handle->process (-> this egg)) 'anim-mode 'clone-anim))
+     (new 'static
+          'spool-anim
+          :name "bird-lady-beach-resolution"
+          :index 4
+          :parts 10
+          :command-list
+          '((141 joint "cameraB") (535 joint "camera") (696 joint "cameraB") (758 joint "camera") (813 joint "cameraB"))))
+    (else (-> this draw art-group data 3))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *bird-lady-beach-sg* 3 51 (new 'static 'vector :y 4096.0 :w 4096.0) 5)
+  (let* ((egg (entity-actor-lookup arg0 'alt-actor 0))
+         (task (-> arg0 extra perm task)))
+    (if (and (= task (game-task none)) egg) (set! task (-> egg extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task beach-flutflut) task))))
+  (set! (-> this sound-flava) (music-flava birdlady))
+  (process-taskable-method-42 this)
+  (none))

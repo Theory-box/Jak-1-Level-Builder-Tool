@@ -1,8 +1,11 @@
-;; Flut Flut egg: own task, placed direction, configurable push distance, and
-;; optional hatch position for saved/restored broken state. No camera-135 or
-;; fixed Beach coordinates. Assign the same task to the egg and the Bird Lady.
-;; Falling closes need-reminder; the Bird Lady still handles the reward speech.
-;; No task: a standalone breakable egg. Set Hatch position for correct reloads.
+;; Flut Flut egg: own task, configurable push distance, optional hatch position. No
+;; camera-135 or fixed Beach coordinates. Pushed toward the Hatch position empty (none:
+;; the way it's placed facing); falling closes its task's need-reminder. Then either:
+;; - the Bird Lady (Beach) that links this egg (alt-actor) plays the hatching cutscene
+;;   and gives the cell; the egg stays cracked until then (vanilla), or
+;; - Spill cell (spill-cell lump): the egg breaks open on landing and its cell comes out
+;;   (at movie-pos 0, else at the egg).
+;; No task: a standalone breakable egg. Hatch position also places it on reload.
 ;; edits: flutflutegg
 
 (deftype __TYPE__ (flutflutegg)
@@ -125,6 +128,18 @@
         (go __TYPE__-flutflutegg-break #f)))
   :post ja-post)
 
+(defbehavior __TYPE__-spill __TYPE__ ()
+  "Spill cell: its task's cell out of the broken egg (at movie-pos 0, else at the egg)."
+  (when (and (!= (-> self entity extra perm task) (game-task none)) (not (task-complete? *game-info* (-> self entity extra perm task))))
+    (let ((s5-0 (new 'stack-no-clear 'vector))
+          (v1-4 (res-lump-struct (-> self entity) 'movie-pos vector)))
+      (cond
+        (v1-4 (set! (-> s5-0 quad) (-> v1-4 quad)) (set! (-> s5-0 w) 1.0))
+        (else (set! (-> s5-0 quad) (-> self root trans quad)) (+! (-> s5-0 y) 8192.0)))
+      (let ((v1-9 (birth-pickup-at-point s5-0 (pickup-type fuel-cell) (the float (-> self entity extra perm task)) #f self (the-as fact-info #f))))
+        (if v1-9 (send-event (ppointer->process v1-9) 'movie-pos 0)))))
+  0)
+
 (defstate __TYPE__-flutflutegg-break (__TYPE__)
   :code
     (behavior ((already-broken symbol))
@@ -141,10 +156,14 @@
         (until (ja-done? 0) (suspend) (ja :num! (seek!))))
       (process-entity-status! self (entity-perm-status complete) #t)
       (ja :group! flutflutegg-crack-ja :num! max)
-      (when (!= (-> self entity extra perm task) (game-task none))
-        (while (not (task-closed? (-> self entity extra perm task) (task-status need-resolution)))
-          (suspend))
-        (ja :group! flutflutegg-broke-ja :num! max))
+      (cond
+        ((nonzero? (res-lump-value (-> self entity) 'spill-cell uint128))
+         (ja :group! flutflutegg-broke-ja :num! max)
+         (__TYPE__-spill))
+        ((!= (-> self entity extra perm task) (game-task none))
+         (while (not (task-closed? (-> self entity extra perm task) (task-status need-resolution)))
+           (suspend))
+         (ja :group! flutflutegg-broke-ja :num! max)))
       (loop (suspend)))
   :post ja-post)
 
@@ -179,6 +198,14 @@
     (set! (-> this root) s4-0))
   (process-drawable-from-entity! this arg0)
   (initialize-skeleton this *flutflutegg-sg* '())
+  ;; pushed toward the hatch position (none: the way it faces)
+  (let ((v1-30 (res-lump-struct arg0 'hatch-pos vector)))
+    (when v1-30
+      (let ((s5-1 (vector-! (new 'stack-no-clear 'vector) v1-30 (-> this root trans))))
+        (set! (-> s5-1 y) 0.0)
+        (when (< 409.6 (vector-length s5-1))
+          (vector-normalize! s5-1 1.0)
+          (forward-up-nopitch->quaternion (-> this root quat) s5-1 *up-vector*)))))
   (vector-z-quaternion! (-> this dir) (-> this root quat))
   (set! (-> this start quad) (-> this root trans quad))
   (set! (-> this fall-dist) (res-lump-float arg0 'fall-distance :default (meters 5)))

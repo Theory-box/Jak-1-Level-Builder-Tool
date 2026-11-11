@@ -190,6 +190,14 @@ def soft(o, scene=None, banks=None, senders=None):
         more = f" +{len(snds) - 3}" if len(snds) > 3 else ""
         out.append({"panel": "sound", "key": b, "sound": snds[0],
                     "label": f"sound bank {b} not loaded: no {', '.join(snds[:3])}{more}"})
+    for sl in _db.link_slots(et):                          # links that only make it do less
+        if sl.get("soft") and not _actor_get_link(o, sl["lump_key"], int(sl.get("slot", 0))):
+            out.append({"panel": "links", "key": sl["lump_key"], "label": sl["soft"]})
+    lb = (_db.find_actor(et) or {}).get("soft_linked_by")   # an actor that should link this one
+    if lb and not (lb.get("unless") and o.get(lb["unless"])):
+        if not any(actor_etype(x) == lb["etype"] and any(getattr(_actor_get_link(x, lb["lump_key"], i), "target_name", None) == o.name for i in range(4))
+                   for x in scene.objects if x.name.startswith("ACTOR_")):
+            out.append({"panel": "links", "key": lb["etype"], "label": lb["label"]})
     if _db.panel_exports(et, "nav-mesh") and _db.nav_unsafe(et):
         nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
         if nm is None and not _actor_get_link(o, "nav-mesh-actor", 0):
