@@ -8014,6 +8014,7 @@
       "shape": "SINGLE_ARROW",
       "description": "Edited (subtypes/bird-lady-beach.gc): link the Flut Flut egg (alt-actor): she appears once it has fallen and broken and her task isn't done; talking plays the hatching cutscene (flut flut and egg) and gives the cell. Task: her own, else the egg's, else vanilla beach-flutflut. With no egg linked: vanilla, shown at the task's need-reward-speech.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_lady_dist", "label": "Play distance (m)", "type": "float", "default": 12.0, "min": 0.0, "lump": {"key": "play-dist", "type": "meters"}, "write_if": "always", "note": "Once the linked egg has broken: the hatching cutscene plays when Jak comes this near."}]},
         {"panel": "game-task", "description": "Her task (none: the linked egg's). Talking gives its cell."},
         {"panel": "actor-link", "slots": [{"lump_key": "alt-actor", "slot": 0, "label": "Flut Flut egg", "accepts": ["flutflutegg"], "required": false, "soft": "no Flut Flut egg linked: she only appears at her task's need-reward-speech (vanilla)"}]}
       ]

@@ -1,6 +1,7 @@
 ;; Bird Lady (Beach, Flut Flut hatch) for custom levels. Link the Flut Flut egg as her
 ;; alt-actor: she appears once the egg has fallen and broken (its complete status) and
-;; her task isn't done, then talking plays the hatching cutscene (with the flut flut and
+;; her task isn't done, then the hatching cutscene plays once Jak comes within Play
+;; distance (play-dist lump; or talking) (with the flut flut and
 ;; egg) and gives the task's cell. Her task: her own (Game Task panel), else the linked
 ;; egg's, else vanilla beach-flutflut. With no egg linked: vanilla (shown at the task's
 ;; need-reward-speech). Any stage layout works.
@@ -38,6 +39,17 @@
           :command-list
           '((141 joint "cameraB") (535 joint "camera") (696 joint "cameraB") (758 joint "camera") (813 joint "cameraB"))))
     (else (-> this draw art-group data 3))))
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :trans
+    (behavior ()
+      ;; plays by itself once Jak comes within Play distance (no talk prompt needed)
+      (if (and (should-display? self)
+               *target*
+               (< (vector-vector-distance (-> self root trans) (target-pos 0)) (res-lump-float (-> self entity) 'play-dist :default (meters 12))))
+        (set! (-> self been-kicked) #t))
+      ((-> (method-of-type process-taskable idle) trans))))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (process-taskable-method-40 this arg0 *bird-lady-beach-sg* 3 51 (new 'static 'vector :y 4096.0 :w 4096.0) 5)
