@@ -1,6 +1,7 @@
 ;; The energy hub (Lava Tube) for custom levels: place it on an energybase,
 ;; shoot the 5 energy balls with yellow eco to stop it; then it sends 'stop to
-;; alt-actor 0, 'open to alt-actor 1 and closes its task.
+;; alt-actor 0, 'open to alt-actor 1 (optional), closes its task and gets its complete
+;; status, which the edited energy doors linked back to it (prev-actor) open on.
 ;; - its task is the actor's own (Game Task panel); none = vanilla lavatube-balls
 ;; - works with fewer than 3 alt-actors (vanilla: the empty slots were left
 ;;   unset and written through every frame, which crashed the game)
@@ -39,6 +40,7 @@
               (v1-5 (-> self alts 1)))
           (t9-1 (if v1-5 (-> v1-5 extra process)) a1-1)))
       (close-specific-task! (__TYPE__-task self) (task-status need-resolution))
+      (process-entity-status! self (entity-perm-status complete) #t)
       (level-hint-spawn (text-id lavatube-balls-resolution) "sksp0378" (the-as entity #f) *entity-pool* (game-task none))
       (if (nonzero? (-> self sound)) (stop! (-> self sound))))
   :trans
@@ -122,6 +124,7 @@
   (cond
     ((task-closed? (__TYPE__-task this) (task-status need-resolution))
      (set-params! (-> this rotation-speed) 0.0 0.01 0.1 0.9)
+     (process-entity-status! this (entity-perm-status complete) #t)
      (go energyhub-stopped))
     (else (set-params! (-> this rotation-speed) 1.0 0.01 0.1 0.9) (go __TYPE__-idle)))
   (none))

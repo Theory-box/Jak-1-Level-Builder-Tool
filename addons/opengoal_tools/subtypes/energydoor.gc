@@ -1,0 +1,154 @@
+;; Energy door (Lava Tube) for custom levels. Vanilla: open while Jak comes from its -X
+;; side; once he's 15 m past it (+X) it closes behind him until its task is resolved
+;; (or its alt-actor door is open); 110 m back on the -X side it closes again, and opens
+;; when he's within 100 m. Vanilla checked only the door's own task, so with no task it
+;; never closed. Here it's solved when its own task is resolved (if set), or when the
+;; energy hub its prev-actor chain leads to (the hub itself, or doors linked back to it)
+;; is stopped (the hub's complete status). Any number of doors: link each one's
+;; prev-actor to the hub or to a door that does. No task and no hub: always open.
+;; edits: energydoor
+(deftype __TYPE__ (energydoor) ()
+  (:states
+   __TYPE__-closed-till-near
+   __TYPE__-closed-till-task
+   __TYPE__-closing
+   __TYPE__-opened
+   __TYPE__-opening))
+
+(defun __TYPE__-solved? ((this __TYPE__))
+  "Its own task resolved, or the hub its prev-actor chain leads to stopped."
+  (let ((task (-> this entity extra perm task))
+        (e (entity-actor-lookup (-> this entity) 'prev-actor 0))
+        (hub (the-as entity-actor #f)))
+    (dotimes (i 16)
+      (when (and e (not hub))
+        (if (type-type? (-> e etype) energyhub)
+          (set! hub e)
+          (set! e (entity-actor-lookup e 'prev-actor 0)))))
+    (cond
+      ((and (!= task (game-task none)) (task-closed? task (task-status need-resolution))) #t)
+      (hub (logtest? (-> hub extra perm status) (entity-perm-status complete)))
+      (else (= task (game-task none))))))
+
+(defbehavior __TYPE__-closed-handler __TYPE__ ((arg0 process) (arg1 int) (arg2 symbol) (arg3 event-message-block))
+  (case arg2
+    (('open) (go __TYPE__-opening))
+    (('open?) #f)))
+
+(defstate __TYPE__-closed-till-near (__TYPE__)
+  :event __TYPE__-closed-handler
+  :trans
+    (behavior ()
+      (if (< -409600.0 (energydoor-player-dist)) (go __TYPE__-opening)))
+  :code
+    (behavior ()
+      (ja :num-func num-func-identity :frame-num 0.0)
+      (transform-post)
+      (loop
+        (suspend))))
+
+(defstate __TYPE__-closed-till-task (__TYPE__)
+  :event __TYPE__-closed-handler
+  :trans
+    (behavior ()
+      (cond
+        ((__TYPE__-solved? self) (go __TYPE__-opening))
+        ((let ((a1-1 (new 'stack-no-clear 'event-message-block)))
+           (set! (-> a1-1 from) self)
+           (set! (-> a1-1 num-params) 0)
+           (set! (-> a1-1 message) 'open?)
+           (let ((t9-2 send-event-function)
+                 (v1-5 (-> self alt-actor)))
+             (t9-2 (if v1-5 (-> v1-5 extra process)) a1-1)))
+         (go __TYPE__-opening))))
+  :code
+    (behavior ()
+      (ja :num-func num-func-identity :frame-num 0.0)
+      (transform-post)
+      (loop
+        (suspend))))
+
+(defstate __TYPE__-closing (__TYPE__)
+  :event __TYPE__-closed-handler
+  :code
+    (behavior ()
+      (ja-no-eval :group! (ja-group) :num! (seek! 0.0) :frame-num max)
+      (until (ja-done? 0)
+        (suspend)
+        (ja :num! (seek! 0.0)))
+      (if (or (__TYPE__-solved? self) (< (energydoor-player-dist) 0.0))
+        (go __TYPE__-closed-till-near)
+        (go __TYPE__-closed-till-task)))
+  :post transform-post)
+
+(defstate __TYPE__-opened (__TYPE__)
+  :event energydoor-open-handler
+  :trans
+    (behavior ()
+      (let ((f30-0 (energydoor-player-dist)))
+        (cond
+          ((< f30-0 -450560.0) (go __TYPE__-closing))
+          ((and (not (__TYPE__-solved? self))
+                (< 61440.0 f30-0)
+                (let ((a1-1 (new 'stack-no-clear 'event-message-block)))
+                  (set! (-> a1-1 from) self)
+                  (set! (-> a1-1 num-params) 0)
+                  (set! (-> a1-1 message) 'open?)
+                  (let ((t9-3 send-event-function)
+                        (v1-7 (-> self alt-actor)))
+                    (not (t9-3 (if v1-7 (-> v1-7 extra process)) a1-1)))))
+           (go __TYPE__-closing)))))
+  :code
+    (behavior ()
+      (ja :num-func num-func-identity :frame-num max)
+      (transform-post)
+      (loop
+        (suspend))))
+
+(defstate __TYPE__-opening (__TYPE__)
+  :event energydoor-open-handler
+  :code
+    (behavior ()
+      (ja-no-eval :group! (ja-group) :num! (seek!) :frame-num 0.0)
+      (until (ja-done? 0)
+        (suspend)
+        (ja :num! (seek!)))
+      (go __TYPE__-opened))
+  :post transform-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (with-pp
+    (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))
+      (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
+      (set! (-> s4-0 reaction) default-collision-reaction)
+      (set! (-> s4-0 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+      (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
+        (set! (-> s3-0 prim-core collide-as) (collide-kind wall-object))
+        (set! (-> s3-0 collide-with) (collide-kind target))
+        (set! (-> s3-0 prim-core action) (collide-action solid))
+        (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+        (set! (-> s3-0 transform-index) 8)
+        (set-vector! (-> s3-0 local-sphere) 0.0 0.0 0.0 102400.0)
+        (set-root-prim! s4-0 s3-0))
+      (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+      (backup-collide-with-as s4-0)
+      (set! (-> this root) s4-0))
+    (process-drawable-from-entity! this arg0)
+    (initialize-skeleton this *energydoor-sg* '())
+    (set! (-> this root pause-adjust-distance) 245760.0)
+    (set! (-> this alt-actor) (entity-actor-lookup arg0 'alt-actor 0))
+    (cond
+      ((< (energydoor-player-dist) -409600.0) (go __TYPE__-closed-till-near))
+      ((__TYPE__-solved? this) (go __TYPE__-opened))
+      (else
+       (let ((a1-9 (new 'stack-no-clear 'event-message-block)))
+         (set! (-> a1-9 from) pp)
+         (set! (-> a1-9 num-params) 0)
+         (set! (-> a1-9 message) 'open?)
+         (let ((t9-12 send-event-function)
+               (v1-25 (-> this alt-actor)))
+           (cond
+             ((t9-12 (if v1-25 (-> v1-25 extra process)) a1-9) (go __TYPE__-opened))
+             ((< 0.0 (energydoor-player-dist)) (go __TYPE__-closed-till-task))
+             (else (go __TYPE__-opened)))))))
+    (none)))

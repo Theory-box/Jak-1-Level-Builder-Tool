@@ -13555,11 +13555,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 1,
-              "label": "Door (sent 'open when all balls are shot)",
+              "label": "Door (sent 'open when all balls are shot; or link doors' prev-actor to the hub)",
               "accepts": [
                 "energydoor"
               ],
-              "required": true,
+              "required": false,
               "allow-multiple": true
             },
             {
@@ -17990,6 +17990,7 @@
     },
     {
       "etype": "energydoor",
+      "edited": "energydoor",
       "label": "Energy Door (lavatube)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17997,7 +17998,7 @@
       "art_group": "energydoor-ag.go",
       "glb": "levels/lavatube/energydoor-lod0.glb",
       "shape": "CUBE",
-      "description": "Blocks from its +X side until its task is resolved, an energy hub sends 'open, or the linked door is open. Always passable from -X.",
+      "description": "Edited (subtypes/energydoor.gc): open while Jak comes from its -X side; once he's 15 m past it (+X) it closes behind him until it's solved, then opens. Solved: its own task resolved (if set), or the energy hub its prev-actor chain leads to is stopped (all balls shot). Any number of doors: link each door's prev-actor to the hub, or to a door that is. No task and no hub: always open. 110 m back on the -X side it closes again and reopens within 100 m (vanilla).",
       "panels": [
         {
           "panel": "game-task",
@@ -18006,6 +18007,8 @@
         {
           "panel": "actor-link",
           "slots": [
+            {"lump_key": "prev-actor", "slot": 0, "label": "Energy hub (or a door linked to it)", "accepts": ["energyhub", "energydoor"], "required": false,
+             "soft": "no energy hub linked (prev-actor) and no task: it's always open"},
             {
               "lump_key": "alt-actor",
               "slot": 0,
