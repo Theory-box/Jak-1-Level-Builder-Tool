@@ -1,7 +1,7 @@
 ;; The energy hub (Lava Tube) for custom levels: place it on an energybase,
-;; shoot the 5 energy balls with yellow eco to stop it; then it sends 'stop to
-;; alt-actor 0, 'open to alt-actor 1 (optional), closes its task and gets its complete
-;; status, which the edited energy doors linked back to it (prev-actor) open on.
+;; shoot the 5 energy balls with yellow eco to stop it; then it sends 'stop to its base
+;; (alt-actor 0), opens the doors of its next-actor chain (hub -> door -> door ...; each
+;; gets its complete status, so they stay open) and closes its task. Alt-actor 1: the lava.
 ;; - its task is the actor's own (Game Task panel); none = vanilla lavatube-balls
 ;; - works with fewer than 3 alt-actors (vanilla: the empty slots were left
 ;;   unset and written through every frame, which crashed the game)
@@ -32,13 +32,13 @@
         (let ((t9-0 send-event-function)
               (v1-1 (-> self alts 0)))
           (t9-0 (if v1-1 (-> v1-1 extra process)) a1-0)))
-      (let ((a1-1 (new 'stack-no-clear 'event-message-block)))
-        (set! (-> a1-1 from) self)
-        (set! (-> a1-1 num-params) 0)
-        (set! (-> a1-1 message) 'open)
-        (let ((t9-1 send-event-function)
-              (v1-5 (-> self alts 1)))
-          (t9-1 (if v1-5 (-> v1-5 extra process)) a1-1)))
+      ;; the doors (next-actor chain): solved for good, and opened if they're alive
+      (let ((gp-1 (entity-actor-lookup (-> self entity) 'next-actor 0)))
+        (dotimes (s5-1 32)
+          (when gp-1
+            (logior! (-> gp-1 extra perm status) (entity-perm-status complete))
+            (if (-> gp-1 extra process) (send-event (-> gp-1 extra process) 'open))
+            (set! gp-1 (entity-actor-lookup gp-1 'next-actor 0)))))
       (close-specific-task! (__TYPE__-task self) (task-status need-resolution))
       (process-entity-status! self (entity-perm-status complete) #t)
       (level-hint-spawn (text-id lavatube-balls-resolution) "sksp0378" (the-as entity #f) *entity-pool* (game-task none))
@@ -104,9 +104,9 @@
   (dotimes (i 3)
     (set! (-> this alts i) (the-as entity-actor #f)))
   (set! (-> this edit-task) (-> arg0 extra perm task))
-  (let ((s5-1 (entity-actor-count (-> this entity) 'alt-actor)))
-    (dotimes (s4-0 (min 3 s5-1))
-      (set! (-> this alts s4-0) (entity-actor-lookup (-> this entity) 'alt-actor s4-0))))
+  ;; alt-actor 0 the base, 1 the lava (vanilla: 2; its 1 was the door, now next-actor)
+  (set! (-> this alts 0) (entity-actor-lookup (-> this entity) 'alt-actor 0))
+  (set! (-> this alts 2) (entity-actor-lookup (-> this entity) 'alt-actor 1))
   (quaternion->matrix (-> this rot-mat-init) (-> this root quat))
   (let ((f30-0 13107.2)
         (s5-2 (new 'stack-no-clear 'vector))

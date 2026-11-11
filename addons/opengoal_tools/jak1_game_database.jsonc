@@ -13539,9 +13539,12 @@
       "tpage_group": "Lavatube",
       "glb": "levels/lavatube/energyhub-lod0.glb",
       "shape": "CUBE",
-      "description": "Edited (subtypes/energyhub.gc): spinning hub (place it on an energybase) with 5 arms holding energy balls; shoot them all with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and closes the actor's task (Game Task panel; none = vanilla lavatube-balls) need-resolution. Alt-actor 2: held at 1.25x X/Z scale while the hub turns, lava palette faded. Works with fewer than 3 alt-actors (vanilla crashed). Its arms still check vanilla lavatube-balls: closed in the save = no balls.",
+      "description": "Edited (subtypes/energyhub.gc): spinning hub (place it on an energybase) with 5 arms holding energy balls; shoot them all with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and closes the actor's task (Game Task panel; none = vanilla lavatube-balls) need-resolution. Alt-actor 2: held at 1.25x X/Z scale while the hub turns, lava palette faded. Works with fewer than 3 alt-actors (vanilla crashed). Its arms still check vanilla lavatube-balls: closed in the save = no balls. Doors: link the first as its next-actor, each door the next one; once all balls are shot they open for good.",
       "panels": [
-        {"panel": "game-task", "description": "Closed (need-resolution) when all balls are shot."},
+        {
+          "panel": "game-task",
+          "description": "Closed (need-resolution) when all balls are shot."
+        },
         {
           "panel": "actor-link",
           "slots": [
@@ -13557,21 +13560,20 @@
             {
               "lump_key": "alt-actor",
               "slot": 1,
-              "label": "Door (sent 'open when all balls are shot; or link doors' prev-actor to the hub)",
-              "accepts": [
-                "energydoor"
-              ],
-              "required": false,
-              "allow-multiple": true
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 2,
               "label": "Lava (model held at 1.25x X/Z scale every frame; must be a drawable actor)",
               "accepts": [
                 "water-anim"
               ],
               "required": true
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First door (doors chain on with their next-actor)",
+              "accepts": [
+                "energydoor"
+              ],
+              "required": false
             }
           ]
         }
@@ -18002,8 +18004,9 @@
       "art_group": "energydoor-ag.go",
       "glb": "levels/lavatube/energydoor-lod0.glb",
       "shape": "CUBE",
-      "description": "Edited (subtypes/energydoor.gc): open while Jak comes from its -X side; once he's 15 m past it (+X) it closes behind him until it's solved, then opens. Solved: its own task resolved (if set), or the energy hub its prev-actor chain leads to is stopped (all balls shot). Any number of doors: link each door's prev-actor to the hub, or to a door that is. No task and no hub: always open. 110 m back on the -X side it closes again and reopens within 100 m (vanilla).",
+      "description": "Edited (subtypes/energydoor.gc): open while Jak comes from its -X side; once he's 15 m past it (+X) it closes behind him until it's solved, then opens. Solved: its own task resolved (if set), or opened for good by the energy hub whose next-actor chain it's in (hub -> door -> door ...) once all balls are shot. Wait for a hub off and no task: always open. 110 m back on the -X side it closes again and reopens within 100 m (vanilla).",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_door_hub", "label": "Wait for a hub", "type": "bool", "default": true, "lump": {"key": "hubbed", "type": "uint32"}, "write_if": "if_true", "note": "No task: closed behind Jak until an energy hub (next-actor chain) opens it. Off: always open."}]},
         {
           "panel": "game-task",
           "description": "Opens once this task is past need-resolution."
@@ -18011,8 +18014,15 @@
         {
           "panel": "actor-link",
           "slots": [
-            {"lump_key": "prev-actor", "slot": 0, "label": "Energy hub (or a door linked to it)", "accepts": ["energyhub", "energydoor"], "required": false,
-             "soft": "no energy hub linked (prev-actor) and no task: it's always open"},
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next door (opened with this one by the hub)",
+              "accepts": [
+                "energydoor"
+              ],
+              "required": false
+            },
             {
               "lump_key": "alt-actor",
               "slot": 0,

@@ -2,12 +2,13 @@
 ;; side; once he's 15 m past it (+X) it closes behind him until its task is resolved
 ;; (or its alt-actor door is open); 110 m back on the -X side it closes again, and opens
 ;; when he's within 100 m. Vanilla checked only the door's own task, so with no task it
-;; never closed. Here it's solved when its own task is resolved (if set), or when the
-;; energy hub its prev-actor chain leads to (the hub itself, or doors linked back to it)
-;; is stopped (the hub's complete status). Any number of doors: link each one's
-;; prev-actor to the hub or to a door that does. No task and no hub: always open.
+;; never closed. Here it's solved when its own task is resolved (if set) or when it's
+;; complete: the energy hub whose next-actor chain it's in (hub -> door -> door ...)
+;; completes and opens every door of the chain once all its balls are shot. A door in no
+;; chain with no task: always open (next-actor links of the chain).
 ;; edits: energydoor
-(deftype __TYPE__ (energydoor) ()
+(deftype __TYPE__ (energydoor)
+  ((hubbed symbol))
   (:states
    __TYPE__-closed-till-near
    __TYPE__-closed-till-task
@@ -16,19 +17,11 @@
    __TYPE__-opening))
 
 (defun __TYPE__-solved? ((this __TYPE__))
-  "Its own task resolved, or the hub its prev-actor chain leads to stopped."
-  (let ((task (-> this entity extra perm task))
-        (e (entity-actor-lookup (-> this entity) 'prev-actor 0))
-        (hub (the-as entity-actor #f)))
-    (dotimes (i 16)
-      (when (and e (not hub))
-        (if (type-type? (-> e etype) energyhub)
-          (set! hub e)
-          (set! e (entity-actor-lookup e 'prev-actor 0)))))
-    (cond
-      ((and (!= task (game-task none)) (task-closed? task (task-status need-resolution))) #t)
-      (hub (logtest? (-> hub extra perm status) (entity-perm-status complete)))
-      (else (= task (game-task none))))))
+  "Its own task resolved, or opened for good by its hub (complete)."
+  (let ((task (-> this entity extra perm task)))
+    (or (logtest? (-> this entity extra perm status) (entity-perm-status complete))
+        (and (!= task (game-task none)) (task-closed? task (task-status need-resolution)))
+        (and (= task (game-task none)) (not (-> this hubbed))))))
 
 (defbehavior __TYPE__-closed-handler __TYPE__ ((arg0 process) (arg1 int) (arg2 symbol) (arg3 event-message-block))
   (case arg2
@@ -117,6 +110,7 @@
   :post transform-post)
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this hubbed) (nonzero? (res-lump-value arg0 'hubbed uint128)))
   (with-pp
     (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))
       (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
