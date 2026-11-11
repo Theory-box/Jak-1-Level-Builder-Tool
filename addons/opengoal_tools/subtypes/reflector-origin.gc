@@ -1,0 +1,54 @@
+;; Eco beam origin for custom levels: until its blocker (alt-actor) is complete the beam
+;; ends at the Beam target empty (beam-target lump), else at the blocker plus its
+;; height-info (the edited mirror: 12 m, its top; vanilla aimed at the mirror's base).
+;; edits: reflector-origin
+(deftype __TYPE__ (reflector-origin) ()
+  (:states
+   __TYPE__-idle))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :code
+    (behavior ()
+      (reflector-origin-update (-> self blocker))
+      (let ((v1-1 (res-lump-struct (-> self entity) 'beam-target vector)))
+        (when v1-1
+          (set! (-> self next-reflector-trans quad) (-> v1-1 quad))
+          (set! (-> self next-reflector-trans w) 1.0)))
+      (while (not (logtest? (-> self blocker extra perm status) (entity-perm-status complete)))
+        (suspend))
+      (let ((a1-0 (new 'stack-no-clear 'event-message-block)))
+        (set! (-> a1-0 from) self)
+        (set! (-> a1-0 num-params) 0)
+        (set! (-> a1-0 message) 'activate)
+        (let ((t9-1 send-event-function)
+              (v1-6 (-> self link)))
+          (t9-1 (the-as process-tree (and (-> v1-6 next) (-> v1-6 next extra process))) a1-0)))
+      (reflector-origin-update (-> self link next))
+      (let ((gp-0 (new 'stack-no-clear 'vector)))
+        (vector-! gp-0 (-> self next-reflector-trans) (-> self reflector-trans))
+        (vector-normalize! gp-0 819200.0)
+        (vector+! (-> self next-reflector-trans) (-> self reflector-trans) gp-0))
+      (let ((gp-1 #f))
+        (until gp-1
+          (let* ((v1-13 (-> self link))
+                 (s5-0 (and (-> v1-13 next) (-> v1-13 next extra process)))
+                 (v1-17 (if (and (nonzero? s5-0) (type-type? (-> s5-0 type) periscope)) s5-0)))
+            (if v1-17 (set! gp-1 (-> (the-as periscope v1-17) raised?))))
+          (suspend)))
+      (process-entity-status! self (entity-perm-status complete) #t)
+      (reflector-origin-update (-> self link next))
+      (loop
+        (suspend)))
+  :post
+    (behavior ()
+      (draw-power-beam (-> self reflector-trans) (-> self next-reflector-trans))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (set! (-> this link) (new 'process 'actor-link-info this))
+  (set! (-> this blocker) (entity-actor-lookup arg0 'alt-actor 0))
+  (set! (-> this reflector-trans quad) (-> this root trans quad))
+  (go __TYPE__-idle)
+  (none))

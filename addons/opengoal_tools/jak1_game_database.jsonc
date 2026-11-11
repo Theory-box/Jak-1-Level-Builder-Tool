@@ -18723,6 +18723,7 @@
     },
     {
       "etype": "periscope",
+      "edited": "periscope",
       "sounds": ["beam-connect", "eco-tower-rise", "eco-tower-stop", "site-moves"],
       "label": "Periscope (eco beam)",
       "category": "Interactive Objects",
@@ -18732,8 +18733,9 @@
       "tpage_group": "Jungle",
       "glb": "levels/jungle/periscope-base-lod0.glb",
       "shape": "CUBE",
-      "description": "Rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece. On target it becomes complete, which powers the next one. A whole chain also advances vanilla jungle-lurkerm.",
+      "description": "Edited (subtypes/periscope.gc): rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece (or the Beam end empty). On target it becomes complete, which powers the next one, then the Beam shot plays: none, a linked camera, or a vanilla junglecam shot from the Shot origin empty. Its task's need-reminder closes once every periscope of the chain is on target (vanilla jungle-lurkerm).",
       "panels": [
+        {"panel": "game-task", "description": "Its need-reminder closes once every periscope of the chain is on target."},
         {
           "panel": "actor-link",
           "slots": [
@@ -18762,6 +18764,10 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_peri_shot", "label": "Beam shot", "type": "enum", "default": "none", "variant": true, "choices": [{"value": "none", "label": "None (Jak is free at once)", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "tower1", "label": "Vanilla shot: tower1", "lump_value": 2, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower2", "label": "Vanilla shot: tower2", "lump_value": 3, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower3", "label": "Vanilla shot: tower3", "lump_value": 4, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower4", "label": "Vanilla shot: tower4", "lump_value": 5, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower5", "label": "Vanilla shot: tower5", "lump_value": 6, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "beamcam", "label": "Vanilla shot: beamcam", "lump_value": 7, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}], "lump": {"key": "beam-shot", "type": "int32"}, "write_if": "always", "note": "Played once it's on target. Vanilla shots are positioned from the Shot origin."},
+            {"key": "og_peri_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "beam-camera", "type": "string"}, "note": "Beam shot = Linked camera."},
+            {"key": "og_peri_shot_time", "label": "Shot time (s)", "type": "float", "default": 3.0, "min": 0.1, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long."},
+            {"key": "og_peri_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla shots: where they're played from. None: the periscope."},
             {
               "key": "og_peri_height",
               "label": "Height (m)",
@@ -18822,13 +18828,15 @@
     },
     {
       "etype": "reflector-origin",
+      "edited": "reflector-origin",
       "label": "Eco Beam Origin",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "code": "jungle-mirrors.o",
       "shape": "PLAIN_AXES",
-      "description": "Draws the eco beam to its blocker until that is complete, then activates the first periscope.",
+      "description": "Edited (subtypes/reflector-origin.gc): draws the eco beam to the Beam target empty (none: its blocker, at the blocker's height, the mirror's top) until the blocker is complete, then activates the first periscope.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_origin_target", "label": "Beam target (empty)", "type": "object_ref", "default": "", "lump": {"key": "beam-target", "type": "vector"}, "note": "Where the beam ends while blocked. None: the blocker (the mirror: its top, 12 m up)."}]},
         {
           "panel": "actor-link",
           "slots": [
@@ -19327,6 +19335,7 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_mirror_height", "type": "float", "default": 12.0, "show-field": false, "lump": {"key": "height-info", "type": "meters"}, "write_if": "always"},
             {
               "key": "og_mirror_beam_end",
               "label": "Beam endpoint (empty)",
