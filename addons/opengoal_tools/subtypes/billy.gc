@@ -80,9 +80,10 @@
 (defmethod process-taskable-method-38 ((this __TYPE__))
   "After talking: the cell after the win, else past the introduction: ask to play."
   (cond
-    ((nonzero? (-> this cell-for-task)) (call-parent-method this))
+    ;; process-taskable's (billy's own asks to play again at vanilla's reminder stages)
+    ((nonzero? (-> this cell-for-task)) ((method-of-type process-taskable process-taskable-method-38) this))
     ((and (not (__TYPE__-won? this)) (not (__TYPE__-intro? this))) (go (method-of-object this query)))
-    (else (call-parent-method this)))
+    (else ((method-of-type process-taskable process-taskable-method-38) this)))
   (none))
 
 (defmethod get-accept-anim ((this __TYPE__) (arg0 symbol))
