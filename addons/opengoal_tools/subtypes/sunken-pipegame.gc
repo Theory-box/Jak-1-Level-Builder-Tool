@@ -1,106 +1,235 @@
-;; The pipe game (Lost Precursor City) for custom levels: 3 buttons, each sends a prize
-;; down its pipe to the jar; catch it before it's sucked away. Vanilla prizes were the
-;; vanilla sunken-pipe cell and 2 sunken-buzzer scout flies. Here:
-;; - the cell: the actor's task (Game Task panel; none = vanilla sunken-pipe)
-;; - the scout flies: flies 1 and 2 of the Scout fly task (Actor Settings, fly-task
-;;   lump; none = vanilla sunken-buzzer)
-(deftype __TYPE__ (sunken-pipegame) ())
+;; The pipe game (Lost Precursor City) for custom levels: 3 buttons (vanilla spots: -7.5 /
+;; 0 / +7.5 m X, +1.25 m Z from the actor), each sends its prize along its own path (patha /
+;; pathb / pathc: from the first point, where it floats, to the last) in its travel time;
+;; catch it before its timeout, or it's carried back. Per button (Actor Settings, a / b / c
+;; lumps; defaults = vanilla):
+;; - prize-type: the pickup (power cell / scout fly / orb / eco), prize-amount (eco amount)
+;; - prize-task: the cell's / fly's task (none: the actor's task), prize-fly: which fly
+;; - camera: a linked CAMERA_ looking at the prize while it's carried out (Jak waits);
+;;   none: the normal camera (vanilla played fixed sunkencam pov-camera shots)
+;; - timeout / travel: seconds (vanilla 25 / 15 / 15 and 8.5 / 5.5 / 4.5)
+;; A prize is won once its cell / fly is collected; other prizes are saved per button
+;; (perm user-int8 0). The actor's task (Game Task panel) gets its need-hint closed.
+(deftype __TYPE__ (sunken-pipegame)
+  ((paths  path-control 3)
+   (cam-on symbol))
+  (:states
+   __TYPE__-beat
+   __TYPE__-end
+   __TYPE__-idle
+   __TYPE__-play))
 
-(defun __TYPE__-cell-task ((this __TYPE__))
-  (let ((t (-> this entity extra perm task)))
-    (if (= t (game-task none)) (game-task sunken-pipe) t)))
+(defmethod relocate ((this __TYPE__) (offset int))
+  (dotimes (v1-0 3)
+    (if (nonzero? (-> this paths v1-0)) (&+! (-> this paths v1-0) offset)))
+  (call-parent-method this offset))
 
-(defun __TYPE__-fly-task ((this __TYPE__))
-  (let ((t (the-as game-task (res-lump-value (-> this entity) 'fly-task uint :default (the-as uint128 0)))))
-    (if (= t (game-task none)) (game-task sunken-buzzer) t)))
+(defun __TYPE__-lump ((i int) (a symbol) (b symbol) (c symbol))
+  "Button i's lump name (0 / 1 / 2 = a / b / c)."
+  (case i
+    ((0) a)
+    ((1) b)
+    (else c)))
+
+(defun __TYPE__-item ((this __TYPE__) (i int))
+  "Button i's prize pickup type (vanilla: cell, fly, fly)."
+  (the-as pickup-type
+          (res-lump-value (-> this entity) (__TYPE__-lump i 'prize-type-a 'prize-type-b 'prize-type-c) int
+                          :default (the-as uint128 (if (zero? i) 6 8)))))
+
+(defun __TYPE__-task ((this __TYPE__) (i int))
+  "Button i's prize task (none: the actor's task)."
+  (let ((t (the-as game-task (res-lump-value (-> this entity) (__TYPE__-lump i 'prize-task-a 'prize-task-b 'prize-task-c) uint
+                                             :default (the-as uint128 0)))))
+    (if (= t (game-task none)) (-> this entity extra perm task) t)))
+
+(defun __TYPE__-fly ((this __TYPE__) (i int))
+  "Button i's scout fly index (vanilla 0 / 1 for the middle / right flies)."
+  (the-as int (res-lump-value (-> this entity) (__TYPE__-lump i 'prize-fly-a 'prize-fly-b 'prize-fly-c) int
+                              :default (the-as uint128 (max 0 (+ i -1))))))
+
+(defun __TYPE__-seconds ((this __TYPE__) (i int) (a symbol) (b symbol) (c symbol) (f0 float) (f1 float) (f2 float))
+  (res-lump-float (-> this entity) (__TYPE__-lump i a b c) :default (case i
+                                                                       ((0) f0)
+                                                                       ((1) f1)
+                                                                       (else f2))))
 
 (defmethod sunken-pipegame-method-20 ((this __TYPE__))
-  "Which prizes are already won (bit 0 the cell, bits 1 / 2 the flies)."
-  (let ((gp-0 0))
-    (if (task-complete? *game-info* (__TYPE__-cell-task this)) (+! gp-0 1))
-    (if (got-buzzer? *game-info* (__TYPE__-fly-task this) 0) (+! gp-0 2))
-    (if (got-buzzer? *game-info* (__TYPE__-fly-task this) 1) (+! gp-0 4))
+  "Which prizes are won (bit i = button i): its cell / fly collected, or saved."
+  (let ((gp-0 (logand (-> this entity extra perm user-int8 0) 7)))
+    (dotimes (s5-0 3)
+      (case (__TYPE__-item this s5-0)
+        (((pickup-type fuel-cell))
+         (if (task-complete? *game-info* (__TYPE__-task this s5-0)) (set! gp-0 (logior gp-0 (ash 1 s5-0)))))
+        (((pickup-type buzzer))
+         (if (got-buzzer? *game-info* (__TYPE__-task this s5-0) (__TYPE__-fly this s5-0)) (set! gp-0 (logior gp-0 (ash 1 s5-0)))))))
     (the-as uint gp-0)))
+
+(defbehavior __TYPE__-camera-on __TYPE__ ()
+  "The button's camera (if linked) looking at the prize; Jak waits meanwhile."
+  (let ((cam (res-lump-struct (-> self entity) (__TYPE__-lump (-> self challenge) 'camera-a 'camera-b 'camera-c) string)))
+    (when (and cam (process-grab? *target*))
+      (camera-change-to cam 0 #f)
+      (send-event *camera* 'change-target (handle->process (-> self prize (-> self challenge) actor-handle)))
+      (set! (-> self cam-on) #t)))
+  0)
+
+(defbehavior __TYPE__-camera-off __TYPE__ ()
+  (when (-> self cam-on)
+    (set! (-> self cam-on) #f)
+    (send-event *camera* 'change-target *target*)
+    (camera-change-to (the-as string 'base) 150 #f)
+    (process-release? *target*))
+  0)
+
+(defbehavior __TYPE__-carry __TYPE__ ((back symbol))
+  "Carry the prize along its path (back: end to start) in the button's travel time."
+  (let* ((s5-0 (-> self prize (-> self challenge)))
+         (s4-0 (-> self paths (-> self challenge)))
+         (f30-0 (fmax 1.0 (* 300.0 (__TYPE__-seconds self (-> self challenge) 'travel-a 'travel-b 'travel-c 8.5 5.5 4.5))))
+         (s3-0 (current-time))
+         (f28-0 0.0)
+         (s2-0 (new 'stack-no-clear 'vector)))
+    (until (>= f28-0 1.0)
+      (set! f28-0 (fmin 1.0 (/ (the float (- (current-time) s3-0)) f30-0)))
+      (spawn (-> s5-0 sucked-up-part) (if back (-> s5-0 sucked-up-far-part-pos) (-> s5-0 sucked-up-jar-part-pos)))
+      (spawn (-> s5-0 blown-out-part) (if back (-> s5-0 blown-out-jar-part-pos) (-> s5-0 blown-out-far-part-pos)))
+      (eval-path-curve! s4-0 s2-0 (if back (- 1.0 f28-0) f28-0) 'interp)
+      (send-event (handle->process (-> s5-0 actor-handle)) 'trans s2-0)
+      (suspend)))
+  0)
+
+(defstate __TYPE__-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger)
+         (when (= (-> proc type) sunken-pipegame-button)
+           (set! (-> self challenge) (-> (the-as sunken-pipegame-button proc) button-id))
+           (go __TYPE__-play)))))
+  :code
+    (behavior ()
+      (loop
+        (suspend))))
+
+(defstate __TYPE__-play (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('notify)
+         (if (= (process->handle proc) (-> self prize (-> self challenge) actor-handle)) (go __TYPE__-beat)))))
+  :enter
+    (behavior ()
+      (sunken-pipegame-method-21 self #f)
+      (set! (-> self abort-audio-if-beaten?) #f)
+      (dotimes (gp-0 3)
+        (let ((v1-4 (-> self button gp-0)))
+          (if (and (!= gp-0 (-> self challenge)) (not (logtest? (ash 1 gp-0) (-> self challenges-mask))))
+            (send-event (ppointer->process v1-4) 'trigger)))))
+  :exit
+    (behavior ()
+      (__TYPE__-camera-off))
+  :code
+    (behavior ()
+      (if (not (handle->process (-> self prize (-> self challenge) actor-handle))) (go __TYPE__-end))
+      (kill-current-level-hint '(camera) '() 'exit)
+      (__TYPE__-camera-on)
+      (__TYPE__-carry #f)
+      (sunken-pipegame-method-22 self #t)
+      (__TYPE__-camera-off)
+      (if (not (handle->process (-> self prize (-> self challenge) actor-handle))) (go __TYPE__-end))
+      (set-time! (-> self state-time))
+      (sleep (-> self ticker)
+             (the int (* 300.0 (__TYPE__-seconds self (-> self challenge) 'timeout-a 'timeout-b 'timeout-c 25.0 15.0 15.0))))
+      (until (time-elapsed? (-> self state-time) (seconds 0.5))
+        (completed? (-> self ticker))
+        (suspend))
+      (level-hint-spawn (text-id sunken-pipegame-hint) "sksp0123" (the-as entity #f) *entity-pool* (game-task none))
+      (if (!= (-> self entity extra perm task) (game-task none))
+        (close-specific-task! (-> self entity extra perm task) (task-status need-hint)))
+      (until (completed? (-> self ticker))
+        (suspend))
+      (sunken-pipegame-method-22 self #f)
+      (__TYPE__-carry #t)
+      (ambient-hint-spawn "st-lose" (the-as vector #f) *entity-pool* 'stinger)
+      (go __TYPE__-end)))
+
+(defstate __TYPE__-beat (__TYPE__)
+  :code
+    (behavior ()
+      (logior! (-> self challenges-mask) (ash 1 (-> self challenge)))
+      (let ((v1-3 (-> self entity extra perm)))
+        (logior! (-> v1-3 status) (entity-perm-status user-set-from-cstage))
+        (set! (-> v1-3 user-int8 0) (logior (-> v1-3 user-int8 0) (ash 1 (-> self challenge)))))
+      (go __TYPE__-end)))
+
+(defstate __TYPE__-end (__TYPE__)
+  :code
+    (behavior ()
+      (local-vars (v1-3 symbol))
+      (sunken-pipegame-method-21 self #t)
+      (set! (-> self abort-audio-if-beaten?) #f)
+      (until v1-3
+        (suspend)
+        (set! v1-3 (or (not *target*) (not (logtest? (-> *target* state-flags) (state-flags grabbed))))))
+      (if (not (handle->process (-> self prize (-> self challenge) actor-handle)))
+        (logior! (-> self challenges-mask) (ash 1 (-> self challenge))))
+      (set! (-> self challenge) -1)
+      (dotimes (gp-0 3)
+        (let ((v1-18 (-> self button gp-0)))
+          (if (not (logtest? (ash 1 gp-0) (-> self challenges-mask))) (send-event (ppointer->process v1-18) 'untrigger))))
+      (go __TYPE__-idle)))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (set! (-> this abort-audio-if-beaten?) #f)
   (stack-size-set! (-> this main-thread) 512)
   (set! (-> this challenge) -1)
+  (set! (-> this cam-on) #f)
   (dotimes (v1-3 3)
     (set! (-> this prize v1-3 actor-handle) (the-as handle #f)))
   (set! (-> this root) (new 'process 'trsqv))
   (process-drawable-from-entity! this arg0)
-  (set! (-> this path) (new 'process 'path-control this 'path 0.0))
-  (logior! (-> this path flags) (path-control-flag display draw-line draw-point draw-text))
   (set! (-> this challenges-mask) (sunken-pipegame-method-20 this))
   (let ((s4-0 (new 'stack-no-clear 'vector))
         (s3-0 (new 'stack-no-clear 'quaternion)))
     (quaternion-identity! s3-0)
     (dotimes (s2-0 3)
       (let* ((s0-0 (-> this prize s2-0))
-             (v1-17 (ash 1 s2-0))
-             (s1-1 (logtest? v1-17 (-> this challenges-mask))))
-        (eval-path-curve-div! (-> this path) (-> s0-0 jar-pos) (the float (* s2-0 2)) 'interp)
-        (eval-path-curve-div! (-> this path) (-> s0-0 far-pos) (the float (+ (* s2-0 2) 1)) 'interp)
+             (s1-1 (logtest? (ash 1 s2-0) (-> this challenges-mask)))
+             (v1-17 (new 'process 'curve-control this (__TYPE__-lump s2-0 'patha 'pathb 'pathc) -1000000000.0)))
+        (set! (-> this paths s2-0) v1-17)
+        (logior! (-> v1-17 flags) (path-control-flag display draw-line draw-point draw-text))
+        (cond
+          ((logtest? (-> v1-17 flags) (path-control-flag not-found))
+           (set! (-> s0-0 jar-pos quad) (-> this root trans quad))
+           (set! (-> s0-0 far-pos quad) (-> this root trans quad)))
+          (else
+           (eval-path-curve! v1-17 (-> s0-0 jar-pos) 0.0 'interp)
+           (eval-path-curve! v1-17 (-> s0-0 far-pos) 1.0 'interp)))
         (set! (-> s0-0 sucked-up-jar-part-pos quad) (-> s0-0 jar-pos quad))
         (set! (-> s0-0 sucked-up-far-part-pos quad) (-> s0-0 far-pos quad))
         (set! (-> s0-0 blown-out-jar-part-pos quad) (-> s0-0 jar-pos quad))
         (+! (-> s0-0 blown-out-jar-part-pos y) 24576.0)
         (set! (-> s0-0 blown-out-far-part-pos quad) (-> s0-0 far-pos quad))
         (+! (-> s0-0 blown-out-far-part-pos y) 28672.0)
-        (let ((v1-30 s2-0))
-          (cond
-            ((zero? v1-30)
-             (set! (-> s0-0 puzzle-delay) (seconds 25))
-             (set! (-> s0-0 pipe-travel-time-to-far) (seconds 8.5))
-             (set! (-> s0-0 pipe-travel-time-to-jar) (seconds 2.5))
-             (set-vector! s4-0 -30720.0 1146.88 5120.0 1.0)
-             (set! (-> s0-0 sucked-up-part) (create-launch-control (-> *part-group-id-table* 448) this))
-             (set! (-> s0-0 blown-out-part) (create-launch-control (-> *part-group-id-table* 451) this))
-             (+! (-> s0-0 jar-pos y) 11673.6)
-             (+! (-> s0-0 far-pos y) 11673.6)
-             (when (not s1-1)
-               (set! (-> s0-0 actor-handle)
-                     (ppointer->handle (birth-pickup-at-point (-> s0-0 jar-pos) (pickup-type fuel-cell) (the float (__TYPE__-cell-task this)) #f this (the-as fact-info #f))))
-               (let ((a1-10 (handle->process (-> s0-0 actor-handle))))
-                 (if a1-10 (clear-collide-with-as (-> (the-as collectable a1-10) root))))))
-            ((= v1-30 1)
-             (set! (-> s0-0 puzzle-delay) (seconds 15))
-             (set! (-> s0-0 pipe-travel-time-to-far) (seconds 5.5))
-             (set! (-> s0-0 pipe-travel-time-to-jar) (seconds 2.5))
-             (set-vector! s4-0 0.0 1146.88 5120.0 1.0)
-             (set! (-> s0-0 sucked-up-part) (create-launch-control (-> *part-group-id-table* 449) this))
-             (set! (-> s0-0 blown-out-part) (create-launch-control (-> *part-group-id-table* 452) this))
-             (+! (-> s0-0 jar-pos y) 7168.0)
-             (+! (-> s0-0 far-pos y) 7168.0)
-             (+! (-> s0-0 blown-out-far-part-pos y) 4096.0)
-             (when (not s1-1)
-               (set! (-> s0-0 actor-handle)
-                     (ppointer->handle (birth-pickup-at-point (-> s0-0 jar-pos) (pickup-type buzzer) (the float (__TYPE__-fly-task this)) #f this (the-as fact-info #f))))
-               (let ((s0-1 (handle->process (-> s0-0 actor-handle))))
-                 (when s0-1
-                   (send-event s0-1 'movie-pos 1)
-                   (clear-collide-with-as (-> (the-as collectable s0-1) root))))))
-            ((= v1-30 2)
-             (set! (-> s0-0 puzzle-delay) (seconds 15))
-             (set! (-> s0-0 pipe-travel-time-to-far) (seconds 4.5))
-             (set! (-> s0-0 pipe-travel-time-to-jar) (seconds 2.5))
-             (set-vector! s4-0 30720.0 1146.88 5120.0 1.0)
-             (set! (-> s0-0 sucked-up-part) (create-launch-control (-> *part-group-id-table* 450) this))
-             (set! (-> s0-0 blown-out-part) (create-launch-control (-> *part-group-id-table* 453) this))
-             (+! (-> s0-0 jar-pos y) 7168.0)
-             (+! (-> s0-0 far-pos y) 7168.0)
-             (+! (-> s0-0 blown-out-far-part-pos y) 4096.0)
-             (when (not s1-1)
-               (set! (-> s0-0 actor-handle)
-                     (ppointer->handle (birth-pickup-at-point (-> s0-0 jar-pos) (pickup-type buzzer) (the float (logior (__TYPE__-fly-task this) (ash 1 16))) #f this (the-as fact-info #f))))
-               (let ((s0-2 (handle->process (-> s0-0 actor-handle))))
-                 (when s0-2
-                   (send-event s0-2 'movie-pos 2)
-                   (clear-collide-with-as (-> (the-as collectable s0-2) root))))))))
-        (vector+! s4-0 s4-0 (-> this root trans))
-        (let ((v1-102 (process-spawn sunken-pipegame-button s4-0 s3-0 arg0 s1-1 :to this)))
-          (set! (-> this button s2-0) (the-as (pointer sunken-pipegame-button) v1-102))
-          (set! (-> (the-as (pointer sunken-pipegame-button) v1-102) 0 button-id) s2-0)))))
-  (go sunken-pipegame-start-up)
+        (set! (-> s0-0 sucked-up-part) (create-launch-control (-> *part-group-id-table* (+ s2-0 448)) this))
+        (set! (-> s0-0 blown-out-part) (create-launch-control (-> *part-group-id-table* (+ s2-0 451)) this))
+        (set-vector! s4-0 (* 30720.0 (the float (+ s2-0 -1))) 1146.88 5120.0 1.0)
+        (when (not s1-1)
+          (let* ((s1-2 (__TYPE__-item this s2-0))
+                 (f30-0 (case s1-2
+                          (((pickup-type fuel-cell)) (the float (__TYPE__-task this s2-0)))
+                          (((pickup-type buzzer)) (the float (logior (__TYPE__-task this s2-0) (ash (__TYPE__-fly this s2-0) 16))))
+                          (else (res-lump-float arg0 (__TYPE__-lump s2-0 'prize-amount-a 'prize-amount-b 'prize-amount-c) :default 1.0)))))
+            (set! (-> s0-0 actor-handle) (ppointer->handle (birth-pickup-at-point (-> s0-0 jar-pos) s1-2 f30-0 #f this (the-as fact-info #f))))
+            (let ((a0-30 (handle->process (-> s0-0 actor-handle))))
+              (when a0-30
+                (logclear! (-> (the-as collectable a0-30) flags) (collectable-flags fade))
+                (send-event a0-30 'movie-pos s2-0)
+                (clear-collide-with-as (-> (the-as collectable a0-30) root)))))))
+      (vector+! s4-0 s4-0 (-> this root trans))
+      (let ((v1-60 (process-spawn sunken-pipegame-button s4-0 s3-0 arg0 (logtest? (ash 1 s2-0) (-> this challenges-mask)) :to this)))
+        (set! (-> this button s2-0) (the-as (pointer sunken-pipegame-button) v1-60))
+        (set! (-> (the-as (pointer sunken-pipegame-button) v1-60) 0 button-id) s2-0))))
+  (go __TYPE__-idle)
   (none))
