@@ -10992,20 +10992,7 @@
       "panels": [
         {
           "panel": "custom-fields",
-          "fields": [
-            {
-              "key": "og_pelican_camera",
-              "label": "Dive camera",
-              "type": "object_ref",
-              "pick": "CAMERA",
-              "default": "",
-              "note": "Shows the dive when Jak comes near (vanilla camera-215). None: the normal camera.",
-              "lump": {
-                "key": "dive-camera",
-                "type": "string"
-              }
-            }
-          ]
+          "fields": [{"key": "og_pelican_camera", "label": "Dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The first dive when Jak comes near, looking at the pelican (vanilla camera-215). None: the normal camera.", "lump": {"key": "dive-camera", "type": "string"}}, {"key": "og_pelican_spit_camera", "label": "Spit camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The spit, looking at the cell as it's thrown. None: the vanilla cutscene camera (turned with the pelican).", "lump": {"key": "spit-camera", "type": "string"}}, {"key": "og_pelican_diveb_camera", "label": "Second dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The second dive (dive-b) and its way back to the nest, looking at the pelican. None: the normal camera.", "lump": {"key": "dive-b-camera", "type": "string"}}, {"key": "og_pelican_spit_pos", "label": "Spit spot (empty)", "type": "object_ref", "default": "", "note": "Where the spat-out cell lands; the pelican turns to it. None: 10 m ahead of the pelican.", "lump": {"key": "spit-pos", "type": "vector", "fallback": "forward", "fallback_m": 10.0}}]
         },
         {
           "panel": "game-task",
@@ -11022,7 +11009,6 @@
             "dive",
             "to-nest",
             "from-nest",
-            "spit",
             "dive-b",
             "to-nest-b",
             "run-away"
@@ -11032,18 +11018,16 @@
             "dive",
             "to-nest",
             "from-nest",
-            "spit",
             "dive-b",
             "to-nest-b",
             "run-away"
           ],
-          "description": "path: Circling route; the dive starts around points 7-8. dive: Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8. to-nest: Fly from the first dive back to the nest. from-nest: Leave the nest after Jak hits it. spit: The last point is where the spat-out cell lands. dive-b: Dive to recover the dropped cell. to-nest-b: Return to the nest after the second dive. run-away: Escape route after the task is complete.",
+          "description": "path: Circling route; the dive starts around points 7-8. dive: Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8. to-nest: Fly from the first dive back to the nest. from-nest: Leave the nest after Jak hits it. dive-b: Dive to recover the dropped cell. to-nest-b: Return to the nest after the second dive. run-away: Escape route after the task is complete.",
           "path_help": {
             "path": "Circling route; the dive starts around points 7-8.",
             "dive": "Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8.",
             "to-nest": "Fly from the first dive back to the nest.",
             "from-nest": "Leave the nest after Jak hits it.",
-            "spit": "The last point is where the spat-out cell lands.",
             "dive-b": "Dive to recover the dropped cell.",
             "to-nest-b": "Return to the nest after the second dive.",
             "run-away": "Escape route after the task is complete."
@@ -11061,7 +11045,7 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/pelican-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Edited (subtypes/pelican.gc): circles on path holding the cell; when Jak comes within 20 m of the cell, the dive camera shows it diving (dive path) and grabbing the cell, then flying to its nest (to-nest). Hit it on the nest: it spits the cell to the last point of spit and flies off (from-nest, then dives again on dive-b / to-nest-b). Take the cell: it flies away on run-away and is gone. Place the actor at the nest (the spit cutscene's camera is at the actor). Vanilla keyed the eight flights as 'path keyframes 1-8 and used camera-215 and a fixed camera spot."
+      "description": "Edited (subtypes/pelican.gc): circles on path holding the cell; when Jak comes within 20 m of the cell, the dive camera shows it diving (dive path) and grabbing the cell, then flying to its nest (to-nest). Hit it on the nest: it turns to the Spit spot empty, spits the cell there and flies off (from-nest, then dives again on dive-b / to-nest-b). Take the cell: it flies away on run-away and is gone. Place the actor at the nest. Cameras: dive, spit (looks at the cell) and second dive; none = the normal camera (spit: the vanilla cutscene camera). Vanilla keyed the flights as 'path keyframes 1-8, spat in a fixed direction and used camera-215 and a fixed camera spot."
     },
     {
       "etype": "seagull",
