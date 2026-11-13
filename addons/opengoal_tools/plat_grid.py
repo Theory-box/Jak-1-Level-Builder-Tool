@@ -117,7 +117,8 @@ def refresh(ctx, o):
         return
     from . import model_preview as mp
     mp.remove_preview(o)
-    build_preview(ctx, o)
+    if mp.special_on(o):        # Show preview off: nothing built while editing
+        build_preview(ctx, o)
 
 
 def _upd(self, ctx):
