@@ -17259,6 +17259,7 @@
     },
     {
       "etype": "oracle",
+      "edited": "oracle",
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -17274,6 +17275,7 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_oracle_speeches", "label": "Speeches", "type": "enum", "default": "village1", "write_if": "always", "lump": {"key": "speeches", "type": "int32"}, "choices": [{"value": "village1", "label": "Sandover", "lump_value": 1}, {"value": "village2", "label": "Rock Village", "lump_value": 2}, {"value": "village3", "label": "Volcanic Crater", "lump_value": 3}], "note": "Which vanilla oracle's cutscenes it plays."},
             {
               "key": "og_alt_task",
               "label": "Linked Task",
@@ -17284,13 +17286,13 @@
                 "type": "enum-uint32",
                 "format": "(game-task {value})"
               },
-              "write_if": "if_not_none"
+              "write_if": "if_not_none",
+              "show-field": false
             }
-          ],
-          "show-panel": false
+          ]
         }
       ],
-      "description": "Two power cells in its eyes for 120 orbs each: its game task = right eye, Linked Task = left eye (use a vanilla pair: village1/2/3-oracle-money1 + -money2). Trading works, but its speeches are picked by the vanilla village Jak is in, so in a custom level it plays no cutscene (only its idle) before giving the cell."
+      "description": "Edited (subtypes/oracle.gc): two power cells in its eyes for 120 orbs each: its game task = right eye, Linked Task = left eye (use a vanilla pair: village1/2/3-oracle-money1 + -money2, their stages hold the orb check). Speeches picks which vanilla set of its cutscenes it plays (introduction, reminder, the eye cutscenes): Sandover, Rock Village or Volcanic Crater. Vanilla picked them by the vanilla village Jak was in, so it played none in a custom level."
     },
     {
       "etype": "minershort",
