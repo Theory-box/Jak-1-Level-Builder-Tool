@@ -4,19 +4,7 @@ Once a feature is part of a release, it'll get removed from here.
 
 ---
 
-## Second entity pass
-Continuation status: new actor records and edited files implemented; static/Blender export
-validation complete, runtime acceptance pending. See Actor Notes and session-notes/entity-pass-2.md.
-Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
-### nav-enemy
-Change the info to "Nav-enemy, needs navmesh and path"
-Remove the "sphere radius" selection before spawning
-### database driven edited actors
-If an actor is using special edited code that are set in special files in the addon. The link should be done in the database. There should also be folder you can point to in the addon path settings with other custom codes. So they're easy to select and add. Also you should be able to set if an actor code will go into the level's -obs or in another file that then could be reused between different levels
-### Hidden/not added entities
-Actors that have been skipped because they have hard coded tasks or positions should be made into edited actors instead of just being ignored. (most NPCs probably need to be edited so they can have custom tasks)
-
----
+# In main
 
 ## Import from files feature (in main)
 A feature that would let you import a text file and the addon would create actors, checkpoint, navmesh, paths, etc, based on those definitions.
@@ -82,93 +70,54 @@ The "clean file" button can stay at the top, without being in a sub menu. When p
 
 ---
 
-## Level Orb count
-At the moment, the orb count on the level seems to be calculated from orbs and crates with orb content. However, it does not seem to count orb-cache, pickup-spawner and probably any other actor that might spawn orbs. Most of those should be detected but it's still possible the count might not be correct so a way to enter it manually should be possible. Have an "orb count" settings in Level > Settings > Gameplay. If left blank, it'll auto calculate, if not, it'll use the number written down.
+## Switch Nav-mesh feature to TFL implementation 
+While this isn't implemented in mod-base yet, this does not mean it's not useable if the addon just create the files and changes. 
+### Research
+You can check on https://github.com/Kuitar5/the-forgotten-lands/ how it works. Here's a few pointers:
+- [tfl-nav-mesh.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/main/goal_src/jak1/engine/mods/tfl-nav-mesh.gc)
+  - Where the custom nav-mesh are defined. They're mostly similar to how they're defined in the other, mod-base way.
+  - Where the list of nav-mesh is defined
+  - Where the setup is made
+- [entity.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/engine/entity/entity.gc#L842)
+  - Where `custom-nav-mesh-check-and-setup` is called
+- [Any level .json](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/custom_assets/jak1/levels/energy-bay/energy-bay.jsonc#L801)
+  - `custom-nav` lump to select from the list of nav-mesh
+- [game.gp](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/game.gp#L2066)
+(when it's implemented on mod-base)
+  - Not forgoting to add the new file in here so it compiles.
+You can have a look around see if there's other things I missed.
+### Advantages
+The main advantage is a cleaner approach, not changing the base files much, each nav-mesh is sparated, you don't need to set it by aid so it's more understandable in the level's json too. As it's a differen file, it doesn't need to compile as much other files when making changes on nav-meshes.
+### Setup for the addon
+As with camera, makes this a settings but default to current implementation, this will only be the default once mod-base has been updated to it.
+### Additional nav-mesh features
+These features should be available regardless of which nav-mesh implementation is selected
+
+We need a way to set some faces as "jump" (written as `:pat 1` in the nav-mesh definition, you can also check if there's more than that and what they do).
+My idea is to have some special navigation materials which automatically get added as slots onto nav-mesh meshes in blender. Then users can switch to edit mode, select the faces they want as jump and change them however they want.
+If you have a better idea you can propose it.
+
+Nav-sphere are also not implemented correctly. At the moment the addon export one nav-sphere per nav-mesh. But no nav-sphere should be exported by default. Those serves to set areas that the enemies will avoid. As it's easier to sometimes put a nav-sphere to block an area than complexifying the nav-mesh itself as there's a vertex limit.
+
+Add a collapsable menu at the bottom of nav-mesh for nav-sphere. Where you can add them by searching for empties or by directly adding one from the menu. The sphere then use the scaling of the sphere times the size of the empty and its position to write down all the nav-sphere definitions.
 
 ---
 
-## Export selected definition options
-At the moment, when exporting definition. The addon adds comments to the text and format it in a way that might be annoying to just paste back into your level files.
-Here's a few options to help with those things:
-- On/Off for "Add comments"
-- Drop Down menu for formating:
-  - Bracket & category (Would add the name of the category in front, ex: `"actors":` before the first bracket for each category)
-  - Bracket (current way it exports actors/ambients/cameras)
-  - No Brackets (remove the main emcompassing brackets at the start and end of categories, so you can just paste it directly in between other entities in the file)
-- Identation offset (at the moment when copying cameras/actors, the indentation is off by one, this can either be defaulted to be one extra indentation or just give the user control here so they can select what they want, but default it to 1)
-
-Also make sure to remove any extra lines at the top and bottom of the file, especially if you're using the "no bracket" so it perfectly fit when pasting into a file without having to edit it after or pasting it first in another text file to copy only what you need.
-
----
-
-## Path additions
-### Add an "add curve" option
-There's already buttons to add waypoints dirrectly, There could be buttons to add a curve too as well. Instead of having to create one before and then link it. That way it'd automatically be linked too. Have both options like the waypoint where the first one add it on the 3D cursor and then "at actor position" to add it on at the actor's position.
-
-When adding the curve, it should spawn the bottom left menu with things to adjust such as:
-- Curve Type (list):
-  - NURBS (default)
-  - POLY
-  - Bézier
-- Curve Shape (list):
-  - Circle
-  - Straight line
-  - Single point
-    - An issue with NURBS and having a single point is that it'll automatically change the Order U to 2 (4 is the default and how opengoal works too). So if the addon is able to change that behaviour and keep it at 4, that'd be best
-  - Half circle
-- Number of points (integer) (depending on the shape and curve type this option would be visible or hidden)
-  - NURBS
-    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
-    - Straight line (visible, Default to 4 points at a minimum)
-    - Single point (hidden)
-    - Half circle (hidden, same as circle)
-  - POLY
-    - Circle (visible, Default to 8, can be as low as 3 or as high as the max amount of points in a path, adding more points just make a regular polygon of that number of point, estimating a circle)
-    - Straight line (visible, Default to 2 points at a minimum)
-    - Single point (hidden)
-    - Half circle (visible, same as circle, default to 4)
-  - Bézier
-    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
-    - Straight line (visible, Default to 2 points at a minimum)
-    - Single point (hidden)
-    - Half circle (hidden, same as circle)
-- Cyclic (on/off button) (shows for all curve type, is on or off by default depending on the curve shape:)
-  - Circle (ON by default)
-  - Straight line (OFF by default)
-  - Single point (OFF by default)
-  - Half circle (OFF by default)
-- Endpoints (only show for NURBS is on or off by default depending on the shape:)
-  - Circle (OFF by default)
-  - Straight line (ON by default)
-  - Single point (ON by default)
-  - Half circle (ON by default)
-- Size (in meters)
-  - size of the diameter for circle/half circle (default 2m)
-  - length of the line for straight line (default 2m)
-  - doesn't show for single point
-- Rotation
-  - X/Y/Z values, defaulting to all 0 which means all curves are flat on blender's XY plane
-
-The curve would then automatically be linked in the path menu of the actor where it was created from and be named to have the name of the actor+name of the path (path/patha/pathb/etc)+ numerical values in case there's multiple ones.
-### Add edit button for curve/waypoints
-Add a button inbetween the "frame" and "delete" buttons to the right to "edit curve/waypoint" which would select the curve, and then automatically switch to edit mode on it. 
-If it's a waypoint (empty), it'd just select it and stay in object mode.
-### Add collection for path curves
-Make a collection for curve linked where they'd automatically go to when added as path and allow the collection sorter button to sort the connected curve as path to also move those to their collection 
+# Second entity pass (in progress)
+Continuation status: new actor records and edited files implemented; static/Blender export
+validation complete, runtime acceptance pending. See Actor Notes and session-notes/entity-pass-2.md.
+Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
+### nav-enemy
+Change the info to "Nav-enemy, needs navmesh and path"
+Remove the "sphere radius" selection before spawning
+### database driven edited actors
+If an actor is using special edited code that are set in special files in the addon. The link should be done in the database. There should also be folder you can point to in the addon path settings with other custom codes. So they're easy to select and add. Also you should be able to set if an actor code will go into the level's -obs or in another file that then could be reused between different levels
+### Hidden/not added entities
+Actors that have been skipped because they have hard coded tasks or positions should be made into edited actors instead of just being ignored. (most NPCs probably need to be edited so they can have custom tasks)
 
 ---
 
-## Camera variant to spawn as the view instead of 3D cursor
-Add a drop down menu to select the spot a camera should spawn at:
-- 3D cursor (aligned view)
-  - Current behaviour where the camera spawn at the 3D cursor and is aligned view
-- 3D cursor (default view)
-  - Spawn at the 3D cursor but default the rotation to 0,0,0
-- Viewport View
-  - Spawn the camera at the current view in the viewport
-
----
-
+# Light Baking additions
 ## Make the "view" buttons for time of day also set the render color
 At the moment, the view button next to time of day will change which color attribute is selected but it won't change which one is set for render. Doing the later one as well would allow you to show it in textured mode too if the user has combined their material to show the effect of the lighting on the textures too.
 
@@ -247,6 +196,148 @@ Adding a light curve in the light baking curve preset that's similar to the fit 
 
 ---
 
+# Path additions
+## Add an "add curve" option
+There's already buttons to add waypoints dirrectly, There could be buttons to add a curve too as well. Instead of having to create one before and then link it. That way it'd automatically be linked too. Have both options like the waypoint where the first one add it on the 3D cursor and then "at actor position" to add it on at the actor's position.
+
+When adding the curve, it should spawn the bottom left menu with things to adjust such as:
+- Curve Type (list):
+  - NURBS (default)
+  - POLY
+  - Bézier
+- Curve Shape (list):
+  - Circle
+  - Straight line
+  - Single point
+    - An issue with NURBS and having a single point is that it'll automatically change the Order U to 2 (4 is the default and how opengoal works too). So if the addon is able to change that behaviour and keep it at 4, that'd be best
+  - Half circle
+- Number of points (integer) (depending on the shape and curve type this option would be visible or hidden)
+  - NURBS
+    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
+    - Straight line (visible, Default to 4 points at a minimum)
+    - Single point (hidden)
+    - Half circle (hidden, same as circle)
+  - POLY
+    - Circle (visible, Default to 8, can be as low as 3 or as high as the max amount of points in a path, adding more points just make a regular polygon of that number of point, estimating a circle)
+    - Straight line (visible, Default to 2 points at a minimum)
+    - Single point (hidden)
+    - Half circle (visible, same as circle, default to 4)
+  - Bézier
+    - Circle (hidden, it should automatically add as many points as needed for making a perfect circle with NURBS)
+    - Straight line (visible, Default to 2 points at a minimum)
+    - Single point (hidden)
+    - Half circle (hidden, same as circle)
+- Cyclic (on/off button) (shows for all curve type, is on or off by default depending on the curve shape:)
+  - Circle (ON by default)
+  - Straight line (OFF by default)
+  - Single point (OFF by default)
+  - Half circle (OFF by default)
+- Endpoints (only show for NURBS is on or off by default depending on the shape:)
+  - Circle (OFF by default)
+  - Straight line (ON by default)
+  - Single point (ON by default)
+  - Half circle (ON by default)
+- Size (in meters)
+  - size of the diameter for circle/half circle (default 2m)
+  - length of the line for straight line (default 2m)
+  - doesn't show for single point
+- Rotation
+  - X/Y/Z values, defaulting to all 0 which means all curves are flat on blender's XY plane
+
+The curve would then automatically be linked in the path menu of the actor where it was created from and be named to have the name of the actor+name of the path (path/patha/pathb/etc)+ numerical values in case there's multiple ones.
+
+## Add edit button for curve/waypoints
+Add a button inbetween the "frame" and "delete" buttons to the right to "edit curve/waypoint" which would select the curve, and then automatically switch to edit mode on it. 
+If it's a waypoint (empty), it'd just select it and stay in object mode.
+
+## Add collection for path curves
+Make a collection for curve linked where they'd automatically go to when added as path and allow the collection sorter button to sort the connected curve as path to also move those to their collection 
+
+---
+
+# Smaller additions
+## Level Orb count
+At the moment, the orb count on the level seems to be calculated from orbs and crates with orb content. However, it does not seem to count orb-cache, pickup-spawner and probably any other actor that might spawn orbs. Most of those should be detected but it's still possible the count might not be correct so a way to enter it manually should be possible. Have an "orb count" settings in Level > Settings > Gameplay. If left blank, it'll auto calculate, if not, it'll use the number written down.
+### List of known actors to check for orb count
+- `money`
+- `orb-cache-top`
+- `crate` (of any type)
+- Most enemies can have different pickup on death (would actually be good to be able to set that pickup too)
+- `plant-boss` (5 orbs when you jump on its head after killing it)
+- `pickup-spawner`
+- `sunken-pipegame` (our custom type allows for any pickup in there, including orbs)
+There might be more that I forgot
+
+---
+
+## Export selected definition options
+At the moment, when exporting definition. The addon adds comments to the text and format it in a way that might be annoying to just paste back into your level files.
+Here's a few options to help with those things:
+- On/Off for "Add comments"
+- Drop Down menu for formating:
+  - Bracket & category (Would add the name of the category in front, ex: `"actors":` before the first bracket for each category)
+  - Bracket (current way it exports actors/ambients/cameras)
+  - No Brackets (remove the main emcompassing brackets at the start and end of categories, so you can just paste it directly in between other entities in the file)
+- Identation offset (at the moment when copying cameras/actors, the indentation is off by one, this can either be defaulted to be one extra indentation or just give the user control here so they can select what they want, but default it to 1)
+
+Also make sure to remove any extra lines at the top and bottom of the file, especially if you're using the "no bracket" so it perfectly fit when pasting into a file without having to edit it after or pasting it first in another text file to copy only what you need.
+
+---
+
+## Camera variant to spawn as the view instead of 3D cursor
+Add a drop down menu to select the spot a camera should spawn at:
+- 3D cursor (aligned view)
+  - Current behaviour where the camera spawn at the 3D cursor and is aligned view
+- 3D cursor (default view)
+  - Spawn at the 3D cursor but default the rotation to 0,0,0
+- Viewport View
+  - Spawn the camera at the current view in the viewport
+
+---
+
+## Extra boot mode
+Drop down selection, under the spawn options in the "Build and play" menu.
+### Debug Mode
+Current way the game boots. Make this the default option
+### Debug Mode (attached debugger)
+Whent he game crashes as you boot in the level, it's a bit annoying to setup the debugger yourself. If this option is selected then the game would start with debugger by doing these commands:
+- task run-game 
+  - this boot the game paused, waiting for the repl to send a test-play command to start, so you can catch crashes that happen on boot, might only be available in a dev environement, maybe there's just arguments you can set when starting gk for this too
+- then in the repl:
+  - (mi)
+  - (lt)
+  - (dbgc)
+  - (test-play)
+### Retail Mode
+Starts the game in Retail Mode so you can test things out of debug
+
+---
+
+## Convert entities doesn't carry over nav-mesh, paths and actor entities links
+
+---
+
+## Changes to entity descriptions
+Make the description of actors in the spawn actor menu collapsable
+
+Also add the description at the top of the actor's "Object settings" right under its name, collapsed by default
+
+---
+
+## Project settings
+New sub menu in the "level" tab. These are settings that are relevant to the whole project, not a specific level:
+- `Retail Boot Checkpoint`: The checkpoint that loads when you boot in retail mode. Leave blank to not change it. Otherwise a menu with all base game checkpoints and the custom one from this blend file + custom option to write down anything.
+- `New Game Checkpoint`: Same as above.
+- `Discord RPC Status`: the status that show when you play this mod, in `goal_src/jak1/pc/pckernel.gc`. String input that's empty by default, if empty it shouldn't change what's set in the file.
+
+---
+
+## Texture remap
+### water-anim texture remap doesn't seem to work
+
+---
+
+# Custom Tools and actors
 ## Actor/jak Light custom actor
 Something I did in TFL is having some areas that affect the light on jak and other actors. However, the way worked was fit inside of the mood function. This comes with a lot of limitation and create a lot of extra code in there which wouldn't be needed if it was a single actor that did it with all its settings in the entity lump. You can check TFL's `goal_src/jak1/engine/gfx/mood/mood.gc` to see how it was done.
 This actor code should be added to common/game.gd if the user uses it and not just per level's -obs.
@@ -280,36 +371,6 @@ Here's all the settings and what they'd do:
 
 ---
 
-## Extra boot mode
-Drop down selection, under the spawn options in the "Build and play" menu.
-### Debug Mode
-Current way the game boots. Make this the default option
-### Debug Mode (attached debugger)
-Whent he game crashes as you boot in the level, it's a bit annoying to setup the debugger yourself. If this option is selected then the game would start with debugger by doing these commands:
-- task run-game 
-  - this boot the game paused, waiting for the repl to send a test-play command to start, so you can catch crashes that happen on boot, might only be available in a dev environement, maybe there's just arguments you can set when starting gk for this too
-- then in the repl:
-  - (mi)
-  - (lt)
-  - (dbgc)
-  - (test-play)
-### Retail Mode
-Starts the game in Retail Mode so you can test things out of debug
-
----
-
-## Project settings
-New sub menu in the "level" tab. These are settings that are relevant to the whole project, not a specific level:
-- `Retail Boot Checkpoint`: The checkpoint that loads when you boot in retail mode. Leave blank to not change it. Otherwise a menu with all base game checkpoints and the custom one from this blend file + custom option to write down anything.
-- `New Game Checkpoint`: Same as above.
-- `Discord RPC Status`: the status that show when you play this mod, in `goal_src/jak1/pc/pckernel.gc`. String input that's empty by default, if empty it shouldn't change what's set in the file.
-
----
-
-## Better Linux support
-
----
-
 ## Custom art group/actor/camera implementation
 It is possible to create your own actor fully from scratch for opengoal even with custom art group and animation. The process can be a bit cumbersome both on the blender side and opengoal side.
 Let's first starth with researching the topic to see what's needed from the blender side as well as the opengoal code side of things.
@@ -337,39 +398,9 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 ---
 
-# Need some outside changes first
+# Others
+## Better Linux support
 
 ---
 
-## Switch Nav-mesh feature to TFL implementation 
-While this isn't implemented in mod-base yet, this does not mean it's not useable if the addon just create the files and changes. 
-### Research
-You can check on https://github.com/Kuitar5/the-forgotten-lands/ how it works. Here's a few pointers:
-- [tfl-nav-mesh.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/main/goal_src/jak1/engine/mods/tfl-nav-mesh.gc)
-  - Where the custom nav-mesh are defined. They're mostly similar to how they're defined in the other, mod-base way.
-  - Where the list of nav-mesh is defined
-  - Where the setup is made
-- [entity.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/engine/entity/entity.gc#L842)
-  - Where `custom-nav-mesh-check-and-setup` is called
-- [Any level .json](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/custom_assets/jak1/levels/energy-bay/energy-bay.jsonc#L801)
-  - `custom-nav` lump to select from the list of nav-mesh
-- [game.gp](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/game.gp#L2066)
-(when it's implemented on mod-base)
-  - Not forgoting to add the new file in here so it compiles.
-You can have a look around see if there's other things I missed.
-### Advantages
-The main advantage is a cleaner approach, not changing the base files much, each nav-mesh is sparated, you don't need to set it by aid so it's more understandable in the level's json too. As it's a differen file, it doesn't need to compile as much other files when making changes on nav-meshes.
-### Setup for the addon
-As with camera, makes this a settings but default to current implementation, this will only be the default once mod-base has been updated to it.
-### Additional nav-mesh features
-These features should be available regardless of which nav-mesh implementation is selected
-
-We need a way to set some faces as "jump" (written as `:pat 1` in the nav-mesh definition, you can also check if there's more than that and what they do).
-My idea is to have some special navigation materials which automatically get added as slots onto nav-mesh meshes in blender. Then users can switch to edit mode, select the faces they want as jump and change them however they want.
-If you have a better idea you can propose it.
-
-Nav-sphere are also not implemented correctly. At the moment the addon export one nav-sphere per nav-mesh. But no nav-sphere should be exported by default. Those serves to set areas that the enemies will avoid. As it's easier to sometimes put a nav-sphere to block an area than complexifying the nav-mesh itself as there's a vertex limit.
-
-Add a collapsable menu at the bottom of nav-mesh for nav-sphere. Where you can add them by searching for empties or by directly adding one from the menu. The sphere then use the scaling of the sphere times the size of the empty and its position to write down all the nav-sphere definitions.
-
----
+## -
