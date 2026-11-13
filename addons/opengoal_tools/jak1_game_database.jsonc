@@ -10306,7 +10306,7 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Freed by (e.g. a Citadel Generator)",
+              "label": "Freed by (a Citadel Generator; or link its alt-actor to him)",
               "accepts": [
                 "citb-generator"
               ],
@@ -10391,11 +10391,11 @@
                 },
                 {
                   "value": "actor",
-                  "label": "His Freed by actor (broken, cell taken)",
+                  "label": "Breaking its generator",
                   "lump_value": 1
                 }
               ],
-              "note": "Freed by actor: the rescue plays by itself (Jak within 16 m) once that actor is complete (a generator: broken) and his task's cell is taken."
+              "note": "Breaking its generator: link the Citadel Generator's alt-actor (or trigger-actor) to him; the rescue plays by itself (Jak within 16 m) once its cell is taken. Or set him a Freed by actor: once it's complete and his task's cell is taken."
             },
             {
               "key": "og_sage_beam",
@@ -10407,6 +10407,19 @@
                 "type": "vector"
               },
               "note": "Once rescued he fires his beam at this point. None: no beam."
+            },
+            {
+              "key": "og_sage_talk_dist",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "Freed by talking: how near Jak has to be for the talk prompt."
             }
           ]
         }

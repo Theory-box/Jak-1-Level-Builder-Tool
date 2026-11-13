@@ -2,16 +2,18 @@
 ;; at any time and again; his rescue cutscene came from the cell code sending 'play-anim to
 ;; a process named yellow-sagecage-1; his beam aimed 20 m above citb-robotboss-1 (or his link),
 ;; pulled 28.5 m back toward him; hidden once citadel-sage-green was done. Here:
-;; - Freed by (free-mode lump): 0 talking to him (once; his task's cell, if any, comes with
-;;   it), 1 his Freed by actor (alt-actor, e.g. a Citadel Generator) breaking (its complete
-;;   status) and his task's cell being taken (none: right away): the rescue plays by itself
-;;   when Jak is near (16 m).
+;; - Freed by (free-mode lump): 0 talking to him (once, within Talk distance: talk-dist;
+;;   his task's cell, if any, comes with it), 1 breaking its generator: a Citadel Generator
+;;   that sends him 'trigger (its alt-actor / trigger-actor: after its cell is taken), or
+;;   his Freed by actor (alt-actor) once it's complete and his task's cell is taken. The
+;;   rescue then plays by itself when Jak is near (16 m).
 ;; - Once rescued (saved, his complete status) he can't be talked to, his cage is open and
 ;;   he fires his beam at the Beam target empty (beam-target lump; none: no beam).
 ;; - 'open (a generator's open actor) drops the bars, as vanilla.
 ;; edits: yellow-sagecage
 (deftype __TYPE__ (yellow-sagecage)
-  ((has-beam symbol)))
+  ((has-beam  symbol)
+   (triggered symbol)))
 
 (defun __TYPE__-rescued? ((this __TYPE__))
   (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
@@ -20,14 +22,16 @@
   (and (not (__TYPE__-rescued? this)) (zero? (res-lump-value (-> this entity) 'free-mode int))))
 
 (defun __TYPE__-ready? ((this __TYPE__))
-  "Freed by an actor: it's complete (broken) and his task's cell is taken."
+  "Freed by its generator: it sent 'trigger (after its cell), or the Freed by actor is
+complete (broken) and his task's cell is taken."
   (let ((e (entity-actor-lookup (-> this entity) 'alt-actor 0))
         (task (-> this entity extra perm task)))
     (and (not (__TYPE__-rescued? this))
          (nonzero? (res-lump-value (-> this entity) 'free-mode int))
-         e
-         (logtest? (-> e extra perm status) (entity-perm-status complete))
-         (or (= task (game-task none)) (task-complete? *game-info* task)))))
+         (or (-> this triggered)
+             (and e
+                  (logtest? (-> e extra perm status) (entity-perm-status complete))
+                  (or (= task (game-task none)) (task-complete? *game-info* task)))))))
 
 (defun __TYPE__-setup ((this __TYPE__))
   "citb-sage's play-reminder: the cage, the beam from the Beam target empty."
@@ -97,6 +101,7 @@
     (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
       (case message
         (('open) (send-event (handle->process (-> self cage)) 'disable-bars))
+        (('trigger) (set! (-> self triggered) #t))   ; a generator, once its cell is taken
         (else ((-> (method-of-type process-taskable idle) event) proc argc message block))))
   :trans
     (behavior ()
@@ -113,7 +118,7 @@
                           (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
                 (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
                 ;; og:preserve-this
-                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) 32768.0)
+                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) (res-lump-float (-> self entity) 'talk-dist :default (meters 15)))
                 (= (-> *level* loading-level) (-> *level* level-default))
                 (not (movie?))
                 (not (level-hint-displayed?))
@@ -159,6 +164,7 @@
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (process-taskable-method-40 this arg0 *yellowsage-sg* 3 50 (new 'static 'vector :w 8192.0) 5)
   (set! (-> this tasks) (get-task-control (-> this entity extra perm task)))
+  (set! (-> this triggered) #f)
   (play-reminder this)
   (set! (-> this sound-flava) (music-flava sage-yellow))
   (process-taskable-method-42 this)
