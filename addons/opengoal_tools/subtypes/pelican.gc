@@ -2,7 +2,8 @@
 ;; 'path keyframes 1-8, which a custom level can't hold (one res tag per lump name);
 ;; here they are named paths:
 ;;   path       circling with the cell in its beak area (dives at points 7-8)
-;;   dive       the swoop that grabs the cell (it waits at u 4.5, grabbed at u 3.8)
+;;   dive       the swoop that grabs the cell (it waits at u 4.5, grabbed at u 3.8 or
+;;              60 % of a shorter path)
 ;;   to-nest    to the nest after the first dive
 ;;   from-nest  off the nest again (starts at point 2)
 ;;   dive-b     the second dive
@@ -186,7 +187,10 @@
       (until (ja-done? 0)
         (ja-blend-eval)
         (let ((gp-1 (handle->process (-> self fuel-cell))))
-          (when (and gp-1 (>= (-> self path-pos) 3.8) (not (send-event gp-1 'query 'grab)))
+          (when (and gp-1
+                     ;; vanilla grabbed at point 3.8: a shorter dive path never got there
+                     (>= (-> self path-pos) (fmin 3.8 (* 0.6 (-> self path-max))))
+                     (not (send-event gp-1 'query 'grab)))
             (level-hint-spawn (text-id zero) (the-as string #f) (-> self entity) *entity-pool* (game-task none))
             (send-event gp-1 'grab self)
             (send-event gp-1 'draw #f)
