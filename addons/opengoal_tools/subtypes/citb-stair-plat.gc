@@ -1,9 +1,15 @@
 ;; Citadel stairs: rise to the placed height on trigger, with a configurable
 ;; travel distance and delay. Vanilla used the three sage tasks and a world-Y
 ;; fade; this version saves activation per entity and fades relative to its rise.
+;; With a task (Game Task panel) it also rises once that task is complete, and starts
+;; risen when it already is (after a death, load or reset too).
 ;; edits: citb-stair-plat
 
 (deftype __TYPE__ (citb-stair-plat) ())
+
+(defun __TYPE__-task-done? ((this __TYPE__))
+  (let ((task (-> this entity extra perm task)))
+    (and (!= task (game-task none)) (task-complete? *game-info* task))))
 
 (defmethod citb-base-plat-method-22 ((this __TYPE__))
   (initialize-skeleton this *plat-citb-sg* '())
@@ -30,6 +36,7 @@
     (behavior ()
       (logior! (-> self draw status) (draw-status hidden))
       (while (not (-> self rise))
+        (if (__TYPE__-task-done? self) (set! (-> self rise) #t))
         (suspend))
       (logclear! (-> self draw status) (draw-status hidden))
       (set-vector! (-> self draw color-mult) 0.0 0.0 0.0 1.0)
@@ -53,7 +60,7 @@
   :post #f)
 
 (defmethod citb-base-plat-method-24 ((this __TYPE__))
-  (if (logtest? (-> this entity extra perm status) (entity-perm-status complete))
+  (if (or (logtest? (-> this entity extra perm status) (entity-perm-status complete)) (__TYPE__-task-done? this))
     (go (method-of-object this citb-base-plat-active))
     (go (method-of-object this citb-base-plat-idle)))
   (none))

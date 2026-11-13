@@ -19211,6 +19211,7 @@
       ],
       "description": "Edited: waits hidden below its placed height, then rises on trigger. Rise distance and delay are configurable. Activation is saved per actor; it stays raised after reload. No vanilla sage tasks or world-height fade.",
       "panels": [
+        {"panel": "game-task", "description": "It rises once this task is complete, and starts risen when it already is. None: only 'trigger raises it."},
         {
           "panel": "custom-fields",
           "fields": [
