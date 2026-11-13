@@ -15,7 +15,7 @@
 ;;   dive-camera    the first dive (vanilla camera-215), looking at the pelican
 ;;   spit-camera    the spit, looking at the cell (none: the vanilla cutscene camera,
 ;;                  turned with the pelican)
-;;   dive-b-camera  the second dive and its way back to the nest
+;;   dive-b-camera  the second dive
 ;; The spit cutscene no longer teleports the camera to a fixed Sentinel Beach spot; the
 ;; real cell is thrown during it (no clone cell). Return time (return-time lump, s):
 ;; how long it takes off the nest before diving back for the spat cell (vanilla 20).
@@ -170,6 +170,7 @@
       0)
   :exit
     (behavior ()
+      (if (= (-> self path) (-> self path-dive1)) (__TYPE__-camera-off))   ; the second dive's camera: the dive only
       (set! (-> self draw force-lod) -1))
   :trans
     (behavior ()
@@ -346,7 +347,7 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
           (suspend)
           (set! v1-21 (or (not *target*) (process-grab? *target*))))
         (if (handle->process gp-1) (send-event (-> gp-1 process 0) 'anim-mode 'clone-anim))
-        (if s3-0 (__TYPE__-camera-on 'spit-camera (handle->process (-> self fuel-cell))))
+        (if s3-0 (__TYPE__-camera-on 'spit-camera self))   ; the pelican, then the cell once it's thrown
         ;; the real cell is thrown during the cutscene (no clone cell in the beak)
         (set-time! (-> self state-time))
         (ja-play-spooled-anim (new 'static 'spool-anim :name "pelican-spit-ext" :index 11 :parts 2 :command-list '())
@@ -378,7 +379,8 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
                                                              (the float (-> self entity extra perm task))
                                                              #f
                                                              *entity-pool*
-                                                             (the-as fact-info #f))))
+                                                             ;; no jump to the pelican's movie-pos
+                                                             (new 'static 'fact-info :options (fact-options skip-jump-anim)))))
                             (when v1-7
                               (set! (-> (the-as collectable (-> v1-7 0)) collect-timeout) 0)
                               (send-event (ppointer->process v1-7) 'movie-pos -1)   ; plays where it's caught
