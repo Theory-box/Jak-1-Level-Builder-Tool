@@ -174,7 +174,7 @@ complete (broken) and his task's cell is taken."
               (not (logtest? (-> *target* state-flags) (state-flags grabbed)))
               (< (vector-vector-distance (-> self root trans) (target-pos 0)) (meters 16)))
          (if (zero? (-> self ready-time)) (set-time! (-> self ready-time)))
-         (if (time-elapsed? (-> self ready-time) (seconds 1)) (set! (-> self been-kicked) #t)))
+         (if (time-elapsed? (-> self ready-time) (seconds 0.1)) (set! (-> self been-kicked) #t)))
         (else (set! (-> self ready-time) 0)))
       ((the-as (function none :behavior citb-sage) (-> (method-of-type process-taskable idle) post)))
       (if (-> self beam-on) (citb-sage-draw-beam))))

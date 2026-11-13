@@ -337,6 +337,11 @@ New sub menu in the "level" tab. These are settings that are relevant to the who
 
 ---
 
+## Snapping snap to preview mesh of the selected actor
+This should be a changed behaviour, otherwise it moves the actors when you try to snap it to another surface. If possible the snap shouldn't be affected by the selected actor preview mesh that you're moving but still by the other preview mesh of other non-selected actors so you can line stuff up on them 
+
+---
+
 # Custom Tools and actors
 ## Actor/jak Light custom actor
 Something I did in TFL is having some areas that affect the light on jak and other actors. However, the way worked was fit inside of the mood function. This comes with a lot of limitation and create a lot of extra code in there which wouldn't be needed if it was a single actor that did it with all its settings in the entity lump. You can check TFL's `goal_src/jak1/engine/gfx/mood/mood.gc` to see how it was done.
