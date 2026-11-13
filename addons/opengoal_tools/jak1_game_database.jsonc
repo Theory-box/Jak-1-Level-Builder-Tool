@@ -5659,7 +5659,13 @@
     },
     {
       "etype": "mistycannon",
-      "sounds": ["cannon-charge", "cannon-shot", "fuse", "sack-land", "telescope"],
+      "sounds": [
+        "cannon-charge",
+        "cannon-shot",
+        "fuse",
+        "sack-land",
+        "telescope"
+      ],
       "label": "Misty Cannon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5774,45 +5780,15 @@
               "note": "0 = around the cannon, radius = Idle distance (Activation)."
             },
             {
-              "key": "og_mc_cx",
-              "label": "X (m)",
-              "type": "float",
-              "default": 0.0,
+              "key": "og_mc_center",
+              "label": "Aim centre (empty)",
+              "type": "object_ref",
+              "default": "",
               "lump": {
                 "key": "center-point",
-                "type": "meters",
-                "slot": 0
+                "type": "vector"
               },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center",
-              "group_label": "Aim Centre",
-              "group_note": "Used when Aim radius > 0 (game axes)."
-            },
-            {
-              "key": "og_mc_cy",
-              "label": "Up (m)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "center-point",
-                "type": "meters",
-                "slot": 1
-              },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center"
-            },
-            {
-              "key": "og_mc_cz",
-              "label": "Z (m, = -Blender Y)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "center-point",
-                "type": "meters",
-                "slot": 2
-              },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center"
+              "note": "Used when Aim radius > 0: it aims at random points within the radius around this empty."
             },
             {
               "key": "og_mc_water",
