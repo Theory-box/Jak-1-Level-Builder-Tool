@@ -10317,7 +10317,7 @@
         "citb-sagecage-ag.go"
       ],
       "tpage_group": "Citadel",
-      "glb": "levels/citadel/redsage-lod0.glb",
+      "glb": "levels/citadel/citb-sagecage-lod0.glb",
       "shape": "CUBE",
       "description": "Red / blue / yellow sage in his energy cage (the cage is a child with solid collision; Jak can stand on it). The game task picks the task control (vanilla citadel-sage-<colour>). Before he's freed: idles, ambient lines, and talking plays his '<colour>sage-resolution' cutscene (drops the cage bars; repeatable, nothing closes). 'open (a broken Citadel Generator's open actor) drops the bars. Collecting the task's cell sends 'play-anim to the process named '<colour>-sagecage-1' (hard-coded in the cell code), which plays the cutscene; afterwards the task is complete and he fires his beam at the linked target forever. Hidden once vanilla citadel-sage-green is fully done. Name the object so it exports as <colour>-sagecage-1.",
       "panels": [
@@ -10364,8 +10364,7 @@
                   "art_group": [
                     "redsage-ag.go",
                     "citb-sagecage-ag.go"
-                  ],
-                  "glb": "levels/citadel/redsage-lod0.glb"
+                  ]
                 },
                 {
                   "id": "blue-sagecage",
@@ -10379,8 +10378,7 @@
                   "art_group": [
                     "bluesage-ag.go",
                     "citb-sagecage-ag.go"
-                  ],
-                  "glb": "levels/citadel/bluesage-lod0.glb"
+                  ]
                 },
                 {
                   "id": "yellow-sagecage",
@@ -10394,8 +10392,7 @@
                   "art_group": [
                     "yellowsage-ag.go",
                     "citb-sagecage-ag.go"
-                  ],
-                  "glb": "levels/citadel/yellowsage-lod0.glb"
+                  ]
                 }
               ]
             }
@@ -12920,7 +12917,7 @@
     {
       "etype": "cavegem",
       "label": "Cave Gem",
-      "category": "Interactive Objects",
+      "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
       "tpage_group": "Village3",
@@ -13528,7 +13525,7 @@
       "etype": "energyhub",
       "edited": "energyhub",
       "label": "Energy Hub",
-      "category": "Visuals",
+      "category": "Interactive Objects",
       "parent": "process-drawable",
       "code": "lavatube-energy.o",
       "art_group": [
