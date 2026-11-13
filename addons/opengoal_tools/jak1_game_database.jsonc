@@ -18746,6 +18746,7 @@
       "shape": "CUBE",
       "description": "Edited (subtypes/periscope.gc): rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece (or the Beam end empty). On target it becomes complete, which powers the next one, then the Beam shot plays: none, a linked camera, or a vanilla junglecam shot from the Shot origin empty. Its task's need-reminder closes once every periscope of the chain is on target (vanilla jungle-lurkerm).",
       "panels": [
+        {"panel": "movie-pos", "description": "[0] Beam cell: where the cell jumps to and plays its pickup."},
         {"panel": "game-task", "description": "Its need-reminder closes once every periscope of the chain is on target."},
         {
           "panel": "actor-link",
@@ -18775,6 +18776,8 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_peri_cam_time", "label": "Camera time (s)", "type": "float", "default": 2.0, "min": 0.1, "lump": {"key": "camera-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long its look moves from this periscope's top to the next piece."},
+            {"key": "og_peri_cell", "label": "Beam cell", "type": "bool", "default": false, "lump": {"key": "beam-cell", "type": "uint32"}, "write_if": "if_true", "note": "Its task's cell pops out at the beam's end near the end of the shot and jumps to movie-pos 0."},
             {"key": "og_peri_shot", "label": "Beam shot", "type": "enum", "default": "none", "variant": true, "choices": [{"value": "none", "label": "None (Jak is free at once)", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "tower1", "label": "Vanilla shot: tower1", "lump_value": 2, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower2", "label": "Vanilla shot: tower2", "lump_value": 3, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower3", "label": "Vanilla shot: tower3", "lump_value": 4, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower4", "label": "Vanilla shot: tower4", "lump_value": 5, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower5", "label": "Vanilla shot: tower5", "lump_value": 6, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "beamcam", "label": "Vanilla shot: beamcam", "lump_value": 7, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}], "lump": {"key": "beam-shot", "type": "int32"}, "write_if": "always", "note": "Played once it's on target. Vanilla shots are positioned from the Shot origin."},
             {"key": "og_peri_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "beam-camera", "type": "string"}, "note": "Beam shot = Linked camera."},
             {"key": "og_peri_shot_time", "label": "Shot time (s)", "type": "float", "default": 3.0, "min": 0.1, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long."},

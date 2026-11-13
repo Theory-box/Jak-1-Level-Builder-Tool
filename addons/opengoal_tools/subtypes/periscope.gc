@@ -5,10 +5,14 @@
 ;;   (beam-camera) for Shot time seconds (shot-time), 2-7 a vanilla junglecam shot
 ;;   (tower1-5, beamcam) played from the Shot origin empty (shot-origin; none: the
 ;;   periscope).
+;;   A linked camera looks from this periscope's top to the next piece in Camera time.
+;; - Beam cell (beam-cell lump): its task's cell pops out at the beam's end near the end
+;;   of the shot and jumps to movie-pos 0.
 ;; - Its task (Game Task panel): need-reminder closes once every periscope of the
 ;;   chain is on target (vanilla jungle-lurkerm). None: no task.
 ;; edits: periscope
-(deftype __TYPE__ (periscope) ()
+(deftype __TYPE__ (periscope)
+  ((cell handle))
   (:states
    __TYPE__-activate
    __TYPE__-idle
@@ -35,15 +39,44 @@
                                          (else "beamcam"))
                                        0 #f '() :to self)))))
 
+(defbehavior __TYPE__-spawn-cell __TYPE__ ()
+  "Beam cell: its task's cell pops out at the beam's end and jumps to movie-pos 0 (once)."
+  (let ((task (-> self entity extra perm task)))
+    (when (and (nonzero? (res-lump-value (-> self entity) 'beam-cell uint128))
+               (!= task (game-task none))
+               (not (task-complete? *game-info* task))
+               (not (handle->process (-> self cell))))
+      (let ((v1-6 (birth-pickup-at-point (-> self next-reflector-trans) (pickup-type fuel-cell) (the float task) #f self (the-as fact-info #f))))
+        (when v1-6
+          (set! (-> self cell) (ppointer->handle v1-6))
+          (send-event (ppointer->process v1-6) 'movie-pos 0)
+          (let ((a0-9 (res-lump-struct (-> self entity) 'movie-pos vector)))
+            (if a0-9 (send-event (ppointer->process v1-6) 'jump a0-9)))))))
+  0)
+
 (defbehavior __TYPE__-beam-camera __TYPE__ ()
-  "Beam shot 1: the linked camera for Shot time, Jak waiting."
+  "Beam shot 1: the linked camera for Shot time, Jak waiting; it looks from this
+periscope's top to the next piece in Camera time. The beam cell pops out 0.5 s before
+the end."
   (let ((cam (res-lump-struct (-> self entity) 'beam-camera string)))
     (when (and cam (= (res-lump-value (-> self entity) 'beam-shot int :default (the-as uint128 0)) 1) (process-grab? *target*))
       (camera-change-to cam 0 #f)
-      (let ((s5-0 (current-time))
-            (f30-0 (* 300.0 (res-lump-float (-> self entity) 'shot-time :default 3.0))))
+      ;; the camera follows a skeleton's root joint: a tiny stand-in moved along the beam
+      (let ((gp-1 (manipy-spawn (-> self reflector-trans) (-> self entity) *fuel-cell-sg* #f :to self))
+            (s5-0 (current-time))
+            (f30-0 (* 300.0 (res-lump-float (-> self entity) 'shot-time :default 3.0)))
+            (f28-0 (fmax 1.0 (* 300.0 (res-lump-float (-> self entity) 'camera-time :default 2.0))))
+            (s4-0 (new 'stack-no-clear 'vector)))
+        (send-event (ppointer->process gp-1) 'eval (lambda :behavior manipy () (set-vector! (-> self root scale) 0.001 0.001 0.001 1.0)))
+        (send-event *camera* 'change-target (ppointer->process gp-1))
         (until (time-elapsed? s5-0 (the int f30-0))
-          (suspend)))
+          (vector-lerp! s4-0 (-> self reflector-trans) (-> self next-reflector-trans)
+                        (fmin 1.0 (/ (the float (- (current-time) s5-0)) f28-0)))
+          (send-event (ppointer->process gp-1) 'trans s4-0)
+          (if (time-elapsed? s5-0 (the int (+ -150.0 f30-0))) (__TYPE__-spawn-cell))
+          (suspend))
+        (send-event *camera* 'change-target *target*)
+        (deactivate (ppointer->process gp-1)))
       (camera-change-to (the-as string 'base) 150 #f)
       (process-release? *target*)))
   0)
@@ -338,7 +371,8 @@
                    (set! *camera-init-mat* #f)
                    (__TYPE__-beam-camera)
                    (while (handle->process gp-1)
-                     (suspend))))
+                     (suspend))
+                   (__TYPE__-spawn-cell)))
                 (else
                  (set! *camera-init-mat* (-> self old-camera-matrix))
                  (send-event *camera* 'change-state *camera-base-mode* 0)
@@ -355,6 +389,7 @@
       (ja-post)))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this cell) (the-as handle #f))
   (stack-size-set! (-> this main-thread) 512)
   (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
     (let ((s3-0 (new 'process 'collide-shape-prim-group s4-0 (the-as uint 3) 0)))
