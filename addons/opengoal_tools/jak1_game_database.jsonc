@@ -12947,7 +12947,8 @@
       "art_group": "cavegem-ag.go",
       "tpage_group": "Village3",
       "code": "miners.o",
-      "is_prop": true
+      "is_prop": true,
+      "glb":"levels/village3/cavegem-lod0.glb"
     },
     {
       "etype": "minecartsteel",
