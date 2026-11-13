@@ -10692,7 +10692,11 @@
     },
     {
       "etype": "yakow",
-      "sounds": ["yakow-grazing", "yakow-idle", "yakow-kicked"],
+      "sounds": [
+        "yakow-grazing",
+        "yakow-idle",
+        "yakow-kicked"
+      ],
       "label": "Yakow",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -10702,7 +10706,8 @@
           "description": "village1-yakow for the herd (its intro / reminder stages close once every yakow of the chain is penned; the farmer gives the cell)."
         },
         {
-          "panel": "nav-mesh"
+          "panel": "nav-mesh",
+          "description": "Its nav-mesh. Paint the pen's faces with the NAV Special material (Nav-mesh tools): a yakow walking onto them is penned."
         },
         {
           "panel": "actor-link",
@@ -10736,6 +10741,23 @@
               "required": false
             }
           ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_yakow_pen",
+              "label": "Pen spot (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "alt-vector",
+                "type": "vector",
+                "w": "yaw"
+              },
+              "note": "Where it walks to and grazes once penned, facing the empty's way."
+            }
+          ]
         }
       ],
       "art_group": [
@@ -10748,17 +10770,12 @@
       "shape": "SINGLE_ARROW",
       "lumps": [
         {
-          "key": "alt-vector",
-          "type": "vector3m",
-          "description": "Pen spot: 'x y z' (m) where it grazes once penned; w = facing."
-        },
-        {
           "key": "water-height",
           "type": "water-height",
           "description": "Water surface to wade at."
         }
       ],
-      "description": "Wanders and runs off when kicked. A yakow counts as penned when it walks onto a nav-mesh poly flagged as pen (pat bit 2); the addon's nav-mesh export writes no pat, so herding can't complete yet."
+      "description": "Wanders and runs off when kicked. It's penned when it walks onto a NAV Special face of its nav-mesh (the pen, pat bit 2), then walks to the Pen spot empty and grazes there (saved). Link the herd with next / prev: the task's intro / reminder close once every yakow of the chain is penned, and the farmer (alt-actor) gives the cell; the pen camera plays at the farmer."
     },
     {
       "etype": "flutflut",
