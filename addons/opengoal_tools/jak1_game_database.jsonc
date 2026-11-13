@@ -13577,6 +13577,7 @@
     },
     {
       "etype": "pistons",
+      "edited": "pistons",
       "label": "Gondola Pistons",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13588,7 +13589,11 @@
       "reacts_to": [
         "update"
       ],
-      "description": "Volcanic Crater generator pistons. Static until it gets 'update (vanilla: from the gondola); then spins up with sound and stays running, also after a reload."
+      "description": "Edited (subtypes/pistons.gc): gondola machinery pistons. Start running on 'update (the gondola once usable), 'trigger (a button's notify list ...), once its task is complete, or from the start (Running). Saved once on.",
+      "panels": [
+        {"panel": "game-task", "description": "They start once this task is complete. None: not by task."},
+        {"panel": "custom-fields", "fields": [{"key": "og_pistons_on", "label": "Running", "type": "bool", "default": false, "lump": {"key": "start-on", "type": "uint32"}, "write_if": "if_true", "note": "Running from the start (vanilla: only once the gondola starts them)."}]}
+      ]
     },
     {
       "etype": "lavashortcut",
@@ -13899,6 +13904,7 @@
     },
     {
       "etype": "gondola",
+      "edited": "gondola",
       "label": "Gondola",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13907,7 +13913,11 @@
       "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
       "shape": "CUBE",
-      "description": "Its rotation is forced to identity. Riding it plays the vanilla cable animations and loads vanilla village3 / snow (a vanilla teleport); use is gated on vanilla village3-button."
+      "description": "Edited (subtypes/gondola.gc): stand in it and press circle to ride its cutscene up / down (Jak ends where the vanilla cutscene ends: the top station sits where it does in vanilla, relative to the gondola). Usable once its task is complete (none: always) and Jak has the Cells; continue points at the top / bottom (optional). Once usable it sends 'update to its alt-actors (pistons, cables). No Keira hints, level loads, music or save in its cutscenes; no load boundaries during the ride.",
+      "panels": [
+        {"panel": "game-task", "description": "Usable once this task is complete. None: always."},
+        {"panel": "custom-fields", "fields": [{"key": "og_gondola_cells", "label": "Cells needed", "type": "int", "default": 0, "min": 0, "lump": {"key": "cells", "type": "float"}, "write_if": "always", "note": "Power cells Jak needs to use it (vanilla 71 or the next gate). 0: any."}, {"key": "og_gondola_cont_top", "label": "Continue at the top", "type": "string", "default": "", "lump": {"key": "continue-top", "type": "string"}, "write_if": "if_non_empty", "note": "Continue point name set when it arrives at the top. Empty: unchanged."}, {"key": "og_gondola_cont_bot", "label": "Continue at the bottom", "type": "string", "default": "", "lump": {"key": "continue-bottom", "type": "string"}, "write_if": "if_non_empty", "note": "Continue point name set when it arrives at the bottom. Empty: unchanged."}]}
+      ]
     },
     {
       "etype": "swamp-blimp",
