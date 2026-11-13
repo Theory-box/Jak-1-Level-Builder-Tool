@@ -10441,14 +10441,16 @@
       "tpage_group": "Citadel",
       "glb": "levels/citadel/green-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Edited rescue-only Green Sage. Open plays his rescue animation once and advances his own task; saved per actor. No fixed-world intro, pre-boss movie, vanilla actor cleanup, level loads or continue teleport. Optional beam target; missing target no longer crashes. Does not use the vanilla named fuel-cell hook: send open from your puzzle.",
+      "description": "Edited (subtypes/green-sagecage.gc): the Green Sage in his cage, freed like the red / blue / yellow sages: by talking to him (once; gives his task's cell) or by breaking its generator (its 'trigger after its cell is taken, or his Freed by actor complete with his task's cell taken; the rescue then plays by itself when Jak is near). Rescued (saved): no more talking, cage open, beam at the Beam target empty. No pre-boss story (robot boss, level loads, continue point).",
       "edited": "green-sagecage",
       "reacts_to": [
-        "open"
+        "open",
+        "trigger"
       ],
       "panels": [
         {
-          "panel": "game-task"
+          "panel": "game-task",
+          "description": "His task: with Freed by an actor, the rescue waits for its cell to be taken (e.g. a Citadel Generator with the same task); talking to free him gives its cell. None: no cell."
         },
         {
           "panel": "actor-link",
@@ -10456,11 +10458,64 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Optional beam target",
+              "label": "Freed by (a Citadel Generator; or link its alt-actor to him)",
               "accepts": [
-                "any"
+                "citb-generator"
               ],
               "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_sage_free",
+              "label": "Freed by",
+              "type": "enum",
+              "default": "talk",
+              "write_if": "always",
+              "lump": {
+                "key": "free-mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "talk",
+                  "label": "Talking to him (once)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "actor",
+                  "label": "Breaking its generator",
+                  "lump_value": 1
+                }
+              ],
+              "note": "Breaking its generator: link the Citadel Generator's alt-actor (or trigger-actor) to him; the rescue plays by itself (Jak within 16 m) once its cell is taken. Or set him a Freed by actor: once it's complete and his task's cell is taken."
+            },
+            {
+              "key": "og_sage_beam",
+              "label": "Beam target (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-target",
+                "type": "vector"
+              },
+              "note": "Once rescued he fires his beam at this point. None: no beam."
+            },
+            {
+              "key": "og_sage_talk_dist",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "Freed by talking: how near Jak has to be for the talk prompt."
             }
           ]
         }
