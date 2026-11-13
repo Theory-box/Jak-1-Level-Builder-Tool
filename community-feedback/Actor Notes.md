@@ -53,16 +53,12 @@ Blender export checks pass; in-game behavior, previews, and save/reload still ne
   hurts below world Y -0.1 m (vanilla check).
 - **robotboss**: its loops (charge buzz, red buzz, blue loop) fade 80 m from its origin; vanilla fights
   within ~20 m of it. Light eco sparkle particles are cut below vanilla heights (cosmetic).
-- **sage-finalboss**: uses the vanilla finalboss-movies task; the credits end the game like vanilla.
-- **Caged sages** (red / blue / yellow): the rescue cutscene only plays if the actor is named
-  `<colour>-sagecage-1` (hard-coded process name).
-- **yakow**: herding can't finish (the pen is a nav-mesh poly flag the nav-mesh export doesn't write).
-- **oracle**: trades and cells work, no speech (picks its cutscene by vanilla level name).
 - **swamp-blimp**: floats away without a tether rock; edited tether rocks now use their own tasks / cameras.
-- **gondola**: rides to vanilla village3 / snow.
-- **pistons**: only move when the gondola sends 'update.
-- **windmill-sail**: vanilla jungle-lurkerm sets its speed; no sound fields yet.
-- **villageb-ogreboss**: removed once vanilla village2-levitator is done; boulder throws follow fixed paths.
+- **sage-finalboss**: the credits end the game like vanilla.
+- **oracle**: the trade needs a vanilla oracle task pair (the orb check is in their stages).
+- **gondola**: the ride is the vanilla cutscene; the top station sits where it does in vanilla (~186 m up).
+- **villageb-ogreboss**: the boulders follow the vanilla throw animations from his spot.
+- **yakow**: the pen is the NAV Special faces of its nav-mesh.
 - **spike**: one controller per group; the export adds the controller itself last.
 - **Klaww (ogreboss)**: if goalc was already running with an older subtype it fails with
   "Inconsistent type definition"; the build now restarts goalc when a level's types change.
@@ -152,3 +148,15 @@ actors it's for, `;; place: shared` = default place).
 | pelican | named paths (path, dive, to-nest, from-nest, spit, dive-b, to-nest-b, run-away), dive camera from Blender, no fixed camera spot |
 | snow-ball | named paths path / pathb, shrinks at its track's end (not below 200 m), no junction timing |
 | fishermans-boat | kinematic boat: path out, pathb back (or path backwards), ride camera or the vanilla ride cutscenes (load boundaries off meanwhile), task gate, saved end |
+| red / blue / yellow / green-sagecage | freed by talking once or by breaking its generator, Talk distance, beam at an empty, saved rescue (vanilla: rescue by the vanilla process name, robot boss beam) |
+| periscope / reflector-origin | beam shot option (none / camera / vanilla shot) instead of a crash, beam cell, beam ends at an empty / the mirror top |
+| helix-button / helix-water | any water look, speed by Jak's height, Started by link, cell on the press |
+| flutflutegg / bird-lady-beach | pushed toward its hatch spot, linked hatch cutscene (talk), spill cell |
+| seagullflock / lrocklrg | own task, optional blackout, rock cell at movie-pos |
+| energyhub / energydoor | doors in the hub's next-actor chain close behind Jak until it's stopped |
+| evilbro / evilsis (hidden) | talk / once the task is done / when triggered |
+| oracle | speeches picked in Blender (Sandover / Rock Village / Volcanic Crater) |
+| gondola / pistons | own task / cell gate, optional continue points, no level loads; pistons standalone |
+| windmill-sail | fast by its own task, turn times, fast sound |
+| villageb-ogreboss | removed by its own task, throws optional |
+| citb-stair-plat | rises once its task is complete, starts risen after |
