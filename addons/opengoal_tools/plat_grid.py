@@ -142,26 +142,34 @@ def draw(layout, o):
         return
     nx, nz = dims(o)
     vals = types(o)
+    brush = int(o.get("og_grid_brush", -1))
     box = layout.box()
-    box.label(text="Platforms (top view; click to change)")
+    box.label(text="Platforms (top view; click to " + ("change)" if brush < 0 else f"paint {TYPES[brush][0]})"))
     grid = box.column(align=True)
     for z in range(nz):
         r = grid.row(align=True)
         for x in range(nx):
             i = x + z * nx
-            v = vals[i]
-            op = r.operator("og.plat_grid_cycle", text=str(v), icon=TYPES[v][1], depress=v != 0)
+            op = r.operator("og.plat_grid_cycle", text="", icon=TYPES[vals[i]][1])
             op.index = i
     leg = box.column(align=True); leg.scale_y = 0.75
     leg.label(text="  ".join(f"{i} {t[0]}" for i, t in enumerate(TYPES)))
     r = box.row(align=True)
+    r.label(text="Set all to")
     for v in range(6):
         op = r.operator("og.plat_grid_fill", text="", icon=TYPES[v][1])
+        op.value = v
+    r = box.row(align=True)
+    r.label(text="Click does")
+    op = r.operator("og.plat_grid_brush", text="", icon="FORWARD", depress=brush < 0)
+    op.value = -1
+    for v in range(6):
+        op = r.operator("og.plat_grid_brush", text="", icon=TYPES[v][1], depress=brush == v)
         op.value = v
 
 
 class OG_OT_PlatGridCycle(bpy.types.Operator):
-    """Next platform type for this slot (0 none, 1 red, 2 green, 3 blue, 4 yellow, 5 plain)"""
+    """Change this slot: the next type (arrow), or the colour picked under "Click does" """
     bl_idname  = "og.plat_grid_cycle"
     bl_label   = "Platform Type"
     bl_options = {"INTERNAL", "UNDO"}
@@ -171,10 +179,24 @@ class OG_OT_PlatGridCycle(bpy.types.Operator):
     def execute(self, ctx):
         o = ctx.active_object
         vals = types(o)
+        brush = int(o.get("og_grid_brush", -1))
         if 0 <= self.index < len(vals):
-            vals[self.index] = (vals[self.index] + 1) % len(TYPES)
+            vals[self.index] = brush if brush >= 0 else (vals[self.index] + 1) % len(TYPES)
             set_types(o, vals)
             refresh(ctx, o)
+        return {"FINISHED"}
+
+
+class OG_OT_PlatGridBrush(bpy.types.Operator):
+    """What clicking a platform does: the arrow steps through the types, a colour paints it"""
+    bl_idname  = "og.plat_grid_brush"
+    bl_label   = "Click Does"
+    bl_options = {"INTERNAL"}
+
+    value: bpy.props.IntProperty(default=-1)
+
+    def execute(self, ctx):
+        ctx.active_object["og_grid_brush"] = int(self.value)
         return {"FINISHED"}
 
 
@@ -193,7 +215,7 @@ class OG_OT_PlatGridFill(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OG_OT_PlatGridCycle, OG_OT_PlatGridFill)
+CLASSES = (OG_OT_PlatGridCycle, OG_OT_PlatGridBrush, OG_OT_PlatGridFill)
 
 
 def register_props():
