@@ -301,6 +301,11 @@ def register():
                 d = c.get("_og_preview_copy") or (0.0, 0.0, 0.0)   # extra copies keep their spot
                 c.location = (float(value[0]) + d[0], float(value[1]) + d[1], float(value[2]) + d[2])
 
+    from .model_preview import refresh_special as _refresh_special
+    bpy.types.Object.og_special_preview = bpy.props.BoolProperty(
+        name="Show preview", default=True, update=_refresh_special,
+        description="Show this actor's special preview (platform grid, race rings, extra models). "
+                    "Off: nothing of it is built or updated")
     bpy.types.Object.og_preview_offset     = bpy.props.FloatVectorProperty(
         name="Preview Offset", subtype="TRANSLATION", size=3,
         get=_prev_off_get, set=_prev_off_set,
@@ -570,7 +575,8 @@ def unregister():
               "og_lb_fwd_lev0_custom","og_lb_fwd_lev1_custom","og_lb_bwd_lev0_custom","og_lb_bwd_lev1_custom",
               "og_waypoint_sources","og_waypoint_sources_index", "og_movie_pos", "og_bc_lurkers",
               "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
-              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
+              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open",
+              "og_special_preview"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
 

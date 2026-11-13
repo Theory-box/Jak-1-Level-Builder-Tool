@@ -1012,8 +1012,9 @@ class OG_PT_ActorPlatGrid(Panel):
         return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "plat-grid")
 
     def draw(self, ctx):
-        from .. import plat_grid
+        from .. import plat_grid, model_preview
         plat_grid.draw(self.layout, ctx.active_object)
+        model_preview.draw_special_toggle(self.layout, ctx.active_object)
 
 
 def _draw_panel_fields(layout, sel, pid):
@@ -1416,6 +1417,9 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # ── Extra paths (pathb, patha..pathh, pathspawn, custom) ─────────────
         if not opts.get("lump"):
             _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only)
+        from .. import race_rings, model_preview
+        if race_rings.uses_rings(sel) or (_db.find_actor(etype) or {}).get("preview_copies"):
+            model_preview.draw_special_toggle(layout, sel)
 
 
 def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):

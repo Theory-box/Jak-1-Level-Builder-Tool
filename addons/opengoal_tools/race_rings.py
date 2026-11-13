@@ -218,6 +218,7 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
         return
     todo = [o.name for o in scene.objects
             if o.name.startswith("ACTOR_race-ring_") and not o.get(_PREVIEW_PROP) and o.name not in _PENDING
+            and getattr(o, "og_special_preview", True)
             and touched(o, objs, curves) and uses_rings(o) and _differs(o)]
     if todo:
         _PENDING.update(todo)
