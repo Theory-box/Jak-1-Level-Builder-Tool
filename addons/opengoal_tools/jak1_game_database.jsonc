@@ -10692,6 +10692,7 @@
     },
     {
       "etype": "yakow",
+      "edited": "yakow",
       "sounds": [
         "yakow-grazing",
         "yakow-idle",
@@ -10745,6 +10746,10 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_yakow_shot", "label": "Pen shot", "type": "enum", "default": "anim", "write_if": "always", "lump": {"key": "pen-shot", "type": "int32"}, "choices": [{"value": "anim", "label": "Vanilla camera animation", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "none", "label": "None", "lump_value": 2}], "note": "Played once the whole herd is penned."},
+            {"key": "og_yakow_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla camera animation: played from here. None: from the farmer (alt-actor)."},
+            {"key": "og_yakow_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pen-camera", "type": "string"}, "note": "Pen shot = Linked camera."},
+            {"key": "og_yakow_shot_time", "label": "Shot time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Pen shot = Linked camera: how long."},
             {
               "key": "og_yakow_pen",
               "label": "Pen spot (empty)",
@@ -10887,7 +10892,8 @@
       "parent": "process-taskable",
       "panels": [
         {
-          "panel": "nav-mesh"
+          "panel": "game-task",
+          "description": "The herd's task (give the yakows the same one): its cell after the herd is penned. None: vanilla village1-yakow."
         }
       ],
       "code": "farmer.o",
@@ -10895,7 +10901,8 @@
       "tpage_group": "Village1",
       "glb": "levels/village1/farmer-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Vanilla village1-yakow: introduction / reminders, then the reward speech and cell once the yakow herd is penned. Joins the nav-mesh (if linked) so yakows walk around him."
+      "description": "Edited (subtypes/farmer.gc): introduction / reminders, then the resolution and his task's cell once the yakow herd (same task) is penned. Joins a nav-mesh (nav-mesh-actor link) so yakows walk around him.",
+      "edited": "farmer"
     },
     {
       "etype": "fisher",
