@@ -17306,15 +17306,44 @@
       "shape": "SINGLE_ARROW",
       "panels": [
         {
-          "panel": "task-gated"
+          "panel": "game-task",
+          "description": "The right eye's cell (traded first)."
         },
         {
           "panel": "custom-fields",
           "fields": [
-            {"key": "og_oracle_speeches", "label": "Speeches", "type": "enum", "default": "village1", "write_if": "always", "lump": {"key": "speeches", "type": "int32"}, "choices": [{"value": "village1", "label": "Sandover", "lump_value": 1}, {"value": "village2", "label": "Rock Village", "lump_value": 2}, {"value": "village3", "label": "Volcanic Crater", "lump_value": 3}], "note": "Which vanilla oracle's cutscenes it plays."},
+            {
+              "key": "og_oracle_speeches",
+              "label": "Speeches",
+              "type": "enum",
+              "default": "village1",
+              "write_if": "always",
+              "lump": {
+                "key": "speeches",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "village1",
+                  "label": "Sandover",
+                  "lump_value": 1
+                },
+                {
+                  "value": "village2",
+                  "label": "Rock Village",
+                  "lump_value": 2
+                },
+                {
+                  "value": "village3",
+                  "label": "Volcanic Crater",
+                  "lump_value": 3
+                }
+              ],
+              "note": "Which vanilla oracle's cutscenes it plays."
+            },
             {
               "key": "og_alt_task",
-              "label": "Linked Task",
+              "label": "Left eye task",
               "type": "task",
               "default": "none",
               "lump": {
@@ -17323,12 +17352,42 @@
                 "format": "(game-task {value})"
               },
               "write_if": "if_not_none",
-              "show-field": false
+              "note": "The left eye's cell (traded second). None: one eye only."
+            },
+            {
+              "key": "og_oracle_price",
+              "label": "Price (orbs)",
+              "type": "int",
+              "default": 120,
+              "min": 0,
+              "lump": {
+                "key": "price",
+                "type": "float"
+              },
+              "write_if": "always",
+              "note": "Orbs per cell (vanilla 120)."
+            },
+            {
+              "key": "og_oracle_talk",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 8.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "How near Jak has to be for the talk prompt."
             }
           ]
         }
       ],
-      "description": "Edited (subtypes/oracle.gc): two power cells in its eyes for 120 orbs each: its game task = right eye, Linked Task = left eye (use a vanilla pair: village1/2/3-oracle-money1 + -money2, their stages hold the orb check). Speeches picks which vanilla set of its cutscenes it plays (introduction, reminder, the eye cutscenes): Sandover, Rock Village or Volcanic Crater. Vanilla picked them by the vanilla village Jak was in, so it played none in a custom level."
+      "description": "Edited (subtypes/oracle.gc): two power cells in its eyes, each traded for Price orbs: right eye = its game task, left eye = its Left eye task (custom tasks work: no stage layout needed). Talking: the introduction once, then a trade when Jak has the orbs, else the reminder. Speeches picks which vanilla oracle's cutscenes it plays. Talk distance for the prompt.",
+      "preview_extra": [
+        {"glb": "levels/common/fuel-cell-lod0.glb", "offset": [-1.36, 0.0, 7.31]},
+        {"glb": "levels/common/fuel-cell-lod0.glb", "offset": [1.36, 0.0, 7.31]}
+      ]
     },
     {
       "etype": "minershort",

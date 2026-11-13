@@ -409,6 +409,25 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         preview_col.objects.link(dup)
         meshes.append(dup)
 
+    # DB "preview_extra": other models at these offsets (e.g. the oracle's eye cells)
+    for _x in ((_db.find_actor(etype) or {}).get("preview_extra") or []) if meshes else []:
+        _rel = _x.get("glb")
+        m = _reuse_or_import(ctx, _glb_path(_rel), Path(_rel).stem) if _rel else None
+        if m is None:
+            continue
+        for col in list(m.users_collection):
+            col.objects.unlink(m)
+        preview_col.objects.link(m)
+        _c = _x.get("offset") or (0.0, 0.0, 0.0)
+        m.name = f"{actor_empty.name}_preview"
+        m["_og_preview_copy"] = [float(_c[i]) - _off[i] for i in range(3)]
+        m.location = (float(_c[0]), float(_c[1]), float(_c[2]))
+        m.parent = actor_empty
+        m.matrix_parent_inverse = mathutils.Matrix()
+        m[_PREVIEW_PROP] = True
+        m.hide_select = not _select_via_preview()
+        meshes.append(m)
+
     _apply_db_display(etype, actor_empty, meshes)
     return attached
 
