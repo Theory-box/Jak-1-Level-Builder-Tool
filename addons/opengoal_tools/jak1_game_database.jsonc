@@ -10294,11 +10294,11 @@
       "tpage_group": "Citadel",
       "glb": "levels/citadel/citb-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Red / blue / yellow sage in his energy cage (the cage is a child with solid collision; Jak can stand on it). The game task picks the task control (vanilla citadel-sage-<colour>). Before he's freed: idles, ambient lines, and talking plays his '<colour>sage-resolution' cutscene (drops the cage bars; repeatable, nothing closes). 'open (a broken Citadel Generator's open actor) drops the bars. Collecting the task's cell sends 'play-anim to the process named '<colour>-sagecage-1' (hard-coded in the cell code), which plays the cutscene; afterwards the task is complete and he fires his beam at the linked target forever. Hidden once vanilla citadel-sage-green is fully done. Name the object so it exports as <colour>-sagecage-1.",
+      "description": "Edited (subtypes/<colour>-sagecage.gc): red / blue / yellow sage in his energy cage (Jak can stand on the cage). Freed by talking to him (once; gives his task's cell) or by his Freed by actor (e.g. a Citadel Generator: once it's broken and his task's cell is taken, the rescue plays by itself when Jak is near). Rescued (saved): no more talking, cage open, beam at the Beam target empty. 'open (a generator's open actor) drops the bars. Vanilla: talk any time and again, rescue from the cell code by the vanilla process name, beam at the robot boss, hidden after the green sage.",
       "panels": [
         {
           "panel": "game-task",
-          "description": "Required: vanilla citadel-sage-red / -blue / -yellow (match the variant). Its cell (from a Citadel Generator with the same task) triggers the rescue cutscene. none: he fires his beam at once and the game logs errors every frame."
+          "description": "His task: with Freed by an actor, the rescue waits for its cell to be taken (e.g. a Citadel Generator with the same task); talking to free him gives its cell. None: no cell."
         },
         {
           "panel": "actor-link",
@@ -10306,12 +10306,11 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Beam target (required)",
+              "label": "Freed by (e.g. a Citadel Generator)",
               "accepts": [
-                "citb-robotboss",
-                "any"
+                "citb-generator"
               ],
-              "required": true
+              "required": false
             }
           ]
         },
@@ -10339,7 +10338,8 @@
                   "art_group": [
                     "redsage-ag.go",
                     "citb-sagecage-ag.go"
-                  ]
+                  ],
+                  "edited": "red-sagecage"
                 },
                 {
                   "id": "blue-sagecage",
@@ -10353,7 +10353,8 @@
                   "art_group": [
                     "bluesage-ag.go",
                     "citb-sagecage-ag.go"
-                  ]
+                  ],
+                  "edited": "blue-sagecage"
                 },
                 {
                   "id": "yellow-sagecage",
@@ -10367,9 +10368,45 @@
                   "art_group": [
                     "yellowsage-ag.go",
                     "citb-sagecage-ag.go"
-                  ]
+                  ],
+                  "edited": "yellow-sagecage"
                 }
               ]
+            },
+            {
+              "key": "og_sage_free",
+              "label": "Freed by",
+              "type": "enum",
+              "default": "talk",
+              "write_if": "always",
+              "lump": {
+                "key": "free-mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "talk",
+                  "label": "Talking to him (once)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "actor",
+                  "label": "His Freed by actor (broken, cell taken)",
+                  "lump_value": 1
+                }
+              ],
+              "note": "Freed by actor: the rescue plays by itself (Jak within 16 m) once that actor is complete (a generator: broken) and his task's cell is taken."
+            },
+            {
+              "key": "og_sage_beam",
+              "label": "Beam target (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-target",
+                "type": "vector"
+              },
+              "note": "Once rescued he fires his beam at this point. None: no beam."
             }
           ]
         }

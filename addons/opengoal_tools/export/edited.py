@@ -105,8 +105,16 @@ def resolve(o, etype):
     sel = str(getattr(o, "og_edited_code", "") or "")
     if sel == "vanilla":
         return None
-    fid = sel or default_id(etype)
+    fid = sel or _variant_id(o, etype) or default_id(etype)
     return files().get(fid) if fid else None
+
+
+def _variant_id(o, etype):
+    """A variant's own edited file ("edited" on the chosen choice, e.g. the red / blue /
+    yellow caged sages), as an id, or None."""
+    from .. import db
+    stem = db.actor_variant(etype, lambda k, d=None: o.get(k, d)).get("edited")
+    return f"addon:{stem}" if stem else None
 
 
 def place(scene, rec):

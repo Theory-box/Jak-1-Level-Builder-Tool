@@ -1,0 +1,165 @@
+;; Red caged sage (Citadel) for custom levels. Vanilla: talking played his rescue
+;; at any time and again; his rescue cutscene came from the cell code sending 'play-anim to
+;; a process named red-sagecage-1; his beam aimed 20 m above citb-robotboss-1 (or his link),
+;; pulled 28.5 m back toward him; hidden once citadel-sage-green was done. Here:
+;; - Freed by (free-mode lump): 0 talking to him (once; his task's cell, if any, comes with
+;;   it), 1 his Freed by actor (alt-actor, e.g. a Citadel Generator) breaking (its complete
+;;   status) and his task's cell being taken (none: right away): the rescue plays by itself
+;;   when Jak is near (16 m).
+;; - Once rescued (saved, his complete status) he can't be talked to, his cage is open and
+;;   he fires his beam at the Beam target empty (beam-target lump; none: no beam).
+;; - 'open (a generator's open actor) drops the bars, as vanilla.
+;; edits: red-sagecage
+(deftype __TYPE__ (red-sagecage)
+  ((has-beam symbol)))
+
+(defun __TYPE__-rescued? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defun __TYPE__-talkable? ((this __TYPE__))
+  (and (not (__TYPE__-rescued? this)) (zero? (res-lump-value (-> this entity) 'free-mode int))))
+
+(defun __TYPE__-ready? ((this __TYPE__))
+  "Freed by an actor: it's complete (broken) and his task's cell is taken."
+  (let ((e (entity-actor-lookup (-> this entity) 'alt-actor 0))
+        (task (-> this entity extra perm task)))
+    (and (not (__TYPE__-rescued? this))
+         (nonzero? (res-lump-value (-> this entity) 'free-mode int))
+         e
+         (logtest? (-> e extra perm status) (entity-perm-status complete))
+         (or (= task (game-task none)) (task-complete? *game-info* task)))))
+
+(defun __TYPE__-setup ((this __TYPE__))
+  "citb-sage's play-reminder: the cage, the beam from the Beam target empty."
+  (set! (-> this root pause-adjust-distance) 409600.0)
+  (set! (-> this cage) (ppointer->handle (process-spawn citb-sagecage this :to this)))
+  (set! (-> this beam-on) #f)
+  (set! (-> this sound-id) (new-sound-id))
+  (if (zero? (-> this sound-name)) (set! (-> this sound-name) ""))
+  (set! (-> this spawn-pos quad) (-> this root trans quad))
+  (let ((v1-6 (res-lump-struct (-> this entity) 'beam-target vector)))
+    (set! (-> this has-beam) (the-as symbol v1-6))
+    (cond
+      (v1-6
+       (set! (-> this target-pos quad) (-> v1-6 quad))
+       (set! (-> this target-pos w) 1.0))
+      (else (set! (-> this target-pos quad) (-> this root trans quad)))))
+  (when (nonzero? (-> this part))
+    (let ((s5-1 (new 'stack-no-clear 'vector)))
+      (vector-! s5-1 (-> this target-pos) (-> this spawn-pos))
+      (vector-float*! (the-as vector (-> this part group bounds)) s5-1 0.5)
+      (set! (-> this part group bounds w) (* 0.6 (vector-vector-distance (-> this spawn-pos) (-> this target-pos))))))
+  0)
+
+(defmethod play-reminder ((this __TYPE__))
+  (set! (-> this idle-anim) 4)
+  (set! (-> this attack-start-anim) 5)
+  (set! (-> this attack-anim) 6)
+  (set! (-> this beam-joint) 20)
+  (set! (-> this part) (create-launch-control (-> *part-group-id-table* 604) this))
+  (set! (-> this part-impact) (create-launch-control (-> *part-group-id-table* 608) this))
+  (set! (-> this resolution-anim)
+        (new 'static
+             'spool-anim
+             :name "redsage-resolution"
+             :index 7
+             :parts 9
+             :command-list
+             '((15 send-event self disable-bars) (45 joint "cameraB") (216 joint "camera") (435 joint "cameraB") (685 joint "camera"))))
+  (set! (-> this sound-name) "redsage-fires")
+  (__TYPE__-setup this)
+  (the-as symbol 0))
+
+(defmethod should-display? ((this __TYPE__))
+  #t)
+
+(defmethod get-art-elem ((this __TYPE__))
+  (cond
+    ((__TYPE__-rescued? this)
+     (set! (-> this beam-on) (-> this has-beam))
+     (-> this draw art-group data (-> this attack-anim)))
+    (else (-> this draw art-group data (-> this idle-anim)))))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (when arg0
+    (send-event (handle->process (-> this cage)) 'disable-bars)
+    (let ((task (-> this entity extra perm task)))
+      (if (and (zero? (res-lump-value (-> this entity) 'free-mode int))
+               (!= task (game-task none))
+               (not (task-complete? *game-info* task)))
+        (set! (-> this cell-for-task) task)))
+    (process-entity-status! this (entity-perm-status complete) #t))
+  (the-as basic (-> this resolution-anim)))
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('open) (send-event (handle->process (-> self cage)) 'disable-bars))
+        (else ((-> (method-of-type process-taskable idle) event) proc argc message block))))
+  :trans
+    (behavior ()
+      (when (time-elapsed? (-> self state-time) (seconds 0.2))
+        (logior! (-> self mask) (process-mask actor-pause))
+        (process-entity-status! self (entity-perm-status bit-3) #f))
+      (cond
+        ((not *target*))
+        ((not (-> self will-talk))
+         (if (>= (- (-> *display* game-frame-counter) (-> self last-talk)) (seconds 10)) (set! (-> self will-talk) #t)))
+        ((begin
+           (process-taskable-method-46 self)
+           (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
+                          (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
+                (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
+                ;; og:preserve-this
+                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) 32768.0)
+                (= (-> *level* loading-level) (-> *level* level-default))
+                (not (movie?))
+                (not (level-hint-displayed?))
+                (none-reserved? *art-control*)
+                (not *progress-process*)
+                (and (not (handle->process (-> *game-info* other-camera-handle))) (close-anim-file! self))))
+         (first-any (-> self tasks) #t)
+         (when (target-above-threshold? self)
+           (case (__TYPE__-talkable? self)
+             ((#t)
+              (kill-current-level-hint '() '(sidekick voicebox ambient) 'exit)
+              (level-hint-surpress!)
+              (hide-hud)
+              (when (and (hud-hidden?) (can-grab-display? self))
+                (let ((gp-1 (new 'stack 'font-context *font-default-matrix* 32 140 0.0 (font-color default) (font-flags shadow kerning))))
+                  (let ((v1-57 gp-1)) (set! (-> v1-57 width) (the float 440)))
+                  (let ((v1-58 gp-1)) (set! (-> v1-58 height) (the float 60)))
+                  (let ((v1-59 gp-1)) (set! (-> v1-59 scale) 0.9))
+                  (set! (-> gp-1 flags) (font-flags shadow kerning middle-vert large))
+                  (print-game-text (lookup-text! *common-text* (-> self talk-message) #f) gp-1 #f 128 22))
+                (when (and (cpad-pressed? 0 circle) (process-grab? *target*))
+                  (logclear! (-> *cpad-list* cpads 0 button0-abs 0) (pad-buttons circle))
+                  (logclear! (-> *cpad-list* cpads 0 button0-rel 0) (pad-buttons circle))
+                  (send-event *target* 'trans 'save (-> self old-target-pos))
+                  (go-virtual play-anim))))))))
+      (if (= (-> *level* loading-level) (-> *level* level-default)) (process-taskable-method-33 self))
+      (draw-npc-shadow self)
+      (when (and (-> self been-kicked)
+                 (and (not *progress-process*) (process-grab? *target*) (not (handle->process (-> *game-info* other-camera-handle)))))
+        (set! (-> self been-kicked) #f)
+        (send-event *target* 'trans 'save (-> self old-target-pos))
+        (go-virtual play-anim))
+      ((-> self cur-trans-hook)))
+  :post
+    (behavior ()
+      (let ((cage (the-as citb-sagecage (handle->process (-> self cage)))))
+        (if (and cage (-> cage bars-on) (__TYPE__-rescued? self)) (send-event cage 'disable-bars)))
+      (if (and (__TYPE__-ready? self) *target* (< (vector-vector-distance (-> self root trans) (target-pos 0)) (meters 16)))
+        (set! (-> self been-kicked) #t))
+      ((the-as (function none :behavior citb-sage) (-> (method-of-type process-taskable idle) post)))
+      (if (-> self beam-on) (citb-sage-draw-beam))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *redsage-sg* 3 33 (new 'static 'vector :w 8192.0) 5)
+  (set! (-> this tasks) (get-task-control (-> this entity extra perm task)))
+  (play-reminder this)
+  (set! (-> this sound-flava) (music-flava sage-red))
+  (process-taskable-method-42 this)
+  (none))
