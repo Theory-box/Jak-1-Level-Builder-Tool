@@ -1,0 +1,69 @@
+;; Windmill sail (Sandover mayor's windmill) for custom levels: vanilla turned once every
+;; 300 s until vanilla jungle-lurkerm was done, then every 16 s with wind particles and the
+;; mayors-gears sound. Here (Actor Settings): Fast when (mode lump: 0 always, 1 once its
+;; task is complete, 2 until its task is complete; no task: always), the slow / fast turn
+;; times (slow-period / fast-period, s) and the fast sound (fast-sound; none: its own
+;; ambient sound stays).
+;; edits: windmill-sail
+(deftype __TYPE__ (windmill-sail)
+  ((fast-sound string))
+  (:states __TYPE__-idle))
+
+(defun __TYPE__-fast? ((this __TYPE__))
+  (let ((mode (the-as int (res-lump-value (-> this entity) 'mode int)))
+        (task (-> this entity extra perm task)))
+    (cond
+      ((or (zero? mode) (= task (game-task none))) #t)
+      ((= mode 1) (task-complete? *game-info* task))
+      (else (not (task-complete? *game-info* task))))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :trans
+    (behavior ()
+      (cond
+        ((__TYPE__-fast? self)
+         (let ((f30-0 (get-current-value (-> self sync) 65536.0)))
+           (set! (-> self sync period) (the-as uint (the int (* 300.0 (res-lump-float (-> self entity) 'fast-period :default 16.0)))))
+           (quaternion-axis-angle! (-> self root-override quat)
+                                   (-> self blade-normal x)
+                                   (-> self blade-normal y)
+                                   (-> self blade-normal z)
+                                   f30-0)
+           (quaternion*! (-> self root-override quat) (-> self root-override quat) (-> self orig-quat))
+           (quaternion-normalize! (-> self root-override quat))
+           (set! (-> *part-id-table* 368 init-specs 15 initial-valuef) f30-0))
+         (spawn (if (movie?) (-> self part2) (-> self part)) (-> self root-override trans))
+         (if (and (nonzero? (-> self sound)) (-> self fast-sound)) (change-sound! (-> self sound) (string->sound-name (-> self fast-sound)))))
+        (else
+         (set! (-> self sync period) (the-as uint (the int (* 300.0 (res-lump-float (-> self entity) 'slow-period :default 300.0)))))
+         (let ((f0-3 (get-current-value (-> self sync) 65536.0)))
+           (quaternion-axis-angle! (-> self root-override quat)
+                                   (-> self blade-normal x)
+                                   (-> self blade-normal y)
+                                   (-> self blade-normal z)
+                                   f0-3))
+         (quaternion*! (-> self root-override quat) (-> self root-override quat) (-> self orig-quat))
+         (quaternion-normalize! (-> self root-override quat))))
+      (if (nonzero? (-> self sound)) (update! (-> self sound)))
+      (if (= (-> self draw cur-lod) (-> self draw lod-set max-lod))
+        (logior! (-> self draw status) (draw-status do-not-check-distance))
+        (logclear! (-> self draw status) (draw-status do-not-check-distance))))
+  :code anim-loop
+  :post ja-post)
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (logior! (-> this mask) (process-mask ambient))
+  (load-params! (-> this sync) this (the-as uint 4800) 0.0 0.15 0.15)
+  (set! (-> this root-override) (new 'process 'trsq))
+  (process-drawable-from-entity! this arg0)
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (initialize-skeleton this *windmill-sail-sg* '())
+  (quaternion-copy! (-> this orig-quat) (-> this root-override quat))
+  (vector-x-quaternion! (-> this blade-normal) (-> this root-override quat))
+  (vector-normalize! (-> this blade-normal) 1.0)
+  (set! (-> this part) (create-launch-control (-> *part-group-id-table* 123) this))
+  (set! (-> this part2) (create-launch-control (-> *part-group-id-table* 124) this))
+  (set! (-> this sound) (new 'process 'ambient-sound arg0 (-> this root-override trans)))
+  (set! (-> this fast-sound) (res-lump-struct arg0 'fast-sound string))
+  (go __TYPE__-idle)
+  (none))

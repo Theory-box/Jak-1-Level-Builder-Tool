@@ -13450,6 +13450,8 @@
     },
     {
       "etype": "windmill-sail",
+      "sounds": ["mayors-gears"],
+      "edited": "windmill-sail",
       "label": "Mayor's Windmill Sail",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13459,7 +13461,11 @@
       "glb": "levels/village1/windmill-sail-lod0.glb",
       "shape": "CUBE",
       "is_prop": true,
-      "description": "Windmill sail turning around its local X axis: once every 300 s until vanilla jungle-lurkerm is closed, then once every 16 s with wind particles and the mayors-gears sound."
+      "description": "Edited (subtypes/windmill-sail.gc): sail turning around its local X axis, slow (Slow turn, vanilla 300 s) or fast (Fast turn, vanilla 16 s, with wind particles and the Fast sound). Fast when: always, once its task is complete, or until it is (vanilla: once jungle-lurkerm was done).",
+      "panels": [
+        {"panel": "game-task", "description": "For Fast when: once / until this task is complete."},
+        {"panel": "custom-fields", "fields": [{"key": "og_windmill_mode", "label": "Fast when", "type": "enum", "default": "always", "write_if": "always", "lump": {"key": "mode", "type": "int32"}, "choices": [{"value": "always", "label": "Always", "lump_value": 0}, {"value": "after", "label": "Once its task is complete", "lump_value": 1}, {"value": "until", "label": "Until its task is complete", "lump_value": 2}], "note": "No task: always fast."}, {"key": "og_windmill_slow", "label": "Slow turn (s)", "type": "float", "default": 300.0, "min": 1.0, "lump": {"key": "slow-period", "type": "float"}, "write_if": "always", "note": "Seconds per turn when slow (vanilla 300)."}, {"key": "og_windmill_fast", "label": "Fast turn (s)", "type": "float", "default": 16.0, "min": 1.0, "lump": {"key": "fast-period", "type": "float"}, "write_if": "always", "note": "Seconds per turn when fast (vanilla 16)."}, {"key": "og_windmill_sound", "label": "Fast sound", "type": "string", "default": "mayors-gears", "lump": {"key": "fast-sound", "type": "string"}, "write_if": "if_non_empty", "note": "Sound while fast (vanilla mayors-gears, village1 bank). Empty: its own ambient sound only."}]}
+      ]
     },
     {
       "etype": "mayorgears",
