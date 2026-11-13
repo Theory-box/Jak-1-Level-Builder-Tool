@@ -13547,6 +13547,7 @@
     },
     {
       "etype": "villageb-ogreboss",
+      "edited": "villageb-ogreboss",
       "sounds": ["v2ogre-roar1", "v2ogre-roar2"],
       "label": "Klaww (Village 2 Backdrop)",
       "category": "Visuals",
@@ -13560,13 +13561,15 @@
       "glb": "levels/village2/ogreboss-village2-lod0.glb",
       "shape": "CUBE",
       "panels": [
+        {"panel": "game-task", "description": "He's removed once this task is complete. None: he stays."},
+        {"panel": "custom-fields", "fields": [{"key": "og_v2ogre_nothrow", "label": "No throws", "type": "bool", "default": false, "lump": {"key": "no-throw", "type": "uint32"}, "write_if": "if_true", "note": "He only idles, no boulders."}]},
         {
           "panel": "scale",
           "export": false,
           "description": "Ignored: always drawn at 0.65 scale."
         }
       ],
-      "description": "Distant Klaww: idles, taunts and throws flaming boulders along baked flight paths (splash / wall-hit effects at fixed points of the throw). Solid. Removed once vanilla village2-levitator is closed."
+      "description": "Edited (subtypes/villageb-ogreboss.gc): Klaww on the cliff, idling and throwing boulders that follow the vanilla throw animations from his spot (they splash about where they land in vanilla, relative to him). Removed once his task is complete (none: he stays; vanilla: once village2-levitator was done). Throws can be turned off."
     },
     {
       "etype": "seaweed",
