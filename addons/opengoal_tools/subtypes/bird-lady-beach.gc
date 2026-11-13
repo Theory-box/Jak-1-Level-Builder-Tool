@@ -1,7 +1,6 @@
 ;; Bird Lady (Beach, Flut Flut hatch) for custom levels. Link the Flut Flut egg as her
 ;; alt-actor: she appears once the egg has fallen and broken (its complete status) and
-;; her task isn't done, then the hatching cutscene plays once Jak comes within Play
-;; distance (play-dist lump; or talking) (with the flut flut and
+;; her task isn't done, then talking (circle) plays the hatching cutscene, once (with the flut flut and
 ;; egg) and gives the task's cell. Her task: her own (Game Task panel), else the linked
 ;; egg's, else vanilla beach-flutflut. With no egg linked: vanilla (shown at the task's
 ;; need-reward-speech). Any stage layout works.
@@ -15,6 +14,7 @@
   (let ((egg (__TYPE__-egg this)))
     (if egg
       (and (logtest? (-> egg extra perm status) (entity-perm-status complete))
+           (not (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
            (not (task-complete? *game-info* (current-task (-> this tasks)))))
       (= (current-status (-> this tasks)) (task-status need-reward-speech)))))
 
@@ -23,6 +23,7 @@
     ((should-display? this)
      (when arg0
        (set! (-> this cell-for-task) (current-task (-> this tasks)))
+       (process-entity-status! this (entity-perm-status complete) #t)   ; plays once
        (if (not (__TYPE__-egg this)) (close-current! (-> this tasks)))
        (set! (-> this flutflut)
              (ppointer->handle (manipy-spawn (-> this root trans) (-> this entity) *flutflut-naked-sg* #f :to this)))
@@ -40,16 +41,59 @@
           '((141 joint "cameraB") (535 joint "camera") (696 joint "cameraB") (758 joint "camera") (813 joint "cameraB"))))
     (else (-> this draw art-group data 3))))
 
+;; idle: vanilla process-taskable idle; she can be talked to whenever she's shown
+;; (vanilla: only at some task stages, which custom tasks may not have)
 (defstate idle (__TYPE__)
   :virtual #t
   :trans
     (behavior ()
-      ;; plays by itself once Jak comes within Play distance (no talk prompt needed)
-      (if (and (should-display? self)
-               *target*
-               (< (vector-vector-distance (-> self root trans) (target-pos 0)) (res-lump-float (-> self entity) 'play-dist :default (meters 12))))
-        (set! (-> self been-kicked) #t))
-      ((-> (method-of-type process-taskable idle) trans))))
+      (when (time-elapsed? (-> self state-time) (seconds 0.2))
+        (logior! (-> self mask) (process-mask actor-pause))
+        (process-entity-status! self (entity-perm-status bit-3) #f))
+      (cond
+        ((not *target*))
+        ((not (-> self will-talk))
+         (if (>= (- (-> *display* game-frame-counter) (-> self last-talk)) (seconds 10)) (set! (-> self will-talk) #t)))
+        ((begin
+           (process-taskable-method-46 self)
+           (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
+                          (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
+                (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
+                ;; og:preserve-this
+                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) 32768.0)
+                (= (-> *level* loading-level) (-> *level* level-default))
+                (not (movie?))
+                (not (level-hint-displayed?))
+                (none-reserved? *art-control*)
+                (not *progress-process*)
+                (and (not (handle->process (-> *game-info* other-camera-handle))) (close-anim-file! self))))
+         (first-any (-> self tasks) #t)
+         (when (target-above-threshold? self)
+           (case (should-display? self)
+             ((#t)
+              (kill-current-level-hint '() '(sidekick voicebox ambient) 'exit)
+              (level-hint-surpress!)
+              (hide-hud)
+              (when (and (hud-hidden?) (can-grab-display? self))
+                (let ((gp-1 (new 'stack 'font-context *font-default-matrix* 32 140 0.0 (font-color default) (font-flags shadow kerning))))
+                  (let ((v1-57 gp-1)) (set! (-> v1-57 width) (the float 440)))
+                  (let ((v1-58 gp-1)) (set! (-> v1-58 height) (the float 60)))
+                  (let ((v1-59 gp-1)) (set! (-> v1-59 scale) 0.9))
+                  (set! (-> gp-1 flags) (font-flags shadow kerning middle-vert large))
+                  (print-game-text (lookup-text! *common-text* (-> self talk-message) #f) gp-1 #f 128 22))
+                (when (and (cpad-pressed? 0 circle) (process-grab? *target*))
+                  (logclear! (-> *cpad-list* cpads 0 button0-abs 0) (pad-buttons circle))
+                  (logclear! (-> *cpad-list* cpads 0 button0-rel 0) (pad-buttons circle))
+                  (send-event *target* 'trans 'save (-> self old-target-pos))
+                  (go-virtual play-anim))))))))
+      (if (= (-> *level* loading-level) (-> *level* level-default)) (process-taskable-method-33 self))
+      (draw-npc-shadow self)
+      (when (and (-> self been-kicked)
+                 (and (not *progress-process*) (process-grab? *target*) (not (handle->process (-> *game-info* other-camera-handle)))))
+        (set! (-> self been-kicked) #f)
+        (send-event *target* 'trans 'save (-> self old-target-pos))
+        (go-virtual play-anim))
+      ((-> self cur-trans-hook))))
 
 (defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
   (process-taskable-method-40 this arg0 *bird-lady-beach-sg* 3 51 (new 'static 'vector :y 4096.0 :w 4096.0) 5)
