@@ -10439,7 +10439,7 @@
         "citb-sagecage-ag.go"
       ],
       "tpage_group": "Citadel",
-      "glb": "levels/citadel/green-sagecage-lod0.glb",
+      "glb": "levels/citadel/citb-sagecage-lod0.glb",
       "shape": "CUBE",
       "description": "Edited (subtypes/green-sagecage.gc): the Green Sage in his cage, freed like the red / blue / yellow sages: by talking to him (once; gives his task's cell) or by breaking its generator (its 'trigger after its cell is taken, or his Freed by actor complete with his task's cell taken; the rescue then plays by itself when Jak is near). Rescued (saved): no more talking, cage open, beam at the Beam target empty. No pre-boss story (robot boss, level loads, continue point).",
       "edited": "green-sagecage",
