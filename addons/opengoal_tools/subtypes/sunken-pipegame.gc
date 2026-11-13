@@ -83,8 +83,29 @@
       (when a0-6
         (logclear! (-> (the-as collectable a0-6) flags) (collectable-flags fade))
         (send-event a0-6 'movie-pos i)
+        (logclear! (-> (the-as collectable a0-6) flags) (collectable-flags can-collect))
         (clear-collide-with-as (-> (the-as collectable a0-6) root)))))
   0)
+
+(defun __TYPE__-caught? ((this __TYPE__) (i int))
+  "Button i's prize is gone or being picked up (eco stays alive a while after)."
+  (let ((v1-2 (handle->process (-> this prize i actor-handle))))
+    (or (not v1-2)
+        (let ((v1-3 (-> v1-2 next-state)))
+          (and v1-3 (or (= (-> v1-3 name) 'pickup) (= (-> v1-3 name) 'die)))))))
+
+(defmethod sunken-pipegame-method-22 ((this __TYPE__) (arg0 symbol))
+  "Its prize collectable (arg0) or not, collision and collect flag both."
+  (let ((a0-2 (handle->process (-> this prize (-> this challenge) actor-handle))))
+    (when a0-2
+      (cond
+        (arg0
+         (restore-collide-with-as (-> (the-as collectable a0-2) root))
+         (logior! (-> (the-as collectable a0-2) flags) (collectable-flags can-collect)))
+        (else
+         (clear-collide-with-as (-> (the-as collectable a0-2) root))
+         (logclear! (-> (the-as collectable a0-2) flags) (collectable-flags can-collect))))))
+  (none))
 
 (defmethod sunken-pipegame-method-20 ((this __TYPE__))
   "Which prizes are won (bit i = button i): its cell / fly collected, or saved."
@@ -159,7 +180,7 @@
       (dotimes (gp-0 3)
         (when (and (logtest? (-> self challenges-mask) (ash 1 gp-0))
                    (__TYPE__-eco? self gp-0)
-                   (not (handle->process (-> self prize gp-0 actor-handle)))
+                   (__TYPE__-caught? self gp-0)
                    *target*
                    (or (!= (-> *target* fact eco-type) (__TYPE__-item self gp-0)) (>= 0.0 (-> *target* fact eco-level))))
           (logclear! (-> self challenges-mask) (ash 1 gp-0))
@@ -206,7 +227,7 @@
       (if (!= (-> self entity extra perm task) (game-task none))
         (close-specific-task! (-> self entity extra perm task) (task-status need-hint)))
       (until (completed? (-> self ticker))
-        (if (not (handle->process (-> self prize (-> self challenge) actor-handle))) (go __TYPE__-beat))
+        (if (__TYPE__-caught? self (-> self challenge)) (go __TYPE__-beat))
         (suspend))
       (sunken-pipegame-method-22 self #f)
       (__TYPE__-carry #t)
@@ -217,6 +238,10 @@
   :code
     (behavior ()
       (logior! (-> self challenges-mask) (ash 1 (-> self challenge)))
+      (when (__TYPE__-eco? self (-> self challenge))
+        (let ((a0-3 (handle->process (-> self prize (-> self challenge) actor-handle))))
+          (if (and a0-3 (!= (-> a0-3 next-state name) 'pickup)) (deactivate a0-3)))
+        (set! (-> self prize (-> self challenge) actor-handle) (the-as handle #f)))
       (when (= (__TYPE__-item self (-> self challenge)) (pickup-type money))
         (let ((v1-3 (-> self entity extra perm)))
           (logior! (-> v1-3 status) (entity-perm-status user-set-from-cstage))

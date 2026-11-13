@@ -298,7 +298,8 @@ def register():
         # full re-import (Refresh Model re-imports for model/override changes).
         for c in self.children:
             if c.get("og_preview_mesh") or c.get("og_waypoint_preview_mesh"):
-                c.location = (float(value[0]), float(value[1]), float(value[2]))
+                d = c.get("_og_preview_copy") or (0.0, 0.0, 0.0)   # extra copies keep their spot
+                c.location = (float(value[0]) + d[0], float(value[1]) + d[1], float(value[2]) + d[2])
 
     bpy.types.Object.og_preview_offset     = bpy.props.FloatVectorProperty(
         name="Preview Offset", subtype="TRANSLATION", size=3,
