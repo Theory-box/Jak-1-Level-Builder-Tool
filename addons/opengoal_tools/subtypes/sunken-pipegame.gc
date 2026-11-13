@@ -16,7 +16,8 @@
 (deftype __TYPE__ (sunken-pipegame)
   ((paths  path-control 3)
    (cam-on symbol)
-   (proxy  handle))
+   (proxy  handle)
+   (spent  handle 3))
   (:states
    __TYPE__-beat
    __TYPE__-end
@@ -70,7 +71,8 @@
          (f30-0 (case s3-0
                   (((pickup-type fuel-cell)) (the float (__TYPE__-task this i)))
                   (((pickup-type buzzer)) (the float (logior (__TYPE__-task this i) (ash (__TYPE__-fly this i) 16))))
-                  (else (res-lump-float (-> this entity) (__TYPE__-lump i 'prize-amount-a 'prize-amount-b 'prize-amount-c) :default 1.0)))))
+                  ;; one blob (an amount above 1 would birth that many blobs, only one watched)
+                  (else 1.0))))
     ;; cells / flies tell the game when caught (notify); others are watched (their
     ;; handle), parented to the entity pool so their pickup isn't paused with the game
     (set! (-> s4-0 actor-handle)
@@ -84,7 +86,11 @@
         (logclear! (-> (the-as collectable a0-6) flags) (collectable-flags fade))
         (send-event a0-6 'movie-pos i)
         (logclear! (-> (the-as collectable a0-6) flags) (collectable-flags can-collect))
-        (clear-collide-with-as (-> (the-as collectable a0-6) root)))))
+        (clear-collide-with-as (-> (the-as collectable a0-6) root))
+        (when (__TYPE__-eco? this i)          ; its eco amount, on the one blob
+          (let ((f0-2 (res-lump-float (-> this entity) (__TYPE__-lump i 'prize-amount-a 'prize-amount-b 'prize-amount-c) :default 1.0)))
+            (set! (-> (the-as collectable a0-6) pickup-amount) f0-2)
+            (set! (-> (the-as collectable a0-6) fact pickup-amount) f0-2))))))
   0)
 
 (defun __TYPE__-caught? ((this __TYPE__) (i int))
@@ -184,6 +190,8 @@
                    *target*
                    (or (!= (-> *target* fact eco-type) (__TYPE__-item self gp-0)) (>= 0.0 (-> *target* fact eco-level))))
           (logclear! (-> self challenges-mask) (ash 1 gp-0))
+          (let ((a0-9 (handle->process (-> self spent gp-0))))
+            (if a0-9 (deactivate a0-9)))
           (__TYPE__-spawn-prize self gp-0)
           (send-event (ppointer->process (-> self button gp-0)) 'untrigger))))
   :code
@@ -239,8 +247,8 @@
     (behavior ()
       (logior! (-> self challenges-mask) (ash 1 (-> self challenge)))
       (when (__TYPE__-eco? self (-> self challenge))
-        (let ((a0-3 (handle->process (-> self prize (-> self challenge) actor-handle))))
-          (if (and a0-3 (!= (-> a0-3 next-state name) 'pickup)) (deactivate a0-3)))
+        ;; the caught blob comes back by itself after its pickup: gone when ours respawns
+        (set! (-> self spent (-> self challenge)) (-> self prize (-> self challenge) actor-handle))
         (set! (-> self prize (-> self challenge) actor-handle) (the-as handle #f)))
       (when (= (__TYPE__-item self (-> self challenge)) (pickup-type money))
         (let ((v1-3 (-> self entity extra perm)))
@@ -271,6 +279,8 @@
   (set! (-> this challenge) -1)
   (set! (-> this cam-on) #f)
   (set! (-> this proxy) (the-as handle #f))
+  (dotimes (v1-0 3)
+    (set! (-> this spent v1-0) (the-as handle #f)))
   (dotimes (v1-3 3)
     (set! (-> this prize v1-3 actor-handle) (the-as handle #f)))
   (set! (-> this root) (new 'process 'trsqv))
