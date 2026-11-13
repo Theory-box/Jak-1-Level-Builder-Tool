@@ -12,8 +12,9 @@
 ;; - 'open (a generator's open actor) drops the bars, as vanilla.
 ;; edits: blue-sagecage
 (deftype __TYPE__ (blue-sagecage)
-  ((has-beam  symbol)
-   (triggered symbol)))
+  ((has-beam   symbol)
+   (triggered  symbol)
+   (ready-time time-frame)))
 
 (defun __TYPE__-rescued? ((this __TYPE__))
   (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
@@ -31,7 +32,9 @@ complete (broken) and his task's cell is taken."
          (or (-> this triggered)
              (and e
                   (logtest? (-> e extra perm status) (entity-perm-status complete))
-                  (or (= task (game-task none)) (task-complete? *game-info* task)))))))
+                  ;; his task's cell, else the generator's, taken (its cell cutscene first)
+                  (let ((t2 (if (= task (game-task none)) (-> e extra perm task) task)))
+                    (or (= t2 (game-task none)) (task-complete? *game-info* t2))))))))
 
 (defun __TYPE__-setup ((this __TYPE__))
   "citb-sage's play-reminder: the cage, the beam from the Beam target empty."
@@ -165,8 +168,16 @@ complete (broken) and his task's cell is taken."
     (behavior ()
       (let ((cage (the-as citb-sagecage (handle->process (-> self cage)))))
         (if (and cage (-> cage bars-on) (__TYPE__-rescued? self)) (send-event cage 'disable-bars)))
-      (if (and (__TYPE__-ready? self) *target* (< (vector-vector-distance (-> self root trans) (target-pos 0)) (meters 16)))
-        (set! (-> self been-kicked) #t))
+      ;; once free and Jak is near: after the cell's own cutscene (Jak free for 1 s)
+      (cond
+        ((and (__TYPE__-ready? self)
+              *target*
+              (not (movie?))
+              (not (logtest? (-> *target* state-flags) (state-flags grabbed)))
+              (< (vector-vector-distance (-> self root trans) (target-pos 0)) (meters 16)))
+         (if (zero? (-> self ready-time)) (set-time! (-> self ready-time)))
+         (if (time-elapsed? (-> self ready-time) (seconds 1)) (set! (-> self been-kicked) #t)))
+        (else (set! (-> self ready-time) 0)))
       ((the-as (function none :behavior citb-sage) (-> (method-of-type process-taskable idle) post)))
       (if (-> self beam-on) (citb-sage-draw-beam))))
 
