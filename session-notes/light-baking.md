@@ -53,7 +53,17 @@ Objects Control > "Copy vertex lighting from closest":
   layer of the same name: BakedLight and every time of day layer both have; the target's alpha
   is kept. Numpy + mathutils.bvhtree.
 
-## Plan: Quantisation for vertex colour (research done, nothing changed yet)
+## Color Quantisation preview (done: palette.py, Light Baking > Color Quantisation)
+Python port of build_level's palette (k-d tree, 13 deep, 8192 colours); bytes = the GLB's
+16-bit linear colours >> 8; closest-time fill; 4-byte colours on installs without time of
+day (versions "time_of_day"). Checked against build_level's own log
+(_claude_tmp/bl_palette.py, 3 grids, 8 times, one mesh missing odd times):
+- test-v0.3.8 (32 bytes): 11163 unique -> 8192, worst diff 66.098 (build_level: same).
+- test-modbase binary (4 bytes): 8969 unique -> 8192, worst diff 1.732 (build_level: same).
+Preview writes "OG Palette Preview" (float, corner) and makes it active + render; the export
+switches back to the bake (use_baked), Restore removes the layers.
+Possible next: options in post-processing (desaturate darks ...) once Kuitar has looked.
+Original notes:
 How build_level makes the palette (jak-project goalc/build_level/common/color_quantization.cpp,
 gltf_mesh_extract.cpp): every vertex's colour is a 32-byte vector (8 times of day x RGBA; a
 level without time of day layers has the same colour 8 times). One k-d tree of depth 13

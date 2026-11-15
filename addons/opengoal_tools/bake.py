@@ -37,6 +37,7 @@ import math
 import numpy as np
 import bpy
 from mathutils import Vector
+from . import palette as _palette
 
 BAKE_ATTR = "BakedLight"
 _EMIT_ATTR = "_og_bake_emit"
@@ -225,6 +226,11 @@ class OGBakeSettings(bpy.types.PropertyGroup):
                     "(Blender otherwise re-prepares the whole scene for every mesh), then the colours go back "
                     "into each mesh. Your objects aren't changed")
     show_options: bpy.props.BoolProperty(name="Bake options", default=True)
+    show_palette: bpy.props.BoolProperty(name="Color Quantisation", default=False)
+    palette_time: bpy.props.EnumProperty(
+        name="Show", default="2", description="Time of day the palette preview shows",
+        items=[(str(i), l, f"Show the {l} colours") for i, (_k, _a, l, *_r) in enumerate(TIMES)],
+        update=lambda self, ctx: _palette.time_update(self, ctx))
     show_tod: bpy.props.BoolProperty(name="Time of day", default=True)
     tod_enabled: bpy.props.BoolProperty(
         name="Time of day", default=False,
@@ -1468,7 +1474,7 @@ class OG_OT_BakeCurveRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
+CLASSES = (*_palette.CLASSES, OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
            OG_OT_TodDefaultSuns, OG_OT_TodCopyFrom, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 
