@@ -145,13 +145,29 @@ def game_info() -> dict:
             if m:
                 info["kind"], info["version"] = "release", m.group(1)
         return info
-    return _cached(key, _detect) or {"kind": "unknown", "version": None, "commit": None, "root": None}
+    info = _cached(key, _detect) or {"kind": "unknown", "version": None, "commit": None, "root": None}
+    ov, rel = _override()
+    if ov != "AUTO":
+        # the user's choice; a dev build's git clone is still used for commit checks
+        info = {"kind": ov, "version": rel if ov == "release" else None,
+                "commit": info["commit"] if info["kind"] == ov else None,
+                "root": info["root"] if info["kind"] == ov else None, "override": True}
+    return info
+
+
+def _override():
+    """(Preferences "OpenGOAL version" override, its release) or ("AUTO", "")."""
+    try:
+        p = bpy.context.preferences.addons[__package__].preferences
+        return p.version_override, p.version_override_release.strip()
+    except (KeyError, AttributeError):
+        return "AUTO", ""
 
 
 def game_label() -> str:
     g = game_info()
     extra = f" v{g['version']}" if g["version"] else (f" @ {g['commit']}" if g["commit"] else "")
-    return KINDS[g["kind"]] + extra
+    return KINDS[g["kind"]] + extra + (" (set by hand)" if g.get("override") else "")
 
 
 def _has_commit(root, commit):
@@ -196,9 +212,13 @@ def feature_status(key) -> tuple:
     if need is False or need is None:
         return False, f"not available on {KINDS[g['kind']]}"
     if g["kind"] == "release":
+        if not g["version"]:
+            return None, "release version not set"
         ok = _vtuple(g["version"]) >= _vtuple(need)
         return ok, ("" if ok else f"needs release v{need}+ (you have v{g['version']}): update OpenGOAL")
     if not g["root"]:
+        if g.get("override"):
+            return True, ""                     # set by hand: taken as up to date
         return None, f"needs {KINDS[g['kind']]} from commit {need} or later; can't check without git: keep it up to date"
     ok = _has_commit(g["root"], need)
     if ok is None:
@@ -245,6 +265,14 @@ def draw_versions(layout):
             sub = col.row(); sub.scale_y = 0.7
             sub.label(text="      " + why)
     box.operator("og.recheck_versions", icon="FILE_REFRESH")
+    try:
+        p = bpy.context.preferences.addons[__package__].preferences
+    except KeyError:
+        return
+    row = box.row(align=True)
+    row.prop(p, "version_override", text="Overwrite")
+    if p.version_override == "release":
+        row.prop(p, "version_override_release", text="v")
 
 
 class OG_OT_RecheckVersions(bpy.types.Operator):

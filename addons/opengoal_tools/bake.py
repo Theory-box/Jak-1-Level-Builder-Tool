@@ -557,15 +557,31 @@ _COMBINED = "OG_BakeCombined"
 _CHUNK_TRIS = 2_000_000          # triangles per temporary mesh
 
 
+# object settings a copy takes from its meshes (meshes are only combined when they match)
+_RAY_PROPS = ("visible_camera", "visible_diffuse", "visible_glossy", "visible_transmission",
+              "visible_volume_scatter", "visible_shadow", "is_shadow_catcher", "is_holdout")
+
+
+def _ray_key(o):
+    return tuple(bool(getattr(o, p, True)) for p in _RAY_PROPS)
+
+
 def _chunks(objs):
-    out, cur, n = [], [], 0
+    """Groups of meshes for the combined copies: same ray visibility, up to
+    _CHUNK_TRIS triangles each."""
+    groups = {}
     for o in objs:
-        t = sum(len(p.vertices) - 2 for p in o.data.polygons)
-        if cur and n + t > _CHUNK_TRIS:
-            out.append(cur); cur, n = [], 0
-        cur.append(o); n += t
-    if cur:
-        out.append(cur)
+        groups.setdefault(_ray_key(o), []).append(o)
+    out = []
+    for grp in groups.values():
+        cur, n = [], 0
+        for o in grp:
+            t = sum(len(p.vertices) - 2 for p in o.data.polygons)
+            if cur and n + t > _CHUNK_TRIS:
+                out.append(cur); cur, n = [], 0
+            cur.append(o); n += t
+        if cur:
+            out.append(cur)
     return out
 
 
@@ -671,6 +687,9 @@ def _combined_mesh(objs, index):
             break
     me.normals_split_custom_set(nrm.tolist())
     ob = bpy.data.objects.new(me.name, me)
+    for p in _RAY_PROPS:                         # the meshes' ray visibility (all the same, _chunks)
+        if hasattr(ob, p):
+            setattr(ob, p, getattr(objs[0], p))
     bpy.context.scene.collection.objects.link(ob)
     return ob, parts
 
