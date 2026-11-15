@@ -4388,6 +4388,91 @@
       ]
     },
     {
+      "id": "drop",
+      "label": "Drop",
+      "draw": "generic",
+      "description": "What the enemy drops when it dies (eco-info lump, read by fact-info). Off: the vanilla drop (random green eco pills).",
+      "fields": [
+        {
+          "key": "og_change_drop",
+          "label": "Change Drop",
+          "type": "bool",
+          "default": false,
+          "note": "Off: the vanilla drop (random green eco pills)."
+        },
+        {
+          "key": "og_drop_pickup",
+          "label": "Drop",
+          "type": "enum",
+          "default": "eco-pill-random",
+          "choices": [
+            {
+              "id": "none",
+              "label": "Nothing",
+              "engine_string": "(pickup-type none)"
+            },
+            {
+              "id": "eco-pill-random",
+              "label": "Green Eco Pills (Random)",
+              "engine_string": "(pickup-type eco-pill-random)"
+            },
+            {
+              "id": "eco-pill",
+              "label": "Green Eco Pills",
+              "engine_string": "(pickup-type eco-pill)"
+            },
+            {
+              "id": "money",
+              "label": "Orbs",
+              "engine_string": "(pickup-type money)"
+            },
+            {
+              "id": "eco-green",
+              "label": "Green Eco",
+              "engine_string": "(pickup-type eco-green)"
+            },
+            {
+              "id": "eco-blue",
+              "label": "Blue Eco",
+              "engine_string": "(pickup-type eco-blue)"
+            },
+            {
+              "id": "eco-red",
+              "label": "Red Eco",
+              "engine_string": "(pickup-type eco-red)"
+            },
+            {
+              "id": "eco-yellow",
+              "label": "Yellow Eco",
+              "engine_string": "(pickup-type eco-yellow)"
+            }
+          ],
+          "visible_if": {
+            "og_change_drop": true
+          },
+          "export_if_visible": true,
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_drop_amount"
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_drop_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99,
+          "visible_if": {
+            "og_change_drop": true
+          },
+          "note": "Random green eco pills: extra pills on top of the random 3 to 5."
+        }
+      ]
+    },
+    {
       "id": "battlecontroller",
       "label": "Battle Controller",
       "description": "battlecontroller.gc settings: intro camera (variant), lurkers, spawning, pickups, linked actors. Drawn by the Battle Controller panel.",
@@ -4923,6 +5008,7 @@
       "etype": "nav-enemy",
       "parent": "process-drawable",      "rotation_lock": ["x", "y"],
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {"panel": "game-task", "description": "Power cell carriers (Options > Has power cell): the task of the cell it drops."},
         {"panel": "movie-pos", "description": "Power cell carriers (Options > Has power cell): Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
         {
@@ -6286,6 +6372,7 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "activation"
         },
@@ -6320,6 +6407,7 @@
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "movie-pos",
           "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
@@ -6572,6 +6660,7 @@
       ],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "movie-pos",
           "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
@@ -14378,6 +14467,7 @@
       ],
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "path",
           "required": true,
