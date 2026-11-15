@@ -45,16 +45,19 @@ _PRESETS = {
     # [R, G, B, combined] curve points (built-ins only shape the combined curve)
     "LINEAR":   [_LIN, _LIN, _LIN, _LIN],
     "JAK":      [_LIN, _LIN, _LIN, [(0.0, 0.25), (0.35, 0.4), (0.75, 0.72), (1.0, 0.9)]],
+    "JAK_FULL": [_LIN, _LIN, _LIN, [(0.0, 0.25), (0.35, 0.45), (0.75, 0.78), (1.0, 1.0)]],
     "SOFT":     [_LIN, _LIN, _LIN, [(0.0, 0.1), (0.5, 0.5), (1.0, 0.9)]],
     "CONTRAST": [_LIN, _LIN, _LIN, [(0.0, 0.0), (0.25, 0.18), (0.75, 0.82), (1.0, 1.0)]],
 }
 _BUILTIN_ITEMS = [
     ("JAK", "Fit 0.25-0.75", "Lifts darks above 0.25 and eases highlights, keeping bright spots over 0.75"),
+    ("JAK_FULL", "Fit 0.25-1.0", "Lifts darks above 0.25, brights go up to 1.0"),
     ("SOFT", "Soft", "Slightly flatter"),
     ("CONTRAST", "Contrast", "Darker darks, brighter brights"),
     ("LINEAR", "Linear", "No change (edit the curve yourself)"),
 ]
 _USER = "USER:"   # enum ids of saved presets
+_FIXED_IDS = {"JAK_FULL": 1000}
 
 
 _PRESETS_KEY = "og_bake_curve_presets"
@@ -81,7 +84,10 @@ def _preset_items(self, ctx):
     items = list(_BUILTIN_ITEMS)
     items += [(_USER + n, n, "Saved curve") for n in sorted(user_presets())]
     items.append(("CUSTOM", "Custom", "Your own curve (choosing a preset overwrites it)"))
-    _ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(items)]
+    # .blends save the number: added built-ins get their own (others keep theirs)
+    rest = [x for x in items if x[0] not in _FIXED_IDS]
+    _ITEMS[:] = [(a, b, c, _FIXED_IDS.get(a, rest.index((a, b, c)) if (a, b, c) in rest else 0))
+                 for a, b, c in items]
     return _ITEMS
 
 
@@ -852,6 +858,7 @@ def draw_tod(layout, level_col):
     row = box.row(align=True)
     row.operator("og.tod_default_worlds", icon="WORLD")
     row.operator("og.tod_default_suns", icon="LIGHT_SUN")
+    box.operator_menu_enum("og.tod_copy_from", "level", text="Copy Worlds / Collections from", icon="COPYDOWN")
     for k, a, l, t in tod_times(s):
         col = box.column(align=True)
         row = col.row(align=True)
@@ -916,8 +923,9 @@ def _new_sun(level_col, key):
 
 
 class OG_OT_ShowBakeAttr(bpy.types.Operator):
-    """Show this bake on the selected meshes: makes it their active color attribute
-(viewport Solid shading with Attribute color shows it)"""
+    """Show this bake on the selected meshes: makes it their active and render color
+attribute (Solid shading with Attribute color, and materials reading the render
+color attribute, show it)"""
     bl_idname = "og.show_bake_attr"
     bl_label = "Show Bake"
     bl_options = {"REGISTER", "UNDO"}
@@ -927,9 +935,7 @@ class OG_OT_ShowBakeAttr(bpy.types.Operator):
         meshes = [o for o in ctx.selected_objects if o.type == "MESH"]
         done = 0
         for o in meshes:
-            cas = o.data.color_attributes
-            if self.attr in cas:
-                cas.active_color = cas[self.attr]
+            if use_baked(o.data, self.attr):
                 done += 1
         if not meshes:
             self.report({"WARNING"}, "Select the meshes to show")
@@ -1005,6 +1011,39 @@ class OG_OT_TodDefaultSuns(bpy.types.Operator):
         for k, *_r in TIMES:
             _new_sun(lv, k)
         self.report({"INFO"}, "Added 8 suns (one per time of day)")
+        return {"FINISHED"}
+
+
+def _other_levels(self, ctx):
+    from .collections import _all_level_collections
+    cur = _tod_level(ctx)
+    items = [(c.name, c.name, "Use this level's time of day worlds and light collections")
+             for c in _all_level_collections(ctx.scene) if c != cur]
+    _OTHER_LEVELS[:] = items or [("", "No other level", "")]
+    return _OTHER_LEVELS
+
+
+_OTHER_LEVELS: list = []
+
+
+class OG_OT_TodCopyFrom(bpy.types.Operator):
+    """Use another level's time of day worlds and light collections (the same
+    ones, not copies)"""
+    bl_idname = "og.tod_copy_from"
+    bl_label = "Copy Worlds / Collections"
+    bl_options = {"REGISTER", "UNDO"}
+    level: bpy.props.EnumProperty(name="Level", items=_other_levels)
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        src = bpy.data.collections.get(self.level) if self.level else None
+        if lv is None or src is None:
+            self.report({"WARNING"}, "No other level to copy from")
+            return {"CANCELLED"}
+        for k, *_r in TIMES:
+            a, b = getattr(src.og_bake, "tod_" + k), getattr(lv.og_bake, "tod_" + k)
+            b.world, b.lights = a.world, a.lights
+        self.report({"INFO"}, f"Time of day worlds / light collections now the same as {src.name}'s")
         return {"FINISHED"}
 
 
@@ -1085,7 +1124,7 @@ class OG_OT_BakeCurveRemove(bpy.types.Operator):
 
 
 CLASSES = (OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
-           OG_OT_TodDefaultSuns, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
+           OG_OT_TodDefaultSuns, OG_OT_TodCopyFrom, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 
 def register_props():
