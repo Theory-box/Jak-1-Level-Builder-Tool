@@ -10,7 +10,8 @@
   samples, 8 times + emit): per mesh 21.6 s, combined 1.8 s (x12); colours within ~2 %
   (sampling). Corner normals come from the evaluated mesh when its corners match (Smooth by
   Angle). A mesh without a UV map gets an empty one on the copy (Blender's bake asks for one).
-  Not done: negative scale (face winding), per-object ray visibility settings.
+  Negative scale: faces wound the other way in the copy (fe4bb69). Not done: per-object ray
+  visibility settings (shadow off ...) aren't carried to the copy.
 
 ## Plan: Optimising light baking (done, see above)
 Why it's slow: one `bpy.ops.object.bake` call with N selected objects bakes them one by one,
