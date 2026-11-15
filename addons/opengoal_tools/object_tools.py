@@ -5,6 +5,7 @@ from __future__ import annotations
 import bpy
 from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty
 from mathutils import Vector, Matrix
+from . import vc_effects as _vc_effects
 
 _SKIP_PREFIXES = ("VOL_", "LOADBND_")       # not ground
 
@@ -597,10 +598,11 @@ meshes (Object Controls > Vertex Colors)"""
 
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha)
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, *_vc_effects.CLASSES)
 
 
 def register_props():
+    _vc_effects.register_props()
     bpy.types.Scene.og_floor = PointerProperty(type=OGFloorSettings)
     bpy.types.Scene.og_distribute = PointerProperty(type=OGDistributeSettings)
     bpy.types.Scene.og_convert = PointerProperty(type=OGConvertSettings)
@@ -612,6 +614,7 @@ def register_props():
 
 
 def unregister_props():
+    _vc_effects.unregister_props()
     bpy.msgbus.clear_by_owner(_MSGBUS_OWNER)
     if _resubscribe in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(_resubscribe)

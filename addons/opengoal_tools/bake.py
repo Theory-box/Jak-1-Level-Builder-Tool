@@ -255,6 +255,9 @@ class OGBakeSettings(bpy.types.PropertyGroup):
     fix_grey_threshold: bpy.props.FloatProperty(name="Threshold", default=0.03, min=0.0, max=0.5,
                                                 update=_fixes_update,
                                                 description="Largest difference between R, G and B still snapped")
+    apply_effects: bpy.props.BoolProperty(
+        name="Apply effects", default=False,
+        description="After the bake, each mesh's Effects After Bake (Object Controls > Vertex Colors) run in order")
     fix_after_bake: bpy.props.BoolProperty(
         name="Apply after every bake", default=False,
         description="The ticked fixes are the last step of every bake (after curve and blur)")
@@ -1131,15 +1134,20 @@ def _finish():
         return
     mapping = curve_mapping(col) if settings.use_curve else None
     luts = curve_luts(mapping) if mapping is not None else None
+    fx_ran = 0
     for n in job["objs"]:
         o = bpy.data.objects.get(n)
         if o is not None:
             post_process(o, settings, mapping, o.name in job["emit_objs"], attrs, luts)
+            if settings.apply_effects:
+                from .vc_effects import apply_stack
+                fx_ran += apply_stack(o)
     labels = {a: l for _k, a, l, *_r in TIMES}
     times = [labels[p[6:]] for p in job["passes"] if p.startswith("light:")]
     extra = [x for x, on in (("emit", "emit" in job["passes"]), ("curve", settings.use_curve),
                              ("blur", settings.use_blur),
-                             ("fixes", settings.fix_after_bake and _palette.fixes_on(settings))) if on]
+                             ("fixes", settings.fix_after_bake and _palette.fixes_on(settings)),
+                             (f"{fx_ran} effect(s)", fx_ran)) if on]
     m, s = divmod(int(round(time.time() - job["t0"])), 60)
     msg = f"Baked {len(job['objs'])} mesh(es)"
     if times:
@@ -1266,6 +1274,7 @@ def draw_options(layout, level_col, scene=None):
                 sub = row.row(); sub.enabled = s.blur_auto_sharp
                 sub.prop(s, "blur_angle")
     box.prop(s, "ignore_vertex_colors")
+    box.prop(s, "apply_effects")
 
 
 def draw_tod(layout, level_col):

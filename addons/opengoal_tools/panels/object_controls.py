@@ -256,6 +256,55 @@ class OG_PT_CopyAlpha(Panel):
         r.label(text="Into BakedLight + every time of day layer", icon="INFO")
 
 
+class OG_PT_ApplyEffect(Panel):
+    bl_label = "Apply Effect"
+    bl_idname = "OG_PT_apply_effect"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_vertex_colors"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        r = self.layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="On BakedLight + every time of day layer", icon="INFO")
+
+
+def _effect_panel(kind, label):
+    class _P(Panel):
+        bl_label = label
+        bl_idname = f"OG_PT_apply_effect_{kind.lower()}"
+        bl_space_type = "VIEW_3D"
+        bl_region_type = "UI"
+        bl_category = "OpenGOAL"
+        bl_parent_id = "OG_PT_apply_effect"
+        bl_options = {"DEFAULT_CLOSED"}
+
+        def draw(self, ctx):
+            from ..vc_effects import draw_apply
+            draw_apply(self.layout, ctx, kind)
+    _P.__name__ = f"OG_PT_ApplyEffect{kind.capitalize()}"
+    return _P
+
+
+_EFFECT_PANELS = tuple(_effect_panel(k, l) for k, l in (("CURVE", "Curve Correction"), ("HUE", "Overwrite Hue"),
+                                                         ("ALPHA", "Overwrite Alpha"), ("BLUR", "Blur")))
+
+
+class OG_PT_EffectsAfterBake(Panel):
+    bl_label = "Effects After Bake"
+    bl_idname = "OG_PT_effects_after_bake"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_vertex_colors"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        from ..vc_effects import draw_stack
+        draw_stack(self.layout, ctx)
+
+
 class OG_PT_DistributeAlongCurve(Panel):
     bl_label = "Distribute Along Curve"
     bl_idname = "OG_PT_distribute_along_curve"
@@ -335,4 +384,5 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
+           OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha,
+           OG_PT_ApplyEffect, *_EFFECT_PANELS, OG_PT_EffectsAfterBake, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

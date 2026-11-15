@@ -88,3 +88,13 @@ Proposed:
 2. Options to help, applied in post-processing: desaturate very dark colours (below a level,
    blend to grey), snap near-greys to grey. Decide after seeing the preview on real levels.
 3. Possibly a jak-project change later (more depth, a better split choice); outside the addon.
+
+## Vertex colour effects (vc_effects.py, Object Controls > Vertex Colors)
+- Apply Effect: Curve Correction (own curve "OG Effect Curve", bake curve presets), Overwrite
+  Hue (keeps saturation / value), Overwrite Alpha, Blur (auto blur options); Factor on all but
+  Blur; on BakedLight + every time of day layer of the selected meshes.
+- Effects After Bake: per-object stack (Object.og_vc_effects; a curve effect owns its node
+  group), on / off, up / down / remove, Copy Effects to Selected, Apply Effects Now. Light
+  Baking > Bake options > Apply effects (off by default) runs each mesh's stack after its
+  post-processing (after the combined copies are split back).
+Test: _claude_tmp/bl_vcfx.py.
