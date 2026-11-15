@@ -1,0 +1,140 @@
+;; Helix floor button without Sunken's scripted player movements. Standing on it closes
+;; the linked slide door (alt-actor 1) and starts the linked rising eco (alt-actor 0); the
+;; water can link the button instead (its prev-actor): each press counts up perm
+;; user-int8 0, which the edited water watches. Both links are optional.
+;; Its task's cell (none = no cell) floats above the button like vanilla and is given
+;; when Jak presses it (at movie-pos 0, else at Jak). No vanilla door camera shot (its
+;; angles only fit Sunken's room and the eco could rise over Jak meanwhile).
+;; Uses its own task instead of sunken-slide. The puzzle resets when the level reloads.
+;; edits: helix-button
+
+(deftype __TYPE__ (helix-button)
+  ((first-press symbol))
+  (:states __TYPE__-helix-button-startup __TYPE__-helix-button-idle-up
+           __TYPE__-helix-button-quick-activate __TYPE__-helix-button-idle-down))
+
+(defstate __TYPE__-helix-button-startup (__TYPE__)
+  :code
+    (behavior ()
+      (when (and (!= (-> self entity extra perm task) (game-task none)) (not (task-complete? *game-info* (-> self entity extra perm task))))
+        (let ((a0-1 (new 'stack-no-clear 'vector)))
+          (set! (-> a0-1 quad) (-> self root trans quad))
+          (+! (-> a0-1 y) 30720.0)
+          (let ((v1-7 (birth-pickup-at-point a0-1 (pickup-type fuel-cell) (the float (-> self entity extra perm task)) #f self (-> self fact))))
+            (set! (-> self fcell-handle) (ppointer->handle v1-7))
+            (when v1-7
+              (send-event (ppointer->process v1-7) 'movie-pos 0)
+              (clear-collide-with-as (-> (the-as collectable (-> v1-7 0)) root))))))
+      (go __TYPE__-helix-button-idle-up)))
+
+(defstate __TYPE__-helix-button-idle-up (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('touch)
+         (when *target*
+           (when (logtest? (-> *target* control status) (cshape-moving-flags onsurf))
+             (set! (-> self first-press) (not (and (-> self entity) (logtest? (-> self entity extra perm status) (entity-perm-status complete)))))
+             (process-entity-status! self (entity-perm-status complete) #t)
+             (go __TYPE__-helix-button-quick-activate))))))
+  :code
+    (behavior ()
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend))))
+
+(defstate __TYPE__-helix-button-quick-activate (__TYPE__)
+  :trans rider-trans
+  :code
+    (behavior ()
+      (local-vars (v1-7 symbol))
+      (let ((v1-0 (-> self entity extra perm)))
+        (set! (-> v1-0 user-int8 0) (logand (+ (-> v1-0 user-int8 0) 1) 127)))
+      ;; the cell, given like vanilla when Jak presses the button
+      (let ((a0-1 (handle->process (-> self fcell-handle))))
+        (when a0-1
+          (send-event a0-1 'pickup)
+          (until v1-7
+            (suspend)
+            (set! v1-7 (or (not *target*) (not (logtest? (-> *target* state-flags) (state-flags grabbed))))))))
+      (when (-> self my-water) (entity-birth-no-kill (-> self my-water)))
+      (when (-> self my-door) (entity-birth-no-kill (-> self my-door)))
+      (suspend)
+      (sound-play "prec-button8")
+      (sound-play "maindoor")
+      (let ((a1-3 (new 'stack-no-clear 'event-message-block)))
+        (set! (-> a1-3 from) self)
+        (set! (-> a1-3 num-params) 0)
+        (set! (-> a1-3 message) 'trigger)
+        (let ((t9-5 send-event-function)
+              (v1-17 (-> self my-door)))
+          (t9-5 (if v1-17 (-> v1-17 extra process)) a1-3)))
+      (let ((a1-4 (new 'stack-no-clear 'event-message-block)))
+        (set! (-> a1-4 from) self)
+        (set! (-> a1-4 num-params) 0)
+        (set! (-> a1-4 message) 'trigger)
+        (let ((t9-6 send-event-function)
+              (v1-21 (-> self my-water)))
+          (t9-6 (if v1-21 (-> v1-21 extra process)) a1-4)))
+      (set! (-> self root transv quad) (the-as uint128 0))
+      (let ((gp-2 5))
+        (until (<= gp-2 0)
+          (let ((f1-0 (-> self root transv y))
+                (f0-0 (-> self root trans y))
+                (a1-5 (new 'stack-no-clear 'vector)))
+            (let* ((f1-1 (+ f1-0 (* -737280.0 (seconds-per-frame))))
+                   (f0-1 (+ f0-0 (* f1-1 (seconds-per-frame)))))
+              (when (>= (-> self down-y) f0-1)
+                (set! f0-1 (-> self down-y))
+                (set! f1-1 (* 0.65 (- f1-1)))
+                (+! gp-2 -1))
+              (set! (-> self root transv y) f1-1)
+              (set! (-> a1-5 quad) (-> self root trans quad))
+              (set! (-> a1-5 y) f0-1))
+            (move-to-point! (-> self root) a1-5))
+          (suspend)))
+      (go __TYPE__-helix-button-idle-down))
+  :post rider-post)
+
+(defstate __TYPE__-helix-button-idle-down (__TYPE__)
+  :code
+    (behavior ()
+      (loop
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this fcell-handle) (the-as handle #f))
+  (set! (-> this first-press) #f)
+  (set! (-> this my-water) (entity-actor-lookup arg0 'alt-actor 0))
+  (set! (-> this my-door) (entity-actor-lookup arg0 'alt-actor 1))
+  (let ((s4-0 (new 'process 'collide-shape-moving this (collide-list-enum hit-by-others))))
+    (set! (-> s4-0 dynam) (copy *standard-dynamics* 'process))
+    (set! (-> s4-0 reaction) default-collision-reaction)
+    (set! (-> s4-0 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+    (alloc-riders s4-0 1)
+    (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
+      (set! (-> s3-0 prim-core collide-as) (collide-kind ground-object))
+      (set! (-> s3-0 collide-with) (collide-kind target))
+      (set! (-> s3-0 prim-core action) (collide-action solid rider-plat-sticky))
+      (set! (-> s3-0 prim-core offense) (collide-offense indestructible))
+      (set! (-> s3-0 transform-index) 0)
+      (set-vector! (-> s3-0 local-sphere) 0.0 14336.0 0.0 22118.4)
+      (set-root-prim! s4-0 s3-0))
+    (set! (-> s4-0 nav-radius) (* 0.75 (-> s4-0 root-prim local-sphere w)))
+    (backup-collide-with-as s4-0)
+    (set! (-> this root) s4-0))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *helix-button-sg* '())
+  (logior! (-> this skel status) (janim-status inited))
+  (ja-channel-set! 1)
+  (let ((s5-1 (-> this skel root-channel 0)))
+    (joint-control-channel-group-eval! s5-1 (the-as art-joint-anim (-> this draw art-group data 2)) num-func-identity)
+    (set! (-> s5-1 frame-num) 0.0))
+  (set! (-> this spawn-trans quad) (-> this root trans quad))
+  (+! (-> this root trans y) -26624.0)
+  (set! (-> this down-y) (+ -6553.6 (-> this root trans y)))
+  (set! (-> this fact) (new 'process 'fact-info this (pickup-type eco-pill-random) (-> *FACT-bank* default-pill-inc)))
+  (ja-post)
+  (update-transforms! (-> this root))
+  (go __TYPE__-helix-button-startup)
+  (none))

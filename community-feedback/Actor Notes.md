@@ -5,39 +5,57 @@ actor itself; this file is the overview.
 
 ---
 
-## Not done yet (no DB record, or record still missing a feature)
-- **helix-button**: needs helix-water and helix-slide-door records (rising dark eco room, Sunken).
-- **helix-water / helix-dark-eco** (water look 40): rises on 'trigger, Sunken-specific, uses an alt-actor list.
-- **reflector-mirror**: the eye-beam mirror between periscopes (Jungle); it sends 'stop to the accordian.
-- **flutflutegg**, **gorge-start**, **exit-chamber** (+ exit-chamber-button): not added.
-- **precursor-arm** (swamp-arm task): the swamp blimp's link 0; no record.
-- **lrocklrg / beach-rock**: seagull flock target and a 'trigger receiver; no record.
-- **allpontoons**: the warrior needs one (crashes without); no record.
-- **'trigger receivers without a record**: helix-slide-door, silostep, citb-stair-plat, citb-drop-plat,
-  citadelcam, beach-rock. Add `"reacts_to": ["trigger"]` when they get one (button notify list).
-- **citb-drop-plat**: needs a specific UI to be intuitive.
+## Entity pass 3 (to do)
+Put on hold after the second pass (merged to main). What's left:
+- **Category checks, every actor**: go through each category and place / export / run each
+  actor. Check its fields and defaults, its soft warnings (add the ones it needs, see Soft
+  warnings below), its sound banks (DB "sounds"), its preview, and its description.
+- **Custom tasks**: check the actors with a task picker with a custom task in game (see
+  Custom tasks on actors below).
+- **Older notes**: the leftovers from the earlier passes (Older notes below).
+- **Enemy drops**: the Drop panel (Change Drop) is on nav-enemies, bully, puffer,
+  mother-spider and swamp-rat-nest, the enemies that drop their fact-info pickup when they
+  die. Checked in game on the bully only; check a nav-enemy (babak) too. The other enemies
+  (swamp-bat, junglesnake, lurkerworm, quicksandlurker, balloonlurker, driller-lurker,
+  rolling-robber) never drop anything; giving them drops would need edited code.
+- **Hidden actors**: look again at the Hidden table below.
+- **Not doable as-is**: aiming Klaww's boulders (villageb-ogreboss), the throws are animations.
+
+## Second entity pass: done (merged to main)
+The following have database records and separate edited GOAL files, checked in game with
+Kuitar's fix rounds (see the Edited actors table at the end for everything changed).
+- **citb-stair-plat / silostep**: triggerable stairs; configurable rise/delay on Citadel stairs,
+  linked silo steps; no vanilla task or camera gate. **citb-drop-plat** already had its grid UI.
+- **reflector-mirror**: configurable beam endpoint; breaking it sends stop to linked receivers.
+- **citadelcam**: invisible trigger relay with optional completed-task gate, no movie.
+- **precursor-arm / lrocklrg**: own optional tasks and placement; rock rewards spawn at its joint.
+  `beach-rock` is the base type, not a separate model to place.
+- **allpontoons**: visible in the picker as an invisible cutscene helper, not a walkable bridge.
+  Edited warrior already handles a missing helper safely.
+- **helix-button / helix-water / helix-slide-door**: linked rising-eco setup. Place the water
+  controller at its starting height, set water height to match, and give it a volume covering
+  the full rise. Use Sunken/Sunkenb texture source. It resets on level reload. The water creates
+  `helix-dark-eco` itself; do not place that child separately.
+- **flutflutegg**: own task, rotation, fall distance and optional hatch/reload position.
+- **gorge-start**: required own task and finish Empty; configurable gate radius/record time.
+  Completing the race advances its task; use a task-aware reward actor for the cell.
+- **exit-chamber**: ride-only version, initially unlocked; original ride animation and optional
+  own-task cell. No five-charger puzzle, world positioning, or forced level transitions.
+  The chamber creates its own button and iris door.
+- **evilbro / evilsis**: NPC records, Intro tpages 1454–1457, own task support; link Gol to Maia.
+- **green-sagecage**: rescue-only, receives open, advances its own task once, optional beam target.
+  No pre-boss story sequence. Saved completion restores cage bars disabled.
+
+## Not done yet
 - **Particles** (part-spawner, level -part files): planned feature, see the to-do list.
 
 ## Hidden (can't work as-is; reason in the DB description)
 | Actor | Why |
 |---|---|
-| energyhub | Crashes in a custom level (even with its 3 links preset to #f); energybase works alone |
 | energylava | Its art group doesn't exist |
 | citb-chains | process-hidden, draws nothing |
 | powercellalt | No init-from-entity!, only spawned by the 100-cell door cutscene |
-| cavespatula | Only works in a level named darkcave |
-| snow-ball | Needs two keyed paths (1.0 / 2.0) above 200 m; the exporter writes one path per name |
-| fishermans-boat | Forced to the Sandover dock, loads vanilla levels |
 | seagull | Only spawned by a Seagull Flock |
-| bird-lady | Intro unloads the level (want-levels) and talks only at a fixed Z; needs a subtype |
-| fisher | Intro unloads the level, minigame moves Jak to fixed jungle coords, wants camera-152 |
-| warrior | Talking crashes without an allpontoons actor; needs a subtype guard |
-| pelican | Reads 8 time-keyed paths; exporter writes one; wants camera-215 |
-| assistant-firecanyon | Cutscene unloads the level; the cutscene-strip subtype would fix it |
-| assistant-lavatube-end | Gated on vanilla village4-button stage |
-| green-sagecage | Vanilla Citadel story: fixed Z trigger, want-levels citadel finalboss |
-| sage-villagec / assistant-villagec | Talk only at vanilla coordinates, gated on village3 progress |
-| evilbro / evilsis | Need an "intro" tpage group (INT.DGO tpage-1454..1457) |
 | sequenceA-village1 / B / C, finalbosscam | Not placeable entities |
 
 ## Working, with limits
@@ -51,27 +69,22 @@ actor itself; this file is the overview.
   hurts below world Y -0.1 m (vanilla check).
 - **robotboss**: its loops (charge buzz, red buzz, blue loop) fade 80 m from its origin; vanilla fights
   within ~20 m of it. Light eco sparkle particles are cut below vanilla heights (cosmetic).
-- **sage-finalboss**: uses the vanilla finalboss-movies task; the credits end the game like vanilla.
-- **Caged sages** (red / blue / yellow): the rescue cutscene only plays if the actor is named
-  `<colour>-sagecage-1` (hard-coded process name).
-- **billy**: needs 3 rat paths (path / pathb / pathc keyed 0 / 1 / 2); the exporter writes one. Needs a subtype.
-- **yakow**: herding can't finish (the pen is a nav-mesh poly flag the nav-mesh export doesn't write).
-- **oracle**: trades and cells work, no speech (picks its cutscene by vanilla level name).
-- **swamp-blimp**: floats away without a tether rock; tether rocks need vanilla swamp-tether tasks / cameras.
-- **swamp-tetherrock**: vanilla swamp-tether-1..4 tasks only (looks up camera-18x).
-- **gondola**: rides to vanilla village3 / snow.
-- **pistons**: only move when the gondola sends 'update.
-- **windmill-sail**: vanilla jungle-lurkerm sets its speed; no sound fields yet.
-- **villageb-ogreboss**: removed once vanilla village2-levitator is done; boulder throws follow fixed paths.
+- **swamp-blimp**: floats away without a tether rock; edited tether rocks now use their own tasks / cameras.
+- **sage-finalboss**: the credits end the game like vanilla.
+- **gondola**: the ride is the vanilla cutscene; the top station sits where it does in vanilla (~186 m up).
+- **villageb-ogreboss**: the boulders follow the vanilla throw animations from his spot.
+- **yakow**: the pen is the NAV Special faces of its nav-mesh.
 - **spike**: one controller per group; the export adds the controller itself last.
 - **Klaww (ogreboss)**: if goalc was already running with an older subtype it fails with
   "Inconsistent type definition"; the build now restarts goalc when a level's types change.
 - **muse**: path of 11+ points (add more if it gets stuck).
 - **lightning-mole**: needs a path and a nav-mesh; chain moles with next / prev (no loop).
 
-## Vanilla hard-coded tasks still used
-snow-switch, snow fort gate, snow bumpers, sunken pipegame, gorge-pusher, swamp-tetherrock,
-sage-finalboss (finalboss-movies). Candidates for subtypes that use the actor's own task.
+## Keyed paths
+The game can key several values of one lump by time ('path at 0 / 1 / 2 ...), but a custom
+level's .jsonc holds one res tag per lump name (build_level). Actors that read keyed paths
+are edited to read named paths instead (billy, pelican, snow-ball); a path keyframe set in
+Blender only changes the one tag's time.
 
 ## Custom tasks on actors (for the next actor pass)
 The task pickers list the .blend's custom tasks, but no actor was checked in
@@ -81,29 +94,25 @@ pontoon / race-ring alternate tasks, and anything with a game-task panel. Look
 for: the cell / fly spawns, collecting it closes need-resolution / counts the
 fly for that task, and it stays collected after a save + reload.
 
-## Soft warnings (for the next actor pass)
-Required-field warnings (the "N ⚠" counts) are for things that break the game
-or the build. Some setups only make an actor do nothing useful; those could
-be a second, softer kind of warning (another colour / its own count) to go
-through actor by actor. Examples so far:
-- a nav-enemy with no nav-mesh linked: it idles / notices Jak but can't
-  pathfind (no crash, uses the engine's default mesh)
-- jump (gap) faces that don't connect two walkable areas: enemies stop at them
-Decide per actor which missing setups are soft, and where the soft count shows.
+## Soft warnings (required.py soft())
+Required-field warnings (the red "N⚠" counts) are for things that break the game or the
+build. Soft warnings (a yellow triangle count next to them, in the panel headers, next to
+Export & Compile and as audit warnings) are setups that work but make an actor do less:
+- a nav-enemy with no nav-mesh linked: it idles / notices Jak but can't pathfind
+- its nav-mesh: separate parts (enemies can't path between them), jump areas that don't
+  join two walkable areas (enemies stop at them)
+Add more per actor during the actor checks.
 
-## Sound bank requirements (for the next actor pass)
-The level only plays an actor's sounds when their sound bank is loaded (Level
-Settings > Sound & Music). The database knows which sounds are in which bank
-(BankSFX) but not which sounds each actor plays, so only sound emitters and
-particle spawner sounds get a "needs bank X" warning today. To warn for actors:
-1. For each actor, list the sounds its code plays: `sound-play` /
-   `ambient-sound` / `sound-play-by-name` calls in its .gc files (and the
-   sounds of the particle groups it spawns).
-2. Map each sound to its bank(s) through BankSFX ("common" sounds need no bank).
-3. Store the result per actor in the database, e.g. `"sound_banks": ["swamp"]`
-   (inherited from parents like the other panel data).
-4. The required-fields check then reports "needs the swamp bank" for actors
-   whose banks aren't loaded (audit + the warnings next to Export & Compile).
+## Sound bank requirements (DB "sounds")
+Each actor record lists the sounds it plays that aren't in the common bank (`"sounds"`,
+actors with non-common sounds). They come from its code (sound-play / sound specs / its particle groups'
+sounds, following the helper functions its states call and its parent types, from the
+game's goal_src; `tools/scan_sounds.py`) and from its art groups (animation effect sounds,
+e.g. babak-roar, lurkbat-wing: most enemy sounds). Which bank holds each sound comes from
+BankSFX; a sound in several banks needs any one of them. When the level loads none of
+them: a soft warning "sound bank X not loaded: no ...". Rerun the scan (and
+tools/sound_db.py) when actors are added. Art strings are matched against the
+known sound names, so an animation / joint named like a sound can give a false one.
 
 ## Older notes from the earlier passes
 - gnawer: orb vertex list + vanilla cell / camera positions.
@@ -116,9 +125,14 @@ particle spawner sounds get a "needs bank X" warning today. To warn for actors:
 - eco door "starts open" (needs a subtype per door type); sun-iris-door scale-factor from the Blender scale.
 - lumps that should become fields; Blender 5 collision export.
 
-## Level subtypes and patches (addons/opengoal_tools/subtypes)
-Each file's header says why. Child types are exported as `<level>-<etype>`; files without
-`(deftype __TYPE__` are patches (the actor keeps its etype).
+## Edited actors (addons/opengoal_tools/subtypes, export/edited.py)
+An actor's DB record names its default edited file (`"edited": "<file stem>"`); each file's
+header says why. Child types are exported as `<level>-<stem>` (in the level's -obs.gc) or
+`lt-<stem>` (Shared file: `goal_src/levels/level-tools/edited/lt-<stem>.gc`, compiled once,
+listed in each using level's .gd); files without `(deftype __TYPE__` are patches (the actor
+keeps its etype). Per actor, GOAL Code > Code picks the default, Vanilla, or a file of the
+Custom code folder (Preferences / this .blend's folders; `;; edits: <etype>` header = which
+actors it's for, `;; place: shared` = default place).
 
 | File | What it changes |
 |---|---|
@@ -134,3 +148,27 @@ Each file's header says why. Child types are exported as `<level>-<etype>`; file
 | sage / assistant / gambler / geologist / minershort | cutscenes without the level-unloading commands |
 | explorer | talks from anywhere |
 | mayorgears | turns always / once / until its task is complete |
+| assistant-firecanyon / assistant-lavatube-end / sage-villagec / assistant-villagec / bird-lady | own task or a cell count, no level-unloading commands, talk from anywhere |
+| warrior | no crash without allpontoons |
+| fisher | own task, minigame spot / camera from Blender |
+| energyhub | no crash, own task |
+| cavespatula | works outside darkcave |
+| snow-switch / snow-fort-gate / snow-bumper / sunken-pipegame / gorge-pusher / swamp-tetherrock | own tasks instead of the vanilla ones, cameras from Blender |
+| billy | own task, named paths path / pathb / pathc, no Boggy Swamp kill lists |
+| pelican | named paths (path, dive, to-nest, from-nest, spit, dive-b, to-nest-b, run-away), dive camera from Blender, no fixed camera spot |
+| snow-ball | named paths path / pathb, shrinks at its track's end (not below 200 m), no junction timing |
+| fishermans-boat | kinematic boat: path out, pathb back (or path backwards), ride camera or the vanilla ride cutscenes (load boundaries off meanwhile), task gate, saved end |
+| red / blue / yellow / green-sagecage | freed by talking once or by breaking its generator, Talk distance, beam at an empty, saved rescue (vanilla: rescue by the vanilla process name, robot boss beam) |
+| periscope / reflector-origin | beam shot option (none / camera / vanilla shot) instead of a crash, beam cell, beam ends at an empty / the mirror top |
+| helix-button / helix-water | any water look, speed by Jak's height, Started by link, cell on the press |
+| flutflutegg / bird-lady-beach | pushed toward its hatch spot, linked hatch cutscene (talk), spill cell |
+| seagullflock / lrocklrg | own task, optional blackout, rock cell at movie-pos |
+| energyhub / energydoor | doors in the hub's next-actor chain close behind Jak until it's stopped |
+| evilbro / evilsis (hidden) | talk / once the task is done / when triggered |
+| oracle | any task per eye (game task + Linked task), price, speeches picked in Blender (Sandover / Rock Village / Volcanic Crater), talk distance / height |
+| yakow / farmer | lone yakows count, pen shot (vanilla shot / linked camera / none), farmer's own task |
+| talkers (assistants, bird lady, sages, oracle) | Talk height field: how high above them Jak can be for the prompt |
+| gondola / pistons | own task / cell gate, optional continue points, no level loads; pistons standalone |
+| windmill-sail | fast by its own task, turn times, fast sound |
+| villageb-ogreboss | removed by its own task, throws optional |
+| citb-stair-plat | rises once its task is complete, starts risen after |

@@ -24,8 +24,11 @@ _STATE = {"count": -1, "objs": {}}      # pointer -> name of the tracked objects
 
 
 def _tracked():
+    # preview meshes are named "<actor>_preview(.001)": not actors (renaming one as a
+    # copied actor gave it a preview of its own: the ghost platforms / buttons)
     return {o.as_pointer(): o.name for o in bpy.data.objects
-            if o.name.startswith(_PREFIXES) and o.library is None}
+            if o.name.startswith(_PREFIXES) and o.library is None
+            and not (o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"))}
 
 
 def _helper_suffix(name):

@@ -1,0 +1,191 @@
+;; The snow ball spawner (Snowy Mountain) for custom levels. Vanilla keyed its two
+;; tracks as 'path keyframes 1 / 2, which a custom level can't hold (one res tag
+;; per lump name); here they are named paths: path, and optionally pathb (balls pick
+;; one at random, never three times the same in a row). A ball rises out of the
+;; ground over the first 5 % of its track, bounces until 90 %, shrinks over the
+;; last 15 m and goes at the end (vanilla: shrank below 200 m height). Vanilla timed
+;; spawns so balls never meet where its two tracks crossed; here only the spawn
+;; delay (1.5 - 5.5 s) spaces them.
+(deftype __TYPE__-roller (snow-ball-roller) ()
+  (:states
+   __TYPE__-roller-idle))
+
+(deftype __TYPE__ (snow-ball)
+  ((num-paths int32))
+  (:states
+   __TYPE__-idle))
+
+(defbehavior __TYPE__-roller-path-update __TYPE__-roller ()
+  (local-vars (f0-5 float))
+  (let ((f0-0 (-> self root trans y)))
+    (+! (-> self root transv y) (* -491520.0 (seconds-per-frame)))
+    (let ((f30-0 (+ f0-0 (* (-> self root transv y) (seconds-per-frame)))))
+      (follow-path self)
+      (let ((a1-0 (new 'stack-no-clear 'vector)))
+        (let ((a0-1 (-> self path-info))) (set! (-> a1-0 quad) (-> a0-1 path-pos quad)))
+        (+! (-> a1-0 y) 9216.0)
+        (cond
+          ((-> self path-info hug-path?) (move-to-point! (-> self root) a1-0) (set! (-> self root transv y) 0.0))
+          ((begin (set! f0-5 (- f30-0 (-> a1-0 y))) (< 0.0 f0-5)) (+! (-> a1-0 y) f0-5) (move-to-point! (-> self root) a1-0))
+          (else
+           (move-to-point! (-> self root) a1-0)
+           (let ((f0-7 (-> self root transv y)))
+             (cond
+               ((>= -40960.0 f0-7) (set! (-> self root transv y) (* 0.4 (- f0-7))) (play-landing-sound self (-> self root transv y)))
+               (else (set! (-> self root transv y) 0.0))))
+           (when (< (-> self path-u) (-> self path-fall-u))
+             (when (time-elapsed? (-> self last-bounce-time) (-> self delay-til-bounce))
+               (let ((f0-13 (rand-vu-float-range 8192.0 20480.0))) (+! (-> self root transv y) f0-13) (play-landing-sound self f0-13))
+               (set-time! (-> self last-bounce-time))
+               (set! (-> self delay-til-bounce) (rand-vu-int-range 300 2100)))))))))
+  (let ((s4-0 (new 'stack-no-clear 'vector)))
+    (path-control-method-14 (-> self path) s4-0 (-> self path-u))
+    (let ((gp-0 (new 'stack-no-clear 'matrix)))
+      (let ((s5-0 (new 'stack-no-clear 'matrix)))
+        (let ((s3-0 (new 'stack-no-clear 'vector)))
+          (vector-negate! s3-0 (-> *standard-dynamics* gravity-normal))
+          (forward-down->inv-matrix gp-0 s4-0 s3-0))
+        (matrix-rotate-x! s5-0 (* 1.1317686 (-> self path-u) (-> self path-length)))
+        (matrix*! gp-0 s5-0 gp-0))
+      (matrix->quaternion (-> self root quat) gp-0)))
+  (+! (-> self path-u) (* (-> self path-speed) (seconds-per-frame)))
+  (if (< 1.0 (-> self path-u)) (set! (-> self path-u) 1.0))
+  ;; shrink over the last 15 m of its path and go at the end (vanilla: below 200 m)
+  (let ((f0-23 (* (- 1.0 (-> self path-u)) (-> self path-length))))
+    (cond
+      ((or (>= (-> self path-u) 1.0) (<= f0-23 0.0)) (deactivate self))
+      ((< f0-23 (meters 15))
+       (let ((f0-25 (/ f0-23 (meters 15))))
+         (set! (-> self root scale x) f0-25)
+         (set! (-> self root scale y) f0-25)
+         (set! (-> self root scale z) f0-25)))))
+  (let ((v1-54 (< (vector-vector-distance (-> self root trans) (math-camera-pos)) 163840.0)))
+    (cond
+      ((zero? (-> self rolling-sound-id))
+       (if (and v1-54 (-> self rolling-sound-enabled?))
+         (set! (-> self rolling-sound-id) (sound-play "snowball-roll" :position (the-as symbol (-> self root trans))))))
+      ((and v1-54 (-> self rolling-sound-enabled?))
+       (sound-play "snowball-roll" :id (-> self rolling-sound-id) :position (the-as symbol (-> self root trans))))
+      (else (sound-stop (-> self rolling-sound-id)) (set! (-> self rolling-sound-id) (new 'static 'sound-id)) 0)))
+  (none))
+
+(defstate __TYPE__-roller-idle (__TYPE__-roller)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('touch 'attack)
+         (when (= (-> proc type) target)
+           (do-push-aways! (-> self root))
+           (when (time-elapsed? (-> self hit-player-time) (seconds 0.5))
+             (set-time! (-> self hit-player-time))
+             (snow-ball-roller-method-22 self *target*))))))
+  :enter
+    (behavior ()
+      (set-time! (-> self last-bounce-time))
+      (snow-ball-roller-path-init))
+  :exit
+    (behavior ()
+      (set! (-> self rolling-sound-enabled?) #f)
+      (when (nonzero? (-> self rolling-sound-id))
+        (sound-stop (-> self rolling-sound-id))
+        (set! (-> self rolling-sound-id) (new 'static 'sound-id))
+        0))
+  :trans
+    (behavior ()
+      (__TYPE__-roller-path-update))
+  :code
+    (behavior ()
+      (loop
+        (logior! (-> self mask) (process-mask sleep-code))
+        (suspend)))
+  :post transform-post)
+
+(defbehavior __TYPE__-roller-init-by-other __TYPE__-roller ((arg0 entity-actor) (arg1 snow-ball) (arg2 float) (arg3 int) (arg4 (inline-array snow-ball-junction)))
+  (set! (-> self rolling-sound-id) (new 'static 'sound-id))
+  (set! (-> self rolling-sound-enabled?) #t)
+  (set! (-> self path-speed) arg2)
+  (set! (-> self which-path) arg3)
+  (set! (-> self hit-player-time) 0)
+  (set! (-> self entity) arg0)
+  (dotimes (s3-0 4)
+    (mem-copy! (the-as pointer (-> self junctions s3-0)) (the-as pointer (-> arg4 s3-0)) 16))
+  (let ((s4-1 (new 'process 'collide-shape-moving self (collide-list-enum hit-by-player))))
+    (set! (-> s4-1 dynam) (copy *standard-dynamics* 'process))
+    (set! (-> s4-1 reaction) default-collision-reaction)
+    (set! (-> s4-1 no-reaction) (the-as (function collide-shape-moving collide-shape-intersect vector vector none) nothing))
+    (let ((s3-1 (new 'process 'collide-shape-prim-sphere s4-1 (the-as uint 0))))
+      (set! (-> s3-1 prim-core collide-as) (collide-kind enemy))
+      (set! (-> s3-1 collide-with) (collide-kind target))
+      (set! (-> s3-1 prim-core action) (collide-action solid))
+      (set! (-> s3-1 prim-core offense) (collide-offense indestructible))
+      (set-vector! (-> s3-1 local-sphere) 0.0 0.0 0.0 10240.0)
+      (set-root-prim! s4-1 s3-1))
+    (set! (-> s4-1 nav-radius) (* 0.75 (-> s4-1 root-prim local-sphere w)))
+    (backup-collide-with-as s4-1)
+    (set! (-> self root) s4-1))
+  (set-vector! (-> self root transv) 0.0 0.0 0.0 1.0)
+  (process-drawable-from-entity! self arg0)
+  (initialize-skeleton self *snow-ball-sg* '())
+  (logclear! (-> self mask) (process-mask actor-pause))
+  (set! (-> self path) (new 'process 'curve-control self (if (zero? arg3) 'path 'pathb) -1000000000.0))
+  (logior! (-> self path flags) (path-control-flag display draw-line draw-point draw-text))
+  (let ((v1-33 (-> self which-path)))
+    (cond
+      (else
+       (set! (-> self path-fall-u) 0.9)
+       (set! (-> self path-coming-out-u) 0.05)
+       (set! (-> self path-faded-up-u) 0.075))))
+  (set! (-> self delay-til-bounce) (rand-vu-int-range 900 2100))
+  (process-spawn snow-ball-shadow :to self)
+  (go __TYPE__-roller-idle)
+  (none))
+
+(defmethod snow-ball-method-14 ((this __TYPE__) (arg0 (inline-array snow-ball-junction)) (arg1 float) (arg2 int))
+  "Vanilla: junction times where its two tracks crossed. Custom tracks: none."
+  #f)
+
+(defmethod snow-ball-method-15 ((this __TYPE__) (arg0 (inline-array snow-ball-junction)) (arg1 int))
+  "Vanilla: no ball meets another at a junction. Custom tracks: always free."
+  #t)
+
+(defstate __TYPE__-idle (__TYPE__)
+  :code
+    (behavior ()
+      (local-vars (gp-0 int))
+      (set-time! (-> self state-time))
+      (set! (-> self delay-til-next) 0)
+      (label cfg-1)
+      (when (time-elapsed? (-> self state-time) (-> self delay-til-next))
+        (set! gp-0
+              (cond
+                ((and (>= (-> self num-paths) 2) (>= (-> self same-path-picked-count) 2)) (if (zero? (-> self last-path-picked)) (set! gp-0 1) (set! gp-0 0)) gp-0)
+                ((< (-> self num-paths) 2) 0)
+                (else (rand-vu-int-range 0 1))))
+        (let ((s4-0 0)
+              (s5-0 (new 'stack-no-clear 'inline-array 'snow-ball-junction 4)))
+          (loop
+            (let ((s3-0 (/ (+ 98304.0 (rand-vu-float-range 0.0 32768.0)) (path-distance (-> self path gp-0)))))
+              (snow-ball-method-14 self s5-0 s3-0 gp-0)
+              (when (snow-ball-method-15 self s5-0 gp-0)
+                (process-spawn __TYPE__-roller :init __TYPE__-roller-init-by-other (-> self entity) self s3-0 gp-0 s5-0 :to self)
+                (set-time! (-> self state-time))
+                (set! (-> self delay-til-next) (rand-vu-int-range 450 1650))
+                (cond
+                  ((= gp-0 (-> self last-path-picked)) (+! (-> self same-path-picked-count) 1))
+                  (else (set! (-> self last-path-picked) gp-0) (set! (-> self same-path-picked-count) 1)))
+                (goto cfg-22)))
+            (+! s4-0 1)
+            (if (< 5 s4-0) (goto cfg-22)))))
+      (label cfg-22)
+      (suspend)
+      (b! #t cfg-1 :delay (nop!))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this last-path-picked) 1)
+  (set! (-> this same-path-picked-count) 1)
+  (set! (-> this path 0) (new 'process 'curve-control this 'path -1000000000.0))
+  (set! (-> this path 1) (new 'process 'curve-control this 'pathb -1000000000.0))
+  (set! (-> this num-paths) (if (logtest? (-> this path 1 flags) (path-control-flag not-found)) 1 2))
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (go __TYPE__-idle)
+  (none))

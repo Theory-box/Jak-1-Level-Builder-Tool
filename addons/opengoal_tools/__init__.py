@@ -116,6 +116,7 @@ from .panels import ALL_CLASSES as _PANELS_CLASSES
 from .versions import CLASSES as _VERSION_CLASSES
 from . import plat_grid as _plat_grid
 from . import connect_neighbours as _connect_neighbours
+from . import link_order as _link_order
 from . import distribute as _distribute
 from . import bake as _bake
 from . import level_settings as _level_settings
@@ -171,6 +172,7 @@ classes = (
     *_VERSION_CLASSES,
     *_plat_grid.CLASSES,
     *_connect_neighbours.CLASSES,
+    *_link_order.CLASSES,
     *_bake.CLASSES,
     *_level_settings.CLASSES,
     *_required_mod.CLASSES,
@@ -230,6 +232,7 @@ def register():
             pass
         bpy.utils.register_class(cls)
     bpy.types.Scene.og_props = PointerProperty(type=OGProperties)
+    _link_order.register_props()
     _bake.register_props()   # needs OGBakeSettings registered
     _level_settings.register_props()
     _tasks.register_props()
@@ -295,8 +298,14 @@ def register():
         # full re-import (Refresh Model re-imports for model/override changes).
         for c in self.children:
             if c.get("og_preview_mesh") or c.get("og_waypoint_preview_mesh"):
-                c.location = (float(value[0]), float(value[1]), float(value[2]))
+                d = c.get("_og_preview_copy") or (0.0, 0.0, 0.0)   # extra copies keep their spot
+                c.location = (float(value[0]) + d[0], float(value[1]) + d[1], float(value[2]) + d[2])
 
+    from .model_preview import refresh_special as _refresh_special
+    bpy.types.Object.og_special_preview = bpy.props.BoolProperty(
+        name="Show preview", default=True, update=_refresh_special,
+        description="Show this actor's special preview (platform grid, race rings, extra models). "
+                    "Off: nothing of it is built or updated")
     bpy.types.Object.og_preview_offset     = bpy.props.FloatVectorProperty(
         name="Preview Offset", subtype="TRANSLATION", size=3,
         get=_prev_off_get, set=_prev_off_set,
@@ -317,6 +326,9 @@ def register():
     # Each ACTOR_ empty holds a list of (key, ltype, value) assisted lump entries.
     bpy.types.Object.og_lump_rows          = bpy.props.CollectionProperty(type=OGLumpRow)
     bpy.types.Object.og_lump_rows_index    = bpy.props.IntProperty(name="Active Lump Row", default=0)
+    bpy.types.Object.og_edited_code        = bpy.props.StringProperty(
+        name="Code", default="",
+        description="Edited code of this actor: blank = the database's, vanilla, or <source>:<file>")
     bpy.types.Object.og_export_as          = bpy.props.StringProperty(
         name="Export as", default="",
         description="Export this actor with another etype (e.g. your own child type of it); everything "
@@ -519,6 +531,7 @@ def unregister():
     unregister_texturing()
     _plat_grid.unregister_props()
     _distribute.unregister_props()
+    _link_order.unregister_props()
     _bake.unregister_props()
     _level_settings.unregister_props()
     _tasks.unregister_props()
@@ -550,7 +563,7 @@ def unregister():
     for a in ("set_invisible","set_collision","ignore","noedge","noentity",
               "nolineofsight","nocamera","collide_material","collide_event","collide_mode",
               "enable_custom_weights","copy_eye_draws","copy_mod_draws","og_vol_links",
-              "og_actor_links","og_lump_rows","og_lump_rows_index","og_export_as","og_goal_code_ref",
+              "og_actor_links","og_lump_rows","og_lump_rows_index","og_export_as","og_edited_code","og_goal_code_ref",
               "og_vertex_export_etype","og_vertex_export_search",
               "og_cp_lev0","og_cp_disp0","og_cp_lev1","og_cp_disp1",
               "og_cp_vis_nick","og_cp_flags","og_cp_load_cmds","og_cp_name","og_cp_trigger",
@@ -562,7 +575,8 @@ def unregister():
               "og_lb_fwd_lev0_custom","og_lb_fwd_lev1_custom","og_lb_bwd_lev0_custom","og_lb_bwd_lev1_custom",
               "og_waypoint_sources","og_waypoint_sources_index", "og_movie_pos", "og_bc_lurkers",
               "og_path_mode", "og_path_lump", "og_path_keyframe", "og_extra_paths",
-              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open"):
+              "og_path_knots_manual", "og_path_knots", "og_path_knots_index", "og_path_knots_open",
+              "og_special_preview"):
         try: delattr(bpy.types.Object, a)
         except Exception: pass
 

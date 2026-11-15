@@ -1,0 +1,30 @@
+;; Pistons (gondola machinery) for custom levels: vanilla only started when the gondola
+;; sent 'update. Here also on 'trigger (a button's notify list ...), once its task is
+;; complete (Game Task panel), or from the start (Running lump start-on). Saved once on.
+;; edits: pistons
+(deftype __TYPE__ (pistons) ())
+
+(defstate idle (__TYPE__)
+  :virtual #t
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('update 'trigger) (go-virtual active (process->handle proc) #f))))
+  :code
+    (behavior ()
+      (ja-post)
+      (loop
+        (let ((task (-> self entity extra perm task)))
+          (if (and (!= task (game-task none)) (task-complete? *game-info* task)) (go-virtual active (the-as handle #f) #f)))
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (initialize-skeleton this *pistons-sg* '())
+  (set! (-> this sound) (new 'process 'ambient-sound (static-sound-spec "gdl-gen-loop" :fo-max 100) (-> this root trans)))
+  (if (or (and (-> this entity) (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+          (nonzero? (res-lump-value arg0 'start-on uint128)))
+    (go (method-of-object this active) (the-as handle #f) #t)
+    (go (method-of-object this idle)))
+  (none))

@@ -189,9 +189,6 @@ def _draw_selected_actor(layout, sel, scene):
             else:
                 box.label(text="Shift-select a mesh to link", icon="INFO")
 
-        nav_r = float(sel.get("og_nav_radius", 6.0))
-        box.label(text=f"Fallback sphere radius: {nav_r:.1f}m", icon="SPHERE")
-
     # ── Sync (DB "sync" panel) ───────────────────────────────────────────
     elif _db.has_panel(etype, "sync"):
         _draw_platform_settings(layout, sel, scene)
@@ -694,10 +691,12 @@ def _draw_selected_navmesh(layout, sel):
         r.label(text=f"{tc} triangles" + (" (the game allows 255)" if tc > 255 else ""), icon="MESH_DATA")
     except Exception:
         pass
-    from ..export.navmesh import nav_issues
+    from ..export.navmesh import nav_issues, nav_soft_issues
     for issue in nav_issues(sel):
         w = layout.row(); w.alert = True
         w.label(text=issue, icon="ERROR")
+    for issue in nav_soft_issues(sel):        # soft: works, enemies can't use all of it
+        layout.label(text=issue, icon="INFO")
     from ..nav_ui import draw_nav_extras
     draw_nav_extras(layout, sel)
 
@@ -901,6 +900,7 @@ def _draw_actor_links(layout, obj, scene, etype):
             row = box.row()
             row.operator("og.link_chain_selected",
                          text=f"Chain {len(sel_actors) + 1} selected by name (prev / next)", icon="LINK_BLEND")
+            row.operator("og.edit_link_order", text="Edit order", icon="SORTALPHA")
 
         for (sidx, label, accepted, required) in key_slots:
             _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, required, sel_actors)
@@ -1006,6 +1006,9 @@ def _draw_link_slot(box, obj, scene, etype, lkey, sidx, label, accepted, require
         left = [o for o in sel_actors if o.name not in {e.target_name for e in ents}]
         if len(left) >= 2:
             op = box.operator("og.link_add_selected", text=f"Add all {len(left)} selected (name order)", icon="ADD")
+            op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
+        if len(ents) + len(left) >= 2:
+            op = box.operator("og.edit_link_order", text="Edit order", icon="SORTALPHA")
             op.source_name = obj.name; op.lump_key = lkey; op.slot_index = sidx
         _draw_link_buttons(box, obj, lkey, sidx, accepted, sel_actors, append=True,
                            skip={e.target_name for e in ents})

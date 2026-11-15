@@ -1,0 +1,166 @@
+;; Keira (Fire Canyon) for custom levels: the 20-cell gate NPC.
+;; - her task is the actor's own (Game Task panel); none = vanilla firecanyon-assistant.
+;;   It stays hidden (voicing the "need cells" hint within 15 m) until the task
+;;   reaches need-reward-speech, then talking plays her resolution and closes it.
+;; - or by cell count (cell-count lump > 0, Actor Settings): hidden (with the hint)
+;;   until Jak holds that many cells, then talking plays her resolution once (saved
+;;   as the actor's complete status). The voiced hint still says 20.
+;; - her resolution cutscene plays without its level commands (vanilla: want-levels
+;;   village1 firecanyon, which unloads the custom level mid-cutscene).
+(deftype __TYPE__ (assistant-firecanyon)
+  ((strip-src basic 8)
+   (strip-dst basic 8)
+   (strip-cnt int32)
+   (cell-count int32)))
+
+(defun __TYPE__-done? ((this __TYPE__))
+  (logtest? (-> this entity extra perm status) (entity-perm-status complete)))
+
+(defun __TYPE__-cells? ((this __TYPE__))
+  (>= (-> *game-info* fuel) (the float (-> this cell-count))))
+
+(defun __TYPE__-level-cmd? ((cmd object))
+  (or (= cmd 'want-levels) (= cmd 'display-level) (= cmd 'want-force-vis)
+      (= cmd 'want-force-inside) (= cmd 'want-vis) (= cmd 'save)))
+
+(defun __TYPE__-strip ((anim spool-anim))
+  (let ((rev '())
+        (out '())
+        (it (-> anim command-list)))
+    (while (not (null? it))
+      (if (not (__TYPE__-level-cmd? (car (cdr (car it)))))
+        (set! rev (cons (car it) rev)))
+      (set! it (cdr it)))
+    (while (not (null? rev))
+      (set! out (cons (car rev) out))
+      (set! rev (cdr rev)))
+    (let ((n (new 'global 'spool-anim)))
+      (set! (-> n name) (-> anim name))
+      (set! (-> n index) (-> anim index))
+      (set! (-> n parts) (-> anim parts))
+      (set! (-> n priority) (-> anim priority))
+      (set! (-> n owner) (-> anim owner))
+      (set! (-> n command-list) (the-as pair out))
+      n)))
+
+(defun __TYPE__-status ((this __TYPE__))
+  "The stage Jak talks at: cell count = need-reward-speech until her resolution has played."
+  (cond
+    ((<= (-> this cell-count) 0) (current-status (-> this tasks)))
+    ((__TYPE__-done? this) (task-status invalid))
+    (else (task-status need-reward-speech))))
+
+;; idle: vanilla process-taskable idle, with __TYPE__-status (the cell-count stage)
+;; deciding whether Jak can talk
+(defstate idle (__TYPE__)
+  :virtual #t
+  :trans
+    (behavior ()
+      (when (time-elapsed? (-> self state-time) (seconds 0.2))
+        (logior! (-> self mask) (process-mask actor-pause))
+        (process-entity-status! self (entity-perm-status bit-3) #f))
+      (cond
+        ((not *target*))
+        ((not (-> self will-talk))
+         (if (>= (- (-> *display* game-frame-counter) (-> self last-talk)) (seconds 10)) (set! (-> self will-talk) #t)))
+        ((begin
+           (process-taskable-method-46 self)
+           (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
+                          (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
+                (< (- (-> (target-pos 0) y) (-> self root trans y)) (res-lump-float (-> self entity) 'talk-height :default (meters 2)))
+                ;; og:preserve-this
+                (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) 32768.0)
+                (= (-> *level* loading-level) (-> *level* level-default))
+                (not (movie?))
+                (not (level-hint-displayed?))
+                (none-reserved? *art-control*)
+                (not *progress-process*)
+                (and (not (handle->process (-> *game-info* other-camera-handle))) (close-anim-file! self))))
+         (first-any (-> self tasks) #t)
+         (when (target-above-threshold? self)
+           (case (__TYPE__-status self)
+             (((task-status need-hint)
+               (task-status need-introduction)
+               (task-status need-reminder)
+               (task-status need-reminder-a)
+               (task-status need-reward-speech))
+              (kill-current-level-hint '() '(sidekick voicebox ambient) 'exit)
+              (level-hint-surpress!)
+              (hide-hud)
+              (when (and (hud-hidden?) (can-grab-display? self))
+                (let ((gp-1 (new 'stack 'font-context *font-default-matrix* 32 140 0.0 (font-color default) (font-flags shadow kerning))))
+                  (let ((v1-57 gp-1)) (set! (-> v1-57 width) (the float 440)))
+                  (let ((v1-58 gp-1)) (set! (-> v1-58 height) (the float 60)))
+                  (let ((v1-59 gp-1)) (set! (-> v1-59 scale) 0.9))
+                  (set! (-> gp-1 flags) (font-flags shadow kerning middle-vert large))
+                  (print-game-text (lookup-text! *common-text* (-> self talk-message) #f) gp-1 #f 128 22))
+                (when (and (cpad-pressed? 0 circle) (process-grab? *target*))
+                  (logclear! (-> *cpad-list* cpads 0 button0-abs 0) (pad-buttons circle))
+                  (logclear! (-> *cpad-list* cpads 0 button0-rel 0) (pad-buttons circle))
+                  (send-event *target* 'trans 'save (-> self old-target-pos))
+                  (go-virtual play-anim))))))))
+      (if (= (-> *level* loading-level) (-> *level* level-default)) (process-taskable-method-33 self))
+      (draw-npc-shadow self)
+      (when (and (-> self been-kicked)
+                 (and (not *progress-process*) (process-grab? *target*) (not (handle->process (-> *game-info* other-camera-handle)))))
+        (set! (-> self been-kicked) #f)
+        (send-event *target* 'trans 'save (-> self old-target-pos))
+        (go-virtual play-anim))
+      ((-> self cur-trans-hook))))
+
+(defmethod should-display? ((this __TYPE__))
+  (if (> (-> this cell-count) 0)
+    (and (__TYPE__-cells? this) (not (__TYPE__-done? this)))
+    (call-parent-method this)))
+
+(defmethod play-anim! ((this __TYPE__) (arg0 symbol))
+  (when (> (-> this cell-count) 0)                  ; cell count: her resolution, once
+    (if arg0 (process-entity-status! this (entity-perm-status complete) #t))
+    (return (the-as basic
+      (new 'static 'spool-anim :name "assistant-firecanyon-resolution" :index 13 :parts 11
+           :command-list '((151 joint "cameraB") (346 joint "camera") (346 shadow self #f) (461 joint "cameraB")
+                           (546 joint "camera") (636 joint "cameraB") (696 joint "camera") (822 joint "cameraB")
+                           (962 joint "camera") (1268 shadow self #t))))))
+  (let ((a (call-parent-method this arg0)))
+    (cond
+      ((or (not a) (not (type-type? (-> a type) spool-anim))) a)
+      (else
+       (dotimes (i (-> this strip-cnt))
+         (if (= (-> this strip-src i) a) (return (-> this strip-dst i))))
+       (let ((n (__TYPE__-strip (the-as spool-anim a))))
+         (when (< (-> this strip-cnt) 8)
+           (set! (-> this strip-src (-> this strip-cnt)) a)
+           (set! (-> this strip-dst (-> this strip-cnt)) n)
+           (+! (-> this strip-cnt) 1))
+         n)))))
+
+;; the hint while hidden: the actor's task instead of firecanyon-assistant
+(defstate hidden (__TYPE__)
+  :virtual #t
+  :trans
+    (behavior ()
+      ((-> (method-of-type process-taskable hidden) trans))
+      (when (and (cond
+                   ((and *target* (>= 61440.0 (vector-vector-distance (-> self root trans) (-> *target* control trans)))) #t)
+                   (else (set-time! (-> self state-time)) #f))
+                 (and (if (> (-> self cell-count) 0)
+                        (not (__TYPE__-done? self))
+                        (not (task-complete? *game-info* (current-task (-> self tasks)))))
+                      (not (movie?))
+                      (not (level-hint-displayed?))
+                      (not (and *cheat-mode* (cpad-hold? 0 l3)))
+                      (not (time-elapsed? (-> self state-time) (seconds 10)))))
+        (hide-hud)
+        (kill-current-level-hint '() '(sidekick voicebox) 'exit)
+        (level-hint-spawn (text-id firecanyon-need-cells) "asstvb09" (the-as entity #f) *entity-pool* (game-task none)))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  ;; vanilla init with the actor's task (a go in init doesn't return: no call-parent-method)
+  (set! (-> this strip-cnt) 0)
+  (set! (-> this cell-count) (the-as int (res-lump-value arg0 'cell-count int :default (the-as uint128 0))))
+  (process-taskable-method-40 this arg0 *assistant-firecanyon-sg* 3 29 (new 'static 'vector :w 4096.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task firecanyon-assistant) task))))
+  (first-any (-> this tasks) #t)
+  (process-taskable-method-42 this)
+  (none))

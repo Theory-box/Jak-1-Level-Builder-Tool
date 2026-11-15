@@ -480,11 +480,11 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
         if _bcl:
             lines += ["", ";; --- battlecontrollers with an intro camera ---"] + _bcl
             log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} battlecontroller type(s)")
-        from . import subtypes as _sub
-        _sl = _sub.gc_lines(_pfx, _level_objects(scene))
+        from . import edited as _ed
+        _sl = _ed.gc_lines(scene, _pfx, _level_objects(scene))
         if _sl:
-            lines += ["", ";; --- level subtypes (export/subtypes.py) ---"] + _sl
-            log(f"  [write_gc] {sum(1 for l in _sl if l.startswith('(deftype'))} level subtype(s)")
+            lines += ["", ";; --- edited actors (export/edited.py) ---"] + _sl
+            log(f"  [write_gc] {sum(1 for l in _sl if l.startswith('(deftype'))} edited actor type(s)")
 
     new_text = "\n".join(lines)
     # Level-scope the addon's trigger type names (and the shared plane-test
@@ -530,7 +530,7 @@ def _deftypes(text: str) -> list[str]:
 
 # Keys collect_actors puts on actor dicts for the build (needed_ags/needed_code)
 # that are not part of the level format — never written to the .jsonc.
-_INTERNAL_ACTOR_KEYS = ("_db_etype", "_export_as", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
+_INTERNAL_ACTOR_KEYS = ("_db_etype", "_export_as", "_edited_obs", "_edited_o", "art_group", "code", "extra_art_groups", "extra_code", "extra_tpages", "_textures")
 
 
 def _dumps_with_raw_lumps(data):
@@ -610,11 +610,13 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     # must point at the level-scoped type name so the engine births the right type.
     _pfx = _level_type_prefix(name)
     from .battlecontroller import GEN_PREFIX as _BC_GEN
-    from .subtypes import ETYPES as _SUBTYPES
     for _a in all_actors:
         if _a.get("_export_as"):
-            continue                                  # an Export as etype is written as typed
-        if _a.get("etype") in _TRIGGER_ETYPES + _SUBTYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
+            continue                                  # an Export as / shared edited etype is written as typed
+        if _a.get("_edited_obs"):
+            _a["etype"] = f"{_pfx}-{_a['_edited_obs']}"   # edited child type in this level's -obs
+            continue
+        if _a.get("etype") in _TRIGGER_ETYPES or str(_a.get("etype", "")).startswith(_BC_GEN):
             _a["etype"] = f"{_pfx}-{_a['etype']}"
     ags = needed_ags(actors)  # camera-tracker has no art group, so only scan regular actors
     # Texture/sky source. Borrowing a vanilla level's textures + sky auto-logins

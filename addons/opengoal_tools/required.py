@@ -1,11 +1,16 @@
 """Required fields of actors, in one place: the panels' warning counts, the
 warning next to Export & Compile and the audit all use these.
 
-Required today: link slots marked "required" in the database, required
+Required today: schema task/object-reference fields and link slots marked
+"required" in the database, required
 paths (the Path panel's "required" option: path, pathb ...), and the sound
 bank of a sound emitter's / particle spawner's sound (actors' own sounds:
 see community-feedback/Actor Notes.md). Results for the
 whole level are cached and only recomputed after an edit (depsgraph update).
+
+Soft warnings (soft()): setups that don't break the game or the build but
+make an actor do nothing useful (a nav-enemy with no nav-mesh, nav-mesh
+parts / jump areas enemies can't use). Shown as a second, yellow count.
 """
 from __future__ import annotations
 
@@ -79,6 +84,24 @@ def missing(o, scene=None, names=None, banks=None):
     if not et:
         return missing_bank(o, scene, banks)
     out = []
+    # Required schema fields work for custom actors too; no per-etype rules.
+    get = _db.prop_getter(o)
+    for field in _db.inherited_fields(et):
+        key = field.get("key")
+        if not key or not field.get("required"):
+            continue
+        if field.get("type") == "object_ref":
+            name = str(get(key, "") or "")
+            target = scene.objects.get(name)
+            kind = field.get("pick", "EMPTY")
+            valid = target is not None and (target.name.startswith("CAMERA_") if kind == "CAMERA" else target.type == "EMPTY")
+        elif field.get("type") == "task":
+            valid = _db.task_expression(get, key) is not None
+        else:
+            continue
+        if not valid:
+            out.append({"panel": "game-task" if key == "og_game_task" else "custom-fields",
+                        "key": key, "label": field.get("label", key)})
     for slot in _actor_link_slots(et):
         lkey, sidx = slot[0], slot[1]
         label = slot[2] if len(slot) > 2 else lkey
@@ -100,8 +123,90 @@ def missing(o, scene=None, names=None, banks=None):
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
             if not _has_path(o, name, scene, names):
-                out.append({"panel": "path", "key": name, "label": f"{name} (path)"})
+                help_text = _db.panel_option(et, "path", "path_help", {}).get(name, "")
+                out.append({"panel": "path", "key": name, "label": f"{name}: {help_text}" if help_text else f"{name} (path)"})
     return out + missing_bank(o, scene, banks)
+
+
+def actor_banks_missing(et, scene, banks=None):
+    """[(bank choices, [sounds])] for the actor's sounds (DB "sounds": the ones
+    its code and art play that aren't in common) whose bank the level doesn't
+    load. A sound in several banks needs any one of them."""
+    snds = (_db.find_actor(et) or {}).get("sounds") or []
+    if not snds:
+        return []
+    loaded, where = banks or _sound_banks(scene)
+    groups = {}
+    for x in snds:
+        b = where.get(x)
+        if b and not (b & loaded):
+            groups.setdefault(tuple(sorted(b)), []).append(x)
+    return sorted(groups.items())
+
+
+def trigger_senders(scene, objects=None):
+    """{actor name: [sender names]}: actors an actor link sends 'trigger to
+    (a link slot that accepts "event:trigger", e.g. a button's notify list)."""
+    from .collections import _level_objects
+    out = {}
+    for s in (objects if objects is not None else _level_objects(scene)):
+        et = actor_etype(s)
+        if not et:
+            continue
+        slots = {(sl[0], sl[1]) for sl in _actor_link_slots(et) if any(str(a).startswith("event:trigger") for a in (sl[3] or []))}
+        if not slots:
+            continue
+        for e in getattr(s, "og_actor_links", ()):
+            if (e.lump_key, e.slot_index) in slots or (e.lump_key, 0) in slots:
+                out.setdefault(e.target_name, []).append(s.name)
+    return out
+
+
+def _needs_trigger(o, et):
+    """DB "needs_trigger": true, or {"unless_field": key} (that field set = it runs on its own)."""
+    v = (_db.find_actor(et) or {}).get("needs_trigger")
+    if isinstance(v, dict) and v.get("unless_field"):
+        try:
+            return not float(o.get(v["unless_field"], 0) or 0)
+        except (TypeError, ValueError):
+            return True
+    return bool(v)
+
+
+def soft(o, scene=None, banks=None, senders=None):
+    """Soft warnings of an actor: [{"panel", "key", "label"}]."""
+    scene = scene or bpy.context.scene
+    et = actor_etype(o)
+    if not et:
+        return []
+    out = []
+    if _needs_trigger(o, et):
+        snd = (senders if senders is not None else trigger_senders(scene)).get(o.name)
+        if not snd:
+            out.append({"panel": "links", "key": "trigger",
+                        "label": "nothing sends it 'trigger: it stays put (link it from a button's notify list)"})
+    for choice, snds in actor_banks_missing(et, scene, banks):   # silent sounds
+        b = " / ".join(choice)
+        more = f" +{len(snds) - 3}" if len(snds) > 3 else ""
+        out.append({"panel": "sound", "key": b, "sound": snds[0],
+                    "label": f"sound bank {b} not loaded: no {', '.join(snds[:3])}{more}"})
+    for sl in _db.link_slots(et):                          # links that only make it do less
+        if sl.get("soft") and not _actor_get_link(o, sl["lump_key"], int(sl.get("slot", 0))):
+            out.append({"panel": "links", "key": sl["lump_key"], "label": sl["soft"]})
+    lb = (_db.find_actor(et) or {}).get("soft_linked_by")   # an actor that should link this one
+    if lb and not (lb.get("unless") and o.get(lb["unless"])):
+        if not any(actor_etype(x) == lb["etype"] and any(getattr(_actor_get_link(x, lb["lump_key"], i), "target_name", None) == o.name for i in range(4))
+                   for x in scene.objects if x.name.startswith("ACTOR_")):
+            out.append({"panel": "links", "key": lb["etype"], "label": lb["label"]})
+    if _db.panel_exports(et, "nav-mesh") and _db.nav_unsafe(et):
+        nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
+        if nm is None and not _actor_get_link(o, "nav-mesh-actor", 0):
+            out.append({"panel": "nav", "key": "", "label": "no nav-mesh: it idles / notices Jak but can't pathfind"})
+        if nm is not None:
+            from .export.navmesh import nav_soft_issues
+            for issue in nav_soft_issues(nm):
+                out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}"})
+    return out
 
 
 def summary(items, header="Missing"):
@@ -116,14 +221,21 @@ def draw_header_count(layout, obj, panel=None):
     "links" / "path" / "nav" / None for all). Hover lists them, click opens a popup
     to fill them in."""
     items = [m for m in missing(obj) if panel is None or m["panel"] == panel]
-    if not items:
-        return
-    row = layout.row(align=True)
-    row.alert = True
-    row.ui_units_x = 1.2 + 0.4 * len(str(len(items)))     # as wide as "N⚠"
-    op = row.operator("og.required_popup", text=f"{len(items)}⚠", emboss=False)
-    op.actor_name = obj.name
-    op.panel = panel or ""
+    if items:
+        row = layout.row(align=True)
+        row.alert = True
+        row.ui_units_x = 1.2 + 0.4 * len(str(len(items)))     # as wide as "N⚠"
+        op = row.operator("og.required_popup", text=f"{len(items)}⚠", emboss=False)
+        op.actor_name = obj.name
+        op.panel = panel or ""
+    sitems = [m for m in soft(obj) if panel is None or m["panel"] == panel]
+    if sitems:                                           # soft: yellow triangle, no red
+        row = layout.row(align=True)
+        row.ui_units_x = 1.2 + 0.4 * len(str(len(sitems)))
+        op = row.operator("og.required_popup", text=f"{len(sitems)}⚠", emboss=False)
+        op.actor_name = obj.name
+        op.panel = panel or ""
+        op.soft = True
 
 
 class OG_OT_RequiredPopup(bpy.types.Operator):
@@ -131,10 +243,14 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
     bl_label = "Missing Required Fields"
     actor_name: bpy.props.StringProperty()
     panel: bpy.props.StringProperty()        # "" = every panel
+    soft: bpy.props.BoolProperty()           # the soft warnings instead
 
     @classmethod
     def description(cls, ctx, props):
         ob = bpy.data.objects.get(props.actor_name)
+        if props.soft:
+            items = [m for m in soft(ob) if not props.panel or m["panel"] == props.panel] if ob else []
+            return soft_summary(items)
         items = [m for m in missing(ob) if not props.panel or m["panel"] == props.panel] if ob else []
         return summary(items) + "\nClick to fill them in."
 
@@ -149,6 +265,13 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
         ob = bpy.data.objects.get(self.actor_name)
         if ob is None:
             layout.label(text="Actor not found", icon="ERROR")
+            return
+        if self.soft:
+            items = [m for m in soft(ob, ctx.scene) if not self.panel or m["panel"] == self.panel]
+            layout.label(text=f"{ob.name}: {len(items)} soft warning(s)", icon="ERROR")
+            layout.label(text="It works, but this setup makes it do less than it could:", icon="INFO")
+            for m in items:
+                layout.box().label(text=m["label"], icon="DOT")
             return
         items = [m for m in missing(ob, ctx.scene) if not self.panel or m["panel"] == self.panel]
         layout.label(text=f"{ob.name}: {len(items)} required field(s) missing", icon="ERROR")
@@ -172,11 +295,21 @@ class OG_OT_RequiredPopup(bpy.types.Operator):
             elif m["panel"] == "nav":
                 box.label(text=f"{m['key']}: {m['label'][len('nav-mesh: '):]}", icon="MOD_MESHDEFORM")
             elif m["panel"] == "path":
-                box.label(text=f"{m['key']}: no path", icon="ANIM")
+                box.label(text=f"Missing {m['label']}", icon="ANIM")
                 if m["key"] == "path":
                     _draw_path_add(box, ob, ctx.scene, ob.og_waypoint_sources)
                 else:
                     box.label(text="Add it in the Path panel (Add Path)", icon="INFO")
+            elif m["panel"] in ("game-task", "custom-fields"):
+                from .panels.actor_fields import _draw_field
+                field = next((f for f in _db.inherited_fields(et) if f.get("key") == m["key"]), None)
+                if field:
+                    _draw_field(box, ob, field)
+
+
+def soft_summary(items):
+    n = len(items)
+    return "\n".join([f"{n} soft warning{'s' if n != 1 else ''} (works, but does less):"] + [f"- {m['label']}" for m in items])
 
 
 def level_summary(by_actor):
@@ -194,24 +327,32 @@ def draw_level_count(layout, scene, row_scale=1.0):
     height; more kinds later split it (row_scale: unused, kept for callers)."""
     by_actor = level_missing(scene)
     n = sum(len(v) for v in by_actor.values())
-    entries = [("og.required_level_popup", f"{n}⚠")] if n else []
+    ns = sum(len(v) for v in level_soft(scene).values())
+    entries = ([(False, f"{n}⚠")] if n else []) + ([(True, f"{ns}⚠")] if ns else [])
     if not entries:
         return
     col = layout.column(align=True)
-    col.alert = True
-    col.ui_units_x = 1.2 + 0.4 * max(len(t) - 1 for _op, t in entries)
-    for op, text in entries:
+    col.ui_units_x = 1.6 + 0.4 * max(len(t) - 1 for _s, t in entries)
+    for is_soft, text in entries:
         r = col.row(align=True)
         r.scale_y = 1.0 / len(entries)
-        r.operator(op, text=text, emboss=False)
+        r.alert = not is_soft                                # required red, soft a yellow triangle
+        op = r.operator("og.required_level_popup", text=text, emboss=False)
+        op.soft = is_soft
 
 
 class OG_OT_RequiredLevelPopup(bpy.types.Operator):
     bl_idname = "og.required_level_popup"
     bl_label = "Missing Required Fields (Level)"
+    soft: bpy.props.BoolProperty()
 
     @classmethod
     def description(cls, ctx, props):
+        if props.soft:
+            by = level_soft(ctx.scene)
+            n = sum(len(v) for v in by.values())
+            return "\n".join([f"{n} soft warning{'s' if n != 1 else ''} (works, but does less):"]
+                             + [f"{a}: {m['label']}" for a, v in by.items() for m in v]) + "\nClick to see them."
         return level_summary(level_missing(ctx.scene)) + "\nClick to see them."
 
     def invoke(self, ctx, event):
@@ -222,9 +363,19 @@ class OG_OT_RequiredLevelPopup(bpy.types.Operator):
 
     def draw(self, ctx):
         layout = self.layout
-        by_actor = level_missing(ctx.scene)
+        by_actor = level_soft(ctx.scene) if self.soft else level_missing(ctx.scene)
         if not by_actor:
             layout.label(text="Nothing missing", icon="CHECKMARK")
+            return
+        if self.soft:
+            layout.label(text="Soft warnings: these work, but do less than they could", icon="ERROR")
+            for name, items in by_actor.items():
+                box = layout.box()
+                op = box.row().operator("og.select_and_frame", text=name, icon="RESTRICT_SELECT_OFF")
+                op.obj_name = name
+                col = box.column(align=True); col.scale_y = 0.8
+                for m in items:
+                    col.label(text=m["label"], icon="DOT")
             return
         layout.label(text="Click an actor to select it; its header warning fills the fields in", icon="INFO")
         for name, items in by_actor.items():
@@ -243,7 +394,7 @@ CLASSES = (OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
 
 
 # ── level-wide, cached ──────────────────────────────────────────────────────
-_CACHE = {"dirty": True, "by_actor": {}, "t": 0.0}
+_CACHE = {"dirty": True, "by_actor": {}, "soft": {}, "t": 0.0}
 _MAX_AGE = 1.0      # s: some edits (link / path collections) send no depsgraph update
 
 
@@ -263,14 +414,26 @@ def level_missing(scene):
         objs = _level_objects(scene)
         wp = {ob.name for ob in objs if "_wp_" in ob.name}     # legacy waypoints, looked up once
         banks = _sound_banks(scene)
+        senders = trigger_senders(scene, objs)
+        sres = {}
         for o in objs:
             m = missing(o, scene, wp, banks)
             if m:
                 res[o.name] = m
+            s = soft(o, scene, banks, senders)
+            if s:
+                sres[o.name] = s
         _CACHE["by_actor"] = res
+        _CACHE["soft"] = sres
         _CACHE["dirty"] = False
         _CACHE["t"] = now
     return _CACHE["by_actor"]
+
+
+def level_soft(scene):
+    """{actor name: soft warnings} of the active level (same cache as level_missing)."""
+    level_missing(scene)
+    return _CACHE["soft"]
 
 
 @bpy.app.handlers.persistent

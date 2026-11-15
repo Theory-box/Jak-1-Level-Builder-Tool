@@ -1147,7 +1147,7 @@ def variant_choices(etype: str) -> list[dict]:
 
 _SHARED_PANELS = ("custom-fields", "path", "sync", "actor-link", "nav-mesh",
                   "aggro-trigger", "volume", "water", "activation", "visibility",
-                  "spawner", "notice-dist", "fact-options", "scale", "movie-pos", "game-task")
+                  "spawner", "notice-dist", "drop", "fact-options", "scale", "movie-pos", "game-task")
 
 
 def generic_panels(etype: str) -> list[tuple[str, dict]]:

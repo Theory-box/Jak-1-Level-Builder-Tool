@@ -235,8 +235,7 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
         box.label(text="No AI or combat")
     elif nav_inline and _db.nav_unsafe(etype):
         box = layout.box()
-        box.label(text="Nav-enemy — needs navmesh", icon="ERROR")
-        box.prop(props, "nav_radius", text="Sphere Radius (m)")
+        box.label(text="Nav-enemy, needs navmesh and path", icon="ERROR")
 
         # ── Inline navmesh link status ───────────────────────────────────
         # Shows when ANY nav-enemy actor is selected — uses actor's actual type,

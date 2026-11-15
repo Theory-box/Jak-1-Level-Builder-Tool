@@ -488,6 +488,7 @@ class OG_PT_DevTools(Panel):
         col.prop(props, "og_blend_exe_path")
         col.prop(props, "og_blend_data_path")
         col.prop(props, "og_blend_decompiler_path")
+        col.prop(props, "og_blend_code_path")
         row = col.row(align=True)
         row.prop(props, "og_blend_db_override_path")
         row.operator("og.reload_database", text="", icon="FILE_REFRESH")

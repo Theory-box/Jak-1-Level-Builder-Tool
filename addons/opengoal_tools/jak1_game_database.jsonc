@@ -4388,6 +4388,91 @@
       ]
     },
     {
+      "id": "drop",
+      "label": "Drop",
+      "draw": "generic",
+      "description": "What the enemy drops when it dies (eco-info lump, read by fact-info). Off: the vanilla drop (random green eco pills).",
+      "fields": [
+        {
+          "key": "og_change_drop",
+          "label": "Change Drop",
+          "type": "bool",
+          "default": false,
+          "note": "Off: the vanilla drop (random green eco pills)."
+        },
+        {
+          "key": "og_drop_pickup",
+          "label": "Drop",
+          "type": "enum",
+          "default": "eco-pill-random",
+          "choices": [
+            {
+              "id": "none",
+              "label": "Nothing",
+              "engine_string": "(pickup-type none)"
+            },
+            {
+              "id": "eco-pill-random",
+              "label": "Green Eco Pills (Random)",
+              "engine_string": "(pickup-type eco-pill-random)"
+            },
+            {
+              "id": "eco-pill",
+              "label": "Green Eco Pills",
+              "engine_string": "(pickup-type eco-pill)"
+            },
+            {
+              "id": "money",
+              "label": "Orbs",
+              "engine_string": "(pickup-type money)"
+            },
+            {
+              "id": "eco-green",
+              "label": "Green Eco",
+              "engine_string": "(pickup-type eco-green)"
+            },
+            {
+              "id": "eco-blue",
+              "label": "Blue Eco",
+              "engine_string": "(pickup-type eco-blue)"
+            },
+            {
+              "id": "eco-red",
+              "label": "Red Eco",
+              "engine_string": "(pickup-type eco-red)"
+            },
+            {
+              "id": "eco-yellow",
+              "label": "Yellow Eco",
+              "engine_string": "(pickup-type eco-yellow)"
+            }
+          ],
+          "visible_if": {
+            "og_change_drop": true
+          },
+          "export_if_visible": true,
+          "lump": {
+            "key": "eco-info",
+            "type": "eco-info-picker",
+            "pairs_with": "og_drop_amount"
+          },
+          "write_if": "always"
+        },
+        {
+          "key": "og_drop_amount",
+          "label": "Amount",
+          "type": "int",
+          "default": 1,
+          "min": 1,
+          "max": 99,
+          "visible_if": {
+            "og_change_drop": true
+          },
+          "note": "Random green eco pills: extra pills on top of the random 3 to 5."
+        }
+      ]
+    },
+    {
       "id": "battlecontroller",
       "label": "Battle Controller",
       "description": "battlecontroller.gc settings: intro camera (variant), lurkers, spawning, pickups, linked actors. Drawn by the Battle Controller panel.",
@@ -4923,6 +5008,7 @@
       "etype": "nav-enemy",
       "parent": "process-drawable",      "rotation_lock": ["x", "y"],
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {"panel": "game-task", "description": "Power cell carriers (Options > Has power cell): the task of the cell it drops."},
         {"panel": "movie-pos", "description": "Power cell carriers (Options > Has power cell): Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."},
         {
@@ -5659,6 +5745,13 @@
     },
     {
       "etype": "mistycannon",
+      "sounds": [
+        "cannon-charge",
+        "cannon-shot",
+        "fuse",
+        "sack-land",
+        "telescope"
+      ],
       "label": "Misty Cannon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -5773,45 +5866,15 @@
               "note": "0 = around the cannon, radius = Idle distance (Activation)."
             },
             {
-              "key": "og_mc_cx",
-              "label": "X (m)",
-              "type": "float",
-              "default": 0.0,
+              "key": "og_mc_center",
+              "label": "Aim centre (empty)",
+              "type": "object_ref",
+              "default": "",
               "lump": {
                 "key": "center-point",
-                "type": "meters",
-                "slot": 0
+                "type": "vector"
               },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center",
-              "group_label": "Aim Centre",
-              "group_note": "Used when Aim radius > 0 (game axes)."
-            },
-            {
-              "key": "og_mc_cy",
-              "label": "Up (m)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "center-point",
-                "type": "meters",
-                "slot": 1
-              },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center"
-            },
-            {
-              "key": "og_mc_cz",
-              "label": "Z (m, = -Blender Y)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "center-point",
-                "type": "meters",
-                "slot": 2
-              },
-              "write_if": "if_any_nonzero",
-              "group": "mc-center"
+              "note": "Used when Aim radius > 0: it aims at random points within the radius around this empty."
             },
             {
               "key": "og_mc_water",
@@ -5830,6 +5893,7 @@
     },
     {
       "etype": "lurkercrab",
+      "sounds": ["crab-slide", "lurkercrab-dies", "shell-down", "shell-up", "snap"],
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
@@ -5844,6 +5908,7 @@
     },
     {
       "etype": "lurkerpuppy",
+      "sounds": ["lurkerdog-bite", "lurkerdog-dies", "lurkerdog-idle", "puppy-bark"],
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Lurker Puppy",
       "category": "Enemies",
@@ -5856,6 +5921,7 @@
     },
     {
       "etype": "hopper",
+      "sounds": ["frog-dies", "frog-idle", "frogspeak"],
       "label": "Hopper",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5869,6 +5935,7 @@
     },
     {
       "etype": "aphid",
+      "sounds": ["aphid-dies", "aphid-roar", "aphid-spike-in", "aphid-spike-out", "aphid-step"],
       "label": "Aphid",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5880,6 +5947,7 @@
     },
     {
       "etype": "swamp-rat",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "panels": [
         {
           "panel": "nav-mesh",
@@ -5915,6 +5983,7 @@
     },
     {
       "etype": "kermit",
+      "sounds": ["kermit-dies", "kermit-letgo", "kermit-shoot", "kermit-speak1", "kermit-speak2", "kermit-stretch"],
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "panels": [{"panel": "nav-mesh", "can-jump": false}],
@@ -5929,6 +5998,7 @@
     },
     {
       "etype": "snow-bunny",
+      "sounds": ["snow-bunny1", "snow-bunny2"],
       "label": "Snow Bunny Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -5968,6 +6038,7 @@
     },
     {
       "etype": "citb-bunny",
+      "sounds": ["snow-bunny1", "snow-bunny2"],
       "label": "Citadel Bunny Lurker",
       "category": "Enemies",
       "parent": "snow-bunny",
@@ -5988,6 +6059,7 @@
     },
     {
       "etype": "double-lurker",
+      "sounds": ["splita-charge", "splita-dies", "splita-roar", "splita-spot", "splita-taunt", "splitb-breathin", "splitb-dies", "splitb-roar", "splitb-spot", "splitb-taunt"],
       "label": "Double Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -6001,6 +6073,7 @@
     },
     {
       "etype": "bonelurker",
+      "sounds": ["bone-bigswing", "bone-freehead", "bone-helmet", "bone-smallswing", "bone-stepl", "bone-stepr"],
       "label": "Bone Lurker",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -6014,6 +6087,8 @@
     },
     {
       "etype": "muse",
+      "sounds": ["muse-taunt-1", "muse-taunt-2"],
+      "edited": "muse",
       // no initialize-collision: a battlecontroller spawning it crashes
       "battlecontroller_lurker": false,
       "label": "Muse",
@@ -6035,6 +6110,7 @@
     },
     {
       "etype": "baby-spider",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "spider-step"],
       "panels": [
         {
           "panel": "nav-mesh",
@@ -6100,6 +6176,7 @@
     },
     {
       "etype": "green-eco-lurker",
+      "sounds": ["blob-dies", "blob-jump", "blob-out", "blob-roar"],
       "panels": [{"panel": "nav-mesh", "can-jump": true}],
       "label": "Green Eco Lurker",
       "category": "Enemies",
@@ -6112,6 +6189,7 @@
     },
     {
       "etype": "lurkerworm",
+      "sounds": ["worm-bite", "worm-dies", "worm-rise1", "worm-sink"],
       "label": "Lurker Worm",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6147,6 +6225,7 @@
     },
     {
       "etype": "junglesnake",
+      "sounds": ["snake-bite", "snake-idle", "snake-rattle"],
       "label": "Jungle Snake",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6179,6 +6258,7 @@
     },
     {
       "etype": "swamp-bat",
+      "sounds": ["bat-celebrate", "lurkbat-dies", "lurkbat-idle", "lurkbat-wing"],
       "label": "Swamp Bat",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6208,6 +6288,7 @@
     },
     {
       "etype": "yeti",
+      "sounds": ["ice-monster2", "ice-monster3"],
       "label": "Yeti",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6291,6 +6372,7 @@
       "category": "Enemies",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "activation"
         },
@@ -6315,6 +6397,7 @@
     },
     {
       "etype": "puffer",
+      "sounds": ["puffer-change", "puffer-wing"],
       "label": "Puffer",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6324,6 +6407,7 @@
       "code": "puffer.o",
       "glb": "levels/sunken/puffer-main-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "movie-pos",
           "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
@@ -6555,6 +6639,7 @@
     },
     {
       "etype": "mother-spider",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "lay-eggs", "mom-spid-dies", "mom-spid-grunt", "spider-step"],
       "label": "Mother Spider",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6575,6 +6660,7 @@
       ],
       "glb": "levels/darkcave/mother-spider-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "movie-pos",
           "description": "Where the power cell this actor gives plays its pickup animation (cone = facing). Not set: at Jak."
@@ -6716,6 +6802,7 @@
     },
     {
       "etype": "gnawer",
+      "sounds": ["gnawer-chew", "gnawer-crawl", "gnawer-dies", "gnawer-taunt"],
       "label": "Gnawer",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6837,6 +6924,7 @@
     },
     {
       "etype": "driller-lurker",
+      "sounds": ["drill-hit", "drill-idle", "drill-idle2", "drill-stop", "drlurker-roar"],
       "label": "Driller Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -6915,6 +7003,7 @@
     },
     {
       "etype": "dark-crystal",
+      "sounds": ["crystal-explode"],
       "label": "Dark Crystal",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -6979,6 +7068,7 @@
     },
     {
       "etype": "cavecrusher",
+      "sounds": ["crush-click"],
       "label": "Cave Crusher (robocave)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -6990,6 +7080,7 @@
     },
     {
       "etype": "quicksandlurker",
+      "sounds": ["mud-lurk-laugh", "mudlurker-dies", "qsl-fire"],
       "label": "Quicksand Lurker",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7036,6 +7127,7 @@
     },
     {
       "etype": "ram",
+      "sounds": ["ice-monster1", "ice-monster3", "ramboss-laugh", "ramboss-yell", "set-ram", "slam-crash"],
       "label": "Ram",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -7161,6 +7253,7 @@
     },
     {
       "etype": "ram-boss",
+      "sounds": ["ice-monster1", "ice-monster3", "ramboss-laugh", "ramboss-yell"],
       "label": "Ram Boss",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -7178,6 +7271,8 @@
     },
     {
       "etype": "lightning-mole",
+      "sounds": ["get-mole", "mole-taunt-1", "mole-taunt-2"],
+      "edited": "lightning-mole",
       "label": "Lightning Mole",
       "category": "Interactive Objects",
       "parent": "fleeing-nav-enemy",
@@ -7316,6 +7411,7 @@
     },
     {
       "etype": "ice-cube",
+      "sounds": ["ice-explode", "ice-monster1", "ice-monster2", "ice-monster4", "ice-spike-in", "ice-spike-out", "ice-stop"],
       "label": "Ice Cube",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -7361,6 +7457,8 @@
     },
     {
       "etype": "fireboulder",
+      "sounds": ["boulder-splash", "v2ogre-boulder"],
+      "edited": "fireboulder",
       "label": "Fire Boulder",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -7394,6 +7492,8 @@
     },
     {
       "etype": "dark-plant",
+      "sounds": ["darkvine-grow", "darkvine-kill", "darkvine-move", "plant-dies", "plant-move"],
+      "edited": "dark-plant",
       "label": "Dark Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -7427,6 +7527,7 @@
     },
     {
       "etype": "happy-plant",
+      "edited": "happy-plant",
       "label": "Happy Plant",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -7465,6 +7566,8 @@
     },
     {
       "etype": "ogreboss",
+      "sounds": ["hits-head", "ogre-boulder", "ogre-dies", "ogre-fires", "ogre-grunt1", "ogre-grunt2", "ogre-grunt3", "ogre-roar2", "ogre-roar3", "ogre-walk", "ogreboss-out", "rock-in-lava"],
+      "edited": "ogreboss",
       "label": "Klaww (Ogre Boss)",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7635,6 +7738,7 @@
     },
     {
       "etype": "plant-boss",
+      "sounds": ["aphid-dies", "aphid-roar", "aphid-step", "plant-chomp", "plant-eye", "plant-fall", "plant-laugh", "plant-ouch", "plant-recover", "plant-roar"],
       "label": "Plant Boss",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7699,6 +7803,8 @@
     },
     {
       "etype": "robotboss",
+      "sounds": ["bfg-buzz", "bfg-fire", "bfg-fizzle", "blob-dies", "blob-roar", "dark-eco-buzz", "dark-eco-fire", "eco-torch", "explod-bfg", "explod-eye", "explosion2", "red-buzz", "red-fire", "robo-servo2", "robo-servo3", "robo-servo5", "robo-servo6", "robo-servo9", "robo-yell"],
+      "edited": "robotboss",
       "label": "Precursor Robot Boss",
       "category": "Bosses",
       "parent": "process-drawable",
@@ -7879,6 +7985,7 @@
     },
     {
       "etype": "sage-finalboss",
+      "edited": "sage-finalboss",
       "label": "Final Boss Sage (ending cutscenes)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7897,10 +8004,14 @@
       "tpage_group": "Final",
       "glb": "levels/finalboss/green-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden; plays the ending cutscenes once the robot boss is beaten (link it as the robot's slot 5): Daxter's sacrifice, then the outros and the credits (which end the game like vanilla). Cutscenes play around it, so place it like vanilla: from the robot (unrotated) X -228 m, Y -138 m, Z +59.5 m. Exported as a level subtype (subtypes/sage-finalboss.gc). Uses the vanilla finalboss-movies task."
+      "description": "Exported as a level subtype (subtypes/sage-finalboss.gc): the final boss ending cutscenes with the actor's own task (Game Task panel; none = vanilla finalboss-movies; a custom task needs the same stages, each cutscene closes the next). Jak returns relative to the sage, no fixed Final Boss position; restarts at the current continue point without all cells; the final door steps are skipped without a final door. The credits end the game like vanilla.",
+      "panels": [
+        {"panel": "game-task", "description": "Each ending cutscene closes the next stage (same stages as finalboss-movies)."}
+      ]
     },
     {
       "etype": "sage",
+      "edited": "sage",
       "label": "Samos (Sage's Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7919,6 +8030,8 @@
     },
     {
       "etype": "assistant",
+      "sounds": ["welding-loop"],
+      "edited": "assistant",
       "label": "Keira (Sage's Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7931,18 +8044,24 @@
     },
     {
       "etype": "bird-lady",
+      "edited": "bird-lady",
       "label": "Bird Lady (Village)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "bird-lady.o",
       "art_group": "bird-lady-ag.go",
       "tpage_group": "Beach",
       "glb": "levels/beach/bird-lady-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: her beach-flutflut introduction starts with 'want-levels village1 beach' (unloads the custom level), and she only offers to talk while Jak is at game Z < -20 m (hard-coded). Removed once beach-flutflut's reminder stage is closed. Needs a subtype: drop level-load commands, target-above-threshold? -> #t."
+      "description": "Edited (subtypes/bird-lady.gc): the actor's own task (Game Task panel; none = vanilla beach-flutflut). Talking plays her introduction (closes need-introduction) without its level commands, then her two reminders; she talks from anywhere (vanilla: only at game Z < -20 m) and is removed once the task's need-reminder stage is closed.",
+      "panels": [
+        {"panel": "game-task", "description": "Her task: introduction closes need-introduction, removed once need-reminder is closed."}
+      ]
     },
     {
       "etype": "bird-lady-beach",
+      "edited": "bird-lady-beach",
+      "sounds": ["egg-crack"],
       "label": "Bird Lady (Beach, Flut Flut hatch)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -7958,10 +8077,17 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/bird-lady-beach-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Invisible until beach-flutflut is at its reward speech (vanilla: the flut flut egg was pushed off the cliff). Then she plays the hatching cutscene (with the flut flut and egg) and gives the beach-flutflut cell."
+      "description": "Edited (subtypes/bird-lady-beach.gc): link the Flut Flut egg (alt-actor): she appears once it has fallen and broken and her task isn't done; talking plays the hatching cutscene (once) (flut flut and egg) and gives the cell. Task: her own, else the egg's, else vanilla beach-flutflut. With no egg linked: vanilla, shown at the task's need-reward-speech.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."}]},
+        {"panel": "game-task", "description": "Her task (none: the linked egg's). Talking gives its cell."},
+        {"panel": "actor-link", "slots": [{"lump_key": "alt-actor", "slot": 0, "label": "Flut Flut egg", "accepts": ["flutflutegg"], "required": false, "soft": "no Flut Flut egg linked: she only appears at her task's need-reward-speech (vanilla)"}]}
+      ]
     },
     {
       "etype": "seagullflock",
+      "edited": "seagullflock",
+      "sounds": ["seagull-takeoff"],
       "label": "Seagull Flock",
       "category": "NPCs",
       "parent": "process",
@@ -7975,9 +8101,10 @@
       "glb": "levels/beach/seagull-lod0.glb",
       "shape": "CUBE",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_flock_blackout", "label": "Blackout at the rock", "type": "bool", "default": false, "lump": {"key": "blackout", "type": "uint32"}, "write_if": "if_true", "note": "The vanilla 2 s black screen while the birds jump to the rock. Off: no black screen."}]},
         {
           "panel": "game-task",
-          "description": "beach-seagull (the flock also closes beach-seagull's reminder itself; its save state keeps how far they were chased)."
+          "description": "Its need-reminder is closed when the birds reach the end (vanilla beach-seagull). None: no task. Its save state keeps how far they were chased."
         },
         {
           "panel": "path",
@@ -7991,14 +8118,14 @@
               "slot": 0,
               "label": "Rock to drop (gets 'loading, then 'trigger; the flock waits until it is complete)",
               "accepts": [
-                "any"
+                "lrocklrg"
               ],
               "required": false
             }
           ]
         }
       ],
-      "description": "21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (vanilla lrocklrg). With no rock linked they wait at the end for good (no crash)."
+      "description": "Edited (subtypes/seagullflock.gc): 21 seagulls at path point 0; walking up scares them on to points 1, 2, 3 (with Daxter's seagull hints), then to the end and, once the linked rock answers, they knock it down (lrocklrg). Its own task's need-reminder closes then (vanilla: beach-seagull). Blackout option: the vanilla 2 s black screen hiding the birds' jump to the rock. With no rock linked they wait at the end for good (no crash)."
     },
     {
       "etype": "part-spawner",
@@ -10146,6 +10273,7 @@
     },
     {
       "etype": "assistant-bluehut",
+      "sounds": ["welding-loop"],
       "label": "Keira (Blue Hut)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10225,15 +10353,20 @@
     },
     {
       "etype": "assistant-lavatube-end",
+      "edited": "assistant-lavatube-end",
       "label": "Keira (Citadel entrance)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-citadel.o",
       "art_group": "assistant-lavatube-end-ag.go",
       "tpage_group": "Citadel",
       "glb": "levels/citadel/assistant-lavatube-end-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: tied to the vanilla task village4-button. She only shows while that task sits at need-reward-speech (vanilla: Jak's first arrival in the Citadel, before its warp-gate button is pressed) and the green sage isn't freed; then she auto-plays assistant-lavatube-end-resolution. On a normal save the task sits at its first 'unknown' stage, so she stays invisible. Spawns safely (no lumps / links); a subtype dropping the should-display gate would make her usable."
+      "description": "Edited (subtypes/assistant-lavatube-end.gc): the actor's own task (Game Task panel; none = vanilla village4-button). She shows while the task is at need-reward-speech and plays her resolution when Jak comes near (closing that stage).",
+      "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: she shows and plays her resolution by the actor's task (Game Task panel). N: she shows and plays her resolution once Jak holds N cells (once, saved), no task needed.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
+        {"panel": "game-task", "description": "Her task: she shows and talks while it's at need-reward-speech."}
+      ]
     },
     {
       "etype": "red-sagecage",
@@ -10249,13 +10382,13 @@
         "citb-sagecage-ag.go"
       ],
       "tpage_group": "Citadel",
-      "glb": "levels/citadel/redsage-lod0.glb",
+      "glb": "levels/citadel/citb-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Red / blue / yellow sage in his energy cage (the cage is a child with solid collision; Jak can stand on it). The game task picks the task control (vanilla citadel-sage-<colour>). Before he's freed: idles, ambient lines, and talking plays his '<colour>sage-resolution' cutscene (drops the cage bars; repeatable, nothing closes). 'open (a broken Citadel Generator's open actor) drops the bars. Collecting the task's cell sends 'play-anim to the process named '<colour>-sagecage-1' (hard-coded in the cell code), which plays the cutscene; afterwards the task is complete and he fires his beam at the linked target forever. Hidden once vanilla citadel-sage-green is fully done. Name the object so it exports as <colour>-sagecage-1.",
+      "description": "Edited (subtypes/<colour>-sagecage.gc): red / blue / yellow sage in his energy cage (Jak can stand on the cage). Freed by talking to him (once; gives his task's cell) or by his Freed by actor (e.g. a Citadel Generator: once it's broken and his task's cell is taken, the rescue plays by itself when Jak is near). Rescued (saved): no more talking, cage open, beam at the Beam target empty. 'open (a generator's open actor) drops the bars. Vanilla: talk any time and again, rescue from the cell code by the vanilla process name, beam at the robot boss, hidden after the green sage.",
       "panels": [
         {
           "panel": "game-task",
-          "description": "Required: vanilla citadel-sage-red / -blue / -yellow (match the variant). Its cell (from a Citadel Generator with the same task) triggers the rescue cutscene. none: he fires his beam at once and the game logs errors every frame."
+          "description": "His task: with Freed by an actor, the rescue waits for its cell to be taken (e.g. a Citadel Generator with the same task); talking to free him gives its cell. None: no cell."
         },
         {
           "panel": "actor-link",
@@ -10263,18 +10396,18 @@
             {
               "lump_key": "alt-actor",
               "slot": 0,
-              "label": "Beam target (required)",
+              "label": "Freed by (a Citadel Generator; or link its alt-actor to him)",
               "accepts": [
-                "citb-robotboss",
-                "any"
+                "citb-generator"
               ],
-              "required": true
+              "required": false
             }
           ]
         },
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},
             {
               "key": "og_sage_variant",
               "label": "Sage",
@@ -10297,7 +10430,7 @@
                     "redsage-ag.go",
                     "citb-sagecage-ag.go"
                   ],
-                  "glb": "levels/citadel/redsage-lod0.glb"
+                  "edited": "red-sagecage"
                 },
                 {
                   "id": "blue-sagecage",
@@ -10312,7 +10445,7 @@
                     "bluesage-ag.go",
                     "citb-sagecage-ag.go"
                   ],
-                  "glb": "levels/citadel/bluesage-lod0.glb"
+                  "edited": "blue-sagecage"
                 },
                 {
                   "id": "yellow-sagecage",
@@ -10327,9 +10460,57 @@
                     "yellowsage-ag.go",
                     "citb-sagecage-ag.go"
                   ],
-                  "glb": "levels/citadel/yellowsage-lod0.glb"
+                  "edited": "yellow-sagecage"
                 }
               ]
+            },
+            {
+              "key": "og_sage_free",
+              "label": "Freed by",
+              "type": "enum",
+              "default": "talk",
+              "write_if": "always",
+              "lump": {
+                "key": "free-mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "talk",
+                  "label": "Talking to him (once)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "actor",
+                  "label": "Breaking its generator",
+                  "lump_value": 1
+                }
+              ],
+              "note": "Breaking its generator: link the Citadel Generator's alt-actor (or trigger-actor) to him; the rescue plays by itself (Jak within 16 m) once its cell is taken. Or set him a Freed by actor: once it's complete and his task's cell is taken."
+            },
+            {
+              "key": "og_sage_beam",
+              "label": "Beam target (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-target",
+                "type": "vector"
+              },
+              "note": "Once rescued he fires his beam at this point. None: no beam."
+            },
+            {
+              "key": "og_sage_talk_dist",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "Freed by talking: how near Jak has to be for the talk prompt."
             }
           ]
         }
@@ -10338,7 +10519,7 @@
     {
       "etype": "green-sagecage",
       "label": "Green Sage (Citadel, caged)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "citb-sage",
       "code": [
         "citadel-part.o",
@@ -10346,29 +10527,113 @@
       ],
       "art_group": [
         "green-sagecage-ag.go",
-        "citb-sagecage-ag.go",
-        "evilbro-citadel-ag.go",
-        "evilsis-citadel-ag.go"
+        "citb-sagecage-ag.go"
       ],
       "tpage_group": "Citadel",
-      "glb": "levels/citadel/green-sagecage-lod0.glb",
+      "glb": "levels/citadel/citb-sagecage-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: drives the vanilla Citadel story. Its intro auto-plays only when Jak's world Z < -4595 m (vanilla coordinate), closes the other sages' need-hint and sets continue 'citadel-elevator'. Its pre-boss outro runs want-levels citadel finalboss (unloads the custom level), kills ~60 vanilla actors by name, and ends with start 'play at continue 'citadel-elevator' (vanilla Citadel). The cell -> cutscene hook is by name 'green-sagecage-1'. Same beam-target crash as the other sages without alt-actor."
+      "description": "Edited (subtypes/green-sagecage.gc): the Green Sage in his cage, freed like the red / blue / yellow sages: by talking to him (once; gives his task's cell) or by breaking its generator (its 'trigger after its cell is taken, or his Freed by actor complete with his task's cell taken; the rescue then plays by itself when Jak is near). Rescued (saved): no more talking, cage open, beam at the Beam target empty. No pre-boss story (robot boss, level loads, continue point).",
+      "edited": "green-sagecage",
+      "reacts_to": [
+        "open",
+        "trigger"
+      ],
+      "panels": [
+        {
+          "panel": "game-task",
+          "description": "His task: with Freed by an actor, the rescue waits for its cell to be taken (e.g. a Citadel Generator with the same task); talking to free him gives its cell. None: no cell."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Freed by (a Citadel Generator; or link its alt-actor to him)",
+              "accepts": [
+                "citb-generator"
+              ],
+              "required": false
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},
+            {
+              "key": "og_sage_free",
+              "label": "Freed by",
+              "type": "enum",
+              "default": "talk",
+              "write_if": "always",
+              "lump": {
+                "key": "free-mode",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "talk",
+                  "label": "Talking to him (once)",
+                  "lump_value": 0
+                },
+                {
+                  "value": "actor",
+                  "label": "Breaking its generator",
+                  "lump_value": 1
+                }
+              ],
+              "note": "Breaking its generator: link the Citadel Generator's alt-actor (or trigger-actor) to him; the rescue plays by itself (Jak within 16 m) once its cell is taken. Or set him a Freed by actor: once it's complete and his task's cell is taken."
+            },
+            {
+              "key": "og_sage_beam",
+              "label": "Beam target (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-target",
+                "type": "vector"
+              },
+              "note": "Once rescued he fires his beam at this point. None: no beam."
+            },
+            {
+              "key": "og_sage_talk_dist",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "Freed by talking: how near Jak has to be for the talk prompt."
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "assistant-firecanyon",
+      "edited": "assistant-firecanyon",
       "label": "Keira (Fire Canyon)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-firecanyon.o",
       "art_group": "assistant-firecanyon-ag.go",
       "tpage_group": "Firecanyon",
       "glb": "levels/firecanyon/assistant-firecanyon-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: task firecanyon-assistant is hard-coded; invisible until Jak holds 20 cells (below that she voices the 'need 20 cells' hint within 15 m). Her resolution cutscene starts with (want-levels village1 firecanyon), which unloads the custom level mid-cutscene, taking her with it. A subtype stripping that command would make her a working 20-cell gate NPC."
+      "description": "Edited (subtypes/assistant-firecanyon.gc): a cell-gate NPC with the actor's own task (Game Task panel; none = vanilla firecanyon-assistant). Hidden until the task reaches need-reward-speech (custom task: e.g. a Cells condition), voicing the 'need 20 cells' hint within 15 m; then talking plays her resolution (without its level commands) and closes the stage.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: she shows and talks by the actor's task (Game Task panel). N: she shows and talks once Jak holds N cells (once, saved), no task needed.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
+        {"panel": "game-task", "description": "Her task: hidden until its need-reward-speech stage opens."}
+      ]
     },
     {
       "etype": "evilbro",
+      "reacts_to": ["trigger"],
       "label": "Gol (Misty ending)",
       "category": "Hidden",
       "parent": "process-taskable",
@@ -10379,8 +10644,9 @@
       ],
       "glb": "levels/intro/evilbro-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden until an 'intro' tpage group (INT.DGO tpage-1454..1457) exists: no addon tpage group carries the intro Gol / Maia textures. Behaviour otherwise works: task leaving-misty is hard-coded; talking plays the evilbro-misty-end cutscene (Gol and Maia; Maia clones it from the linked evilsis) and can be replayed. The alt-actor must be an evilsis: without it, talking dereferences #f.",
+      "description": "Edited (subtypes/evilbro.gc): Gol plays the evilbro-misty-end cutscene with Maia (link evilsis as alt-actor). Play mode: Talk (vanilla, while his task isn't done; closes its need-introduction), Once the task is done (hidden until his task is complete, then plays by itself when Jak comes within Play distance) or When triggered (hidden until 'trigger, then the same). The automatic modes play once (saved) and hide both after. Maia shows / hides with him.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_evil_mode", "label": "Play mode", "type": "enum", "default": "talk", "write_if": "always", "lump": {"key": "play-mode", "type": "int32"}, "choices": [{"value": "talk", "label": "Talk (vanilla: while the task isn't done)", "lump_value": 0}, {"value": "task-done", "label": "By itself once the task is done", "lump_value": 1}, {"value": "trigger", "label": "By itself when triggered", "lump_value": 2}], "note": "Automatic modes: Gol and Maia stay hidden until then, play once when Jak comes near (saved) and hide after."}, {"key": "og_evil_dist", "label": "Play distance (m)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "play-dist", "type": "meters"}, "write_if": "always", "note": "Automatic modes: how near Jak has to be."}]},
         {
           "panel": "actor-link",
           "slots": [
@@ -10394,7 +10660,18 @@
               "required": true
             }
           ]
+        },
+        {
+          "panel": "game-task"
         }
+      ],
+      "edited": "evilbro",
+      "tpage_group": "Intro",
+      "tpages": [
+        "tpage-1454.go",
+        "tpage-1455.go",
+        "tpage-1456.go",
+        "tpage-1457.go"
       ]
     },
     {
@@ -10406,12 +10683,26 @@
       "art_group": "evilsis-ag.go",
       "glb": "levels/intro/evilsis-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden until an 'intro' tpage group exists (see evilbro). Never talks; idles and clones Gol's cutscene when an evilbro links to her."
+      "description": "Edited (subtypes/evilsis.gc): Maia; link her from Gol (evilbro alt-actor). She shows / hides with him (his Play mode) and plays her part of his cutscene.",
+      "edited": "evilsis",
+      "tpage_group": "Intro",
+      "tpages": [
+        "tpage-1454.go",
+        "tpage-1455.go",
+        "tpage-1456.go",
+        "tpage-1457.go"
+      ],
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
     },
     {
       "etype": "sage-villagec",
+      "edited": "sage-villagec",
       "label": "Sage (Volcanic Crater)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "sage-village3.o",
       "art_group": [
@@ -10422,19 +10713,32 @@
       "tpage_group": "Village3",
       "glb": "levels/village3/sage-village3-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: invisible until vanilla village3-button need-hint is closed, hidden again once the sages are kidnapped; the talk prompt only shows when Jak is at vanilla world X < 1117 m and Z > -3497 m; auto-plays its intro when village3-button is at need-introduction, which dereferences its alt-actor (assistant-villagec) without a check."
+      "description": "Edited (subtypes/sage-villagec.gc): a talker with the actor's own task (Game Task panel; none = vanilla cave-dark-crystals). Each stage plays the cutscene picked in Actor Settings (introduction closes need-introduction, reminder replays, reward speech closes it); at need-resolution talking gives the task's cell. Always shown, talks from anywhere; Keira (alt-actor) is optional. The introduction with Gol and Maia spawns them for the cutscene.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: by the actor's task (Game Task panel). N: no task; hidden until Jak holds N cells, then the Introduction cutscene once (saved), then the Reminder.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
+        {"panel": "custom-fields", "fields": [{"key": "og_talk_intro", "label": "Introduction", "type": "enum", "default": "intro", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-intro", "type": "int32"}, "write_if": "always", "note": "Played while the task is at need-introduction (closes it)."}, {"key": "og_talk_reminder", "label": "Reminder", "type": "enum", "default": "reminder-dark-eco", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-reminder", "type": "int32"}, "write_if": "always", "note": "Played at need-reminder (replays)."}, {"key": "og_talk_reward", "label": "Reward speech", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "intro", "label": "Introduction (with Gol and Maia)", "lump_value": 0}, {"value": "intro-dark-eco", "label": "Introduction: dark eco", "lump_value": 1}, {"value": "intro-rams", "label": "Introduction: rams", "lump_value": 2}, {"value": "reminder-dark-eco", "label": "Reminder: dark eco", "lump_value": 3}, {"value": "reminder-rams", "label": "Reminder: rams", "lump_value": 4}], "lump": {"key": "talk-reward", "type": "int32"}, "write_if": "always", "note": "Played at need-reward-speech (closes it)."}]},
+        {"panel": "game-task", "description": "Its stages pick the cutscene (Actor Settings); at need-resolution talking gives the cell."}
+      ]
     },
     {
       "etype": "assistant-villagec",
+      "edited": "assistant-villagec",
       "label": "Keira (Volcanic Crater)",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "code": "assistant-village3.o",
       "art_group": "assistant-village3-ag.go",
       "tpage_group": "Village3",
       "glb": "levels/village3/assistant-village3-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: only visible after vanilla village3-button need-introduction is closed and before the sages are kidnapped, and its talk prompt only shows when Jak is at vanilla world Z < -3478 m. Talking would play assistant-village3-reminder."
+      "description": "Edited (subtypes/assistant-villagec.gc): a talker with the actor's own task (Game Task panel; none = vanilla assistant-village3). Her one cutscene (assistant-village3-reminder) plays at the stages picked in Actor Settings (introduction closes need-introduction, reminder replays, reward speech closes it); at need-resolution talking gives the task's cell. Always shown, talks from anywhere.",
+      "panels": [
+        {"panel": "custom-fields", "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},{"key": "og_cell_count", "label": "Cell count (0 = by task)", "type": "int", "default": 0, "min": 0, "max": 101, "note": "0: by the actor's task (Game Task panel). N: no task; hidden until Jak holds N cells, then the Introduction cutscene once (saved), then the Reminder.", "lump": {"key": "cell-count", "type": "int32"}, "write_if": "if_positive"}]},
+        {"panel": "custom-fields", "fields": [{"key": "og_talk_intro", "label": "Introduction", "type": "enum", "default": "reminder", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-intro", "type": "int32"}, "write_if": "always", "note": "Played while the task is at need-introduction (closes it)."}, {"key": "og_talk_reminder", "label": "Reminder", "type": "enum", "default": "reminder", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-reminder", "type": "int32"}, "write_if": "always", "note": "Played at need-reminder (replays)."}, {"key": "og_talk_reward", "label": "Reward speech", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "No cutscene", "lump_value": -1}, {"value": "reminder", "label": "Her reminder", "lump_value": 0}], "lump": {"key": "talk-reward", "type": "int32"}, "write_if": "always", "note": "Played at need-reward-speech (closes it)."}]},
+        {"panel": "game-task", "description": "Its stages pick the cutscene (Actor Settings); at need-resolution talking gives the cell."}
+      ]
     },
     {
       "etype": "sequenceA-village1",
@@ -10483,6 +10787,12 @@
     },
     {
       "etype": "yakow",
+      "edited": "yakow",
+      "sounds": [
+        "yakow-grazing",
+        "yakow-idle",
+        "yakow-kicked"
+      ],
       "label": "Yakow",
       "category": "NPCs",
       "parent": "process-drawable",
@@ -10492,7 +10802,8 @@
           "description": "village1-yakow for the herd (its intro / reminder stages close once every yakow of the chain is penned; the farmer gives the cell)."
         },
         {
-          "panel": "nav-mesh"
+          "panel": "nav-mesh",
+          "description": "Its nav-mesh. Paint the pen's faces with the NAV Special material (Nav-mesh tools): a yakow walking onto them is penned."
         },
         {
           "panel": "actor-link",
@@ -10526,6 +10837,27 @@
               "required": false
             }
           ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_yakow_shot", "label": "Pen shot", "type": "enum", "default": "anim", "write_if": "always", "lump": {"key": "pen-shot", "type": "int32"}, "choices": [{"value": "anim", "label": "Vanilla camera animation", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "none", "label": "None", "lump_value": 2}], "note": "Played once the whole herd is penned."},
+            {"key": "og_yakow_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla camera animation: played from here. None: from the farmer (alt-actor)."},
+            {"key": "og_yakow_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pen-camera", "type": "string"}, "note": "Pen shot = Linked camera."},
+            {"key": "og_yakow_shot_time", "label": "Shot time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Pen shot = Linked camera: how long."},
+            {
+              "key": "og_yakow_pen",
+              "label": "Pen spot (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "alt-vector",
+                "type": "vector",
+                "w": "yaw"
+              },
+              "note": "Where it walks to and grazes once penned, facing the empty's way."
+            }
+          ]
         }
       ],
       "art_group": [
@@ -10538,20 +10870,16 @@
       "shape": "SINGLE_ARROW",
       "lumps": [
         {
-          "key": "alt-vector",
-          "type": "vector3m",
-          "description": "Pen spot: 'x y z' (m) where it grazes once penned; w = facing."
-        },
-        {
           "key": "water-height",
           "type": "water-height",
           "description": "Water surface to wade at."
         }
       ],
-      "description": "Wanders and runs off when kicked. A yakow counts as penned when it walks onto a nav-mesh poly flagged as pen (pat bit 2); the addon's nav-mesh export writes no pat, so herding can't complete yet."
+      "description": "Wanders and runs off when kicked. It's penned when it walks onto a NAV Special face of its nav-mesh (the pen, pat bit 2), then walks to the Pen spot empty and grazes there (saved). Link the herd with next / prev: the task's intro / reminder close once every yakow of the chain is penned, and the farmer (alt-actor) gives the cell; the pen camera plays at the farmer."
     },
     {
       "etype": "flutflut",
+      "sounds": ["flut-death"],
       "panels": [
         {
           "panel": "game-task",
@@ -10659,7 +10987,8 @@
       "parent": "process-taskable",
       "panels": [
         {
-          "panel": "nav-mesh"
+          "panel": "game-task",
+          "description": "The herd's task (give the yakows the same one): its cell after the herd is penned. None: vanilla village1-yakow."
         }
       ],
       "code": "farmer.o",
@@ -10667,17 +10996,25 @@
       "tpage_group": "Village1",
       "glb": "levels/village1/farmer-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Vanilla village1-yakow: introduction / reminders, then the reward speech and cell once the yakow herd is penned. Joins the nav-mesh (if linked) so yakows walk around him."
+      "description": "Edited (subtypes/farmer.gc): introduction / reminders, then the resolution and his task's cell once the yakow herd (same task) is penned. Joins a nav-mesh (nav-mesh-actor link) so yakows walk around him.",
+      "edited": "farmer"
     },
     {
       "etype": "fisher",
+      "edited": "fisher",
+      "sounds": ["fish-miss"],
       "label": "Fisherman",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_fisher_stand", "label": "Fishing spot (Jak face negative Y)", "type": "object_ref", "default": "", "note": "An empty where Jak stands for the minigame (its Z rotation = his facing). Place around 2.5m above Net path point and 5m ahead. None: vanilla jungle coordinates.", "lump": {"key": "fisher-stand", "type": "vector", "w": "yaw"}}, {"key": "og_fisher_camera", "label": "Minigame camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "A CAMERA_ object used during the minigame (vanilla: camera-152). None: the normal camera.", "lump": {"key": "fisher-camera", "type": "string"}}]},
+        {"panel": "game-task", "description": "The cell for winning the minigame."},
         {
           "panel": "path",
-          "required": true
+          "required": true,
+          "path_help": {
+            "path": "Fish path (Net at position 6.5)"
+          }
         }
       ],
       "code": "fisher.o",
@@ -10692,10 +11029,11 @@
       "tpage_group": "Jungle",
       "glb": "levels/jungle/fisher-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: the jungle-fishgame introduction starts with 'want-levels village1 jungle' (unloads the custom level), and the minigame moves Jak to fixed jungle coordinates and looks for camera entity camera-152. The fish run down its path (net at path point 6.5). Needs a subtype."
+      "description": "Edited (subtypes/fisher.gc): the fishing minigame with the actor's own task (Game Task panel; none = vanilla jungle-fishgame). Introduction without its level commands; Jak stands at the linked Fishing spot empty and the linked Minigame camera is used (vanilla: fixed jungle coordinates and camera-152). The fish run down the fisher's path (net at path point 6.5); catching enough gives the task's cell."
     },
     {
       "etype": "explorer",
+      "edited": "explorer",
       "label": "Uncle (Explorer)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10708,6 +11046,7 @@
     },
     {
       "etype": "geologist",
+      "edited": "geologist",
       "label": "Geologist",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10720,10 +11059,12 @@
     },
     {
       "etype": "warrior",
+      "edited": "warrior",
       "label": "Warrior",
-      "category": "Hidden",
+      "category": "NPCs",
       "parent": "process-taskable",
       "panels": [
+        {"panel": "game-task", "description": "His task: the cell he gives for the orbs."},
         {
           "panel": "actor-link",
           "slots": [
@@ -10745,10 +11086,11 @@
       "tpage_group": "Village2",
       "glb": "levels/village2/warrior-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: leaving any of his cutscenes sends to (entity-by-type allpontoons) with no null check, so talking crashes without an allpontoons actor. Vanilla village2-warrior-money (90 orbs, gives its cell). Needs a subtype: guard the allpontoons lookups."
+      "description": "Edited (subtypes/warrior.gc): an orb trade with the actor's own task (Game Task panel; none = vanilla village2-warrior-money): introduction, reminder, then he takes 90 orbs (money-task-inc) for the task's cell. His alt-actors are born and sent 'die after the trade (vanilla: the pontoons). Works without an allpontoons actor (vanilla: talking crashed)."
     },
     {
       "etype": "gambler",
+      "edited": "gambler",
       "label": "Gambler",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10761,6 +11103,7 @@
     },
     {
       "etype": "sculptor",
+      "sounds": ["hammer-tap"],
       "label": "Sculptor",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10776,6 +11119,8 @@
     },
     {
       "etype": "billy",
+      "edited": "billy",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "label": "Billy (rat game)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -10792,15 +11137,18 @@
       "tpage_group": "Swamp",
       "glb": "levels/swamp/billy-lod0.glb",
       "shape": "CUBE",
-      "description": "Billy and his pet Farthy (a clone-anim manipy). Task swamp-billy is hard-coded. Talk: billy-introduction cutscene (puts snack props along path 0, offset X -10 m / Z +5 m), then later talks ask to play; accepting moves Jak to the linked Jak-spot actor and starts the rat-shooting game: snacks along path 0, rats spawn at random points of path 1 and walk to random points of path 2 (rats use Billy's nav-mesh). Win: resolution cutscene gives the swamp-billy cell (at movie-pos). Lose: replay prompt. Vanilla reads all three paths from the one 'path' lump at keyframes 0/1/2, which a .jsonc lump can't hold (one entry per name): needs a level subtype reading path / pathb / pathc. Without paths 1/2 the rats spawn at the world origin and the game never ends.",
+      "description": "Edited (subtypes/billy.gc): Billy and his pet Farthy, with the actor's own task (Game Task panel; none = vanilla swamp-billy), any stage layout. Talk: billy-introduction cutscene while need-hint / need-introduction is open (puts snack props along path, offset X -10 m / Z +5 m), then talking asks to play; accepting moves Jak to the linked Jak-spot actor and starts the rat-shooting game: snacks on the points of path, rats spawn at random points of pathb and walk to random points of pathc (rats use Billy's nav-mesh). Jak's view turns around View angle by Angle range each side. Win (saved): resolution cutscene gives the task's cell (at movie-pos). Lose: replay prompt. Vanilla keyed the three paths as 'path keyframes 0/1/2; the vanilla Boggy Swamp kill lists are gone.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_billy_view_angle", "label": "View angle (deg)", "type": "float", "default": 205.0, "min": -360.0, "max": 360.0, "note": "The centre of Jak's view during the game: the way an actor rotated by this much (Z) faces. Vanilla 205.", "lump": {"key": "view-angle", "type": "degrees"}, "write_if": "always"}, {"key": "og_billy_view_range", "label": "Angle range (deg)", "type": "float", "default": 60.0, "min": 0.0, "max": 180.0, "note": "How far the view turns left / right of the view angle. Vanilla 60.", "lump": {"key": "view-range", "type": "degrees"}, "write_if": "always"}]},
+        {"panel": "game-task", "description": "Its cell is the rat game's prize; need-introduction closes after the introduction."},
         {
           "panel": "movie-pos",
           "description": "Where the swamp-billy cell plays its pickup animation after the win (cone = facing). Not set: at Jak."
         },
         {
           "panel": "nav-mesh",
-          "show-panel": true
+          "show-panel": true,
+          "required": true
         },
         {
           "panel": "path",
@@ -10815,7 +11163,12 @@
             "pathc"
           ],
           "linear-only": true,
-          "description": "path: snack spots (one Farthy snack per point). pathb: rat spawn points. pathc: rat waypoints (random points they wander to). Needs the billy subtype (vanilla keys all three as 'path' keyframes 0/1/2)."
+          "description": "path: snack spots (one Farthy snack per point). pathb: rat spawn points. pathc: rat waypoints (random points they wander to). Needs the billy subtype (vanilla keys all three as 'path' keyframes 0/1/2).",
+          "path_help": {
+            "path": "Snack spots. (one Farthy snack per point)",
+            "pathb": "Rats spawn points",
+            "pathc": "Rats waypoints (random points they wander to)"
+          }
         },
         {
           "panel": "actor-link",
@@ -10835,10 +11188,20 @@
     },
     {
       "etype": "pelican",
+      "edited": "pelican",
+      "sounds": [
+        "pelican-flap",
+        "pelican-gulp"
+      ],
       "label": "Pelican",
-      "category": "Hidden",
+      "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_pelican_return", "label": "Return time (s)", "type": "float", "default": 20.0, "min": 0.5, "lump": {"key": "return-time", "type": "float"}, "write_if": "always", "note": "After the spit: how long it flies (from-nest path) before diving back for the cell. Vanilla 20."},{"key": "og_pelican_camera", "label": "Dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The first dive when Jak comes near, looking at the pelican (vanilla camera-215). None: the normal camera.", "lump": {"key": "dive-camera", "type": "string"}}, {"key": "og_pelican_spit_camera", "label": "Spit camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The spit, looking at the cell as it's thrown. None: the vanilla cutscene camera (turned with the pelican).", "lump": {"key": "spit-camera", "type": "string"}}, {"key": "og_pelican_diveb_camera", "label": "Second dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The second dive (dive-b) and its way back to the nest, looking at the pelican. None: the normal camera.", "lump": {"key": "dive-b-camera", "type": "string"}}, {"key": "og_pelican_spit_pos", "label": "Spit spot (empty)", "type": "object_ref", "default": "", "note": "Where the spat-out cell lands; the pelican turns to it. None: 10 m ahead of the pelican.", "lump": {"key": "spit-pos", "type": "vector", "fallback": "forward", "fallback_m": 10.0}}]
+        },
         {
           "panel": "game-task",
           "description": "beach-pelican: the cell in its nest / the one it drops."
@@ -10849,7 +11212,34 @@
         },
         {
           "panel": "path",
-          "required": true
+          "required": [
+            "path",
+            "dive",
+            "to-nest",
+            "from-nest",
+            "dive-b",
+            "to-nest-b",
+            "run-away"
+          ],
+          "paths": [
+            "path",
+            "dive",
+            "to-nest",
+            "from-nest",
+            "dive-b",
+            "to-nest-b",
+            "run-away"
+          ],
+          "description": "path: Circling route; the dive starts around points 7-8. dive: Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8. to-nest: Fly from the first dive back to the nest. from-nest: Leave the nest after Jak hits it. dive-b: Dive to recover the dropped cell. to-nest-b: Return to the nest after the second dive. run-away: Escape route after the task is complete.",
+          "path_help": {
+            "path": "Circling route; the dive starts around points 7-8.",
+            "dive": "Swoop to grab the cell; waits at path parameter 4.5 and grabs near 3.8.",
+            "to-nest": "Fly from the first dive back to the nest.",
+            "from-nest": "Leave the nest after Jak hits it.",
+            "dive-b": "Dive to recover the dropped cell.",
+            "to-nest-b": "Return to the nest after the second dive.",
+            "run-away": "Escape route after the task is complete."
+          }
         }
       ],
       "code": [
@@ -10863,10 +11253,11 @@
       "tpage_group": "Beach",
       "glb": "levels/beach/pelican-lod0.glb",
       "shape": "SINGLE_ARROW",
-      "description": "Hidden: reads 8 separate 'path' lumps keyed by time 1-8 (circle, dives, to / from nest, spit); the exporter writes one path, so every flight uses the same curve. Also wants camera entity camera-215."
+      "description": "Edited (subtypes/pelican.gc): circles on path holding the cell; when Jak comes within 20 m of the cell, the dive camera shows it diving (dive path) and grabbing the cell, then flying to its nest (to-nest). Hit it on the nest: it turns to the Spit spot empty, spits the cell there and flies off (from-nest, then dives again on dive-b / to-nest-b). Take the cell: it flies away on run-away and is gone. Place the actor at the nest. Cameras: dive, spit (looks at the cell) and second dive; none = the normal camera (spit: the vanilla cutscene camera). Vanilla keyed the flights as 'path keyframes 1-8, spat in a fixed direction and used camera-215 and a fixed camera spot."
     },
     {
       "etype": "seagull",
+      "sounds": ["seagull-takeoff"],
       "label": "Seagull",
       "category": "Hidden",
       "parent": "process-drawable",
@@ -10882,6 +11273,7 @@
     },
     {
       "etype": "robber",
+      "sounds": ["robber-flap"],
       "label": "Robber (Lurker)",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -11490,6 +11882,7 @@
     },
     {
       "etype": "citb-rotatebox",
+      "sounds": ["assembly-moves"],
       "label": "Rotate Box (Citadel)",
       "category": "Platforms",
       "parent": "citb-base-plat",
@@ -11500,6 +11893,7 @@
     },
     {
       "etype": "citb-donut",
+      "sounds": ["rotate-plat"],
       "label": "Spinning Donut (Citadel)",
       "category": "Platforms",
       "parent": "citb-base-plat",
@@ -11539,6 +11933,7 @@
     },
     {
       "etype": "silodoor",
+      "sounds": ["silo-moves"],
       "label": "Silo Door (Final Boss)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11584,6 +11979,8 @@
     },
     {
       "etype": "citb-exit-plat",
+      "needs_trigger": true,
+      "sounds": ["elev-loop"],
       "label": "Exit Platform (Citadel)",
       "category": "Platforms",
       "parent": "plat-button",
@@ -11626,6 +12023,7 @@
     },
     {
       "etype": "plat-button",
+      "sounds": ["elev-loop"],
       "label": "Button Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11876,6 +12274,7 @@
     },
     {
       "etype": "snow-log",
+      "sounds": ["snow-spat-long", "snow-spat-short"],
       "label": "Snow Log",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -11929,6 +12328,7 @@
     },
     {
       "etype": "snow-spatula",
+      "sounds": ["snow-spat-long", "snow-spat-short"],
       "label": "Snow Spatula",
       "category": "Platforms",
       "parent": "baseplat",
@@ -11959,6 +12359,7 @@
     },
     {
       "etype": "plat-flip",
+      "sounds": ["plat-flip"],
       "label": "Flip Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12016,6 +12417,8 @@
     },
     {
       "etype": "wall-plat",
+      "needs_trigger": {"unless_field": "og_sync_period"},
+      "sounds": ["wall-plat"],
       "label": "Wall Platform",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12125,6 +12528,7 @@
     },
     {
       "etype": "teetertotter",
+      "sounds": ["teeter-launch", "teeter-rockland", "teeter-wobble"],
       "label": "Teeter Totter",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12147,6 +12551,7 @@
     },
     {
       "etype": "wedge-plat",
+      "sounds": ["plat-flip"],
       "label": "Wedge Platform",
       "category": "Platforms",
       "parent": "baseplat",
@@ -12201,6 +12606,7 @@
     },
     {
       "etype": "wedge-plat-outer",
+      "sounds": ["plat-flip"],
       "label": "Wedge Platform Outer",
       "category": "Platforms",
       "parent": "wedge-plat",
@@ -12567,6 +12973,7 @@
     },
     {
       "etype": "citb-drop-plat",
+      "needs_trigger": true,
       "label": "Drop Platforms (citadel)",
       "description": "A grid of coloured platforms that rise when it gets a 'trigger (link it from a button or a trigger volume) and drop after a while or when Jak walks away; stepping on one colour drops the others of that colour. Set the grid size and each platform in the Platforms panel (random when not set).",
       "category": "Platforms",
@@ -12709,12 +13116,13 @@
     {
       "etype": "cavegem",
       "label": "Cave Gem",
-      "category": "Interactive Objects",
+      "category": "Visuals",
       "parent": "process-drawable",
       "art_group": "cavegem-ag.go",
       "tpage_group": "Village3",
       "code": "miners.o",
-      "is_prop": true
+      "is_prop": true,
+      "glb":"levels/village3/cavegem-lod0.glb"
     },
     {
       "etype": "minecartsteel",
@@ -12784,6 +13192,7 @@
     },
     {
       "etype": "spike",
+      "sounds": ["magma-rock"],
       "label": "Spike",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -12940,6 +13349,7 @@
     },
     {
       "etype": "lurkerm-tall-sail",
+      "sounds": ["lurkerm-squeak"],
       "label": "Sail (Tall)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12952,6 +13362,7 @@
     },
     {
       "etype": "precurbridge",
+      "sounds": ["pc-bridge"],
       "label": "Precursor Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -12964,6 +13375,7 @@
     },
     {
       "etype": "grottopole",
+      "sounds": ["dirt-crumble", "grotto-pole-hit"],
       "label": "Grotto Pole",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -13016,6 +13428,7 @@
     },
     {
       "etype": "windmill-one",
+      "sounds": ["gears-rumble"],
       "label": "Windmill Cog Wheel",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -13139,6 +13552,8 @@
     },
     {
       "etype": "windmill-sail",
+      "sounds": ["mayors-gears"],
+      "edited": "windmill-sail",
       "label": "Mayor's Windmill Sail",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13148,10 +13563,15 @@
       "glb": "levels/village1/windmill-sail-lod0.glb",
       "shape": "CUBE",
       "is_prop": true,
-      "description": "Windmill sail turning around its local X axis: once every 300 s until vanilla jungle-lurkerm is closed, then once every 16 s with wind particles and the mayors-gears sound."
+      "description": "Edited (subtypes/windmill-sail.gc): sail turning around its local X axis, slow (Slow turn, vanilla 300 s) or fast (Fast turn, vanilla 16 s, with wind particles and the Fast sound). Fast when: always, once its task is complete, or until it is (vanilla: once jungle-lurkerm was done).",
+      "panels": [
+        {"panel": "game-task", "description": "For Fast when: once / until this task is complete."},
+        {"panel": "custom-fields", "fields": [{"key": "og_windmill_mode", "label": "Fast when", "type": "enum", "default": "always", "write_if": "always", "lump": {"key": "mode", "type": "int32"}, "choices": [{"value": "always", "label": "Always", "lump_value": 0}, {"value": "after", "label": "Once its task is complete", "lump_value": 1}, {"value": "until", "label": "Until its task is complete", "lump_value": 2}], "note": "No task: always fast."}, {"key": "og_windmill_slow", "label": "Slow turn (s)", "type": "float", "default": 300.0, "min": 1.0, "lump": {"key": "slow-period", "type": "float"}, "write_if": "always", "note": "Seconds per turn when slow (vanilla 300)."}, {"key": "og_windmill_fast", "label": "Fast turn (s)", "type": "float", "default": 16.0, "min": 1.0, "lump": {"key": "fast-period", "type": "float"}, "write_if": "always", "note": "Seconds per turn when fast (vanilla 16)."}, {"key": "og_windmill_sound", "label": "Fast sound", "type": "string", "default": "mayors-gears", "lump": {"key": "fast-sound", "type": "string"}, "write_if": "if_non_empty", "note": "Sound while fast (vanilla mayors-gears, village1 bank). Empty: its own ambient sound only."}]}
+      ]
     },
     {
       "etype": "mayorgears",
+      "edited": "mayorgears",
       "label": "Mayor's Gears",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13229,6 +13649,8 @@
     },
     {
       "etype": "villageb-ogreboss",
+      "edited": "villageb-ogreboss",
+      "sounds": ["v2ogre-roar1", "v2ogre-roar2"],
       "label": "Klaww (Village 2 Backdrop)",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13241,13 +13663,15 @@
       "glb": "levels/village2/ogreboss-village2-lod0.glb",
       "shape": "CUBE",
       "panels": [
+        {"panel": "game-task", "description": "He's removed once this task is complete. None: he stays."},
+        {"panel": "custom-fields", "fields": [{"key": "og_v2ogre_nothrow", "label": "No throws", "type": "bool", "default": false, "lump": {"key": "no-throw", "type": "uint32"}, "write_if": "if_true", "note": "He only idles, no boulders."}]},
         {
           "panel": "scale",
           "export": false,
           "description": "Ignored: always drawn at 0.65 scale."
         }
       ],
-      "description": "Distant Klaww: idles, taunts and throws flaming boulders along baked flight paths (splash / wall-hit effects at fixed points of the throw). Solid. Removed once vanilla village2-levitator is closed."
+      "description": "Edited (subtypes/villageb-ogreboss.gc): Klaww on the cliff, idling and throwing boulders that follow the vanilla throw animations from his spot (they splash about where they land in vanilla, relative to him). Removed once his task is complete (none: he stays; vanilla: once village2-levitator was done). Throws can be turned off."
     },
     {
       "etype": "seaweed",
@@ -13264,6 +13688,7 @@
     },
     {
       "etype": "pistons",
+      "edited": "pistons",
       "label": "Gondola Pistons",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -13275,7 +13700,11 @@
       "reacts_to": [
         "update"
       ],
-      "description": "Volcanic Crater generator pistons. Static until it gets 'update (vanilla: from the gondola); then spins up with sound and stays running, also after a reload."
+      "description": "Edited (subtypes/pistons.gc): gondola machinery pistons. Start running on 'update (the gondola once usable), 'trigger (a button's notify list ...), once its task is complete, or from the start (Running). Saved once on.",
+      "panels": [
+        {"panel": "game-task", "description": "They start once this task is complete. None: not by task."},
+        {"panel": "custom-fields", "fields": [{"key": "og_pistons_on", "label": "Running", "type": "bool", "default": false, "lump": {"key": "start-on", "type": "uint32"}, "write_if": "if_true", "note": "Running from the start (vanilla: only once the gondola starts them)."}]}
+      ]
     },
     {
       "etype": "lavashortcut",
@@ -13308,8 +13737,9 @@
     },
     {
       "etype": "energyhub",
+      "edited": "energyhub",
       "label": "Energy Hub",
-      "category": "Hidden",
+      "category": "Interactive Objects",
       "parent": "process-drawable",
       "code": "lavatube-energy.o",
       "art_group": [
@@ -13320,8 +13750,12 @@
       "tpage_group": "Lavatube",
       "glb": "levels/lavatube/energyhub-lod0.glb",
       "shape": "CUBE",
-      "description": "Hidden: crashed the game in a custom level. Spinning hub (place it on an energybase) that spawns 5 arms, each holding an energy ball; shoot all balls with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and resolves the vanilla lavatube-balls task. Every frame it also holds alt-actor 2's model at 1.25x X/Z scale and fades lava palette 2. Likely crash cause: when fewer than 3 alt-actors are linked, the empty slots are 0 (not #f). Each frame the hub then writes through that 0 pointer.",
+      "description": "Edited (subtypes/energyhub.gc): spinning hub (place it on an energybase) with 5 arms holding energy balls; shoot them all with yellow eco to stop it. Then it sends 'stop to alt-actor 0, 'open to alt-actor 1 and closes the actor's task (Game Task panel; none = vanilla lavatube-balls) need-resolution. Alt-actor 2: held at 1.25x X/Z scale while the hub turns, lava palette faded. Works with fewer than 3 alt-actors (vanilla crashed). Its arms still check vanilla lavatube-balls: closed in the save = no balls. Doors: link the first as its next-actor, each door the next one; once all balls are shot they open for good.",
       "panels": [
+        {
+          "panel": "game-task",
+          "description": "Closed (need-resolution) when all balls are shot."
+        },
         {
           "panel": "actor-link",
           "slots": [
@@ -13330,29 +13764,27 @@
               "slot": 0,
               "label": "Base (sent 'stop when all balls are shot)",
               "accepts": [
-                "energybase",
-                "any"
+                "energybase"
               ],
               "required": true
             },
             {
               "lump_key": "alt-actor",
               "slot": 1,
-              "label": "Door (sent 'open when all balls are shot)",
+              "label": "Lava (model held at 1.25x X/Z scale every frame; must be a drawable actor)",
               "accepts": [
-                "energydoor",
-                "any"
+                "water-anim"
               ],
               "required": true
             },
             {
-              "lump_key": "alt-actor",
-              "slot": 2,
-              "label": "Lava (model held at 1.25x X/Z scale every frame; must be a drawable actor)",
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "First door (doors chain on with their next-actor)",
               "accepts": [
-                "any"
+                "energydoor"
               ],
-              "required": true
+              "required": false
             }
           ]
         }
@@ -13549,6 +13981,7 @@
     },
     {
       "etype": "swamp-rock",
+      "sounds": ["rock-break"],
       "label": "Swamp Rock",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13582,6 +14015,7 @@
     },
     {
       "etype": "gondola",
+      "edited": "gondola",
       "label": "Gondola",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13590,7 +14024,11 @@
       "code": "village3-obs.o",
       "glb": "levels/village3/gondola-lod0.glb",
       "shape": "CUBE",
-      "description": "Its rotation is forced to identity. Riding it plays the vanilla cable animations and loads vanilla village3 / snow (a vanilla teleport); use is gated on vanilla village3-button."
+      "description": "Edited (subtypes/gondola.gc): stand in it and press circle to ride its cutscene up / down (Jak ends where the vanilla cutscene ends: the top station sits where it does in vanilla, relative to the gondola). Usable once its task is complete (none: always) and Jak has the Cells; continue points at the top / bottom (optional). Once usable it sends 'update to its alt-actors (pistons, cables). No Keira hints, level loads, music or save in its cutscenes; no load boundaries during the ride.",
+      "panels": [
+        {"panel": "game-task", "description": "Usable once this task is complete. None: always."},
+        {"panel": "custom-fields", "fields": [{"key": "og_gondola_cells", "label": "Cells needed", "type": "int", "default": 0, "min": 0, "lump": {"key": "cells", "type": "float"}, "write_if": "always", "note": "Power cells Jak needs to use it (vanilla 71 or the next gate). 0: any."}, {"key": "og_gondola_cont_top", "label": "Continue at the top", "type": "string", "default": "", "lump": {"key": "continue-top", "type": "string"}, "write_if": "if_non_empty", "note": "Continue point name set when it arrives at the top. Empty: unchanged."}, {"key": "og_gondola_cont_bot", "label": "Continue at the bottom", "type": "string", "default": "", "lump": {"key": "continue-bottom", "type": "string"}, "write_if": "if_non_empty", "note": "Continue point name set when it arrives at the bottom. Empty: unchanged."}]}
+      ]
     },
     {
       "etype": "swamp-blimp",
@@ -13614,7 +14052,7 @@
               "slot": 0,
               "label": "Precursor arm (sinks when the blimp leaves; never holds it down)",
               "accepts": [
-                "any"
+                "precursor-arm"
               ],
               "required": true
             },
@@ -13673,6 +14111,7 @@
     },
     {
       "etype": "swamp-spike",
+      "sounds": ["pole-down", "pole-up"],
       "label": "Swamp Spike (Swamp)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -13708,6 +14147,7 @@
     },
     {
       "etype": "whirlpool",
+      "sounds": ["whirlpool"],
       "label": "Whirlpool",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -13770,6 +14210,7 @@
     },
     {
       "etype": "warp-gate-switch",
+      "edited": "warp-gate-switch",
       "label": "Warp Gate Switch",
       "category": "Buttons and Doors",
       "parent": "basebutton",
@@ -13814,6 +14255,7 @@
     },
     {
       "etype": "balloonlurker",
+      "sounds": ["propeller"],
       "label": "Balloon Lurker",
       "category": "Enemies",
       "parent": "rigid-body-platform",
@@ -13872,6 +14314,7 @@
     },
     {
       "etype": "darkvine",
+      "sounds": ["darkvine-down", "darkvine-move", "darkvine-up"],
       "label": "Dark Vine",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -13886,6 +14329,7 @@
     },
     {
       "etype": "junglefish",
+      "sounds": ["lurkerfish-bite", "lurkerfish-dies"],
       "label": "Jungle Fish",
       "category": "Enemies",
       "parent": "nav-enemy",
@@ -13916,6 +14360,7 @@
     },
     {
       "etype": "peeper",
+      "sounds": ["get-mole", "mole-taunt-1", "mole-taunt-2"],
       "label": "Peeper",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -13932,6 +14377,7 @@
     },
     {
       "etype": "cave-trap",
+      "sounds": ["bab-spid-dies", "bab-spid-roar", "eggs-hatch", "spider-step"],
       "label": "Cave Spider Trap",
       "description": "Spawns baby spiders from its linked eggs / vents (max 8 alive) when Jak is within 46 m. The spiders use the trap's own nav-mesh, path (patrol) and activation settings. Also sets the vanilla cave-spider-tunnel task hint.",
       "category": "Enemies",
@@ -14006,6 +14452,7 @@
     },
     {
       "etype": "swamp-rat-nest",
+      "sounds": ["lurkrat-bounce", "lurkrat-dies", "lurkrat-idle", "lurkrat-notice", "lurkrat-walk", "rat-celebrate"],
       "label": "Swamp Rat Nest",
       "category": "Enemies",
       "parent": "process-drawable",
@@ -14020,6 +14467,7 @@
       ],
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "panels": [
+        {"panel": "drop", "show-panel": true},
         {
           "panel": "path",
           "required": true,
@@ -14444,6 +14892,7 @@
     },
     {
       "etype": "ecoventrock",
+      "sounds": ["cannon-shot"],
       "panels": [
         {
           "panel": "game-task",
@@ -14924,6 +15373,7 @@
     },
     {
       "etype": "ogre-isle",
+      "sounds": ["rock-in-lava"],
       "label": "Klaww Platform Isles",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -15004,6 +15454,7 @@
     },
     {
       "etype": "ogre-step",
+      "sounds": ["rock-in-lava"],
       "label": "Klaww Step",
       "category": "Platforms",
       "parent": "ogre-plat",
@@ -15106,6 +15557,7 @@
     },
     {
       "etype": "citb-disc",
+      "sounds": ["rotate-plat"],
       "label": "Disc Platform (citadel)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15309,6 +15761,7 @@
     },
     {
       "etype": "darkecobarrel",
+      "sounds": ["lav-dark-eco"],
       "label": "Dark Eco Barrel",
       "category": "Obstacles",
       "parent": "darkecobarrel-base",
@@ -15407,6 +15860,7 @@
     },
     {
       "etype": "caveelevator",
+      "sounds": ["cavelevator"],
       "label": "Cave Elevator",
       "description": "Moves along a baked animation (the path can't be edited). Cycling modes use the Sync period; the one-way mode starts when Jak touches it.",
       "category": "Platforms",
@@ -15476,6 +15930,7 @@
     },
     {
       "etype": "caveflamepots",
+      "sounds": ["hot-flame"],
       "label": "Cave Flame Pots",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -15559,6 +16014,7 @@
     },
     {
       "etype": "cavetrapdoor",
+      "sounds": ["trapdoor"],
       "label": "Cave Trap Door",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15592,8 +16048,10 @@
     },
     {
       "etype": "cavespatula",
+      "edited": "cavespatula",
+      "sounds": ["spatula"],
       "label": "Cave Spatula Plat",
-      "category": "Hidden",
+      "category": "Platforms",
       "parent": "process-drawable",
       "art_group": "cavespatula-darkcave-ag.go",
       "tpage_group": "Maincave",
@@ -15623,10 +16081,11 @@
       ],
       "glb": "levels/darkcave/cavespatula-darkcave-lod0.glb",
       "shape": "CUBE",
-      "description": "Only works in a level named darkcave: elsewhere its art group (cavespatula) doesn't exist and it goes into an art error. Hidden from the spawn list."
+      "description": "Edited (subtypes/cavespatula.gc): the spinning cave spatula platform, always with its Dark Cave look (vanilla used it only in a level named darkcave; the other model has no art group, so it went into an art error)."
     },
     {
       "etype": "cavespatulatwo",
+      "sounds": ["spatula"],
       "label": "Cave Spatula Plat 2",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15661,6 +16120,7 @@
     },
     {
       "etype": "ogre-bridge",
+      "sounds": ["bridge-appears", "bridge-breaks", "rock-in-lava"],
       "label": "Klaww Drawbridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15722,6 +16182,7 @@
     },
     {
       "etype": "mis-bone-bridge",
+      "sounds": ["bonebridge-fall"],
       "label": "Bone Bridge",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -15777,6 +16238,7 @@
     },
     {
       "etype": "breakaway-mid",
+      "sounds": ["falling-bones"],
       "label": "Breakaway Plat",
       "category": "Platforms",
       "parent": "breakaway",
@@ -15845,6 +16307,7 @@
     },
     {
       "etype": "water-anim",
+      "edited": "water-anim",
       "label": "Water Anim",
       "category": "Hidden",
       "parent": "water-vol",
@@ -16863,6 +17326,7 @@
     },
     {
       "etype": "springbox",
+      "sounds": ["trampoline"],
       "label": "Bounce Pad (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -16898,6 +17362,7 @@
     },
     {
       "etype": "spiderwebs",
+      "sounds": ["web-tramp"],
       "label": "Spider Web (Bouncer)",
       "category": "Platforms",
       "parent": "process-drawable",
@@ -16933,6 +17398,7 @@
     },
     {
       "etype": "oracle",
+      "edited": "oracle",
       "label": "Oracle",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -16943,14 +17409,45 @@
       "shape": "SINGLE_ARROW",
       "panels": [
         {
-          "panel": "task-gated"
+          "panel": "game-task",
+          "description": "The right eye's cell (traded first)."
         },
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_talk_height", "label": "Talk height (m)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "talk-height", "type": "meters"}, "write_if": "always", "note": "The talk prompt shows while Jak is at most this high above its base (vanilla: about 2 m). Below it: always."},
+            {
+              "key": "og_oracle_speeches",
+              "label": "Speeches",
+              "type": "enum",
+              "default": "village1",
+              "write_if": "always",
+              "lump": {
+                "key": "speeches",
+                "type": "int32"
+              },
+              "choices": [
+                {
+                  "value": "village1",
+                  "label": "Sandover",
+                  "lump_value": 1
+                },
+                {
+                  "value": "village2",
+                  "label": "Rock Village",
+                  "lump_value": 2
+                },
+                {
+                  "value": "village3",
+                  "label": "Volcanic Crater",
+                  "lump_value": 3
+                }
+              ],
+              "note": "Which vanilla oracle's cutscenes it plays."
+            },
             {
               "key": "og_alt_task",
-              "label": "Linked Task",
+              "label": "Left eye task",
               "type": "task",
               "default": "none",
               "lump": {
@@ -16958,16 +17455,47 @@
                 "type": "enum-uint32",
                 "format": "(game-task {value})"
               },
-              "write_if": "if_not_none"
+              "write_if": "if_not_none",
+              "note": "The left eye's cell (traded second). None: one eye only."
+            },
+            {
+              "key": "og_oracle_price",
+              "label": "Price (orbs)",
+              "type": "int",
+              "default": 120,
+              "min": 0,
+              "lump": {
+                "key": "price",
+                "type": "float"
+              },
+              "write_if": "always",
+              "note": "Orbs per cell (vanilla 120)."
+            },
+            {
+              "key": "og_oracle_talk",
+              "label": "Talk distance (m)",
+              "type": "float",
+              "default": 8.0,
+              "min": 1.0,
+              "lump": {
+                "key": "talk-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "note": "How near Jak has to be for the talk prompt."
             }
-          ],
-          "show-panel": false
+          ]
         }
       ],
-      "description": "Two power cells in its eyes for 120 orbs each: its game task = right eye, Linked Task = left eye (use a vanilla pair: village1/2/3-oracle-money1 + -money2). Trading works, but its speeches are picked by the vanilla village Jak is in, so in a custom level it plays no cutscene (only its idle) before giving the cell."
+      "description": "Edited (subtypes/oracle.gc): two power cells in its eyes, each traded for Price orbs: right eye = its game task, left eye = its Left eye task (custom tasks work: no stage layout needed). Talking: the introduction once, then a trade when Jak has the orbs, else the reminder. Speeches picks which vanilla oracle's cutscenes it plays. Talk distance for the prompt.",
+      "preview_extra": [
+        {"glb": "levels/common/fuel-cell-lod0.glb", "offset": [-1.36, 0.0, 7.31]},
+        {"glb": "levels/common/fuel-cell-lod0.glb", "offset": [1.36, 0.0, 7.31]}
+      ]
     },
     {
       "etype": "minershort",
+      "edited": "minershort",
       "label": "Miner (Short)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -16996,6 +17524,7 @@
     },
     {
       "etype": "minertall",
+      "sounds": ["bird"],
       "label": "Miner (Tall)",
       "category": "NPCs",
       "parent": "process-taskable",
@@ -17394,6 +17923,8 @@
     },
     {
       "etype": "swampgate",
+      "needs_trigger": true,
+      "sounds": ["pole-down", "pole-up"],
       "label": "Swamp Spike Gate",
       "category": "Buttons and Doors",
       "parent": "swamp-spike",
@@ -17426,6 +17957,7 @@
     },
     {
       "etype": "gorge-pusher",
+      "edited": "gorge-pusher",
       "label": "Gorge Pusher (rolling)",
       "category": "Buttons and Doors",
       "parent": "pusher-base",
@@ -17433,8 +17965,9 @@
       "art_group": "pusher-ag.go",
       "glb": "levels/rolling/pusher-lod0.glb",
       "shape": "CUBE",
-      "description": "Pusher held at its blocking position until the vanilla rolling-race task is introduced, then at its open position.",
+      "description": "Edited (subtypes/gorge-pusher.gc): a pusher that moves from max-frame to min-frame once its task's need-introduction stage is closed (the actor's task; none = vanilla rolling-race, the race introduction).",
       "panels": [
+        {"panel": "game-task", "description": "It moves once this task's need-introduction is closed."},
         {
           "panel": "custom-fields",
           "fields": [
@@ -17470,6 +18003,7 @@
     },
     {
       "etype": "sunken-pipegame",
+      "edited": "sunken-pipegame",
       "label": "Pipe Game (sunken)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17482,27 +18016,16 @@
         "sunkencam-ag.go"
       ],
       "glb": "levels/sunken/generic-button-lod0.glb",
+      "offset": [0.0, -1.25, 0.28],
+      "preview_copies": [[-7.5, -1.25, 0.28], [7.5, -1.25, 0.28]],
       "shape": "CUBE",
-      "description": "Spawns 3 buttons at fixed world offsets (-7.5 / 0 / +7.5 m X, +1.25 m Z). Path points 1-6 = jar / far pairs for left, middle, right. Prizes are vanilla: sunken-pipe cell + 2 sunken-buzzer flies.",
-      "panels": [
-        {
-          "panel": "path",
-          "show-panel": true,
-          "required": true,
-          "min-points": 6
-        },
-        {
-          "panel": "game-task",
-          "description": "Its need-hint is closed when a prize is caught."
-        },
-        {
-          "panel": "movie-pos",
-          "description": "Entries [1] [2]: where the two scout flies play their pickup."
-        }
-      ]
+      "description": "Edited (subtypes/sunken-pipegame.gc): 3 buttons (-7.5 / 0 / +7.5 m X, +1.25 m Z from the actor); each carries its prize along its own path (path / pathb / pathc) in its travel time, then Jak has its timeout to catch it before it's carried back. Per button: the prize (power cell / scout fly / orb / eco, with task and fly index), a camera looking at the prize on the way out, timeout and travel time. Won prizes stay won (cells / flies collected, others saved).",
+      "panels": [{"panel": "custom-fields", "fields": [{"key": "og_pipe_item_a", "label": "Prize", "type": "enum", "default": "fuel-cell", "choices": [{"value": "fuel-cell", "label": "Power cell", "lump_value": 6}, {"value": "buzzer", "label": "Scout fly", "lump_value": 8}, {"value": "money", "label": "Orb", "lump_value": 5}, {"value": "eco-yellow", "label": "Yellow eco", "lump_value": 1}, {"value": "eco-red", "label": "Red eco", "lump_value": 2}, {"value": "eco-blue", "label": "Blue eco", "lump_value": 3}, {"value": "eco-green", "label": "Green eco", "lump_value": 4}], "lump": {"key": "prize-type-a", "type": "int32"}, "write_if": "always", "group": "pipe-a", "group_label": "Left button (path)", "group_note": "Its prize floats at path's first point and is carried to its last."}, {"key": "og_pipe_amount_a", "label": "Eco amount", "type": "float", "default": 1.0, "min": 0.0, "lump": {"key": "prize-amount-a", "type": "float"}, "write_if": "always", "group": "pipe-a", "note": "Eco prizes only."}, {"key": "og_pipe_task_a", "label": "Task", "type": "task", "default": "none", "lump": {"key": "prize-task-a", "type": "enum-uint32"}, "group": "pipe-a", "note": "A power cell's / scout fly's task. None: the actor's task."}, {"key": "og_pipe_fly_a", "label": "Scout fly index", "type": "int", "default": 0, "min": 0, "max": 6, "lump": {"key": "prize-fly-a", "type": "int32"}, "write_if": "always", "group": "pipe-a", "note": "Scout fly prizes only: which of the task's flies."}, {"key": "og_pipe_cam_a", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "camera-a", "type": "string"}, "group": "pipe-a", "note": "Looks at the prize while it's carried out (Jak waits). None: the normal camera."}, {"key": "og_pipe_timeout_a", "label": "Timeout (s)", "type": "float", "default": 25.0, "min": 1.0, "lump": {"key": "timeout-a", "type": "float"}, "write_if": "always", "group": "pipe-a", "note": "How long Jak has to catch it at the end of its path."}, {"key": "og_pipe_travel_a", "label": "Travel time (s)", "type": "float", "default": 8.5, "min": 0.1, "lump": {"key": "travel-a", "type": "float"}, "write_if": "always", "group": "pipe-a", "note": "How long it takes along its path (both ways)."}, {"key": "og_pipe_item_b", "label": "Prize", "type": "enum", "default": "buzzer", "choices": [{"value": "fuel-cell", "label": "Power cell", "lump_value": 6}, {"value": "buzzer", "label": "Scout fly", "lump_value": 8}, {"value": "money", "label": "Orb", "lump_value": 5}, {"value": "eco-yellow", "label": "Yellow eco", "lump_value": 1}, {"value": "eco-red", "label": "Red eco", "lump_value": 2}, {"value": "eco-blue", "label": "Blue eco", "lump_value": 3}, {"value": "eco-green", "label": "Green eco", "lump_value": 4}], "lump": {"key": "prize-type-b", "type": "int32"}, "write_if": "always", "group": "pipe-b", "group_label": "Middle button (pathb)", "group_note": "Its prize floats at pathb's first point and is carried to its last."}, {"key": "og_pipe_amount_b", "label": "Eco amount", "type": "float", "default": 1.0, "min": 0.0, "lump": {"key": "prize-amount-b", "type": "float"}, "write_if": "always", "group": "pipe-b", "note": "Eco prizes only."}, {"key": "og_pipe_task_b", "label": "Task", "type": "task", "default": "none", "lump": {"key": "prize-task-b", "type": "enum-uint32"}, "group": "pipe-b", "note": "A power cell's / scout fly's task. None: the actor's task."}, {"key": "og_pipe_fly_b", "label": "Scout fly index", "type": "int", "default": 0, "min": 0, "max": 6, "lump": {"key": "prize-fly-b", "type": "int32"}, "write_if": "always", "group": "pipe-b", "note": "Scout fly prizes only: which of the task's flies."}, {"key": "og_pipe_cam_b", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "camera-b", "type": "string"}, "group": "pipe-b", "note": "Looks at the prize while it's carried out (Jak waits). None: the normal camera."}, {"key": "og_pipe_timeout_b", "label": "Timeout (s)", "type": "float", "default": 15.0, "min": 1.0, "lump": {"key": "timeout-b", "type": "float"}, "write_if": "always", "group": "pipe-b", "note": "How long Jak has to catch it at the end of its path."}, {"key": "og_pipe_travel_b", "label": "Travel time (s)", "type": "float", "default": 5.5, "min": 0.1, "lump": {"key": "travel-b", "type": "float"}, "write_if": "always", "group": "pipe-b", "note": "How long it takes along its path (both ways)."}, {"key": "og_pipe_item_c", "label": "Prize", "type": "enum", "default": "buzzer", "choices": [{"value": "fuel-cell", "label": "Power cell", "lump_value": 6}, {"value": "buzzer", "label": "Scout fly", "lump_value": 8}, {"value": "money", "label": "Orb", "lump_value": 5}, {"value": "eco-yellow", "label": "Yellow eco", "lump_value": 1}, {"value": "eco-red", "label": "Red eco", "lump_value": 2}, {"value": "eco-blue", "label": "Blue eco", "lump_value": 3}, {"value": "eco-green", "label": "Green eco", "lump_value": 4}], "lump": {"key": "prize-type-c", "type": "int32"}, "write_if": "always", "group": "pipe-c", "group_label": "Right button (pathc)", "group_note": "Its prize floats at pathc's first point and is carried to its last."}, {"key": "og_pipe_amount_c", "label": "Eco amount", "type": "float", "default": 1.0, "min": 0.0, "lump": {"key": "prize-amount-c", "type": "float"}, "write_if": "always", "group": "pipe-c", "note": "Eco prizes only."}, {"key": "og_pipe_task_c", "label": "Task", "type": "task", "default": "none", "lump": {"key": "prize-task-c", "type": "enum-uint32"}, "group": "pipe-c", "note": "A power cell's / scout fly's task. None: the actor's task."}, {"key": "og_pipe_fly_c", "label": "Scout fly index", "type": "int", "default": 1, "min": 0, "max": 6, "lump": {"key": "prize-fly-c", "type": "int32"}, "write_if": "always", "group": "pipe-c", "note": "Scout fly prizes only: which of the task's flies."}, {"key": "og_pipe_cam_c", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "camera-c", "type": "string"}, "group": "pipe-c", "note": "Looks at the prize while it's carried out (Jak waits). None: the normal camera."}, {"key": "og_pipe_timeout_c", "label": "Timeout (s)", "type": "float", "default": 15.0, "min": 1.0, "lump": {"key": "timeout-c", "type": "float"}, "write_if": "always", "group": "pipe-c", "note": "How long Jak has to catch it at the end of its path."}, {"key": "og_pipe_travel_c", "label": "Travel time (s)", "type": "float", "default": 4.5, "min": 0.1, "lump": {"key": "travel-c", "type": "float"}, "write_if": "always", "group": "pipe-c", "note": "How long it takes along its path (both ways)."}]}, {"panel": "path", "show-panel": true, "required": ["path", "pathb", "pathc"], "paths": ["path", "pathb", "pathc"], "description": "path / pathb / pathc: the left / middle / right button's prize route: it floats at the first point and is carried to the last when its button is pressed.", "path_help": {"path": "Left button: prize start (first point) to end (last point).", "pathb": "Middle button: prize start (first point) to end (last point).", "pathc": "Right button: prize start (first point) to end (last point)."}}, {"panel": "game-task", "description": "Its need-hint is closed when a prize reaches the end of its path; also the task of prizes with Task none."}, {"panel": "movie-pos", "description": "Entries [0] [1] [2]: the left / middle / right prize's pickup spot (a scout fly: where its task's cell jumps)."}]
+
     },
     {
       "etype": "snow-bumper",
+      "edited": "snow-bumper",
       "label": "Snow Bumper",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17510,7 +18033,7 @@
       "art_group": "snow-bumper-ag.go",
       "glb": "levels/snow/snow-bumper-lod0.glb",
       "shape": "CUBE",
-      "description": "Shoves Jak within 5 m; stomp it to switch it off. Chain bumpers with next / prev: the last one down gives its task's cell.",
+      "description": "Edited (subtypes/snow-bumper.gc): knock all the linked bumpers down (next / prev actor chain); the last one gives the task's cell. Its progress (which bumper gives the cell, the need-hint it closes) is in its own task (vanilla: snow-bumpers).",
       "panels": [
         {
           "panel": "game-task"
@@ -17570,6 +18093,10 @@
               "group": "bump"
             }
           ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing)."
         }
       ]
     },
@@ -17628,6 +18155,7 @@
     },
     {
       "etype": "snow-switch",
+      "edited": "snow-switch",
       "label": "Snow Fort Switch",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17638,7 +18166,7 @@
       ],
       "glb": "levels/snow/snow-switch-lod0.glb",
       "shape": "CUBE",
-      "description": "Holds its task's cell (unless vanilla snow-ball is done); taking it sends 'notice to the linked actors (fort gate). Its camera is at a fixed vanilla position.",
+      "description": "Edited (subtypes/snow-switch.gc): holds its task's cell; taking it presses the switch, which sends 'notice to its linked actors (the fort gate). Already pressed when its own task is complete (vanilla: when snow-ball was). No gear camera (vanilla flew one to fixed Snowy Mountain coordinates).",
       "panels": [
         {
           "panel": "game-task"
@@ -17657,11 +18185,21 @@
               "required": true
             }
           ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing). With no Empty, use the switch top at the actor origin.",
+          "default_height": 0.0
         }
       ]
     },
     {
       "etype": "snow-fort-gate",
+      "edited": "snow-fort-gate",
+      "sounds": [
+        "lodge-close",
+        "lodge-door-mov"
+      ],
       "label": "Snow Fort Gate",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17669,7 +18207,52 @@
       "art_group": "snow-fort-gate-ag.go",
       "glb": "levels/snow/snow-fort-gate-lod0.glb",
       "shape": "CUBE",
-      "description": "Opens on 'notice (snow fort switch): slides 34.5 m down and 8 m along world +Z whatever its rotation. Starts open if the vanilla snow-ball task is done."
+      "description": "Edited (subtypes/snow-fort-gate.gc): opens when it gets 'notice (link the snow switch to it). While closed, Daxter's hint plays near it and closes its task's need-hint (Game Task panel; vanilla snow-fort). Open from the start once the 'Open when complete' task is done (vanilla: snow-ball).",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_fort_open_task",
+              "label": "Open when complete",
+              "type": "task",
+              "default": "none",
+              "note": "Already open when this task is complete (vanilla snow-ball). None: closed until the switch.",
+              "lump": {
+                "key": "open-task",
+                "type": "enum-uint32"
+              }
+            }
+          ]
+        },
+        {
+          "panel": "game-task",
+          "description": "Its need-hint stage is closed by the hint near the closed gate."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Previous switch / gate",
+              "accepts": [
+                "any"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next gate",
+              "accepts": [
+                "snow-fort-gate"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
     },
     {
       "etype": "snow-eggtop",
@@ -17692,6 +18275,7 @@
     },
     {
       "etype": "energydoor",
+      "edited": "energydoor",
       "label": "Energy Door (lavatube)",
       "category": "Buttons and Doors",
       "parent": "process-drawable",
@@ -17699,8 +18283,9 @@
       "art_group": "energydoor-ag.go",
       "glb": "levels/lavatube/energydoor-lod0.glb",
       "shape": "CUBE",
-      "description": "Blocks from its +X side until its task is resolved, an energy hub sends 'open, or the linked door is open. Always passable from -X.",
+      "description": "Edited (subtypes/energydoor.gc): open while Jak comes from its -X side; once he's 15 m past it (+X) it closes behind him until it's solved, then opens. Solved: its own task resolved (if set), or opened for good by the energy hub whose next-actor chain it's in (hub -> door -> door ...) once all balls are shot. Wait for a hub off and no task: always open. 110 m back on the -X side it closes again and reopens within 100 m (vanilla).",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_door_hub", "label": "Wait for a hub", "type": "bool", "default": true, "lump": {"key": "hubbed", "type": "uint32"}, "write_if": "if_true", "note": "No task: closed behind Jak until an energy hub (next-actor chain) opens it. Off: always open."}]},
         {
           "panel": "game-task",
           "description": "Opens once this task is past need-resolution."
@@ -17708,6 +18293,15 @@
         {
           "panel": "actor-link",
           "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Next door (opened with this one by the hub)",
+              "accepts": [
+                "energydoor"
+              ],
+              "required": false
+            },
             {
               "lump_key": "alt-actor",
               "slot": 0,
@@ -17814,6 +18408,7 @@
     },
     {
       "etype": "accordian",
+      "sounds": ["accordian-pump"],
       "label": "Accordion Machine",
       "category": "Visuals",
       "parent": "process-drawable",
@@ -17922,6 +18517,7 @@
     },
     {
       "etype": "balloon",
+      "sounds": ["cool-balloon"],
       "label": "Balloon",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -17999,6 +18595,7 @@
     },
     {
       "etype": "logtrap",
+      "sounds": ["logtrap1", "logtrap2"],
       "label": "Log Trap (jungle)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18160,23 +18757,22 @@
     },
     {
       "etype": "snow-ball",
+      "edited": "snow-ball",
       "label": "Snow Ball (Snowy)",
-      "category": "Hidden",
+      "category": "Obstacles",
       "parent": "process",
       "panels": [
-        {
-          "panel": "path",
-          "required": true
-        }
+        {"panel": "path", "required": ["path"], "paths": ["path", "pathb"], "description": "path: a ball track (it starts there; first point under the ground looks best, it rises out). pathb (optional): a second track, balls pick one at random."}
       ],
       "art_group": "snow-ball-ag.go",
       "glb": "levels/snow/snow-ball-lod0.glb",
       "code": "snow-ball.o",
       "tpage_group": "Snow",
-      "description": "Needs two paths keyed at 1.0 and 2.0 and placed above 200 m (it shrinks below that). Not supported by the exporter yet: the .jsonc holds one 'path' per name."
+      "description": "Edited (subtypes/snow-ball.gc): rolling snow balls spawned every 1.5 - 5.5 s on path, or at random on path / pathb (never three times the same in a row). A ball rises out of the ground over the first 5 % of its track, bounces until 90 %, shrinks over the last 15 m and goes at the end. Hitting Jak knocks him aside. Vanilla keyed its two tracks as 'path keyframes 1 / 2 and shrank balls below 200 m height; it timed spawns around where its two tracks crossed (custom tracks: only the spawn delay spaces them)."
     },
     {
       "etype": "keg-conveyor",
+      "sounds": ["keg-conveyor"],
       "label": "Keg Conveyor (misty)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18200,10 +18796,12 @@
     },
     {
       "etype": "swamp-tetherrock",
+      "edited": "swamp-tetherrock",
       "label": "Swamp Tether Rock",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_tether_rock_camera", "label": "Rock camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "Looks at the rock as it breaks (vanilla camera-18x). None: the normal camera.", "lump": {"key": "rock-camera", "type": "string"}}, {"key": "og_tether_arm_camera", "label": "Arm camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "After the last rock: looks at the blimp's arm sinking. None: the normal camera.", "lump": {"key": "arm-camera", "type": "string"}}, {"key": "og_tether_blimp_rp", "label": "Blimp rope point", "type": "int", "default": 8, "min": 0, "max": 15, "note": "Which point of the blimp its rope ties to (vanilla rocks: 10, 6, 7, 9).", "lump": {"key": "blimp-rp", "type": "int32"}, "write_if": "always"}]},
         {
           "panel": "game-task",
           "description": "Task this actor is tied to (its saved state, the cell it gives)."
@@ -18230,10 +18828,12 @@
       "art_group": "swamp-tetherrock-ag.go",
       "tpage_group": "Village2",
       "code": "swamp-blimp.o",
-      "description": "Only works with the vanilla swamp-tether-1..4 tasks: when broken it looks up the vanilla 'camera-18x' entities for that task (missing ones crash), and counts breaks in vanilla swamp-tether-1."
+      "glb": "levels/village2/swamp-tetherrock-lod0.glb",
+      "description": "Edited (subtypes/swamp-tetherrock.gc): shoot it with yellow eco; it gives its task's cell and lets go of the blimp. Its cameras and rope point come from Actor Settings (vanilla: from its vanilla swamp-tether-1..4 task, crashing on missing camera-18x entities)."
     },
     {
       "etype": "citb-firehose",
+      "sounds": ["eco-torch"],
       "label": "Fire Hose (citadel)",
       "category": "Obstacles",
       "parent": "process-drawable",
@@ -18268,15 +18868,78 @@
     },
     {
       "etype": "fishermans-boat",
+      "edited": "fishermans-boat",
+      "sounds": [
+        "boat-engine"
+      ],
       "label": "Fisherman's Boat",
-      "category": "Hidden",
+      "category": "Platforms",
       "parent": "rigid-body-platform",
       "art_group": "fishermans-boat-ag.go",
       "tpage_group": "Village1",
       "code": "fishermans-boat.o",
-      "is_prop": true,
       "shape": "CUBE",
-      "description": "Not usable in a custom level: its position is forced to the vanilla Sandover dock and riding it loads vanilla misty / village1 and their continue points."
+      "description": "Edited (subtypes/fishermans-boat.gc): stand on the boat and press circle: it sails along path (Jak held on deck), docks at its end; ride it back along pathb (none: path backwards). It sits at the path's height (put the path on the waterline) and bobs. Ride camera: a linked CAMERA_ during the ride (none: the normal camera). Ride cutscene: the vanilla ride cutscenes play instead (out: to Misty, back: to Sandover; their own camera), then the boat is at the leg's end. Usable once its task is complete (none: always). Which end it's at is saved. Vanilla was forced to the Sandover dock, floated on the ocean and loaded misty / village1.",
+      "panels": [
+        {
+          "panel": "path",
+          "required": [
+            "path"
+          ],
+          "paths": [
+            "path",
+            "pathb"
+          ],
+          "description": "path: the ride out (the boat starts at its first point; on the waterline). pathb (optional): the ride back, from path's end to its start. None: path backwards."
+        },
+        {
+          "panel": "game-task",
+          "description": "Usable once this task is complete (vanilla jungle-fishgame). None: always."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_boat_camera",
+              "label": "Ride camera",
+              "type": "object_ref",
+              "pick": "CAMERA",
+              "default": "",
+              "note": "The camera during the ride. None: the normal camera.",
+              "lump": {
+                "key": "ride-camera",
+                "type": "string"
+              }
+            },
+            {
+              "key": "og_boat_movie",
+              "label": "Ride cutscene",
+              "type": "bool",
+              "default": false,
+              "note": "Play the vanilla ride cutscenes (to Misty / to Sandover) instead of sailing; the boat ends at the leg's end.",
+              "lump": {
+                "key": "ride-movie",
+                "type": "uint32"
+              },
+              "write_if": "if_true"
+            },
+            {
+              "key": "og_boat_speed",
+              "label": "Speed (m/s)",
+              "type": "float",
+              "default": 15.0,
+              "min": 1.0,
+              "max": 60.0,
+              "note": "Top speed; it eases in and out over the first and last 8 m.",
+              "lump": {
+                "key": "speed",
+                "type": "meters"
+              }
+            }
+          ]
+        }
+      ],
+      "glb": "levels/village1/fishermans-boat-lod0.glb"
     },
     {
       "etype": "scarecrow-a",
@@ -18324,6 +18987,7 @@
     },
     {
       "etype": "harvester",
+      "sounds": ["rope-stretch"],
       "label": "Eco Harvester",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18352,6 +19016,8 @@
     },
     {
       "etype": "periscope",
+      "edited": "periscope",
+      "sounds": ["beam-connect", "eco-tower-rise", "eco-tower-stop", "site-moves"],
       "label": "Periscope (eco beam)",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18360,8 +19026,10 @@
       "tpage_group": "Jungle",
       "glb": "levels/jungle/periscope-base-lod0.glb",
       "shape": "CUBE",
-      "description": "Rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece. On target it becomes complete, which powers the next one. A whole chain also advances vanilla jungle-lurkerm.",
+      "description": "Edited (subtypes/periscope.gc): rises when the previous beam piece activates it; once powered Jak grabs the grips and aims at the next piece (or the Beam end empty). On target it becomes complete, which powers the next one, then the Beam shot plays: none, a linked camera, or a vanilla junglecam shot from the Shot origin empty. Its task's need-reminder closes once every periscope of the chain is on target (vanilla jungle-lurkerm).",
       "panels": [
+        {"panel": "movie-pos", "description": "[0] Beam cell: where the cell jumps to and plays its pickup."},
+        {"panel": "game-task", "description": "Its need-reminder closes once every periscope of the chain is on target."},
         {
           "panel": "actor-link",
           "slots": [
@@ -18370,7 +19038,8 @@
               "slot": 0,
               "label": "Beam source (powered once it is complete)",
               "accepts": [
-                "any"
+                "reflector-origin",
+                "periscope"
               ],
               "required": true
             },
@@ -18380,8 +19049,7 @@
               "label": "Aim at (its position + its Height)",
               "accepts": [
                 "periscope",
-                "reflector-end",
-                "any"
+                "reflector-end"
               ],
               "required": false
             }
@@ -18390,6 +19058,12 @@
         {
           "panel": "custom-fields",
           "fields": [
+            {"key": "og_peri_hold", "label": "Hold time (s)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "hold-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long it stays on the next piece after Camera time; the beam cell pops out as it starts."},
+            {"key": "og_peri_cam_time", "label": "Camera time (s)", "type": "float", "default": 2.0, "min": 0.1, "lump": {"key": "camera-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long its look moves from this periscope's top to the next piece (then Hold time on it)."},
+            {"key": "og_peri_cell", "label": "Beam cell", "type": "bool", "default": false, "lump": {"key": "beam-cell", "type": "uint32"}, "write_if": "if_true", "note": "Its task's cell pops out at the beam's end near the end of the shot and jumps to movie-pos 0."},
+            {"key": "og_peri_shot", "label": "Beam shot", "type": "enum", "default": "none", "variant": true, "choices": [{"value": "none", "label": "None (Jak is free at once)", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "tower1", "label": "Vanilla shot: tower1", "lump_value": 2, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower2", "label": "Vanilla shot: tower2", "lump_value": 3, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower3", "label": "Vanilla shot: tower3", "lump_value": 4, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower4", "label": "Vanilla shot: tower4", "lump_value": 5, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower5", "label": "Vanilla shot: tower5", "lump_value": 6, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "beamcam", "label": "Vanilla shot: beamcam", "lump_value": 7, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}], "lump": {"key": "beam-shot", "type": "int32"}, "write_if": "always", "note": "Played once it's on target. Vanilla shots are positioned from the Shot origin."},
+            {"key": "og_peri_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "beam-camera", "type": "string"}, "note": "Beam shot = Linked camera."},
+            {"key": "og_peri_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla shots: where they're played from. None: the periscope."},
             {
               "key": "og_peri_height",
               "label": "Height (m)",
@@ -18432,45 +19106,17 @@
               "group": "peri-rot"
             },
             {
-              "key": "og_peri_ex",
-              "label": "X (m)",
-              "type": "float",
-              "default": 0.0,
+              "key": "og_peri_beam_end",
+              "label": "Beam end (no next actor)",
+              "type": "object_ref",
+              "default": "",
               "lump": {
                 "key": "alt-vector",
-                "type": "meters",
-                "slot": 0
+                "type": "vector",
+                "fallback": "forward",
+                "fallback_m": 100.0
               },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end",
-              "group_label": "Beam End (no next actor)",
-              "group_note": "Game axes."
-            },
-            {
-              "key": "og_peri_ey",
-              "label": "Up (m)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "alt-vector",
-                "type": "meters",
-                "slot": 1
-              },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end"
-            },
-            {
-              "key": "og_peri_ez",
-              "label": "Z (m, = -Blender Y)",
-              "type": "float",
-              "default": 0.0,
-              "lump": {
-                "key": "alt-vector",
-                "type": "meters",
-                "slot": 2
-              },
-              "write_if": "if_any_nonzero",
-              "group": "peri-end"
+              "note": "Where the beam is aimed when nothing is linked as next actor. None: 100 m ahead of the periscope (vanilla crashed without one)."
             }
           ]
         }
@@ -18478,13 +19124,15 @@
     },
     {
       "etype": "reflector-origin",
+      "edited": "reflector-origin",
       "label": "Eco Beam Origin",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "code": "jungle-mirrors.o",
       "shape": "PLAIN_AXES",
-      "description": "Draws the eco beam to its blocker until that is complete, then activates the first periscope.",
+      "description": "Edited (subtypes/reflector-origin.gc): draws the eco beam to the Beam target empty (none: its blocker, at the blocker's height, the mirror's top) until the blocker is complete, then activates the first periscope.",
       "panels": [
+        {"panel": "custom-fields", "fields": [{"key": "og_origin_target", "label": "Beam target (empty)", "type": "object_ref", "default": "", "lump": {"key": "beam-target", "type": "vector"}, "note": "Where the beam ends while blocked. None: the blocker (the mirror: its top, 12 m up)."}]},
         {
           "panel": "actor-link",
           "slots": [
@@ -18493,7 +19141,7 @@
               "slot": 0,
               "label": "Blocker (the beam starts once it is complete)",
               "accepts": [
-                "any"
+                "reflector-mirror"
               ],
               "required": true
             },
@@ -18539,6 +19187,8 @@
     },
     {
       "etype": "race-ring",
+      "sounds": ["close-racering"],
+      "edited": "race-ring",
       "label": "Race Ring",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18781,6 +19431,7 @@
     },
     {
       "etype": "citb-generator",
+      "sounds": ["sagecage-open"],
       "label": "Citadel Generator",
       "category": "Interactive Objects",
       "parent": "process-drawable",
@@ -18849,6 +19500,1638 @@
       ]
     },
     {
+      "etype": "citb-stair-plat",
+      "label": "Rising Stair Platform (Citadel)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "citb-plat.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "plat-citb-ag.go",
+      "tpage_group": "Citadel",
+      "glb": "levels/citadel/plat-citb-lod0.glb",
+      "edited": "citb-stair-plat",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited: waits hidden below its placed height, then rises on trigger. Rise distance and delay are configurable. Activation is saved per actor; it stays raised after reload. No vanilla sage tasks or world-height fade.",
+      "panels": [
+        {"panel": "game-task", "description": "It rises once this task is complete, and starts risen when it already is. None: only 'trigger raises it."},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_stair_rise",
+              "label": "Rise distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "rise-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.1
+            },
+            {
+              "key": "og_stair_delay",
+              "label": "Delay (s)",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "delay",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "silostep",
+      "label": "Silo Step (Misty)",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "misty-warehouse.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "silostep-ag.go",
+      "tpage_group": "Misty",
+      "glb": "levels/misty/silostep-lod0.glb",
+      "edited": "silostep",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger",
+        "trigger-rise"
+      ],
+      "sounds": [
+        "arena-steps"
+      ],
+      "description": "Edited: trigger raises the step and its linked following steps, without a fixed camera or the Misty Warehouse task. Distance is a fraction of its built-in animation, not meters. Raised position is saved per actor.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_silostep_distance",
+              "label": "Rise animation fraction",
+              "type": "float",
+              "default": 1.0,
+              "lump": {
+                "key": "distance",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.0,
+              "max": 1.0
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "next-actor",
+              "slot": 0,
+              "label": "Following steps (trigger-rise)",
+              "accepts": [
+                "silostep"
+              ],
+              "required": false,
+              "allow-multiple": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "reflector-mirror",
+      "sounds": ["mirror-smash"],
+      "label": "Breakable Beam Mirror",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "jungle-mirrors.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "reflector-mirror-ag.go",
+      "tpage_group": "Jungle",
+      "glb": "levels/jungle/reflector-mirror-lod0.glb",
+      "edited": "reflector-mirror",
+      "sounds": [
+        "eco-beam",
+        "mirror-smash"
+      ],
+      "description": "Edited: punch or spin to break the mirror and send stop to its linked receivers (e.g. accordian). Beam endpoint comes from an empty. Broken state is saved. No fixed camera, vanilla task updates, or forced player grab.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_mirror_height", "type": "float", "default": 12.0, "show-field": false, "lump": {"key": "height-info", "type": "meters"}, "write_if": "always"},
+            {
+              "key": "og_mirror_beam_end",
+              "label": "Beam endpoint (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "beam-end",
+                "type": "vector"
+              },
+              "note": "None: endpoint at the mirror origin."
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Receives stop when broken",
+              "accepts": [
+                "any"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "citadelcam",
+      "label": "Trigger Relay (Citadel)",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "battlecontroller.o",
+        "citadel-part.o",
+        "citadel-obs.o"
+      ],
+      "shape": "CUBE",
+      "edited": "citadelcam",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited invisible relay: receives trigger and forwards it to every linked receiver after birthing it. Optional completed-task gate. No vanilla sage requirements or Citadel camera movie. Cyclic relay links must be avoided.",
+      "panels": [
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_relay_gate_task",
+              "label": "Require completed task",
+              "type": "task",
+              "default": "none",
+              "lump": {
+                "key": "gate-task",
+                "type": "enum-uint32"
+              },
+              "write_if": "if_not_none"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "trigger-actor",
+              "slot": 0,
+              "label": "Trigger receivers",
+              "accepts": [
+                "event:trigger"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "precursor-arm",
+      "label": "Precursor Tether Arm",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "swamp-blimp.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "precursor-arm-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/precursor-arm-lod0.glb",
+      "edited": "precursor-arm",
+      "reacts_to": [
+        "arm-sink-evt"
+      ],
+      "description": "Edited: the swamp blimp tether arm, positioned at its base/waterline. Works without a task. On arm-sink-evt it sinks, closing its assigned task if any. Splash height follows its placed origin. Link from the blimp first, followed by tether rocks.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "lrocklrg",
+      "label": "Seagull Avalanche Rock",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "beach-rocks.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "lrocklrg-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/lrocklrg-lod0.glb",
+      "edited": "lrocklrg",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger",
+        "loading"
+      ],
+      "description": "Edited (subtypes/lrocklrg.gc): the seagull flock rock. Loading preloads its falling animation; trigger plays it without the vanilla camera or player grab. No task: saves the fallen state. Assigned task: gives its cell at movie-pos 0 (else at the fallen rock) and restores it if uncollected on reload. Uses the original large avalanche animation; leave room around it.",
+      "panels": [
+        {"panel": "movie-pos", "description": "[0] where its cell appears and plays its pickup. Not set: at the fallen rock."},
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "allpontoons",
+      "label": "Pontoon Cutscene Helper",
+      "category": "Visuals",
+      "parent": "process-drawable",
+      "code": [
+        "village2-obs.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "allpontoons-ag.go",
+      "tpage_group": "Village2",
+      "glb": "levels/village2/allpontoons-lod0.glb",
+      "description": "Vanilla helper, intentionally invisible while idle. Its clone event takes a process handle and plays the pontoon cutscene animation; it is not a walkable pontoon bridge. The edited warrior no longer requires this helper. Use pontoon actors for a bridge.",
+      "panels": [
+        {
+          "panel": "game-task"
+        }
+      ]
+    },
+    {
+      "etype": "helix-button",
+      "label": "Helix Floor Button",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "helix-button-ag.go",
+      "tpage_group": "Sunkenb",
+      "glb": "levels/sunkenb/helix-button-lod0.glb",
+      "offset": [
+        0,
+        0,
+        -6.5
+      ],
+      "edited": "helix-button",
+      "sounds": [
+        "prec-button8",
+        "maindoor"
+      ],
+      "description": "Edited (subtypes/helix-button.gc): standing on it depresses the button, closes the linked door and starts the linked rising eco (or the water that has it as Started by). Its task's cell floats above it like vanilla and is given when Jak presses it (at movie-pos 0). No forced player movement. Button and door reset on level reload.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "movie-pos",
+          "description": "[0] where its cell plays its pickup. Not set: at Jak."
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Rising eco (or link this button as the water's Started by)",
+              "accepts": [
+                "helix-water"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 1,
+              "label": "Slide door",
+              "accepts": [
+                "helix-slide-door"
+              ],
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "helix-slide-door",
+      "label": "Helix Slide Door",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "helix-slide-door-ag.go",
+      "tpage_group": "Sunkenb",
+      "glb": "levels/sunkenb/helix-slide-door-lod0.glb",
+      "edited": "helix-slide-door",
+      "needs_trigger": true,
+      "reacts_to": [
+        "trigger"
+      ],
+      "description": "Edited: starts open and closes on trigger (from a Helix Button or trigger volume). Starts open again after level reload. Does not overwrite the vanilla Sunken singleton."
+    },
+    {
+      "etype": "helix-water",
+      "label": "Rising Helix Dark Eco",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "launcherdoor.o",
+        "helix-water.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "water-anim-sunken-dark-eco-ag.go",
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/water-anim-sunken-dark-eco-helix-room-lod0.glb",
+      "edited": "helix-water",
+      "reacts_to": [
+        "trigger",
+        "reset",
+        "notify"
+      ],
+      "texture_sources": [
+        "sunken",
+        "sunkenb"
+      ],
+      "texture_note": "the dark eco surface",
+      "description": "Edited (subtypes/helix-water.gc): rises from the placed height by Rise distance after a trigger, a press of its Started by button or one linking it. Speed: fixed, or by Jak's height above the surface (vanilla: slow when he's close, catching up when he's far; checkboxes). Any water look and liquid (dark eco: the vanilla dark eco pool). Reset / notify lowers it at once. Link a volume covering the whole rise; set its initial surface to the placed height. Linked submerged actors are removed once the surface passes them (babak / launcher die; eco vents and others vanish), in any order.",
+      "panels": [
+        {
+          "panel": "volume"
+        },
+        {
+          "panel": "water",
+          "fields": [
+            {
+              "key": "og_water_liquid",
+              "default": "dark-eco"
+            },
+            {
+              "key": "og_water_ripple",
+              "default": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_helix_look_variant",
+              "label": "Look",
+              "type": "enum",
+              "default": "look-40",
+              "variant": true,
+              "lump": {},
+              "write_if": "always",
+              "choices": [
+                {
+                  "value": "look-40",
+                  "id": "look-40",
+                  "label": "40 (Sunken) (dark eco) sunken-dark-eco-helix-room (vanilla helix)",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-helix-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 40,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "flat",
+                  "id": "flat",
+                  "label": "No look (invisible, flat surface)",
+                  "props": {
+                    "og_water_look": -1
+                  }
+                },
+                {
+                  "value": "look-0",
+                  "id": "look-0",
+                  "label": "0 (Sunken) (electric water, on / off) sunken-big-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-big-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 0,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-1",
+                  "id": "look-1",
+                  "label": "1 (Sunken) (electric water, on / off) sunken-first-room-from-entrance",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-first-room-from-entrance-lod0.glb",
+                  "props": {
+                    "og_water_look": 1,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-2",
+                  "id": "look-2",
+                  "label": "2 (Sunken) (electric water) sunken-qbert-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-qbert-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 2,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-3",
+                  "id": "look-3",
+                  "label": "3 (Sunken) (electric water, on / off) sunken-first-right-branch",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-first-right-branch-lod0.glb",
+                  "props": {
+                    "og_water_look": 3,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-4",
+                  "id": "look-4",
+                  "label": "4 (Sunken) (water) sunken-circular-with-bullys",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-circular-with-bullys-lod0.glb",
+                  "props": {
+                    "og_water_look": 4,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-5",
+                  "id": "look-5",
+                  "label": "5 (Sunken) (electric water, on / off) sunken-hall-with-one-whirlpool",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-with-one-whirlpool-lod0.glb",
+                  "props": {
+                    "og_water_look": 5,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-6",
+                  "id": "look-6",
+                  "label": "6 (Sunken) (electric water, on / off) sunken-hall-with-three-whirlpools",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-with-three-whirlpools-lod0.glb",
+                  "props": {
+                    "og_water_look": 6,
+                    "og_water_liquid": "electric-toggle",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-7",
+                  "id": "look-7",
+                  "label": "7 (Sunkenb) (electric water) sunken-start-of-helix-slide",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-start-of-helix-slide-lod0.glb",
+                  "props": {
+                    "og_water_look": 7,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-8",
+                  "id": "look-8",
+                  "label": "8 (Sunken) (electric water) sunken-room-above-exit-chamber",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-room-above-exit-chamber-lod0.glb",
+                  "props": {
+                    "og_water_look": 8,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-9",
+                  "id": "look-9",
+                  "label": "9 (Sunken) (electric water) sunken-hall-before-big-room",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-hall-before-big-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 9,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-10",
+                  "id": "look-10",
+                  "label": "10 (Sunken) (dark eco) sunken-dark-eco-qbert",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-qbert-lod0.glb",
+                  "props": {
+                    "og_water_look": 10,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-11",
+                  "id": "look-11",
+                  "label": "11 (Sunken) (electric water) sunken-short-piece",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-short-piece-lod0.glb",
+                  "props": {
+                    "og_water_look": 11,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-12",
+                  "id": "look-12",
+                  "label": "12 (Sunken) (electric water) sunken-big-room-upper-water",
+                  "art_group": "water-anim-sunken-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-big-room-upper-water-lod0.glb",
+                  "props": {
+                    "og_water_look": 12,
+                    "og_water_liquid": "electric",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "sunken-water.o"
+                  ],
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-13",
+                  "id": "look-13",
+                  "label": "13 (Sunken) (dark eco) sunken-dark-eco-platform-room",
+                  "art_group": "water-anim-sunken-dark-eco-ag.go",
+                  "glb": "levels/sunken/water-anim-sunken-dark-eco-platform-room-lod0.glb",
+                  "props": {
+                    "og_water_look": 13,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "sunken",
+                    "sunkenb"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-14",
+                  "id": "look-14",
+                  "label": "14 (Maincave) (water) maincave-water-with-crystal",
+                  "art_group": "water-anim-maincave-water-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-water-with-crystal-lod0.glb",
+                  "props": {
+                    "og_water_look": 14,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "maincave-obs.o"
+                  ],
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-15",
+                  "id": "look-15",
+                  "label": "15 (Maincave) (dark eco) maincave-center-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-center-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 15,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-16",
+                  "id": "look-16",
+                  "label": "16 (Maincave) (dark eco) maincave-lower-right-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-lower-right-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 16,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-17",
+                  "id": "look-17",
+                  "label": "17 (Maincave) (dark eco) maincave-mid-right-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-mid-right-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 17,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-18",
+                  "id": "look-18",
+                  "label": "18 (Maincave) (dark eco) maincave-lower-left-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-lower-left-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 18,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-19",
+                  "id": "look-19",
+                  "label": "19 (Maincave) (dark eco) maincave-mid-left-pool",
+                  "art_group": "water-anim-maincave-ag.go",
+                  "glb": "levels/maincave/water-anim-maincave-mid-left-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 19,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "maincave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-20",
+                  "id": "look-20",
+                  "label": "20 (Robocave) (dark eco) robocave-main-pool",
+                  "art_group": "water-anim-robocave-ag.go",
+                  "glb": "levels/robocave/water-anim-robocave-main-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 20,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "robocave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-21",
+                  "id": "look-21",
+                  "label": "21 (Misty) (mud) misty-mud-by-arena",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-by-arena-lod0.glb",
+                  "props": {
+                    "og_water_look": 21,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-22",
+                  "id": "look-22",
+                  "label": "22 (Misty) (mud) misty-mud-above-skeleton",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skeleton-lod0.glb",
+                  "props": {
+                    "og_water_look": 22,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-23",
+                  "id": "look-23",
+                  "label": "23 (Misty) (mud) misty-mud-behind-skeleton",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-behind-skeleton-lod0.glb",
+                  "props": {
+                    "og_water_look": 23,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-24",
+                  "id": "look-24",
+                  "label": "24 (Misty) (mud) misty-mud-above-skull-back",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skull-back-lod0.glb",
+                  "props": {
+                    "og_water_look": 24,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-25",
+                  "id": "look-25",
+                  "label": "25 (Misty) (mud) misty-mud-above-skull-front",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-above-skull-front-lod0.glb",
+                  "props": {
+                    "og_water_look": 25,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-26",
+                  "id": "look-26",
+                  "label": "26 (Misty) (mud) misty-mud-other-near-skull",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-other-near-skull-lod0.glb",
+                  "props": {
+                    "og_water_look": 26,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-27",
+                  "id": "look-27",
+                  "label": "27 (Misty) (mud) misty-mud-near-skull",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-near-skull-lod0.glb",
+                  "props": {
+                    "og_water_look": 27,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-28",
+                  "id": "look-28",
+                  "label": "28 (Misty) (mud) misty-mud-under-spine",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-under-spine-lod0.glb",
+                  "props": {
+                    "og_water_look": 28,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-29",
+                  "id": "look-29",
+                  "label": "29 (Misty) (mud) misty-mud-by-dock",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-by-dock-lod0.glb",
+                  "props": {
+                    "og_water_look": 29,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-30",
+                  "id": "look-30",
+                  "label": "30 (Misty) (mud) misty-mud-island-near-dock",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-island-near-dock-lod0.glb",
+                  "props": {
+                    "og_water_look": 30,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-31",
+                  "id": "look-31",
+                  "label": "31 (Misty) (mud) misty-mud-lonely-island",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-mud-lonely-island-lod0.glb",
+                  "props": {
+                    "og_water_look": 31,
+                    "og_water_liquid": "mud",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "mud.o"
+                  ]
+                },
+                {
+                  "value": "look-32",
+                  "id": "look-32",
+                  "label": "32 (Misty) (dark eco) misty-dark-eco-pool",
+                  "art_group": "water-anim-misty-ag.go",
+                  "glb": "levels/misty/water-anim-misty-dark-eco-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 32,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "misty"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-33",
+                  "id": "look-33",
+                  "label": "33 (Ogre) (lava) ogre-lava",
+                  "art_group": "water-anim-ogre-ag.go",
+                  "glb": "levels/ogre/water-anim-ogre-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 33,
+                    "og_water_liquid": "lava",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "ogre-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-34",
+                  "id": "look-34",
+                  "label": "34 (Jungle) (water) jungle-river",
+                  "art_group": "water-anim-jungle-ag.go",
+                  "glb": "levels/jungle/water-anim-jungle-river-lod0.glb",
+                  "props": {
+                    "og_water_look": 34,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "jungle-obs.o"
+                  ],
+                  "texture_sources": [
+                    "jungle"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-35",
+                  "id": "look-35",
+                  "label": "35 (Village3) (lava) village3-lava",
+                  "art_group": "water-anim-village3-ag.go",
+                  "glb": "levels/village3/water-anim-village3-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 35,
+                    "og_water_liquid": "lava",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village3-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-36",
+                  "id": "look-36",
+                  "label": "36 (Training) (water) training-lake",
+                  "art_group": "water-anim-training-ag.go",
+                  "glb": "levels/training/water-anim-training-lake-lod0.glb",
+                  "props": {
+                    "og_water_look": 36,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "training-obs.o"
+                  ],
+                  "texture_sources": [
+                    "training"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-37",
+                  "id": "look-37",
+                  "label": "37 (Darkcave) (water) darkcave-water-with-crystal",
+                  "art_group": "water-anim-darkcave-ag.go",
+                  "glb": "levels/darkcave/water-anim-darkcave-water-with-crystal-lod0.glb",
+                  "props": {
+                    "og_water_look": 37,
+                    "og_water_liquid": "water",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "maincave-obs.o"
+                  ],
+                  "texture_sources": [
+                    "darkcave"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-38",
+                  "id": "look-38",
+                  "label": "38 (Rolling) (deep water) rolling-water-back",
+                  "art_group": "water-anim-rolling-ag.go",
+                  "glb": "levels/rolling/water-anim-rolling-water-back-lod0.glb",
+                  "props": {
+                    "og_water_look": 38,
+                    "og_water_liquid": "water-swim-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "rolling-obs.o"
+                  ],
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-39",
+                  "id": "look-39",
+                  "label": "39 (Rolling) (deep water) rolling-water-front",
+                  "art_group": "water-anim-rolling-ag.go",
+                  "glb": "levels/rolling/water-anim-rolling-water-front-lod0.glb",
+                  "props": {
+                    "og_water_look": 39,
+                    "og_water_liquid": "water-swim-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "rolling-obs.o"
+                  ],
+                  "texture_sources": [
+                    "rolling"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-41",
+                  "id": "look-41",
+                  "label": "41 (Finalboss) (dark eco) finalboss-dark-eco-pool",
+                  "art_group": "water-anim-finalboss-ag.go",
+                  "glb": "levels/finalboss/water-anim-finalboss-dark-eco-pool-lod0.glb",
+                  "props": {
+                    "og_water_look": 41,
+                    "og_water_liquid": "dark-eco",
+                    "og_water_ripple": true
+                  },
+                  "texture_sources": [
+                    "finalboss"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-42",
+                  "id": "look-42",
+                  "label": "42 (Lavatube) (hot lava) lavatube-energy-lava",
+                  "art_group": "water-anim-lavatube-ag.go",
+                  "glb": "levels/lavatube/water-anim-lavatube-energy-lava-lod0.glb",
+                  "props": {
+                    "og_water_look": 42,
+                    "og_water_liquid": "lava-heat",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "lavatube-obs.o"
+                  ]
+                },
+                {
+                  "value": "look-43",
+                  "id": "look-43",
+                  "label": "43 (Village1) (shallow water) village1-rice-paddy",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-lod0.glb",
+                  "props": {
+                    "og_water_look": 43,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-44",
+                  "id": "look-44",
+                  "label": "44 (Village1) (shallow water) village1-fountain",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-fountain-lod0.glb",
+                  "props": {
+                    "og_water_look": 44,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-45",
+                  "id": "look-45",
+                  "label": "45 (Village1) (shallow water) village1-rice-paddy-mid",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-mid-lod0.glb",
+                  "props": {
+                    "og_water_look": 45,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-46",
+                  "id": "look-46",
+                  "label": "46 (Village1) (shallow water) village1-rice-paddy-top",
+                  "art_group": "water-anim-village1-ag.go",
+                  "glb": "levels/village1/water-anim-village1-rice-paddy-top-lod0.glb",
+                  "props": {
+                    "og_water_look": 46,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village1"
+                  ],
+                  "texture_note": "the look's water surface"
+                },
+                {
+                  "value": "look-47",
+                  "id": "look-47",
+                  "label": "47 (Village2) (shallow water) village2-bucket",
+                  "art_group": "water-anim-village2-ag.go",
+                  "glb": "levels/village2/water-anim-village2-bucket-lod0.glb",
+                  "props": {
+                    "og_water_look": 47,
+                    "og_water_liquid": "water-wade-only",
+                    "og_water_ripple": true
+                  },
+                  "code": [
+                    "village2-obs.o"
+                  ],
+                  "texture_sources": [
+                    "village2"
+                  ],
+                  "texture_note": "the look's water surface"
+                }
+              ],
+              "note": "The surface's look (and its liquid preset). Dark eco liquid: the vanilla dark eco pool; other liquids: plain water."
+            },
+            {
+              "key": "og_water_look",
+              "label": "Look index",
+              "type": "int",
+              "default": 40,
+              "show-field": false,
+              "lump": {
+                "key": "look",
+                "type": "int32"
+              },
+              "write_if": "if_nonneg"
+            },
+            {
+              "key": "og_helix_rise",
+              "label": "Rise distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "lump": {
+                "key": "rise-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.0
+            },
+            {
+              "key": "og_helix_speed",
+              "label": "Rise speed (m/s)",
+              "type": "float",
+              "default": 2.0,
+              "lump": {
+                "key": "rise-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.01,
+              "note": "The speed with both Jak-height options off (or the end an option is off for)."
+            },
+            {
+              "key": "og_helix_slow",
+              "label": "Slow down when Jak is close",
+              "type": "bool",
+              "default": true,
+              "lump_bit": {
+                "key": "speed-opts",
+                "type": "uint32",
+                "bit_value": 1
+              },
+              "group": "helix-speed",
+              "group_label": "Speed by Jak's height (vanilla)",
+              "group_note": "Jak at most Close distance above the surface: Slow speed; Far distance or more: Catch-up speed; a blend in between. Off: Rise speed there."
+            },
+            {
+              "key": "og_helix_catch",
+              "label": "Catch up when Jak is far",
+              "type": "bool",
+              "default": true,
+              "lump_bit": {
+                "key": "speed-opts",
+                "type": "uint32",
+                "bit_value": 2
+              },
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_slow_speed",
+              "label": "Slow speed (m/s)",
+              "type": "float",
+              "default": 0.875,
+              "min": 0.0,
+              "lump": {
+                "key": "slow-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_fast_speed",
+              "label": "Catch-up speed (m/s)",
+              "type": "float",
+              "default": 4.0,
+              "min": 0.0,
+              "lump": {
+                "key": "fast-speed",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_near",
+              "label": "Close distance (m)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.0,
+              "lump": {
+                "key": "near-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            },
+            {
+              "key": "og_helix_far",
+              "label": "Far distance (m)",
+              "type": "float",
+              "default": 20.0,
+              "min": 0.0,
+              "lump": {
+                "key": "far-dist",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "group": "helix-speed"
+            }
+          ]
+        },
+        {
+          "panel": "actor-link",
+          "slots": [
+            {
+              "lump_key": "prev-actor",
+              "slot": 0,
+              "label": "Started by (e.g. the helix button)",
+              "accepts": [
+                "helix-button"
+              ],
+              "required": false
+            },
+            {
+              "lump_key": "alt-actor",
+              "slot": 0,
+              "label": "Submerged actors (removed once the surface passes them)",
+              "accepts": [
+                "babak",
+                "ecovent",
+                "launcher"
+              ],
+              "required": false,
+              "allow-multiple": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "flutflutegg",
+      "sounds": ["egg-crack", "egg-hit", "sack-land"],
+      "label": "Flut Flut Egg",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "wobbler.o",
+        "beach-obs.o"
+      ],
+      "shape": "CUBE",
+      "art_group": "flutflutegg-ag.go",
+      "tpage_group": "Beach",
+      "glb": "levels/beach/flutflutegg-lod0.glb",
+      "edited": "flutflutegg",
+      "soft_linked_by": {"etype": "bird-lady-beach", "lump_key": "alt-actor", "unless": "og_egg_spill", "label": "no Bird Lady (Beach) links this egg and Spill cell is off: its cell never comes"},
+      "description": "Edited (subtypes/flutflutegg.gc): punch / spin it toward its Hatch position empty (none: the way it faces); after Push distance it falls, its task's need-reminder closes, and it cracks on landing. Then the Bird Lady (Beach) linking it plays the hatching cutscene and gives the cell, or with Spill cell the egg breaks open and its cell comes out (movie-pos 0, else at the egg). No fixed Beach camera or coordinates. No task: a standalone breakable egg.",
+      "panels": [
+        {"panel": "movie-pos", "description": "[0] Spill cell: where the cell comes out and plays its pickup. Not set: at the egg."},
+        {"panel": "custom-fields", "fields": [{"key": "og_egg_spill", "label": "Spill cell", "type": "bool", "default": false, "lump": {"key": "spill-cell", "type": "uint32"}, "write_if": "if_true", "note": "The egg breaks open on landing and its task's cell comes out (no Bird Lady needed)."}]},
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_egg_fall_distance",
+              "label": "Push distance before falling (m)",
+              "type": "float",
+              "default": 5.0,
+              "lump": {
+                "key": "fall-distance",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.01
+            },
+            {
+              "key": "og_egg_hatch_pos",
+              "label": "Hatch position (empty)",
+              "type": "object_ref",
+              "default": "",
+              "lump": {
+                "key": "hatch-pos",
+                "type": "vector"
+              },
+              "note": "Where it lands: it's pushed toward this point and restored here on reload. None: pushed the way it faces."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "gorge-start",
+      "label": "Race Start (custom course)",
+      "category": "Interactive Objects",
+      "parent": "process-drawable",
+      "code": [
+        "rolling-obs.o"
+      ],
+      "shape": "ARROWS",
+      "art_group": "rolling-start-ag.go",
+      "tpage_group": "Rolling",
+      "glb": "levels/rolling/rolling-start-whole-lod0.glb",
+      "edited": "gorge-start",
+      "reacts_to": [
+        "aborted"
+      ],
+      "description": "Edited: vanilla timer/record HUD with placed start position/facing and a linked finish empty. Both gates extend above their origin, so place at ground height. Cross start front to back to race; cross the finish facing its forward side. Requires an assigned task and finish empty; otherwise disabled. Beating the record closes the task need-reminder stage; use its NPC for the reward, or enable Direct cell reward to spawn at the finish and fly to Movie Position. Uncollected direct rewards respawn after reload. No vanilla abort planes. Return through start to restart, or send aborted to cancel.",
+      "panels": [
+        {
+          "panel": "game-task",
+          "fields": [
+            {
+              "key": "og_game_task",
+              "required": true
+            }
+          ]
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_race_finish",
+              "label": "Finish gate (empty)",
+              "type": "object_ref",
+              "default": "",
+              "required": true,
+              "lump": {
+                "key": "finish-pos",
+                "type": "vector",
+                "w": "yaw"
+              }
+            },
+            {
+              "key": "og_race_radius",
+              "label": "Gate half-width/height (m)",
+              "type": "float",
+              "default": 14.0,
+              "lump": {
+                "key": "gate-radius",
+                "type": "meters"
+              },
+              "write_if": "always",
+              "min": 0.1
+            },
+            {
+              "key": "og_race_record",
+              "label": "Initial record time (s)",
+              "type": "float",
+              "default": 45.0,
+              "lump": {
+                "key": "record-time",
+                "type": "float"
+              },
+              "write_if": "always",
+              "min": 0.1
+            },
+            {
+              "key": "og_race_direct_cell",
+              "label": "Direct cell reward",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "direct-cell",
+                "type": "uint32"
+              },
+              "write_if": "always"
+            }
+          ]
+        },
+        {
+          "panel": "movie-pos",
+          "description": "Optional cell destination and collection animation position. Set one Empty (position and facing)."
+        }
+      ]
+    },
+    {
+      "etype": "exit-chamber",
+      "sounds": [
+        "chamber-move",
+        "submerge",
+        "surface"
+      ],
+      "label": "Exit Chamber Ride",
+      "category": "Platforms",
+      "parent": "process-drawable",
+      "code": [
+        "sunken-obs.o",
+        "sun-iris-door.o",
+        "sun-exit-chamber.o"
+      ],
+      "shape": "CUBE",
+      "art_group": [
+        "exit-chamber-ag.go",
+        "sun-iris-door-ag.go",
+        "generic-button-ag.go"
+      ],
+      "tpage_group": "Sunken",
+      "glb": "levels/sunken/exit-chamber-lod0.glb",
+      "edited": "exit-chamber",
+      "reacts_to": [
+        "trigger",
+        "open",
+        "notify"
+      ],
+      "description": "External trigger/open unlocks the door without starting a ride; its built-in button travels. Optional path replaces animated travel; the chamber keeps its placed rotation and returns along the path backwards. Travel time applies to each path leg, excluding door closing. No path keeps the original animation. A linked CAMERA_ controls the ride view. Starts closed optionally; vanilla charger notify messages also unlock after all five chargers activate. Saved unlock and endpoint belong to this entity.",
+      "panels": [
+        {
+          "panel": "game-task"
+        },
+        {
+          "panel": "path",
+          "required": false,
+          "paths": [
+            "path"
+          ],
+          "description": "Optional world-space route for the chamber origin. Two or more points; it starts at the first point and returns along the same route. No path: original animated ride."
+        },
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {
+              "key": "og_chamber_closed",
+              "label": "Starts closed",
+              "type": "bool",
+              "default": false,
+              "lump": {
+                "key": "starts-closed",
+                "type": "uint32"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_chamber_time",
+              "label": "Path travel time (s)",
+              "type": "float",
+              "default": 10.0,
+              "min": 0.1,
+              "lump": {
+                "key": "travel-time",
+                "type": "float"
+              },
+              "write_if": "always"
+            },
+            {
+              "key": "og_chamber_camera",
+              "label": "Ride camera",
+              "type": "object_ref",
+              "pick": "CAMERA",
+              "default": "",
+              "lump": {
+                "key": "ride-camera",
+                "type": "string"
+              },
+              "note": "Used during either ride mode, then returns to base camera."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "etype": "test-actor",
       "label": "Test Actor",
       "category": "Debug",
@@ -18860,65 +21143,6 @@
 
   // ── OrphanEtypes ────────────────────────────────────────────────
   "OrphanEtypes": [
-    {
-      "etype": "helix-button",
-      "label": "Helix Button",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Helix water controller",
-              "accepts": [
-                "helix-water"
-              ],
-              "required": true
-            },
-            {
-              "lump_key": "alt-actor",
-              "slot": 1,
-              "label": "Helix slide door",
-              "accepts": [
-                "helix-slide-door"
-              ],
-              "required": true
-            }
-          ]
-        }
-      ],
-      "spawnable": false
-    },
-    {
-      "etype": "helix-water",
-      "label": "Helix Water",
-      "category": "Hidden",
-      "parent": "process-drawable",
-      "panels": [
-        {
-          "panel": "actor-link",
-          "slots": [
-            {
-              "lump_key": "alt-actor",
-              "slot": 0,
-              "label": "Helix buttons",
-              "accepts": [
-                "helix-button"
-              ],
-              "required": true,
-              "allow-multiple": true
-            }
-          ]
-        }
-      ],
-      "spawnable": false,
-      "reacts_to": [
-        "trigger"
-      ]
-    },
     {
       "etype": "rolling-lightning-mole",
       "label": "Rolling Lightning Mole",

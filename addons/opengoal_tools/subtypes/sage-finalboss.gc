@@ -6,8 +6,10 @@
 ;;     of vanilla "finalboss-start"
 ;;   - the final door steps (power-left / power-right) are skipped when the
 ;;     level has no final door (vanilla crashes)
-;; It still uses the vanilla finalboss-movies task, and the credits end the game
-;; (back to the title screen) like vanilla.
+;;   - its task is the actor's own (Game Task panel; none = vanilla finalboss-movies):
+;;     each cutscene closes the next stage, so the task needs the same stages as
+;;     finalboss-movies
+;; The credits end the game (back to the title screen) like vanilla.
 (deftype __TYPE__ (sage-finalboss) ())
 
 (defmethod play-anim! ((this __TYPE__) (arg0 symbol))
@@ -77,7 +79,7 @@
            (272
             eval
             ,(lambda :behavior sage-finalboss ()
-              (let ((a0-1 (get-task-control (game-task finalboss-movies)))) (save-reminder a0-1 (logior (get-reminder a0-1 0) 1) 0))
+              (let ((a0-1 (-> self tasks))) (save-reminder a0-1 (logior (get-reminder a0-1 0) 1) 0))
               (none)))
            (273 send-event self deactivate-particle 5)
            (333 joint "cameraB")
@@ -403,3 +405,40 @@
     (behavior ()
       (sage-finalboss-extra-trans)
       ((-> (method-of-type process-taskable idle) trans))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (process-taskable-method-40 this arg0 *sage-finalboss-sg* 3 40 (new 'static 'vector :w 4096.0) 5)
+  (let ((task (-> arg0 extra perm task)))
+    (set! (-> this tasks) (get-task-control (if (= task (game-task none)) (game-task finalboss-movies) task))))
+  (set! (-> this redsage) (the-as handle #f))
+  (set! (-> this bluesage) (the-as handle #f))
+  (set! (-> this yellowsage) (the-as handle #f))
+  (set! (-> this assistant) (the-as handle #f))
+  (set! (-> this robotplat) (the-as handle #f))
+  (set! (-> this robotboss) (the-as handle #f))
+  (set! (-> this jak-white) (the-as handle #f))
+  (set! (-> this silodoor) (the-as handle #f))
+  (set! (-> this left-door) #f)
+  (set! (-> this right-door) #f)
+  (set! (-> this kick-in-the-door) #f)
+  (set! (-> this kick-the-credits) #f)
+  (set! (-> this credits-played) #f)
+  (set! (-> this part) (create-launch-control (-> *part-group-id-table* 682) this))
+  (set! (-> this part matrix) (sprite-allocate-user-hvdf))
+  (set! (-> this particle-whiteout) (create-launch-control (-> *part-group-id-table* 706) this))
+  (set! (-> this particle-whiteout matrix) (sprite-allocate-user-hvdf))
+  (set! (-> this particle 0 part) (create-launch-control (-> *part-group-id-table* 699) this))
+  (set! (-> this particle 1 part) (create-launch-control (-> *part-group-id-table* 700) this))
+  (set! (-> this particle 2 part) (create-launch-control (-> *part-group-id-table* 701) this))
+  (set! (-> this particle 3 part) (create-launch-control (-> *part-group-id-table* 702) this))
+  (set! (-> this particle 7 part) (create-launch-control (-> *part-group-id-table* 645) this))
+  (set! (-> this particle 4 part) (create-launch-control (-> *part-group-id-table* 703) this))
+  (set! (-> this particle 5 part) (create-launch-control (-> *part-group-id-table* 696) this))
+  (set! (-> this particle 6 part) (create-launch-control (-> *part-group-id-table* 704) this))
+  (set! (-> this particle 8 part) (create-launch-control (-> *part-group-id-table* 698) this))
+  (dotimes (v1-37 9)
+    (set! (-> this particle v1-37 active) #f))
+  (set! (-> this palette-val) 0.0)
+  (+! (-> this root trans y) 2048.0)
+  (if (not (should-display? this)) (go (method-of-object this hidden)) (go (method-of-object this idle)))
+  (none))

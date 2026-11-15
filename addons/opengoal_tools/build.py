@@ -657,6 +657,8 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     _lv_objs = _level_objects(scene)
     from .export.level_tools import ensure_level_tools
     ensure_level_tools()              # shared lt-checkpoint (checkpoint triggers)
+    from .export.edited import ensure_shared
+    ensure_shared(scene, _lv_objs)    # shared edited actors (lt-<file>.gc)
     write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
     if navmesh:
         patch_entity_gc(navmesh_actors, scene)
@@ -842,6 +844,8 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         _lv_objs = _level_objects(scene)
         from .export.level_tools import ensure_level_tools
         ensure_level_tools()          # shared code: only written when missing / changed
+        from .export.edited import ensure_shared
+        ensure_shared(scene, _lv_objs)
         write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files

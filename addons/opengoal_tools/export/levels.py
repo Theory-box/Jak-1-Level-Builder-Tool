@@ -120,7 +120,7 @@ def needed_code(actors):
     for a in actors:
         etype = a.get("_db_etype") or a["etype"]
         variant_code = _db.code_files({"code": a.get("code")}) + list(a.get("extra_code") or [])
-        for o in list(ETYPE_CODE.get(etype, [])) + variant_code:
+        for o in list(ETYPE_CODE.get(etype, [])) + variant_code + ([a["_edited_o"]] if a.get("_edited_o") else []):
             if o and o not in seen and not _in_game_gd(o):
                 seen.add(o)
                 r.append((o, None, None))

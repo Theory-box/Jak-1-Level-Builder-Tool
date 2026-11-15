@@ -1,0 +1,34 @@
+;; Citadel trigger relay, without the vanilla sage-task gate and camera path.
+;; Optional gate-task must be complete; none allows any trigger. Receivers are
+;; born before the event is sent. It can be triggered again after reloading.
+;; edits: citadelcam
+
+(deftype __TYPE__ (citadelcam) ()
+  (:states __TYPE__-citadelcam-idle __TYPE__-send))
+
+(defstate __TYPE__-citadelcam-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (when (= message 'trigger)
+        (let ((task (the-as game-task (res-lump-value (-> self entity) 'gate-task uint :default (the-as uint128 0)))))
+          (when (or (= task (game-task none)) (task-complete? *game-info* task))
+            (go __TYPE__-send)))))
+  :code (behavior () (loop (suspend))))
+
+(defstate __TYPE__-send (__TYPE__)
+  :code
+    (behavior ()
+      (dotimes (i (entity-actor-count (-> self entity) 'trigger-actor))
+        (let ((a (entity-actor-lookup (-> self entity) 'trigger-actor i)))
+          (when a
+            (entity-birth-no-kill a)
+            (suspend)
+            (send-event (-> a extra process) 'trigger))))
+      (go __TYPE__-citadelcam-idle)))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (go __TYPE__-citadelcam-idle)
+  (none))

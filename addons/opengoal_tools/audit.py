@@ -89,10 +89,6 @@ def check_navmesh_links(scene):
                 issues.append(_issue("ERROR",
                     f"'{o.name}' ({et}) uses the nav-mesh of '{src.target_name}', "
                     "which has no navmesh link.", o.name))
-        elif not nm_name:
-            issues.append(_issue("ERROR",
-                f"Nav-enemy '{o.name}' ({et}) has no navmesh link. "
-                "It will freeze or crash in-game without one.", o.name))
         elif objects.get(nm_name) is None:
             issues.append(_issue("ERROR",
                 f"Nav-enemy '{o.name}' ({et}) navmesh link '{nm_name}' "
@@ -516,8 +512,16 @@ def check_battlecontrollers(scene):
     return issues
 
 
+def check_soft_warnings(scene):
+    """Soft warnings (required.py soft(), the yellow count): works, does less."""
+    from .required import soft
+    return [_issue("WARNING", f"'{o.name}' ({_etype(o)}): {m['label']}", o.name)
+            for o in _actor_objs(scene) for m in soft(o, scene)]
+
+
 _REGISTERED_CHECKS = [
     check_navmesh_links,
+    check_soft_warnings,
     check_missing_paths,
     check_battlecontrollers,
     check_actor_links,

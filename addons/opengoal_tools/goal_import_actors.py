@@ -191,7 +191,7 @@ def resolve_etype(entry):
         return variant_etypes()[et][0]
     from . import db
     if et and not db.find_actor(et) and "-" in et and db.find_actor(et.split("-", 1)[1]):
-        return et.split("-", 1)[1]
+        return et.split("-", 1)[1]                # <level>-<etype> / lt-<etype>: an edited actor
     if et == "eco":
         ei = (entry.get("lump") or {}).get("eco-info")
         if isinstance(ei, list) and ei and isinstance(ei[0], int) and 0 <= ei[0] < len(PICKUPS):

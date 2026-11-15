@@ -188,15 +188,30 @@ def _computed_lumps(o, etype):
         if f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "vector":
             dest_name = o.get(f["key"], "")
             dest_obj  = bpy.data.objects.get(dest_name) if dest_name else None
-            if dest_obj:
-                dl = dest_obj.matrix_world.translation   # world position (it may be parented)
+            fb = lp.get("fallback")   # "forward": no object -> fallback_m metres ahead of the actor
+            if dest_obj or fb == "forward":
+                if dest_obj:
+                    dl = dest_obj.matrix_world.translation   # world position (it may be parented)
+                else:                                        # game +Z = Blender -Y, rotated
+                    from mathutils import Vector as _V
+                    dl = o.matrix_world @ _V((0.0, -float(lp.get("fallback_m", 100.0)) / max(o.scale.y, 1e-6), 0.0))
                 dx = round(dl.x * 4096, 2)
                 dy = round(dl.z * 4096, 2)
                 dz = round(-dl.y * 4096, 2)
-                tkey = lp.get("pairs_with")
-                t    = float(o.get(tkey, -1.0)) if tkey else -1.0
-                fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
+                if lp.get("w") == "yaw" and dest_obj:   # W = the object's facing (Z rotation), game angle units
+                    import math as _m
+                    fw = round(dest_obj.matrix_world.to_euler("XYZ").z * 65536.0 / (2 * _m.pi), 3)
+                else:
+                    tkey = lp.get("pairs_with")
+                    t    = float(o.get(tkey, -1.0)) if tkey else -1.0
+                    fw   = t if t >= 0 else 0.5   # fly time in seconds (engine reads W as seconds)
                 out[lp["key"]] = ["vector", [dx, dy, dz, fw]]
+        # an object's entity name (e.g. a built-in camera's) from a linked object
+        elif f.get("type") == "object_ref" and isinstance(lp, dict) and lp.get("type") == "string":
+            dest_name = str(o.get(f["key"], "") or "").strip()
+            if dest_name and bpy.data.objects.get(dest_name):
+                from ..collections import actor_lump_name
+                out[lp["key"]] = ["string", actor_lump_name(dest_name)]
         # flags bitfield: prop bits + link-derived bits
         elif isinstance(lb, dict) and lb.get("key") == "flags":
             have_flags = True
@@ -388,6 +403,12 @@ def collect_actors(scene, depsgraph=None):
             if _mp_list:
                 lump["movie-pos"] = ["movie-pos"] + [movie_pos_vector(e) for e in _mp_list]
                 log(f"  [movie-pos] {o.name}  {len(_mp_list)} position(s)")
+            else:
+                height = _schema_db.panel_option(etype, "movie-pos", "default_height", None)
+                if height is not None:
+                    pos = movie_pos_vector(o)
+                    pos[1] += float(height) * o.matrix_world.to_scale().z
+                    lump["movie-pos"] = ["movie-pos", pos]
 
         # ── Platform grid panel (citb-drop-plat): 'count + 'plat-type ──────────
         if _schema_db.panel_exports(etype, "plat-grid"):
@@ -587,6 +608,18 @@ def collect_actors(scene, depsgraph=None):
             _lc, _lag, _ltp = _bc.lurker_assets(o)
             _out_ag = ([_out_ag] if _out_ag else []) + [g for g in _lag if g != _out_ag] or None
             _extra = {"extra_code": _lc, "extra_tpages": _ltp}
+        # GOAL Code > Code: an edited child type (obs: <level>-<stem>, written
+        # by write_jsonc; shared: lt-<stem>); a patch keeps the etype
+        from . import edited as _ed
+        _edrec = _ed.resolve(o, etype)
+        _edited_obs = _edited_o = None
+        if _edrec is not None:
+            if _ed.place(scene, _edrec) == "shared":
+                _edited_o = f"lt-{_edrec['stem']}.o"
+                if _edrec["child"]:
+                    _out_etype = f"lt-{_edrec['stem']}"
+            elif _edrec["child"]:
+                _edited_obs = _edrec["stem"]
         # Custom Lumps > Export as: another etype, everything else unchanged
         _export_as = str(getattr(o, "og_export_as", "") or "").strip()
         if _export_as:
@@ -602,7 +635,9 @@ def collect_actors(scene, depsgraph=None):
             "lump":      lump,
             # Internal build bookkeeping below — stripped by write_jsonc.
             "_db_etype": etype,
-            "_export_as": bool(_export_as),   # write_jsonc: no level prefix
+            "_export_as": bool(_export_as) or _out_etype.startswith("lt-"),   # write_jsonc: no level prefix
+            "_edited_obs": None if _export_as else _edited_obs,   # write_jsonc: <level>-<stem>
+            "_edited_o": _edited_o,             # needed_code: a shared edited file's .o
             "art_group": _out_ag,   # None -> fall back to ETYPE_AG
             "code":      _var_code,   # variant's extra .o files (db.code_files)
             "extra_art_groups": _variant.get("extra_art_groups") or [],

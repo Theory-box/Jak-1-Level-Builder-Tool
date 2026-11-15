@@ -260,6 +260,34 @@ def _fit_empty_to_mesh(actor_empty: bpy.types.Object, mesh_obj: bpy.types.Object
 # Public API
 # ---------------------------------------------------------------------------
 
+def special_on(o) -> bool:
+    """Show the actor's special preview (plat grid, race rings, extra copies)? Its
+    Show preview checkbox; off skips building them at all."""
+    return bool(getattr(o, "og_special_preview", True))
+
+
+def refresh_special(self, ctx):
+    """Show preview toggled: rebuild the actor's previews (or drop the special ones)."""
+    if not self.name.startswith("ACTOR_"):
+        return
+    from . import db as _db, race_rings
+    etype = self.name.split("_", 2)[1]
+    for c in [c for c in self.children if c.get("og_ring_preview")]:
+        bpy.data.objects.remove(c, do_unlink=True)
+    if race_rings.uses_rings(self) and special_on(self):
+        race_rings.build_preview(ctx, self)
+    prefs = ctx.preferences.addons.get("opengoal_tools")
+    if prefs and prefs.preferences.preview_models:
+        remove_preview(self)
+        attach_preview(ctx, etype, self)
+
+
+def draw_special_toggle(layout, o):
+    """The Show preview checkbox at the bottom of an actor's special-preview panel."""
+    layout.separator(factor=0.5)
+    layout.prop(o, "og_special_preview", text="Show preview")
+
+
 def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
     """Import and attach a preview mesh to the given ACTOR empty.
 
@@ -281,6 +309,8 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
         glb_rel = _var["glb"]
 
     if _db.has_panel(etype, "plat-grid"):   # one model per platform slot
+        if not special_on(actor_empty):
+            return False
         from . import plat_grid
         return plat_grid.build_preview(ctx, actor_empty)
 
@@ -361,6 +391,42 @@ def attach_preview(ctx, etype: str, actor_empty: bpy.types.Object) -> bool:
 
         attached = True
         meshes.append(mesh_obj)
+
+    # DB "preview_copies": more copies of the model at these offsets (Blender m, in
+    # the actor's space; e.g. the pipe game's side buttons)
+    _copies = ((_db.find_actor(etype) or {}).get("preview_copies") or []) if meshes and special_on(actor_empty) else []
+    for _old in [c for c in actor_empty.children if c.get("_og_preview_copy") is not None and c not in meshes]:
+        bpy.data.objects.remove(_old, do_unlink=True)      # never two sets of copies
+    for _c in _copies:
+        dup = meshes[0].copy()
+        dup.name = f"{actor_empty.name}_preview"
+        # kept relative to the main preview: the offset setter moves it by the same amount
+        dup["_og_preview_copy"] = [float(_c[i]) - _off[i] for i in range(3)]
+        dup.location = (float(_c[0]), float(_c[1]), float(_c[2]))
+        dup.parent = actor_empty
+        dup.matrix_parent_inverse = mathutils.Matrix()
+        dup[_PREVIEW_PROP] = True
+        preview_col.objects.link(dup)
+        meshes.append(dup)
+
+    # DB "preview_extra": other models at these offsets (e.g. the oracle's eye cells)
+    for _x in ((_db.find_actor(etype) or {}).get("preview_extra") or []) if meshes else []:
+        _rel = _x.get("glb")
+        m = _reuse_or_import(ctx, _glb_path(_rel), Path(_rel).stem) if _rel else None
+        if m is None:
+            continue
+        for col in list(m.users_collection):
+            col.objects.unlink(m)
+        preview_col.objects.link(m)
+        _c = _x.get("offset") or (0.0, 0.0, 0.0)
+        m.name = f"{actor_empty.name}_preview"
+        m["_og_preview_copy"] = [float(_c[i]) - _off[i] for i in range(3)]
+        m.location = (float(_c[0]), float(_c[1]), float(_c[2]))
+        m.parent = actor_empty
+        m.matrix_parent_inverse = mathutils.Matrix()
+        m[_PREVIEW_PROP] = True
+        m.hide_select = not _select_via_preview()
+        meshes.append(m)
 
     _apply_db_display(etype, actor_empty, meshes)
     return attached
