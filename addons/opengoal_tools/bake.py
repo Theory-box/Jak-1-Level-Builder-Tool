@@ -190,6 +190,16 @@ def tod_times(settings):
     return [(k, a, l, getattr(settings, "tod_" + k)) for k, a, l, *_ in TIMES]
 
 
+# (plain functions: the property annotations are evaluated where lambdas
+# don't see this module's names)
+def _palette_time_update(self, ctx):
+    _palette.time_update(self, ctx)
+
+
+def _fixes_update(self, ctx):
+    _palette.fixes_update(self, ctx)
+
+
 class OGBakeSettings(bpy.types.PropertyGroup):
     emit_strength: bpy.props.FloatProperty(
         name="Emit strength", default=1.0, min=0.0, soft_max=1.0,
@@ -230,21 +240,21 @@ class OGBakeSettings(bpy.types.PropertyGroup):
     palette_time: bpy.props.EnumProperty(
         name="Show", default="2", description="Time of day the palette preview shows",
         items=[(str(i), l, f"Show the {l} colours") for i, (_k, _a, l, *_r) in enumerate(TIMES)],
-        update=lambda self, ctx: _palette.time_update(self, ctx))
+        update=_palette_time_update)
     fix_dark: bpy.props.BoolProperty(
-        name="Desaturate darks", default=False,
+        name="Desaturate darks", default=False, update=_fixes_update,
         description="Colours darker than the level blend toward grey (fully at black): fewer tinted spots in shadows")
     fix_dark_level: bpy.props.FloatProperty(name="Level", default=0.25, min=0.0, max=1.0, subtype="FACTOR",
+                                            update=_fixes_update,
                                             description="Brightness under which colours lose colour")
-    fix_dark_strength: bpy.props.FloatProperty(name="Strength", default=1.0, min=0.0, max=1.0, subtype="FACTOR")
+    fix_dark_strength: bpy.props.FloatProperty(name="Strength", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
+                                               update=_fixes_update)
     fix_grey: bpy.props.BoolProperty(
-        name="Snap near-greys", default=False,
+        name="Snap near-greys", default=False, update=_fixes_update,
         description="Colours that are almost grey become grey: fewer palette colours spent on faint tints")
     fix_grey_threshold: bpy.props.FloatProperty(name="Threshold", default=0.03, min=0.0, max=0.5,
+                                                update=_fixes_update,
                                                 description="Largest difference between R, G and B still snapped")
-    palette_with_fixes: bpy.props.BoolProperty(
-        name="Preview with fixes", default=True,
-        description="Preview Palette shows the palette as if the fixes were applied (your bake isn't changed)")
     fix_after_bake: bpy.props.BoolProperty(
         name="Apply after every bake", default=False,
         description="The ticked fixes are the last step of every bake (after curve and blur)")
@@ -729,10 +739,34 @@ def _bake_objs(job, emit=False):
 # their vertices the ground's baked colour. Each target vertex looks straight
 # down and up for a source face (the nearer hit), else takes the closest point
 # (Search: Closest point only skips the rays); the colour is interpolated on
-# that triangle. Done for BakedLight and every time of day layer; the
-# target's alpha stays.
+# that triangle. Done for BakedLight and every time of day layer; alpha comes
+# from the target's ALPHA_<TIME> / ALPHA layer like a bake, else stays.
 
 LIGHT_LAYERS = (BAKE_ATTR,) + TOD_ATTRS
+
+
+def copy_alpha(mesh, src_name):
+    """The alpha of colour layer src_name into BakedLight and every time of
+    day layer of the mesh. Returns how many layers changed."""
+    cas = mesh.color_attributes
+    src = cas.get(src_name)
+    if src is None:
+        return 0
+    n = 0
+    for name in LIGHT_LAYERS:
+        a = cas.get(name)
+        if a is None or name == src_name:
+            continue
+        al = alpha_values(mesh, src, a.domain)
+        if al is None:
+            continue
+        cols, key = _read(a)
+        cols[:, 3] = al
+        _write(a, cols, key)
+        n += 1
+    if n:
+        mesh.update()
+    return n
 
 
 def _world_box(o, pad):
@@ -847,6 +881,11 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
             new = rgb if ca.domain == "POINT" else rgb[lv]
             keep = np.isnan(new[:, 0])
             arr[~keep, :3] = new[~keep]
+            src = alpha_source(m, n)                # the bake's alpha (ALPHA_<TIME> / ALPHA), else the layer's
+            if src is not None:
+                al = alpha_values(m, src, ca.domain)
+                if al is not None and len(al) == len(arr):
+                    arr[:, 3] = al
             ca.data.foreach_set("color_srgb", np.clip(arr, 0, 1).ravel())
         m.update()
     return out

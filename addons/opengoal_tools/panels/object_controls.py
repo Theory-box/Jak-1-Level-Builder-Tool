@@ -198,13 +198,26 @@ class OG_PT_SetToFloor(Panel):
         r.label(text="Ignores volumes, nav-meshes, previews and the selection", icon="INFO")
 
 
+class OG_PT_VertexColors(Panel):
+    bl_label = "Vertex Colors"
+    bl_idname = "OG_PT_vertex_colors"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        pass
+
+
 class OG_PT_CopyLighting(Panel):
     bl_label = "Copy Vertex Lighting from Closest"
     bl_idname = "OG_PT_copy_lighting"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "OpenGOAL"
-    bl_parent_id = "OG_PT_object_controls"
+    bl_parent_id = "OG_PT_vertex_colors"
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
@@ -217,7 +230,30 @@ class OG_PT_CopyLighting(Panel):
         txt = f"Copy to {n} mesh(es)" if n else "Copy Vertex Lighting"
         layout.operator("og.copy_lighting", text=txt, icon="GROUP_VCOL")
         r = layout.row(); r.enabled = False; r.scale_y = 0.7
-        r.label(text="BakedLight + time of day layers; alpha is kept", icon="INFO")
+        r.label(text="BakedLight + time of day layers; alpha from ALPHA layers", icon="INFO")
+
+
+class OG_PT_CopyAlpha(Panel):
+    bl_label = "Copy Alpha to All Times"
+    bl_idname = "OG_PT_copy_alpha"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_vertex_colors"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_copy_light
+        layout = self.layout
+        act = ctx.view_layer.objects.active
+        if act is not None and act.type == "MESH":
+            layout.prop_search(s, "alpha_layer", act.data, "color_attributes", text="Alpha from")
+        else:
+            layout.prop(s, "alpha_layer")
+        n = sum(1 for o in ctx.selected_objects if o.type == "MESH")
+        layout.operator("og.copy_alpha", text=f"Copy to {n} Mesh(es)" if n else "Copy Alpha", icon="IMAGE_ALPHA")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Into BakedLight + every time of day layer", icon="INFO")
 
 
 class OG_PT_DistributeAlongCurve(Panel):
@@ -299,4 +335,4 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_CopyLighting, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
+           OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

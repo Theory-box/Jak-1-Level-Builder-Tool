@@ -517,6 +517,8 @@ class OGCopyLightSettings(bpy.types.PropertyGroup):
                                 ("CLOSEST", "Closest point", "The closest point of the source geometry")])
     distance: FloatProperty(name="Max distance", default=5.0, min=0.0, unit="LENGTH",
                             description="Vertices with no source geometry this close keep their colour")
+    alpha_layer: StringProperty(name="Alpha from", default="ALPHA",
+                                description="Colour layer whose alpha goes into BakedLight and every time of day layer")
 
 
 def copy_light_targets(ctx):
@@ -564,9 +566,38 @@ class OG_OT_CopyLighting(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_CopyAlpha(bpy.types.Operator):
+    """Copy the alpha of the chosen colour layer into BakedLight and every time of day layer of the selected
+meshes (Object Controls > Vertex Colors)"""
+    bl_idname = "og.copy_alpha"
+    bl_label = "Copy Alpha to All Times"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.mode == "OBJECT" and bool(ctx.selected_objects)
+
+    def execute(self, ctx):
+        from . import bake
+        name = ctx.scene.og_copy_light.alpha_layer
+        done, layers, missing = set(), 0, 0
+        for o in ctx.selected_objects:
+            if o.type != "MESH" or o.data.name in done or o.data.library:
+                continue
+            done.add(o.data.name)
+            if name not in o.data.color_attributes:
+                missing += 1; continue
+            layers += bake.copy_alpha(o.data, name)
+        if not layers:
+            self.report({"WARNING"}, f"No mesh with '{name}' and a baked layer selected"); return {"CANCELLED"}
+        self.report({"WARNING"} if missing else {"INFO"},
+                    f"Alpha of '{name}' copied into {layers} layer(s)" + (f"; {missing} mesh(es) without '{name}'" if missing else ""))
+        return {"FINISHED"}
+
+
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting)
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha)
 
 
 def register_props():

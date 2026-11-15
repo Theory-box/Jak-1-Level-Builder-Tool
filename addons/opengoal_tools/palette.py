@@ -17,7 +17,9 @@
 # Fixes (on the stored sRGB values, like the curve): Desaturate darks blends
 # colours under a brightness toward grey (fully at black, not at the level),
 # Snap near-greys makes almost-grey colours grey. Applied after every bake
-# (option), once on the selected meshes (button), or only in the preview.
+# (option) or once on the selected meshes (button); Preview Fixes applies them
+# to the saved preview palette (instant, close: the real grouping would shift a
+# little with the fixed colours).
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -58,15 +60,15 @@ def _to_linear(c):
     return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
 
 
-def _corner_colours(mesh, attr, fix=None):
-    """(corners, 4) linear colours of a colour layer, on face corners
-    (with `fix` settings: the fixes applied first, as they would be)."""
+def _to_srgb(c):
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(np.maximum(c, 0), 1 / 2.4) - 0.055)
+
+
+def _corner_colours(mesh, attr):
+    """(corners, 4) linear colours of a colour layer, on face corners."""
     a = np.empty(len(attr.data) * 4, np.float32)
-    attr.data.foreach_get("color_srgb" if fix is not None else "color", a)
+    attr.data.foreach_get("color", a)
     a = a.reshape(-1, 4)
-    if fix is not None:
-        a = apply_fixes(a, fix)
-        a[:, :3] = _to_linear(a[:, :3])
     if attr.domain == "POINT":
         lv = np.empty(len(mesh.loops), np.int32)
         mesh.loops.foreach_get("vertex_index", lv)
@@ -74,7 +76,7 @@ def _corner_colours(mesh, attr, fix=None):
     return a
 
 
-def mesh_vectors(mesh, tod, wide=True, fix=None):
+def mesh_vectors(mesh, tod, wide=True):
     """(corners, 32) uint8 (4 for a build without time of day): what the
     level builder reads for this mesh."""
     from .bake import TOD_ATTRS, BAKE_ATTR
@@ -89,14 +91,14 @@ def mesh_vectors(mesh, tod, wide=True, fix=None):
                     slots[i] = TOD_ATTRS[(i - d) % 8]; break
                 if have[(i + d) % 8]:
                     slots[i] = TOD_ATTRS[(i + d) % 8]; break
-        cols = {a: _bytes(_corner_colours(mesh, cas[a], fix)) for a in set(slots)}
+        cols = {a: _bytes(_corner_colours(mesh, cas[a])) for a in set(slots)}
         return np.concatenate([cols[a] for a in slots], axis=1)
     # COLOR_0: the layer the export makes active (bake.use_baked), else white
     name = next((x for x in (BAKE_ATTR, "_NOON") + TOD_ATTRS if x in cas), None)
     if name is None:
         rgba = np.tile(np.array([0x80, 0x80, 0x80, 0xFF], np.uint8), (n, 1))
     else:
-        rgba = _bytes(_corner_colours(mesh, cas[name], fix))
+        rgba = _bytes(_corner_colours(mesh, cas[name]))
     return np.tile(rgba, (1, 8)) if wide else rgba
 
 
@@ -179,9 +181,9 @@ def _meshes(level_col):
     return out
 
 
-def show_time(meshes, slot):
+def show_time(meshes, slot, fixes=None):
     """Write the cached quantised colours of time `slot` (0-7) into the
-    preview layers."""
+    preview layers (with `fixes` settings: the fixes applied on top)."""
     for me in meshes:
         q = _CACHE.get(me.name)
         if q is None or len(q) != len(me.loops):
@@ -194,6 +196,10 @@ def show_time(meshes, slot):
         rgba = np.ones((len(q), 4), np.float32)
         slot = slot if q.shape[1] > 4 else 0
         rgba[:, :3] = q[:, slot * 4:slot * 4 + 3] / 255.0
+        if fixes is not None:
+            rgba[:, :3] = _to_srgb(rgba[:, :3])
+            rgba = apply_fixes(rgba, fixes)
+            rgba[:, :3] = _to_linear(np.clip(rgba[:, :3], 0.0, 1.0))
         cas[PREVIEW].data.foreach_set("color", rgba.ravel())
         cas.active_color = cas[PREVIEW]
         cas.render_color_index = next(i for i, x in enumerate(cas) if x.name == PREVIEW)
@@ -207,9 +213,7 @@ def preview(level_col, slot):
     wide = bool(feature_available("time_of_day"))
     tod = bool(level_col.og_bake.tod_enabled) and wide
     meshes = _meshes(level_col)
-    s = level_col.og_bake
-    fix = s if (s.palette_with_fixes and fixes_on(s)) else None
-    vecs = [mesh_vectors(me, tod, wide, fix) for me in meshes]
+    vecs = [mesh_vectors(me, tod, wide) for me in meshes]
     allv = np.concatenate(vecs) if vecs else np.zeros((0, 32), np.uint8)
     if not len(allv):
         return {}
@@ -229,7 +233,7 @@ def preview(level_col, slot):
     show_time(meshes, slot)
     _STATS.clear()
     _STATS.update({"level": level_col.name, "unique": len(U), "palette": len(pal), "meshes": len(meshes),
-                   "tod": tod, "mean": per_time, "worst": worst, "fixed": fix is not None})
+                   "tod": tod, "mean": per_time, "worst": worst, "fixes": False})
     return _STATS
 
 
@@ -266,9 +270,19 @@ HELP = (
 )
 
 
+def _shown_fixes(s):
+    return s if _STATS.get("fixes") and fixes_on(s) else None
+
+
 def time_update(self, ctx):
     if _CACHE and _STATS.get("level") == self.id_data.name:
-        show_time(_meshes(self.id_data), int(self.palette_time))
+        show_time(_meshes(self.id_data), int(self.palette_time), _shown_fixes(self))
+
+
+def fixes_update(self, ctx):
+    """Fix values changed while the fixes are previewed: show them again."""
+    if _CACHE and _STATS.get("fixes") and _STATS.get("level") == self.id_data.name:
+        show_time(_meshes(self.id_data), int(self.palette_time) if self.tod_enabled else 0, _shown_fixes(self))
 
 
 def draw(layout, level_col):
@@ -288,8 +302,7 @@ def draw(layout, level_col):
     st = _STATS if _STATS.get("level") == level_col.name else None
     if st:
         col = box.column(align=True); col.scale_y = 0.8
-        col.label(text=f"{st['unique']} colours on {st['meshes']} mesh(es) -> {st['palette']} in the palette"
-                       + (" (with fixes)" if st.get("fixed") else ""))
+        col.label(text=f"{st['unique']} colours on {st['meshes']} mesh(es) -> {st['palette']} in the palette")
         if st["tod"]:
             from .bake import TIMES
             for i, (_k, _a, l, *_r) in enumerate(TIMES):
@@ -307,10 +320,17 @@ def draw(layout, level_col):
     if s.fix_grey:
         fx.prop(s, "fix_grey_threshold")
     col = fx.column(); col.enabled = fixes_on(s)
-    col.prop(s, "palette_with_fixes")
+    shown = bool(st and st.get("fixes"))
+    op = col.operator("og.palette_preview_fixes", icon="HIDE_ON" if shown else "HIDE_OFF",
+                      text="Hide Fixes" if shown else "Preview Fixes", depress=shown)
+    op.show = not shown
+    if shown:
+        r = col.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Fixes shown on the palette preview (close, not exact)", icon="INFO")
     col.prop(s, "fix_after_bake")
     n = sum(1 for o in bpy.context.selected_objects if o.type == "MESH")
-    col.operator("og.palette_apply_fixes", text=f"Apply to {n} Selected" if n else "Apply to Selected", icon="CHECKMARK")
+    col.operator("og.palette_apply_fixes", icon="CHECKMARK",
+                 text=f"Apply to {n} Selected (all times)" if n else "Apply to Selected (all times)")
 
 
 class OG_OT_PaletteHelp(bpy.types.Operator):
@@ -365,6 +385,29 @@ class OG_OT_PaletteRestore(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_PalettePreviewFixes(bpy.types.Operator):
+    """Show the ticked fixes on the palette preview (instant: applied to the saved preview, not grouped again;
+runs Preview Palette first if there's none)"""
+    bl_idname = "og.palette_preview_fixes"
+    bl_label = "Preview Fixes"
+    bl_options = {"REGISTER", "UNDO"}
+    show: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        from .collections import _active_level_col
+        lv = _active_level_col(ctx.scene)
+        if lv is None:
+            self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
+        s = lv.og_bake
+        slot = int(s.palette_time) if s.tod_enabled else 0
+        if not (_CACHE and _STATS.get("level") == lv.name):
+            if not preview(lv, slot):
+                self.report({"WARNING"}, "No level meshes"); return {"CANCELLED"}
+        _STATS["fixes"] = self.show
+        show_time(_meshes(lv), slot, _shown_fixes(s))
+        return {"FINISHED"}
+
+
 class OG_OT_PaletteApplyFixes(bpy.types.Operator):
     """Apply the ticked fixes once to the bake layers (BakedLight, time of day) of the selected meshes.
 Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
@@ -397,4 +440,5 @@ Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
         return {"FINISHED"}
 
 
-CLASSES = (OG_OT_PaletteHelp, OG_OT_PalettePreview, OG_OT_PaletteRestore, OG_OT_PaletteApplyFixes)
+CLASSES = (OG_OT_PaletteHelp, OG_OT_PalettePreview, OG_OT_PaletteRestore, OG_OT_PalettePreviewFixes,
+           OG_OT_PaletteApplyFixes)
