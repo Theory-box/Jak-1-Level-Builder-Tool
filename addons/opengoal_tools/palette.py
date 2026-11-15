@@ -329,8 +329,14 @@ def draw(layout, level_col):
         r.label(text="Fixes shown on the palette preview (close, not exact)", icon="INFO")
     col.prop(s, "fix_after_bake")
     n = sum(1 for o in bpy.context.selected_objects if o.type == "MESH")
-    col.operator("og.palette_apply_fixes", icon="CHECKMARK",
-                 text=f"Apply to {n} Selected (all times)" if n else "Apply to Selected (all times)")
+    what = f"Apply to {n} Selected" if n else "Apply to Selected"
+    if s.tod_enabled:
+        from .bake import TIMES
+        _k, attr, label, *_r = TIMES[int(s.palette_time)]
+        op = col.operator("og.palette_apply_fixes", icon="CHECKMARK", text=f"{what} ({label})")
+        op.layer = attr
+    op = col.operator("og.palette_apply_fixes", icon="CHECKMARK", text=f"{what} (all times)")
+    op.layer = ""
 
 
 class OG_OT_PaletteHelp(bpy.types.Operator):
@@ -409,11 +415,12 @@ runs Preview Palette first if there's none)"""
 
 
 class OG_OT_PaletteApplyFixes(bpy.types.Operator):
-    """Apply the ticked fixes once to the bake layers (BakedLight, time of day) of the selected meshes.
-Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
+    """Apply the ticked fixes once to the bake layers of the selected meshes (one time of day, or BakedLight
+and every time of day). Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
     bl_idname = "og.palette_apply_fixes"
     bl_label = "Apply Fixes"
     bl_options = {"REGISTER", "UNDO"}
+    layer: bpy.props.StringProperty(default="", options={"SKIP_SAVE"})   # "": all bake layers
 
     def execute(self, ctx):
         from .collections import _active_level_col
@@ -426,7 +433,7 @@ Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
             if o.type != "MESH" or o.data.name in done or o.data.library:
                 continue
             done.add(o.data.name)
-            for name in LIGHT_LAYERS:
+            for name in ((self.layer,) if self.layer else LIGHT_LAYERS):
                 a = o.data.color_attributes.get(name)
                 if a is None:
                     continue
