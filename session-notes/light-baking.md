@@ -4,8 +4,15 @@
 - View buttons (eye per time of day) set the active and the render colour attribute.
 - Copy Worlds / Collections from another level (same worlds / collections, not copies).
 - Curve preset "Fit 0.25-1.0" (enum number 1000 so saved files keep their preset).
+- Bake time in the end message ("Baked N mesh(es), N time(s) of day in mm:ss (combined): ...").
+- "Combine meshes while baking" (bake options, off by default), as planned below. Test
+  (_claude_tmp/bl_fastbake.py, headless, 980k-triangle unselected ground, 43 meshes, 32
+  samples, 8 times + emit): per mesh 21.6 s, combined 1.8 s (x12); colours within ~2 %
+  (sampling). Corner normals come from the evaluated mesh when its corners match (Smooth by
+  Angle). A mesh without a UV map gets an empty one on the copy (Blender's bake asks for one).
+  Not done: negative scale (face winding), per-object ray visibility settings.
 
-## Plan: Optimising light baking (not started, waiting for Kuitar)
+## Plan: Optimising light baking (done, see above)
 Why it's slow: one `bpy.ops.object.bake` call with N selected objects bakes them one by one,
 and every object re-syncs the whole scene (BVH of all its triangles) before rendering. Kuitar's
 numbers: 4 walls = 4 x ~1:30, the same walls joined = ~1:35. Time of day multiplies that by

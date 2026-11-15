@@ -218,6 +218,11 @@ class OGBakeSettings(bpy.types.PropertyGroup):
         description="While baking light, unplug the materials' Color Attribute nodes (colour and alpha). "
                     "They read colour layers: a black layer bakes black, alpha 0 makes the surface see-through "
                     "(also black). Off: vertex colours / transparency affect the bake")
+    combine: bpy.props.BoolProperty(
+        name="Combine meshes while baking", default=False,
+        description="Speeds up baking on large scenes: the selected meshes are baked as one temporary copy "
+                    "(Blender otherwise re-prepares the whole scene for every mesh), then the colours go back "
+                    "into each mesh. Your objects aren't changed")
     show_options: bpy.props.BoolProperty(name="Bake options", default=True)
     show_tod: bpy.props.BoolProperty(name="Time of day", default=True)
     tod_enabled: bpy.props.BoolProperty(
@@ -504,6 +509,182 @@ def has_emission(obj) -> bool:
     return False
 
 
+# ── combined bake ───────────────────────────────────────────────────────────
+# Blender bakes the selected objects one by one and prepares the whole scene
+# for each, so N meshes cost about N renders. With "Combine meshes while
+# baking" the meshes are copied into temporary combined meshes (world space,
+# materials, corner normals, UV maps, colour layers the materials may read),
+# the originals are hidden from render meanwhile, and after the last pass the
+# copies' colours are cut back into each mesh by corner / vertex ranges.
+
+_COMBINED = "OG_BakeCombined"
+_CHUNK_TRIS = 2_000_000          # triangles per temporary mesh
+
+
+def _chunks(objs):
+    out, cur, n = [], [], 0
+    for o in objs:
+        t = sum(len(p.vertices) - 2 for p in o.data.polygons)
+        if cur and n + t > _CHUNK_TRIS:
+            out.append(cur); cur, n = [], 0
+        cur.append(o); n += t
+    if cur:
+        out.append(cur)
+    return out
+
+
+def _skip_layer(name):
+    return name in (BAKE_ATTR, _EMIT_ATTR) or name in TOD_ATTRS
+
+
+def _combined_mesh(objs, index):
+    """One temporary object holding objs' meshes. Returns (object, parts):
+    parts = [(object name, first corner, corners, first vertex, vertices)]."""
+    me = bpy.data.meshes.new(f"{_COMBINED}{index}")
+    nv = sum(len(o.data.vertices) for o in objs)
+    nl = sum(len(o.data.loops) for o in objs)
+    npl = sum(len(o.data.polygons) for o in objs)
+    me.vertices.add(nv); me.loops.add(nl); me.polygons.add(npl)
+    co = np.empty(nv * 3, np.float32); lv = np.empty(nl, np.int32)
+    ls = np.empty(npl, np.int32); mi = np.empty(npl, np.int32)
+    nrm = np.empty((nl, 3), np.float32)
+    mats, parts = [], []
+    uv_names = sorted({u.name for o in objs for u in o.data.uv_layers})
+    col_names = sorted({c.name for o in objs for c in o.data.color_attributes if not _skip_layer(c.name)})
+    uvs = {n: np.zeros(nl * 2, np.float32) for n in uv_names}
+    cols = {n: np.ones(nl * 4, np.float32) for n in col_names}
+    v0 = l0 = p0 = 0
+    dg = bpy.context.evaluated_depsgraph_get()
+    for o in objs:
+        m = o.data
+        a, b, c = len(m.vertices), len(m.loops), len(m.polygons)
+        mw = np.array(o.matrix_world, np.float32)
+        x = np.empty(a * 3, np.float32); m.vertices.foreach_get("co", x)
+        x = x.reshape(a, 3) @ mw[:3, :3].T + mw[:3, 3]
+        co[v0 * 3:(v0 + a) * 3] = x.ravel()
+        t = np.empty(b, np.int32); m.loops.foreach_get("vertex_index", t); lv[l0:l0 + b] = t + v0
+        t = np.empty(c, np.int32); m.polygons.foreach_get("loop_start", t); ls[p0:p0 + c] = t + l0
+        # material slots -> the combined mesh's slots
+        remap = []
+        for s in o.material_slots or [None]:
+            mat = s.material if s else None
+            if mat not in mats:
+                mats.append(mat)
+            remap.append(mats.index(mat))
+        t = np.empty(c, np.int32); m.polygons.foreach_get("material_index", t)
+        mi[p0:p0 + c] = np.array(remap, np.int32)[np.clip(t, 0, len(remap) - 1)]
+        # shading: the corner normals (sharp edges, flat faces, custom normals)
+        # (the evaluated mesh's when its corners match: Smooth by Angle modifier ...)
+        em = o.evaluated_get(dg).data
+        n = np.empty(b * 3, np.float32)
+        (em if len(em.loops) == b else m).corner_normals.foreach_get("vector", n)
+        n = n.reshape(b, 3) @ np.linalg.inv(mw[:3, :3])     # rows: n' = (M^-1)^T n
+        nrm[l0:l0 + b] = n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-8)
+        for u in m.uv_layers:
+            t = np.empty(b * 2, np.float32); u.data.foreach_get("uv", t); uvs[u.name][l0 * 2:(l0 + b) * 2] = t
+        for ca in m.color_attributes:
+            if ca.name not in cols:
+                continue
+            arr = np.empty(len(ca.data) * 4, np.float32)
+            ca.data.foreach_get("color", arr)       # linear, like the copy's float layer
+            arr = arr.reshape(-1, 4)
+            if ca.domain == "POINT":
+                vi = np.empty(b, np.int32); m.loops.foreach_get("vertex_index", vi); arr = arr[vi]
+            cols[ca.name][l0 * 4:(l0 + b) * 4] = arr.ravel()
+        parts.append((o.name, l0, b, v0, a))
+        v0 += a; l0 += b; p0 += c
+    me.vertices.foreach_set("co", co)
+    me.loops.foreach_set("vertex_index", lv)
+    me.polygons.foreach_set("loop_start", ls)
+    me.polygons.foreach_set("material_index", mi)
+    me.polygons.foreach_set("use_smooth", np.ones(npl, bool))
+    me.update(calc_edges=True)
+    for mat in mats:
+        me.materials.append(mat)
+    for n in uv_names:
+        me.uv_layers.new(name=n).data.foreach_set("uv", uvs[n])
+    if not uv_names:
+        me.uv_layers.new(name="UVMap")           # Blender's bake wants one on a mesh it didn't make
+    for o in objs:                               # the same render UV map as the meshes
+        r = next((u.name for u in o.data.uv_layers if u.active_render), None)
+        if r and r in me.uv_layers:
+            me.uv_layers[r].active_render = True
+            break
+    for n in col_names:
+        ca = me.color_attributes.new(n, "FLOAT_COLOR", "CORNER")
+        ca.data.foreach_set("color", cols[n])
+    for o in objs:                               # Color Attribute nodes without a name read the render one
+        cas = o.data.color_attributes
+        if 0 <= cas.render_color_index < len(cas) and cas[cas.render_color_index].name in me.color_attributes:
+            name = cas[cas.render_color_index].name
+            me.color_attributes.render_color_index = next(
+                i for i, x in enumerate(me.color_attributes) if x.name == name)
+            break
+    me.normals_split_custom_set(nrm.tolist())
+    ob = bpy.data.objects.new(me.name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob, parts
+
+
+def _combine(job, objs):
+    """Temporary combined meshes for the bake; the originals stop rendering."""
+    job["combined"] = []
+    job["hidden"] = {o.name: o.hide_render for o in objs}
+    for i, ch in enumerate(_chunks(objs)):
+        ob, parts = _combined_mesh(ch, i)
+        job["combined"].append({"name": ob.name, "parts": parts})
+    for o in objs:
+        o.hide_render = True
+
+
+def _uncombine(job, attrs):
+    """Copy the baked layers of the combined meshes back into each mesh."""
+    for c in job.get("combined", []):
+        ob = bpy.data.objects.get(c["name"])
+        if ob is None:
+            continue
+        cas = ob.data.color_attributes
+        for name in attrs:
+            src = cas.get(name)
+            if src is None:
+                continue
+            arr, key = _read(src)
+            for oname, l0, nl, v0, nv in c["parts"]:
+                o = bpy.data.objects.get(oname)
+                if o is None or (name == _EMIT_ATTR and oname not in job["emit_objs"]):
+                    continue
+                dst = o.data.color_attributes
+                if name in dst and (dst[name].domain != src.domain or dst[name].data_type != "BYTE_COLOR"):
+                    dst.remove(dst[name])
+                if name not in dst:
+                    dst.new(name=name, type="BYTE_COLOR", domain=src.domain)
+                part = arr[l0:l0 + nl] if src.domain == "CORNER" else arr[v0:v0 + nv]
+                _write(dst[name], part, key)
+
+
+def _drop_combined(job):
+    for c in job.pop("combined", []):
+        ob = bpy.data.objects.get(c["name"])
+        if ob is not None:
+            me = ob.data
+            bpy.data.objects.remove(ob)
+            if me.users == 0:
+                bpy.data.meshes.remove(me)
+    for n, h in job.pop("hidden", {}).items():
+        o = bpy.data.objects.get(n)
+        if o is not None:
+            o.hide_render = h
+
+
+def _bake_objs(job, emit=False):
+    """The objects a pass bakes: the combined meshes, else the meshes."""
+    if "combined" in job:
+        want = set(job["emit_objs"]) if emit else None
+        return _objs([c["name"] for c in job["combined"]
+                      if want is None or any(p[0] in want for p in c["parts"])])
+    return _objs(job["emit_objs"] if emit else job["objs"])
+
+
 # ── the pass queue ──────────────────────────────────────────────────────────
 
 _JOB: dict = {}
@@ -594,7 +775,7 @@ def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
     if kind.startswith("light"):
-        objs = _objs(job["objs"])
+        objs = _bake_objs(job)
         attr = kind[6:] or BAKE_ATTR       # "light" or "light:_SUNRISE"
         if attr != BAKE_ATTR:
             _tod_setup(job, attr)
@@ -604,7 +785,7 @@ def _run_pass():
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
         _relink(job, "Color")              # emission may come from vertex colours (alpha stays off)
-        objs = _objs(job["emit_objs"])
+        objs = _bake_objs(job, emit=True)
         _prepare(objs, _EMIT_ATTR, job["domain"])
         args = dict(type="EMIT")
     _select_only(objs)
@@ -613,7 +794,9 @@ def _run_pass():
     job["pass_t"] = time.time()
     job["seen"] = False
     label = {a: l for _k, a, l, *_r in TIMES}.get(kind[6:], kind) if kind.startswith("light:") else kind
-    _status(f"Baking: {label} pass ({len(objs)} mesh(es)) — {job['i'] + 1} of {len(job['passes'])}")
+    what = (f"{len(job['objs'])} mesh(es) as {len(objs)} combined" if "combined" in job
+            else f"{len(objs)} mesh(es)")
+    _status(f"Baking: {label} pass ({what}) — {job['i'] + 1} of {len(job['passes'])}")
     if job["blocking"]:
         bpy.ops.object.bake("EXEC_DEFAULT", target="VERTEX_COLORS", save_mode="INTERNAL", **args)
         _next()
@@ -697,6 +880,7 @@ def _tod_setup(job, attr):
 
 def _restore(job):
     _relink(job)
+    _drop_combined(job)
     r = job.get("restore")
     if not r:
         return
@@ -708,8 +892,11 @@ def _restore(job):
 
 
 def _finish():
+    import time
     job = dict(_JOB)
     _JOB.clear()
+    attrs = tuple(p[6:] or BAKE_ATTR for p in job["passes"] if p.startswith("light"))
+    _uncombine(job, attrs + (_EMIT_ATTR,))
     _restore(job)
     _status("Baking: post-processing…")
     _select_only(_objs(job["objs"]))       # the selection the bake started with
@@ -719,15 +906,25 @@ def _finish():
         return
     mapping = curve_mapping(col) if settings.use_curve else None
     luts = curve_luts(mapping) if mapping is not None else None
-    attrs = tuple(p[6:] or BAKE_ATTR for p in job["passes"] if p.startswith("light"))
     for n in job["objs"]:
         o = bpy.data.objects.get(n)
         if o is not None:
             post_process(o, settings, mapping, o.name in job["emit_objs"], attrs, luts)
     labels = {a: l for _k, a, l, *_r in TIMES}
-    steps = [labels.get(p[6:], p) if p.startswith("light:") else p for p in job["passes"]] + \
-            [x for x, on in (("curve", settings.use_curve), ("blur", settings.use_blur)) if on]
-    _status(f"Baked {len(job['objs'])} mesh(es): {' + '.join(steps)}")
+    times = [labels[p[6:]] for p in job["passes"] if p.startswith("light:")]
+    extra = [x for x, on in (("emit", "emit" in job["passes"]), ("curve", settings.use_curve),
+                             ("blur", settings.use_blur)) if on]
+    m, s = divmod(int(round(time.time() - job["t0"])), 60)
+    msg = f"Baked {len(job['objs'])} mesh(es)"
+    if times:
+        msg += f", {len(times)} time(s) of day"
+    msg += f" in {m:02d}:{s:02d}"
+    if job.get("was_combined"):
+        msg += " (combined)"
+    if times or extra:
+        msg += f": {', '.join(times + extra)}"
+    _status(msg)
+    print("[OpenGOAL] " + msg)
 
 
 def _safe(fn):
@@ -775,10 +972,15 @@ def start(objs, level_col, blocking=False):
         passes.append("emit")
     _JOB.clear()
     import time
-    _JOB.update({"t": time.time(), "objs": [o.name for o in objs], "emit_objs": emit_objs, "passes": passes, "i": 0,
+    _JOB.update({"t": time.time(), "t0": time.time(), "objs": [o.name for o in objs], "emit_objs": emit_objs,
+                 "passes": passes, "i": 0,
                  "domain": s.domain if s is not None else "CORNER",
                  "ignore_vc": s.ignore_vertex_colors if s is not None else True,
                  "level": level_col.name if level_col is not None else "", "blocking": blocking})
+    if s is not None and s.combine and len(objs) > 1:
+        _JOB["was_combined"] = True
+        _status("Baking: combining meshes…")
+        _safe(lambda: _combine(_JOB, objs))
     _safe(_run_pass)
     return passes
 
@@ -803,6 +1005,7 @@ def draw_options(layout, level_col, scene=None):
         return
     if scene is not None:
         box.prop(scene.og_props, "lightbake_samples")
+    box.prop(s, "combine")
     box.row().prop(s, "domain", expand=True)
     box.prop(s, "emit_strength")
     r = box.row(); r.enabled = False
