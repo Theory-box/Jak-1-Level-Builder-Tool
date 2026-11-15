@@ -98,7 +98,7 @@
            (process-taskable-method-46 self)
            (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
                           (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
-                (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
+                (< (fabs (- (-> (target-pos 0) y) (-> self root trans y))) (meters 10))
                 ;; og:preserve-this
                 (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) (res-lump-float (-> self entity) 'talk-dist :default (meters 8)))
                 (= (-> *level* loading-level) (-> *level* level-default))

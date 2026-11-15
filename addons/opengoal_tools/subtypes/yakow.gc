@@ -23,15 +23,18 @@
      (let ((cam (res-lump-struct (-> self entity) 'pen-camera string)))
        (when cam
          (process-spawn-function process
-           (lambda ((arg0 string) (arg1 float))
+           (lambda ((arg0 string) (arg1 float) (arg2 process))
              (camera-change-to arg0 0 #f)
+             (send-event *camera* 'change-target arg2)   ; looks at the last yakow penned
              (let ((s5-0 (current-time)))
                (until (time-elapsed? s5-0 (the int (* 300.0 arg1)))
                  (suspend)))
+             (send-event *camera* 'change-target *target*)
              (camera-change-to (the-as string 'base) 150 #f)
              (none))
            cam
            (res-lump-float (-> self entity) 'shot-time :default 4.0)
+           self
            :to *entity-pool*))))
     ((2))
     (else
