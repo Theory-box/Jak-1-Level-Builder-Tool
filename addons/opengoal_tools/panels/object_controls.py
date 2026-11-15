@@ -198,6 +198,28 @@ class OG_PT_SetToFloor(Panel):
         r.label(text="Ignores volumes, nav-meshes, previews and the selection", icon="INFO")
 
 
+class OG_PT_CopyLighting(Panel):
+    bl_label = "Copy Vertex Lighting from Closest"
+    bl_idname = "OG_PT_copy_lighting"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_copy_light
+        layout = self.layout
+        layout.prop(s, "mode", text="")
+        layout.prop(s, "search")
+        layout.prop(s, "distance")
+        n = 1 if s.mode == "ACTIVE" else sum(1 for o in ctx.selected_objects if o.type == "MESH")
+        txt = f"Copy to {n} mesh(es)" if n else "Copy Vertex Lighting"
+        layout.operator("og.copy_lighting", text=txt, icon="GROUP_VCOL")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="BakedLight + time of day layers; alpha is kept", icon="INFO")
+
+
 class OG_PT_DistributeAlongCurve(Panel):
     bl_label = "Distribute Along Curve"
     bl_idname = "OG_PT_distribute_along_curve"
@@ -277,4 +299,4 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
+           OG_PT_SetToFloor, OG_PT_CopyLighting, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

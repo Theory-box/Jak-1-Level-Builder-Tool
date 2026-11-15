@@ -40,7 +40,9 @@ matches). Linked (library) meshes are skipped like now.
 Test: a synthetic heavy scene, per-object vs combined: time per pass and the colour
 difference per object (should be only sampling noise).
 
-## Plan: Copy vertex lighting from closest (not started)
+## Copy vertex lighting from closest (done: bake.copy_lighting, Object Controls sub-panel)
+Test: _claude_tmp/bl_copylight.py (ramp-coloured ground, 300 grass quads half under it: max error 0.3 %).
+Original plan:
 Objects Control > "Copy vertex lighting from closest":
 - Mode: "Selected to active" (sources: the other selected meshes, target: the active one) or
   "Any geometry to selected" (sources: the level's exported meshes that aren't selected).

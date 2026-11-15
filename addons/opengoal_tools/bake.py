@@ -36,6 +36,7 @@ from __future__ import annotations
 import math
 import numpy as np
 import bpy
+from mathutils import Vector
 
 BAKE_ATTR = "BakedLight"
 _EMIT_ATTR = "_og_bake_emit"
@@ -683,6 +684,134 @@ def _bake_objs(job, emit=False):
         return _objs([c["name"] for c in job["combined"]
                       if want is None or any(p[0] in want for p in c["parts"])])
     return _objs(job["emit_objs"] if emit else job["objs"])
+
+
+# ── copy lighting from the closest geometry ─────────────────────────────────
+# Grass / plants standing on the ground light differently from it; this gives
+# their vertices the ground's baked colour. Each target vertex looks straight
+# down and up for a source face (the nearer hit), else takes the closest point
+# (Search: Closest point only skips the rays); the colour is interpolated on
+# that triangle. Done for BakedLight and every time of day layer; the
+# target's alpha stays.
+
+LIGHT_LAYERS = (BAKE_ATTR,) + TOD_ATTRS
+
+
+def _world_box(o, pad):
+    mw = o.matrix_world
+    pts = np.array([mw @ Vector(c) for c in o.bound_box])
+    return pts.min(0) - pad, pts.max(0) + pad
+
+
+def _sources_near(sources, targets, dist):
+    """Sources whose bounding box comes within dist of the targets'."""
+    if not targets:
+        return []
+    boxes = [_world_box(t, dist) for t in targets]
+    lo = np.min([b[0] for b in boxes], 0); hi = np.max([b[1] for b in boxes], 0)
+    out = []
+    for s in sources:
+        a, b = _world_box(s, 0.0)
+        if np.all(a <= hi) and np.all(b >= lo):
+            out.append(s)
+    return out
+
+
+def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
+    """Copy the baked light layers from `sources` onto `targets` (meshes).
+    Returns {"vertical": n, "closest": n, "missed": n, "layers": [...]}."""
+    from mathutils.bvhtree import BVHTree
+    sources = _sources_near([s for s in sources if s not in targets and s.type == "MESH"], targets, dist)
+    out = {"vertical": 0, "closest": 0, "missed": 0, "layers": []}
+    layers = [n for n in LIGHT_LAYERS if any(n in s.data.color_attributes for s in sources)]
+    if not sources or not layers:
+        return out
+    # all source triangles, world space; per triangle its 3 corners' colours per layer
+    verts, tris, cols = [], [], {n: [] for n in layers}
+    v0 = 0
+    for s in sources:
+        m = s.data
+        m.calc_loop_triangles()
+        nv = len(m.vertices)
+        co = np.empty(nv * 3, np.float32); m.vertices.foreach_get("co", co)
+        mw = np.array(s.matrix_world, np.float32)
+        verts.append(co.reshape(nv, 3) @ mw[:3, :3].T + mw[:3, 3])
+        nt = len(m.loop_triangles)
+        tv = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("vertices", tv)
+        tl = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("loops", tl)
+        tris.append(tv.reshape(nt, 3) + v0)
+        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        for n in layers:
+            ca = m.color_attributes.get(n)
+            if ca is None:
+                cols[n].append(np.full((nt, 3, 3), np.nan, np.float32))
+                continue
+            arr = np.empty(len(ca.data) * 4, np.float32); ca.data.foreach_get("color_srgb", arr)
+            arr = arr.reshape(-1, 4)[:, :3]
+            idx = tl if ca.domain == "CORNER" else lv[tl]
+            cols[n].append(arr[idx].reshape(nt, 3, 3))
+        v0 += nv
+    verts = np.concatenate(verts); tris = np.concatenate(tris)
+    cols = {n: np.concatenate(c) for n, c in cols.items()}
+    bvh = BVHTree.FromPolygons(verts.tolist(), tris.tolist(), all_triangles=True)
+    down, up = Vector((0, 0, -1)), Vector((0, 0, 1))
+    out["layers"] = layers
+    for t in targets:
+        m = t.data
+        nv = len(m.vertices)
+        co = np.empty(nv * 3, np.float32); m.vertices.foreach_get("co", co)
+        mw = np.array(t.matrix_world, np.float32)
+        pts = co.reshape(nv, 3) @ mw[:3, :3].T + mw[:3, 3]
+        hit_tri = np.full(nv, -1, np.int64); hit_loc = np.zeros((nv, 3), np.float32)
+        for i, p in enumerate(pts):
+            p = Vector(p)
+            best = None
+            if search == "VERTICAL":
+                for d in (down, up):
+                    loc, _n, idx, dd = bvh.ray_cast(p, d, dist)
+                    if idx is not None and (best is None or dd < best[2]):
+                        best = (loc, idx, dd)
+            if best is not None:
+                out["vertical"] += 1
+            else:
+                loc, _n, idx, dd = bvh.find_nearest(p, dist)
+                if idx is None:
+                    out["missed"] += 1
+                    continue
+                best = (loc, idx, dd)
+                out["closest"] += 1
+            hit_tri[i] = best[1]; hit_loc[i] = best[0]
+        ok = hit_tri >= 0
+        if not ok.any():
+            continue
+        # barycentric weights of each hit on its triangle
+        tri = verts[tris[hit_tri[ok]]]                      # (k, 3, 3)
+        a, b, c = tri[:, 0], tri[:, 1], tri[:, 2]
+        v0_, v1_, v2_ = b - a, c - a, hit_loc[ok] - a
+        d00 = (v0_ * v0_).sum(1); d01 = (v0_ * v1_).sum(1); d11 = (v1_ * v1_).sum(1)
+        d20 = (v2_ * v0_).sum(1); d21 = (v2_ * v1_).sum(1)
+        den = np.where(np.abs(d00 * d11 - d01 * d01) < 1e-12, 1.0, d00 * d11 - d01 * d01)
+        wv = (d11 * d20 - d01 * d21) / den; ww = (d00 * d21 - d01 * d20) / den
+        w = np.clip(np.stack([1 - wv - ww, wv, ww], 1), 0, 1)
+        w /= np.maximum(w.sum(1, keepdims=True), 1e-8)
+        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        cas = m.color_attributes
+        for n in layers:
+            rgb = np.full((nv, 3), np.nan, np.float32)
+            rgb[ok] = (cols[n][hit_tri[ok]] * w[:, :, None]).sum(1)
+            if np.isnan(rgb).all():
+                continue
+            if n not in cas:
+                cas.new(name=n, type="BYTE_COLOR", domain="CORNER")
+            ca = cas[n]
+            arr = np.empty(len(ca.data) * 4, np.float32); ca.data.foreach_get("color_srgb", arr)
+            arr = arr.reshape(-1, 4)
+            new = rgb if ca.domain == "POINT" else rgb[lv]
+            keep = np.isnan(new[:, 0])
+            arr[~keep, :3] = new[~keep]
+            ca.data.foreach_set("color_srgb", np.clip(arr, 0, 1).ravel())
+        m.update()
+    return out
 
 
 # ── the pass queue ──────────────────────────────────────────────────────────

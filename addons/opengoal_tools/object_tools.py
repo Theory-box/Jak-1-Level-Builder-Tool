@@ -505,9 +505,68 @@ them (with the art groups / code the actors need): to the clipboard and the file
         return {"FINISHED"}
 
 
+class OGCopyLightSettings(bpy.types.PropertyGroup):
+    mode: EnumProperty(name="Copy", default="ANY",
+                       items=[("ANY", "Any geometry to selected",
+                               "The selected meshes get the light of the level's other meshes"),
+                              ("ACTIVE", "Selected to active",
+                               "The active mesh gets the light of the other selected meshes")])
+    search: EnumProperty(name="Search", default="VERTICAL",
+                         items=[("VERTICAL", "Down / up, then closest",
+                                 "Straight down and up (the nearer hit), else the closest point"),
+                                ("CLOSEST", "Closest point", "The closest point of the source geometry")])
+    distance: FloatProperty(name="Max distance", default=5.0, min=0.0, unit="LENGTH",
+                            description="Vertices with no source geometry this close keep their colour")
+
+
+def copy_light_targets(ctx):
+    """(targets, sources) for Copy Lighting's mode."""
+    s = ctx.scene.og_copy_light
+    sel = [o for o in ctx.selected_objects if o.type == "MESH" and not o.get("og_preview_mesh")]
+    if s.mode == "ACTIVE":
+        act = ctx.view_layer.objects.active
+        if act is None or act.type != "MESH":
+            return [], []
+        return [act], [o for o in sel if o != act]
+    from .collections import _active_level_col
+    from .export.glb import exported_meshes
+    lv = _active_level_col(ctx.scene)
+    pool = exported_meshes(lv) if lv is not None else [o for o in ctx.scene.objects if o.type == "MESH"]
+    return sel, [o for o in pool if o not in sel]
+
+
+class OG_OT_CopyLighting(bpy.types.Operator):
+    """Copy the baked light (BakedLight and the time of day layers) from the nearby geometry onto the vertices
+(Object Controls > Copy Vertex Lighting settings)"""
+    bl_idname = "og.copy_lighting"
+    bl_label = "Copy Vertex Lighting"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.mode == "OBJECT" and bool(ctx.selected_objects)
+
+    def execute(self, ctx):
+        from . import bake
+        s = ctx.scene.og_copy_light
+        targets, sources = copy_light_targets(ctx)
+        if not targets or not sources:
+            self.report({"WARNING"}, "Nothing to copy from" if targets else "No target mesh")
+            return {"CANCELLED"}
+        r = bake.copy_lighting(targets, sources, s.search, s.distance)
+        if not r["layers"]:
+            self.report({"WARNING"}, "No baked light layer on the source meshes in range")
+            return {"CANCELLED"}
+        msg = f"Copied {', '.join(r['layers'])} to {len(targets)} mesh(es): "
+        msg += (f"{r['vertical']} vertices down / up, " if s.search == "VERTICAL" else "")
+        msg += f"{r['closest']} closest" + (f", {r['missed']} too far (kept)" if r["missed"] else "")
+        self.report({"WARNING"} if r["missed"] else {"INFO"}, msg)
+        return {"FINISHED"}
+
+
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs)
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting)
 
 
 def register_props():
@@ -515,6 +574,7 @@ def register_props():
     bpy.types.Scene.og_distribute = PointerProperty(type=OGDistributeSettings)
     bpy.types.Scene.og_convert = PointerProperty(type=OGConvertSettings)
     bpy.types.Scene.og_export_defs = PointerProperty(type=OGExportDefsSettings)
+    bpy.types.Scene.og_copy_light = PointerProperty(type=OGCopyLightSettings)
     subscribe()
     if _resubscribe not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(_resubscribe)       # msgbus subscriptions are cleared on file load
@@ -524,6 +584,6 @@ def unregister_props():
     bpy.msgbus.clear_by_owner(_MSGBUS_OWNER)
     if _resubscribe in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(_resubscribe)
-    for p in ("og_floor", "og_distribute", "og_convert", "og_export_defs"):
+    for p in ("og_floor", "og_distribute", "og_convert", "og_export_defs", "og_copy_light"):
         if hasattr(bpy.types.Scene, p):
             delattr(bpy.types.Scene, p)
