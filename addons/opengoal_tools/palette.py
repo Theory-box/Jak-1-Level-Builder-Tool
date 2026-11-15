@@ -14,6 +14,10 @@
 # tree: the preview follows the install (versions "time_of_day").
 # Preview runs the same steps on the level's exported meshes and shows one
 # time in a preview colour layer; Restore removes it.
+# Fixes (on the stored sRGB values, like the curve): Desaturate darks blends
+# colours under a brightness toward grey (fully at black, not at the level),
+# Snap near-greys makes almost-grey colours grey. Applied after every bake
+# (option), once on the selected meshes (button), or only in the preview.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -32,11 +36,37 @@ def _bytes(arr):
     return (np.clip(np.round(arr * 65535.0), 0, 65535).astype(np.uint32) >> 8).astype(np.uint8)
 
 
-def _corner_colours(mesh, attr):
-    """(corners, 4) linear colours of a colour layer, on face corners."""
+def fixes_on(s) -> bool:
+    return bool(s.fix_dark or s.fix_grey)
+
+
+def apply_fixes(cols, s):
+    """The ticked fixes on (n, 4) sRGB colours (alpha untouched)."""
+    rgb = cols[:, :3]
+    if s.fix_dark and s.fix_dark_level > 0 and s.fix_dark_strength > 0:
+        lum = rgb @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+        w = s.fix_dark_strength * np.clip((s.fix_dark_level - lum) / s.fix_dark_level, 0.0, 1.0)
+        rgb += (lum[:, None] - rgb) * w[:, None]
+    if s.fix_grey and s.fix_grey_threshold > 0:
+        near = (rgb.max(1) - rgb.min(1)) < s.fix_grey_threshold
+        rgb[near] = rgb[near].mean(1, keepdims=True)
+    cols[:, :3] = rgb
+    return cols
+
+
+def _to_linear(c):
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def _corner_colours(mesh, attr, fix=None):
+    """(corners, 4) linear colours of a colour layer, on face corners
+    (with `fix` settings: the fixes applied first, as they would be)."""
     a = np.empty(len(attr.data) * 4, np.float32)
-    attr.data.foreach_get("color", a)
+    attr.data.foreach_get("color_srgb" if fix is not None else "color", a)
     a = a.reshape(-1, 4)
+    if fix is not None:
+        a = apply_fixes(a, fix)
+        a[:, :3] = _to_linear(a[:, :3])
     if attr.domain == "POINT":
         lv = np.empty(len(mesh.loops), np.int32)
         mesh.loops.foreach_get("vertex_index", lv)
@@ -44,7 +74,7 @@ def _corner_colours(mesh, attr):
     return a
 
 
-def mesh_vectors(mesh, tod, wide=True):
+def mesh_vectors(mesh, tod, wide=True, fix=None):
     """(corners, 32) uint8 (4 for a build without time of day): what the
     level builder reads for this mesh."""
     from .bake import TOD_ATTRS, BAKE_ATTR
@@ -59,14 +89,14 @@ def mesh_vectors(mesh, tod, wide=True):
                     slots[i] = TOD_ATTRS[(i - d) % 8]; break
                 if have[(i + d) % 8]:
                     slots[i] = TOD_ATTRS[(i + d) % 8]; break
-        cols = {a: _bytes(_corner_colours(mesh, cas[a])) for a in set(slots)}
+        cols = {a: _bytes(_corner_colours(mesh, cas[a], fix)) for a in set(slots)}
         return np.concatenate([cols[a] for a in slots], axis=1)
     # COLOR_0: the layer the export makes active (bake.use_baked), else white
     name = next((x for x in (BAKE_ATTR, "_NOON") + TOD_ATTRS if x in cas), None)
     if name is None:
         rgba = np.tile(np.array([0x80, 0x80, 0x80, 0xFF], np.uint8), (n, 1))
     else:
-        rgba = _bytes(_corner_colours(mesh, cas[name]))
+        rgba = _bytes(_corner_colours(mesh, cas[name], fix))
     return np.tile(rgba, (1, 8)) if wide else rgba
 
 
@@ -177,7 +207,9 @@ def preview(level_col, slot):
     wide = bool(feature_available("time_of_day"))
     tod = bool(level_col.og_bake.tod_enabled) and wide
     meshes = _meshes(level_col)
-    vecs = [mesh_vectors(me, tod, wide) for me in meshes]
+    s = level_col.og_bake
+    fix = s if (s.palette_with_fixes and fixes_on(s)) else None
+    vecs = [mesh_vectors(me, tod, wide, fix) for me in meshes]
     allv = np.concatenate(vecs) if vecs else np.zeros((0, 32), np.uint8)
     if not len(allv):
         return {}
@@ -197,7 +229,7 @@ def preview(level_col, slot):
     show_time(meshes, slot)
     _STATS.clear()
     _STATS.update({"level": level_col.name, "unique": len(U), "palette": len(pal), "meshes": len(meshes),
-                   "tod": tod, "mean": per_time, "worst": worst})
+                   "tod": tod, "mean": per_time, "worst": worst, "fixed": fix is not None})
     return _STATS
 
 
@@ -256,7 +288,8 @@ def draw(layout, level_col):
     st = _STATS if _STATS.get("level") == level_col.name else None
     if st:
         col = box.column(align=True); col.scale_y = 0.8
-        col.label(text=f"{st['unique']} colours on {st['meshes']} mesh(es) -> {st['palette']} in the palette")
+        col.label(text=f"{st['unique']} colours on {st['meshes']} mesh(es) -> {st['palette']} in the palette"
+                       + (" (with fixes)" if st.get("fixed") else ""))
         if st["tod"]:
             from .bake import TIMES
             for i, (_k, _a, l, *_r) in enumerate(TIMES):
@@ -264,6 +297,20 @@ def draw(layout, level_col):
                 r.label(text=f"{l}: off by {st['mean'][i]:.1f} on average, {st['worst'][i]} at most (of 255)")
         else:
             col.label(text=f"Off by {st['mean'][0]:.1f} on average, {st['worst'][0]} at most (of 255)")
+    fx = box.box()
+    fx.label(text="Fixes", icon="MODIFIER")
+    fx.prop(s, "fix_dark")
+    if s.fix_dark:
+        r = fx.row(align=True)
+        r.prop(s, "fix_dark_level"); r.prop(s, "fix_dark_strength")
+    fx.prop(s, "fix_grey")
+    if s.fix_grey:
+        fx.prop(s, "fix_grey_threshold")
+    col = fx.column(); col.enabled = fixes_on(s)
+    col.prop(s, "palette_with_fixes")
+    col.prop(s, "fix_after_bake")
+    n = sum(1 for o in bpy.context.selected_objects if o.type == "MESH")
+    col.operator("og.palette_apply_fixes", text=f"Apply to {n} Selected" if n else "Apply to Selected", icon="CHECKMARK")
 
 
 class OG_OT_PaletteHelp(bpy.types.Operator):
@@ -318,4 +365,36 @@ class OG_OT_PaletteRestore(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OG_OT_PaletteHelp, OG_OT_PalettePreview, OG_OT_PaletteRestore)
+class OG_OT_PaletteApplyFixes(bpy.types.Operator):
+    """Apply the ticked fixes once to the bake layers (BakedLight, time of day) of the selected meshes.
+Applying again makes them stronger; Ctrl+Z or a new bake undoes them"""
+    bl_idname = "og.palette_apply_fixes"
+    bl_label = "Apply Fixes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from .collections import _active_level_col
+        from .bake import LIGHT_LAYERS, _read, _write
+        lv = _active_level_col(ctx.scene)
+        if lv is None or not fixes_on(lv.og_bake):
+            self.report({"WARNING"}, "Tick a fix first"); return {"CANCELLED"}
+        done = set(); n = 0
+        for o in ctx.selected_objects:
+            if o.type != "MESH" or o.data.name in done or o.data.library:
+                continue
+            done.add(o.data.name)
+            for name in LIGHT_LAYERS:
+                a = o.data.color_attributes.get(name)
+                if a is None:
+                    continue
+                cols, key = _read(a)
+                _write(a, np.clip(apply_fixes(cols, lv.og_bake), 0.0, 1.0), key)
+                n += 1
+            o.data.update()
+        if not n:
+            self.report({"WARNING"}, "No baked layer on the selected meshes"); return {"CANCELLED"}
+        self.report({"INFO"}, f"Fixes applied to {n} layer(s) on {len(done)} mesh(es)")
+        return {"FINISHED"}
+
+
+CLASSES = (OG_OT_PaletteHelp, OG_OT_PalettePreview, OG_OT_PaletteRestore, OG_OT_PaletteApplyFixes)

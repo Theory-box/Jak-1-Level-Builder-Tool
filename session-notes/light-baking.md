@@ -62,7 +62,9 @@ day (versions "time_of_day"). Checked against build_level's own log
 - test-modbase binary (4 bytes): 8969 unique -> 8192, worst diff 1.732 (build_level: same).
 Preview writes "OG Palette Preview" (float, corner) and makes it active + render; the export
 switches back to the bake (use_baked), Restore removes the layers.
-Possible next: options in post-processing (desaturate darks ...) once Kuitar has looked.
+Fixes (Kuitar: both ways): Desaturate darks (Level, Strength), Snap near-greys (Threshold); Apply
+after every bake (last post step), Apply to Selected (once, stacks), Preview with fixes. On the
+test level the fixes lower the average error per time by about 10-15 %.
 Original notes:
 How build_level makes the palette (jak-project goalc/build_level/common/color_quantization.cpp,
 gltf_mesh_extract.cpp): every vertex's colour is a 32-byte vector (8 times of day x RGBA; a

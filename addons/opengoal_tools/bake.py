@@ -231,6 +231,23 @@ class OGBakeSettings(bpy.types.PropertyGroup):
         name="Show", default="2", description="Time of day the palette preview shows",
         items=[(str(i), l, f"Show the {l} colours") for i, (_k, _a, l, *_r) in enumerate(TIMES)],
         update=lambda self, ctx: _palette.time_update(self, ctx))
+    fix_dark: bpy.props.BoolProperty(
+        name="Desaturate darks", default=False,
+        description="Colours darker than the level blend toward grey (fully at black): fewer tinted spots in shadows")
+    fix_dark_level: bpy.props.FloatProperty(name="Level", default=0.25, min=0.0, max=1.0, subtype="FACTOR",
+                                            description="Brightness under which colours lose colour")
+    fix_dark_strength: bpy.props.FloatProperty(name="Strength", default=1.0, min=0.0, max=1.0, subtype="FACTOR")
+    fix_grey: bpy.props.BoolProperty(
+        name="Snap near-greys", default=False,
+        description="Colours that are almost grey become grey: fewer palette colours spent on faint tints")
+    fix_grey_threshold: bpy.props.FloatProperty(name="Threshold", default=0.03, min=0.0, max=0.5,
+                                                description="Largest difference between R, G and B still snapped")
+    palette_with_fixes: bpy.props.BoolProperty(
+        name="Preview with fixes", default=True,
+        description="Preview Palette shows the palette as if the fixes were applied (your bake isn't changed)")
+    fix_after_bake: bpy.props.BoolProperty(
+        name="Apply after every bake", default=False,
+        description="The ticked fixes are the last step of every bake (after curve and blur)")
     show_tod: bpy.props.BoolProperty(name="Time of day", default=True)
     tod_enabled: bpy.props.BoolProperty(
         name="Time of day", default=False,
@@ -446,6 +463,8 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
                 sf = sharp_arrays(obj)              # once per object
             cols = blur(mesh, cols, attr.domain, settings.blur_strength, settings.blur_passes,
                         settings.blur_keep_sharp, settings.blur_angle if settings.blur_auto_sharp else None, sf)
+        if settings.fix_after_bake and _palette.fixes_on(settings):
+            cols = _palette.apply_fixes(cols, settings)
         # last step: the user's alpha (the bake writes 1.0)
         src = alpha_source(mesh, name)
         if src is not None:
@@ -1061,7 +1080,8 @@ def _finish():
     labels = {a: l for _k, a, l, *_r in TIMES}
     times = [labels[p[6:]] for p in job["passes"] if p.startswith("light:")]
     extra = [x for x, on in (("emit", "emit" in job["passes"]), ("curve", settings.use_curve),
-                             ("blur", settings.use_blur)) if on]
+                             ("blur", settings.use_blur),
+                             ("fixes", settings.fix_after_bake and _palette.fixes_on(settings))) if on]
     m, s = divmod(int(round(time.time() - job["t0"])), 60)
     msg = f"Baked {len(job['objs'])} mesh(es)"
     if times:
