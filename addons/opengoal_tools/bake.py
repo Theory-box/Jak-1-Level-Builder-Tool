@@ -538,9 +538,19 @@ def _skip_layer(name):
     return name in (BAKE_ATTR, _EMIT_ATTR) or name in TOD_ATTRS
 
 
+def _flip_order(m, starts):
+    """Each corner's position once every face's winding is reversed (the
+    first corner stays): corner k of an n-corner face goes to (n - k) % n."""
+    tot = np.empty(len(starts), np.int32); m.polygons.foreach_get("loop_total", tot)
+    poly = np.repeat(np.arange(len(starts)), tot)
+    k = np.arange(len(m.loops)) - starts[poly]
+    return starts[poly] + (tot[poly] - k) % tot[poly]
+
+
 def _combined_mesh(objs, index):
     """One temporary object holding objs' meshes. Returns (object, parts):
-    parts = [(object name, first corner, corners, first vertex, vertices)]."""
+    parts = [(object name, first corner, corners, first vertex, vertices,
+    each corner's place in the copy after the first corner)]."""
     me = bpy.data.meshes.new(f"{_COMBINED}{index}")
     nv = sum(len(o.data.vertices) for o in objs)
     nl = sum(len(o.data.loops) for o in objs)
@@ -563,8 +573,11 @@ def _combined_mesh(objs, index):
         x = np.empty(a * 3, np.float32); m.vertices.foreach_get("co", x)
         x = x.reshape(a, 3) @ mw[:3, :3].T + mw[:3, 3]
         co[v0 * 3:(v0 + a) * 3] = x.ravel()
-        t = np.empty(b, np.int32); m.loops.foreach_get("vertex_index", t); lv[l0:l0 + b] = t + v0
-        t = np.empty(c, np.int32); m.polygons.foreach_get("loop_start", t); ls[p0:p0 + c] = t + l0
+        pst = np.empty(c, np.int32); m.polygons.foreach_get("loop_start", pst); ls[p0:p0 + c] = pst + l0
+        # mirrored (negative scale): faces wound the other way, each corner's place in the copy
+        pos = _flip_order(m, pst) if np.linalg.det(mw[:3, :3]) < 0 else np.arange(b)
+        at = l0 + pos
+        t = np.empty(b, np.int32); m.loops.foreach_get("vertex_index", t); lv[at] = t + v0
         # material slots -> the combined mesh's slots
         remap = []
         for s in o.material_slots or [None]:
@@ -580,9 +593,9 @@ def _combined_mesh(objs, index):
         n = np.empty(b * 3, np.float32)
         (em if len(em.loops) == b else m).corner_normals.foreach_get("vector", n)
         n = n.reshape(b, 3) @ np.linalg.inv(mw[:3, :3])     # rows: n' = (M^-1)^T n
-        nrm[l0:l0 + b] = n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-8)
+        nrm[at] = n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-8)
         for u in m.uv_layers:
-            t = np.empty(b * 2, np.float32); u.data.foreach_get("uv", t); uvs[u.name][l0 * 2:(l0 + b) * 2] = t
+            t = np.empty(b * 2, np.float32); u.data.foreach_get("uv", t); uvs[u.name].reshape(-1, 2)[at] = t.reshape(b, 2)
         for ca in m.color_attributes:
             if ca.name not in cols:
                 continue
@@ -591,8 +604,8 @@ def _combined_mesh(objs, index):
             arr = arr.reshape(-1, 4)
             if ca.domain == "POINT":
                 vi = np.empty(b, np.int32); m.loops.foreach_get("vertex_index", vi); arr = arr[vi]
-            cols[ca.name][l0 * 4:(l0 + b) * 4] = arr.ravel()
-        parts.append((o.name, l0, b, v0, a))
+            cols[ca.name].reshape(-1, 4)[at] = arr
+        parts.append((o.name, l0, b, v0, a, pos))
         v0 += a; l0 += b; p0 += c
     me.vertices.foreach_set("co", co)
     me.loops.foreach_set("vertex_index", lv)
@@ -650,7 +663,7 @@ def _uncombine(job, attrs):
             if src is None:
                 continue
             arr, key = _read(src)
-            for oname, l0, nl, v0, nv in c["parts"]:
+            for oname, l0, nl, v0, nv, pos in c["parts"]:
                 o = bpy.data.objects.get(oname)
                 if o is None or (name == _EMIT_ATTR and oname not in job["emit_objs"]):
                     continue
@@ -659,7 +672,7 @@ def _uncombine(job, attrs):
                     dst.remove(dst[name])
                 if name not in dst:
                     dst.new(name=name, type="BYTE_COLOR", domain=src.domain)
-                part = arr[l0:l0 + nl] if src.domain == "CORNER" else arr[v0:v0 + nv]
+                part = arr[l0 + pos] if src.domain == "CORNER" else arr[v0:v0 + nv]
                 _write(dst[name], part, key)
 
 
