@@ -396,6 +396,24 @@ When a new actor is created it'd create a new main collection for all custom act
 
 ---
 
+## UV tools
+New menu in Object controls with a bunch of tools for editing UVs in ways that are useful for openGOAL. Each would be a sub menu in the general UV Tools. Each tool would work on the whole mesh (or the selected faces if in edit mode)
+### Fit Faces on UV
+This mode would take each quad face and place all 4 points in all corner coordinates of the UV (Triangles would go to 3 of the corners. N-gons wouldn't get moved)
+This would have these options:
+- Scale (default to 1.0) Scale the whole UV result by that value
+- Rotation (Default to 0.0) Rotate the whole UV result
+- Pivot: Set where the scale and rotation pivot point is centered on. Whith these options:
+  - Corner (the 0,0 corner of the UV space)
+  - Center (the 0.5,0.5 center of the UV space)
+- Placement: Set how multiple faces are placed
+  - Overlap (every face overlap at the center)
+  - Spread (Faces are spread next to each other, with connected faces still connected. Starting from a cube project so a mesh with depth can be still worked with)
+### Cube Project
+Simply use the cube project with a scale modifier as well as an option to normalise each faces or not.
+
+---
+
 ## Creating custom Particles tool (extra addon?)
 It's a lot easier to just have people creating their own particle files and edit them in terms of buidling the addon but ideally. 
 It would be very useful to have a particle editor and preview directly in blender where you can create, edit and see how each particle group work as that would be a lot quicker than editing particle files and then seeing the affect in game.
