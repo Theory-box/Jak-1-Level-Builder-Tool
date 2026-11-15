@@ -5,9 +5,25 @@ actor itself; this file is the overview.
 
 ---
 
-## Second entity pass: ready for runtime testing
-The following now have database records and separate edited GOAL files. Compiler and
-Blender export checks pass; in-game behavior, previews, and save/reload still need testing.
+## Entity pass 3 (to do)
+Put on hold after the second pass (merged to main). What's left:
+- **Category checks, every actor**: go through each category and place / export / run each
+  actor. Check its fields and defaults, its soft warnings (add the ones it needs, see Soft
+  warnings below), its sound banks (DB "sounds"), its preview, and its description.
+- **Custom tasks**: check the actors with a task picker with a custom task in game (see
+  Custom tasks on actors below).
+- **Older notes**: the leftovers from the earlier passes (Older notes below).
+- **Enemy drops**: the Drop panel (Change Drop) is on nav-enemies, bully, puffer,
+  mother-spider and swamp-rat-nest, the enemies that drop their fact-info pickup when they
+  die. Checked in game on the bully only; check a nav-enemy (babak) too. The other enemies
+  (swamp-bat, junglesnake, lurkerworm, quicksandlurker, balloonlurker, driller-lurker,
+  rolling-robber) never drop anything; giving them drops would need edited code.
+- **Hidden actors**: look again at the Hidden table below.
+- **Not doable as-is**: aiming Klaww's boulders (villageb-ogreboss), the throws are animations.
+
+## Second entity pass: done (merged to main)
+The following have database records and separate edited GOAL files, checked in game with
+Kuitar's fix rounds (see the Edited actors table at the end for everything changed).
 - **citb-stair-plat / silostep**: triggerable stairs; configurable rise/delay on Citadel stairs,
   linked silo steps; no vanilla task or camera gate. **citb-drop-plat** already had its grid UI.
 - **reflector-mirror**: configurable beam endpoint; breaking it sends stop to linked receivers.
@@ -55,7 +71,6 @@ Blender export checks pass; in-game behavior, previews, and save/reload still ne
   within ~20 m of it. Light eco sparkle particles are cut below vanilla heights (cosmetic).
 - **swamp-blimp**: floats away without a tether rock; edited tether rocks now use their own tasks / cameras.
 - **sage-finalboss**: the credits end the game like vanilla.
-- **oracle**: the trade needs a vanilla oracle task pair (the orb check is in their stages).
 - **gondola**: the ride is the vanilla cutscene; the top station sits where it does in vanilla (~186 m up).
 - **villageb-ogreboss**: the boulders follow the vanilla throw animations from his spot.
 - **yakow**: the pen is the NAV Special faces of its nav-mesh.
@@ -78,11 +93,6 @@ game with one yet. To check with a custom task: fuel-cell, buzzer
 pontoon / race-ring alternate tasks, and anything with a game-task panel. Look
 for: the cell / fly spawns, collecting it closes need-resolution / counts the
 fly for that task, and it stays collected after a save + reload.
-
-## Enemy drops (for the enemies pass)
-Killing an enemy drops its eco (green eco pills for most): nav-enemies and some others
-can drop other things. Give them the pickup picker (what they drop / how many), like
-the crate contents, where their code reads it (fact-info pickup-type / pickup-amount).
 
 ## Soft warnings (required.py soft())
 Required-field warnings (the red "N⚠" counts) are for things that break the game or the
@@ -155,7 +165,9 @@ actors it's for, `;; place: shared` = default place).
 | seagullflock / lrocklrg | own task, optional blackout, rock cell at movie-pos |
 | energyhub / energydoor | doors in the hub's next-actor chain close behind Jak until it's stopped |
 | evilbro / evilsis (hidden) | talk / once the task is done / when triggered |
-| oracle | speeches picked in Blender (Sandover / Rock Village / Volcanic Crater) |
+| oracle | any task per eye (game task + Linked task), price, speeches picked in Blender (Sandover / Rock Village / Volcanic Crater), talk distance / height |
+| yakow / farmer | lone yakows count, pen shot (vanilla shot / linked camera / none), farmer's own task |
+| talkers (assistants, bird lady, sages, oracle) | Talk height field: how high above them Jak can be for the prompt |
 | gondola / pistons | own task / cell gate, optional continue points, no level loads; pistons standalone |
 | windmill-sail | fast by its own task, turn times, fast sound |
 | villageb-ogreboss | removed by its own task, throws optional |

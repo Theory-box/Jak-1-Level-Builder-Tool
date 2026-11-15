@@ -103,9 +103,9 @@ Add a collapsable menu at the bottom of nav-mesh for nav-sphere. Where you can a
 
 ---
 
-# Second entity pass (in progress)
-Continuation status: new actor records and edited files implemented; static/Blender export
-validation complete, runtime acceptance pending. See Actor Notes and session-notes/entity-pass-2.md.
+# Second entity pass (in main)
+Done and merged. What's left (category checks, custom tasks, older notes) is listed for an
+"entity pass 3" in Actor Notes. See also session-notes/entity-pass-2.md.
 Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
 ### nav-enemy
 Change the info to "Nav-enemy, needs navmesh and path"
