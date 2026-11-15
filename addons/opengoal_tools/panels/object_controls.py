@@ -287,7 +287,7 @@ def _effect_panel(kind, label):
     return _P
 
 
-_EFFECT_PANELS = tuple(_effect_panel(k, l) for k, l in (("CURVE", "Curve Correction"), ("HUE", "Overwrite Hue"),
+_EFFECT_PANELS = tuple(_effect_panel(k, l) for k, l in (("CURVE", "Curve Correction"), ("COLOR", "Overwrite Color"),
                                                          ("ALPHA", "Overwrite Alpha"), ("BLUR", "Blur")))
 
 

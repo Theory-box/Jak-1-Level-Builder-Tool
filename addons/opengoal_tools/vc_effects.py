@@ -6,8 +6,9 @@
 #   - Effects After Bake: an effect stack per object (like modifiers), applied
 #     in order after a bake when Light Baking > Apply effects is on.
 # Effects: Curve Correction (an RGB curve, the bake curve's presets),
-# Overwrite Hue (keeps saturation / value), Overwrite Alpha, Blur (the auto
-# blur). All but Blur have a Factor. Values are the stored sRGB ones.
+# Overwrite Color (moves each colour's hue / saturation / value toward the
+# picked colour's, a factor each), Overwrite Alpha, Blur (the auto blur).
+# Curve and Alpha have a Factor. Values are the stored sRGB ones.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ from bpy.props import (BoolProperty, EnumProperty, FloatProperty, FloatVectorPro
                        PointerProperty, CollectionProperty, StringProperty)
 
 KINDS = (("CURVE", "Curve Correction", "Remap the colours with a curve", "FCURVE"),
-         ("HUE", "Overwrite Hue", "Give every colour this hue (saturation and value stay)", "COLOR"),
+         ("COLOR", "Overwrite Color", "Move every colour's hue / saturation / value toward this colour's", "COLOR"),
          ("ALPHA", "Overwrite Alpha", "Set the alpha of every colour", "IMAGE_ALPHA"),
          ("BLUR", "Blur", "Average neighbouring colours", "MOD_SMOOTH"))
 _LABEL = {k: l for k, l, _d, _i in KINDS}
@@ -44,8 +45,13 @@ class OGVcEffect(bpy.types.PropertyGroup):
                           description="How much the effect changes the colours")
     curve: PointerProperty(type=bpy.types.NodeTree, name="Curve")
     curve_preset: EnumProperty(name="Preset", items=_curve_preset_items, update=_curve_preset_update)
-    hue: FloatVectorProperty(name="Hue", subtype="COLOR", size=3, min=0.0, max=1.0, default=(1.0, 0.5, 0.2),
-                             description="Its hue is used (not its saturation / value)")
+    color: FloatVectorProperty(name="Color", subtype="COLOR", size=3, min=0.0, max=1.0, default=(1.0, 0.5, 0.2))
+    hue_factor: FloatProperty(name="Hue Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
+                              description="How much each colour's hue moves to the colour's hue")
+    sat_factor: FloatProperty(name="Saturation Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
+                              description="How much each colour's saturation moves to the colour's saturation")
+    val_factor: FloatProperty(name="Value Factor", default=0.0, min=0.0, max=1.0, subtype="FACTOR",
+                              description="How much each colour's value (brightness) moves to the colour's value")
     alpha: FloatProperty(name="Alpha", default=1.0, min=0.0, max=1.0, subtype="FACTOR")
     blur_strength: FloatProperty(name="Strength", default=0.5, min=0.0, max=1.0, subtype="FACTOR")
     blur_passes: IntProperty(name="Passes", default=2, min=1, max=50)
@@ -58,26 +64,33 @@ class OGVcEffect(bpy.types.PropertyGroup):
 
 # ── the effects ─────────────────────────────────────────────────────────────
 
-def _hue_of(rgb):
-    r, g, b = rgb
-    mx, mn = max(rgb), min(rgb)
-    if mx == mn:
-        return None
-    d = mx - mn
-    h = ((g - b) / d) % 6 if mx == r else ((b - r) / d + 2 if mx == g else (r - g) / d + 4)
-    return h / 6.0
+def rgb_to_hsv(rgb):
+    """(n, 3) -> h, s, v arrays (h in 0-1; 0 for greys)."""
+    r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
+    v = rgb.max(1); mn = rgb.min(1); d = v - mn
+    s = np.where(v > 0, d / np.maximum(v, 1e-8), 0.0)
+    dd = np.maximum(d, 1e-8)
+    h = np.where(v == r, ((g - b) / dd) % 6, np.where(v == g, (b - r) / dd + 2, (r - g) / dd + 4))
+    return np.where(d > 0, h / 6.0, 0.0), s, v
 
 
-def overwrite_hue(cols, hue, factor):
-    rgb = cols[:, :3]
-    v = rgb.max(1)
-    s = np.where(v > 0, (v - rgb.min(1)) / np.maximum(v, 1e-8), 0.0)
-    h6 = hue * 6.0
-    i = int(h6) % 6
-    f = h6 - int(h6)
+def hsv_to_rgb(h, s, v):
+    h6 = (h % 1.0) * 6.0
+    i = np.floor(h6).astype(np.int64) % 6
+    f = h6 - np.floor(h6)
     p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
-    new = [np.stack(c, 1) for c in ((v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q))][i]
-    cols[:, :3] = rgb + (new - rgb) * factor
+    r = np.choose(i, [v, q, p, p, t, v]); g = np.choose(i, [t, v, v, q, p, p]); b = np.choose(i, [p, p, t, v, v, q])
+    return np.stack([r, g, b], 1)
+
+
+def overwrite_color(cols, color, hf, sf, vf):
+    """Each colour's hue / saturation / value moved toward the colour's (a
+    factor each; hue the short way round; a grey's hue is the target's)."""
+    h, s, v = rgb_to_hsv(cols[:, :3])
+    th, ts, tv = (x[0] for x in rgb_to_hsv(np.array([color], np.float32)))
+    h = np.where(s > 0, h, th)
+    dh = (th - h + 0.5) % 1.0 - 0.5
+    cols[:, :3] = hsv_to_rgb(h + dh * hf, s + (ts - s) * sf, v + (tv - v) * vf)
     return cols
 
 
@@ -108,9 +121,6 @@ def apply_effect(obj, fx, layers=None, kind=None):
         if m is None:
             return 0
         luts = curve_luts(m)
-    hue = _hue_of(tuple(fx.hue)) if kind == "HUE" else None
-    if kind == "HUE" and hue is None:
-        hue = 0.0                                   # a grey pick: red hue
     sf = None
     n = 0
     for name in layers or LIGHT_LAYERS:
@@ -120,8 +130,8 @@ def apply_effect(obj, fx, layers=None, kind=None):
         cols, key = _read(a)
         if kind == "CURVE":
             cols = apply_curve(cols, luts[0], luts[1], fx.factor)
-        elif kind == "HUE":
-            cols = overwrite_hue(cols, hue, fx.factor)
+        elif kind == "COLOR":
+            cols = overwrite_color(cols, tuple(fx.color), fx.hue_factor, fx.sat_factor, fx.val_factor)
         elif kind == "ALPHA":
             cols[:, 3] += (fx.alpha - cols[:, 3]) * fx.factor
         elif kind == "BLUR":
@@ -245,7 +255,8 @@ class OG_OT_VcEffectEdit(bpy.types.Operator):
         return {"FINISHED"}
 
 
-_COPY_PROPS = ("kind", "enabled", "show", "factor", "curve_preset", "hue", "alpha", "blur_strength",
+_COPY_PROPS = ("kind", "enabled", "show", "factor", "curve_preset", "color", "hue_factor", "sat_factor",
+               "val_factor", "alpha", "blur_strength",
                "blur_passes", "blur_keep_sharp", "blur_auto_sharp", "blur_angle")
 
 
@@ -302,11 +313,15 @@ def draw_options(layout, fx, init_index, kind=None):
         else:
             node = next(n for n in fx.curve.nodes if n.bl_idname == "ShaderNodeRGBCurve")
             layout.template_curve_mapping(node, "mapping", type="COLOR")
-    elif kind == "HUE":
-        layout.prop(fx, "hue")
+    elif kind == "COLOR":
+        layout.prop(fx, "color")
+        col = layout.column(align=True)
+        col.prop(fx, "hue_factor"); col.prop(fx, "sat_factor"); col.prop(fx, "val_factor")
     elif kind == "ALPHA":
         layout.prop(fx, "alpha")
-    if kind == "BLUR":
+    if kind == "COLOR":
+        pass
+    elif kind == "BLUR":
         r = layout.row(align=True)
         r.prop(fx, "blur_strength"); r.prop(fx, "blur_passes")
         layout.prop(fx, "blur_keep_sharp")

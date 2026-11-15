@@ -90,9 +90,9 @@ Proposed:
 3. Possibly a jak-project change later (more depth, a better split choice); outside the addon.
 
 ## Vertex colour effects (vc_effects.py, Object Controls > Vertex Colors)
-- Apply Effect: Curve Correction (own curve "OG Effect Curve", bake curve presets), Overwrite
-  Hue (keeps saturation / value), Overwrite Alpha, Blur (auto blur options); Factor on all but
-  Blur; on BakedLight + every time of day layer of the selected meshes.
+- Apply Effect: Curve Correction (own curve "OG Effect Curve", bake curve presets), Overwrite Color
+  (hue / saturation / value factors, 1 / 1 / 0), Overwrite Alpha, Blur (auto blur options); Factor on curve,
+  alpha; on BakedLight + every time of day layer of the selected meshes.
 - Effects After Bake: per-object stack (Object.og_vc_effects; a curve effect owns its node
   group), on / off, up / down / remove, Copy Effects to Selected, Apply Effects Now. Light
   Baking > Bake options > Apply effects (off by default) runs each mesh's stack after its
