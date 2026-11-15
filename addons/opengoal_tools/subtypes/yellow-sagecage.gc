@@ -6,7 +6,7 @@
 ;;   his task's cell, if any, comes with it), 1 breaking its generator: a Citadel Generator
 ;;   that sends him 'trigger (its alt-actor / trigger-actor: after its cell is taken), or
 ;;   his Freed by actor (alt-actor) once it's complete and his task's cell is taken. The
-;;   rescue then plays by itself when Jak is near (16 m).
+;;   rescue then plays by itself, after the cell's cutscene, wherever Jak is.
 ;; - Once rescued (saved, his complete status) he can't be talked to, his cage is open and
 ;;   he fires his beam at the Beam target empty (beam-target lump; none: no beam).
 ;; - 'open (a generator's open actor) drops the bars, as vanilla.
@@ -119,7 +119,7 @@ complete (broken) and his task's cell is taken."
            (process-taskable-method-46 self)
            (and (not (and (logtest? (-> *target* control unknown-surface00 flags) (surface-flags jump))
                           (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf)))))
-                (< (-> (target-pos 0) y) (+ 8192.0 (-> self root root-prim prim-core world-sphere y)))
+                (< (- (-> (target-pos 0) y) (-> self root trans y)) (res-lump-float (-> self entity) 'talk-height :default (meters 2)))
                 ;; og:preserve-this
                 (less-than-hack (vector-vector-distance (target-pos 0) (the-as vector (-> self root root-prim prim-core))) (res-lump-float (-> self entity) 'talk-dist :default (meters 15)))
                 (= (-> *level* loading-level) (-> *level* level-default))
@@ -159,15 +159,14 @@ complete (broken) and his task's cell is taken."
     (behavior ()
       (let ((cage (the-as citb-sagecage (handle->process (-> self cage)))))
         (if (and cage (-> cage bars-on) (__TYPE__-rescued? self)) (send-event cage 'disable-bars)))
-      ;; once free and Jak is near: after the cell's own cutscene (Jak free for 1 s)
+      ;; once free: after the cell's own cutscene (Jak free for 1 s), wherever Jak is
       (cond
         ((and (__TYPE__-ready? self)
               *target*
               (not (movie?))
-              (not (logtest? (-> *target* state-flags) (state-flags grabbed)))
-              (< (vector-vector-distance (-> self root trans) (target-pos 0)) (meters 16)))
+              (not (logtest? (-> *target* state-flags) (state-flags grabbed))))
          (if (zero? (-> self ready-time)) (set-time! (-> self ready-time)))
-         (if (time-elapsed? (-> self ready-time) (seconds 0.1)) (set! (-> self been-kicked) #t)))
+         (if (time-elapsed? (-> self ready-time) (seconds 1)) (set! (-> self been-kicked) #t)))
         (else (set! (-> self ready-time) 0)))
       ((the-as (function none :behavior citb-sage) (-> (method-of-type process-taskable idle) post)))
       (if (-> self beam-on) (citb-sage-draw-beam))))
