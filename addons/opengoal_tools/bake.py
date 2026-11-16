@@ -266,6 +266,10 @@ class OGBakeSettings(bpy.types.PropertyGroup):
         name="Time of day", default=False,
         description="Bake one colour layer per time of day (_SUNRISE ... _GREENSUN), each with its own lights / world. "
                     "Off: one BakedLight layer, as before")
+    tod_show_all: bpy.props.BoolProperty(
+        name="Show bake on all", default=False,
+        description="The show buttons (eye) switch every mesh of the level's Geometry collection, rendered or not "
+                    "(grass clumps with rendering off ...), instead of the selected meshes")
     tod_sunrise: bpy.props.PointerProperty(type=OGTodTime)
     tod_morning: bpy.props.PointerProperty(type=OGTodTime)
     tod_noon: bpy.props.PointerProperty(type=OGTodTime)
@@ -1311,6 +1315,7 @@ def draw_tod(layout, level_col):
         r = col.row(align=True)
         r.prop(t, "world", text="World")
         op = r.operator("og.tod_new_world", text="", icon="ADD"); op.time = k
+    box.prop(s, "tod_show_all")
 
 
 def _tod_level(ctx):
@@ -1361,8 +1366,8 @@ def _new_sun(level_col, key):
 
 
 class OG_OT_ShowBakeAttr(bpy.types.Operator):
-    """Show this bake on the selected meshes: makes it their active and render color
-attribute (Solid shading with Attribute color, and materials reading the render
+    """Show this bake on the selected meshes (Show bake on all: every mesh of the level's Geometry): makes it
+their active and render color attribute (Solid shading with Attribute color, and materials reading the render
 color attribute, show it)"""
     bl_idname = "og.show_bake_attr"
     bl_label = "Show Bake"
@@ -1370,13 +1375,22 @@ color attribute, show it)"""
     attr: bpy.props.StringProperty()
 
     def execute(self, ctx):
-        meshes = [o for o in ctx.selected_objects if o.type == "MESH"]
-        done = 0
+        from .collections import _active_level_col
+        lv = _active_level_col(ctx.scene)
+        if lv is not None and lv.og_bake.tod_show_all:
+            from .export.glb import geometry_collection
+            geo = geometry_collection(lv, create=False)
+            meshes = [o for o in (geo.all_objects if geo else ()) if o.type == "MESH"]
+        else:
+            meshes = [o for o in ctx.selected_objects if o.type == "MESH"]
+        shown = {}                                  # mesh data -> has the layer
         for o in meshes:
-            if use_baked(o.data, self.attr):
-                done += 1
+            if o.data.name not in shown:
+                shown[o.data.name] = use_baked(o.data, self.attr)
+        done = sum(1 for o in meshes if shown[o.data.name])
         if not meshes:
-            self.report({"WARNING"}, "Select the meshes to show")
+            self.report({"WARNING"}, "No meshes in the level's Geometry" if lv is not None and lv.og_bake.tod_show_all
+                        else "Select the meshes to show")
             return {"CANCELLED"}
         missing = len(meshes) - done
         self.report({"WARNING"} if missing else {"INFO"},
