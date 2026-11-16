@@ -405,6 +405,13 @@ def draw_stack(layout, ctx):
                               text=f"Add Effect to {n} Mesh(es)" if n > 1 else "Add Effect")
     r = layout.row(); r.enabled = False; r.scale_y = 0.7
     r.label(text="Adds to every selected mesh; shown: the active one's", icon="INFO")
+    from .collections import _active_level_col
+    lv = _active_level_col(ctx.scene)
+    if lv is not None and not lv.og_bake.apply_effects:
+        box = layout.box(); box.alert = True
+        box.label(text="Light Baking > Apply effects is off:", icon="ERROR")
+        box.label(text="these effects won't run after a bake")
+        box.prop(lv.og_bake, "apply_effects", text="Turn on Apply effects")
     layout.label(text=o.name, icon="MESH_DATA")
     fxs = o.og_vc_effects
     for i, fx in enumerate(fxs):
