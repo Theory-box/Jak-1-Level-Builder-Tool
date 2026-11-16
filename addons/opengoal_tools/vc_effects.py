@@ -4,7 +4,11 @@
 # layers), Object Controls > Vertex Colors:
 #   - Apply Effect: one effect (scene settings) applied now to the selected meshes.
 #   - Effects After Bake: an effect stack per object (like modifiers), applied
-#     in order after a bake when Light Baking > Apply effects is on.
+#     in order after a bake when Light Baking > Apply effects is on. Add Effect
+#     adds to every selected mesh; the panel shows the active one's. A new
+#     effect starts with the last used options of its kind: the Apply Effect
+#     settings, which editing a stack effect also updates (curve: a copy of the
+#     last curve added / set up, scene og_vc_last_curve).
 # Effects: Curve Correction (an RGB curve, the bake curve's presets),
 # Overwrite Color (moves each colour's hue / saturation / value toward the
 # picked colour's, a factor each), Overwrite Alpha, Blur (the auto blur).
@@ -31,10 +35,35 @@ def _curve_preset_items(self, ctx):
     return _preset_items(self, ctx)
 
 
+_REMEMBER = {"CURVE": ("factor", "curve_preset"), "COLOR": ("color", "hue_factor", "sat_factor", "val_factor"),
+             "ALPHA": ("alpha", "factor"),
+             "BLUR": ("blur_strength", "blur_passes", "blur_keep_sharp", "blur_auto_sharp", "blur_angle")}
+_REMEMBERING = []
+
+
+def _remember(self, ctx):
+    """A stack effect edited: its options become the last used ones of its
+    kind (the Apply Effect settings, which new effects copy)."""
+    if _REMEMBERING or not isinstance(self.id_data, bpy.types.Object) or ctx.scene is None:
+        return
+    dst = getattr(ctx.scene, "og_fx_" + self.kind.lower(), None)
+    if dst is None:
+        return
+    _REMEMBERING.append(1)
+    try:
+        for p in _REMEMBER.get(self.kind, ()):
+            setattr(dst, p, getattr(self, p))
+    finally:
+        _REMEMBERING.pop()
+
+
 def _curve_preset_update(self, ctx):
     from .bake import _apply_preset
-    if self.curve is not None:
+    if self.curve is not None and not _REMEMBERING:
         _apply_preset(self.curve, self.curve_preset)
+        if ctx.scene is not None:
+            ctx.scene.og_vc_last_curve = self.curve
+    _remember(self, ctx)
 
 
 class OGVcEffect(bpy.types.PropertyGroup):
@@ -42,24 +71,27 @@ class OGVcEffect(bpy.types.PropertyGroup):
     enabled: BoolProperty(name="On", default=True, description="Apply this effect after a bake")
     show: BoolProperty(name="Show", default=True)
     factor: FloatProperty(name="Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
-                          description="How much the effect changes the colours")
+                          description="How much the effect changes the colours", update=_remember)
     curve: PointerProperty(type=bpy.types.NodeTree, name="Curve")
     curve_preset: EnumProperty(name="Preset", items=_curve_preset_items, update=_curve_preset_update)
-    color: FloatVectorProperty(name="Color", subtype="COLOR", size=3, min=0.0, max=1.0, default=(1.0, 0.5, 0.2))
+    color: FloatVectorProperty(name="Color", subtype="COLOR", size=3, min=0.0, max=1.0, default=(1.0, 0.5, 0.2),
+                               update=_remember)
     hue_factor: FloatProperty(name="Hue Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
-                              description="How much each colour's hue moves to the colour's hue")
+                              description="How much each colour's hue moves to the colour's hue", update=_remember)
     sat_factor: FloatProperty(name="Saturation Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR",
-                              description="How much each colour's saturation moves to the colour's saturation")
+                              description="How much each colour's saturation moves to the colour's saturation",
+                              update=_remember)
     val_factor: FloatProperty(name="Value Factor", default=0.0, min=0.0, max=1.0, subtype="FACTOR",
-                              description="How much each colour's value (brightness) moves to the colour's value")
-    alpha: FloatProperty(name="Alpha", default=1.0, min=0.0, max=1.0, subtype="FACTOR")
-    blur_strength: FloatProperty(name="Strength", default=0.5, min=0.0, max=1.0, subtype="FACTOR")
-    blur_passes: IntProperty(name="Passes", default=2, min=1, max=50)
-    blur_keep_sharp: BoolProperty(name="Keep sharp edges", default=True,
+                              description="How much each colour's value (brightness) moves to the colour's value",
+                              update=_remember)
+    alpha: FloatProperty(name="Alpha", default=1.0, min=0.0, max=1.0, subtype="FACTOR", update=_remember)
+    blur_strength: FloatProperty(name="Strength", default=0.5, min=0.0, max=1.0, subtype="FACTOR", update=_remember)
+    blur_passes: IntProperty(name="Passes", default=2, min=1, max=50, update=_remember)
+    blur_keep_sharp: BoolProperty(name="Keep sharp edges", default=True, update=_remember,
                                   description="Don't mix across the mesh's sharp edges (marked sharp, or flat-shaded faces)")
-    blur_auto_sharp: BoolProperty(name="Auto sharp", default=False,
+    blur_auto_sharp: BoolProperty(name="Auto sharp", default=False, update=_remember,
                                   description="Also treat edges sharper than the angle as sharp")
-    blur_angle: FloatProperty(name="Angle", default=0.5236, min=0.0, max=3.1416, subtype="ANGLE")
+    blur_angle: FloatProperty(name="Angle", default=0.5236, min=0.0, max=3.1416, subtype="ANGLE", update=_remember)
 
 
 # ── the effects ─────────────────────────────────────────────────────────────
@@ -205,24 +237,44 @@ class OG_OT_VcCurveInit(bpy.types.Operator):
             o = ctx.view_layer.objects.active
             fx = o.og_vc_effects[self.index]
             fx.curve = new_curve(f"OG Effect Curve {o.name}", fx.curve_preset)
+        ctx.scene.og_vc_last_curve = fx.curve
         return {"FINISHED"}
 
 
 class OG_OT_VcAddEffect(bpy.types.Operator):
-    """Add an effect to the active mesh's Effects After Bake"""
+    """Add an effect to the Effects After Bake of every selected mesh, with the last used options of that effect"""
     bl_idname = "og.vc_add_effect"
     bl_label = "Add Effect"
     bl_options = {"REGISTER", "UNDO"}
     kind: EnumProperty(items=[(k, l, d, i, n) for n, (k, l, d, i) in enumerate(KINDS)])
 
     def execute(self, ctx):
-        o = ctx.view_layer.objects.active
-        if o is None or o.type != "MESH":
+        objs = [o for o in ctx.selected_objects if o.type == "MESH"]
+        act = ctx.view_layer.objects.active
+        if act is not None and act.type == "MESH" and act not in objs:
+            objs.append(act)
+        if not objs:
             return {"CANCELLED"}
-        fx = o.og_vc_effects.add()
-        fx.kind = self.kind
+        last = scene_effect(ctx.scene, self.kind)
+        src_curve = ctx.scene.og_vc_last_curve or last.curve
+        _REMEMBERING.append(1)                      # copying the last used: don't write them back
+        try:
+            for o in objs:
+                fx = o.og_vc_effects.add()
+                fx.kind = self.kind
+                for p in _REMEMBER[self.kind]:
+                    setattr(fx, p, getattr(last, p))
+                if self.kind == "CURVE":
+                    if src_curve is not None:
+                        fx.curve = src_curve.copy()
+                        fx.curve.name = f"OG Effect Curve {o.name}"
+                    else:
+                        fx.curve = new_curve(f"OG Effect Curve {o.name}", fx.curve_preset)
+        finally:
+            _REMEMBERING.pop()
         if self.kind == "CURVE":
-            fx.curve = new_curve(f"OG Effect Curve {o.name}", "JAK")
+            ctx.scene.og_vc_last_curve = (act if act in objs else objs[-1]).og_vc_effects[-1].curve
+        self.report({"INFO"}, f"{_LABEL[self.kind]} added to {len(objs)} mesh(es)")
         return {"FINISHED"}
 
 
@@ -348,8 +400,12 @@ def draw_stack(layout, ctx):
     if o is None or o.type != "MESH":
         layout.label(text="Make a mesh active", icon="INFO")
         return
+    n = sum(1 for x in ctx.selected_objects if x.type == "MESH" and x != o) + 1
+    layout.operator_menu_enum("og.vc_add_effect", "kind", icon="ADD",
+                              text=f"Add Effect to {n} Mesh(es)" if n > 1 else "Add Effect")
+    r = layout.row(); r.enabled = False; r.scale_y = 0.7
+    r.label(text="Adds to every selected mesh; shown: the active one's", icon="INFO")
     layout.label(text=o.name, icon="MESH_DATA")
-    layout.operator_menu_enum("og.vc_add_effect", "kind", text="Add Effect", icon="ADD")
     fxs = o.og_vc_effects
     for i, fx in enumerate(fxs):
         box = layout.box()
@@ -377,6 +433,7 @@ CLASSES = (OGVcEffect, OG_OT_VcApplyEffect, OG_OT_VcCurveInit, OG_OT_VcAddEffect
 
 def register_props():
     bpy.types.Object.og_vc_effects = CollectionProperty(type=OGVcEffect)
+    bpy.types.Scene.og_vc_last_curve = PointerProperty(type=bpy.types.NodeTree)
     for k, *_r in KINDS:
         setattr(bpy.types.Scene, "og_fx_" + k.lower(), PointerProperty(type=OGVcEffect))
 
@@ -385,5 +442,7 @@ def unregister_props():
     for k, *_r in KINDS:
         if hasattr(bpy.types.Scene, "og_fx_" + k.lower()):
             delattr(bpy.types.Scene, "og_fx_" + k.lower())
+    if hasattr(bpy.types.Scene, "og_vc_last_curve"):
+        del bpy.types.Scene.og_vc_last_curve
     if hasattr(bpy.types.Object, "og_vc_effects"):
         del bpy.types.Object.og_vc_effects
