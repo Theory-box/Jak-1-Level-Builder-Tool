@@ -255,6 +255,12 @@ class OGBakeSettings(bpy.types.PropertyGroup):
     fix_grey_threshold: bpy.props.FloatProperty(name="Threshold", default=0.03, min=0.0, max=0.5,
                                                 update=_fixes_update,
                                                 description="Largest difference between R, G and B still snapped")
+    auto_copy: bpy.props.BoolProperty(
+        name="Automatically copy lighting to", default=False,
+        description="Last step of every bake: the meshes of this collection (rendered or not) get the lighting of "
+                    "the level's other geometry (Copy Vertex Lighting from Closest, Any geometry)")
+    auto_copy_col: bpy.props.PointerProperty(type=bpy.types.Collection, name="Collection",
+                                             description="Its meshes (and its sub-collections') get the copied lighting")
     apply_effects: bpy.props.BoolProperty(
         name="Apply effects", default=False,
         description="After the bake, each mesh's Effects After Bake (Object Controls > Vertex Colors) run in order")
@@ -917,6 +923,20 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
     return out
 
 
+def auto_copy_lighting(level_col, target_col):
+    """Bake option "Automatically copy lighting to": every mesh of target_col
+    (rendered or not) gets the lighting of the level's other exported meshes,
+    with the Copy Vertex Lighting search / max distance. Returns the count."""
+    from .export.glb import exported_meshes
+    targets = [o for o in target_col.all_objects if o.type == "MESH" and not o.data.library]
+    if not targets:
+        return 0
+    sources = [o for o in exported_meshes(level_col) if o not in targets]
+    s = bpy.context.scene.og_copy_light
+    copy_lighting(targets, sources, s.search, s.distance)
+    return len(targets)
+
+
 # ── the pass queue ──────────────────────────────────────────────────────────
 
 _JOB: dict = {}
@@ -1146,12 +1166,16 @@ def _finish():
             if settings.apply_effects:
                 from .vc_effects import apply_stack
                 fx_ran += apply_stack(o)
+    copied = None
+    if settings.auto_copy and settings.auto_copy_col is not None:
+        copied = auto_copy_lighting(col, settings.auto_copy_col)
     labels = {a: l for _k, a, l, *_r in TIMES}
     times = [labels[p[6:]] for p in job["passes"] if p.startswith("light:")]
     extra = [x for x, on in (("emit", "emit" in job["passes"]), ("curve", settings.use_curve),
                              ("blur", settings.use_blur),
                              ("fixes", settings.fix_after_bake and _palette.fixes_on(settings)),
-                             (f"{fx_ran} effect(s)", fx_ran)) if on]
+                             (f"{fx_ran} effect(s)", fx_ran),
+                             (f"lighting copied to {copied} mesh(es)", copied is not None)) if on]
     m, s = divmod(int(round(time.time() - job["t0"])), 60)
     msg = f"Baked {len(job['objs'])} mesh(es)"
     if times:
@@ -1279,6 +1303,15 @@ def draw_options(layout, level_col, scene=None):
                 sub.prop(s, "blur_angle")
     box.prop(s, "ignore_vertex_colors")
     box.prop(s, "apply_effects")
+    row = box.row(align=True)
+    row.prop(s, "auto_copy", text="")
+    row.label(text="Automatically copy lighting to")
+    if s.auto_copy:
+        col = box.column(align=True)
+        col.prop(s, "auto_copy_col", text="")
+        if scene is not None:                      # the same settings as Object Controls > Copy Vertex Lighting
+            col.prop(scene.og_copy_light, "search")
+            col.prop(scene.og_copy_light, "distance")
 
 
 def draw_tod(layout, level_col):
