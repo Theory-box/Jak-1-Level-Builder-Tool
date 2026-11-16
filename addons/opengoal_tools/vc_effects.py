@@ -338,6 +338,33 @@ class OG_OT_VcCopyEffects(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def _with_effects(ctx):
+    """Selected meshes (and the active one) that have Effects After Bake."""
+    objs = list(ctx.selected_objects)
+    act = ctx.view_layer.objects.active
+    if act is not None and act not in objs:
+        objs.append(act)
+    return [o for o in objs if o.type == "MESH" and len(o.og_vc_effects)]
+
+
+class OG_OT_VcClearEffects(bpy.types.Operator):
+    """Remove every Effects After Bake effect from the selected meshes"""
+    bl_idname = "og.vc_clear_effects"
+    bl_label = "Remove All Effects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        objs = _with_effects(ctx)
+        n = 0
+        for o in objs:
+            for fx in o.og_vc_effects:
+                _drop_curve(fx)
+            n += len(o.og_vc_effects)
+            o.og_vc_effects.clear()
+        self.report({"INFO"}, f"Removed {n} effect(s) from {len(objs)} mesh(es)")
+        return {"FINISHED"}
+
+
 class OG_OT_VcApplyStack(bpy.types.Operator):
     """Apply the Effects After Bake of the selected meshes now (as a bake with Apply effects would)"""
     bl_idname = "og.vc_apply_stack"
@@ -430,12 +457,16 @@ def draw_stack(layout, ctx):
         r = layout.row(align=True)
         r.operator("og.vc_copy_effects", icon="COPYDOWN")
         r.operator("og.vc_apply_stack", icon="CHECKMARK")
+    k = sum(1 for x in _with_effects(ctx))
+    if k:
+        layout.operator("og.vc_clear_effects", icon="TRASH",
+                        text=f"Remove All Effects from {k} Mesh(es)")
     r = layout.row(); r.enabled = False; r.scale_y = 0.7
     r.label(text="Run after a bake with Light Baking > Apply effects on", icon="INFO")
 
 
 CLASSES = (OGVcEffect, OG_OT_VcApplyEffect, OG_OT_VcCurveInit, OG_OT_VcAddEffect, OG_OT_VcEffectEdit,
-           OG_OT_VcCopyEffects, OG_OT_VcApplyStack)
+           OG_OT_VcCopyEffects, OG_OT_VcClearEffects, OG_OT_VcApplyStack)
 
 
 def register_props():
