@@ -79,6 +79,8 @@ class OG_PT_Lighting(Panel):
         if _lv is not None:
             _bake.draw_options(layout, _lv, ctx.scene)   # samples + options (collapsible)
             _bake.draw_tod(layout, _lv)
+            from .. import palette as _pal
+            _pal.draw(layout, _lv)
         else:
             layout.prop(props, "lightbake_samples")
 

@@ -138,6 +138,11 @@ def draw_db_status(layout):
 
 
 # --- OGPreferences ---
+def _version_override_changed(self, ctx):
+    from .versions import clear_cache
+    clear_cache()
+
+
 class OGPreferences(AddonPreferences):
     bl_idname = "opengoal_tools"
 
@@ -167,6 +172,22 @@ class OGPreferences(AddonPreferences):
     show_manual_paths: BoolProperty(
         name="Manual path overrides (advanced)",
         default=False,
+    )
+    # versions.py: use this instead of the detected OpenGOAL (features follow it)
+    version_override: EnumProperty(
+        name="OpenGOAL version",
+        items=[("AUTO", "Detected", "Use the detected OpenGOAL"),
+               ("release", "Release", "A release (launcher / zip) of the version below"),
+               ("jak-project", "jak-project dev", "An up to date jak-project dev build"),
+               ("mod-base", "mod-base dev", "An up to date mod-base dev build")],
+        default="AUTO",
+        description="Overwrite the detected OpenGOAL version (when the detection is wrong for your setup)",
+        update=_version_override_changed,
+    )
+    version_override_release: StringProperty(
+        name="Release", default="0.3.8",
+        description="Release version used when the override is Release (e.g. 0.3.8)",
+        update=_version_override_changed,
     )
 
     # ── Manual overrides ──────────────────────────────────────────────────────
