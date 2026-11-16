@@ -155,6 +155,24 @@ This should be a changed behaviour, otherwise it moves the actors when you try t
 
 ---
 
+# Light baking addition 2
+## Change Frame on time of day baking
+An option I thought would give some very interesting control is to give the ability to set a frame per time of day. Then when that time of day is getting rendered, blender switch the animation frame to a set frame per time of day.
+
+That way, users can set keyframes on these frames to change light intensity, move lights or meshs to create different shadows, change emit settings, etc. The possibilities would be endless.
+
+The way it would be setup is a checkbox at the bottom of the time of day menu "Set time frame per time of day". Off by default, if it's on, one new line in each time of day would appear with the label "time frame" and an integer input. Then the addon can switch to that specific frame when rendering that specific time of day
+
+## Emit per time of day
+As well as this, another checkbox could be added in time of day that is "Render emit per time of day". Which as the name would indicate, will render an emit pass for every time of day instead of a single one applied to all time of days. 
+This would be needed if the users want to vary emit intensity/colors depending on the time of day. As this would add a lot of rendering time, it should be off by default.
+Make the pop message on hover on that option very specific that it's only useful if you're doing emit changes on time of days, if not it'll just add rendering time for no reason.
+
+## Combining emits for render time optimisation
+To speed up emit rendering, the mesh with emits could get another object together when using the "combine mesh while baking" just to render the emit pass or passes on that smaller object. Then combine the emits of that separated objects onto the larger combined meshes. That could be done regardless of if the emit per time of day option is turned on as it could save time in one single pass too.
+
+---
+
 # Custom Tools and actors
 ## Actor/jak Light custom actor
 Something I did in TFL is having some areas that affect the light on jak and other actors. However, the way worked was fit inside of the mood function. This comes with a lot of limitation and create a lot of extra code in there which wouldn't be needed if it was a single actor that did it with all its settings in the entity lump. You can check TFL's `goal_src/jak1/engine/gfx/mood/mood.gc` to see how it was done.
