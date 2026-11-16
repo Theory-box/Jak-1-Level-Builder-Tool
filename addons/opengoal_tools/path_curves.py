@@ -60,9 +60,20 @@ def _bspline_basis(knots, n, t, p=3):
     return N[:n]
 
 
-def nurbs_half_circle(r, tol=0.002):
+def nurbs_half_circle(r):
+    """nurbs_half_circle_unit scaled to radius r."""
+    return [(x * r, y * r, 0.0) for x, y, _z in nurbs_half_circle_unit()]
+
+
+_HALF_UNIT: list = []
+
+
+def nurbs_half_circle_unit(tol=0.002):
     """Fewest control points (clamped cubic, ends on the arc) whose curve
-    stays within tol x r of the half circle (0 to 180 degrees)."""
+    stays within tol of the unit half circle (0 to 180 degrees). Fitted once."""
+    if _HALF_UNIT:
+        return _HALF_UNIT
+    r = 1.0
     for n in range(4, 17):
         knots = [0.0] * 4 + list(range(1, n - 3)) + [float(n - 3)] * 4
         ts = np.linspace(0, n - 3, 80)
@@ -77,7 +88,8 @@ def nurbs_half_circle(r, tol=0.002):
         err = np.abs(np.hypot(dense[:, 0], dense[:, 1]) - r).max()
         if err <= tol * r:
             break
-    return [(x, y, 0.0) for x, y in P]
+    _HALF_UNIT[:] = [(float(x), float(y), 0.0) for x, y in P]
+    return _HALF_UNIT
 
 
 def poly_points(shape, r, length, n):
@@ -210,6 +222,10 @@ Its type, shape, points ... are in the Adjust Last Operation panel"""
                         description="Circle / half circle: diameter. Straight line: length")
     rotation: FloatVectorProperty(name="Rotation", subtype="EULER", size=3, default=(0.0, 0.0, 0.0),
                                   description="0, 0, 0: flat on the XY plane")
+    location: FloatVectorProperty(name="Position", subtype="TRANSLATION", size=3, default=(0.0, 0.0, 0.0),
+                                  description="Where the curve goes (the actor or the 3D cursor when added)")
+    # set by the first run (the actor / 3D cursor); Adjust Last Operation keeps it
+    placed: BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     def draw(self, ctx):
         l = self.layout
@@ -225,6 +241,7 @@ Its type, shape, points ... are in the Adjust Last Operation panel"""
         if self.shape != "POINT":
             l.prop(self, "size", text="Diameter" if self.shape in ("CIRCLE", "HALF") else "Length")
         l.prop(self, "rotation")
+        l.prop(self, "location")
 
     def execute(self, ctx):
         from .operators.links import _path_list
@@ -238,8 +255,11 @@ Its type, shape, points ... are in the Adjust Last Operation panel"""
         n = max(self.points, _MIN_POINTS.get(key, 1))
         ob = build_curve(curve_name(owner, self.path_index), self.curve_type, self.shape, n,
                          self.cyclic, self.endpoint, self.size)
-        at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
-        ob.location = owner.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
+        if not self.placed:
+            at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
+            self.location = owner.matrix_world.translation if at_actor else ctx.scene.cursor.location
+            self.placed = True
+        ob.location = self.location
         ob.rotation_euler = self.rotation
         ctx.scene.collection.objects.link(ob)
         to_paths_collection(ctx.scene, ob)
