@@ -3,7 +3,7 @@ entities, Export selected definitions."""
 from __future__ import annotations
 
 import bpy
-from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty
+from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty, IntProperty
 from mathutils import Vector, Matrix
 from . import vc_effects as _vc_effects
 from . import path_curves as _path_curves
@@ -330,6 +330,51 @@ def _plain(v):
     return v
 
 
+def _copy_struct(a, b):
+    """Every editable property of a (PropertyGroup) into b, collections and
+    nested groups included."""
+    for p in a.bl_rna.properties:
+        k = p.identifier
+        if k == "rna_type":
+            continue
+        try:
+            if p.type == "COLLECTION":
+                dst = getattr(b, k)
+                dst.clear()
+                for it in getattr(a, k):
+                    _copy_struct(it, dst.add())
+            elif p.type == "POINTER" and isinstance(getattr(a, k), bpy.types.PropertyGroup):
+                _copy_struct(getattr(a, k), getattr(b, k))
+            elif not p.is_readonly:
+                setattr(b, k, getattr(a, k))
+        except (AttributeError, TypeError, ValueError) as e:
+            print(f"[og convert] {k} not copied: {e}")
+
+
+def _copy_rna_props(src, new):
+    """The addon's og_* properties registered on Object, src -> new.
+    Returns their names."""
+    done = set()
+    for p in bpy.types.Object.bl_rna.properties:
+        k = p.identifier
+        if not k.startswith("og_") or k.startswith("og_preview"):
+            continue
+        done.add(k)
+        try:
+            if p.type == "COLLECTION":
+                dst = getattr(new, k)
+                dst.clear()
+                for it in getattr(src, k):
+                    _copy_struct(it, dst.add())
+            elif p.type == "POINTER" and isinstance(getattr(src, k), bpy.types.PropertyGroup):
+                _copy_struct(getattr(src, k), getattr(new, k))
+            elif not p.is_readonly:
+                setattr(new, k, getattr(src, k))
+        except (AttributeError, TypeError, ValueError) as e:
+            print(f"[og convert] {k} not copied: {e}")
+    return done
+
+
 def _repoint(old, new):
     """Links / name references to `old` point at `new` (volume links, actor
     links, string properties holding the name)."""
@@ -426,7 +471,11 @@ still apply are kept, previews updated. "All objects" deletes the converted mesh
                 bpy.ops.og.spawn_entity()
                 new = ctx.view_layer.objects.active
                 new.rotation_euler = src.matrix_world.to_euler()
-                keep = {k: _plain(src[k]) for k in src.keys() if k != "_RNA_UI" and not k.startswith("og_preview")}
+                # the addon's registered properties (links, paths, nav-mesh, path
+                # mode, lump rows ...) copied as properties; the plain custom ones below
+                rna = _copy_rna_props(src, new)
+                keep = {k: _plain(src[k]) for k in src.keys()
+                        if k != "_RNA_UI" and not k.startswith("og_preview") and k not in rna}
                 for k, v in keep.items():
                     try:
                         new[k] = v
@@ -453,6 +502,19 @@ class OGExportDefsSettings(bpy.types.PropertyGroup):
     path: StringProperty(name="Write to", subtype="FILE_PATH", default="",
                          description="A text file (rewritten each export) or a folder (a new file each export). "
                                      "Empty: clipboard only")
+    comments: BoolProperty(name="Add comments", default=True,
+                           description="The ;; lines saying what each part is and where it goes")
+    format: EnumProperty(
+        name="Format", default="BRACKET",
+        items=[("CATEGORY", "Bracket & category", 'Each .jsonc list with its key: "actors": [ ... ]'),
+               ("BRACKET", "Bracket", "Each .jsonc list in brackets: [ ... ]"),
+               ("NONE", "No brackets", "Only the entries, to paste between other entries of a list")])
+    trailing_comma: BoolProperty(name="End with a comma", default=True,
+                                 description="No brackets: a comma after the last entry, to paste between other "
+                                             "entries (off when pasting as a list's last entry)")
+    indent: IntProperty(name="Indentation offset", default=1, min=0, max=8,
+                        description="Extra indentation of the .jsonc parts, in levels of 2 spaces "
+                                    "(1: entries line up inside a level file's \"actors\" / \"cameras\")")
 
 
 def export_target(path, now=None):
@@ -486,7 +548,10 @@ them (with the art groups / code the actors need): to the clipboard and the file
     def execute(self, ctx):
         import os
         from .export.selected_defs import build
-        text, counts = build(ctx.scene, ctx.evaluated_depsgraph_get(), list(ctx.selected_objects))
+        s = ctx.scene.og_export_defs
+        text, counts = build(ctx.scene, ctx.evaluated_depsgraph_get(), list(ctx.selected_objects),
+                             {"comments": s.comments, "format": s.format, "trailing_comma": s.trailing_comma,
+                              "indent": s.indent})
         if not counts:
             self.report({"WARNING"}, "Nothing to export: select actors, cameras, checkpoints or load boundaries")
             return {"CANCELLED"}

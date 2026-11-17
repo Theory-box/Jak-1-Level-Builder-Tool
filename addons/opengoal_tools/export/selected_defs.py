@@ -7,6 +7,12 @@ file, to paste into a level made without the addon (or to share a setup).
 - cameras: the .jsonc "cameras" entries (built-in camera system)
 - checkpoints: the continue-points of level-info.gc (:continues)
 - load boundaries: the static-load-boundary forms of load-boundary-data.gc
+
+Options (Object Controls > Export Selected Definitions): comments on / off;
+the .jsonc lists as "key": [ ... ] (category), [ ... ] (bracket) or just the
+entries (no brackets, optionally ending with a comma to paste between other
+entries); an indentation offset (levels of 2 spaces) for the .jsonc parts. No
+blank lines at the start / end.
 """
 from __future__ import annotations
 
@@ -38,8 +44,25 @@ def _aid_entries(scene, mesh_names):
     return out
 
 
-def build(scene, depsgraph, objs):
-    """(text, {kind: count}) for the selected objects."""
+def _json_part(key, items, opts):
+    """A .jsonc list in the chosen format, indented by the offset."""
+    text = json.dumps(items, indent=2) if not isinstance(items, str) else items
+    lines = text.split("\n")
+    fmt = opts.get("format", "BRACKET")
+    if fmt == "NONE":
+        lines = lines[1:-1]                      # the entries (they keep the list's indentation)
+        if lines and opts.get("trailing_comma", True):
+            lines[-1] += ","
+    elif fmt == "CATEGORY":
+        lines[0] = f'"{key}": ' + lines[0]
+    pad = "  " * max(0, int(opts.get("indent", 1)))
+    return "\n".join(pad + l if l else l for l in lines)
+
+
+def build(scene, depsgraph, objs, opts=None):
+    """(text, {kind: count}) for the selected objects. opts: comments,
+    format (CATEGORY / BRACKET / NONE), trailing_comma, indent."""
+    opts = opts or {}
     from ..collections import actor_lump_name, spawn_uid
     from .actors import collect_actors
     from .levels import needed_ags, needed_extras_ags, needed_code
@@ -64,8 +87,9 @@ def build(scene, depsgraph, objs):
         body = text[text.index("["):text.rindex("]") + 1]
         lines = body.split("\n")          # the list sat inside {"actors": ...}: one level less indent
         body = "\n".join(l[2:] if l.startswith("  ") else l for l in lines)
-        out += [";; ===== Actors: level .jsonc \"actors\" entries =====", body, "",
-                ";; .jsonc \"art_groups\":", json.dumps([g.replace(".go", "") for g in ags]), "",
+        out += [";; ===== Actors: level .jsonc \"actors\" entries =====", _json_part("actors", body, opts), "",
+                ";; .jsonc \"art_groups\":",
+                _json_part("art_groups", json.dumps([g.replace(".go", "") for g in ags], indent=2), opts), "",
                 ";; .gd files these actors need (code first, then tpages / art groups):"]
         out += [f'  "{f}"' for f in code + list(tpages) + ags + extras] or [";;   (none: everything is in GAME.CGO)"]
         out.append("")
@@ -77,8 +101,7 @@ def build(scene, depsgraph, objs):
                           for n in cams)]
         if entries:
             counts["cameras"] = len(cams)
-            body = json.dumps(entries, indent=2)
-            out += [";; ===== Cameras: level .jsonc \"cameras\" entries =====", body, ""]
+            out += [";; ===== Cameras: level .jsonc \"cameras\" entries =====", _json_part("cameras", entries, opts), ""]
 
     uids = {spawn_uid(o) for o in objs if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")}
     if uids:
@@ -124,4 +147,8 @@ def build(scene, depsgraph, objs):
             out += [";; ===== Load boundaries: load-boundary-data.gc (inside a static-lb-list) ====="]
             out += [_make_static_boundary(b, name) for b in bs] + [""]
     log(f"[export selected] {counts or 'nothing exportable'}")
-    return "\n".join(out) + "\n", counts
+    if not opts.get("comments", True):
+        out = [l for l in out if not l.lstrip().startswith(";;")]
+        # one blank line between parts at most
+        out = [l for i, l in enumerate(out) if l.strip() or (i and out[i - 1].strip())]
+    return "\n".join(out).strip("\n"), counts

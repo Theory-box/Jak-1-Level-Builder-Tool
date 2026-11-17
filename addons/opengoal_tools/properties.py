@@ -506,6 +506,12 @@ class OGProperties(PropertyGroup):
                     "after the boot. Not available on jak-project releases / dev clones",
         default=True,
     )
+    camera_spawn_at: EnumProperty(
+        name="Camera spawn", default="CURSOR_VIEW",
+        items=[("CURSOR_VIEW", "3D cursor (aligned view)", "At the 3D cursor, facing the way the viewport looks"),
+               ("CURSOR_DEFAULT", "3D cursor (default view)", "At the 3D cursor, rotation 0, 0, 0"),
+               ("VIEWPORT", "Viewport view", "Where the viewport looks from: the camera sees what the viewport shows")],
+        description="Where a new camera is placed")
     og_boot_mode: EnumProperty(
         name="Boot", default="DEBUG",
         items=[("DEBUG", "Debug Mode", "The game boots in debug mode (as before)"),

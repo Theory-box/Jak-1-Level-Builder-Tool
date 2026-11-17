@@ -668,7 +668,20 @@ class OG_OT_SpawnCamera(Operator):
         n = len([o for o in _level_objects(ctx.scene)
                  if o.name.startswith("CAMERA_") and o.type == "CAMERA"])
         cam_name = f"CAMERA_{n}"
-        bpy.ops.object.camera_add(location=ctx.scene.cursor.location)
+        at = ctx.scene.og_props.camera_spawn_at
+        rv3d = ctx.space_data.region_3d if ctx.space_data and ctx.space_data.type == "VIEW_3D" else None
+        if rv3d is None:
+            rv3d = next((a.spaces.active.region_3d for a in (ctx.screen.areas if ctx.screen else ())
+                         if a.type == "VIEW_3D"), None)
+        if at == "VIEWPORT" and rv3d is not None:
+            # the camera where the viewport looks from (its view matrix inverted)
+            m = rv3d.view_matrix.inverted()
+            bpy.ops.object.camera_add(location=m.translation, rotation=m.to_euler())
+        elif at == "CURSOR_DEFAULT":
+            bpy.ops.object.camera_add(location=ctx.scene.cursor.location, rotation=(0.0, 0.0, 0.0), align="WORLD")
+        else:   # the 3D cursor, facing the way the view looks
+            rot = rv3d.view_rotation.to_euler() if rv3d is not None else (0.0, 0.0, 0.0)
+            bpy.ops.object.camera_add(location=ctx.scene.cursor.location, rotation=rot)
         o = ctx.active_object
         # Set name twice: Blender resolves duplicate data-block names after the
         # first assignment, so the second set lands the exact name we want.

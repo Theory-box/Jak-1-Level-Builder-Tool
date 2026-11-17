@@ -786,6 +786,15 @@ class OG_PT_SelectedObject(Panel):
             row.label(text=label, icon="OBJECT_DATA")
             sub = row.row(); sub.enabled = False
             sub.label(text=f"[{cat}]")
+            desc = ENTITY_WIKI.get(etype, {}).get("desc", "")
+            if desc:
+                hd, body = layout.panel("og_sel_desc", default_closed=True)
+                hd.label(text="Description", icon="INFO")
+                if body is not None:
+                    from .spawn import _wrap_text
+                    col = body.column(align=True); col.scale_y = 0.85
+                    for line in _wrap_text(desc, width=40):
+                        col.label(text=line if line else " ")
         elif name.startswith("CHECKPOINT_") and not name.endswith("_CAM"):
             layout.label(text=name, icon="EMPTY_SINGLE_ARROW")
         elif name.startswith("AMBIENT_"):

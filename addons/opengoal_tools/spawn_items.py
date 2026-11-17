@@ -175,7 +175,8 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
         spawn_id="special:camera",
         label="Camera",
         category="Cameras",
-        description="A standalone camera placed at the 3D cursor. After "
+        description="A standalone camera, at the 3D cursor or the viewport's "
+                    "view (Spawn at). After "
                     "spawn, configure mode / FOV / look-at and link to a "
                     "trigger volume via the Object Settings panel.\n"
                     "\n"
@@ -183,6 +184,7 @@ _SYNTHETIC_ITEMS: tuple[SpawnItem, ...] = (
                     "respawn point, select that empty first and use the "
                     "'Add Camera' button under Object Settings.",
         operator="og.spawn_camera",
+        pre_spawn_fields=("camera_spawn",),
         icon="CAMERA_DATA",
     ),
     SpawnItem(
