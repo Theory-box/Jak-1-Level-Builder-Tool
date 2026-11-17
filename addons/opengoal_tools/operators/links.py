@@ -745,6 +745,8 @@ class OG_OT_WaypointSourceLinkCurve(Operator):
         src = coll.add()
         src.obj = curve
         setattr(owner, attr, len(coll) - 1)
+        from ..path_curves import to_paths_collection
+        to_paths_collection(ctx.scene, curve)
         self.report({"INFO"}, f"Linked curve '{curve.name}' to {actor.name}")
         return {"FINISHED"}
 

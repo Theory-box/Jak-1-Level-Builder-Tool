@@ -42,6 +42,7 @@ _COL_PATH_GEO_COLLISION       = ("Geometry", "Collision Only")
 _COL_PATH_GEO_VISUAL          = ("Geometry", "Visual Only")
 _COL_PATH_GEO_REFERENCE       = ("Geometry", "Reference")
 _COL_PATH_WAYPOINTS           = ("Waypoints",)
+_COL_PATH_PATHS               = ("Paths",)        # curves used as paths (path_curves.py)
 _COL_PATH_NAVMESHES           = ("NavMeshes",)
 _COL_PATH_EXPORT_AS           = ("Export As",)
 
@@ -364,6 +365,10 @@ def _classify_object(obj):
             return _COL_PATH_SOUND_EMITTERS
 
         return None  # Unknown empty — leave in place
+
+    # ── Curves used as paths (tagged by path_curves / Sort & Clean) ─────────
+    if otype == "CURVE" and obj.get("og_path_curve"):
+        return _COL_PATH_PATHS
 
     # ── Cameras ─────────────────────────────────────────────────────────────
     if otype == "CAMERA":

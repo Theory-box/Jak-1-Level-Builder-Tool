@@ -1228,6 +1228,8 @@ def _draw_path_add(layout, sel, scene, coll, path_index=-1):
     row = layout.row(align=True)
     op = row.operator("og.add_waypoint", text="Spawn Waypoint", icon="PLUS")
     op.enemy_name = sel.name; op.path_index = path_index
+    op = row.operator("og.add_path_curve", text="Add Curve", icon="CURVE_BEZCURVE")
+    op.owner_name = sel.name; op.path_index = path_index
     row.prop(scene.og_props, "waypoint_spawn_at_actor", text="At Actor Position", toggle=True)
 
 
@@ -1327,6 +1329,7 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         )
         sidebar = list_row.column(align=True)
         sidebar.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM")
+        sidebar.operator("og.waypoint_source_edit", text="", icon="EDITMODE_HLT")
         sidebar.operator("og.waypoint_source_remove", text="", icon="X")
         sidebar.separator()
         sidebar.operator("og.waypoint_source_move",
@@ -1453,6 +1456,7 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
             lrow.template_list("OG_UL_WaypointSources", f"xp{i}", xp, "sources", xp, "sources_index", rows=3)
             side = lrow.column(align=True)
             side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM").path_index = i
+            side.operator("og.waypoint_source_edit", text="", icon="EDITMODE_HLT").path_index = i
             side.operator("og.waypoint_source_remove", text="", icon="X").path_index = i
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i

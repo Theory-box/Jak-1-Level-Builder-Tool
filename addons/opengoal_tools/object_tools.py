@@ -6,6 +6,7 @@ import bpy
 from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty
 from mathutils import Vector, Matrix
 from . import vc_effects as _vc_effects
+from . import path_curves as _path_curves
 
 _SKIP_PREFIXES = ("VOL_", "LOADBND_")       # not ground
 
@@ -598,7 +599,8 @@ meshes (Object Controls > Vertex Colors)"""
 
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, *_vc_effects.CLASSES)
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, *_vc_effects.CLASSES,
+           *_path_curves.CLASSES)
 
 
 def register_props():

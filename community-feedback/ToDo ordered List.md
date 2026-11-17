@@ -6,197 +6,10 @@ Once a feature is part of a release, it'll get removed from here.
 
 # In main
 
-## Import from files feature (in main)
-A feature that would let you import a text file and the addon would create actors, checkpoint, navmesh, paths, etc, based on those definitions.
-### UI Panel
-Use the already existing `import` menu. Divide it for the 3D model import, move the texturing menu inside there and then also have an actor sections. Like this:
-- Import
-  - Game 3D models
-  - Game textures
-  - From GOAL files
-
-The import from files would just be an input to search for files. Or a button to import text copied in the clickboard.
-Once text is loaded, it should show a list of all object found, organised by categories. And allow you to select/deselect which ones you want. With a select/deselect all button and then an import button when you've made your choice.
-Select all objects that were imported.
-### Available to import
-- Custom level Json / exported actor list from the game
-  - Actors (Fill every field in the actor based on the definition in the json, if a field doesn't exist, add it as custom lump)
-  - Paths (automatically made from the path definition of the actors and automatically linked)
-  - Volumes (same as paths)
-  - Ambients
-  - Camera
-- Entity.gc / nav file
-  - navmesh (as mesh with the materials assigned already)
-- level-info.gc
-  - checkpoints
 
 ---
 
-## Export as another entity (in main)
-Useful tool to have, especially if users make custom actors that are child of another entity, would be an option where you can write down the etype that would be exported. All it'd do would just be changing the etype in the actor export. The rest of the actor would export as if nothing had changed. 
-That way, if someone has made a custom version of an existing actor, they can just spawn that existing actor then change the "export as" option and it'd use their custom actor directly.
-It can just be one extra field at the top of custom lump in the actor settings so it's not too much in the way as that'd be a feature that's not used that often  
-
----
-
-## Small UI changes (in main)
-### Main panel re-organisation
-Not sure what the default order is right now since I've moved them a lot in my testing file but here's what the default order should be:
-- Build & Play
-- Level
-- Spawn Objects
-- Obects Control
-- Object Settings
-- Light Baking
-- Tasks
-- Import
-- Developer Tools
-### Level
-- Move the `Level Manager` sub menu at the top. And remove the selection of levels inside of it. There's already a drop down menu for levels at the top of the main panel
-- In `Collections` Move the `sort & Clean` button outside of the `Clean` sub menu and put it at the top of the Collection menu
-### Spawn Objects
-- Move the `Spawn` button right under the name of the seleted actor
-### Developer Tools
-At the moment, this panel is a long list so we should have a few sub menu that are collapsed for a cleaner UI:
-- Paths
-  - Paths
-  - Use this .blend's folders
-- Addon settings
-  - Launch Timing
-  - Build Settings
-  - Versions
-- Quick Open
-The "clean file" button can stay at the top, without being in a sub menu. When pressing it, it should open a popup telling you which files will be deleted/edited and then confirm with a "delete" and "cancel" button.
-
----
-
-## Switch Nav-mesh feature to TFL implementation 
-While this isn't implemented in mod-base yet, this does not mean it's not useable if the addon just create the files and changes. 
-### Research
-You can check on https://github.com/Kuitar5/the-forgotten-lands/ how it works. Here's a few pointers:
-- [tfl-nav-mesh.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/main/goal_src/jak1/engine/mods/tfl-nav-mesh.gc)
-  - Where the custom nav-mesh are defined. They're mostly similar to how they're defined in the other, mod-base way.
-  - Where the list of nav-mesh is defined
-  - Where the setup is made
-- [entity.gc](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/engine/entity/entity.gc#L842)
-  - Where `custom-nav-mesh-check-and-setup` is called
-- [Any level .json](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/custom_assets/jak1/levels/energy-bay/energy-bay.jsonc#L801)
-  - `custom-nav` lump to select from the list of nav-mesh
-- [game.gp](https://github.com/Kuitar5/the-forgotten-lands/blob/e8618a3022879ce45eee7ffd227e7d41949638df/goal_src/jak1/game.gp#L2066)
-(when it's implemented on mod-base)
-  - Not forgoting to add the new file in here so it compiles.
-You can have a look around see if there's other things I missed.
-### Advantages
-The main advantage is a cleaner approach, not changing the base files much, each nav-mesh is sparated, you don't need to set it by aid so it's more understandable in the level's json too. As it's a differen file, it doesn't need to compile as much other files when making changes on nav-meshes.
-### Setup for the addon
-As with camera, makes this a settings but default to current implementation, this will only be the default once mod-base has been updated to it.
-### Additional nav-mesh features
-These features should be available regardless of which nav-mesh implementation is selected
-
-We need a way to set some faces as "jump" (written as `:pat 1` in the nav-mesh definition, you can also check if there's more than that and what they do).
-My idea is to have some special navigation materials which automatically get added as slots onto nav-mesh meshes in blender. Then users can switch to edit mode, select the faces they want as jump and change them however they want.
-If you have a better idea you can propose it.
-
-Nav-sphere are also not implemented correctly. At the moment the addon export one nav-sphere per nav-mesh. But no nav-sphere should be exported by default. Those serves to set areas that the enemies will avoid. As it's easier to sometimes put a nav-sphere to block an area than complexifying the nav-mesh itself as there's a vertex limit.
-
-Add a collapsable menu at the bottom of nav-mesh for nav-sphere. Where you can add them by searching for empties or by directly adding one from the menu. The sphere then use the scaling of the sphere times the size of the empty and its position to write down all the nav-sphere definitions.
-
----
-
-# Second entity pass (in main)
-Done and merged. What's left (category checks, custom tasks, older notes) is listed for an
-"entity pass 3" in Actor Notes. See also session-notes/entity-pass-2.md.
-Based on `community-feedback/Actor Notes.md` and notes here. Start by reading your note and these ones and then make a plan of actions before making changes.
-### nav-enemy
-Change the info to "Nav-enemy, needs navmesh and path"
-Remove the "sphere radius" selection before spawning
-### database driven edited actors
-If an actor is using special edited code that are set in special files in the addon. The link should be done in the database. There should also be folder you can point to in the addon path settings with other custom codes. So they're easy to select and add. Also you should be able to set if an actor code will go into the level's -obs or in another file that then could be reused between different levels
-### Hidden/not added entities
-Actors that have been skipped because they have hard coded tasks or positions should be made into edited actors instead of just being ignored. (most NPCs probably need to be edited so they can have custom tasks)
-
----
-
-# Light Baking additions
-## Make the "view" buttons for time of day also set the render color
-At the moment, the view button next to time of day will change which color attribute is selected but it won't change which one is set for render. Doing the later one as well would allow you to show it in textured mode too if the user has combined their material to show the effect of the lighting on the textures too.
-
----
-
-## Optimising light baking
-At the moment, when baking multiple objects, the addon/blender have to start 8 different renders per objects. The more object you have, the crazier the time to complete this get. 
-### Test on a complex scene
-Here some tests I just ran on an existing level, which is a very complexe scene (4.5m trianges as it's 4 levels in one file, many light sources)
-I used 4 stone walls, totalling 22k triangles:
-
-1 bake per object 
-- 128 samples:
-  - 1:35
-  - 1:32
-  - 1:31
-  - 1:29
-1 bake of 4 separated objects 
-- 128 samples:
-  - 5:53
-1 bake of 1 combined objects:
-- 128 samples:
-  - 1:38
-- 64 samples:
-  - 1:33
-
-As you can see, each object baked take about the same time, even if they're all 4 combined into a single object. Considering my levels are in the hundred of objects, this can easily create bakes that could last 10+ hours. I also experienced a crash trying to start a render of a full level during the night.
-### Problems with combining
-The obvious solution would be to combine all meshes that need to be baked into one. However this comes with some issues:
-- You lose all separated objects so controlling them becomes harder as you'd need to select all the vertex inside of everything
-- By losing all objects you lose their object propeties:
-  - Individual origins
-  - Their positions, rotations, scale
-  - Their custom properties, which include the collision properties whish is very important to keep. While users can use materials to set those, it's very useful to be able to use both.
-### Potential solution
-After thinking for a bit, I came up with a solution, let me see if it's doable or if there's a better approach than this.
-
-- First, for each object, instead of combining them, you separate the whole mesh from them. Which leave us with two objects:
-  - The original object, which now has no mesh inside, but has kept all of its properties
-  - The separated object, which contain the mesh
-- Secondly, we combine all of those separate objects together, but not the original objects
-  - While combining them, for each object that get merged, a vertex group (or another attribute) is created and is named the same as the name of the ORIGINAL OBJECT (not the separated object itself)
-- Third, bake that singular combined mesh, and nothing else. This should be a lot quicker than separate bakes for each objects
-- Fourth, the combined mesh get separate using by their vertex group (or the other attribute) and merged back into the original mesh of the same name from the attribute.
-
-This should both allow for a much quicker bake but also let the user keep all of his original objects. This should also be an option that's off by default that users needs to turn on if they want. "Combine all meshes during light baking (Speed up baking on large scenes)"
-
----
-
-## Copy lighting/color attribute from nearby
-Something that doesn't always give a great result in the light baking is things like grass. Because they're vertical from the ground, the way light will hit those planes won't be the same as how they hit the ground under them. As such, the lighting might be drastically different on them.
-Something I've done in the past is to manually paint them, using the vertex color from the grass under them.
-I'm trying to automate this process.
-### Implementation
-New sub menu in `Objects controls` called  `Copy vertex lighting from closest`.
-With one drop down menu at the top:
-- Copy from selected to active
-- Copy from any geometry to selected
-Then the button to copy
-
----
-
-## Quantisation for vertex color
-The Palette of colors for vertex lighting is limited, especially for the darker part. So when something is in the shadow but has some color tint, it can come out as weird colored spots in game. 
-If we could have the same quantisation of color in blender it'd make it easier to see end results more clearly and then adapt them as another option in the vertex light baking. Maybe even with some sub options to decolor very dark areas or other useful ways to control lighting
-
----
-
-## Copy Worlds/Collection
-Buttons to copy the world and collection used for time of day from another level in the blend file. Makes it quicker to setup multiple levels that use the same lighting. This should set the collections and worlds to the exact same ones, not make copies of them.
-
----
-
-## Adding curve "fit 0.25 to 1.0"
-Adding a light curve in the light baking curve preset that's similar to the fit 0.25 to 0.75 but with 0.25 to 1.0
-
----
-
-# Path additions
+# Path additions (in progress)
 ## Add an "add curve" option
 There's already buttons to add waypoints dirrectly, There could be buttons to add a curve too as well. Instead of having to create one before and then link it. That way it'd automatically be linked too. Have both options like the waypoint where the first one add it on the 3D cursor and then "at actor position" to add it on at the actor's position.
 
@@ -339,6 +152,37 @@ New sub menu in the "level" tab. These are settings that are relevant to the who
 
 ## Snapping snap to preview mesh of the selected actor
 This should be a changed behaviour, otherwise it moves the actors when you try to snap it to another surface. If possible the snap shouldn't be affected by the selected actor preview mesh that you're moving but still by the other preview mesh of other non-selected actors so you can line stuff up on them 
+
+---
+
+# Light baking addition 2
+## Change Frame on time of day baking
+An option I thought would give some very interesting control is to give the ability to set a frame per time of day. Then when that time of day is getting rendered, blender switch the animation frame to a set frame per time of day.
+
+That way, users can set keyframes on these frames to change light intensity, move lights or meshs to create different shadows, change emit settings, etc. The possibilities would be endless.
+
+The way it would be setup is a checkbox at the bottom of the time of day menu "Set time frame per time of day". Off by default, if it's on, one new line in each time of day would appear with the label "time frame" and an integer input. Then the addon can switch to that specific frame when rendering that specific time of day
+
+## Emit per time of day
+As well as this, another checkbox could be added in time of day that is "Render emit per time of day". Which as the name would indicate, will render an emit pass for every time of day instead of a single one applied to all time of days. 
+This would be needed if the users want to vary emit intensity/colors depending on the time of day. As this would add a lot of rendering time, it should be off by default.
+Make the pop message on hover on that option very specific that it's only useful if you're doing emit changes on time of days, if not it'll just add rendering time for no reason.
+
+## Combining emits for render time optimisation
+To speed up emit rendering, the mesh with emits could get another object together when using the "combine mesh while baking" just to render the emit pass or passes on that smaller object. Then combine the emits of that separated objects onto the larger combined meshes. That could be done regardless of if the emit per time of day option is turned on as it could save time in one single pass too.
+
+---
+
+## Delete color attribute tool
+New tool in the "Objects control" > "Vertex Colors" called "Delete color attribute". This would delete all color attribute of a specified name (select in a list or written down) on every selected objects.
+
+---
+
+## Color Bit size
+Having all color attributes of all time of days does increase file size quite significantly on large levels. The color depth used in blender is a lot larger than the one used by the game so a way to make the files smallers would be to to set the color depth to a lower bit value. 
+Under the face corner/vertex button, you could have another option "Bit Size" with the default amount as a button then 6, 5 and 4 bit to lower the compression. These should be done at the end of the rendering pipeline so other effects aren't added after, changing the values again.
+However I'm not 100% sure how this would work out. You'd think draco should take care of that but reducing color/generic values in the compression does not yield any better smaller results.
+So before making any changes, we'll have to investigate how all of this works and see how to reduce best the file size
 
 ---
 

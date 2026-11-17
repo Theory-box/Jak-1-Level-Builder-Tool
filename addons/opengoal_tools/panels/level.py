@@ -358,7 +358,13 @@ class OG_OT_SortLevelObjects(Operator):
             return {"CANCELLED"}
 
         # Gather every object in the level (all sub-collections included)
-        all_objs = _recursive_col_objects(level_col, exclude_no_export=False)
+        all_objs = list(_recursive_col_objects(level_col, exclude_no_export=False))
+        # curves used by the level's paths go to Paths (also ones outside the level)
+        from ..path_curves import path_curves_of, TAG
+        for c in path_curves_of(all_objs):
+            c[TAG] = True
+            if c not in all_objs:
+                all_objs.append(c)
 
         moved   = []
         skipped = []
