@@ -70,6 +70,10 @@ class OGLevelSettings(bpy.types.PropertyGroup):
                                 description="Wait until the level is fully loaded before it's displayed")
     wall_angle: FloatProperty(name="Automatic Wall Angle", default=45.0, min=-1.0, max=90.0,
                               description="Faces steeper than this angle are walls (Jak can't stand on them). -1 = off")
+    orb_count: StringProperty(
+        name="Orb Count", default="",
+        description="Orbs in this level (its progress page). Blank: counted from the actors (orbs, crates, orb caches, "
+                    "enemy drops, pipe game, plant boss ...); a number: used as is")
     double_sided: BoolProperty(name="Double Sided Collision", default=False,
                                description="Collide with both sides of every face. Doubles the collision mesh")
     show_visuals: BoolProperty(name="Visuals", default=False)
@@ -187,13 +191,19 @@ class OG_OT_LevelTaskRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (OGTaskRow, OGLevelSettings, OG_OT_LevelTaskAdd, OG_OT_LevelTaskRemove)
+from . import level_counts as _level_counts
+from . import project_settings as _project
+
+CLASSES = (OGTaskRow, OGLevelSettings, OG_OT_LevelTaskAdd, OG_OT_LevelTaskRemove,
+           *_level_counts.CLASSES, *_project.CLASSES)
 
 
 def register_props():
     bpy.types.Collection.og_level = PointerProperty(type=OGLevelSettings)
+    _project.register_props()
 
 
 def unregister_props():
+    _project.unregister_props()
     if hasattr(bpy.types.Collection, "og_level"):
         del bpy.types.Collection.og_level

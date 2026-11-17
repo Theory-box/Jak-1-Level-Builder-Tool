@@ -628,6 +628,8 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     state["status"] = f"Collecting scene ({name})..."
     # Apply engine patches (idempotent — only writes if needed)
     _apply_engine_patches()
+    from .project_settings import apply as _apply_project
+    _apply_project(scene)             # Level > Project Settings (game-info / save / pckernel lines)
     _clean_orphaned_vol_links(scene)
     actors    = collect_actors(scene, depsgraph)
     ambients  = collect_ambients(scene)

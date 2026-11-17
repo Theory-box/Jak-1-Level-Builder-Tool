@@ -433,6 +433,8 @@ def generate_gc(scene, group, slots, level_text):
         idx = int(col.get("og_level_index", 100))
         fly = next((i for i, t in enumerate(lt) if t.buzzer), -1)
         orbs, flies = _counts(scene, col)
+        from ..level_counts import level_orbs
+        orbs = level_orbs(col)
         infos = []
         for t in lt:
             a, b, c = slots[t.name]

@@ -14467,7 +14467,6 @@
       ],
       "glb": "levels/swamp/swamp-rat-nest-a-lod0.glb",
       "panels": [
-        {"panel": "drop", "show-panel": true},
         {
           "panel": "path",
           "required": true,

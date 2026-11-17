@@ -209,11 +209,29 @@ class OG_PT_LevelSettings(Panel):
             _draw_checkpoint_list(body, scene)
             body.prop(props, "bottom_height")
             _draw_tasks(body, s)
+            row = body.row(align=True)
+            row.prop(s, "orb_count")
+            auto = col.get("og_orb_count_auto")
+            row.operator("og.count_orbs", text=f"Auto: {auto}" if auto is not None else "Count", icon="FILE_REFRESH")
+            if s.orb_count.strip() and not s.orb_count.strip().isdigit():
+                w = body.row(); w.alert = True
+                w.label(text="Orb Count: a whole number, or blank for the automatic count", icon="ERROR")
             body.prop(s, "wall_angle")
             body.prop(s, "double_sided")
             if s.double_sided:
                 w = body.row(); w.alert = True
                 w.label(text="Doubles the collision mesh", icon="ERROR")
+
+        # ── Project Settings (the whole .blend, not this level) ───────
+        head, body = layout.panel("og_lvl_project", default_closed=True)
+        head.label(text="Project Settings", icon="WORLD")
+        if body is not None:
+            ps = scene.og_project
+            body.prop(ps, "retail_checkpoint")
+            body.prop(ps, "new_game_checkpoint")
+            body.prop(ps, "discord_status")
+            hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
+            hint.label(text="For every level of this .blend. Blank: the game's own", icon="INFO")
 
         # ── Others ─────────────────────────────────────────────────────
         head, body = layout.panel("og_lvl_others", default_closed=True)
