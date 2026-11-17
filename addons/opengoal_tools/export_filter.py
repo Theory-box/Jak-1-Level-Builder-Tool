@@ -18,9 +18,11 @@ PARTS = (
     ("level_settings", "Level settings", "level-info.gc: everything but the checkpoints"),
     ("checkpoints", "Checkpoints", "level-info.gc: the continue-points"),
     ("load_boundaries", "Load Boundaries", "load-boundary-data.gc"),
+    ("project", "Project settings", "Level > Project Settings: the boot / new game / quit checkpoints and the "
+                                    "Discord status in the game files (off: those files aren't touched at all)"),
 )
 GROUPS = (("Level folder", ("glb", "jsonc", "gd", "obs")), (None, ("gamegp", "navmesh", "tasks")),
-          ("Level-info", ("level_settings", "checkpoints")), (None, ("load_boundaries",)))
+          ("Level-info", ("level_settings", "checkpoints")), (None, ("load_boundaries", "project")))
 
 
 def _settings_class():

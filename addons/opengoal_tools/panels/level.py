@@ -206,14 +206,33 @@ class OG_PT_LevelSettings(Panel):
         head, body = layout.panel("og_lvl_gameplay", default_closed=True)
         head.label(text="Gameplay", icon="ARMATURE_DATA")
         if body is not None:
-            _draw_checkpoint_list(body, scene)
             body.prop(props, "bottom_height")
-            _draw_tasks(body, s)
+            row = body.row(align=True)
+            row.prop(s, "orb_count")
+            auto = col.get("og_orb_count_auto")
+            row.operator("og.count_orbs", text=f"Auto: {auto}" if auto is not None else "Count", icon="FILE_REFRESH")
+            if s.orb_count.strip() and not s.orb_count.strip().isdigit():
+                w = body.row(); w.alert = True
+                w.label(text="Orb Count: a whole number, or blank for the automatic count", icon="ERROR")
             body.prop(s, "wall_angle")
             body.prop(s, "double_sided")
             if s.double_sided:
                 w = body.row(); w.alert = True
                 w.label(text="Doubles the collision mesh", icon="ERROR")
+            _draw_checkpoint_list(body, scene)
+            _draw_tasks(body, s)
+
+        # ── Project Settings (the whole .blend, not this level) ───────
+        head, body = layout.panel("og_lvl_project", default_closed=True)
+        head.label(text="Project Settings", icon="WORLD")
+        if body is not None:
+            ps = scene.og_project
+            body.prop(ps, "retail_checkpoint")
+            body.prop(ps, "new_game_checkpoint")
+            body.prop(ps, "quit_checkpoint")
+            body.prop(ps, "discord_status")
+            hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
+            hint.label(text="For every level of this .blend. Blank: the game's own", icon="INFO")
 
         # ── Others ─────────────────────────────────────────────────────
         head, body = layout.panel("og_lvl_others", default_closed=True)
@@ -279,28 +298,34 @@ def _draw_checkpoint_list(layout, scene):
     cps = sorted((o for o in _level_objects(scene)
                   if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")),
                  key=lambda o: (spawn_uid(o) != "start", o.name))
-    head = layout.row(align=True)
+    hd, body = layout.panel("og_lvl_checkpoints", default_closed=True)
+    head = hd.row(align=True)
     head.label(text=f"Checkpoints ({len(cps)})", icon="EMPTY_SINGLE_ARROW")
     head.operator("og.spawn_checkpoint", text="", icon="ADD")
-    colm = layout.column(align=True)
+    if not any(spawn_uid(o) == "start" for o in cps):
+        w = layout.row(); w.alert = True
+        w.label(text='No "start" checkpoint', icon="ERROR")
+    if body is None:
+        return
+    colm = body.column(align=True)
     for o in cps:
         row = colm.row(align=True)
         op = row.operator("og.select_and_frame", text=spawn_uid(o) or o.name,
                           icon="RADIOBUT_ON" if o.select_get() else "RADIOBUT_OFF", depress=o.select_get())
         op.obj_name = o.name
-    if not any(spawn_uid(o) == "start" for o in cps):
-        w = layout.row(); w.alert = True
-        w.label(text='No "start" checkpoint', icon="ERROR")
 
 
 def _draw_tasks(layout, s):
     from ..level_settings import auto_tasks
     auto = auto_tasks(s)
-    head = layout.row(align=True)
+    hd, body = layout.panel("og_lvl_tasks", default_closed=True)
+    head = hd.row(align=True)
     n = len(s.tasks) + len(auto)
-    head.label(text=f"Tasks ({n})" if n else "Tasks")
+    head.label(text=f"Tasks ({n})" if n else "Tasks", icon="CHECKBOX_HLT")
     head.operator("og.level_task_add", text="", icon="ADD")
-    colm = layout.column(align=True)
+    if body is None:
+        return
+    colm = body.column(align=True)
     for name, i in auto:
         r = colm.row(); r.enabled = False
         r.label(text=f"{name}  ({i}, custom task of this level)", icon="CHECKMARK")
