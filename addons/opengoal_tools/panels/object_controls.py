@@ -371,7 +371,14 @@ class OG_PT_ExportDefinitions(Panel):
 
     def draw(self, ctx):
         layout = self.layout
-        layout.prop(ctx.scene.og_export_defs, "path")
+        s = ctx.scene.og_export_defs
+        layout.prop(s, "path")
+        col = layout.column(align=True)
+        col.prop(s, "comments")
+        col.prop(s, "format", text="")
+        if s.format == "NONE":
+            col.prop(s, "trailing_comma")
+        col.prop(s, "indent")
         g = grouped(ctx.selected_objects)
         n = sum(len(g.get(k, ())) for k in ("Actors", "Checkpoints", "Cameras", "Load boundaries"))
         layout.operator("og.export_selected_defs", text=f"Export {n} Definition(s)" if n else "Export Definitions",

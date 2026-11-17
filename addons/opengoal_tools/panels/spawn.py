@@ -173,6 +173,10 @@ def _draw_field_custom_name(layout, ctx, item):
     layout.prop(ctx.scene.og_props, "custom_type_name", text="Deftype name")
 
 
+def _draw_field_camera_spawn(layout, ctx, item):
+    layout.prop(ctx.scene.og_props, "camera_spawn_at", text="Spawn at")
+
+
 def _draw_field_target_context(layout, ctx, item):
     """Read-only context indicator for the Camera anchor item.
     Mirrors OG_OT_SpawnSelected._validate so the user sees the same state."""
@@ -201,6 +205,7 @@ FIELD_DRAWERS = {
     "music_radius":   _draw_field_music_radius,
     "custom_name":    _draw_field_custom_name,
     "target_context": _draw_field_target_context,
+    "camera_spawn":   _draw_field_camera_spawn,
 }
 
 
@@ -221,10 +226,13 @@ def _draw_dynamic_settings(layout, ctx, item):
     spawn_row.operator("og.spawn_selected", icon="ADD")
 
     if item.description:
-        col = box.column(align=True)
-        col.scale_y = 0.85
-        for line in _wrap_text(item.description, width=40):
-            col.label(text=line if line else " ")
+        hd, body = box.panel("og_spawn_desc", default_closed=False)
+        hd.label(text="Description", icon="INFO")
+        if body is not None:
+            col = body.column(align=True)
+            col.scale_y = 0.85
+            for line in _wrap_text(item.description, width=40):
+                col.label(text=line if line else " ")
 
     # Entity-specific info messages.
     if item.etype is not None:
