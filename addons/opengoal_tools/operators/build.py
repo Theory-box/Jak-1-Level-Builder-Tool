@@ -243,14 +243,21 @@ class OG_OT_Play(Operator):
                         else "Launch after the compile cancelled")
             return {"FINISHED"}
         cp = getattr(ctx.scene.og_props, "og_launch_checkpoint", "none")
+        from ..build import BOOT
+        BOOT["mode"] = ctx.scene.og_props.og_boot_mode
 
-        # Bare-launch path: synchronous, no GOALC.
-        if cp == "none":
+        # Bare-launch path: synchronous, no GOALC (the debugger mode needs it:
+        # it goes through _bg_play with no spawn)
+        if BOOT["mode"] == "RETAIL" or (cp == "none" and BOOT["mode"] != "DEBUGGER"):
             kill_gk()
             ok, msg = launch_gk()
             if not ok:
                 self.report({"ERROR"}, msg); return {"CANCELLED"}
-            self.report({"INFO"}, "Game launched in debug mode — select your level manually")
+            if BOOT["mode"] == "RETAIL":
+                self.report({"INFO"}, "Game launched in retail mode (no listener, so no spawn: Level > Project "
+                                      "Settings > Retail Boot Checkpoint starts it in your level)")
+            else:
+                self.report({"INFO"}, "Game launched in debug mode — select your level manually")
             return {"FINISHED"}
 
         # Spawn-at-checkpoint path: modal, runs _bg_play in a background thread.
@@ -262,10 +269,11 @@ class OG_OT_Play(Operator):
             return {"CANCELLED"}
 
         name = _lname(ctx)
-        if not name:
-            self.report({"ERROR"}, "Enter a level name first"); return {"CANCELLED"}
-        if len(name) > 10:
-            self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
+        if cp != "none":
+            if not name:
+                self.report({"ERROR"}, "Enter a level name first"); return {"CANCELLED"}
+            if len(name) > 10:
+                self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
         _PLAY_STATE.clear()
         _PLAY_STATE.update({"done":False,"error":None,"status":"Starting..."})
         # Read tunables from properties (settable in Developer Tools).
@@ -420,6 +428,8 @@ class OG_OT_ExportBuildPlay(Operator):
 
         _BUILD_PLAY_STATE.clear()
         _BUILD_PLAY_STATE.update({"done": False, "status": "Starting...", "error": None, "ok": False})
+        from ..build import BOOT
+        BOOT["mode"] = ctx.scene.og_props.og_boot_mode
         depsgraph = ctx.evaluated_depsgraph_get()  # fetch on main thread — unsafe from bg thread
         threading.Thread(target=_bg_build_and_play, args=(name, ctx.scene, depsgraph, _boot_cp(ctx, f"{name}-start")), daemon=True).start()
         wm = ctx.window_manager
