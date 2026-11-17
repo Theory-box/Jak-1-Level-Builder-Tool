@@ -10,8 +10,8 @@
 #     low bits for Draco to store
 #   - COLOR_0 is left out when all 8 time of day layers are there (the level
 #     builder doesn't read it then)
-# Only while the addon exports a level (ACTIVE["on"]); other glTF exports are
-# left alone.
+# While the addon exports a level (ACTIVE["on"]); other glTF exports only with
+# the preference "8-bit colours in every glTF export".
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -35,13 +35,20 @@ def _to_u8(acc):
     return src.nbytes // 2
 
 
+def _all_exports() -> bool:
+    """Preference: also for glTF exports made by hand (File > Export > glTF)."""
+    import bpy
+    a = bpy.context.preferences.addons.get(__package__)
+    return bool(a and getattr(a.preferences, "glb_colors_all_exports", False))
+
+
 class glTF2ExportUserExtension:
     def __init__(self):
         pass
 
     def gather_mesh_hook(self, gltf2_mesh, blender_mesh, blender_object, vertex_groups, modifiers, materials,
                          export_settings):
-        if not ACTIVE["on"] or gltf2_mesh is None:
+        if gltf2_mesh is None or not (ACTIVE["on"] or _all_exports()):
             return
         st = ACTIVE["stats"] if ACTIVE["stats"] is not None else {}
         for prim in gltf2_mesh.primitives or ():

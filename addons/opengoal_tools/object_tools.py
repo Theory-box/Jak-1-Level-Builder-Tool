@@ -635,6 +635,56 @@ class OG_OT_CopyLighting(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def float_color_layers(objs):
+    """[(mesh, layer name)] of the float ("Color") colour layers of the meshes."""
+    seen, out = set(), []
+    for o in objs:
+        if o.type != "MESH" or o.data.name in seen:
+            continue
+        seen.add(o.data.name)
+        out += [(o.data, a.name) for a in o.data.color_attributes if a.data_type == "FLOAT_COLOR"]
+    return out
+
+
+def to_byte_color(mesh, name):
+    """A float colour layer as a Byte Color one (same name, domain, values;
+    a quarter of the size). The active / render layer stays the same."""
+    import numpy as np
+    cas = mesh.color_attributes
+    a = cas[name]
+    dom = a.domain
+    vals = np.empty(len(a.data) * 4, np.float32)
+    a.data.foreach_get("color", vals)                 # linear
+    act = cas.active_color.name if cas.active_color else None
+    ren = cas[cas.render_color_index].name if 0 <= cas.render_color_index < len(cas) else None
+    cas.remove(a)
+    b = cas.new(name, "BYTE_COLOR", dom)
+    b.data.foreach_set("color", np.clip(vals, 0.0, 1.0))
+    names = [x.name for x in cas]
+    if act in names:
+        cas.active_color = cas[act]
+        cas.active_color_index = names.index(act)
+    if ren in names:
+        cas.render_color_index = names.index(ren)
+
+
+class OG_OT_ColorLayersToByte(bpy.types.Operator):
+    """Turn the float ("Color") colour layers of the selected meshes into Byte Color: a quarter of the
+size in the .blend, the same 8 bits the game uses"""
+    bl_idname = "og.color_layers_to_byte"
+    bl_label = "Convert Float Colors to Byte"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        todo = float_color_layers(ctx.selected_objects)
+        for mesh, name in todo:
+            to_byte_color(mesh, name)
+            mesh.update()
+        self.report({"INFO"} if todo else {"WARNING"},
+                    f"{len(todo)} colour layer(s) converted to Byte Color" if todo else "No float colour layer selected")
+        return {"FINISHED"} if todo else {"CANCELLED"}
+
+
 class OG_OT_DeleteColorAttribute(bpy.types.Operator):
     """Delete the colour layer with this name from every selected mesh"""
     bl_idname = "og.delete_color_attribute"
@@ -693,7 +743,8 @@ meshes (Object Controls > Vertex Colors)"""
 
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, OG_OT_DeleteColorAttribute, *_vc_effects.CLASSES,
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, OG_OT_DeleteColorAttribute, OG_OT_ColorLayersToByte,
+           *_vc_effects.CLASSES,
            *_path_curves.CLASSES)
 
 
