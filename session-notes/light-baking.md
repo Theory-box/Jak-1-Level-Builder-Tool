@@ -89,6 +89,22 @@ Proposed:
    blend to grey), snap near-greys to grey. Decide after seeing the preview on real levels.
 3. Possibly a jak-project change later (more depth, a better split choice); outside the addon.
 
+## Light baking addition 2 (branch claude/light-baking-2, waiting for Kuitar's test)
+- Level GLB colours 8-bit + COLOR_0 left out when all 8 times are baked (glb_colors.py, a glTF
+  gather_mesh_hook before Draco). Blender writes colours as u16 normalized; build_level keeps
+  u16 >> 8 and reads u8 directly, so the game data is identical (built 3 ways on test-v0.3.8:
+  same palette). Draco's colour / generic quantization only applies to float attributes, which is
+  why it never helped. Test level (62.5k faces, 8 times): Draco 3.03 MB -> 1.02 MB; Kuitar's big
+  level (Draco, COLOR_0 already dropped): 97 MB -> 60 MB. Preference "8-bit colours in every glTF
+  export" for hand-made exports.
+- Bit Size option (6/5/4 bits) not built: only helps with Draco (-5 / -20 / -48 % more on the test
+  level) and bands visibly; waiting on Kuitar.
+- Time frame per time of day (frame_set per time, combined copies rebuilt when the frame changes:
+  object transforms only), Render emit per time of day (emit:<time> passes, _og_bake_emit<time>
+  layers), emit passes on a small combined copy of the emissive meshes, keyframed emission counts as
+  emissive, Delete Color Attribute, Float Colors to Byte. Tests: _claude_tmp/bl_bake2.py,
+  bl_glbsize.py, bl_glbbuild.py, bl_bytecol.py.
+
 ## Vertex colour effects (vc_effects.py, Object Controls > Vertex Colors)
 - Apply Effect: Curve Correction (own curve "OG Effect Curve", bake curve presets), Overwrite Color
   (hue / saturation / value factors, 1 / 1 / 0), Overwrite Alpha, Blur (auto blur options); Factor on curve,
