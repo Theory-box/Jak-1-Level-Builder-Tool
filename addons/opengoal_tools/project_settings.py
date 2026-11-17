@@ -110,10 +110,12 @@ def apply(scene):
             # (the tag goes after the whole line: closing parens may follow).
             # Changed only when it holds the vanilla value or carries our tag;
             # each key has its own tag so two settings on the same kind of line
-            # stay apart (None: the first version's tag, "<tag>: was").
-            tag = f"{_TAG} {key}" if key else f"{_TAG}:"
+            # stay apart. Lines written by the first version carry the tag
+            # without the key ("<tag>: was ...") and are ours too.
+            tag = f"{_TAG} {key}" if key else _TAG
+            tag_rx = re.escape(_TAG) + (rf"(?: {re.escape(key)})?:" if key else ":")
             head, tail = pattern.split(vanilla, 1)
-            rx = re.compile(head + f"({_VALUE_RX})" + tail + r"([^\n]*?)" + rf"([ \t]*{re.escape(tag)}[^\n]*)?$",
+            rx = re.compile(head + f"({_VALUE_RX})" + tail + r"([^\n]*?)" + rf"([ \t]*{tag_rx}[^\n]*)?$",
                             re.M)
 
             def repl(m):
