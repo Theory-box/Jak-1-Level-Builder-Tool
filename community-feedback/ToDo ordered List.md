@@ -139,11 +139,6 @@ New sub menu in the "level" tab. These are settings that are relevant to the who
 
 ---
 
-## Texture remap
-### water-anim texture remap doesn't seem to work
-
----
-
 ## Snapping snap to preview mesh of the selected actor
 This should be a changed behaviour, otherwise it moves the actors when you try to snap it to another surface. If possible the snap shouldn't be affected by the selected actor preview mesh that you're moving but still by the other preview mesh of other non-selected actors so you can line stuff up on them 
 
