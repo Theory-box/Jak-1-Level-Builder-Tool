@@ -206,9 +206,7 @@ class OG_PT_LevelSettings(Panel):
         head, body = layout.panel("og_lvl_gameplay", default_closed=True)
         head.label(text="Gameplay", icon="ARMATURE_DATA")
         if body is not None:
-            _draw_checkpoint_list(body, scene)
             body.prop(props, "bottom_height")
-            _draw_tasks(body, s)
             row = body.row(align=True)
             row.prop(s, "orb_count")
             auto = col.get("og_orb_count_auto")
@@ -221,6 +219,8 @@ class OG_PT_LevelSettings(Panel):
             if s.double_sided:
                 w = body.row(); w.alert = True
                 w.label(text="Doubles the collision mesh", icon="ERROR")
+            _draw_checkpoint_list(body, scene)
+            _draw_tasks(body, s)
 
         # ── Project Settings (the whole .blend, not this level) ───────
         head, body = layout.panel("og_lvl_project", default_closed=True)

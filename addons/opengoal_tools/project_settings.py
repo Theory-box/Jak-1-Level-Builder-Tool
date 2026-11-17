@@ -91,6 +91,9 @@ def apply(scene):
     """Write the project settings into the game files (or put vanilla back).
     Returns the files changed."""
     from .export import _goal_src, log
+    from .export_filter import allowed
+    if not allowed("project", scene):
+        return []                                 # filtered out: the game files stay as they are
     s = scene.og_project
     root = _goal_src()
     changed = []
