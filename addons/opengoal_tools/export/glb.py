@@ -168,13 +168,21 @@ def export_level_glb(level_col, filepath):
             ids.add(o)
             ids.update(s.material for s in o.material_slots if s.material)
         plain = _plain_collision_props(ids)
+    from .. import glb_colors
+    glb_colors.ACTIVE.update({"on": True, "stats": {}})   # 8-bit colours (glb_colors.py)
     try:
         idx = list(geo.exporters).index(ex)
         with bpy.context.temp_override(collection=geo):
             r = bpy.ops.collection.exporter_export(index=idx)
         if "FINISHED" not in r:
             raise RuntimeError(f"glTF export of {geo.name} failed")
+        st = glb_colors.ACTIVE["stats"] or {}
+        if st:
+            from .paths import log
+            log(f"[glb] colours 8-bit: {st.get('saved', 0) // 1024} KB less"
+                + (f", COLOR_0 left out: {st.get('dropped', 0) // 1024} KB" if st.get("dropped") else ""))
     finally:
+        glb_colors.ACTIVE["on"] = False
         for parent, ch in unlinked:
             parent.children.link(ch)
         for idb, k in plain:              # Blender 5.0 copies, only for the export

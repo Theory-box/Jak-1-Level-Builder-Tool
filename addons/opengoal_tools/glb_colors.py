@@ -1,0 +1,54 @@
+# ---------------------------------------------------------------------------
+# glb_colors.py — OpenGOAL Level Tools
+# Smaller level GLBs: a glTF export hook (Blender's exporter calls
+# glTF2ExportUserExtension.gather_mesh_hook on every mesh, before Draco).
+# Blender writes colour layers as 16-bit (linear) values; the level builder
+# only keeps their top 8 bits (gltf_util.cpp: u16 >> 8, and it reads 8-bit
+# colours as they are). So:
+#   - COLOR_0 and the time of day layers (_SUNRISE ...) are written as 8-bit:
+#     exactly the bytes the game ends up with, half the size, and no noisy
+#     low bits for Draco to store
+#   - COLOR_0 is left out when all 8 time of day layers are there (the level
+#     builder doesn't read it then)
+# Only while the addon exports a level (ACTIVE["on"]); other glTF exports are
+# left alone.
+# ---------------------------------------------------------------------------
+from __future__ import annotations
+
+import numpy as np
+
+TOD = ("_SUNRISE", "_MORNING", "_NOON", "_AFTERNOON", "_SUNSET", "_TWILIGHT", "_EVENING", "_GREENSUN")
+_U8, _U16 = 5121, 5123
+ACTIVE = {"on": False, "u8": True, "drop_color0": True, "stats": None}
+
+
+def _to_u8(acc):
+    """A colour accessor's 16-bit data as 8-bit (top byte, like the level builder)."""
+    if acc is None or int(acc.component_type) != _U16 or acc.buffer_view is None:
+        return 0
+    from io_scene_gltf2.io.exp.binary_data import BinaryData
+    from io_scene_gltf2.io.com.constants import ComponentType
+    src = np.frombuffer(acc.buffer_view.data, dtype=np.uint16)
+    acc.buffer_view = BinaryData((src >> 8).astype(np.uint8).tobytes(), acc.buffer_view.bufferViewTarget)
+    acc.component_type = ComponentType.UnsignedByte
+    acc.normalized = True
+    return src.nbytes // 2
+
+
+class glTF2ExportUserExtension:
+    def __init__(self):
+        pass
+
+    def gather_mesh_hook(self, gltf2_mesh, blender_mesh, blender_object, vertex_groups, modifiers, materials,
+                         export_settings):
+        if not ACTIVE["on"] or gltf2_mesh is None:
+            return
+        st = ACTIVE["stats"] if ACTIVE["stats"] is not None else {}
+        for prim in gltf2_mesh.primitives or ():
+            attrs = prim.attributes or {}
+            if ACTIVE["drop_color0"] and "COLOR_0" in attrs and all(t in attrs for t in TOD):
+                acc = attrs.pop("COLOR_0")
+                st["dropped"] = st.get("dropped", 0) + (len(acc.buffer_view.data) if acc.buffer_view else 0)
+            if ACTIVE["u8"]:
+                for k in [k for k in attrs if k.startswith("COLOR_") or k in TOD]:
+                    st["saved"] = st.get("saved", 0) + _to_u8(attrs[k])
