@@ -256,6 +256,31 @@ class OG_PT_CopyAlpha(Panel):
         r.label(text="Into BakedLight + every time of day layer", icon="INFO")
 
 
+class OG_PT_DeleteColorAttribute(Panel):
+    bl_label = "Delete Color Attribute"
+    bl_idname = "OG_PT_delete_color_attribute"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_vertex_colors"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_copy_light
+        layout = self.layout
+        act = ctx.view_layer.objects.active
+        if act is not None and act.type == "MESH":
+            layout.prop_search(s, "delete_layer", act.data, "color_attributes", text="Layer")
+        else:
+            layout.prop(s, "delete_layer")
+        n = sum(1 for o in ctx.selected_objects if o.type == "MESH")
+        r = layout.row(); r.alert = True
+        r.operator("og.delete_color_attribute", icon="TRASH",
+                   text=f"Delete from {n} Mesh(es)" if n else "Delete Color Attribute")
+        h = layout.row(); h.enabled = False; h.scale_y = 0.7
+        h.label(text="Pick from the active mesh or type a name", icon="INFO")
+
+
 class OG_PT_ApplyEffect(Panel):
     bl_label = "Apply Effect"
     bl_idname = "OG_PT_apply_effect"
@@ -391,5 +416,5 @@ class OG_PT_ExportDefinitions(Panel):
 
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
-           OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha,
+           OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha, OG_PT_DeleteColorAttribute,
            OG_PT_ApplyEffect, *_EFFECT_PANELS, OG_PT_EffectsAfterBake, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

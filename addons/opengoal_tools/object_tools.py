@@ -586,6 +586,8 @@ class OGCopyLightSettings(bpy.types.PropertyGroup):
                             description="Vertices with no source geometry this close keep their colour")
     alpha_layer: StringProperty(name="Alpha from", default="ALPHA",
                                 description="Colour layer whose alpha goes into BakedLight and every time of day layer")
+    delete_layer: StringProperty(name="Layer", default="",
+                                 description="Name of the colour layer to delete from the selected meshes")
 
 
 def copy_light_targets(ctx):
@@ -633,6 +635,33 @@ class OG_OT_CopyLighting(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_DeleteColorAttribute(bpy.types.Operator):
+    """Delete the colour layer with this name from every selected mesh"""
+    bl_idname = "og.delete_color_attribute"
+    bl_label = "Delete Color Attribute"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, ctx):
+        return ctx.mode == "OBJECT" and bool(ctx.scene.og_copy_light.delete_layer.strip())
+
+    def execute(self, ctx):
+        name = ctx.scene.og_copy_light.delete_layer.strip()
+        done, n = set(), 0
+        for o in ctx.selected_objects:
+            if o.type != "MESH" or o.data.name in done or o.data.library:
+                continue
+            done.add(o.data.name)
+            cas = o.data.color_attributes
+            if name in cas:
+                cas.remove(cas[name])
+                o.data.update()
+                n += 1
+        self.report({"INFO"} if n else {"WARNING"}, f"'{name}' deleted from {n} mesh(es)" if n
+                    else f"No selected mesh has '{name}'")
+        return {"FINISHED"} if n else {"CANCELLED"}
+
+
 class OG_OT_CopyAlpha(bpy.types.Operator):
     """Copy the alpha of the chosen colour layer into BakedLight and every time of day layer of the selected
 meshes (Object Controls > Vertex Colors)"""
@@ -664,7 +693,7 @@ meshes (Object Controls > Vertex Colors)"""
 
 CLASSES = (OGFloorSettings, OG_OT_SetToFloor, OGDistributeSettings, OG_OT_DistributeAlongCurve,
            OG_OT_EditDistributeCurve, OGConvertSettings, OG_OT_PickConvertTarget, OG_OT_ConvertEntities,
-           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, *_vc_effects.CLASSES,
+           OGExportDefsSettings, OG_OT_ExportSelectedDefs, OGCopyLightSettings, OG_OT_CopyLighting, OG_OT_CopyAlpha, OG_OT_DeleteColorAttribute, *_vc_effects.CLASSES,
            *_path_curves.CLASSES)
 
 

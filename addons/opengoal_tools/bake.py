@@ -182,6 +182,9 @@ class OGTodTime(bpy.types.PropertyGroup):
                                                   "off while it bakes; lights outside them light every time)")
     world: bpy.props.PointerProperty(type=bpy.types.World, name="World",
                                      description="World (environment) used while this time bakes")
+    frame: bpy.props.IntProperty(name="Time frame", default=1,
+                                 description="Animation frame this time bakes at (Set time frame per time of day): "
+                                             "keyframe lights, meshes, emission ... to change them per time")
     show: bpy.props.BoolProperty(name="Show", default=True)
 
 
@@ -276,6 +279,15 @@ class OGBakeSettings(bpy.types.PropertyGroup):
         name="Show bake on all", default=False,
         description="The show buttons (eye) switch every mesh of the level's Geometry collection, rendered or not "
                     "(grass clumps with rendering off ...), instead of the selected meshes")
+    tod_frames: bpy.props.BoolProperty(
+        name="Set time frame per time of day", default=False,
+        description="Each time of day bakes at its own animation frame (a Time frame field per time): keyframe "
+                    "lights, meshes, emission ... on those frames. Your current frame comes back after the bake")
+    emit_per_tod: bpy.props.BoolProperty(
+        name="Render emit per time of day", default=False,
+        description="One emit pass per time of day instead of one for all. ONLY useful when your emissive "
+                    "materials change between times of day (keyframed with Set time frame per time of day, or "
+                    "different per world / lights); otherwise it only adds render time for the same result")
     tod_sunrise: bpy.props.PointerProperty(type=OGTodTime)
     tod_morning: bpy.props.PointerProperty(type=OGTodTime)
     tod_noon: bpy.props.PointerProperty(type=OGTodTime)
@@ -476,8 +488,11 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
         if attr is None:
             continue
         cols, key = _read(attr)
-        if em is not None:
-            cols = screen(cols, em, settings.emit_strength)
+        # this time's own emit pass (Render emit per time of day), else the shared one
+        own = mesh.color_attributes.get(_EMIT_ATTR + name) if emitted else None
+        e = _read(own)[0] if own is not None else em
+        if e is not None:
+            cols = screen(cols, e, settings.emit_strength)
         if settings.use_curve and mapping is not None and settings.curve_factor > 0:
             xs, lu = luts if luts is not None else curve_luts(mapping)
             cols = apply_curve(cols, xs, lu, settings.curve_factor)
@@ -495,8 +510,8 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
             if al is not None and len(al) == len(cols):
                 cols[:, 3] = al
         _write(attr, np.clip(cols, 0.0, 1.0), key)
-    if _EMIT_ATTR in mesh.color_attributes:
-        mesh.color_attributes.remove(mesh.color_attributes[_EMIT_ATTR])
+    for n in [a.name for a in mesh.color_attributes if a.name.startswith(_EMIT_ATTR)]:
+        mesh.color_attributes.remove(mesh.color_attributes[n])
     use_baked(mesh, "_NOON" if "_NOON" in attrs else attrs[0])   # shown in the viewport / COLOR_0
     mesh.update()
 
@@ -518,11 +533,22 @@ def use_baked(mesh, name=None):
     return True
 
 
+def _animated(sock) -> bool:
+    """The socket's value is keyframed (it may emit on another frame)."""
+    tree = sock.id_data
+    ad = getattr(tree, "animation_data", None)
+    if ad is None or ad.action is None:
+        return False
+    path = sock.path_from_id("default_value")
+    return any(fc.data_path == path for fc in ad.action.fcurves)
+
+
 def _lit(sock, colour=False):
-    """The socket carries something: linked (texture, nodes) or a non-zero value."""
+    """The socket carries something: linked (texture, nodes), keyframed, or a
+    non-zero value."""
     if sock is None:
         return False
-    if sock.is_linked:
+    if sock.is_linked or _animated(sock):
         return True
     v = sock.default_value
     return any(float(x) > 0 for x in list(v)[:3]) if colour else float(v) > 0
@@ -599,7 +625,7 @@ def _chunks(objs):
 
 
 def _skip_layer(name):
-    return name in (BAKE_ATTR, _EMIT_ATTR) or name in TOD_ATTRS
+    return name == BAKE_ATTR or name.startswith(_EMIT_ATTR) or name in TOD_ATTRS
 
 
 def _flip_order(m, starts):
@@ -707,20 +733,56 @@ def _combined_mesh(objs, index):
     return ob, parts
 
 
+def _make_copies(objs, first=0):
+    """[{"name", "parts"}] of new combined copies of objs."""
+    out = []
+    for i, ch in enumerate(_chunks(objs)):
+        ob, parts = _combined_mesh(ch, first + i)
+        out.append({"name": ob.name, "parts": parts})
+    return out
+
+
 def _combine(job, objs):
     """Temporary combined meshes for the bake; the originals stop rendering."""
-    job["combined"] = []
+    job["combined"] = _make_copies(objs)
+    job["baked"] = []                    # layers baked on these copies (copied back at the end)
+    job["copies_frame"] = bpy.context.scene.frame_current
     job["hidden"] = {o.name: o.hide_render for o in objs}
-    for i, ch in enumerate(_chunks(objs)):
-        ob, parts = _combined_mesh(ch, i)
-        job["combined"].append({"name": ob.name, "parts": parts})
     for o in objs:
         o.hide_render = True
 
 
-def _uncombine(job, attrs):
+def _delete_copies(copies):
+    for c in copies:
+        ob = bpy.data.objects.get(c["name"])
+        if ob is not None:
+            me = ob.data
+            bpy.data.objects.remove(ob)
+            if me.users == 0:
+                bpy.data.meshes.remove(me)
+
+
+def _recombine(job):
+    """Set time frame per time of day: the copies follow the meshes to this
+    frame (layers baked so far go back to the meshes first)."""
+    _uncombine(job, job.get("baked", []))
+    _delete_copies(job.get("combined", []))
+    job["combined"] = _make_copies(_objs(job["objs"]))
+    job["baked"] = []
+    job["copies_frame"] = bpy.context.scene.frame_current
+
+
+def _close_emit_copies(job):
+    """After an emit pass on its own small copy: its layer to the meshes, copy gone."""
+    copies = job.pop("emit_copies", None)
+    if copies:
+        _uncombine(job, [job.pop("emit_attr")], copies)
+        _delete_copies(copies)
+
+
+def _uncombine(job, attrs, copies=None):
     """Copy the baked layers of the combined meshes back into each mesh."""
-    for c in job.get("combined", []):
+    for c in job.get("combined", []) if copies is None else copies:
         ob = bpy.data.objects.get(c["name"])
         if ob is None:
             continue
@@ -732,7 +794,7 @@ def _uncombine(job, attrs):
             arr, key = _read(src)
             for oname, l0, nl, v0, nv, pos in c["parts"]:
                 o = bpy.data.objects.get(oname)
-                if o is None or (name == _EMIT_ATTR and oname not in job["emit_objs"]):
+                if o is None or (name.startswith(_EMIT_ATTR) and oname not in job["emit_objs"]):
                     continue
                 dst = o.data.color_attributes
                 if name in dst and (dst[name].domain != src.domain or dst[name].data_type != "BYTE_COLOR"):
@@ -744,13 +806,8 @@ def _uncombine(job, attrs):
 
 
 def _drop_combined(job):
-    for c in job.pop("combined", []):
-        ob = bpy.data.objects.get(c["name"])
-        if ob is not None:
-            me = ob.data
-            bpy.data.objects.remove(ob)
-            if me.users == 0:
-                bpy.data.meshes.remove(me)
+    _delete_copies(job.pop("combined", []))
+    _delete_copies(job.pop("emit_copies", []))
     for n, h in job.pop("hidden", {}).items():
         o = bpy.data.objects.get(n)
         if o is not None:
@@ -758,11 +815,13 @@ def _drop_combined(job):
 
 
 def _bake_objs(job, emit=False):
-    """The objects a pass bakes: the combined meshes, else the meshes."""
+    """The objects a pass bakes: the combined meshes (emit: a small combined
+    copy of only the emissive meshes, made for this pass), else the meshes."""
     if "combined" in job:
-        want = set(job["emit_objs"]) if emit else None
-        return _objs([c["name"] for c in job["combined"]
-                      if want is None or any(p[0] in want for p in c["parts"])])
+        if emit:
+            job["emit_copies"] = _make_copies(_objs(job["emit_objs"]), first=100)
+            return _objs([c["name"] for c in job["emit_copies"]])
+        return _objs([c["name"] for c in job["combined"]])
     return _objs(job["emit_objs"] if emit else job["objs"])
 
 
@@ -1027,25 +1086,37 @@ def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
     if kind.startswith("light"):
-        objs = _bake_objs(job)
         attr = kind[6:] or BAKE_ATTR       # "light" or "light:_SUNRISE"
         if attr != BAKE_ATTR:
             _tod_setup(job, attr)
+        if "combined" in job and job.get("copies_frame") != bpy.context.scene.frame_current:
+            _recombine(job)                # Set time frame per time of day: copies at this frame
+        objs = _bake_objs(job)
+        if "combined" in job:
+            job["baked"].append(attr)
         _prepare(objs, attr, job["domain"])
         if job.get("ignore_vc", True):
             _cut_colour_links(job, objs)
         args = dict(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"})
     else:   # only the meshes with an emissive material render the emit pass
+        # "emit", or "emit:_SUNRISE" (Render emit per time of day: that time's setup and layer)
+        attr = _EMIT_ATTR + (kind[5:] if kind.startswith("emit:") else "")
+        if kind.startswith("emit:"):
+            _tod_setup(job, kind[5:])
         _relink(job, "Color")              # emission may come from vertex colours (alpha stays off)
         objs = _bake_objs(job, emit=True)
-        _prepare(objs, _EMIT_ATTR, job["domain"])
+        if "emit_copies" in job:
+            job["emit_attr"] = attr
+        _prepare(objs, attr, job["domain"])
         args = dict(type="EMIT")
     _select_only(objs)
     import time
     job["evt"] = False                     # set by object_bake_complete for this pass
     job["pass_t"] = time.time()
     job["seen"] = False
-    label = {a: l for _k, a, l, *_r in TIMES}.get(kind[6:], kind) if kind.startswith("light:") else kind
+    names = {a: l for _k, a, l, *_r in TIMES}
+    label = (names.get(kind[6:], kind) if kind.startswith("light:")
+             else f"{names.get(kind[5:], kind)} emit" if kind.startswith("emit:") else kind)
     what = (f"{len(job['objs'])} mesh(es) as {len(objs)} combined" if "combined" in job
             else f"{len(objs)} mesh(es)")
     _status(f"Baking: {label} pass ({what}) — {job['i'] + 1} of {len(job['passes'])}")
@@ -1121,13 +1192,16 @@ def _tod_setup(job, attr):
     sc = bpy.context.scene
     if "restore" not in job:                 # put back after the bake
         job["restore"] = {"world": sc.world.name if sc.world else "",
-                          "hide": {t.lights.name: t.lights.hide_render for _k, _a, _l, t in tod_times(s) if t.lights}}
+                          "hide": {t.lights.name: t.lights.hide_render for _k, _a, _l, t in tod_times(s) if t.lights},
+                          "frame": sc.frame_current}
     for _k, a, _l, t in tod_times(s):
         if t.lights:
             t.lights.hide_render = (a != attr)
     cur = next(t for _k, a, _l, t in tod_times(s) if a == attr)
     if cur.world:
         sc.world = cur.world
+    if s.tod_frames and sc.frame_current != cur.frame:
+        sc.frame_set(cur.frame)              # Set time frame per time of day
 
 
 def _restore(job):
@@ -1141,6 +1215,8 @@ def _restore(job):
         if c is not None:
             c.hide_render = h
     bpy.context.scene.world = bpy.data.worlds.get(r["world"]) if r["world"] else None
+    if r.get("frame") is not None and bpy.context.scene.frame_current != r["frame"]:
+        bpy.context.scene.frame_set(r["frame"])
 
 
 def _finish():
@@ -1148,7 +1224,7 @@ def _finish():
     job = dict(_JOB)
     _JOB.clear()
     attrs = tuple(p[6:] or BAKE_ATTR for p in job["passes"] if p.startswith("light"))
-    _uncombine(job, attrs + (_EMIT_ATTR,))
+    _uncombine(job, job.get("baked", []))    # the layers still on the copies (emit: back already)
     _restore(job)
     _status("Baking: post-processing…")
     _select_only(_objs(job["objs"]))       # the selection the bake started with
@@ -1171,7 +1247,8 @@ def _finish():
         copied = auto_copy_lighting(col, settings.auto_copy_col)
     labels = {a: l for _k, a, l, *_r in TIMES}
     times = [labels[p[6:]] for p in job["passes"] if p.startswith("light:")]
-    extra = [x for x, on in (("emit", "emit" in job["passes"]), ("curve", settings.use_curve),
+    n_emit = sum(1 for p in job["passes"] if p.startswith("emit"))
+    extra = [x for x, on in (("emit" if n_emit == 1 else f"{n_emit} emit passes", n_emit), ("curve", settings.use_curve),
                              ("blur", settings.use_blur),
                              ("fixes", settings.fix_after_bake and _palette.fixes_on(settings)),
                              (f"{fx_ran} effect(s)", fx_ran),
@@ -1204,6 +1281,7 @@ def _safe(fn):
 
 def _next():
     import time
+    _close_emit_copies(_JOB)                 # the emit pass just done: its copy's layer back
     _JOB["t"] = time.time()
     _JOB["i"] += 1
     if _JOB["i"] < len(_JOB["passes"]):
@@ -1223,14 +1301,17 @@ def _on_cancel(_scene, *args):
 def start(objs, level_col, blocking=False):
     """Bake the passes for objs (names kept), then post-process."""
     s = level_col.og_bake if level_col is not None else None
+    emit_objs = [o.name for o in objs if has_emission(o)] if s is not None and s.emit_strength > 0 else []
     passes = ["light"]
     if s is not None and s.tod_enabled:
-        passes = [f"light:{a}" for _k, a, _l, t in tod_times(s) if t.enabled]
-        if not passes:
+        times = [a for _k, a, _l, t in tod_times(s) if t.enabled]
+        if not times:
             _status("Bake error: time of day is on but every time is off")
             return []
-    emit_objs = [o.name for o in objs if has_emission(o)] if s is not None and s.emit_strength > 0 else []
-    if emit_objs:
+        per = bool(s.emit_per_tod and emit_objs)
+        # each time's light pass (+ its emit pass): its frame / world / lights set once
+        passes = [p for a in times for p in ([f"light:{a}"] + ([f"emit:{a}"] if per else []))]
+    if emit_objs and not any(p.startswith("emit:") for p in passes):
         passes.append("emit")
     _JOB.clear()
     import time
@@ -1348,7 +1429,11 @@ def draw_tod(layout, level_col):
         r = col.row(align=True)
         r.prop(t, "world", text="World")
         op = r.operator("og.tod_new_world", text="", icon="ADD"); op.time = k
+        if s.tod_frames:
+            col.prop(t, "frame")
     box.prop(s, "tod_show_all")
+    box.prop(s, "tod_frames")
+    box.prop(s, "emit_per_tod")
 
 
 def _tod_level(ctx):
