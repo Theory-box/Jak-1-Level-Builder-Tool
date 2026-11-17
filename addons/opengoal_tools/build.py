@@ -399,6 +399,20 @@ def launch_goalc(wait_for_nrepl=False):
     except Exception as e:
         return False, str(e)
 
+# Boot mode (Build & Play > Boot), copied here on the main thread by the
+# operators before a launch (the launch threads don't read bpy):
+#   DEBUG     the game boots in debug mode (as before)
+#   RETAIL    the game boots without -debug (retail menus / checkpoints); a
+#             retail gk has no listener, so nothing is sent: it starts where
+#             Level > Project Settings > Retail Boot Checkpoint says
+#   DEBUGGER  gk waits for the listener (no -boot, like `task run-game`);
+#             _start_game then attaches goalc's debugger and runs (test-play),
+#             so a crash while booting the level stops in the debugger
+BOOT = {"mode": "DEBUG"}
+_GK_ARGS = {"DEBUG": ["-boot", "-fakeiso", "-debug"], "RETAIL": ["-boot", "-fakeiso"],
+            "DEBUGGER": ["-fakeiso", "-debug"]}
+
+
 def launch_gk():
     exe = _gk()
     if not exe.exists(): return False, f"Not found: {exe}"
@@ -408,13 +422,38 @@ def launch_gk():
         kill_gk()
     try:
         data_dir = str(_data())
+        mode = BOOT.get("mode", "DEBUG")
         subprocess.Popen([str(exe), "-v", "--game", "jak1",
                           "--proj-path", data_dir,
-                          "--", "-boot", "-fakeiso", "-debug"],
+                          "--", *_GK_ARGS.get(mode, _GK_ARGS["DEBUG"])],
                          cwd=str(_exe_root()))
-        return True, "gk launched"
+        return True, f"gk launched ({mode.lower()})"
     except Exception as e:
         return False, str(e)
+
+
+def _start_game(state, boot_wait, listener_wait):
+    """Launch gk and connect the listener; debugger mode also attaches the
+    debugger and boots the game with (test-play). Returns an error or None."""
+    ok, msg = launch_gk()
+    if not ok:
+        return msg
+    if BOOT.get("mode") == "RETAIL":
+        return None
+    time.sleep(boot_wait)
+    state["status"] = "Connecting listener..."
+    goalc_send("(lt)", timeout=1)
+    if BOOT.get("mode") == "DEBUGGER":
+        time.sleep(listener_wait)
+        state["status"] = "Attaching the debugger..."
+        goalc_send("(dbg)", timeout=1)
+        time.sleep(1.0)
+        goalc_send("(:cont)", timeout=1)
+        time.sleep(0.5)
+        state["status"] = "Booting the game (test-play)..."
+        goalc_send("(test-play)", timeout=1)
+        time.sleep(boot_wait)
+    return None
 
 
 
@@ -761,9 +800,11 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0, booted_cp=None):
     unconditional: send and trust the timing.
     """
     state = _PLAY_STATE
+    mode = BOOT.get("mode", "DEBUG")
+    # mod-base boots debug mode into the spawn itself (mod-settings.gc)
+    booted = bool(booted_cp) and booted_cp == cp_name
     try:
-        if booted_cp and booted_cp == cp_name:
-            # mod-base: mod-settings.gc already boots into this spawn
+        if booted and mode == "DEBUG":
             state["status"] = f"Launching GK (boots into {cp_name})..."
             ok, msg = launch_gk()
             if not ok:
@@ -784,16 +825,15 @@ def _bg_play(name, cp_name, boot_wait=4.0, listener_wait=1.0, booted_cp=None):
         # invisible. launch_gk() kills existing GK internally before
         # spawning the fresh process.
         state["status"] = f"Launching GK (waiting {boot_wait:g}s for boot)..."
-        ok, msg = launch_gk()
-        if not ok:
-            state["error"] = msg; return
-        time.sleep(boot_wait)
-
-        # Send (lt). If listener was already connected, this is a no-op
-        # (goalc prints "already connected!" to its own console — nothing
-        # comes back over nREPL).
-        state["status"] = "Connecting listener..."
-        goalc_send("(lt)", timeout=1)
+        # (lt): if the listener was already connected this is a no-op (goalc
+        # prints "already connected!" to its own console — nothing comes
+        # back over nREPL). Debugger mode: debugger attached, (test-play).
+        err = _start_game(state, boot_wait, listener_wait)
+        if err:
+            state["error"] = err; return
+        if booted or cp_name == "none" or mode == "RETAIL":
+            state["status"] = "Done!"
+            return
         time.sleep(listener_wait)
 
         # Send the spawn. The continue-point's :lev0 triggers the level
@@ -903,13 +943,14 @@ def _bg_build_and_play(name, scene, depsgraph=None, boot_cp=None):
         boot_wait = float(getattr(props, "og_launch_boot_wait", 4.0))
         listener_wait = float(getattr(props, "og_launch_listener_wait", 1.0))
         state["status"] = f"Launching game (waiting {boot_wait:g}s for boot)..."
-        ok, msg = launch_gk()
-        log(f"[launch] launch_gk returned: ok={ok} msg={msg}")
-        if not ok:
-            state["error"] = f"GK launch failed: {msg}"; return
-        time.sleep(boot_wait)
-        state["status"] = "Connecting listener..."
-        goalc_send("(lt)", timeout=1)
+        err = _start_game(state, boot_wait, listener_wait)
+        log(f"[launch] {BOOT.get('mode')}: {err or 'ok'}")
+        if err:
+            state["error"] = f"GK launch failed: {err}"; return
+        if BOOT.get("mode") == "RETAIL":
+            state["status"] = "Done! (retail: no listener, so no spawn)"
+            state["ok"] = True
+            return
         if boot_cp:
             # mod-base: the game boots into the spawn itself (mod-settings.gc)
             state["status"] = "Done! (boots into the spawn)"

@@ -198,6 +198,7 @@ class OG_PT_BuildPlay(Panel):
             row.label(text="Boot into spawn (mod-base)", icon="CHECKBOX_DEHLT")
             sub = col.row(); sub.scale_y = 0.7
             sub.label(text=why, icon="INFO")
+        col.prop(ctx.scene.og_props, "og_boot_mode")
 
         # Level GLB: the Geometry collection's exporter (Draco etc. set there)
         level_col = _active_level_col(ctx.scene)

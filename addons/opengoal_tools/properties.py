@@ -506,6 +506,16 @@ class OGProperties(PropertyGroup):
                     "after the boot. Not available on jak-project releases / dev clones",
         default=True,
     )
+    og_boot_mode: EnumProperty(
+        name="Boot", default="DEBUG",
+        items=[("DEBUG", "Debug Mode", "The game boots in debug mode (as before)"),
+               ("DEBUGGER", "Debug Mode (attached debugger)",
+                "The game waits, goalc attaches its debugger, then (test-play) boots it: a crash while booting "
+                "stops in goalc's debugger (its console shows where)"),
+               ("RETAIL", "Retail Mode", "The game boots without debug mode, to test it like players will. A retail "
+                "game has no listener, so no spawn is sent: Level > Project Settings > Retail Boot Checkpoint "
+                "starts it in your level")],
+        description="How Launch Game / Build & Play start the game")
     # Launch timing — exposed in Developer Tools for tuning per-machine.
     # See _bg_play in build.py for how these are used.
     og_launch_boot_wait: FloatProperty(
