@@ -259,6 +259,17 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 ---
 
+# Code Audit
+Let's do a code audit, as well as the more general things, let's look at these things in particular:
+## Cleaning old features
+Cleaning old features and anything that's made to work with previous version of the addon. We don't need this code debt at the moment, we don't need to complexify the code for this at the moment
+## Performance 
+Take particular attention to performance for things that redraw/recalculate every frame instead of only when they should, etc
+## Reusing functions
+Reusing functions, whenever something has to do be done in multiple places, there should be one single function that's called instead of having multiple snippets of the same or similar code
+
+---
+
 # Others
 ## Better Linux support
 
