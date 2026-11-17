@@ -173,6 +173,19 @@ To speed up emit rendering, the mesh with emits could get another object togethe
 
 ---
 
+## Delete color attribute tool
+New tool in the "Objects control" > "Vertex Colors" called "Delete color attribute". This would delete all color attribute of a specified name (select in a list or written down) on every selected objects.
+
+---
+
+## Color Bit size
+Having all color attributes of all time of days does increase file size quite significantly on large levels. The color depth used in blender is a lot larger than the one used by the game so a way to make the files smallers would be to to set the color depth to a lower bit value. 
+Under the face corner/vertex button, you could have another option "Bit Size" with the default amount as a button then 6, 5 and 4 bit to lower the compression. These should be done at the end of the rendering pipeline so other effects aren't added after, changing the values again.
+However I'm not 100% sure how this would work out. You'd think draco should take care of that but reducing color/generic values in the compression does not yield any better smaller results.
+So before making any changes, we'll have to investigate how all of this works and see how to reduce best the file size
+
+---
+
 # Custom Tools and actors
 ## Actor/jak Light custom actor
 Something I did in TFL is having some areas that affect the light on jak and other actors. However, the way worked was fit inside of the mood function. This comes with a lot of limitation and create a lot of extra code in there which wouldn't be needed if it was a single actor that did it with all its settings in the entity lump. You can check TFL's `goal_src/jak1/engine/gfx/mood/mood.gc` to see how it was done.
