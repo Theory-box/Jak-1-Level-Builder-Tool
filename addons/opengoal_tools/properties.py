@@ -241,6 +241,13 @@ class OGPreferences(AddonPreferences):
         default=True,
         update=lambda self, ctx: __import__(__package__ + ".model_preview", fromlist=["x"]).set_previews_selectable(self.select_via_preview),
     )
+    snap_skip_own_preview: BoolProperty(
+        name="Snapping skips the moved actor's preview",
+        description=("While actors are selected their own previews can't be snapped to (they move with them), "
+                     "other actors' previews still can. Turns on Blender's snapping option Exclude Non-Selectable. "
+                     "Needs 'Select actors by their preview model'"),
+        default=True,
+    )
     auto_connect_spawn: BoolProperty(
         name="Connect spawned actors to the selection",
         description=("When spawning an actor, link what was selected: curves become its path, a nav-mesh "
@@ -262,6 +269,7 @@ class OGPreferences(AddonPreferences):
             layout.separator()
             layout.prop(self, "preview_models")
             layout.prop(self, "select_via_preview")
+            layout.prop(self, "snap_skip_own_preview")
             layout.prop(self, "auto_connect_spawn")
             # Advanced — always last, and doesn't need any folder set.
             layout.separator()
@@ -374,6 +382,7 @@ class OGPreferences(AddonPreferences):
         layout.separator()
         layout.prop(self, "preview_models")
         layout.prop(self, "select_via_preview")
+        layout.prop(self, "snap_skip_own_preview")
         layout.prop(self, "auto_connect_spawn")
 
         # Advanced — always last.

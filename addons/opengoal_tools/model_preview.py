@@ -601,6 +601,36 @@ def _redirect_preview_selection():
         _REDIRECTING = False
 
 
+_SNAP_SEL: set = set()      # actors whose previews are kept out of snapping
+
+
+def _snap_skip_own_previews(vl):
+    """Snapping ignores the selected actors' own previews (they move with the
+    actor, so it snapped onto itself) but still uses the others': selected
+    actors' previews are made non-selectable and Blender's snapping excludes
+    non-selectable objects. Only the actors whose selection changed are touched."""
+    global _SNAP_SEL
+    a = bpy.context.preferences.addons.get(__package__)
+    if not (a and getattr(a.preferences, "snap_skip_own_preview", True)) or not _select_via_preview():
+        return
+    sel = {o.name for o in vl.objects if o.select_get() and o.name.startswith("ACTOR_")}
+    if not sel and not _SNAP_SEL:
+        return
+    # every selected actor (a preview rebuilt while selected too), the deselected ones back
+    for n, hide in [(n, True) for n in sel] + [(n, False) for n in _SNAP_SEL - sel]:
+        o = bpy.data.objects.get(n)
+        if o is None:
+            continue
+        for c in o.children:
+            if c.get(_PREVIEW_PROP) and c.hide_select != hide:
+                c.hide_select = hide
+    if sel and bpy.context.scene is not None:
+        ts = bpy.context.scene.tool_settings
+        if not ts.use_snap_selectable:
+            ts.use_snap_selectable = True        # "Exclude Non-Selectable"
+    _SNAP_SEL = sel
+
+
 def _is_any_preview(obj) -> bool:
     """Return True if obj is either an actor preview or a waypoint ghost preview."""
     return bool(obj.get(_PREVIEW_PROP) or obj.get(_WAYPOINT_PREVIEW_PROP))
@@ -634,6 +664,9 @@ def _on_depsgraph_update(scene, depsgraph):
     """Depsgraph handler — detect orphaned preview meshes and schedule removal.
     Kept intentionally cheap: only scans if there are any preview meshes at all."""
     _redirect_preview_selection()
+    vl = getattr(bpy.context, "view_layer", None)
+    if vl is not None:
+        _snap_skip_own_previews(vl)
     from . import race_rings, distribute
     objs, curves = race_rings.changed(depsgraph)   # only edited actors / paths are looked at
     if objs or curves:
