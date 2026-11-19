@@ -187,25 +187,44 @@ Here's all the settings and what they'd do:
   - The strength of the effect is then calculated depending on the distance of the actor to the Actor Light using the min and max distance. (from the max intensity to 0 intensity)
 - `Key Color` as a color picker (default to white), to choose the color that'll affect the Key lighting of the actor
 - `Key Intensity` as a float value (default to 1.0), to choose the intensity of the key lighting
-- The direction of the key light would be using the rotation of the actor. The default position would mean the light comes from straight ahead, then rotating would change that. Using the Z axis of the Actor Light in blender to determine the direction of the light, using the `quat` of the actor.
-  - In the object properties, viewport display, the axis could be turned on automatically to so there's a nice visual on the direction of the light 
+- `Direction`, a drop down menu with two options `From Center`, `Actor Rotation`
+  - `From Center`: The direction of the light onto the actor uses the Center of the object (or closest point if using paths) to determine the direction it light the actor, so moving around the light would change which side the actor get the light from.
+  - `Actor Rotation`: The direction of the key light would be using the rotation of the actor. The default position would mean the light comes from straight ahead, then rotating would change that. Using the Z axis of the Actor Light in blender to determine the direction of the light, using the `quat` of the actor.
+    - In the object properties, viewport display, the axis could be turned on automatically to so there's a nice visual on the direction of the light 
+- `Control Shadow` 0.0 to 1.0 slider for how much it'll impact the shadow direction
+  - The shadow of the actor/jak should also change to the direction set by the previous setting (might need to inverse it, you can check how shadows direction relate to sun position in the mood files).
+  - The shadow would also blend between using this direction (as much as the slider is set to) and the default direction from the mood depending on distance like the light intensity.
 - `Ambient Color` as a color picker (default to white), to choose the color that'll affect the ambient lighting of the actor
 - `Ambient Intensity` as a float value (default to 0.5), to choose the intensity of the ambient lighting
 - `Affect Jak`, On/Off checkbox (default on), if off, the actor light would only affect the actors in `alt-actor` and not jak. 
 - `Cylinder Mode`, On/off checkbox (default off), if this setting is on, the distance check would only be done on the x/z plane (in game), ignoring the height.
 - `Mode`:
   - `Default on`
+    - Light is on by default, it'd only turn off if another actor trigger it
     - `On timer`, in seconds (default 1.0), The time it takes to go from 0.0 to max intensity when the actor light turns on
     - `Off timer`, in seconds (default 1.0), The time it takes to go from max to 0.0 intensity when the actor light turns off
   - `Default off`
+    - Light would be off by default, would only turn on if another actor trigger it
     - also gets the timers
   - `Time of day`
     - `Time on`, in hours (default 18.0), time of day when it turns on
     - `Time off`, in hours (default 8.0), time of day when it turns off
     - Also gets the timers for how long it takes to turn on and off
+  - `Time of day (default off)`
+    - Same as previous but only turn on if it's been turned on by trigger actor
 - `Volume`, not required, if a volume is added, the actor/jak is only affected when inside of that volume. If there's no volume, then it just uses the distances set above.
 - `alt-actor`, the actors that get affected by the lighting as well as jak. Allow multiple. Maybe we can set a maximum if this is heavy on the computing.
-- `trigger-actor`, if this actor is dead, the light goes off, The `trigger-actor` can also send an on and off signal to turn the actor light on and off.
+- `trigger-actor` to control the light on/off
+  - if this actor is dead, the light triggers on/off depending on its mode
+    - in `Default on`, it'd turn off
+    - in `Default off`, it'd turn on
+    - in `Time of day`, it'd turn off completely and time of day doesn't turn it back on
+    - in `Time of day (default off)`, it'd allow it to turn on when it's time of day is correct
+  - The `trigger-actor` can also send an on and off signal to turn the actor light on and off
+    - `on` would turn the light on
+    - `off` would turn the light off
+    - `trigger` would switch between on/off (use whatever the basebutton uses for this so they can be used directly instead of needed a new trigger actor)
+- `path`, if a path is added, instead of doing the calculation from the center of the empty, it uses the closest position on the path and then calculate the distances from that point
 
 ---
 
