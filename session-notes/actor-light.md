@@ -50,6 +50,10 @@ tasks/al_ingame.py with al_q.txt / al_q3.txt (REPL): hook set, Jak strength 1 at
 into the free dir2 slot, ambient +0.5, crate (alt-actor) lit, Jak shadow turned half-way away from the
 light, 'on / 'trigger / timers, negative intensities halve levels, time of day 18-8 off at 12 / on at 20,
 game running with the light on. (A babak without a nav-mesh crashed the first test level: not the light.)
+Kuitar's changes: Lit actors = one "allow-multiple" alt-actor link (16 max, in the label); Color mode
+(color-mode lump, flag 16 in game): Add / Switch (the actor's own lights x (1 - summed switch strength),
+then the lights added). In game (al_q4.txt): full-strength Switch = only the key (colour x 2) + ambient
+0.5, the other lights 0; both crates lit.
 Not checked: how it looks (no screenshots), path / volume, trigger-actor death, Actor Rotation.
 
 ## Built

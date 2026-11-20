@@ -12,6 +12,8 @@
 ;;     rotation (light-dir 1: its +Y, the Blender empty's +Z); several lights blend
 ;;     into one directional light (an unused slot, else merged with the weakest).
 ;;   ambient: colour x intensity added. Negative intensities darken instead.
+;;   color-mode 1 (switch): the actor's own lights fade out by the strength, so at
+;;     full strength it has only this light (several: they share it).
 ;;   shadow: the actor's shadow turns toward the light by strength x control-shadow.
 ;;   light-mode: 0 default on, 1 default off, 2 time of day, 3 time of day (default
 ;;     off); events 'on 'off 'trigger 'untrigger (toggle); trigger-actor dead /
@@ -49,6 +51,7 @@
 (defconstant __TYPE__-cylinder 2)
 (defconstant __TYPE__-has-vol 4)
 (defconstant __TYPE__-has-path 8)
+(defconstant __TYPE__-switch 16)
 
 ;; the active lights (handles: processes can move in memory), kept across level loads
 (define-perm *__TYPE__-list* (pointer handle) (the-as (pointer handle) (malloc 'global 256)))
@@ -126,6 +129,7 @@
         (dark-key 1.0)
         (dark-amb 1.0)
         (sh-w 0.0)
+        (sw 0.0)
         (add-amb #f)
         (hit #f)
         (jak (the-as symbol (and *target*
@@ -141,6 +145,7 @@
           (let ((s (* (-> l fade) (__TYPE__-strength l (-> proc root trans) pt))))
             (when (< 0.0 s)
               (set! hit #t)
+              (if (logtest? (-> l flags) __TYPE__-switch) (+! sw s))
               (__TYPE__-to-light l (-> proc root trans) pt to-light)
               (let ((k (* s (-> l key-int))))
                 (if (< k 0.0)
@@ -162,6 +167,11 @@
       ((not hit) src)
       (else
        (quad-copy! (the-as pointer dst) (the-as pointer src) 12)
+       ;; switch lights: the actor's own light fades out
+       (when (< 0.0 sw)
+         (let ((f (fmax 0.0 (- 1.0 sw))))
+           (dotimes (j 4)
+             (set! (-> dst lights j levels x) (* f (-> dst lights j levels x))))))
        (when (< dark-key 1.0)
          (dotimes (j 3)
            (set! (-> dst lights j levels x) (* dark-key (-> dst lights j levels x)))))
@@ -305,13 +315,14 @@
   (let ((lf (res-lump-value arg0 'light-flags uint32)))
     (set! (-> this flags)
           (the-as uint (logior (if (logtest? lf 1) 0 __TYPE__-affect-jak) (if (logtest? lf 2) __TYPE__-cylinder 0)))))
+  (if (= (res-lump-value arg0 'color-mode uint32) 1) (logior! (-> this flags) __TYPE__-switch))
   (set! (-> this switch-init) (or (= (-> this light-mode) 0) (= (-> this light-mode) 2)))
   (set! (-> this switch) (-> this switch-init))
   (set! (-> this dead-done) #f)
   (set! (-> this active) #f)
   (set! (-> this fade) (if (-> this switch) 1.0 0.0))
   (set! (-> this trigger) (entity-actor-lookup arg0 'trigger-actor 0))
-  (set! (-> this alt-count) (min 16 (entity-actor-count arg0 'alt-actor)))
+  (set! (-> this alt-count) (min 16 (entity-actor-count arg0 'alt-actor)))   ;; Lit actors: 16 max
   (dotimes (i (-> this alt-count))
     (set! (-> this alt i) (entity-actor-lookup arg0 'alt-actor i)))
   (when (res-lump-data arg0 'path pointer)

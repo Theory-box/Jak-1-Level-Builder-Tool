@@ -13514,6 +13514,13 @@
             {"key": "og_al_amb_int", "label": "Ambient intensity", "type": "float", "default": 0.5, "min": -1.0,
              "lump": {"key": "ambient-intensity", "type": "float"}, "write_if": "always",
              "note": "Ambient light added. Negative: darkens the ambient light instead."},
+            {"key": "og_al_color_mode", "label": "Color mode", "type": "enum", "default": "add",
+             "choices": [
+               {"value": "add", "label": "Add", "lump_value": 0},
+               {"value": "switch", "label": "Switch", "lump_value": 1}
+             ],
+             "lump": {"key": "color-mode", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "Add: the light is added to (or, negative, taken from) the actor's own light. Switch: the actor's own light fades out by the strength, so at full strength it has only this light."},
             {"key": "og_al_affect_jak", "label": "Affect Jak", "type": "bool", "default": true,
              "lump_bit": {"key": "light-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_not_default",
              "note": "Off: only the Lit actors (Actor Links > alt-actor) get the light."},
@@ -13554,14 +13561,7 @@
         {
           "panel": "actor-link",
           "slots": [
-            {"lump_key": "alt-actor", "slot": 0, "label": "Lit actor 1", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 1, "label": "Lit actor 2", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 2, "label": "Lit actor 3", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 3, "label": "Lit actor 4", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 4, "label": "Lit actor 5", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 5, "label": "Lit actor 6", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 6, "label": "Lit actor 7", "accepts": ["any"], "required": false},
-            {"lump_key": "alt-actor", "slot": 7, "label": "Lit actor 8", "accepts": ["any"], "required": false},
+            {"lump_key": "alt-actor", "slot": 0, "label": "Lit actors (16 max)", "accepts": ["any"], "required": false, "allow-multiple": true},
             {"lump_key": "trigger-actor", "slot": 0, "label": "Trigger actor (its death switches the light)", "accepts": ["any"], "required": false}
           ]
         }
