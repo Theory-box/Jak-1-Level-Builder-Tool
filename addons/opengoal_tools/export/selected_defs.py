@@ -16,6 +16,7 @@ blank lines at the start / end.
 """
 from __future__ import annotations
 
+from ..collections import is_actor
 import json
 
 from .paths import log
@@ -74,7 +75,7 @@ def build(scene, depsgraph, objs, opts=None):
     out = [f";; OpenGOAL Level Tools: definitions of {len(objs)} selected object(s), level {name}", ""]
     counts = {}
 
-    lumps = {actor_lump_name(n, scene) for n in names if n.startswith("ACTOR_") and "_wp_" not in n}
+    lumps = {actor_lump_name(n, scene) for n in names if is_actor(n)}
     actors = [a for a in collect_actors(scene, depsgraph) if a.get("lump", {}).get("name") in lumps] if lumps else []
     if actors:
         counts["actors"] = len(actors)

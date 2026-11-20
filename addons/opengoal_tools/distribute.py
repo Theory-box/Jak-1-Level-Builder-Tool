@@ -19,6 +19,7 @@ import bpy
 import mathutils
 
 from . import db as _db
+from .collections import actor_etype
 
 _GHOST = "og_dist_ghost"
 
@@ -35,9 +36,6 @@ def phases(a: float, n: int) -> list:
     return [round((a + i / n) % 1.0, 6) for i in range(n)]
 
 
-def _etype(o):
-    p = o.name.split("_", 2)
-    return p[1] if len(p) >= 3 and p[0] == "ACTOR" else None
 
 
 # ── where the game first puts the platform ─────────────────────────────────
@@ -111,7 +109,7 @@ def point_at(pts, knots, pos):
 def start_positions(o) -> list:
     """Where this platform (and its distributed copies) first sit."""
     from .export import path_modes as _pm
-    et = _etype(o)
+    et = actor_etype(o)
     if not et:
         return []
     pts, knots, _m, _w = _pm.build(_pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
@@ -191,7 +189,7 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     todo = [o.name for o in scene.objects
             if o.type == "EMPTY" and o.name.startswith("ACTOR_") and not o.get("og_preview_mesh") and o.name not in _PENDING
             and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
-            and allowed(_etype(o) or "") and _differs(o)]
+            and allowed(actor_etype(o) or "") and _differs(o)]
     if not todo:
         return
     _PENDING.update(todo)
@@ -212,7 +210,7 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
 
 
 def _upd(self, ctx):
-    if _etype(self):
+    if actor_etype(self):
         try:
             apply(ctx, self)
         except Exception as e:

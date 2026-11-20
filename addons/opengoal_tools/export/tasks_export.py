@@ -16,6 +16,7 @@ Every file is only written when its content changed.
 """
 from __future__ import annotations
 
+from ..collections import is_actor
 import json
 import re
 
@@ -382,7 +383,7 @@ def _counts(scene, level_col):
     from ..collections import _recursive_col_objects
     orbs = flies = 0
     for o in _recursive_col_objects(level_col, exclude_no_export=True):
-        if not (o.type == "EMPTY" and o.name.startswith("ACTOR_")) or "_wp_" in o.name:
+        if not is_actor(o):
             continue
         et = o.name.split("_", 2)[1]
         if et == "money":

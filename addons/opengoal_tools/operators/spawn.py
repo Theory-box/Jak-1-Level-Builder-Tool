@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..collections import is_actor
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -478,7 +479,7 @@ class OG_OT_DuplicateEntity(Operator):
 
     def execute(self, ctx):
         srcs = [o for o in ctx.selected_objects
-                if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+                if is_actor(o)]
         if not srcs:
             self.report({"ERROR"}, "Select an ACTOR_ empty first")
             return {"CANCELLED"}

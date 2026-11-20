@@ -2,6 +2,7 @@
 selected by kind, and the selection tools (sub-panels)."""
 from __future__ import annotations
 
+from ..collections import is_waypoint
 import bpy
 from bpy.types import Panel, Operator
 from bpy.props import StringProperty
@@ -31,7 +32,7 @@ def classify(o):
     n, t = o.name, o.type
     if o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"):
         return "Previews"
-    if "_wp_" in n or "_wpb_" in n:
+    if is_waypoint(n):
         return "Waypoints"
     if n.startswith("ACTOR_"):
         return "Actors"

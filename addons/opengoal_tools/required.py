@@ -17,17 +17,10 @@ from __future__ import annotations
 import bpy
 
 from . import db as _db
+from .collections import actor_etype
 from .data import _actor_link_slots, _actor_get_link, _actor_multi_links
 
 
-def actor_etype(o):
-    """etype of an ACTOR_<etype>_... empty (not its waypoints), else None."""
-    if o is None or o.type != "EMPTY" or not o.name.startswith("ACTOR_"):
-        return None
-    if "_wp_" in o.name or "_wpb_" in o.name:
-        return None
-    parts = o.name.split("_", 2)
-    return parts[1] if len(parts) >= 3 else None
 
 
 def _has_path(o, name):

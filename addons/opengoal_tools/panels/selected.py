@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from ..collections import is_actor
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
@@ -776,7 +777,7 @@ class OG_PT_SelectedObject(Panel):
 
         # ── Active object name + type — sub-panels carry the detail ─────────
         name = sel.name
-        if name.startswith("ACTOR_") and "_wp_" not in name:
+        if is_actor(name):
             parts = name.split("_", 2)
             etype = parts[1] if len(parts) >= 3 else ""
             einfo = ENTITY_DEFS.get(etype, {})

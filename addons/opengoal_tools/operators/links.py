@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..collections import actor_etype, is_actor, is_waypoint
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -112,7 +113,7 @@ class OG_OT_LinkNavMesh(Operator):
         # Find the mesh and the enemy empties from the full selection — order irrelevant
         meshes  = [o for o in selected if o.type == "MESH"]
         enemies = [o for o in selected if o.type == "EMPTY"
-                   and o.name.startswith("ACTOR_") and "_wp_" not in o.name
+                   and is_actor(o)
                    and "_wpb_" not in o.name]
 
         if not meshes:
@@ -200,7 +201,7 @@ class OG_OT_LinkNavMeshTo(Operator):
 def _is_movie_pos_candidate(o):
     """Empties that can be a movie position: any non-actor, non-waypoint empty."""
     return (o.type == "EMPTY" and not o.name.startswith("ACTOR_")
-            and "_wp_" not in o.name and "_wpb_" not in o.name)
+            and not is_waypoint(o.name))
 
 
 def _movie_pos_items(self, ctx):
@@ -338,7 +339,7 @@ def path_users(scene, actor):
     if not key:
         return []
     return [o for o in scene.objects
-            if o is not actor and o.type == "EMPTY" and o.name.startswith("ACTOR_") and "_wp_" not in o.name
+            if o is not actor and is_actor(o)
             and path_key(o) == key]
 
 
@@ -506,7 +507,7 @@ def _get_actor_for_waypoint_ops(ctx):
         return None
     if not (sel.name.startswith("ACTOR_") or sel.name.startswith("CAMERA_")):
         return None
-    if "_wp_" in sel.name or "_wpb_" in sel.name:
+    if is_waypoint(sel.name):
         return None
     return sel
 
@@ -732,7 +733,7 @@ def _add_path_name_items(self, ctx):
     from ..export.path_modes import STANDARD_PATH_NAMES
     actor = bpy.data.objects.get(self.actor_name)
     have = {actor.og_path_lump} | {p.name for p in actor.og_extra_paths} if actor else set()
-    etype = actor.name.split("_", 2)[1] if actor and actor.name.startswith("ACTOR_") else ""
+    etype = (actor_etype(actor) or "")
     wanted = [n for n in _db.path_names(etype) if n not in have]
     rest = [n for n in STANDARD_PATH_NAMES if n not in have and n not in wanted]
     items = [(n, n, f"{n} (this actor reads it)", i) for i, n in enumerate(wanted)]
@@ -782,7 +783,7 @@ def path_knot_target(actor, path_index):
     knot editor; built = path_modes.build() output for that path."""
     from ..export import path_modes as _pm
     from .. import db as _db
-    lin = _db.path_linear_only(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "")
+    lin = _db.path_linear_only((actor_etype(actor) or ""))
     if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
         xp = actor.og_extra_paths[path_index]
         built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin)

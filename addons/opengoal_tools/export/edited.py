@@ -26,6 +26,8 @@ import os
 import re
 from pathlib import Path
 
+from ..collections import actor_etype
+
 ADDON_DIR = Path(__file__).resolve().parent.parent / "subtypes"
 SHARED_DIR = "levels/level-tools/edited"
 _TAG = "; og-level-tools"
@@ -144,8 +146,9 @@ def used(scene, objects):
     """{id: record} of the files the level's actors use."""
     out = {}
     for o in objects:
-        if o.type == "EMPTY" and o.name.startswith("ACTOR_") and o.name.count("_") >= 2:
-            r = resolve(o, o.name.split("_", 2)[1])
+        et = actor_etype(o)
+        if et:
+            r = resolve(o, et)
             if r is not None:
                 out[r["id"]] = r
     return out

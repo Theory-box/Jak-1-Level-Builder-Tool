@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..collections import is_waypoint
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -668,7 +669,7 @@ class OG_OT_CreateGoalCodeBlock(bpy.types.Operator):
             return False
         parts = sel.name.split("_", 2)
         return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and "_wp_" not in sel.name and "_wpb_" not in sel.name)
+                and not is_waypoint(sel.name))
 
     def execute(self, ctx):
         sel   = ctx.active_object

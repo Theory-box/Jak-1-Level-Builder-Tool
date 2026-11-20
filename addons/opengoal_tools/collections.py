@@ -88,6 +88,37 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def _name(o_or_name) -> str:
+    return o_or_name if isinstance(o_or_name, str) else (getattr(o_or_name, "name", "") or "")
+
+
+def is_waypoint(o_or_name) -> bool:
+    """A path waypoint empty (<actor>_wp_NN, <actor>_wp_<path>_NN, old _wpb_)."""
+    n = _name(o_or_name)
+    return "_wp_" in n or "_wpb_" in n
+
+
+def actor_etype(o_or_name):
+    """etype of an ACTOR_<etype>_<uid> empty (or name), None for anything else
+    (waypoints, other objects)."""
+    n = _name(o_or_name)
+    if not n.startswith("ACTOR_") or is_waypoint(n):
+        return None
+    if not isinstance(o_or_name, str) and getattr(o_or_name, "type", "EMPTY") != "EMPTY":
+        return None
+    parts = n.split("_", 2)
+    return parts[1] if len(parts) >= 3 and parts[1] else None
+
+
+def is_actor(o_or_name) -> bool:
+    return actor_etype(o_or_name) is not None
+
+
+def active_actor_etype(ctx):
+    """etype of the active object if it's an actor, else None (panel polls)."""
+    return actor_etype(ctx.active_object) if ctx.active_object is not None else None
+
+
 def free_object_name(prefix, n=0):
     """f"{prefix}{n}" with the first n not used by any object in the file, so
     an actor spawned in a second level doesn't get Blender's ".001"."""

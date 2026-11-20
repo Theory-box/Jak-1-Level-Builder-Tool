@@ -24,6 +24,7 @@
 # db.actor_panel(etype) == "<id>" — no hardcoded etype lists.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
+from ..collections import actor_etype
 import bpy
 from bpy.types import Operator, Panel
 from bpy.props import StringProperty, BoolProperty
@@ -109,7 +110,7 @@ class OG_OT_InitColorField(Operator):
         obj = context.active_object
         if obj is None:
             return {"CANCELLED"}
-        etype = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
+        etype = (actor_etype(obj) or "")
         f = next((x for x in _db.inherited_fields(etype) if x.get("key") == self.prop_key), {})
         obj[self.prop_key] = list(f.get("default") or [1.0, 1.0, 1.0])
         obj.id_properties_ui(self.prop_key).update(subtype="COLOR", min=0.0, max=1.0, soft_min=0.0, soft_max=1.0)
@@ -375,7 +376,7 @@ class OG_OT_PickEnumField(Operator):
 
     def _items(self, context):
         obj = context.active_object
-        et = obj.name.split("_", 2)[1] if obj and obj.name.count("_") >= 2 else ""
+        et = (actor_etype(obj) or "")
         f = next((x for x in _db.inherited_fields(et) if x.get("key") == self.prop_key), None)
         items = [(c.get("value", ""), c.get("label", c.get("value", "")), "")
                  for c in _resolve_choices((f or {}).get("choices", []))]

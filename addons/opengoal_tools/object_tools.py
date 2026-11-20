@@ -2,6 +2,7 @@
 entities, Export selected definitions."""
 from __future__ import annotations
 
+from .collections import is_waypoint
 import bpy
 from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty, IntProperty
 from mathutils import Vector, Matrix
@@ -303,7 +304,7 @@ def _convertible(o, mode):
     if o.get("og_preview_mesh") or o.get("og_waypoint_preview_mesh"):
         return False
     n = o.name
-    if "_wp_" in n or "_wpb_" in n or n.startswith(_SPECIAL) or n.endswith(_HELPER_ENDS):
+    if is_waypoint(n) or n.startswith(_SPECIAL) or n.endswith(_HELPER_ENDS):
         return False
     if n.startswith("ACTOR_") and o.type == "EMPTY":
         return True

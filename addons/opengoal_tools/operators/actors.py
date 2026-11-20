@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..collections import actor_etype, is_waypoint
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -100,8 +101,8 @@ class OG_OT_SetActorLink(Operator):
         else:
             _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
         # Unexpected types are allowed, with a warning (they may not work in game).
-        src_et = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
-        tgt_et = target.name.split("_", 2)[1] if target.name.count("_") >= 2 else ""
+        src_et = (actor_etype(obj) or "")
+        tgt_et = (actor_etype(target) or "")
         slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
         if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
             self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
@@ -119,7 +120,7 @@ def _link_target_items(self, ctx):
     types the slot accepts first, others marked "(unexpected type)"."""
     scene = ctx.scene if ctx else bpy.context.scene
     src = scene.objects.get(self.source_name)
-    src_et = self.source_name.split("_", 2)[1] if self.source_name.count("_") >= 2 else ""
+    src_et = (actor_etype(self.source_name) or "")
     acc = _db.link_slot(src_et, self.lump_key, self.slot_index).get("accepts")
     from ..data import _actor_multi_links
     have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
@@ -131,7 +132,7 @@ def _link_target_items(self, ctx):
     rows = []
     for o in scene.objects:
         if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
-                or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
+                or is_waypoint(o.name) or o.name.count("_") < 2:
             continue
         ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
         got = has(o) if has else None
@@ -359,7 +360,7 @@ def _natural_key(name):
 def _selected_actor_empties(ctx, exclude=None):
     return sorted((o for o in ctx.selected_objects
                    if o is not exclude and o.type == "EMPTY" and o.name.startswith("ACTOR_")
-                   and "_wp_" not in o.name and "_wpb_" not in o.name),
+                   and not is_waypoint(o.name)),
                   key=lambda o: _natural_key(o.name))
 
 
@@ -461,7 +462,7 @@ class OG_OT_ShowLinkTypes(Operator):
 
     def _types(self):
         src = bpy.data.objects.get(self.source_name)
-        et = src.name.split("_", 2)[1] if src and src.name.count("_") >= 2 else ""
+        et = (actor_etype(src) or "")
         acc = _db.link_slot(et, self.lump_key, self.slot_index).get("accepts")
         out = [(a.get("label") or a["etype"], a["etype"]) for a in _db.actors()
                if a.get("category") != "Hidden" and _db.link_accepts(acc, a["etype"])]
@@ -552,7 +553,7 @@ class OG_OT_SetPlatformDefaults(Operator):
         if not o:
             return {"CANCELLED"}
         from ..utils import sync_defaults
-        etype = o.name.split("_", 2)[1] if o.name.count("_") >= 2 else ""
+        etype = (actor_etype(o) or "")
         for k, v in sync_defaults(etype).items():
             o[k] = int(v) if isinstance(v, bool) else v
         return {"FINISHED"}

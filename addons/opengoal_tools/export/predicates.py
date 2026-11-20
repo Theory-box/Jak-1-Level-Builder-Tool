@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from ..collections import is_waypoint
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from .. import db as _db
@@ -60,7 +61,7 @@ def _canonical_actor_objects(scene, objects=None):
     for o in source:
         if not (o.name.startswith("ACTOR_") and o.type == "EMPTY"):
             continue
-        if "_wp_" in o.name or "_wpb_" in o.name:
+        if is_waypoint(o.name):
             continue
         if len(o.name.split("_", 2)) < 3:
             continue
@@ -136,7 +137,7 @@ def _classify_target(target_name):
         return "camera"
     if target_name.startswith("CHECKPOINT_") and not target_name.endswith("_CAM"):
         return "checkpoint"
-    if target_name.startswith("ACTOR_") and "_wp_" not in target_name and "_wpb_" not in target_name:
+    if target_name.startswith("ACTOR_") and not is_waypoint(target_name):
         parts = target_name.split("_", 2)
         if len(parts) >= 3:
             if _db.needs_vol(parts[1]):

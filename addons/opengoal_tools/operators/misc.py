@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..collections import is_actor
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -148,7 +149,7 @@ linked helper objects (which Blender's own Delete leaves behind)."""
 
     def execute(self, ctx):
         targets = [o for o in ctx.selected_objects
-                   if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+                   if is_actor(o)]
         if not targets:
             self.report({"WARNING"}, "No OpenGOAL actors selected")
             return {"CANCELLED"}

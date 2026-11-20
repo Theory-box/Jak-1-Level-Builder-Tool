@@ -4,6 +4,7 @@
 # No imports from operators or panels (breaks circular dependency).
 # ---------------------------------------------------------------------------
 
+from .collections import is_actor, is_waypoint
 import bpy
 from bpy.types import Operator
 from . import db as _db
@@ -40,7 +41,7 @@ def _is_linkable(obj):
             return False
         if n.startswith("CHECKPOINT_"):
             return True
-        if n.startswith("ACTOR_") and "_wp_" not in n and "_wpb_" not in n:
+        if n.startswith("ACTOR_") and not is_waypoint(n):
             parts = n.split("_", 2)
             if len(parts) >= 3:
                 if _actor_supports_aggro_trigger(parts[1]):
@@ -60,7 +61,7 @@ def _is_aggro_target(obj):
     """
     if obj is None or obj.type != "EMPTY" or not obj.name.startswith("ACTOR_"):
         return False
-    if "_wp_" in obj.name or "_wpb_" in obj.name or obj.name.endswith("_CAM"):
+    if is_waypoint(obj.name) or obj.name.endswith("_CAM"):
         return False
     parts = obj.name.split("_", 2)
     return len(parts) >= 3 and _actor_supports_aggro_trigger(parts[1])
@@ -240,7 +241,7 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
         # not the dropdown (so selecting a babak actor always shows its navmesh
         # status regardless of what the entity picker currently shows).
         sel = ctx.active_object
-        if sel and sel.name.startswith("ACTOR_") and "_wp_" not in sel.name:
+        if sel and is_actor(sel):
             parts = sel.name.split("_", 2)
             if len(parts) >= 3 and _actor_uses_navmesh(parts[1]):
                 nm_name = sel.get("og_navmesh_link", "")
