@@ -188,9 +188,11 @@ def _probe(name):
         from .paths_core import data
         p = data() / "goal_src" / "jak1" / "engine" / "game" / "game-info.gc"
         try:
-            return "(the int (game-task max))" in p.read_text(encoding="utf-8", errors="replace")
+            mt = p.stat().st_mtime_ns          # read again only when the file changed
         except OSError:
             return None
+        return _cached(("probe", name, str(p), mt),
+                       lambda: "(the int (game-task max))" in p.read_text(encoding="utf-8", errors="replace"))
     return None
 
 

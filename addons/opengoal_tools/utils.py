@@ -351,6 +351,9 @@ def _draw_wiki_preview(layout, etype: str, ctx=None):
 # Safe UI helper — never writes to object during draw()
 # ---------------------------------------------------------------------------
 
+_PENDING_DEFAULTS: set = set()
+
+
 def _prop_row(layout, obj, key, label, default):
     """Draw a labelled input row for a custom property.
 
@@ -365,13 +368,17 @@ def _prop_row(layout, obj, key, label, default):
     """
     if key not in obj:
         # Schedule write outside draw — timer fires after current redraw
+        # (once per object / key, not once per redraw until it fires)
         obj_name = obj.name
-        def _init(name=obj_name, k=key, v=default):
-            o = bpy.data.objects.get(name)
-            if o is not None and k not in o:
-                o[k] = v
-            return None  # don't repeat
-        bpy.app.timers.register(_init, first_interval=0.0)
+        if (obj_name, key) not in _PENDING_DEFAULTS:
+            _PENDING_DEFAULTS.add((obj_name, key))
+            def _init(name=obj_name, k=key, v=default):
+                _PENDING_DEFAULTS.discard((name, k))
+                o = bpy.data.objects.get(name)
+                if o is not None and k not in o:
+                    o[k] = v
+                return None  # don't repeat
+            bpy.app.timers.register(_init, first_interval=0.0)
         # Show greyed placeholder this frame
         row = layout.row(align=True)
         row.label(text=label)

@@ -64,8 +64,19 @@ def _read(source, path):
 
 def files():
     """{id: file record} of the addon's and the Custom code folder's .gc files
-    (cached until a file / the folder changes)."""
-    dirs = [("addon", ADDON_DIR)] + ([("custom", custom_dir())] if custom_dir() else [])
+    (cached until a file / the folder changes; files are looked at again at
+    most every 2 s while the folders stay the same: panels ask every redraw)."""
+    import time
+    cd = custom_dir()
+    dirs = [("addon", ADDON_DIR)] + ([("custom", cd)] if cd else [])
+    try:
+        dkey = tuple((s, str(d), d.stat().st_mtime_ns) for s, d in dirs)
+    except OSError:
+        dkey = None
+    now = time.monotonic()
+    if dkey is not None and dkey == _CACHE.get("dkey") and now - _CACHE.get("t", 0.0) < 2.0:
+        return _CACHE["files"]
+    _CACHE.update(dkey=dkey, t=now)
     paths = [(s, p) for s, d in dirs for p in sorted(d.glob("*.gc"))]
     key = tuple((s, str(p), p.stat().st_mtime) for s, p in paths)
     if key != _CACHE["key"]:
