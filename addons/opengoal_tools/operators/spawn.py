@@ -289,6 +289,7 @@ def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, 
     if _rot:
         o.rotation_euler = [math.radians(a) for a in _rot]
     o.lock_rotation = _db.rotation_lock(etype)
+    o.show_axis = bool((_db.find_actor(etype) or {}).get("show_axis"))   # DB "show_axis": its rotation matters (Actor Light)
     ctx.scene.collection.objects.link(o)
     _link_object_to_sub_collection(ctx.scene, o, *_col_path_for_entity("evilplant" if custom else etype))
     # Variant selection -> the actor's variant field (crate types, bridge variants, ...)

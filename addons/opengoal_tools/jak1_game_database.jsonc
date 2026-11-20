@@ -138,7 +138,8 @@
     {"id": "Interactive Objects", "label": "Interactive Objects", "color": [0.2, 0.8, 0.6, 1.0]},
     {"id": "Buttons and Doors", "label": "Buttons and Doors", "color": [0.2, 0.7, 0.8, 1.0]},
     {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]},
-    {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]}
+    {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]},
+    {"id": "Effects", "label": "Effects", "color": [1.0, 0.9, 0.5, 1.0]}
   ],
 
   // ── Defaults ────────────────────────────────────────────────────
@@ -13467,6 +13468,105 @@
       "shape": "CUBE",
       "is_prop": true,
       "description": "Hanging lamp that swings gently (about 10 degrees, 3 s cycle, random start). No settings."
+    },
+    {
+      "etype": "actor-light",
+      "label": "Actor Light",
+      "category": "Effects",
+      "parent": "process-drawable",
+      "custom_actor": true,
+      "edited": "actor-light",
+      "shape": "SPHERE",
+      "show_axis": true,
+      "description": "Addon actor (exports as lt-actor-light, in a shared file): adds light to Jak and its Lit actors near it, or takes it away with negative intensities. Full strength within Min distance, none beyond Max distance (the sphere), from the light or the closest point of its path; only inside its volume if one is linked. The time of day / mood light stays as it is: this is added on top. Building a level with one adds a small hook to the game's draw code (engine/draw/drawable.gc, full engine compile once).",
+      "panels": [
+        {"panel": "fact-options", "export": false},
+        {"panel": "scale", "export": false},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_al_min_dist", "label": "Min distance (m)", "type": "float", "default": 5.0, "min": 0.0,
+             "lump": {"key": "min-dist", "type": "meters"}, "write_if": "always",
+             "note": "Within this distance the light has its full effect."},
+            {"key": "og_al_max_dist", "label": "Max distance (m)", "type": "float", "default": 10.0, "min": 0.0,
+             "lump": {"key": "max-dist", "type": "meters"}, "write_if": "always",
+             "driver": {"var": "self", "expression": "var", "driven": "empty_display_size"},
+             "note": "The light starts having an effect at this distance (the sphere's size)."},
+            {"key": "og_al_cylinder", "label": "Cylinder mode", "type": "bool", "default": false,
+             "lump_bit": {"key": "light-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true",
+             "note": "Distances are only measured horizontally (height ignored)."},
+            {"key": "og_al_key_color", "label": "Key colour", "type": "color", "default": [1.0, 1.0, 1.0],
+             "lump": {"key": "key-color", "type": "float"}, "write_if": "always"},
+            {"key": "og_al_key_int", "label": "Key intensity", "type": "float", "default": 1.0, "min": -1.0,
+             "lump": {"key": "key-intensity", "type": "float"}, "write_if": "always",
+             "note": "Directional light added. Negative: darkens the actor's directional lights instead (-1 = fully at full strength)."},
+            {"key": "og_al_dir", "label": "Direction", "type": "enum", "default": "center",
+             "choices": [
+               {"value": "center", "label": "From Center", "lump_value": 0},
+               {"value": "rotation", "label": "Actor Rotation", "lump_value": 1}
+             ],
+             "lump": {"key": "light-dir", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "From Center: the light comes from the light's position (the closest point of its path). Actor Rotation: from the empty's Z axis (blue arrow) side."},
+            {"key": "og_al_shadow", "label": "Control shadow", "type": "float", "default": 0.5, "min": 0.0, "max": 1.0,
+             "lump": {"key": "control-shadow", "type": "float"}, "write_if": "always",
+             "note": "How much the actor's shadow turns away from the light (blended with the time of day shadow like the light)."},
+            {"key": "og_al_amb_color", "label": "Ambient colour", "type": "color", "default": [1.0, 1.0, 1.0],
+             "lump": {"key": "ambient-color", "type": "float"}, "write_if": "always"},
+            {"key": "og_al_amb_int", "label": "Ambient intensity", "type": "float", "default": 0.5, "min": -1.0,
+             "lump": {"key": "ambient-intensity", "type": "float"}, "write_if": "always",
+             "note": "Ambient light added. Negative: darkens the ambient light instead."},
+            {"key": "og_al_color_mode", "label": "Color mode", "type": "enum", "default": "add",
+             "choices": [
+               {"value": "add", "label": "Add", "lump_value": 0},
+               {"value": "switch", "label": "Switch", "lump_value": 1}
+             ],
+             "lump": {"key": "color-mode", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "Add: the light is added to (or, negative, taken from) the actor's own light. Switch: the actor's own light fades out by the strength, so at full strength it has only this light."},
+            {"key": "og_al_affect_jak", "label": "Affect Jak", "type": "bool", "default": true,
+             "lump_bit": {"key": "light-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_not_default",
+             "note": "Off: only the Lit actors (Actor Links > alt-actor) get the light."},
+            {"key": "og_al_mode", "label": "Mode", "type": "enum", "default": "on",
+             "choices": [
+               {"value": "on", "label": "Default on", "lump_value": 0},
+               {"value": "off", "label": "Default off", "lump_value": 1},
+               {"value": "tod", "label": "Time of day", "lump_value": 2},
+               {"value": "tod_off", "label": "Time of day (default off)", "lump_value": 3}
+             ],
+             "lump": {"key": "light-mode", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "Events 'on / 'off turn it on / off, 'trigger (a button) switches it. When the trigger actor dies: Default on turns off, Default off turns on, Time of day turns off for good, Time of day (default off) may turn on."},
+            {"key": "og_al_fade_on", "label": "On timer (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 0}, "write_if": "always",
+             "note": "Seconds from off to full strength."},
+            {"key": "og_al_fade_off", "label": "Off timer (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 1}, "write_if": "always",
+             "note": "Seconds from full strength to off."},
+            {"key": "og_al_hour_on", "label": "Time on (h)", "type": "float", "default": 18.0, "min": 0.0, "max": 24.0,
+             "lump": {"key": "hours", "type": "float", "slot": 0}, "write_if": "always",
+             "visible_if": {"og_al_mode": ["tod", "tod_off"]}, "export_if_visible": true,
+             "note": "Time of day it turns on (0-24)."},
+            {"key": "og_al_hour_off", "label": "Time off (h)", "type": "float", "default": 8.0, "min": 0.0, "max": 24.0,
+             "lump": {"key": "hours", "type": "float", "slot": 1}, "write_if": "always",
+             "visible_if": {"og_al_mode": ["tod", "tod_off"]}, "export_if_visible": true,
+             "note": "Time of day it turns off (0-24); earlier than Time on: on over midnight."}
+          ]
+        },
+        {
+          "panel": "visibility",
+          "fields": [
+            {"key": "og_vis_dist", "label": "Camera distance (m)", "default": 100.0,
+             "note": "Farther than this from the camera the light does nothing (no work at all, even for actors close to it)."}
+          ]
+        },
+        {"panel": "path", "paths": ["path"], "linear-only": true},
+        {"panel": "volume"},
+        {
+          "panel": "actor-link",
+          "slots": [
+            {"lump_key": "alt-actor", "slot": 0, "label": "Lit actors (16 max)", "accepts": ["any"], "required": false, "allow-multiple": true},
+            {"lump_key": "trigger-actor", "slot": 0, "label": "Trigger actor (its death switches the light)", "accepts": ["any"], "required": false}
+          ]
+        }
+      ]
     },
     {
       "etype": "sagesail",
