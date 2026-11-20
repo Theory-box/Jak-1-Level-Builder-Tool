@@ -144,7 +144,39 @@ def reload() -> dict:
     Primarily for dev workflows — the addon rebinds its derived tables lazily."""
     global DB
     DB = _load()
+    _CACHE.clear()
     return DB
+
+
+# ── Caches ──────────────────────────────────────────────────────────────────
+# Panels draw / poll many times a second and each asks the database about the
+# selected actor: lookups go through dicts built once, and the resolved
+# panels / fields / link slots of an etype are kept until reload(). The cached
+# lists and dicts are shared: callers must not change them (copy first).
+_CACHE: dict = {}
+
+
+def _cached(kind: str, key, build):
+    c = _CACHE.setdefault(kind, {})
+    if key not in c:
+        c[key] = build()
+    return c[key]
+
+
+def _index(kind: str) -> dict:
+    """{etype: record} for "actor" (Actors, then OrphanEtypes) and "parent"
+    (Parents, then Actors / OrphanEtypes); {id: panel type} for "panel"."""
+    def build():
+        out = {}
+        if kind == "panel":
+            for p in DB.get("PanelTypes", []):
+                out.setdefault(p.get("id"), p)
+            return out
+        recs = ([] if kind == "actor" else DB["Parents"]) + DB["Actors"] + DB.get("OrphanEtypes", [])
+        for r in recs:
+            out.setdefault(r["etype"], r)
+        return out
+    return _cached("index", kind, build)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -169,13 +201,7 @@ def vertex_export_types() -> list[dict]:
 def find_actor(etype: str) -> dict | None:
     """Return the actor record for an etype, or None if not found.
     Looks in Actors first, then OrphanEtypes (non-spawnable link targets)."""
-    for a in DB["Actors"]:
-        if a["etype"] == etype:
-            return a
-    for a in DB.get("OrphanEtypes", []):
-        if a["etype"] == etype:
-            return a
-    return None
+    return _index("actor").get(etype)
 
 
 def code_files(rec: dict | None) -> list[str]:
@@ -215,19 +241,17 @@ def all_sfx() -> list[dict]:
 def find_parent(etype: str) -> dict | None:
     """A parent record: the Parents section first, then any actor/orphan
     (actors can be parents too: plat -> plat-eco, babak -> babak-with-cannon)."""
-    for p in DB["Parents"]:
-        if p["etype"] == etype:
-            return p
-    for p in DB["Actors"] + DB.get("OrphanEtypes", []):
-        if p["etype"] == etype:
-            return p
-    return None
+    return _index("parent").get(etype)
 
 
 def parent_chain(etype: str) -> list[dict]:
     """Return the full parent chain for an etype, nearest first (root last),
     following the game's deftype tree through Parents and actors.
     Example: parent_chain('plat-eco') → [plat, baseplat, process-drawable]"""
+    return _cached("chain", etype, lambda: _parent_chain(etype))
+
+
+def _parent_chain(etype: str) -> list[dict]:
     chain: list[dict] = []
     actor = find_actor(etype)
     if actor:
@@ -363,10 +387,7 @@ def panel_types() -> list[dict]:
 
 
 def panel_type(pid: str) -> dict:
-    for p in DB.get("PanelTypes", []):
-        if p.get("id") == pid:
-            return p
-    return {}
+    return _index("panel").get(pid) or {}
 
 
 def _record_panels(rec: dict) -> list[dict]:
@@ -401,7 +422,11 @@ def _merge_slots(base, over) -> list:
 
 def actor_panels(etype: str) -> dict:
     """Resolved panels for an etype, in first-seen order:
-    {panel_id: {"show": bool, "fields": [...]}}."""
+    {panel_id: {"show": bool, "fields": [...]}} (cached: don't change it)."""
+    return _cached("panels", etype, lambda: _actor_panels(etype))
+
+
+def _actor_panels(etype: str) -> dict:
     out: dict = {}
     actor = find_actor(etype)
     for rec in list(reversed(parent_chain(etype))) + ([actor] if actor else []):
@@ -529,21 +554,25 @@ def _field_exports(f: dict) -> bool:
 def panel_fields(etype: str, pid: str, visible_only: bool = False) -> list[dict]:
     """Fields of one panel (standard + overrides), without "export": false
     ones. visible_only also drops hidden panels and "show-field": false."""
-    p = actor_panels(etype).get(pid)
-    if not p or not p["export"] or (visible_only and not p["show"]):
-        return []
-    return [f for f in p["fields"] if _field_exports(f)
-            and not (visible_only and f.get("show-field") is False)]
+    def build():
+        p = actor_panels(etype).get(pid)
+        if not p or not p["export"] or (visible_only and not p["show"]):
+            return []
+        return [f for f in p["fields"] if _field_exports(f)
+                and not (visible_only and f.get("show-field") is False)]
+    return _cached("panel_fields", (etype, pid, visible_only), build)
 
 
 def inherited_fields(etype: str) -> list[dict]:
     """Every exported field of every panel an etype has (shown or hidden;
     parents first, nearer records overriding by key). Used by the
     schema-driven exporter (export/schema_emit.py) and default lookups."""
-    out = []
-    for pid in actor_panels(etype):
-        out.extend(panel_fields(etype, pid))
-    return out
+    def build():
+        out = []
+        for pid in actor_panels(etype):
+            out.extend(panel_fields(etype, pid))
+        return out
+    return _cached("inherited", etype, build)
 
 
 def custom_fields(etype: str) -> list[dict]:
@@ -910,15 +939,17 @@ def link_slots(etype: str) -> list[dict]:
     """Link slots (lump_key, slot, label, accepts, required): the "actor-link"
     panel's "slots", then those other panels bring (the path panel's
     path-actor), each lump once. None when actor-link doesn't export."""
-    if not panel_exports(etype, "actor-link"):
-        return []
-    out = list(panel_option(etype, "actor-link", "slots", []) or [])
-    for pid in actor_panels(etype):
-        if pid != "actor-link":
-            have = {s.get("lump_key") for s in out}
-            out += [dict(s) for s in panel_option(etype, pid, "slots", []) or []
-                    if s.get("lump_key") not in have]
-    return out
+    def build():
+        if not panel_exports(etype, "actor-link"):
+            return []
+        out = list(panel_option(etype, "actor-link", "slots", []) or [])
+        for pid in actor_panels(etype):
+            if pid != "actor-link":
+                have = {s.get("lump_key") for s in out}
+                out += [dict(s) for s in panel_option(etype, pid, "slots", []) or []
+                        if s.get("lump_key") not in have]
+        return out
+    return _cached("link_slots", etype, build)
 
 
 def uses_waypoints(etype: str) -> bool:
