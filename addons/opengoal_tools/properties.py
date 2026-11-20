@@ -241,6 +241,13 @@ class OGPreferences(AddonPreferences):
         default=True,
         update=lambda self, ctx: __import__(__package__ + ".model_preview", fromlist=["x"]).set_previews_selectable(self.select_via_preview),
     )
+    glb_colors_all_exports: BoolProperty(
+        name="8-bit colours in every glTF export",
+        description=("Level exports always write vertex colours as 8-bit (what the game keeps) and leave out COLOR_0 "
+                     "when all 8 time of day layers are there. On: also glTF exports made by hand (File > Export > "
+                     "glTF), e.g. a level not set up with the addon yet"),
+        default=False,
+    )
     snap_skip_own_preview: BoolProperty(
         name="Snapping skips the moved actor's preview",
         description=("While actors are selected their own previews can't be snapped to (they move with them), "
@@ -271,6 +278,7 @@ class OGPreferences(AddonPreferences):
             layout.prop(self, "select_via_preview")
             layout.prop(self, "snap_skip_own_preview")
             layout.prop(self, "auto_connect_spawn")
+            layout.prop(self, "glb_colors_all_exports")
             # Advanced — always last, and doesn't need any folder set.
             layout.separator()
             self._draw_database(layout)
@@ -384,6 +392,7 @@ class OGPreferences(AddonPreferences):
         layout.prop(self, "select_via_preview")
         layout.prop(self, "snap_skip_own_preview")
         layout.prop(self, "auto_connect_spawn")
+        layout.prop(self, "glb_colors_all_exports")
 
         # Advanced — always last.
         layout.separator()

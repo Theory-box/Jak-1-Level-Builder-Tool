@@ -33,9 +33,14 @@ _CACHE: dict = {}                   # mesh name -> quantised (corners, 32) uint8
 _STATS: dict = {}
 
 
-def _bytes(arr):
-    """Linear float colours -> the level builder's bytes (16-bit, top 8 bits)."""
-    return (np.clip(np.round(arr * 65535.0), 0, 65535).astype(np.uint32) >> 8).astype(np.uint8)
+def _bytes(arr, bits=8):
+    """Linear float colours -> the level builder's bytes (16-bit, top 8 bits);
+    bits < 8: RGB at the level's Color Depth, like the GLB export."""
+    b = (np.clip(np.round(arr * 65535.0), 0, 65535).astype(np.uint32) >> 8).astype(np.uint8)
+    if bits < 8:
+        from .glb_colors import _depth_table
+        b[:, :3] = _depth_table(bits)[b[:, :3]]
+    return b
 
 
 def fixes_on(s) -> bool:
@@ -76,7 +81,7 @@ def _corner_colours(mesh, attr):
     return a
 
 
-def mesh_vectors(mesh, tod, wide=True):
+def mesh_vectors(mesh, tod, wide=True, bits=8):
     """(corners, 32) uint8 (4 for a build without time of day): what the
     level builder reads for this mesh."""
     from .bake import TOD_ATTRS, BAKE_ATTR
@@ -91,14 +96,14 @@ def mesh_vectors(mesh, tod, wide=True):
                     slots[i] = TOD_ATTRS[(i - d) % 8]; break
                 if have[(i + d) % 8]:
                     slots[i] = TOD_ATTRS[(i + d) % 8]; break
-        cols = {a: _bytes(_corner_colours(mesh, cas[a])) for a in set(slots)}
+        cols = {a: _bytes(_corner_colours(mesh, cas[a]), bits) for a in set(slots)}
         return np.concatenate([cols[a] for a in slots], axis=1)
     # COLOR_0: the layer the export makes active (bake.use_baked), else white
     name = next((x for x in (BAKE_ATTR, "_NOON") + TOD_ATTRS if x in cas), None)
     if name is None:
         rgba = np.tile(np.array([0x80, 0x80, 0x80, 0xFF], np.uint8), (n, 1))
     else:
-        rgba = _bytes(_corner_colours(mesh, cas[name]))
+        rgba = _bytes(_corner_colours(mesh, cas[name]), bits)
     return np.tile(rgba, (1, 8)) if wide else rgba
 
 
@@ -213,7 +218,8 @@ def preview(level_col, slot):
     wide = bool(feature_available("time_of_day"))
     tod = bool(level_col.og_bake.tod_enabled) and wide
     meshes = _meshes(level_col)
-    vecs = [mesh_vectors(me, tod, wide) for me in meshes]
+    bits = int(level_col.og_bake.color_depth)
+    vecs = [mesh_vectors(me, tod, wide, bits) for me in meshes]
     allv = np.concatenate(vecs) if vecs else np.zeros((0, 32), np.uint8)
     if not len(allv):
         return {}

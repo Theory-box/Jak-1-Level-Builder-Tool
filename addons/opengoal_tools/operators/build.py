@@ -517,10 +517,13 @@ class OG_OT_BakeLighting(Operator):
             self.report({"WARNING"}, "A bake is still running"); return {"CANCELLED"}
         passes = _bake.start(targets, _active_level_col(scene), blocking=bpy.app.background)
         modal = _bake.busy() and not bpy.app.background
+        if not passes:
+            self.report({"WARNING"}, ctx.window_manager.og_bake_status or "Bake didn't start")
+            return {"CANCELLED"}
 
         names = ", ".join(o.name for o in targets)
         msg = f"Baking {len(targets)} mesh(es) ({' + '.join(passes)}"
-        if "emit" in passes:
+        if any(p.startswith("emit") for p in passes):
             msg += f", emit on {len(_bake._JOB.get('emit_objs', []))}"
         msg += ")"
         if skipped:

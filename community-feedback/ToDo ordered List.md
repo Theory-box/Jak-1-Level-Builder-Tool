@@ -3,13 +3,7 @@ Features and fixes to work on, have been ordered and can be checked out when the
 Once a feature is part of a release, it'll get removed from here.
 
 ---
-
-# In main
-
-
----
-
-# Path additions (in progress)
+# Path additions (in main)
 ## Add an "add curve" option
 There's already buttons to add waypoints dirrectly, There could be buttons to add a curve too as well. Instead of having to create one before and then link it. That way it'd automatically be linked too. Have both options like the waypoint where the first one add it on the 3D cursor and then "at actor position" to add it on at the actor's position.
 
@@ -68,7 +62,7 @@ Make a collection for curve linked where they'd automatically go to when added a
 
 ---
 
-# Smaller additions
+# Smaller additions (in main)
 ## Level Orb count
 At the moment, the orb count on the level seems to be calculated from orbs and crates with orb content. However, it does not seem to count orb-cache, pickup-spawner and probably any other actor that might spawn orbs. Most of those should be detected but it's still possible the count might not be correct so a way to enter it manually should be possible. Have an "orb count" settings in Level > Settings > Gameplay. If left blank, it'll auto calculate, if not, it'll use the number written down.
 ### List of known actors to check for orb count
@@ -145,17 +139,12 @@ New sub menu in the "level" tab. These are settings that are relevant to the who
 
 ---
 
-## Texture remap
-### water-anim texture remap doesn't seem to work
-
----
-
 ## Snapping snap to preview mesh of the selected actor
 This should be a changed behaviour, otherwise it moves the actors when you try to snap it to another surface. If possible the snap shouldn't be affected by the selected actor preview mesh that you're moving but still by the other preview mesh of other non-selected actors so you can line stuff up on them 
 
 ---
 
-# Light baking addition 2
+# Light baking addition 2 (in progress)
 ## Change Frame on time of day baking
 An option I thought would give some very interesting control is to give the ability to set a frame per time of day. Then when that time of day is getting rendered, blender switch the animation frame to a set frame per time of day.
 
@@ -198,25 +187,62 @@ Here's all the settings and what they'd do:
   - The strength of the effect is then calculated depending on the distance of the actor to the Actor Light using the min and max distance. (from the max intensity to 0 intensity)
 - `Key Color` as a color picker (default to white), to choose the color that'll affect the Key lighting of the actor
 - `Key Intensity` as a float value (default to 1.0), to choose the intensity of the key lighting
-- The direction of the key light would be using the rotation of the actor. The default position would mean the light comes from straight ahead, then rotating would change that. Using the Z axis of the Actor Light in blender to determine the direction of the light, using the `quat` of the actor.
-  - In the object properties, viewport display, the axis could be turned on automatically to so there's a nice visual on the direction of the light 
+- `Direction`, a drop down menu with two options `From Center`, `Actor Rotation`
+  - `From Center`: The direction of the light onto the actor uses the Center of the object (or closest point if using paths) to determine the direction it light the actor, so moving around the light would change which side the actor get the light from.
+  - `Actor Rotation`: The direction of the key light would be using the rotation of the actor. The default position would mean the light comes from straight ahead, then rotating would change that. Using the Z axis of the Actor Light in blender to determine the direction of the light, using the `quat` of the actor.
+    - In the object properties, viewport display, the axis could be turned on automatically to so there's a nice visual on the direction of the light 
+- `Control Shadow` 0.0 to 1.0 slider for how much it'll impact the shadow direction
+  - The shadow of the actor/jak should also change to the direction set by the previous setting (might need to inverse it, you can check how shadows direction relate to sun position in the mood files).
+  - The shadow would also blend between using this direction (as much as the slider is set to) and the default direction from the mood depending on distance like the light intensity.
 - `Ambient Color` as a color picker (default to white), to choose the color that'll affect the ambient lighting of the actor
 - `Ambient Intensity` as a float value (default to 0.5), to choose the intensity of the ambient lighting
 - `Affect Jak`, On/Off checkbox (default on), if off, the actor light would only affect the actors in `alt-actor` and not jak. 
 - `Cylinder Mode`, On/off checkbox (default off), if this setting is on, the distance check would only be done on the x/z plane (in game), ignoring the height.
 - `Mode`:
   - `Default on`
+    - Light is on by default, it'd only turn off if another actor trigger it
     - `On timer`, in seconds (default 1.0), The time it takes to go from 0.0 to max intensity when the actor light turns on
     - `Off timer`, in seconds (default 1.0), The time it takes to go from max to 0.0 intensity when the actor light turns off
   - `Default off`
+    - Light would be off by default, would only turn on if another actor trigger it
     - also gets the timers
   - `Time of day`
     - `Time on`, in hours (default 18.0), time of day when it turns on
     - `Time off`, in hours (default 8.0), time of day when it turns off
     - Also gets the timers for how long it takes to turn on and off
+  - `Time of day (default off)`
+    - Same as previous but only turn on if it's been turned on by trigger actor
 - `Volume`, not required, if a volume is added, the actor/jak is only affected when inside of that volume. If there's no volume, then it just uses the distances set above.
 - `alt-actor`, the actors that get affected by the lighting as well as jak. Allow multiple. Maybe we can set a maximum if this is heavy on the computing.
-- `trigger-actor`, if this actor is dead, the light goes off, The `trigger-actor` can also send an on and off signal to turn the actor light on and off.
+- `trigger-actor` to control the light on/off
+  - if this actor is dead, the light triggers on/off depending on its mode
+    - in `Default on`, it'd turn off
+    - in `Default off`, it'd turn on
+    - in `Time of day`, it'd turn off completely and time of day doesn't turn it back on
+    - in `Time of day (default off)`, it'd allow it to turn on when it's time of day is correct
+  - The `trigger-actor` can also send an on and off signal to turn the actor light on and off
+    - `on` would turn the light on
+    - `off` would turn the light off
+    - `trigger` would switch between on/off (use whatever the basebutton uses for this so they can be used directly instead of needed a new trigger actor)
+- `path`, if a path is added, instead of doing the calculation from the center of the empty, it uses the closest position on the path and then calculate the distances from that point
+
+---
+
+## UV tools
+New menu in Object controls with a bunch of tools for editing UVs in ways that are useful for openGOAL. Each would be a sub menu in the general UV Tools. Each tool would work on the whole mesh (or the selected faces if in edit mode)
+### Fit Faces on UV
+This mode would take each quad face and place all 4 points in all corner coordinates of the UV (Triangles would go to 3 of the corners. N-gons wouldn't get moved)
+This would have these options:
+- Scale (default to 1.0) Scale the whole UV result by that value
+- Rotation (Default to 0.0) Rotate the whole UV result
+- Pivot: Set where the scale and rotation pivot point is centered on. Whith these options:
+  - Corner (the 0,0 corner of the UV space)
+  - Center (the 0.5,0.5 center of the UV space)
+- Placement: Set how multiple faces are placed
+  - Overlap (every face overlap at the center)
+  - Spread (Faces are spread next to each other, with connected faces still connected. Starting from a cube project so a mesh with depth can be still worked with)
+### Cube Project
+Simply use the cube project with a scale modifier as well as an option to normalise each faces or not.
 
 ---
 
@@ -240,28 +266,21 @@ When a new actor is created it'd create a new main collection for all custom act
 
 ---
 
-## UV tools
-New menu in Object controls with a bunch of tools for editing UVs in ways that are useful for openGOAL. Each would be a sub menu in the general UV Tools. Each tool would work on the whole mesh (or the selected faces if in edit mode)
-### Fit Faces on UV
-This mode would take each quad face and place all 4 points in all corner coordinates of the UV (Triangles would go to 3 of the corners. N-gons wouldn't get moved)
-This would have these options:
-- Scale (default to 1.0) Scale the whole UV result by that value
-- Rotation (Default to 0.0) Rotate the whole UV result
-- Pivot: Set where the scale and rotation pivot point is centered on. Whith these options:
-  - Corner (the 0,0 corner of the UV space)
-  - Center (the 0.5,0.5 center of the UV space)
-- Placement: Set how multiple faces are placed
-  - Overlap (every face overlap at the center)
-  - Spread (Faces are spread next to each other, with connected faces still connected. Starting from a cube project so a mesh with depth can be still worked with)
-### Cube Project
-Simply use the cube project with a scale modifier as well as an option to normalise each faces or not.
-
----
-
 ## Creating custom Particles tool (extra addon?)
 It's a lot easier to just have people creating their own particle files and edit them in terms of buidling the addon but ideally. 
 It would be very useful to have a particle editor and preview directly in blender where you can create, edit and see how each particle group work as that would be a lot quicker than editing particle files and then seeing the affect in game.
 This would, however, be a huge undertaking and isn't priority at the moment.
+
+---
+
+# Code Audit
+Let's do a code audit, as well as the more general things, let's look at these things in particular:
+## Cleaning old features
+Cleaning old features and anything that's made to work with previous version of the addon. We don't need this code debt at the moment, we don't need to complexify the code for this at the moment
+## Performance 
+Take particular attention to performance for things that redraw/recalculate every frame instead of only when they should, etc
+## Reusing functions
+Reusing functions, whenever something has to do be done in multiple places, there should be one single function that's called instead of having multiple snippets of the same or similar code
 
 ---
 

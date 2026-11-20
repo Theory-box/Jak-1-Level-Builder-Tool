@@ -119,6 +119,8 @@ from . import connect_neighbours as _connect_neighbours
 from . import link_order as _link_order
 from . import distribute as _distribute
 from . import bake as _bake
+# Blender's glTF exporter calls this on every mesh (level GLBs: 8-bit colours, glb_colors.py)
+from .glb_colors import glTF2ExportUserExtension
 from . import level_settings as _level_settings
 from . import required as _required_mod
 from . import tasks as _tasks
