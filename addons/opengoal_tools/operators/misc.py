@@ -6,7 +6,8 @@
 
 from __future__ import annotations
 
-from ..collections import is_actor
+from ..collections import actor_etype, is_actor
+from ..data import keep_items
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -64,6 +65,7 @@ from .. import model_preview as _mp
 import re as _re
 
 
+@keep_items
 def _flava_items_for_active(self, context):
     """Dynamic items callback — flavas for whatever bank the selected object has."""
     sel  = context.active_object if context else None
@@ -260,6 +262,22 @@ def _water_top(vol):
     return round(max((vol.matrix_world @ v.co).z for v in vol.data.vertices), 4)
 
 
+_VOL_BY_MESH = {"key": None, "map": {}}
+
+
+def _vols_of_mesh(mesh_name):
+    """VOL_ objects using a mesh ({mesh name: [object names]}, rebuilt when the
+    number of objects / meshes changes, not scanned on every mesh edit)."""
+    key = (len(bpy.data.objects), len(bpy.data.meshes))
+    if _VOL_BY_MESH["key"] != key:
+        m = {}
+        for o in bpy.data.objects:
+            if o.type == "MESH" and o.name.startswith("VOL_") and o.data is not None:
+                m.setdefault(o.data.name, []).append(o.name)
+        _VOL_BY_MESH.update(key=key, map=m)
+    return _VOL_BY_MESH["map"].get(mesh_name, ())
+
+
 @bpy.app.handlers.persistent
 def _on_depsgraph_water(scene, depsgraph):
     """Keep each water actor's surface at the top of its linked VOL_ mesh
@@ -272,17 +290,16 @@ def _on_depsgraph_water(scene, depsgraph):
         if isinstance(idb, bpy.types.Object) and idb.name.startswith("VOL_"):
             names.add(idb.name)
         elif isinstance(idb, bpy.types.Mesh):
-            names.update(o.name for o in bpy.data.objects
-                         if o.type == "MESH" and o.data == idb and o.name.startswith("VOL_"))
+            names.update(_vols_of_mesh(idb.name))
     for vn in names:
         vol = bpy.data.objects.get(vn)
         if vol is None or vol.type != "MESH":
             continue
         for an in _vol_link_targets(vol):
             a = bpy.data.objects.get(an)
-            if a is None or a.get("og_water_surface_manual") or a.name.count("_") < 2:
+            if a is None or a.get("og_water_surface_manual") or not actor_etype(a):
                 continue
-            if not _wdb.has_panel(a.name.split("_", 2)[1], "water"):
+            if not _wdb.has_panel(actor_etype(a), "water"):
                 continue
             top = _water_top(vol)
             if top is not None and abs(float(a.get("og_water_surface", 0.0)) - top) > 1e-4:

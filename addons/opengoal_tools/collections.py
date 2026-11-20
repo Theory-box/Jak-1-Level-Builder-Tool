@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES
+from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES, keep_items
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
 _COL_PATH_SPAWNABLE_PLATFORMS = ("Spawnables", "Platforms")
@@ -402,6 +402,7 @@ def _set_level_prop(scene, key, value):
 
 
 # Dynamic enum callback for active_level selector
+@keep_items
 def _active_level_items(self, context):
     """Populate the active_level dropdown from level collections."""
     scene = context.scene if context else None

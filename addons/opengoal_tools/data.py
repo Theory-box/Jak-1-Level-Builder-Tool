@@ -257,6 +257,21 @@ def _build_tpage_filter_items():
 TPAGE_FILTER_ITEMS = _build_tpage_filter_items()
 
 
+_ENUM_KEEP: dict = {}
+
+
+def keep_items(fn):
+    """Dynamic EnumProperty items callback whose strings are built on each
+    call: the list is kept referenced here, or Blender can show garbled labels
+    once Python frees the strings."""
+    def items(self, context):
+        out = fn(self, context)
+        _ENUM_KEEP[fn.__module__ + "." + fn.__qualname__] = out
+        return out
+    items.__name__, items.__doc__ = fn.__name__, fn.__doc__
+    return items
+
+
 def _make_filtered_enum(base_items, cats):
     def _callback(self, context):
         if context is None:
@@ -469,6 +484,7 @@ ETYPE_TPAGES: dict[str, list] = {
 MUSIC_FLAVA_TABLE: dict[str, list] = _db.music_flava_table()
 
 
+@keep_items
 def _music_flava_items_cb(self, context):
     bank = getattr(self, "og_music_amb_bank", "none") if self else "none"
     flavas = MUSIC_FLAVA_TABLE.get(bank, ["default"])

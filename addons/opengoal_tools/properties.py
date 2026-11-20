@@ -3,6 +3,7 @@
 # Blender PropertyGroups, AddonPreferences, and UILists.
 # ---------------------------------------------------------------------------
 
+from .data import keep_items
 import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, PointerProperty, FloatProperty,
@@ -65,12 +66,14 @@ def _cp_level_items_base(context):
                 items.append((lname, lname, f"Keep level '{lname}' resident"))
     return items
 
+@keep_items
 def _cp_lev0_items(self, context):
     # Slot 0 always names a level; defaults to the checkpoint's own level.
     return [("self", "(This level)", "The level this checkpoint belongs to")] \
         + _cp_level_items_base(context) \
         + [("custom", "Custom\u2026", "Type a level name below")]
 
+@keep_items
 def _cp_lev1_items(self, context):
     # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
     return [("none", "(None)", "No second resident level")] \
@@ -432,6 +435,7 @@ def _bank_live(key):
 
 
 # --- Launch checkpoint dropdown ---
+@keep_items
 def _launch_checkpoint_items(self, context):
     """Items for the og.play launch dropdown.
 
