@@ -463,7 +463,7 @@ def nav_gc_path(name):
 def write_nav_gc(name, scene):
     """CUSTOM: write <level>-nav.gc (only when changed); otherwise remove it.
     Returns True when the level has one."""
-    from .level_tools import _write_if_changed
+    from .fileio import write_if_changed
     p = nav_gc_path(name)
     meshes = level_nav_meshes(scene) if nav_system(scene) == "CUSTOM" else []
     if not meshes:
@@ -494,7 +494,7 @@ def write_nav_gc(name, scene):
         L.append("")
         log(f"[navmesh] {nm.name} -> custom-nav '{sym}' ({mesh['poly_count']} polys, {len(mesh['nodes'])} nodes)")
     p.parent.mkdir(parents=True, exist_ok=True)
-    _write_if_changed(p, "\n".join(L) + "\n")
+    write_if_changed(p, "\n".join(L) + "\n")
     return True
 
 

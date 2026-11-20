@@ -185,14 +185,14 @@ def ensure_shared(scene, objects):
     """Write the level's shared edited files (only when changed) and register
     them once in game.gp (goal-src after their actor's code)."""
     from .paths import _goal_src, _game_gp
-    from .level_tools import _write_if_changed, _patch
+    from .fileio import write_if_changed, patch
     from ..data import ETYPE_CODE
     lines = []
     for r in used(scene, objects).values():
         if place(scene, r) != "shared":
             continue
         text = r["path"].read_text(encoding="utf-8").replace("__TYPE__", f"lt-{r['stem']}")
-        _write_if_changed(_goal_src() / SHARED_DIR / f"lt-{r['stem']}.gc", text)
+        write_if_changed(_goal_src() / SHARED_DIR / f"lt-{r['stem']}.gc", text)
         etypes = r["edits"] or [r["stem"]]
         deps = ["process-drawable"] + [Path(o).stem for e in etypes for o in ETYPE_CODE.get(e, [])]
         deps = list(dict.fromkeys(deps))
@@ -211,5 +211,5 @@ def ensure_shared(scene, objects):
             if matches:
                 first = matches[0].start()
                 text = pattern.sub(lambda m: line if m.start() == first else "", text)
-        _write_if_changed(gp, text)
-        _patch(gp, lines, '(group-list "all-code"', "shared edited actors")
+        write_if_changed(gp, text)
+        patch(gp, lines, '(group-list "all-code"', "shared edited actors")

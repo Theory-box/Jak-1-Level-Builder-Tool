@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
+from .fileio import rewrite
 from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, ETYPE_EXTRAS_AG, VERTEX_EXPORT_TYPES,
@@ -251,20 +252,11 @@ def _strip_level_registrations(name):
     # Patch game.gp — strip all entries for this level
     gp_path = _game_gp()
     if gp_path.exists():
-        raw  = gp_path.read_bytes()
-        crlf = b"\r\n" in raw
-        txt  = raw.decode("utf-8").replace("\r\n", "\n")
-        before = txt
-
-        nick = _nick(name)
-        txt = re.sub(r'\(build-custom-level "' + re.escape(name) + r'"\)\n', '', txt)
-        txt = re.sub(r'\(custom-level-cgo "[^"]*" "' + re.escape(name) + r'/[^"]+\"\)\n', '', txt)
-        txt = re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+\"[^)]*\)\n', '', txt)
-
-        if txt != before:
-            if crlf:
-                txt = txt.replace("\n", "\r\n")
-            gp_path.write_bytes(txt.encode("utf-8"))
+        def strip_level(txt):
+            txt = re.sub(r'\(build-custom-level "' + re.escape(name) + r'"\)\n', '', txt)
+            txt = re.sub(r'\(custom-level-cgo "[^"]*" "' + re.escape(name) + r'/[^"]+\"\)\n', '', txt)
+            return re.sub(r'\(goal-src "levels/' + re.escape(name) + r'/[^"]+\"[^)]*\)\n', '', txt)
+        if rewrite(gp_path, strip_level):
             msgs.append(f"Cleaned game.gp entries for '{name}'")
         else:
             msgs.append(f"game.gp had no entries for '{name}'")

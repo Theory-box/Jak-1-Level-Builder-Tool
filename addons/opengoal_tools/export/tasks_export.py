@@ -23,7 +23,8 @@ import re
 from ..game_text import game_text, vanilla_texts, ID_RE, VAR_RE
 from ..tasks import task_expr
 from .paths import _goal_src, _game_gp, _data, log
-from .level_tools import (_write_if_changed, _patch, task_enum, ensure_task_engine, LT_DIR, _TAG)
+from .level_tools import (task_enum, ensure_task_engine, LT_DIR, _TAG)
+from .fileio import write_if_changed, rewrite, patch
 
 _BEGIN = ";; og-level-tools tasks: {g} BEGIN"
 _END = ";; og-level-tools tasks: {g} END"
@@ -102,22 +103,6 @@ def _other_group_tasks(group):
     return ids
 
 
-def _rewrite(path, fn):
-    """Apply fn to a text file (LF inside, original line ends kept); write if changed."""
-    if not path.exists():
-        return False
-    raw = path.read_bytes()
-    crlf = b"\r\n" in raw
-    txt = raw.decode("utf-8")
-    new = fn(txt.replace("\r\n", "\n"))
-    if crlf:
-        new = new.replace("\n", "\r\n")
-    if new == txt:
-        return False
-    path.write_bytes(new.encode("utf-8"))
-    return True
-
-
 def _drop_entries(group, names):
     """Remove entries from a group's block (the whole block once empty), in
     game-task-h.gc and all-types.gc."""
@@ -132,7 +117,7 @@ def _drop_entries(group, names):
         ind = txt[start:m.start()]
         return txt[:m.start()] + _BEGIN.format(g=group) + "\n" + "\n".join(lines) + "\n" + ind + _END.format(g=group) + "\n" + txt[m.end():]
     for p in (_task_h(), _data().joinpath(*_ALL_TYPES)):
-        if _rewrite(p, fn):
+        if rewrite(p, fn):
             log(f"Patched {p.name}: removed {', '.join(sorted(names))} (task group {group})")
 
 
@@ -144,7 +129,7 @@ def _unregister_task_file(group):
         f.unlink()
         log(f"Removed {f.name}")
     for p in (_game_gp(), _goal_src().joinpath(*_DGO_GAME)):
-        if _rewrite(p, lambda t: "".join(l for l in t.splitlines(True) if f"{name}." not in l)):
+        if rewrite(p, lambda t: "".join(l for l in t.splitlines(True) if f"{name}." not in l)):
             log(f"Patched {p.name}: removed {name}")
 
 
@@ -154,7 +139,7 @@ def _unregister_texts(group):
         f.unlink()
         log(f"Removed {f.name}")
     gp = _data() / "game" / "assets" / "jak1" / "game_text.gp"
-    if _rewrite(gp, lambda t: t.replace(f' "game/assets/jak1/text/{_text_json_name(group)}"', "")):
+    if rewrite(gp, lambda t: t.replace(f' "game/assets/jak1/text/{_text_json_name(group)}"', "")):
         log(f"Patched {gp.name}: removed {_text_json_name(group)}")
 
 
@@ -195,45 +180,32 @@ def _put_enum_block(path, group, block):
     if not path.exists():
         log(f"WARNING: {path} not found")
         return False
-    raw = path.read_bytes()
-    crlf = b"\r\n" in raw
-    txt = raw.decode("utf-8").replace("\r\n", "\n")
     b, e = _BEGIN.format(g=group), _END.format(g=group)
-    start = txt.index("(defenum game-task")
-    m = re.compile(r"^([ \t]*)\(max\b", re.M).search(txt, start)
-    if not m:
-        log(f"WARNING: {path.name}: no (max ...) in the game-task enum")
-        return False
-    ind = m.group(1)
-    text = "\n".join(ind + line for line in block)
-    if b in txt and e in txt:
-        i = txt.rfind("\n", 0, txt.index(b)) + 1          # from the start of the BEGIN line
-        j = txt.index(e) + len(e)
-        new = txt[:i] + text + txt[j:]
-    else:
-        new = txt[:m.start()] + text + "\n" + txt[m.start():]
-    if crlf:
-        new = new.replace("\n", "\r\n")
-    if new.encode("utf-8") == raw:
-        return False
-    path.write_bytes(new.encode("utf-8"))
-    log(f"Patched {path.name}: tasks of group {group}")
-    return True
+
+    def fn(txt):
+        start = txt.index("(defenum game-task")
+        m = re.compile(r"^([ \t]*)\(max\b", re.M).search(txt, start)
+        if not m:
+            log(f"WARNING: {path.name}: no (max ...) in the game-task enum")
+            return txt
+        ind = m.group(1)
+        text = "\n".join(ind + line for line in block)
+        if b in txt and e in txt:
+            i = txt.rfind("\n", 0, txt.index(b)) + 1          # from the start of the BEGIN line
+            j = txt.index(e) + len(e)
+            return txt[:i] + text + txt[j:]
+        return txt[:m.start()] + text + "\n" + txt[m.start():]
+    return rewrite(path, fn, f"Patched {path.name}: tasks of group {group}")
 
 
 def _set_all_types_max(path, mx):
-    raw = path.read_bytes()
-    crlf = b"\r\n" in raw
-    txt = raw.decode("utf-8").replace("\r\n", "\n")
-    start = txt.index("(defenum game-task")
-    m = re.compile(r"\(max\s*(\d*)\)").search(txt, start)
-    if not m or m.group(1) == str(mx):
-        return False
-    new = txt[:m.start()] + f"(max {mx})" + txt[m.end():]
-    if crlf:
-        new = new.replace("\n", "\r\n")
-    path.write_bytes(new.encode("utf-8"))
-    return True
+    def fn(txt):
+        start = txt.index("(defenum game-task")
+        m = re.compile(r"\(max\s*(\d*)\)").search(txt, start)
+        if not m or m.group(1) == str(mx):
+            return txt
+        return txt[:m.start()] + f"(max {mx})" + txt[m.end():]
+    return rewrite(path, fn)
 
 
 def _texts(scene, group):
@@ -363,7 +335,7 @@ def _write_texts(scene, group):
     """The group's text JSON (task names, menu names, hints) + its game_text.gp entry."""
     strings, slots, level_text, _hints = _texts(scene, group)
     td = _text_dir()
-    _write_if_changed(td / _text_json_name(group),
+    write_if_changed(td / _text_json_name(group),
                       json.dumps({f"{k:x}": v for k, v in sorted(strings.items())}, indent=2, ensure_ascii=False) + "\n")
     gp = _data() / "game" / "assets" / "jak1" / "game_text.gp"
     if gp.exists():
@@ -567,9 +539,9 @@ def export_tasks(scene):
     slots, level_text = _write_texts(scene, group)
     # the task file + its registration (game.gp goal-src, game.gd object)
     name = f"lt-tasks-{group}"
-    _write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", generate_gc(scene, group, slots, level_text))
-    _patch(_game_gp(), [f'(goal-src "{LT_DIR}/{name}.gc" "progress" "task-control") {_TAG}'],
+    write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", generate_gc(scene, group, slots, level_text))
+    patch(_game_gp(), [f'(goal-src "{LT_DIR}/{name}.gc" "progress" "task-control") {_TAG}'],
            '(group-list "all-code"', f"{name} goal-src")
-    _patch(_goal_src().joinpath(*_DGO_GAME), [f'  "{name}.o" {_TAG.replace(";", ";;", 1)}'], " ))", f"{name} object")
+    patch(_goal_src().joinpath(*_DGO_GAME), [f'  "{name}.o" {_TAG.replace(";", ";;", 1)}'], " ))", f"{name} object")
     log(f"[tasks] group {group}: {len(s.tasks)} task(s) exported")
     return []
