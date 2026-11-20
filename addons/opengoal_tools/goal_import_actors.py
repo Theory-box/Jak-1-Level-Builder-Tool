@@ -80,7 +80,7 @@ def _field_types(etype):
     """{lump key: lump type} from the actor's DB fields (for raw values)."""
     from . import db
     out = {}
-    for f in db.inherited_fields(etype) + db.trait_fields(etype):
+    for f in db.inherited_fields(etype):
         lp = f.get("lump")
         if isinstance(lp, dict) and lp.get("key"):
             out.setdefault(lp["key"], lp.get("type") or f.get("type"))
@@ -264,7 +264,7 @@ def apply_fields(o, etype, lumps, fields=None):
     rows)."""
     from . import db
     if fields is None:
-        fields = db.inherited_fields(etype) + db.trait_fields(etype)
+        fields = db.inherited_fields(etype)
     took = set()
     by_key = {}
     for f in fields:
@@ -394,11 +394,9 @@ def settle(o, etype, lumps, took):
     from . import db
     from .export.schema_emit import emit_schema_lumps
     fields = db.inherited_fields(etype)
-    traits = db.trait_fields(etype)
     def emitted():
         get = db.prop_getter(o)
         em = emit_schema_lumps(get, fields, etype=etype, choice_tables={"CratePickups": db.crate_pickups()})
-        em.update(emit_schema_lumps(get, traits, etype=etype))
         if "options" in em:
             em["options"] = db.options_enum_lump(em["options"])
         return em

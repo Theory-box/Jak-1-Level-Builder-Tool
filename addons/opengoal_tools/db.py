@@ -4,14 +4,8 @@
 # structure plus a small set of accessors. No bpy imports — safe to import
 # anywhere.
 #
-# This module is the single point of contact with the on-disk database file.
-# Everything else in the addon that needs game data should either:
-#   (a) import from .data (compatibility layer — preserves old names), or
-#   (b) import DB / find_actor / find_parent from here (new, idiomatic).
-#
-# During the migration window (the window we're currently in), data.py is a
-# thin shim built on top of this module. Post-migration, data.py gets deleted
-# and all callers move to (b).
+# This module is the single point of contact with the on-disk database file
+# (data.py builds its tables from it).
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 import json
@@ -21,14 +15,10 @@ from pathlib import Path
 from typing import Any
 
 # ── Path resolution ─────────────────────────────────────────────────────────
-# The database lives alongside this file when the addon is installed. During
-# dev we also support loading from ../../refactoring/ (the canonical source
-# until rewire is complete), so editing the refactoring copy updates the addon
-# live without needing to copy.
+# The database lives alongside this file.
 _HERE = Path(__file__).resolve().parent
 _CANDIDATES = [
-    _HERE / "jak1_game_database.jsonc",                          # install location
-    _HERE.parent.parent / "refactoring" / "jak1_game_database.jsonc",  # dev location
+    _HERE / "jak1_game_database.jsonc",
 ]
 
 
@@ -188,28 +178,15 @@ def find_actor(etype: str) -> dict | None:
     return None
 
 
-# COMPAT: accepts the old dict / extra_code formats (docs/backward-compat.md)
 def code_files(rec: dict | None) -> list[str]:
     """The .o files an actor (or variant) brings into the level DGO, in load
     order. DB format: "code": "file.o" or "code": ["dep.o", ..., "file.o"].
     Files listed in Defaults > game_gd_files are skipped at export (always
-    loaded), so vanilla GAME.CGO code is listed like any other.
-    Older override databases still load: {"o": ..., "o_only": ...},
-    {"in_game_cgo": true} (nothing to add) and a separate "extra_code" list
-    (loaded before the actor's own file)."""
-    if not rec:
-        return []
-    c = rec.get("code")
+    loaded), so vanilla GAME.CGO code is listed like any other."""
+    c = (rec or {}).get("code")
     if isinstance(c, str):
-        files = [c]
-    elif isinstance(c, list):
-        files = [f for f in c if isinstance(f, str)]
-    elif isinstance(c, dict):
-        files = [] if c.get("in_game_cgo") or not c.get("o") else [c["o"]]
-    else:
-        files = []
-    extra = rec.get("extra_code") or []
-    return [f for f in list(extra) + files if f]
+        return [c] if c else []
+    return [f for f in c if isinstance(f, str) and f] if isinstance(c, list) else []
 
 
 def all_actors_including_orphans() -> list[dict]:
@@ -392,57 +369,9 @@ def panel_type(pid: str) -> dict:
     return {}
 
 
-# COMPAT: everything after the "panels" check reads pre-panel DB keys (docs/backward-compat.md)
 def _record_panels(rec: dict) -> list[dict]:
-    """A record's panels list. Older override databases (separate "fields" and
-    "panel" keys) are read as the equivalent panels list."""
-    if not rec:
-        return []
-    if "panels" in rec:
-        return rec.get("panels") or []
-    out = []
-    if rec.get("panel"):
-        out.append({"panel": rec["panel"], "show-panel": True})
-    if rec.get("fields"):
-        out.append({"panel": "custom-fields", "show-panel": not rec.get("panel"),
-                    "fields": rec["fields"]})
-    # old path/sync flags
-    if rec.get("needs_path") or rec.get("needs_sync") or rec.get("nav_safe") is False:
-        p = {"panel": "path", "show-panel": True}
-        if rec.get("needs_path"):
-            p["required"] = ["path", "pathb"] if rec.get("needs_pathb") else True
-        if rec.get("path_linear_only"):
-            p["linear-only"] = True
-        if rec.get("paths"):
-            p["paths"] = rec["paths"]
-        out.append(p)
-    if rec.get("needs_sync"):
-        out.append({"panel": "sync", "show-panel": True})
-    # old link / nav / volume / launcher / water flags
-    if rec.get("link_slots"):
-        out.append({"panel": "actor-link", "show-panel": True, "slots": rec["link_slots"]})
-    is_nav_parent = rec.get("etype") == "nav-enemy"     # the Parents entry
-    if rec.get("requires_navmesh") or rec.get("nav_safe") is False or is_nav_parent:
-        nm = {"panel": "nav-mesh", "show-panel": True}
-        if rec.get("nav_safe") is False:
-            nm["fallback-sphere"] = True
-        out.append(nm)
-    if is_nav_parent:
-        out.append({"panel": "aggro-trigger", "show-panel": True})
-    if rec.get("need_vol"):
-        out.append({"panel": "volume", "show-panel": True})
-    if rec.get("is_launcher"):
-        out.append({"panel": "launcher", "show-panel": True})
-    if rec.get("is_water"):
-        out.append({"panel": "water", "show-panel": True})
-    if rec.get("category") in ("Enemies", "Bosses") and "panels" not in rec:
-        out.append({"panel": "activation", "show-panel": True})
-        out.append({"panel": "visibility", "show-panel": True})
-    if rec.get("spawns_lurkers"):
-        out.append({"panel": "spawner", "show-panel": True})
-    if rec.get("needs_notice_dist"):
-        out.append({"panel": "notice-dist", "show-panel": True})
-    return out
+    """A record's panels list."""
+    return (rec or {}).get("panels") or []
 
 
 def _merge_fields(base: list, over: list) -> list:
@@ -502,31 +431,12 @@ def actor_panels(etype: str) -> dict:
     return out
 
 
-# COMPAT: old prop names via "legacy_key" (docs/backward-compat.md)
-def legacy_keys() -> dict:
-    """{field key: older prop key} from PanelTypes fields' "legacy_key" —
-    props saved under the old name (e.g. og_sync_wrap -> og_fop_wrap_phase)
-    are read through this so old .blend files keep their values."""
-    out = {}
-    for p in DB.get("PanelTypes", []):
-        for f in p.get("fields", []):
-            if f.get("key") and f.get("legacy_key"):
-                out[f["key"]] = f["legacy_key"]
-    return out
-
-
 def prop_getter(obj):
-    """get(key, default) for an object's props that also reads legacy keys.
-    A selected variant choice's "props" ({field key: value}) win over the
-    object's own values (e.g. a water-anim look sets its liquid)."""
-    leg = legacy_keys()
+    """get(key, default) for an object's props. A selected variant choice's
+    "props" ({field key: value}) win over the object's own values (e.g. a
+    water-anim look sets its liquid)."""
     def base(k, d=None):
-        if k in obj.keys():
-            return obj.get(k)
-        old = leg.get(k)
-        if old and old in obj.keys():
-            return obj.get(old)
-        return d
+        return obj.get(k, d)
     name = getattr(obj, "name", "") or ""
     forced = {}
     if name.startswith("ACTOR_") and name.count("_") >= 2:
@@ -1016,63 +926,6 @@ def uses_waypoints(etype: str) -> bool:
     return has_panel(etype, "path")
 
 
-# Membership sets (built once from the DB; mirror the legacy data.py constants).
-def nav_unsafe_types() -> set[str]:
-    return {a["etype"] for a in actors() if not is_nav_safe(a["etype"])}
-
-
-def needs_path_types() -> set[str]:
-    return {a["etype"] for a in actors() if needs_path(a["etype"])}
-
-
-def needs_pathb_types() -> set[str]:
-    return {a["etype"] for a in actors() if needs_pathb(a["etype"])}
-
-
-def is_prop_types() -> set[str]:
-    return {a["etype"] for a in actors() if a.get("is_prop")}
-
-
-def launcher_types() -> set[str]:
-    return {a["etype"] for a in actors() if is_launcher(a["etype"])}
-
-
-def spawner_types() -> set[str]:
-    return {a["etype"] for a in actors() if spawns_lurkers(a["etype"])}
-
-
-# ── Trait fields (predicate-tagged field groups) ────────────────────────────
-# Some fields belong to a *behaviour shared across many actors* rather than to
-# one actor: every enemy reads idle-distance/vis-dist, every spawner reads
-# num-lurkers, etc. There is no shared parent to hang these on, so the DB's
-# "TraitFields" section maps a predicate name -> a fields[] list, and any actor
-# for which that predicate is true inherits those fields. Set the flag/category
-# on a new actor and it gets the behaviour (and its UI) with no duplication.
-_TRAIT_PREDICATES = {
-    "is_enemy":          is_enemy,
-    "is_platform":       is_platform,
-    "is_launcher":       is_launcher,
-    "spawns_lurkers":    spawns_lurkers,
-    "needs_notice_dist": needs_notice_dist,
-    "is_water":          is_water,
-    "needs_path":        needs_path,
-    "needs_pathb":       needs_pathb,
-    "is_prop":           is_prop,
-}
-
-
-# COMPAT: TraitFields is empty in the bundled DB (docs/backward-compat.md)
-def trait_fields(etype: str) -> list[dict]:
-    """Fields contributed by every behavioural predicate this actor matches
-    (DB `TraitFields` section). Returns [] for actors matching nothing."""
-    out = []
-    for trait, flds in DB.get("TraitFields", {}).items():
-        pred = _TRAIT_PREDICATES.get(trait)
-        if pred and pred(etype):
-            out.extend(flds)
-    return out
-
-
 def _field_is_output_only(f: dict) -> bool:
     """Const lumps have no editable prop — emit-only, never shown in the UI."""
     return f.get("type") == "const" or (f.get("lump") or {}).get("type") == "const"
@@ -1167,9 +1020,5 @@ def actor_panel(etype: str) -> str | None:
 
 
 def ui_fields(etype: str) -> list[dict]:
-    """Fields to render in the generic actor panel: own/inherited fields plus
-    trait fields, deduped by key (own wins), excluding output-only const lumps."""
-    own = [f for f in custom_fields(etype) if not _field_is_output_only(f)]
-    seen = {f.get("key") for f in own}
-    return own + [f for f in trait_fields(etype)
-                  if not _field_is_output_only(f) and f.get("key") not in seen]
+    """Fields to render in the generic actor panel (no output-only const lumps)."""
+    return [f for f in custom_fields(etype) if not _field_is_output_only(f)]

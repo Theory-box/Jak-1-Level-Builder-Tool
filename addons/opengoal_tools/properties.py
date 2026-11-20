@@ -10,12 +10,12 @@ from bpy.props import (StringProperty, BoolProperty, IntProperty,
 from bpy.types import Panel, Operator, PropertyGroup, AddonPreferences
 from .data import (
     ENTITY_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS,
-    ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
+    ENEMY_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
     LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
     LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
     TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS,
     TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
-    _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
+    _enemy_enum_cb, _interactive_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
     _spawn_variant_cb,
     _spawn_variant_sub_cb,
     _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
@@ -710,7 +710,7 @@ class OGProperties(PropertyGroup):
     # items= uses a dynamic callback so the Limit Search tpage filter is respected.
     enemy_type:     EnumProperty(name="Enemy Type",   items=_enemy_enum_cb,
                                  description="Select an enemy or boss to place")
-    prop_type:      EnumProperty(name="Interactive",  items=_prop_enum_cb,
+    prop_type:      EnumProperty(name="Interactive",  items=_interactive_enum_cb,
                                  description="Select an interactive object to place")
     npc_type:       EnumProperty(name="NPC Type",     items=_npc_enum_cb,
                                  description="Select an NPC to place")

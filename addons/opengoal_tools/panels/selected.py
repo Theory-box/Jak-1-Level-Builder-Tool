@@ -15,7 +15,7 @@ from pathlib import Path
 from .. import db as _db
 from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
-    PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
+NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
     ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
@@ -49,7 +49,7 @@ from ..build import (
 from ..properties import OGLumpRow, OG_UL_LumpRows
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
+    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS,
     _draw_platform_settings, _header_sep, _draw_entity_sub,
     _draw_wiki_preview, _prop_row,
     _preview_collections, _load_previews, _unload_previews,

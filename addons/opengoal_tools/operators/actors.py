@@ -12,7 +12,7 @@ from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
 from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
+    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
     ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
@@ -55,7 +55,7 @@ from ..build import (
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
+    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS,
     _draw_platform_settings, _header_sep, _draw_entity_sub,
     _draw_wiki_preview,
 )
@@ -528,75 +528,6 @@ class OG_OT_SetCratePickup(Operator):
                 self.report({"WARNING"}, "Scout Fly requires Iron box — crate type set to Iron")
         return {"FINISHED"}
 
-class OG_OT_SetCrateAmount(Operator):
-    """Set the pickup amount dropped by this crate."""
-    bl_idname  = "og.set_crate_amount"
-    bl_label   = "Set Crate Amount"
-    bl_options = {"REGISTER", "UNDO"}
-
-    delta: bpy.props.IntProperty(default=1)
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if not o:
-            return {"CANCELLED"}
-        # Scout fly is always 1 — don't allow changes
-        if o.get("og_crate_pickup", "money") == "buzzer":
-            return {"CANCELLED"}
-        current = int(o.get("og_crate_pickup_amount", 1))
-        o["og_crate_pickup_amount"] = max(1, min(5, current + self.delta))
-        return {"FINISHED"}
-
-class OG_OT_ToggleCrystalUnderwater(Operator):
-    """Toggle dark crystal underwater variant (mode=1 lump)."""
-    bl_idname  = "og.toggle_crystal_underwater"
-    bl_label   = "Toggle Crystal Underwater"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_crystal_underwater"] = 0 if bool(o.get("og_crystal_underwater", False)) else 1
-        return {"FINISHED"}
-
-class OG_OT_ToggleCellSkipJump(Operator):
-    """Toggle skip-jump-anim fact-option on fuel-cell (options lump bit 2)."""
-    bl_idname  = "og.toggle_cell_skip_jump"
-    bl_label   = "Toggle Cell Skip Jump"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_cell_skip_jump"] = 0 if bool(o.get("og_cell_skip_jump", False)) else 1
-        return {"FINISHED"}
-
-class OG_OT_SetBridgeVariant(Operator):
-    """Set the art-name (bridge variant) on a ropebridge actor."""
-    bl_idname  = "og.set_bridge_variant"
-    bl_label   = "Set Bridge Variant"
-    bl_options = {"REGISTER", "UNDO"}
-
-    variant: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_bridge_variant"] = self.variant
-        return {"FINISHED"}
-
-class OG_OT_ToggleTurbineParticles(Operator):
-    """Toggle particle-select on windturbine actor."""
-    bl_idname  = "og.toggle_turbine_particles"
-    bl_label   = "Toggle Turbine Particles"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_turbine_particles"] = 0 if bool(o.get("og_turbine_particles", False)) else 1
-        return {"FINISHED"}
-
 class OG_OT_SetElevatorMode(Operator):
     """Set the mode lump on a cave elevator."""
     bl_idname  = "og.set_elevator_mode"
@@ -609,32 +540,6 @@ class OG_OT_SetElevatorMode(Operator):
         o = ctx.active_object
         if o:
             o["og_elevator_mode"] = self.mode_val
-        return {"FINISHED"}
-
-class OG_OT_SetBoneBridgeAnim(Operator):
-    """Set the animation-select lump on a mis-bone-bridge."""
-    bl_idname  = "og.set_bone_bridge_anim"
-    bl_label   = "Set Bone Bridge Anim"
-    bl_options = {"REGISTER", "UNDO"}
-
-    anim_val: bpy.props.IntProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_bone_bridge_anim"] = self.anim_val
-        return {"FINISHED"}
-
-class OG_OT_TogglePlatformWrap(Operator):
-    """Toggle wrap-phase (one-way loop vs ping-pong) on the selected platform."""
-    bl_idname = "og.toggle_platform_wrap"
-    bl_label  = "Toggle Wrap Phase"
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if not o:
-            return {"CANCELLED"}
-        o["og_sync_wrap"] = 0 if bool(o.get("og_sync_wrap", 0)) else 1
         return {"FINISHED"}
 
 class OG_OT_SetPlatformDefaults(Operator):
@@ -686,14 +591,7 @@ CLASSES = (
     OG_OT_ShowLinkTypes,
     OG_OT_SetCrateType,
     OG_OT_SetCratePickup,
-    OG_OT_SetCrateAmount,
-    OG_OT_ToggleCrystalUnderwater,
-    OG_OT_ToggleCellSkipJump,
-    OG_OT_SetBridgeVariant,
-    OG_OT_ToggleTurbineParticles,
     OG_OT_SetElevatorMode,
-    OG_OT_SetBoneBridgeAnim,
-    OG_OT_TogglePlatformWrap,
     OG_OT_SetPlatformDefaults,
     OG_OT_SetVersionField,
 )

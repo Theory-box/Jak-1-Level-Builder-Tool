@@ -371,17 +371,6 @@ def collect_actors(scene, depsgraph=None):
             log(f"  [path-k] {o.name}  {_pm.MODE_LABELS.get(_pmode, _pmode)}  "
                 f"{len(path_pts)} cverts  {len(path_knots)} knots")
 
-        # ── Trait fields ──────────────────────────────────────────────────────
-        # Behaviours shared across many actors by predicate: idle-distance +
-        # vis-dist (enemies), num-lurkers (spawners), notice-dist
-        # (needs_notice_dist). Driven by the DB's TraitFields section and applied
-        # to every matching actor.
-        for _tk, _tv in emit_schema_lumps(
-                _schema_db.prop_getter(o),
-                _schema_db.trait_fields(etype),
-                etype=etype).items():
-            lump[_tk] = _tv
-
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
         # which requires the bsphere to pass the renderer's cull test.

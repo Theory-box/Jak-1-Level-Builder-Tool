@@ -15,7 +15,7 @@ from bpy.types import Panel, Operator
 from pathlib import Path
 from ..data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
-    PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
+NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
     ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
     ETYPE_AG,
@@ -49,7 +49,7 @@ from ..build import (
 from ..properties import OGLumpRow, OG_UL_LumpRows
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
+    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS,
     _draw_platform_settings, _header_sep, _draw_entity_sub,
     _draw_wiki_preview, _prop_row,
     _preview_collections, _load_previews, _unload_previews,
@@ -1026,45 +1026,6 @@ def _draw_panel_fields(layout, sel, pid):
         _draw_field(layout, sel, f, info)
 
 
-class OG_PT_ActorScale(Panel):
-    """DB "scale" panel: shows what the empty's Blender scale exports as."""
-    bl_label       = "Scale"
-    bl_idname      = "OG_PT_actor_scale"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_actor_fields"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.panel_exports(parts[1], "scale")
-
-    def draw(self, ctx):
-        sel = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
-        layout = self.layout
-        # top-down so several axes can be dragged/edited together
-        col = layout.column(align=True)
-        for i, ax in enumerate("XYZ"):
-            col.prop(sel, "scale", index=i, text=ax)
-        lump = _db.scale_lump(etype, sel.matrix_world.to_scale())
-        col = layout.column(); col.scale_y = 0.85
-        if lump:
-            col.label(text=f"Exports scale [{lump[1]:g}, {lump[2]:g}, {lump[3]:g}, 1]", icon="CHECKMARK")
-        else:
-            col.label(text="Scale 1: not exported", icon="DOT")
-        if _db.panel_option(etype, "scale", "always", False):
-            col.label(text="Always exported for this actor", icon="INFO")
-        s = sel.matrix_world.to_scale()
-        if _db.panel_option(etype, "scale", "uniform", False) and (abs(s.x - s.y) > 1e-4 or abs(s.x - s.z) > 1e-4):
-            w = col.row(); w.alert = True
-            w.label(text="This actor reads one value: only X is used", icon="ERROR")
-
-
 class OG_PT_ActorFactOptions(Panel):
     """DB "fact-options" panel: the 'options' lump bits the actor's code reads
     (fact-h.gc). Options marked "highlight" for this actor come first."""
@@ -1750,7 +1711,6 @@ _ACTOR_SUBPANELS = (
     OG_PT_ActorTaskGated,
     OG_PT_ActorVisibility,
     OG_PT_ActorWaypoints,
-    OG_PT_ActorScale,
     OG_PT_ActorFactOptions,
 )
 for _c in _ACTOR_SUBPANELS:

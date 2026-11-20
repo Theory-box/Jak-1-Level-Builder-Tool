@@ -13,7 +13,7 @@ from bpy.props import (StringProperty, BoolProperty, IntProperty,
 from bpy.types import Operator
 from .. import db as _db
 from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
+    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
     NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
     ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
     MUSIC_FLAVA_TABLE,
@@ -56,7 +56,7 @@ from ..build import (
 from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
 from ..utils import (
     _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
+    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS,
     _draw_platform_settings, _header_sep, _draw_entity_sub,
     _draw_wiki_preview,
 )

@@ -9,7 +9,7 @@ from bpy.types import Operator
 from . import db as _db
 from .data import (
     ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
-    PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
+NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
     LUMP_TYPE_ITEMS,
     _actor_has_links, _actor_link_slots, _lump_ref_for_etype, _is_custom_type,
 )
