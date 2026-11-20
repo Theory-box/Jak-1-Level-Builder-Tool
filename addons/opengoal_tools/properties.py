@@ -4,6 +4,7 @@
 # ---------------------------------------------------------------------------
 
 from .data import keep_items
+from .collections import clean_level_name, level_name
 import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, PointerProperty, FloatProperty,
@@ -61,7 +62,7 @@ def _cp_level_items_base(context):
     scene = context.scene if context else None
     if scene is not None:
         for col in _all_level_collections(scene):
-            lname = str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
+            lname = level_name(col)
             if lname:
                 items.append((lname, lname, f"Keep level '{lname}' resident"))
     return items
@@ -452,7 +453,7 @@ def _launch_checkpoint_items(self, context):
     if col is None:
         return items
 
-    level_name = str(col.get("og_level_name", "")).strip().lower().replace(" ", "-")
+    level_name = clean_level_name(col.get("og_level_name", ""))
     if not level_name:
         return items
 

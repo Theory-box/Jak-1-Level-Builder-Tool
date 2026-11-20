@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 from ..collections import is_actor
+from ..collections import clean_level_name
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
@@ -785,7 +786,7 @@ class OG_PT_ActorLauncherDoor(Panel):
 
         cp_name = sel.get("og_continue_name", "")
 
-        level_name = str(_get_level_prop(scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+        level_name = clean_level_name(_get_level_prop(scene, "og_level_name", ""))
         cps = sorted([
             o for o in _level_objects(scene)
             if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")

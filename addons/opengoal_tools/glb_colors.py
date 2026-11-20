@@ -29,11 +29,10 @@ def _depth_table(bits):
     """Byte -> byte for a lower colour depth: rounded to 2^bits levels in sRGB
     (even steps to the eye, the darks keep their detail), back to linear."""
     if bits not in _TABLES:
-        lin = np.arange(256, dtype=np.float64) / 255.0
-        srgb = np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
+        from .palette import _to_linear, _to_srgb
+        srgb = _to_srgb(np.arange(256, dtype=np.float64) / 255.0)
         n = (1 << bits) - 1
-        q = np.round(srgb * n) / n
-        back = np.where(q <= 0.04045, q / 12.92, ((q + 0.055) / 1.055) ** 2.4)
+        back = _to_linear(np.round(srgb * n) / n)
         _TABLES[bits] = np.round(back * 255.0).astype(np.uint8)
     return _TABLES[bits]
 

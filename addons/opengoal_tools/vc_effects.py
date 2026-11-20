@@ -165,7 +165,7 @@ def apply_effect(obj, fx, layers=None, kind=None):
     """One effect (fx's kind, or `kind` for the Apply Effect settings) on the
     bake layers of obj. Returns how many layers changed."""
     kind = kind or fx.kind
-    from .bake import LIGHT_LAYERS, _read, _write, curve_luts, apply_curve, blur, sharp_arrays
+    from .bake import LIGHT_LAYERS, _read, _write, curve_luts, apply_curve, blur, sharp_arrays, loop_verts
     mesh = obj.data
     w, wd = None, {}                            # Vertex Group weights (per vertex, per domain)
     if fx.vertex_group:
@@ -189,8 +189,7 @@ def apply_effect(obj, fx, layers=None, kind=None):
             orig = cols.copy()
             if a.domain not in wd:
                 if a.domain == "CORNER":
-                    lv = np.empty(len(mesh.loops), np.int32)
-                    mesh.loops.foreach_get("vertex_index", lv)
+                    lv = loop_verts(mesh)
                     wd[a.domain] = w[lv][:, None]
                 else:
                     wd[a.domain] = w[:, None]

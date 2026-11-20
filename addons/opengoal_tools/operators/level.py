@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from ..collections import is_waypoint
+from ..collections import level_name
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -327,7 +328,7 @@ class OG_OT_SetActiveLevel(Operator):
             return {"CANCELLED"}
         ctx.scene.og_props.active_level = col.name
         _set_blender_active_collection(ctx, col)
-        lname = col.get("og_level_name", col.name)
+        lname = level_name(col)
         self.report({"INFO"}, f"Active level: {lname}")
         return {"FINISHED"}
 
@@ -368,7 +369,7 @@ class OG_OT_DeleteLevel(Operator):
             self.report({"ERROR"}, f"Level '{self.col_name}' not found")
             return {"CANCELLED"}
 
-        lname = target.get("og_level_name", target.name)
+        lname = level_name(target)
 
         # Just remove the level marker — collection stays intact
         if "og_is_level" in target:
@@ -530,7 +531,7 @@ class OG_OT_EditLevel(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
-        self.level_name    = str(col.get("og_level_name", col.name))
+        self.level_name    = level_name(col)
         self.base_id       = int(col.get("og_base_id", 10000))
         self.level_index   = int(col.get("og_level_index", 100))
         self.vis_nick      = str(col.get("og_vis_nick_override", "") or "")
@@ -794,7 +795,7 @@ class OG_OT_IncludeCreate(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             return {"CANCELLED"}
-        name = str(col.get("og_level_name", col.name))
+        name = level_name(col)
         txt = bpy.data.texts.new(f"{name}-include.jsonc")
         txt.from_string(_inc.TEMPLATE)
         txt.use_fake_user = True

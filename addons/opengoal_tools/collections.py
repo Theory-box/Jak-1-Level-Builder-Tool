@@ -88,6 +88,16 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def clean_level_name(s) -> str:
+    """A level name as the game files use it: lowercase, spaces -> dashes."""
+    return str(s or "").strip().lower().replace(" ", "-")
+
+
+def level_name(col) -> str:
+    """The level name of a level collection (its og_level_name, else its name), cleaned."""
+    return clean_level_name(col.get("og_level_name", col.name)) if col is not None else ""
+
+
 def _name(o_or_name) -> str:
     return o_or_name if isinstance(o_or_name, str) else (getattr(o_or_name, "name", "") or "")
 
@@ -119,12 +129,12 @@ def active_actor_etype(ctx):
     return actor_etype(ctx.active_object) if ctx.active_object is not None else None
 
 
-def free_object_name(prefix, n=0):
-    """f"{prefix}{n}" with the first n not used by any object in the file, so
-    an actor spawned in a second level doesn't get Blender's ".001"."""
-    while f"{prefix}{n}" in bpy.data.objects:
+def free_object_name(prefix, n=0, width=0):
+    """f"{prefix}{n}" (n zero-padded to width) with the first n not used by
+    any object in the file, so a new object doesn't get Blender's ".001"."""
+    while f"{prefix}{n:0{width}d}" in bpy.data.objects:
         n += 1
-    return f"{prefix}{n}"
+    return f"{prefix}{n:0{width}d}"
 
 
 def spawn_uid(o):
@@ -398,7 +408,7 @@ def _set_level_prop(scene, key, value):
         col[key] = value
         # Keep collection name in sync with level name
         if key == "og_level_name":
-            col.name = str(value).strip().lower().replace(" ", "-") or "unnamed-level"
+            col.name = clean_level_name(value) or "unnamed-level"
 
 
 # Dynamic enum callback for active_level selector
@@ -413,7 +423,7 @@ def _active_level_items(self, context):
         return [("NONE", "No Levels", "", 0)]
     items = []
     for i, col in enumerate(levels):
-        lname = col.get("og_level_name", col.name)
+        lname = level_name(col)
         items.append((col.name, lname, f"Switch to level '{lname}'", "SCENE_DATA", i))
     return items
 
@@ -491,7 +501,7 @@ def _resolve_vis_nick(col):
     override = str(col.get("og_vis_nick_override", "") or "").strip().lower()
     if override:
         return override
-    name = str(col.get("og_level_name", col.name) or "")
+    name = level_name(col)
     return name.replace("-", "")[:3].lower()
 
 
@@ -536,14 +546,14 @@ def _suggest_unique_vis_nick(scene, base_name, exclude_col=None):
 def _get_level_name_live(self):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is not None:
-        return str(col.get("og_level_name", col.name))
+        return level_name(col)
     return ""
 
 def _set_level_name_live(self, value):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is None:
         return
-    clean = str(value).strip().lower().replace(" ", "-")
+    clean = clean_level_name(value)
     if not clean:
         return  # Refuse to blank the name
     clean = clean[:10]  # Silent cap; subpanel shows a warning if over

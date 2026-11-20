@@ -17,6 +17,7 @@ blank lines at the start / end.
 from __future__ import annotations
 
 from ..collections import is_actor
+from ..collections import level_name
 import json
 
 from .paths import log
@@ -25,7 +26,7 @@ from .paths import log
 def _level_name(scene):
     from ..collections import _active_level_col
     col = _active_level_col(scene)
-    return str(col.get("og_level_name", col.name)) if col is not None else "level"
+    return level_name(col) if col is not None else "level"
 
 
 def _aid_entries(scene, mesh_names):

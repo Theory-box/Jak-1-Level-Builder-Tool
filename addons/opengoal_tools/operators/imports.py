@@ -28,6 +28,7 @@
 
 from __future__ import annotations
 
+from ..utils import redraw
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty
@@ -109,14 +110,6 @@ def is_find_attempted() -> bool:
     return _FIND_ATTEMPTED
 
 
-def _tag_view3d_redraw(ctx):
-    """Force the 3D viewport sidebar to repaint so the Import panel
-    transitions out of setup mode the moment the cache fills."""
-    for area in ctx.screen.areas:
-        if area.type == "VIEW_3D":
-            area.tag_redraw()
-
-
 # ── Operators ────────────────────────────────────────────────────────────
 
 class OG_OT_RescanGlbs(Operator):
@@ -133,7 +126,7 @@ class OG_OT_RescanGlbs(Operator):
             self.report({"WARNING"}, msg)
         else:
             self.report({"INFO"}, f"Found {n} GLB{'s' if n != 1 else ''} under decompiler_out/jak1/")
-        _tag_view3d_redraw(ctx)
+        redraw(ctx)
         return {"FINISHED"}
 
 
@@ -164,14 +157,14 @@ class OG_OT_FindModels(Operator):
         picked = (self.directory or "").strip().rstrip("\\/")
         if not picked:
             self.report({"WARNING"}, "No folder selected — set path manually below")
-            _tag_view3d_redraw(ctx)
+            redraw(ctx)
             return {"CANCELLED"}
 
         from ..paths_core import prefs as _prefs_of
         prefs = _prefs_of()
         if not prefs:
             self.report({"ERROR"}, "Addon preferences not found")
-            _tag_view3d_redraw(ctx)
+            redraw(ctx)
             return {"CANCELLED"}
 
         # Write directly to the decompiler_path override. We don't touch
@@ -188,7 +181,7 @@ class OG_OT_FindModels(Operator):
                 {"WARNING"},
                 msg or "No GLBs found under that folder. Check the path below."
             )
-        _tag_view3d_redraw(ctx)
+        redraw(ctx)
         return {"FINISHED"}
 
 

@@ -313,6 +313,13 @@ class OGBakeSettings(bpy.types.PropertyGroup):
 
 # ── post-processing (numpy) ─────────────────────────────────────────────────
 
+def loop_verts(mesh):
+    """Vertex index of every face corner of a mesh (numpy int64)."""
+    lv = np.empty(len(mesh.loops), dtype=np.int64)
+    mesh.loops.foreach_get("vertex_index", lv)
+    return lv
+
+
 def _read(attr):
     n = len(attr.data)
     arr = np.empty(n * 4, dtype=np.float32)
@@ -377,7 +384,7 @@ def _corner_groups(mesh, keep_sharp, angle=None, sharp_flat=None):
     edges: not marked sharp, neither face flat-shaded, and (angle given)
     faces less than `angle` apart."""
     nl = len(mesh.loops)
-    lv = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("vertex_index", lv)
+    lv = loop_verts(mesh)
     le = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("edge_index", le)
     if not keep_sharp:
         return lv, int(lv.max()) + 1 if nl else 0
@@ -476,8 +483,7 @@ def alpha_values(mesh, src, domain):
     a = vals[:, 3]
     if src.domain == domain:
         return a
-    lv = np.empty(len(mesh.loops), dtype=np.int64)
-    mesh.loops.foreach_get("vertex_index", lv)
+    lv = loop_verts(mesh)
     if src.domain == "POINT" and domain == "CORNER":
         return a[lv]
     if src.domain == "CORNER" and domain == "POINT":   # mean of each vertex's corners
@@ -919,7 +925,7 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
         tv = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("vertices", tv)
         tl = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("loops", tl)
         tris.append(tv.reshape(nt, 3) + v0)
-        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        lv = loop_verts(m)
         for n in layers:
             ca = m.color_attributes.get(n)
             if ca is None:
@@ -973,7 +979,7 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
         wv = (d11 * d20 - d01 * d21) / den; ww = (d00 * d21 - d01 * d20) / den
         w = np.clip(np.stack([1 - wv - ww, wv, ww], 1), 0, 1)
         w /= np.maximum(w.sum(1, keepdims=True), 1e-8)
-        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        lv = loop_verts(m)
         cas = m.color_attributes
         for n in layers:
             rgb = np.full((nv, 3), np.nan, np.float32)

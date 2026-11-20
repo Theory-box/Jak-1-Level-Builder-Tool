@@ -75,8 +75,8 @@ def _corner_colours(mesh, attr):
     attr.data.foreach_get("color", a)
     a = a.reshape(-1, 4)
     if attr.domain == "POINT":
-        lv = np.empty(len(mesh.loops), np.int32)
-        mesh.loops.foreach_get("vertex_index", lv)
+        from .bake import loop_verts
+        lv = loop_verts(mesh)
         a = a[lv]
     return a
 

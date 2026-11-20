@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from ..utils import redraw
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -83,18 +84,12 @@ def compile_running() -> bool:
     return any(st.get("status") and not st.get("done") for st in (_BUILD_STATE, _QUICK_EXPORT_STATE))
 
 
-def _redraw(ctx):
-    for a in ctx.screen.areas if ctx.screen else ():
-        if a.type == "VIEW_3D":
-            a.tag_redraw()
-
-
 def _after_compile(ctx, ok):
     """A compile ended: launch the game when Launch Game was clicked during it
     or Auto is on."""
     want = LAUNCH["pending"] or getattr(ctx.scene.og_props, "og_auto_launch", False)
     LAUNCH["pending"] = False
-    _redraw(ctx)
+    redraw(ctx)
     if ok and want:
         bpy.ops.og.play()
 
@@ -238,7 +233,7 @@ class OG_OT_Play(Operator):
         if compile_running():
             # wait for the compile; clicking again cancels the wait
             LAUNCH["pending"] = not LAUNCH["pending"]
-            _redraw(ctx)
+            redraw(ctx)
             self.report({"INFO"}, "The game will launch once the compile is done" if LAUNCH["pending"]
                         else "Launch after the compile cancelled")
             return {"FINISHED"}

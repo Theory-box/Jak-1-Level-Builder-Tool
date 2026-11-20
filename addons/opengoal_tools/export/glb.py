@@ -10,6 +10,7 @@ Export" (the collection's "skip_export" custom property) are skipped.
 """
 from __future__ import annotations
 
+from ..collections import level_name
 import bpy
 from ..collections import (
     _ensure_sub_collection, _recursive_col_objects, _col_is_no_export,
@@ -47,7 +48,7 @@ def geometry_collection(level_col, create=True):
 
 def find_sub_collection(level_col, *path):
     """_ensure_sub_collection without creating anything (safe in draw)."""
-    name = str(level_col.get("og_level_name", level_col.name))
+    name = level_name(level_col)
     cur = level_col
     for seg in path:
         name = f"{name}.{seg}"

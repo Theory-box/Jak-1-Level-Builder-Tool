@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from ..coords import to_game_vec4
+from ..collections import clean_level_name
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
@@ -619,7 +620,7 @@ def collect_actors(scene, depsgraph=None):
     # Volume mode: if a CPVOL_ mesh is linked (og_cp_link = checkpoint name),
     # the actor uses AABB bounds instead of sphere radius. The GOAL code reads
     # a 'has-volume' lump (uint32 1) to choose AABB vs sphere.
-    level_name_for_cp = str(_get_level_prop(scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+    level_name_for_cp = clean_level_name(_get_level_prop(scene, "og_level_name", ""))
 
     # Build cp_name → first linked vol_obj from og_vol_links collections.
     # Checkpoint links are soft-enforced 1:1 at link time (block duplicates),

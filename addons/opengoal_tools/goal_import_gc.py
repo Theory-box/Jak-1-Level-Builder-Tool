@@ -6,6 +6,7 @@ Numbers are game units: (meters x) = x * 4096, #x.. hex, plain numbers raw.
 """
 from __future__ import annotations
 
+from .collections import clean_level_name
 import math
 import re
 
@@ -115,7 +116,7 @@ def _checkpoint_for(ctx, cont_name):
     n = LAST_CHECKPOINTS.get(cont_name)
     if n and n in bpy.data.objects:
         return bpy.data.objects[n]
-    lv = str(_get_level_prop(ctx.scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+    lv = clean_level_name(_get_level_prop(ctx.scene, "og_level_name", ""))
     return next((o for o in _level_objects(ctx.scene) if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")
                  and f"{lv}-{spawn_uid(o)}" == cont_name), None)
 

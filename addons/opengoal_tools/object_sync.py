@@ -12,6 +12,7 @@ Objects are tracked by pointer, so a renamed object isn't seen as deleted.
 """
 from __future__ import annotations
 
+from .collections import free_object_name
 import re
 
 import bpy
@@ -35,20 +36,13 @@ def _helper_suffix(name):
     return next((s for s in HELPERS if name.endswith(s)), None)
 
 
-def _free(prefix, width=0):
-    n = 0
-    while f"{prefix}{n:0{width}d}" in bpy.data.objects:
-        n += 1
-    return f"{prefix}{n:0{width}d}"
-
-
 def _new_name(base, o):
     """The addon name for a copy of the object named `base`, or None."""
     if "_wp_" in base or _helper_suffix(base):
         return None
     if base.startswith("ACTOR_"):
         parts = base.split("_", 2)
-        return _free(f"ACTOR_{parts[1]}_") if len(parts) == 3 else None
+        return free_object_name(f"ACTOR_{parts[1]}_") if len(parts) == 3 else None
     if base.startswith("CHECKPOINT_"):
         from .collections import spawn_uid
         src = bpy.data.objects.get(base)
@@ -59,10 +53,10 @@ def _new_name(base, o):
             n += 1
         return f"{head}cp{n}"
     if base.startswith("CAMERA_") and o.type == "CAMERA":
-        return _free("CAMERA_")
+        return free_object_name("CAMERA_")
     m = re.match(r"^(AMBIENT_[a-z]+?)(\d+)$", base)
     if m:
-        return _free(m.group(1), len(m.group(2)))
+        return free_object_name(m.group(1), width=len(m.group(2)))
     return None
 
 

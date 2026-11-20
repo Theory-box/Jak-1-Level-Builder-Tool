@@ -12,6 +12,7 @@ other groups / mods / old levels already use.
 """
 from __future__ import annotations
 
+from .collections import level_name
 import re
 
 import bpy
@@ -67,7 +68,7 @@ _ITEMS = {"levels": [], "filter": []}     # dynamic enum items must stay referen
 
 def _level_items(self, ctx):
     scene = ctx.scene if ctx else bpy.context.scene
-    items = [(c.name, str(c.get("og_level_name", c.name)), "") for c in _levels(scene)] or [("NONE", "(no level)", "")]
+    items = [(c.name, level_name(c), "") for c in _levels(scene)] or [("NONE", "(no level)", "")]
     if items != _ITEMS["levels"]:
         _ITEMS["levels"] = items
     return _ITEMS["levels"]

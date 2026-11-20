@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from ..collections import clean_level_name
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
@@ -69,7 +70,7 @@ def _entity_gc():  return _goal_src() / "engine" / "entity" / "entity.gc"
 def _lname(ctx):
     col = _active_level_col(ctx.scene)
     if col is not None:
-        return str(col.get("og_level_name", "")).strip().lower().replace(" ", "-")
+        return clean_level_name(col.get("og_level_name", ""))
     return ctx.scene.og_props.level_name.strip().lower().replace(" ","-")
 
 def _nick(n):      return n.replace("-","")[:3].lower()

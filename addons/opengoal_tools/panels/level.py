@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from ..collections import level_name
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
@@ -144,7 +145,7 @@ class OG_PT_LevelSettings(Panel):
         layout.prop(props, "level_index")
 
         # Derived / read-only info
-        name = str(col.get("og_level_name", col.name))
+        name = level_name(col)
         nick_eff = _resolve_vis_nick(col)
         info = layout.row(); info.enabled = False
         info.label(text=f"ISO: {_iso(name)}   Effective Nick: {nick_eff}")

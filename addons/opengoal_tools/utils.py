@@ -351,6 +351,14 @@ def _draw_wiki_preview(layout, etype: str, ctx=None):
 # Safe UI helper — never writes to object during draw()
 # ---------------------------------------------------------------------------
 
+def redraw(ctx=None, area_type="VIEW_3D"):
+    """Tag every area of a type (3D viewports) for a redraw."""
+    ctx = ctx or bpy.context
+    for a in (ctx.screen.areas if getattr(ctx, "screen", None) else ()):
+        if a.type == area_type:
+            a.tag_redraw()
+
+
 _PENDING_DEFAULTS: set = set()
 
 
