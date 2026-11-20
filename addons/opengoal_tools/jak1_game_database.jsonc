@@ -138,7 +138,8 @@
     {"id": "Interactive Objects", "label": "Interactive Objects", "color": [0.2, 0.8, 0.6, 1.0]},
     {"id": "Buttons and Doors", "label": "Buttons and Doors", "color": [0.2, 0.7, 0.8, 1.0]},
     {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]},
-    {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]}
+    {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]},
+    {"id": "Effects", "label": "Effects", "color": [1.0, 0.9, 0.5, 1.0]}
   ],
 
   // ── Defaults ────────────────────────────────────────────────────
@@ -13471,7 +13472,7 @@
     {
       "etype": "actor-light",
       "label": "Actor Light",
-      "category": "Visuals",
+      "category": "Effects",
       "parent": "process-drawable",
       "custom_actor": true,
       "edited": "actor-light",
