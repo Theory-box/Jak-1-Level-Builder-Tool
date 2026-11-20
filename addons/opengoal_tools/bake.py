@@ -218,6 +218,18 @@ class OGBakeSettings(bpy.types.PropertyGroup):
         items=(("CORNER", "Face Corner", "Clean edges where the model is sharp"),
                ("POINT", "Vertex", "Smoother, no hard edges")),
         description="Domain of the next bake (existing bakes aren't changed)")
+    color_depth: bpy.props.EnumProperty(
+        name="Color Depth", default="8",
+        items=(("8", "8 bit", "Colours as baked (256 levels per channel)"),
+               ("6", "6 bit", "64 levels per channel"),
+               ("5", "5 bit", "32 levels per channel"),
+               ("4", "4 bit", "16 levels per channel")),
+        description="Levels per colour channel in the exported level GLB (the bake isn't changed). Fewer levels make "
+                    "the GLB smaller with Draco compression, but can show banding. Color Quantisation's preview "
+                    "uses it too")
+    auto_save: bpy.props.BoolProperty(
+        name="Auto save before bake", default=False,
+        description="Save the .blend before the bake changes anything (baking large files can crash Blender)")
     use_blur: bpy.props.BoolProperty(name="Auto blur", default=False,
                                      description="Smooth the bake by averaging neighbouring colours")
     blur_strength: bpy.props.FloatProperty(name="Strength", default=0.5, min=0.0, max=1.0, subtype="FACTOR")
@@ -1302,9 +1314,25 @@ def _on_cancel(_scene, *args):
     _JOB.clear()
 
 
+def _auto_save() -> bool:
+    """Auto save before bake: save the .blend first (False: not baking)."""
+    if not bpy.data.filepath:
+        _status("Bake error: Auto save before bake is on but the .blend was never saved (save it once first)")
+        return False
+    _status("Baking: saving the .blend…")
+    try:
+        bpy.ops.wm.save_mainfile()
+    except RuntimeError as e:
+        _status(f"Bake error: auto save failed ({e})")
+        return False
+    return True
+
+
 def start(objs, level_col, blocking=False):
     """Bake the passes for objs (names kept), then post-process."""
     s = level_col.og_bake if level_col is not None else None
+    if s is not None and s.auto_save and not _auto_save():
+        return []
     emit_objs = [o.name for o in objs if has_emission(o)] if s is not None and s.emit_strength > 0 else []
     passes = ["light"]
     if s is not None and s.tod_enabled:
@@ -1354,6 +1382,14 @@ def draw_options(layout, level_col, scene=None):
         box.prop(scene.og_props, "lightbake_samples")
     box.prop(s, "combine")
     box.row().prop(s, "domain", expand=True)
+    row = box.row()
+    row.label(text="Color Depth")
+    row.row().prop(s, "color_depth", expand=True)
+    if s.color_depth != "8":
+        n = 1 << int(s.color_depth)
+        r = box.row(); r.alert = True
+        r.label(text=f"{n} colours per channel ({n ** 3:,} in all) in the GLB: may show banding", icon="ERROR")
+    box.prop(s, "auto_save")
     box.prop(s, "emit_strength")
     r = box.row(); r.enabled = False
     r.label(text=f"Alpha: from an '{ALPHA_ATTR}' colour layer (or {ALPHA_ATTR}_SUNRISE ... per time)", icon="INFO")
@@ -1430,9 +1466,14 @@ def draw_tod(layout, level_col):
         r = col.row(align=True)
         r.prop(t, "lights", text="Lights")
         op = r.operator("og.tod_new_lights", text="", icon="ADD"); op.time = k
+        sub = r.row(align=True); sub.enabled = t.lights is not None
+        op = sub.operator("og.tod_select_lights", text="", icon="RESTRICT_SELECT_OFF"); op.time = k
         r = col.row(align=True)
         r.prop(t, "world", text="World")
         op = r.operator("og.tod_new_world", text="", icon="ADD"); op.time = k
+        sub = r.row(align=True); sub.enabled = t.world is not None
+        op = sub.operator("og.tod_use_world", text="", icon="RESTRICT_SELECT_OFF",
+                          depress=t.world is not None and bpy.context.scene.world == t.world); op.time = k
         if s.tod_frames:
             col.prop(t, "frame")
     box.prop(s, "tod_show_all")
@@ -1550,6 +1591,48 @@ class OG_OT_TodNewWorld(bpy.types.Operator):
         if lv is None:
             return {"CANCELLED"}
         _new_world(lv, self.time)
+        return {"FINISHED"}
+
+
+class OG_OT_TodSelectLights(bpy.types.Operator):
+    """Select the objects of this time of day's light collection (and its sub-collections')"""
+    bl_idname = "og.tod_select_lights"
+    bl_label = "Select Lights"
+    bl_options = {"REGISTER", "UNDO"}
+    time: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        c = getattr(lv.og_bake, "tod_" + self.time).lights if lv is not None else None
+        if c is None:
+            return {"CANCELLED"}
+        vl = ctx.view_layer
+        objs = [o for o in c.all_objects if o.name in vl.objects and o.visible_get(view_layer=vl)]
+        hidden = sum(1 for o in c.all_objects) - len(objs)
+        for o in ctx.selected_objects:
+            o.select_set(False)
+        for o in objs:
+            o.select_set(True)
+        if objs:
+            vl.objects.active = objs[0]
+        self.report({"WARNING"} if hidden else {"INFO"},
+                    f"Selected {len(objs)} object(s) of {c.name}" + (f"; {hidden} hidden" if hidden else ""))
+        return {"FINISHED"}
+
+
+class OG_OT_TodUseWorld(bpy.types.Operator):
+    """Make this time of day's world the scene's world"""
+    bl_idname = "og.tod_use_world"
+    bl_label = "Use World"
+    bl_options = {"REGISTER", "UNDO"}
+    time: bpy.props.StringProperty()
+
+    def execute(self, ctx):
+        lv = _tod_level(ctx)
+        w = getattr(lv.og_bake, "tod_" + self.time).world if lv is not None else None
+        if w is None:
+            return {"CANCELLED"}
+        ctx.scene.world = w
         return {"FINISHED"}
 
 
@@ -1697,7 +1780,7 @@ class OG_OT_BakeCurveRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
-CLASSES = (*_palette.CLASSES, OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodDefaultWorlds,
+CLASSES = (*_palette.CLASSES, OGTodTime, OGBakeSettings, OG_OT_ShowBakeAttr, OG_OT_TodNewLights, OG_OT_TodNewWorld, OG_OT_TodSelectLights, OG_OT_TodUseWorld, OG_OT_TodDefaultWorlds,
            OG_OT_TodDefaultSuns, OG_OT_TodCopyFrom, OG_OT_BakeCurveInit, OG_OT_BakeCurveSave, OG_OT_BakeCurveUpdate, OG_OT_BakeCurveRemove)
 
 

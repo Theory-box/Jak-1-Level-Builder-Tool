@@ -13,6 +13,8 @@
 # Overwrite Color (moves each colour's hue / saturation / value toward the
 # picked colour's, a factor each), Overwrite Alpha, Blur (the auto blur).
 # Curve and Alpha have a Factor. Values are the stored sRGB ones.
+# Vertex Group (every effect, optional): only that group's vertices change, by
+# their weight (0.0 - 1.0); a mesh without the group isn't changed.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
@@ -92,6 +94,9 @@ class OGVcEffect(bpy.types.PropertyGroup):
     blur_auto_sharp: BoolProperty(name="Auto sharp", default=False, update=_remember,
                                   description="Also treat edges sharper than the angle as sharp")
     blur_angle: FloatProperty(name="Angle", default=0.5236, min=0.0, max=3.1416, subtype="ANGLE", update=_remember)
+    vertex_group: StringProperty(name="Vertex Group",
+                                 description="Only this vertex group changes, by each vertex's weight (0.0 - 1.0). "
+                                             "Empty: the whole mesh. A mesh without this group isn't changed")
 
 
 # ── the effects ─────────────────────────────────────────────────────────────
@@ -141,12 +146,32 @@ def new_curve(name, preset="JAK"):
     return ng
 
 
+def group_weights(obj, name):
+    """Per vertex weight of the vertex group (0 outside it); None: no such group."""
+    vg = obj.vertex_groups.get(name)
+    if vg is None:
+        return None
+    gi = vg.index
+    w = np.zeros(len(obj.data.vertices), np.float32)
+    for v in obj.data.vertices:
+        for g in v.groups:
+            if g.group == gi:
+                w[v.index] = g.weight
+                break
+    return w
+
+
 def apply_effect(obj, fx, layers=None, kind=None):
     """One effect (fx's kind, or `kind` for the Apply Effect settings) on the
     bake layers of obj. Returns how many layers changed."""
     kind = kind or fx.kind
     from .bake import LIGHT_LAYERS, _read, _write, curve_luts, apply_curve, blur, sharp_arrays
     mesh = obj.data
+    w, wd = None, {}                            # Vertex Group weights (per vertex, per domain)
+    if fx.vertex_group:
+        w = group_weights(obj, fx.vertex_group)
+        if w is None or not w.any():
+            return 0
     luts = None
     if kind == "CURVE":
         m = curve_mapping(fx.curve)
@@ -160,6 +185,15 @@ def apply_effect(obj, fx, layers=None, kind=None):
         if a is None:
             continue
         cols, key = _read(a)
+        if w is not None:
+            orig = cols.copy()
+            if a.domain not in wd:
+                if a.domain == "CORNER":
+                    lv = np.empty(len(mesh.loops), np.int32)
+                    mesh.loops.foreach_get("vertex_index", lv)
+                    wd[a.domain] = w[lv][:, None]
+                else:
+                    wd[a.domain] = w[:, None]
         if kind == "CURVE":
             cols = apply_curve(cols, luts[0], luts[1], fx.factor)
         elif kind == "COLOR":
@@ -173,6 +207,8 @@ def apply_effect(obj, fx, layers=None, kind=None):
                 sf = sharp_arrays(obj)
             cols = blur(mesh, cols, a.domain, fx.blur_strength, fx.blur_passes, fx.blur_keep_sharp,
                         fx.blur_angle if fx.blur_auto_sharp else None, sf)
+        if w is not None:
+            cols = orig + (cols - orig) * wd[a.domain]
         _write(a, np.clip(cols, 0.0, 1.0), key)
         n += 1
     if n:
@@ -214,6 +250,9 @@ class OG_OT_VcApplyEffect(bpy.types.Operator):
         fx = scene_effect(ctx.scene, self.kind)
         objs = _targets(ctx)
         n = sum(apply_effect(o, fx, kind=self.kind) for o in objs)
+        no_vg = sum(1 for o in objs if fx.vertex_group and fx.vertex_group not in o.vertex_groups)
+        if no_vg:
+            self.report({"WARNING"}, f"{no_vg} mesh(es) without vertex group '{fx.vertex_group}' not changed")
         if not n:
             self.report({"WARNING"}, "No baked layer on the selected meshes"
                         + (" (set up the curve first)" if self.kind == "CURVE" and fx.curve is None else ""))
@@ -308,7 +347,7 @@ class OG_OT_VcEffectEdit(bpy.types.Operator):
 
 
 _COPY_PROPS = ("kind", "enabled", "show", "factor", "curve_preset", "color", "hue_factor", "sat_factor",
-               "val_factor", "alpha", "blur_strength",
+               "val_factor", "alpha", "blur_strength", "vertex_group",
                "blur_passes", "blur_keep_sharp", "blur_auto_sharp", "blur_angle")
 
 
@@ -380,9 +419,16 @@ class OG_OT_VcApplyStack(bpy.types.Operator):
 
 # ── UI (drawn by panels/object_controls.py) ─────────────────────────────────
 
-def draw_options(layout, fx, init_index, kind=None):
+def draw_options(layout, fx, init_index, kind=None, obj=None):
     """An effect's options (not the kind)."""
     kind = kind or fx.kind
+    if obj is not None and obj.type == "MESH":
+        r = layout.row(align=True)
+        r.prop_search(fx, "vertex_group", obj, "vertex_groups", text="", icon="GROUP_VERTEX")
+        if fx.vertex_group and fx.vertex_group not in obj.vertex_groups:
+            r.alert = True
+    else:
+        layout.prop(fx, "vertex_group", text="", icon="GROUP_VERTEX")
     if kind == "CURVE":
         r = layout.row(align=True)
         r.prop(fx, "curve_preset", text="")
@@ -415,7 +461,7 @@ def draw_options(layout, fx, init_index, kind=None):
 
 def draw_apply(layout, ctx, kind):
     fx = scene_effect(ctx.scene, kind)
-    draw_options(layout, fx, -1, kind)
+    draw_options(layout, fx, -1, kind, ctx.view_layer.objects.active)
     n = len(_targets(ctx))
     op = layout.operator("og.vc_apply_effect", icon=_ICON[kind],
                          text=f"Apply {_LABEL[kind]} to {n} Mesh(es)" if n else f"Apply {_LABEL[kind]}")
@@ -452,7 +498,7 @@ def draw_stack(layout, ctx):
             op.index = i; op.action = act
         if fx.show:
             col = box.column(); col.enabled = fx.enabled
-            draw_options(col, fx, i)
+            draw_options(col, fx, i, obj=o)
     if fxs:
         r = layout.row(align=True)
         r.operator("og.vc_copy_effects", icon="COPYDOWN")

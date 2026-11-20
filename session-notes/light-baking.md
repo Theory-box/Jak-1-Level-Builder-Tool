@@ -97,8 +97,17 @@ Proposed:
   why it never helped. Test level (62.5k faces, 8 times): Draco 3.03 MB -> 1.02 MB; Kuitar's big
   level (Draco, COLOR_0 already dropped): 97 MB -> 60 MB. Preference "8-bit colours in every glTF
   export" for hand-made exports.
-- Bit Size option (6/5/4 bits) not built: only helps with Draco (-5 / -20 / -48 % more on the test
-  level) and bands visibly; waiting on Kuitar.
+- Color Depth (bake options, under Face Corner / Vertex: 8 / 6 / 5 / 4 bit, 8 by default, warning
+  with the levels per channel otherwise): the GLB hook rounds RGB to 2^bits levels in sRGB (back to
+  linear bytes, alpha kept); Color Quantisation's preview uses it too. Only smaller with Draco
+  (-5 / -20 / -48 % on the test level).
+- Kuitar's test (2026-11-17): time frame, emit copy, Delete Color Attribute, Float to Byte work.
+  Keyframed emission crashed on Blender 5.3 (no Action.fcurves in 5.x): fixed with the action
+  slot's channelbag (7ff8401).
+- Light collection select button (RESTRICT_SELECT_OFF) and world "make it the scene's world" button
+  per time of day; Auto save before bake (off by default; an unsaved .blend doesn't bake);
+  per-effect Vertex Group (empty: whole mesh; a mesh without the group isn't changed). Test:
+  _claude_tmp/bl_lb2b.py (4.4 and 5.3).
 - Time frame per time of day (frame_set per time, combined copies rebuilt when the frame changes:
   object transforms only), Render emit per time of day (emit:<time> passes, _og_bake_emit<time>
   layers), emit passes on a small combined copy of the emissive meshes, keyframed emission counts as

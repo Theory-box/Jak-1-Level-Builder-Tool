@@ -169,7 +169,8 @@ def export_level_glb(level_col, filepath):
             ids.update(s.material for s in o.material_slots if s.material)
         plain = _plain_collision_props(ids)
     from .. import glb_colors
-    glb_colors.ACTIVE.update({"on": True, "stats": {}})   # 8-bit colours (glb_colors.py)
+    glb_colors.ACTIVE.update({"on": True, "stats": {},       # 8-bit colours (glb_colors.py)
+                              "bits": int(level_col.og_bake.color_depth)})
     try:
         idx = list(geo.exporters).index(ex)
         with bpy.context.temp_override(collection=geo):
@@ -179,7 +180,9 @@ def export_level_glb(level_col, filepath):
         st = glb_colors.ACTIVE["stats"] or {}
         if st:
             from .paths import log
-            log(f"[glb] colours 8-bit: {st.get('saved', 0) // 1024} KB less"
+            bits = glb_colors.ACTIVE["bits"]
+            log(f"[glb] colours 8-bit{f' ({bits}-bit colour depth)' if bits < 8 else ''}: "
+                f"{st.get('saved', 0) // 1024} KB less"
                 + (f", COLOR_0 left out: {st.get('dropped', 0) // 1024} KB" if st.get("dropped") else ""))
     finally:
         glb_colors.ACTIVE["on"] = False
