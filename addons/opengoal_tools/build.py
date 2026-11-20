@@ -135,6 +135,34 @@ def _apply_engine_patches():
     return patched
 
 
+# Actor Light (subtypes/actor-light.gc): the draw code asks the actor lights for
+# each drawn process's light group. Added the first time a level with an Actor
+# Light is built and left in (without a light the hook is #f: one check per draw).
+_AL_TAG = ";; og-level-tools actor-light"
+_AL_DEFINE = ("(define *actor-light-hook* (the-as (function process-drawable light-group light-group light-group) #f)) "
+              + _AL_TAG)
+_AL_CALL_RX = re.compile(r"\n([ \t]*)\(cond\n[ \t]*\(\(= cur-interp 0\.0\) \(vu-lights<-light-group! vu-lgt lgt\)\)")
+
+
+def _apply_actor_light_patch():
+    """drawable.gc: the hook global + its call in dma-add-process-drawable. True if written."""
+    p = _data() / "goal_src" / "jak1" / "engine" / "draw" / "drawable.gc"
+    if not p.exists():
+        return False
+    text = p.read_text(encoding="utf-8")
+    if _AL_TAG in text:
+        return False
+    new = text.replace("\n(defun dma-add-process-drawable (", "\n" + _AL_DEFINE + "\n\n(defun dma-add-process-drawable (", 1)
+    new = _AL_CALL_RX.sub(lambda m: f"\n{m.group(1)}(if *actor-light-hook* (set! lgt (*actor-light-hook* arg0 lgt cur-lgt))) "
+                                    f"{_AL_TAG}{m.group(0)}", new, count=1)
+    if new.count(_AL_TAG) != 2:
+        log("  [patch] drawable.gc: Actor Light hook not added (the draw code isn't what the addon expects)")
+        return False
+    p.write_text(new, encoding="utf-8", newline="\r\n" if b"\r\n" in p.read_bytes() else "\n")
+    log("  [patch] drawable.gc: Actor Light hook added (full engine compile)")
+    return True
+
+
 
 # ---------------------------------------------------------------------------
 # AUDIO ENUMS
@@ -605,7 +633,7 @@ def _engine_files():
     gs = _goal_src() / "engine"
     return {"entity.gc": _entity_gc(), "level-info.gc": _level_info(),
             "load-boundary-data.gc": _load_boundary_data(),
-            "vol-h.gc": gs / "geometry" / "vol-h.gc",
+            "vol-h.gc": gs / "geometry" / "vol-h.gc", "drawable.gc": gs / "draw" / "drawable.gc",
             "mod-settings.gc": mod_settings_path(), "game.gp": _game_gp()}
 
 
@@ -677,6 +705,8 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     extras    = needed_extras_ags(actors)
     tpages    = needed_tpages(actors)
     code_deps = needed_code(actors)
+    if any(a.get("_db_etype") == "actor-light" for a in actors):
+        _apply_actor_light_patch()
     collect_nav_mesh_geometry(scene, name)
     cam_actors, trigger_actors = collect_cameras(scene)
 

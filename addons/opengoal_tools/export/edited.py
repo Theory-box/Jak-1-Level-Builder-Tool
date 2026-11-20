@@ -83,12 +83,20 @@ def default_id(etype):
     return f"addon:{stem}" if stem else None
 
 
+def custom_actor(etype) -> bool:
+    """An addon-made actor ("custom_actor": true, e.g. Actor Light): no vanilla type,
+    its file is always shared (lt-<stem>)."""
+    from .. import db
+    return bool((db.find_actor(etype) or {}).get("custom_actor"))
+
+
 def choices(etype):
     """[(id, label, description)] for an actor's Code picker."""
     d = default_id(etype)
     out = [("", "Default" + (f" ({d.split(':', 1)[1]}.gc)" if d else " (vanilla)"),
             "The database's choice for this actor")]
-    out.append(("vanilla", "Vanilla", "No edited code: the game's own type"))
+    if not custom_actor(etype):
+        out.append(("vanilla", "Vanilla", "No edited code: the game's own type"))
     for fid, r in files().items():
         if fid == d:
             continue
@@ -103,8 +111,10 @@ def choices(etype):
 def resolve(o, etype):
     """The file record an actor uses, or None (vanilla)."""
     sel = str(getattr(o, "og_edited_code", "") or "")
-    if sel == "vanilla":
+    if sel == "vanilla" and not custom_actor(etype):
         return None
+    if sel == "vanilla":
+        sel = ""
     fid = sel or _variant_id(o, etype) or default_id(etype)
     return files().get(fid) if fid else None
 
@@ -119,7 +129,7 @@ def _variant_id(o, etype):
 
 def place(scene, rec):
     """obs / shared for a file (this .blend's setting, else the file's header)."""
-    if scene is None:
+    if scene is None or any(custom_actor(e) for e in rec["edits"]):
         return rec["place"]
     return str(scene.get("og_edited_place", {}).get(rec["id"], rec["place"]))
 

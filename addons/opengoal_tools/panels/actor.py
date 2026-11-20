@@ -1577,10 +1577,11 @@ def draw_edited_code(layout, ctx, o):
     if rec is None:
         return
     pl = ed.place(ctx.scene, rec)
-    row = layout.row(align=True)
-    for p, txt in (("obs", "Level (-obs)"), ("shared", "Shared file")):
-        op = row.operator("og.edited_place", text=txt, depress=(pl == p))
-        op.file_id, op.place = rec["id"], p
+    if not ed.custom_actor(etype):                 # an addon-made actor's file is always shared
+        row = layout.row(align=True)
+        for p, txt in (("obs", "Level (-obs)"), ("shared", "Shared file")):
+            op = row.operator("og.edited_place", text=txt, depress=(pl == p))
+            op.file_id, op.place = rec["id"], p
     sub = layout.column(align=True)
     sub.enabled = False
     sub.scale_y = 0.8
