@@ -540,7 +540,11 @@ def _animated(sock) -> bool:
     if ad is None or ad.action is None:
         return False
     path = sock.path_from_id("default_value")
-    return any(fc.data_path == path for fc in ad.action.fcurves)
+    # Blender 5 only has layered actions (no Action.fcurves): the curves are in
+    # the channelbag of the tree's slot
+    from bpy_extras.anim_utils import action_get_channelbag_for_slot
+    bag = action_get_channelbag_for_slot(ad.action, ad.action_slot)
+    return bag is not None and any(fc.data_path == path for fc in bag.fcurves)
 
 
 def _lit(sock, colour=False):
