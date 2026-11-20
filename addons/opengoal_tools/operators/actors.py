@@ -567,9 +567,10 @@ class OG_OT_SetVersionField(bpy.types.Operator):
     value: StringProperty()
 
     def execute(self, ctx):
-        prefs = ctx.preferences.addons.get("opengoal_tools")
-        if prefs and self.field in ("og_active_version", "og_active_data"):
-            setattr(prefs.preferences, self.field, self.value)
+        from ..paths_core import prefs
+        p = prefs()
+        if p and self.field in ("og_active_version", "og_active_data"):
+            setattr(p, self.field, self.value)
         return {"FINISHED"}
 
 

@@ -750,10 +750,10 @@ class OG_OT_ScanPaths(bpy.types.Operator):
         import re
         from pathlib import Path
         from ..build import _scan_for_installs
-        prefs = ctx.preferences.addons.get("opengoal_tools")
-        if not prefs:
+        from ..paths_core import prefs as _prefs_of
+        p = _prefs_of()
+        if not p:
             self.report({"ERROR"}, "Addon preferences not found"); return {"CANCELLED"}
-        p = prefs.preferences
         raw = p.og_root_path.strip().rstrip("\\/")
         if not raw:
             self.report({"WARNING"}, "Set the OpenGOAL Root folder first"); return {"CANCELLED"}

@@ -451,8 +451,7 @@ class OG_OT_AddWaypoint(Operator):
         # Parse the entity type from the actor name (ACTOR_<etype>_<uid>)
         # and attach a white, 50%-transparent ghost of its mesh so the user
         # can see where the entity will stand at each waypoint.
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
+        if _mp.previews_on():
             parts = self.enemy_name.split("_")  # ["ACTOR", "<etype>", "<uid>"]
             etype = parts[1] if len(parts) >= 3 else ""
             if etype:

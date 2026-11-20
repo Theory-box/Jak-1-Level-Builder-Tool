@@ -43,8 +43,8 @@ def custom_dir():
         if getattr(props, "og_blend_paths_enabled", False) and props.og_blend_code_path.strip():
             p = bpy.path.abspath(props.og_blend_code_path.strip())
         else:
-            a = bpy.context.preferences.addons.get(__package__.split(".")[0])
-            p = bpy.path.abspath(getattr(a.preferences, "custom_code_path", "") or "") if a else ""
+            from ..paths_core import pref
+            p = bpy.path.abspath(pref("custom_code_path", "") or "")
     except Exception:
         return None
     return Path(p) if p and os.path.isdir(p) else None

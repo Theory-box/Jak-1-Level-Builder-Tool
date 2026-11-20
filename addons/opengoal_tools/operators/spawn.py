@@ -318,15 +318,9 @@ def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, 
     # DB field drivers (e.g. launcher spring height -> arrow length)
     from ..utils import apply_db_drivers
     apply_db_drivers(o, etype)
-    if preview:
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                if not _mp.attach_preview(ctx, etype, o):
-                    o["_og_no_preview"] = True
-            except Exception as e:
-                # Never fail the spawn over a preview failure
-                log(f"model_preview: {e}")
+    if preview and _mp.previews_on():
+        if not _mp.try_attach_preview(ctx, etype, o):     # never fails the spawn
+            o["_og_no_preview"] = True
     return o
 
 
@@ -390,8 +384,8 @@ def auto_connect(ctx, o, etype, pre_sel):
     before spawning gets linked: curves -> path, a nav-mesh (or an actor that
     has one -> its nav-mesh-actor) -> nav-mesh, a VOL_ volume -> volume.
     Returns messages for what was linked."""
-    a = bpy.context.preferences.addons.get("opengoal_tools")
-    if not (a and getattr(a.preferences, "auto_connect_spawn", True)):
+    from ..paths_core import pref
+    if not pref("auto_connect_spawn", True):
         return []
     from .links import _is_navmesh
     from ..data import _actor_set_link
@@ -516,12 +510,7 @@ class OG_OT_DuplicateEntity(Operator):
             for child in list(new_empty.children):
                 if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
                     bpy.data.objects.remove(child, do_unlink=True)
-            _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-            if _prefs and _prefs.preferences.preview_models:
-                try:
-                    _mp.attach_preview(ctx, etype, new_empty)
-                except Exception as e:
-                    log(f"duplicate_entity model_preview: {e}")
+            _mp.try_attach_preview(ctx, etype, new_empty, "duplicate_entity model_preview")
             new_names.append(new_empty.name)
 
         # Leave the new duplicates selected.
@@ -1010,12 +999,7 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         _sv = getattr(scene.og_props, "spawn_variant", "")
         if _vf and _sv and _sv != "NONE" and any(c.get("value") == _sv for c in _db.variant_choices(etype)):
             actor[_vf["key"]] = _sv
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                _mp.attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
-            except Exception as e:
-                log(f"model_preview: {e}")
+        _mp.try_attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
         for msg in auto_connect(ctx, actor, etype, pre_sel):
@@ -1118,14 +1102,10 @@ class OG_OT_SpawnPlatform(Operator):
         self.report({"INFO"}, f"Added {o.name}")
 
         # ---- Model preview ------------------------------------------------
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                attached = _mp.attach_preview(ctx, etype, o)
-                if not attached and ENTITY_DEFS.get(etype, {}).get("glb"):
-                    self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
-            except Exception as e:
-                log(f"model_preview: {e}")
+        if _mp.previews_on():
+            attached = _mp.try_attach_preview(ctx, etype, o)
+            if not attached and ENTITY_DEFS.get(etype, {}).get("glb"):
+                self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
 
         return {"FINISHED"}
 

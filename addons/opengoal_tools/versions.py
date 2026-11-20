@@ -157,11 +157,8 @@ def game_info() -> dict:
 
 def _override():
     """(Preferences "OpenGOAL version" override, its release) or ("AUTO", "")."""
-    try:
-        p = bpy.context.preferences.addons[__package__].preferences
-        return p.version_override, p.version_override_release.strip()
-    except (KeyError, AttributeError):
-        return "AUTO", ""
+    from .paths_core import pref
+    return pref("version_override", "AUTO"), (pref("version_override_release", "") or "").strip()
 
 
 def game_label() -> str:
@@ -267,9 +264,9 @@ def draw_versions(layout):
             sub = col.row(); sub.scale_y = 0.7
             sub.label(text="      " + why)
     box.operator("og.recheck_versions", icon="FILE_REFRESH")
-    try:
-        p = bpy.context.preferences.addons[__package__].preferences
-    except KeyError:
+    from .paths_core import prefs
+    p = prefs()
+    if p is None:
         return
     row = box.row(align=True)
     row.prop(p, "version_override", text="Overwrite")

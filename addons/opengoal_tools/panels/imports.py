@@ -61,9 +61,9 @@ def _draw_setup(layout, ctx):
 
     # Stage B — first attempt found nothing. Show the manual picker.
     box.label(text="No GLBs found. Set the path manually:", icon="INFO")
-    prefs = ctx.preferences.addons.get("opengoal_tools")
-    if prefs:
-        box.prop(prefs.preferences, "decompiler_path", text="Decompiler path")
+    from ..paths_core import prefs
+    if prefs():
+        box.prop(prefs(), "decompiler_path", text="Decompiler path")
     row = box.row(align=True)
     row.operator("og.find_models",  text="📂  Re-pick",  icon="FILEBROWSER")
     row.operator("og.rescan_glbs",  text="Rescan",      icon="FILE_REFRESH")

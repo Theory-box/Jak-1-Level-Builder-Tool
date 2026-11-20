@@ -116,11 +116,8 @@ def _ensure_preview(o):
     from .model_preview import _is_any_preview, attach_preview
     if any(_is_any_preview(c) for c in o.children):
         return
-    try:
-        prefs = bpy.context.preferences.addons[__package__].preferences
-        if not getattr(prefs, "preview_models", False):
-            return
-    except KeyError:
+    from .model_preview import previews_on
+    if not previews_on():
         return
     etype = o.name.split("_", 2)[1]
     try:

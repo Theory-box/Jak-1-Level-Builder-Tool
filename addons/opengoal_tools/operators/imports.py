@@ -167,7 +167,8 @@ class OG_OT_FindModels(Operator):
             _tag_view3d_redraw(ctx)
             return {"CANCELLED"}
 
-        prefs = ctx.preferences.addons.get("opengoal_tools")
+        from ..paths_core import prefs as _prefs_of
+        prefs = _prefs_of()
         if not prefs:
             self.report({"ERROR"}, "Addon preferences not found")
             _tag_view3d_redraw(ctx)
@@ -177,7 +178,7 @@ class OG_OT_FindModels(Operator):
         # og_root_path — that's the Preferences panel's job — and we
         # don't run scan_paths because we don't need exe/data folders
         # to scan for GLBs.
-        prefs.preferences.decompiler_path = picked
+        prefs.decompiler_path = picked
 
         n, msg = _scan_glbs()
         if n > 0:

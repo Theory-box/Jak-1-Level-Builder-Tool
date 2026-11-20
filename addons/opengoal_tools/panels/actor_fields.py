@@ -85,8 +85,7 @@ def _refresh_variant_preview(context, obj, key):
     """A new variant can have its own model / offset: rebuild the preview
     (when preview models are on)."""
     from .. import model_preview as _mp
-    prefs = context.preferences.addons.get("opengoal_tools")
-    if not obj.name.startswith("ACTOR_") or not (prefs and prefs.preferences.preview_models):
+    if not obj.name.startswith("ACTOR_") or not _mp.previews_on():
         return
     etype = obj.name.split("_", 2)[1]
     vf = _db.variant_field(etype)

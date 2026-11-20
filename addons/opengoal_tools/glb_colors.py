@@ -60,9 +60,8 @@ def _to_u8(acc, bits=8):
 
 def _all_exports() -> bool:
     """Preference: also for glTF exports made by hand (File > Export > glTF)."""
-    import bpy
-    a = bpy.context.preferences.addons.get(__package__)
-    return bool(a and getattr(a.preferences, "glb_colors_all_exports", False))
+    from .paths_core import pref
+    return bool(pref("glb_colors_all_exports", False))
 
 
 class glTF2ExportUserExtension:

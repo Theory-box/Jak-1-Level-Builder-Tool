@@ -276,8 +276,7 @@ def refresh_special(self, ctx):
         bpy.data.objects.remove(c, do_unlink=True)
     if race_rings.uses_rings(self) and special_on(self):
         race_rings.build_preview(ctx, self)
-    prefs = ctx.preferences.addons.get("opengoal_tools")
-    if prefs and prefs.preferences.preview_models:
+    if previews_on():
         remove_preview(self)
         attach_preview(ctx, etype, self)
 
@@ -561,9 +560,28 @@ def attach_waypoint_preview(ctx, etype: str, waypoint_empty: bpy.types.Object) -
     return True
 
 
+def previews_on() -> bool:
+    """Preference "Preview models" (actor meshes in the viewport)."""
+    from .paths_core import pref
+    return bool(pref("preview_models", False))
+
+
+def try_attach_preview(ctx, etype, obj, what="model_preview"):
+    """attach_preview when previews are on; a failure is logged, never raised.
+    Returns attach_preview's result (None when off / failed)."""
+    if not previews_on():
+        return None
+    try:
+        return attach_preview(ctx, etype, obj)
+    except Exception as e:
+        from .export.paths import log
+        log(f"{what}: {e}")
+        return None
+
+
 def _select_via_preview() -> bool:
-    a = bpy.context.preferences.addons.get(__package__)
-    return bool(a and getattr(a.preferences, "select_via_preview", True))
+    from .paths_core import pref
+    return bool(pref("select_via_preview", True))
 
 
 def set_previews_selectable(flag: bool) -> None:
@@ -610,8 +628,8 @@ def _snap_skip_own_previews(vl):
     actors' previews are made non-selectable and Blender's snapping excludes
     non-selectable objects. Only the actors whose selection changed are touched."""
     global _SNAP_SEL
-    a = bpy.context.preferences.addons.get(__package__)
-    if not (a and getattr(a.preferences, "snap_skip_own_preview", True)) or not _select_via_preview():
+    from .paths_core import pref
+    if not pref("snap_skip_own_preview", True) or not _select_via_preview():
         return
     sel = {o.name for o in bpy.context.selected_objects if o.name.startswith("ACTOR_")}
     if not sel and not _SNAP_SEL:
