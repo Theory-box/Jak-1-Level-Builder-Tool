@@ -433,8 +433,8 @@ def _draw_field(layout, obj, field, actor_info=None):
     default = _resolve_default(field, obj, actor_info)
 
     if field.get("required"):
-        from ..required import missing
-        if any(m["key"] == field["key"] for m in missing(obj)):
+        from ..required import actor_missing
+        if any(m["key"] == field["key"] for m in actor_missing(obj)):
             warning = layout.row()
             warning.alert = True
             warning.label(text=f"Required: {label}", icon="ERROR")

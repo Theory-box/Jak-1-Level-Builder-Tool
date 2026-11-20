@@ -162,7 +162,20 @@ def _needs_trigger(o, et):
     return bool(v)
 
 
-def soft(o, scene=None, banks=None, senders=None):
+def linked_index(objects):
+    """{(source etype, lump key): {target names}} of the given actors' links
+    (built once per level check instead of scanning every object per actor)."""
+    out = {}
+    for x in objects:
+        et = actor_etype(x)
+        if et:
+            for e in getattr(x, "og_actor_links", ()):
+                if e.target_name:
+                    out.setdefault((et, e.lump_key), set()).add(e.target_name)
+    return out
+
+
+def soft(o, scene=None, banks=None, senders=None, linked=None):
     """Soft warnings of an actor: [{"panel", "key", "label"}]."""
     scene = scene or bpy.context.scene
     et = actor_etype(o)
@@ -184,8 +197,9 @@ def soft(o, scene=None, banks=None, senders=None):
             out.append({"panel": "links", "key": sl["lump_key"], "label": sl["soft"]})
     lb = (_db.find_actor(et) or {}).get("soft_linked_by")   # an actor that should link this one
     if lb and not (lb.get("unless") and o.get(lb["unless"])):
-        if not any(actor_etype(x) == lb["etype"] and any(getattr(_actor_get_link(x, lb["lump_key"], i), "target_name", None) == o.name for i in range(4))
-                   for x in scene.objects if x.name.startswith("ACTOR_")):
+        if linked is None:
+            linked = linked_index(scene.objects)
+        if o.name not in linked.get((lb["etype"], lb["lump_key"]), ()):
             out.append({"panel": "links", "key": lb["etype"], "label": lb["label"]})
     if _db.panel_exports(et, "nav-mesh") and _db.nav_unsafe(et):
         nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
@@ -209,7 +223,7 @@ def draw_header_count(layout, obj, panel=None):
     """Panel header: "N ⚠" when the actor misses required fields (panel =
     "links" / "path" / "nav" / None for all). Hover lists them, click opens a popup
     to fill them in."""
-    items = [m for m in missing(obj) if panel is None or m["panel"] == panel]
+    items = [m for m in actor_missing(obj) if panel is None or m["panel"] == panel]
     if items:
         row = layout.row(align=True)
         row.alert = True
@@ -217,7 +231,7 @@ def draw_header_count(layout, obj, panel=None):
         op = row.operator("og.required_popup", text=f"{len(items)}⚠", emboss=False)
         op.actor_name = obj.name
         op.panel = panel or ""
-    sitems = [m for m in soft(obj) if panel is None or m["panel"] == panel]
+    sitems = [m for m in actor_soft(obj) if panel is None or m["panel"] == panel]
     if sitems:                                           # soft: yellow triangle, no red
         row = layout.row(align=True)
         row.ui_units_x = 1.2 + 0.4 * len(str(len(sitems)))
@@ -383,8 +397,10 @@ CLASSES = (OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
 
 
 # ── level-wide, cached ──────────────────────────────────────────────────────
-_CACHE = {"dirty": True, "by_actor": {}, "soft": {}, "t": 0.0}
-_MAX_AGE = 1.0      # s: some edits (link / path collections) send no depsgraph update
+# Rebuilt after an edit: any depsgraph update that isn't only a move (see
+# _on_depsgraph), any addon operator (track_operators: link / path list edits
+# send no depsgraph update), undo / redo, file load.
+_CACHE = {"dirty": True, "by_actor": {}, "soft": {}, "names": set()}
 
 
 def mark_dirty(*_a):
@@ -393,29 +409,73 @@ def mark_dirty(*_a):
 
 def level_missing(scene):
     """{actor name: missing list} for every actor of the active level with
-    something missing. Cached until the next edit (or for at most _MAX_AGE:
-    link / path list edits don't always send a depsgraph update)."""
-    import time
-    now = time.monotonic()
-    if _CACHE["dirty"] or now - _CACHE["t"] > _MAX_AGE:
-        from .collections import _level_objects
-        res = {}
-        objs = _level_objects(scene)
-        banks = _sound_banks(scene)
-        senders = trigger_senders(scene, objs)
-        sres = {}
-        for o in objs:
-            m = missing(o, scene, banks=banks)
-            if m:
-                res[o.name] = m
-            s = soft(o, scene, banks, senders)
-            if s:
-                sres[o.name] = s
-        _CACHE["by_actor"] = res
-        _CACHE["soft"] = sres
-        _CACHE["dirty"] = False
-        _CACHE["t"] = now
+    something missing. Cached until the next edit."""
+    if _CACHE["dirty"]:
+        from .export.navmesh import nav_pass
+        nav_pass(True)
+        try:
+            _rebuild(scene)
+        finally:
+            nav_pass(False)
     return _CACHE["by_actor"]
+
+
+def _rebuild(scene):
+    """Recompute every level object's missing / soft lists."""
+    from .collections import _level_objects
+    res = {}
+    objs = _level_objects(scene)
+    banks = _sound_banks(scene)
+    senders = trigger_senders(scene, objs)
+    linked = linked_index(scene.objects)
+    sres = {}
+    for o in objs:
+        m = missing(o, scene, banks=banks)
+        if m:
+            res[o.name] = m
+        s = soft(o, scene, banks, senders, linked)
+        if s:
+            sres[o.name] = s
+    _CACHE["by_actor"] = res
+    _CACHE["soft"] = sres
+    _CACHE["names"] = {o.name for o in objs}
+    _CACHE["dirty"] = False
+
+
+def actor_missing(o, scene=None):
+    """missing(o) from the level cache (computed directly for an object
+    outside the active level)."""
+    scene = scene or bpy.context.scene
+    level_missing(scene)
+    if o is not None and o.name in _CACHE["names"]:
+        return _CACHE["by_actor"].get(o.name, [])
+    return missing(o, scene)
+
+
+def actor_soft(o, scene=None):
+    """soft(o) from the level cache (computed directly outside the level)."""
+    scene = scene or bpy.context.scene
+    level_missing(scene)
+    if o is not None and o.name in _CACHE["names"]:
+        return _CACHE["soft"].get(o.name, [])
+    return soft(o, scene)
+
+
+def track_operators(classes):
+    """Every addon operator marks the level checks dirty when it finishes
+    (call before the classes are registered)."""
+    def wrap(f):
+        def execute(self, ctx):
+            try:
+                return f(self, ctx)
+            finally:
+                _CACHE["dirty"] = True
+        execute._og_dirty = True
+        execute.__doc__ = f.__doc__
+        return execute
+    for c in classes:
+        if issubclass(c, bpy.types.Operator) and "execute" in c.__dict__ and not getattr(c.execute, "_og_dirty", False):
+            c.execute = wrap(c.execute)
 
 
 def level_soft(scene):
@@ -454,14 +514,18 @@ def _on_load(*_a):
     _CACHE["dirty"] = True
 
 
+_HANDLERS = lambda: ((bpy.app.handlers.depsgraph_update_post, _on_depsgraph), (bpy.app.handlers.load_post, _on_load),
+                     (bpy.app.handlers.undo_post, _on_load), (bpy.app.handlers.redo_post, _on_load))
+
+
 def register_handlers():
-    for hl, f in ((bpy.app.handlers.depsgraph_update_post, _on_depsgraph), (bpy.app.handlers.load_post, _on_load)):
+    for hl, f in _HANDLERS():
         for old in [x for x in hl if getattr(x, "__name__", "") == f.__name__ and getattr(x, "__module__", "").endswith(".required")]:
             hl.remove(old)
         hl.append(f)
 
 
 def unregister_handlers():
-    for hl, f in ((bpy.app.handlers.depsgraph_update_post, _on_depsgraph), (bpy.app.handlers.load_post, _on_load)):
+    for hl, f in _HANDLERS():
         if f in hl:
             hl.remove(f)

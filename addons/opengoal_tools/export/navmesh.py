@@ -300,12 +300,39 @@ def nav_mesh_static(mesh, indent="  "):
     return "\n".join(L)
 
 
+_NAV_MEMO: dict = {}      # nav-mesh object name -> (triangles hash, nav_compute(full=False))
+_NAV_PASS: list = [None]  # {name: summary} while one level check runs (many actors, one mesh)
+
+
+def nav_pass(on: bool):
+    """Start / end a level check: a nav-mesh's summary is read once for all
+    the actors linking it."""
+    _NAV_PASS[0] = {} if on else None
+
+
+def nav_summary(nav_obj):
+    """nav_compute(full=False) of a nav-mesh object, recomputed only when its
+    triangles (positions / jump materials) changed: the warnings ask for it on
+    every redraw."""
+    p = _NAV_PASS[0]
+    if p is not None and nav_obj.name in p:
+        return p[nav_obj.name]
+    tris = nav_tris(nav_obj)
+    key = hash(tuple(tris))
+    hit = _NAV_MEMO.get(nav_obj.name)
+    if hit is None or hit[0] != key:
+        hit = _NAV_MEMO[nav_obj.name] = (key, nav_compute(tris, full=False))
+    if p is not None:
+        p[nav_obj.name] = hit[1]
+    return hit[1]
+
+
 def nav_issues(nav_obj):
     """Problems of a nav-mesh object for the warnings (no triangles, over 255
     triangles / vertices, zero-area, 3+ triangles on an edge, only jump faces)."""
     if nav_obj is None or nav_obj.type != "MESH":
         return []
-    m = nav_compute(nav_tris(nav_obj), full=False)
+    m = nav_summary(nav_obj)
     return ["no triangles"] if m is None else m["problems"]
 
 
@@ -314,7 +341,7 @@ def nav_soft_issues(nav_obj):
     it): separate parts, jump areas that don't join two walkable areas."""
     if nav_obj is None or nav_obj.type != "MESH":
         return []
-    m = nav_compute(nav_tris(nav_obj), full=False)
+    m = nav_summary(nav_obj)
     return [] if m is None else m["soft"]
 
 

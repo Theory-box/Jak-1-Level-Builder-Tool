@@ -1211,8 +1211,8 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
 
         layout.label(text=header_text, icon="ANIM")
         if etype and not opts.get("lump"):      # red = a required path is missing
-            from ..required import missing as _missing
-            for m in _missing(sel, scene):
+            from ..required import actor_missing
+            for m in actor_missing(sel, scene):
                 if m["panel"] == "path":
                     w = layout.row(); w.alert = True
                     w.label(text=f"Required — {m['label']}", icon="ERROR")

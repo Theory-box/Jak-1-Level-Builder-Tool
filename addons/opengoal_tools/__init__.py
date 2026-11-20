@@ -200,6 +200,8 @@ def register():
     register_texturing()
     _plat_grid.register_props()
     _distribute.register_props()
+    from .required import track_operators
+    track_operators(classes)          # every operator refreshes the level checks when it finishes
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)
