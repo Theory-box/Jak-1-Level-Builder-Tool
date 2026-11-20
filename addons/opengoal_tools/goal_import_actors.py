@@ -21,7 +21,7 @@ import re
 import bpy
 import mathutils
 
-M = 4096.0                    # game units per meter
+from .coords import M, R as _R, to_blender as game_to_blender
 DEG = 65536.0 / 360.0         # game units per degree
 
 # typed lump forms of a custom level .jsonc
@@ -42,7 +42,6 @@ PICKUPS = ("none", "eco-yellow", "eco-red", "eco-blue", "eco-green", "money", "f
 _DROP = {"name", "visvol"}
 
 # Blender (x, y, z) -> game (x, z, -y)
-_R = mathutils.Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 
 
 def _ltype(v):
@@ -402,7 +401,7 @@ def settle(o, etype, lumps, took):
         return em
     em = emitted()
     for k in [k for k in em if k not in lumps]:
-        for f in fields + traits:
+        for f in fields:
             lp = f.get("lump") if isinstance(f.get("lump"), dict) else {}
             lb = f.get("lump_bit") if isinstance(f.get("lump_bit"), dict) else {}
             if lb.get("key") == k and not lb.get("set_if_link"):
@@ -420,7 +419,7 @@ def settle(o, etype, lumps, took):
     if "options" in src:
         src["options"] = db.options_enum_lump(src["options"])
     return {k: lumps[k] for k in took
-            if (k in em and _norm(em[k]) != _norm(src[k])) or (k not in em and _writes(fields + traits, k))}
+            if (k in em and _norm(em[k]) != _norm(src[k])) or (k not in em and _writes(fields, k))}
 
 
 def _writes(fields, key):
@@ -484,10 +483,6 @@ def _eco_into(o, f, lp, tv):
 
 
 # ── Paths, volumes, links, custom rows ────────────────────────────────────────
-
-def game_to_blender(p):
-    return mathutils.Vector((p[0], -p[2], p[1]))
-
 
 def _make_path(ctx, o, name, tv, knots):
     """A poly curve through the path points, linked as the actor's path (main

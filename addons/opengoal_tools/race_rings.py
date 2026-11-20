@@ -22,6 +22,8 @@ import math
 import bpy
 import mathutils
 
+from .coords import to_game
+
 RING_RADIUS = 4.5     # m, the particle ring (the pass-through cylinder is 6 m)
 _PREVIEW_PROP = "og_preview_mesh"
 
@@ -52,10 +54,6 @@ def points(o) -> list:
     return out
 
 
-def _game(v):          # Blender -> game axes (x, z, -y)
-    return mathutils.Vector((v.x, v.z, -v.y))
-
-
 def _flat_norm(v):
     v = mathutils.Vector((v.x, 0.0, v.z))
     return v.normalized() if v.length > 1e-9 else v
@@ -63,7 +61,7 @@ def _flat_norm(v):
 
 def yaws(pts, extra=0.0) -> list:
     """Game rot-y (radians) per ring, without / with each point's tilt."""
-    g = [_game(p["co"]) for p in pts]
+    g = [to_game(p["co"]) for p in pts]
     n = len(g)
     out = []
     for i in range(n):
@@ -93,7 +91,7 @@ def straight_rings(pts) -> list:
     """Indices of middle rings whose neighbours are in a straight line through
     them: the game's bisector is then zero and it falls back to 90 deg (axis
     along game Z), so the ring is edge-on unless the line runs along Z."""
-    g = [_game(p["co"]) for p in pts]
+    g = [to_game(p["co"]) for p in pts]
     bad = []
     for i in range(1, len(g) - 1):
         a, b = _flat_norm(g[i - 1] - g[i]), _flat_norm(g[i + 1] - g[i])
@@ -264,7 +262,7 @@ def entities(o, base: dict) -> list:
     out = []
     for i, p in enumerate(pts):
         e = copy.deepcopy(base)
-        g = _game(p["co"])
+        g = to_game(p["co"])
         t = [round(g.x, 4), round(g.y, 4), round(g.z, 4)]
         e["trans"] = t
         e["quat"] = [0.0, 0.0, 0.0, 1.0]

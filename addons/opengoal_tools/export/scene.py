@@ -348,7 +348,7 @@ def collect_builtin_cameras(scene):
     """
     from .. import db as _db
     from .schema_emit import emit_schema_lumps
-    from .actors import _to_game_coords
+    from ..coords import to_game_vec4
     from . import path_modes as _pm
     cam_db = _db.cameras()
     fields = cam_db.get("fields", [])
@@ -414,7 +414,7 @@ def collect_builtin_cameras(scene):
                 knots, _kn = _pm.manual_knots(knots, [k.value for k in cam_obj.og_path_knots])
                 log(f"  [camera] {name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if knots and len(raw) <= _pm.MAX_CVERTS:
-                lump["campath"] = ["vector4m"] + [_to_game_coords(mathutils.Vector(p)) for p in raw]
+                lump["campath"] = ["vector4m"] + [to_game_vec4(p) for p in raw]
                 lump["campath-k"] = ["float"] + knots
             else:
                 log(f"  [camera] WARNING: {name} path mode needs 2+ path points "
@@ -651,7 +651,7 @@ def collect_spawns(scene):
     # Used to conjugate Blender rotation matrices into game space:
     #   game_rot = R_remap @ bl_rot @ R_remap^T
     # Verified: identity Blender empty → identity game quat (x:0 y:0 z:0 w:1).
-    R_remap = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
+    from ..coords import R as R_remap
 
     out = []
     for o in sorted(_level_objects(scene), key=lambda o: o.name):
@@ -786,7 +786,7 @@ def collect_load_boundaries(scene):
     OG Boundary Viz modifier (which offsets the wall in the object's local
     frame). Emitted in game units (metres * 4096): game_x = bx, game_z = -by.
     """
-    M = 4096.0
+    from ..coords import M
 
     out = []
     for o in _level_objects(scene):

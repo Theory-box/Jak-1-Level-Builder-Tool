@@ -12,7 +12,7 @@ import re
 import bpy
 import mathutils
 
-M = 4096.0
+from .coords import M, R as _R, to_blender as _bl
 
 
 def num(f, default=0.0):
@@ -59,12 +59,6 @@ def _to_text(f):
     return str(f)
 
 
-def _bl(p):
-    """Game (x, y, z) in meters -> Blender."""
-    return mathutils.Vector((p[0], -p[2], p[1]))
-
-
-_R = mathutils.Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 
 
 def _cam_rot(rows):

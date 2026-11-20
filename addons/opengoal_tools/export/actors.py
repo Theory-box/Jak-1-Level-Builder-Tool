@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from ..coords import to_game_vec4
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
@@ -70,13 +71,6 @@ from .volumes import (
 #   - A CURVE (one waypoint per spline control point, in spline order;
 #     bezier handles are ignored, only the main control points are used)
 # ═══════════════════════════════════════════════════════════════════════════
-
-
-def _to_game_coords(world_vec):
-    """Blender world-space → Jak game coords (Y-up, axes swapped).
-    Returns a 4-element list ready for the path lump's vector4m format."""
-    return [round(world_vec.x, 4), round(world_vec.z, 4),
-            round(-world_vec.y, 4), 1.0]
 
 
 def _make_path_knots(n):
@@ -252,7 +246,7 @@ def collect_actors(scene, depsgraph=None):
         # produces the correct game-space orientation. The previous negate-xyz
         # was erroneously borrowed from the camera system and inverted facing for
         # all non-0/180 angles (same fix already applied to the spawn path).
-        _R  = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
+        from ..coords import R as _R
         _m3 = o.matrix_world.to_3x3()
         _gq = (_R @ _m3 @ _R.transposed()).to_quaternion()
         aqx = round(_gq.x, 6)
@@ -278,7 +272,7 @@ def collect_actors(scene, depsgraph=None):
         _ppts, path_knots, _pmode, _pwarn = _pm.build(
             _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
             linear_only=_schema_db.path_linear_only(etype))
-        path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
+        path_pts = [to_game_vec4(p) for p in _ppts]
         if _pwarn and path_pts:
             log(f"  [path] {o.name}: {_pwarn}")
         if path_knots and getattr(o, "og_path_knots_manual", False):
@@ -490,7 +484,7 @@ def collect_actors(scene, depsgraph=None):
                 _xk, _kn = _pm.manual_knots(_xk, [k.value for k in _xp.knots])
                 log(f"  [{_xn}-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if _xpts:
-                lump[_xn] = ["vector4m" + _xkf] + [_to_game_coords(mathutils.Vector(p)) for p in _xpts]
+                lump[_xn] = ["vector4m" + _xkf] + [to_game_vec4(p) for p in _xpts]
                 lump.pop(_xn + "-k", None)
                 if _xk:
                     lump[_xn + "-k"] = ["float" + _xkf] + _xk
