@@ -44,7 +44,15 @@
   actors / Jak directly. (TFL's examples predate time of day; not needed.)
 - New: camera distance (vis-dist, default 100 m): farther from the camera the light does nothing.
 
-## Built (not tested yet)
+## Tested (test-v0.3.8, 2026-11-20, 1ce1855)
+_claude_tmp/bl_actorlight.py (export: lumps, shared file, game.gp, .gd, patch once) + al_compile.sh +
+tasks/al_ingame.py with al_q.txt / al_q3.txt (REPL): hook set, Jak strength 1 at 5 m (cylinder), key light
+into the free dir2 slot, ambient +0.5, crate (alt-actor) lit, Jak shadow turned half-way away from the
+light, 'on / 'trigger / timers, negative intensities halve levels, time of day 18-8 off at 12 / on at 20,
+game running with the light on. (A babak without a nav-mesh crashed the first test level: not the light.)
+Not checked: how it looks (no screenshots), path / volume, trigger-actor death, Actor Rotation.
+
+## Built
 - subtypes/actor-light.gc (";; edits: actor-light", ";; place: shared"): type lt-actor-light, registry of
   handles (define-perm, 32 max), *actor-light-hook* set every frame by each light (a level unloading
   clears it on deactivate), hook = strength per light (min / max / cylinder / path closest point /
