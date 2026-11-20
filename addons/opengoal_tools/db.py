@@ -144,8 +144,13 @@ def reload() -> dict:
     Primarily for dev workflows — the addon rebinds its derived tables lazily."""
     global DB
     DB = _load()
-    _CACHE.clear()
+    invalidate()
     return DB
+
+
+def invalidate() -> None:
+    """Drop the cached lookups (after changing DB in memory, e.g. tests)."""
+    _CACHE.clear()
 
 
 # ── Caches ──────────────────────────────────────────────────────────────────
