@@ -29,13 +29,3 @@ ALL_CLASSES = (
     *_MISC_OPS,
     *_IMPORTS_OPS,
 )
-
-# Re-export every class by name for `from .operators import OG_OT_Foo`
-# compatibility with any consumer of the old single-module layout.
-from .spawn   import *
-from .level   import *
-from .actors  import *
-from .links   import *
-from .build   import *
-from .misc    import *
-from .imports import *

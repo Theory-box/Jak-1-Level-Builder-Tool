@@ -1019,8 +1019,7 @@ class OGBattleLurker(bpy.types.PropertyGroup):
 class OGWaypointSource(bpy.types.PropertyGroup):
     """One entry in an actor's reorderable waypoint list.
 
-    Each entry points to either an EMPTY (single waypoint, the legacy
-    _wp_NN style) or a CURVE (each spline point becomes a waypoint at
+    Each entry points to either an EMPTY (single waypoint) or a CURVE (each spline point becomes a waypoint at
     export). The collection's order is the export order — a curve in
     the middle expands its points in place.
 

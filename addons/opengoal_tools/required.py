@@ -30,13 +30,9 @@ def actor_etype(o):
     return parts[1] if len(parts) >= 3 else None
 
 
-def _has_path(o, name, scene, names=None):
+def _has_path(o, name):
     if name == "path":
-        if len(getattr(o, "og_waypoint_sources", ())):
-            return True
-        prefix = o.name + "_wp_"          # legacy waypoint empties
-        return any(n.startswith(prefix) and n[len(prefix):].isdigit()
-                   for n in (names if names is not None else (ob.name for ob in scene.objects)))
+        return bool(len(getattr(o, "og_waypoint_sources", ())))
     return any(p.name.strip() == name and len(p.sources) for p in getattr(o, "og_extra_paths", ()))
 
 
@@ -75,7 +71,7 @@ def missing_bank(o, scene, banks=None):
     return []
 
 
-def missing(o, scene=None, names=None, banks=None):
+def missing(o, scene=None, banks=None):
     """Missing required fields of an actor (and the sound bank a sound
     emitter / particle spawner needs): [{"panel": "links" | "path" | "sound",
     "key": lump / bank name, "label": text}] (empty when nothing is missing)."""
@@ -122,7 +118,7 @@ def missing(o, scene=None, names=None, banks=None):
             out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}"})
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
-            if not _has_path(o, name, scene, names):
+            if not _has_path(o, name):
                 help_text = _db.panel_option(et, "path", "path_help", {}).get(name, "")
                 out.append({"panel": "path", "key": name, "label": f"{name}: {help_text}" if help_text else f"{name} (path)"})
     return out + missing_bank(o, scene, banks)
@@ -412,12 +408,11 @@ def level_missing(scene):
         from .collections import _level_objects
         res = {}
         objs = _level_objects(scene)
-        wp = {ob.name for ob in objs if "_wp_" in ob.name}     # legacy waypoints, looked up once
         banks = _sound_banks(scene)
         senders = trigger_senders(scene, objs)
         sres = {}
         for o in objs:
-            m = missing(o, scene, wp, banks)
+            m = missing(o, scene, banks=banks)
             if m:
                 res[o.name] = m
             s = soft(o, scene, banks, senders)

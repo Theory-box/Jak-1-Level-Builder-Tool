@@ -472,35 +472,9 @@ class OG_OT_AddWaypoint(Operator):
             src.obj = empty
             xpath.sources_index = len(xpath.sources) - 1
         elif actor_obj is not None:
-            try:
-                # If the actor has legacy _wp_NN empties but the collection
-                # is empty, auto-migrate them first. Without this step the
-                # export (which reads from the collection when non-empty)
-                # would silently drop all the legacy waypoints once the
-                # collection gets its first entry. Excludes the empty we
-                # just created so it can be appended last in name order.
-                if len(actor_obj.og_waypoint_sources) == 0:
-                    prefix = actor_obj.name + "_wp_"
-                    legacy = sorted(
-                        [o for o in _level_objects(ctx.scene)
-                         if o.name.startswith(prefix) and o.type == "EMPTY"
-                         and o.name != empty.name
-                         and o.name[len(prefix):].isdigit()],
-                        key=lambda o: o.name
-                    )
-                    for lwp in legacy:
-                        src = actor_obj.og_waypoint_sources.add()
-                        src.obj = lwp
-                # Append the newly-created waypoint
-                src = actor_obj.og_waypoint_sources.add()
-                src.obj = empty
-                actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
-            except AttributeError:
-                # Actor doesn't have the new properties yet — possible if the
-                # addon was registered without our properties registered, or
-                # during a version mismatch. Fail silently; the legacy export
-                # path will still find this empty by name.
-                pass
+            src = actor_obj.og_waypoint_sources.add()
+            src.obj = empty
+            actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
 
         return {"FINISHED"}
 
@@ -890,43 +864,6 @@ class OG_OT_RemoveExtraPath(Operator):
         return {"FINISHED"}
 
 
-class OG_OT_WaypointSourceMigrate(Operator):
-    """One-time migration for actors with legacy _wp_NN empties but no
-    og_waypoint_sources collection. Walks the empties in name order and
-    adds each to the collection, so the user can then reorder them or
-    interleave curves."""
-    bl_idname      = "og.waypoint_source_migrate"
-    bl_label       = "Migrate Waypoints to List"
-    bl_description = "Populate the reorderable list from this actor's existing _wp_NN empties"
-    bl_options     = {"REGISTER", "UNDO"}
-
-    actor_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        actor = bpy.data.objects.get(self.actor_name)
-        if actor is None:
-            self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
-            return {"CANCELLED"}
-        if len(actor.og_waypoint_sources) > 0:
-            self.report({"WARNING"}, "Waypoint list already has entries — not migrating")
-            return {"CANCELLED"}
-        prefix = actor.name + "_wp_"
-        wps = sorted(
-            [o for o in _level_objects(ctx.scene)
-             if o.name.startswith(prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-        if not wps:
-            self.report({"WARNING"}, "No legacy waypoints found to migrate")
-            return {"CANCELLED"}
-        for wp in wps:
-            src = actor.og_waypoint_sources.add()
-            src.obj = wp
-        actor.og_waypoint_sources_index = 0
-        self.report({"INFO"}, f"Migrated {len(wps)} waypoint{'s' if len(wps) != 1 else ''} for {actor.name}")
-        return {"FINISHED"}
-
-
 class OG_OT_LinkVolume(Operator):
     """Append a link from a VOL_ mesh to a camera, checkpoint, or nav-enemy.
     Select the VOL_ mesh first, then shift-click the target, then click Link.
@@ -1180,7 +1117,6 @@ CLASSES = (
     OG_OT_AddExtraPath,
     OG_OT_RemoveExtraPath,
     OG_OT_PathKnotsPreset,
-    OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,
     OG_OT_CleanOrphanedLinks,

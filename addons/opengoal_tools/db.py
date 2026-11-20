@@ -738,7 +738,7 @@ def vertex_export_excluded_etypes() -> list[str]:
 
 def ai_type(etype: str) -> str:
     """The actor's AI type. Derived from `parent`, except eco-collectable
-    pickups which are treated as 'prop' (matches the legacy ENTITY_DEFS rule)."""
+    pickups which are treated as 'prop' (the ENTITY_DEFS rule)."""
     a = find_actor(etype) or {}
     parent = a.get("parent", "prop")
     return "prop" if parent == "eco-collectable" else parent

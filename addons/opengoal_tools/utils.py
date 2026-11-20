@@ -205,8 +205,6 @@ _PICKUP_CATS    = {"Pickups"}
 _OBSTACLE_CATS  = {"Obstacles"}
 _BUTTONDOOR_CATS = {"Buttons and Doors"}
 _VISUALS_CATS   = {"Visuals"}
-# Alias kept for backward compatibility with any in-flight imports
-_PROP_CATS      = _INTERACTIVE_CATS
 
 
 

@@ -36,7 +36,6 @@ from ..collections import (
     _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
     _next_free_level_index, _level_index_in_use,
     _vis_nick_in_use, _suggest_unique_vis_nick, _resolve_vis_nick,
-    _ensure_level_index, _migrate_all_level_indices,
 )
 from ..export import (
     _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
@@ -530,8 +529,6 @@ class OG_OT_EditLevel(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
-        # Lazy-migrate every level missing og_level_index so collision checks see real values
-        _migrate_all_level_indices(ctx.scene)
         self.level_name    = str(col.get("og_level_name", col.name))
         self.base_id       = int(col.get("og_base_id", 10000))
         self.level_index   = int(col.get("og_level_index", 100))

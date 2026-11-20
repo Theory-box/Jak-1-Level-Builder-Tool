@@ -42,16 +42,3 @@ ALL_CLASSES = (
     *_LIGHTING_CLASSES,
     *_IMPORTS_CLASSES,
 )
-
-# Re-export every class by name so legacy `from .panels import OG_PT_Foo`
-# keeps working during the split transition. Once the addon's __init__.py
-# is updated to use ALL_CLASSES, these re-exports can be cleaned up.
-from .level import *
-from .spawn import *
-from .selected import *
-from .actor import *
-from .actor_fields import *
-from .scene import *
-from .tools import *
-from .lighting import *
-from .imports import *

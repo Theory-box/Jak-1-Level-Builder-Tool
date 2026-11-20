@@ -129,26 +129,11 @@ def _vol_planes(vol_obj):
 
 
 def _vol_links(vol):
-    """Return the og_vol_links CollectionProperty on a volume mesh.
-    Migrates legacy single-string og_vol_link if present.
-    Always safe to call — returns the live collection.
-    """
-    if vol is None:
-        return None
-    # Migration: legacy single-string format -> single-entry collection
-    legacy = vol.get("og_vol_link", "")
-    if legacy and len(vol.og_vol_links) == 0:
-        entry = vol.og_vol_links.add()
-        entry.target_name = legacy
-        entry.behaviour   = "cue-chase"
-        try:
-            del vol["og_vol_link"]
-        except Exception:
-            pass
-    return vol.og_vol_links
+    """The og_vol_links collection of a volume mesh (None for no volume)."""
+    return None if vol is None else vol.og_vol_links
 
 def _vol_link_targets(vol):
-    """Return list of target_name strings for a volume. Migrates if needed."""
+    """Return list of target_name strings for a volume."""
     links = _vol_links(vol)
     if links is None:
         return []

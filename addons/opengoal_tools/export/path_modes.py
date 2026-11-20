@@ -262,20 +262,9 @@ def straight_bezier(points: list) -> tuple[list, list[float]]:
 
 def gather_sources(obj) -> list[dict]:
     """Read an object's main path (og_waypoint_sources) into build() sources,
-    in Blender world space. Falls back to legacy <name>_wp_NN empties."""
-    import bpy
+    in Blender world space."""
     sources = getattr(obj, "og_waypoint_sources", None)
-    if sources and len(sources) > 0:
-        return gather_from(sources)
-    out = []
-    prefix = obj.name + "_wp_"
-    # Legacy main-path empties are exactly <name>_wp_NN (extra paths use
-    # <name>_wp_<lump>_NN and must not leak in here).
-    for o in sorted((o for o in bpy.data.objects if o.name.startswith(prefix) and o.type == "EMPTY"
-                     and o.name[len(prefix):].isdigit()),
-                    key=lambda o: o.name):
-        out.append({"kind": "point", "co": tuple(o.matrix_world.translation)})
-    return out
+    return gather_from(sources) if sources else []
 
 
 def gather_from(sources) -> list[dict]:

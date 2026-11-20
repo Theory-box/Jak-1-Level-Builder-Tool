@@ -1,12 +1,7 @@
 # ---------------------------------------------------------------------------
 # data.py — OpenGOAL Level Tools
-# COMPATIBILITY LAYER. All legacy symbols (ENTITY_DEFS, 
-# LEVEL_BANKS, ALL_SFX_ITEMS, etc.) are now derived at import time from
-# db.py, which reads jak1_game_database.jsonc.
-#
-# This keeps existing `from .data import X` statements working unchanged while
-# the actual game data lives in the database file. Post-migration, callers
-# should import from `.db` directly and this module gets deleted.
+# Tables built at import time from db.py (jak1_game_database.jsonc):
+# ENTITY_DEFS, LEVEL_BANKS, ALL_SFX_ITEMS, the spawn enums, etc.
 #
 # No bpy imports here — safe to import anywhere.
 # ---------------------------------------------------------------------------
@@ -28,7 +23,7 @@ pat_modes    = [(m["id"], m["label"], "", m["value"]) for m in _pat["modes"]]
 # ENTITY_DEFS — reconstructed from db.actors()
 # ═══════════════════════════════════════════════════════════════════════════
 def _entity_info_from_actor(a: dict) -> dict:
-    """Reverse-build the legacy ENTITY_DEFS dict from one Actor record."""
+    """Build the ENTITY_DEFS entry of one Actor record."""
     info: dict = {"label": a["label"], "cat": a["category"]}
     if a.get("art_group"):    info["ag"] = a["art_group"]
     # extra_art_groups: art groups Jak/target needs bundled with the level
@@ -96,9 +91,7 @@ def _build_entity_enum():
         cats.setdefault(cat, []).append((etype, info))
     order = ["Enemies", "Bosses", "NPCs", "Pickups", "Platforms",
              "Interactive Objects", "Obstacles", "Buttons and Doors", "Visuals",
-             # Legacy aliases — kept so actors that didn't receive a new
-             # category yet (or future additions using old names) still show.
-             "Props", "Objects", "Debug"]
+             "Props", "Objects", "Debug", "Effects"]
     # The lists above only set display ORDER. Every DB actor must end up in this
     # enum (spawning sets entity_type to the picked etype), so any category or
     # tpage group not named above is appended rather than dropped. Only the
@@ -169,8 +162,6 @@ PICKUP_ENUM_ITEMS       = _build_cat_enum({"Pickups"})
 OBSTACLE_ENUM_ITEMS     = _build_cat_enum({"Obstacles"})
 BUTTONDOOR_ENUM_ITEMS   = _build_cat_enum({"Buttons and Doors"})
 VISUALS_ENUM_ITEMS      = _build_cat_enum({"Visuals"})
-# Alias kept for backward compatibility
-PROP_ENUM_ITEMS         = INTERACTIVE_ENUM_ITEMS
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -302,8 +293,6 @@ _pickup_enum_cb       = _make_filtered_enum(PICKUP_ENUM_ITEMS,       {"Pickups"}
 _obstacle_enum_cb     = _make_filtered_enum(OBSTACLE_ENUM_ITEMS,     {"Obstacles"})
 _buttondoor_enum_cb   = _make_filtered_enum(BUTTONDOOR_ENUM_ITEMS,   {"Buttons and Doors"})
 _visuals_enum_cb      = _make_filtered_enum(VISUALS_ENUM_ITEMS,      {"Visuals"})
-# Alias
-_prop_enum_cb         = _interactive_enum_cb
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -475,37 +464,6 @@ ETYPE_TPAGES: dict[str, list] = {
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Per-level tpage arrays (legacy: BEACH_TPAGES, JUNGLE_TPAGES, …)
-# ═══════════════════════════════════════════════════════════════════════════
-def _level_tpages(name: str) -> list:
-    lvl = _db.level(name)
-    return list(lvl["tpages"]) if lvl else []
-
-
-BEACH_TPAGES     = _level_tpages("beach")
-JUNGLE_TPAGES    = _level_tpages("jungle")
-JUNGLEB_TPAGES   = _level_tpages("jungleb")
-SWAMP_TPAGES     = _level_tpages("swamp")
-SNOW_TPAGES      = _level_tpages("snow")
-SUNKEN_TPAGES    = _level_tpages("sunken")
-SUB_TPAGES       = _level_tpages("sub")
-CAVE_TPAGES      = _level_tpages("maincave")
-ROBOCAVE_TPAGES  = _level_tpages("robocave")
-DARK_TPAGES      = _level_tpages("darkcave")
-OGRE_TPAGES      = _level_tpages("ogre")
-MISTY_TPAGES     = _level_tpages("misty")
-LAVATUBE_TPAGES  = _level_tpages("lavatube")
-FIRECANYON_TPAGES= _level_tpages("firecanyon")
-ROLLING_TPAGES   = _level_tpages("rolling")
-TRAINING_TPAGES  = _level_tpages("training")
-FINALBOSS_TPAGES = _level_tpages("finalboss")
-CITADEL_TPAGES   = _level_tpages("citadel")
-VILLAGE1_TPAGES  = _level_tpages("village1")
-VILLAGE2_TPAGES  = _level_tpages("village2")
-VILLAGE3_TPAGES  = _level_tpages("village3")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
 # Music + audio
 # ═══════════════════════════════════════════════════════════════════════════
 MUSIC_FLAVA_TABLE: dict[str, list] = _db.music_flava_table()
@@ -590,7 +548,7 @@ def _lump_ref_for_etype(etype):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ACTOR_LINK_DEFS — reconstruct legacy shape from Actors[].link_slots
+# ACTOR_LINK_DEFS — link slots per etype
 # ═══════════════════════════════════════════════════════════════════════════
 ACTOR_LINK_DEFS: dict[str, list] = {}
 for _actor in _db.all_actors_including_orphans():

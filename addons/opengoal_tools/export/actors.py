@@ -69,9 +69,6 @@ from .volumes import (
 #   - An EMPTY (single waypoint at the empty's world position)
 #   - A CURVE (one waypoint per spline control point, in spline order;
 #     bezier handles are ignored, only the main control points are used)
-#
-# If the collection is empty, fall back to the legacy `<actor>_wp_NN` empty
-# name-grep so pre-existing levels still export correctly.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -117,40 +114,6 @@ def _curve_points_world(curve_obj):
             for pt in spline.points:
                 local = mathutils.Vector(pt.co[:3])
                 yield M @ local
-
-
-def _collect_waypoint_points(actor_obj):
-    """Return the actor's path as a list of game-space [x,y,z,w] vectors.
-
-    Reads og_waypoint_sources if populated; otherwise falls back to the
-    legacy name-grep so older levels with manually-placed _wp_NN empties
-    continue to export without migration.
-    """
-    points = []
-    sources = getattr(actor_obj, "og_waypoint_sources", None)
-    if sources and len(sources) > 0:
-        # New collection-driven path
-        for src in sources:
-            src_obj = src.obj
-            if src_obj is None or src_obj.name not in bpy.data.objects:
-                continue
-            if src_obj.type == "EMPTY":
-                points.append(_to_game_coords(src_obj.matrix_world.translation))
-            elif src_obj.type == "CURVE":
-                for world_co in _curve_points_world(src_obj):
-                    points.append(_to_game_coords(world_co))
-    else:
-        # Legacy fallback — name-based discovery of <actor>_wp_NN empties.
-        wp_prefix = actor_obj.name + "_wp_"
-        wp_objects = sorted(
-            [o for o in bpy.data.objects
-             if o.name.startswith(wp_prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-        for wp in wp_objects:
-            points.append(_to_game_coords(wp.matrix_world.translation))
-
-    return points
 
 
 def movie_pos_vector(e):
@@ -305,8 +268,7 @@ def collect_actors(scene, depsgraph=None):
         # Collect waypoints. Reads from the actor's og_waypoint_sources
         # collection (Phase 4 of waypoint-link-source) — each source is an
         # empty (single point) or a curve (one point per spline control
-        # point). Falls back to legacy <actor>_wp_NN name-grep for older
-        # levels with no collection populated.
+        # point).
         # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
         # decides the control points and, for curve-control actors, path-k.
         # Actors flagged path_linear_only in the DB (path-control readers that
@@ -416,7 +378,7 @@ def collect_actors(scene, depsgraph=None):
         # These are merged before custom lump rows so rows can override them.
         link_lumps = _build_actor_link_lumps(o, etype)
         # Keys that must outrank the schema: computed entity links and (below)
-        # user custom lump rows. The schema overrides only legacy hardcoded values.
+        # user custom lump rows. The schema overrides only the hardcoded values.
         _protected_keys = set(link_lumps.keys())
         for lkey, lval in link_lumps.items():
             lump[lkey] = lval
@@ -445,7 +407,7 @@ def collect_actors(scene, depsgraph=None):
 
         # ── Schema-driven lumps (every actor) ────────────────────────────────
         # The fields of all the actor's panels (its own + its parents') drive
-        # its value lumps directly. Authoritative over the legacy hardcoded
+        # its value lumps directly. Authoritative over the hardcoded
         # branches above, but yields to computed entity links and to explicit
         # user custom lump rows (both in _protected_keys).
         _arec = _schema_db.find_actor(etype)

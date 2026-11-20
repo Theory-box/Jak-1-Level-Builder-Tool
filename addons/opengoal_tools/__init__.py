@@ -312,8 +312,6 @@ def register():
     # Reorderable waypoint sources — registered after OGWaypointSource is in
     # the classes tuple. Each ACTOR_ empty holds an ordered list of links to
     # empties (single waypoint) or curves (each control point is a waypoint).
-    # When the collection is empty, export falls back to the legacy
-    # `<actor>_wp_NN` name-grep so existing levels keep working unchanged.
     bpy.types.Object.og_waypoint_sources       = bpy.props.CollectionProperty(type=OGWaypointSource)
     bpy.types.Object.og_waypoint_sources_index = bpy.props.IntProperty(
         name="Active Waypoint Source", default=0)

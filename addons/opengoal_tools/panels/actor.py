@@ -1137,7 +1137,7 @@ def draw_knot_editor(layout, owner, lump_name, actor_name, path_index, auto_knot
 
 class OG_UL_WaypointSources(bpy.types.UIList):
     """List of waypoint source entries for an actor. Each entry points to
-    either an EMPTY (legacy _wp_NN style, single point) or a CURVE (each
+    either an EMPTY (single point) or a CURVE (each
     control point becomes one waypoint at export). The list's order is the
     export order. Rendered with a vertical sidebar of frame/delete/move
     buttons in OG_PT_ActorWaypoints."""
@@ -1244,21 +1244,15 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         einfo  = ENTITY_DEFS.get(etype, {}) if etype else {}
 
         sources = sel.og_waypoint_sources
-        legacy_wps = _legacy_wps(sel, scene)
-        n_sources = len(sources)
 
         # Total point count for the header — sum across the list, expanding
         # curves to their spline-point counts.
-        if n_sources > 0:
-            total_pts = sum(
-                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
-                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
-                for s in sources
-            )
-            header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
-        else:
-            n_legacy = len(legacy_wps)
-            header_text = f"Path  ({n_legacy} legacy waypoint{'s' if n_legacy != 1 else ''})"
+        total_pts = sum(
+            (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
+             else (1 if s.obj and s.obj.type == "EMPTY" else 0))
+            for s in sources
+        )
+        header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
 
         layout.label(text=header_text, icon="ANIM")
         if etype and not opts.get("lump"):      # red = a required path is missing
@@ -1267,18 +1261,6 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
                 if m["panel"] == "path":
                     w = layout.row(); w.alert = True
                     w.label(text=f"Required — {m['label']}", icon="ERROR")
-
-        # If the new collection is empty and legacy _wp_NN empties exist,
-        # offer a one-click migration. Skips Path B which stays on the
-        # legacy system for now.
-        if n_sources == 0 and legacy_wps:
-            box = layout.box()
-            box.label(text=f"Found {len(legacy_wps)} legacy waypoint empties",
-                      icon="INFO")
-            op = box.operator("og.waypoint_source_migrate",
-                              text="Migrate to reorderable list",
-                              icon="FILE_REFRESH")
-            op.actor_name = sel.name
 
         # List + sidebar (the new UI).
         list_row = layout.row()
@@ -1366,11 +1348,7 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # path), "min-points" (e.g. plat-button / sync platforms need 2).
         min_pts = int(opts.get("min-points") or (_db.panel_option(etype, "path", "min-points", 1) if etype else 1) or 1)
         if einfo.get("needs_path") or min_pts > 1:
-            pt_count = sum(
-                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
-                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
-                for s in sources
-            ) if n_sources else len(legacy_wps)
+            pt_count = total_pts
             if pt_count < min_pts:
                 if einfo.get("needs_path"):
                     layout.label(text=f"⚠ Needs ≥ {min_pts} waypoint{'s' if min_pts > 1 else ''} or will crash",
@@ -1461,19 +1439,6 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
             op.actor_name = sel.name
         if einfo.get("needs_pathb") and not has_b:
             layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
-
-def _legacy_wps(actor_obj, scene):
-    """Return the list of legacy <actor>_wp_NN empty objects in name order.
-    Used to show the migration button and as the fallback path count."""
-    prefix = actor_obj.name + "_wp_"
-    return sorted(
-        [o for o in _level_objects(scene)
-         if o.name.startswith(prefix) and o.type == "EMPTY"
-         and o.name[len(prefix):].isdigit()],     # not extra-path empties
-        key=lambda o: o.name
-    )
-
-
 
 _EDITED_ITEMS: list = []
 
@@ -1679,7 +1644,6 @@ _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_fact_options",    # Options
     "OG_PT_actor_links",           # Entity Links
     "OG_PT_actor_visibility",
-    "OG_PT_actor_scale",
 )
 
 

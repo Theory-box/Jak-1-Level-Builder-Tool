@@ -7,26 +7,6 @@
 import bpy
 from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES
 
-# Mapping from collection custom-property keys to OGProperties attribute names.
-# Shared by _get_level_prop and _set_level_prop — defined once here.
-_LEVEL_PROP_KEY_MAP = {
-    "og_level_name":        "level_name",
-    "og_base_id":           "base_id",
-    "og_level_index":       "level_index",
-    "og_bottom_height":     "bottom_height",
-    "og_vis_nick_override": "vis_nick_override",
-    "og_sound_bank_1":      "sound_bank_1",
-    "og_sound_bank_2":      "sound_bank_2",
-    "og_music_bank":        "music_bank",
-    "og_mood":              "mood",
-    "og_fog_override_enabled": "fog_override_enabled",
-    "og_fog_color":         "fog_color",
-    "og_fog_start":         "fog_start",
-    "og_fog_end":           "fog_end",
-    "og_fog_max":           "fog_max",
-    "og_fog_min":           "fog_min",
-}
-
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
 _COL_PATH_SPAWNABLE_PLATFORMS = ("Spawnables", "Platforms")
 _COL_PATH_SPAWNABLE_PROPS     = ("Spawnables", "Props & Objects")
@@ -95,10 +75,7 @@ def _all_level_collections(scene):
 
 
 def _active_level_col(scene):
-    """Return the active level collection, or None if not in collection mode.
-
-    If no collection has og_is_level=True, returns None → fallback to v1.1.0.
-    """
+    """Return the active level collection, or None when the file has no level."""
     levels = _all_level_collections(scene)
     if not levels:
         return None
@@ -195,15 +172,11 @@ def _recursive_col_objects(col, exclude_no_export=True):
 
 
 def _level_objects(scene, level_col=None, exclude_no_export=True):
-    """Return all objects belonging to the active level collection.
-
-    Falls back to scene.objects if not in collection mode (backward compat).
-    """
+    """Return all objects belonging to the active level collection ([] without a level)."""
     if level_col is None:
         level_col = _active_level_col(scene)
     if level_col is None:
-        # Fallback: v1.1.0 behaviour — all scene objects
-        return list(scene.objects)
+        return []
     return _recursive_col_objects(level_col, exclude_no_export=exclude_no_export)
 
 
@@ -287,12 +260,12 @@ def _ensure_sub_collection(level_col, *path):
 def _link_object_to_sub_collection(scene, obj, *col_path):
     """Link an object into the correct sub-collection of the active level.
 
-    If not in collection mode, does nothing (object stays wherever Blender put it).
+    Without a level, does nothing (object stays wherever Blender put it).
     Unlinks from Scene Collection root if linked there.
     """
     level_col = _active_level_col(scene)
     if level_col is None:
-        return  # v1.1.0 fallback — no auto-organization
+        return
     target = _ensure_sub_collection(level_col, *col_path)
     # Link to target if not already there
     if obj.name not in target.objects:
@@ -380,32 +353,21 @@ def _classify_object(obj):
 
 
 def _get_level_prop(scene, key, default=None):
-    """Read a level property — from active collection or scene.og_props fallback."""
+    """Read a property of the active level (default without a level)."""
     col = _active_level_col(scene)
     if col is not None:
         return col.get(key, _LEVEL_COL_DEFAULTS.get(key, default))
-    # Fallback: read from scene.og_props
-    props = scene.og_props
-    attr = _LEVEL_PROP_KEY_MAP.get(key)
-    if attr and hasattr(props, attr):
-        return getattr(props, attr)
     return default
 
 
 def _set_level_prop(scene, key, value):
-    """Write a level property — to active collection or scene.og_props fallback."""
+    """Write a property of the active level (nothing without a level)."""
     col = _active_level_col(scene)
     if col is not None:
         col[key] = value
         # Keep collection name in sync with level name
         if key == "og_level_name":
             col.name = str(value).strip().lower().replace(" ", "-") or "unnamed-level"
-        return
-    # Fallback: write to scene.og_props
-    props = scene.og_props
-    attr = _LEVEL_PROP_KEY_MAP.get(key)
-    if attr and hasattr(props, attr):
-        setattr(props, attr, value)
 
 
 # Dynamic enum callback for active_level selector
@@ -533,24 +495,6 @@ def _suggest_unique_vis_nick(scene, base_name, exclude_col=None):
             return candidate
     return plain
 
-
-def _ensure_level_index(scene, col):
-    """Lazy migration: assign og_level_index to col if missing."""
-    if col is None:
-        return
-    idx = col.get("og_level_index", None)
-    if not isinstance(idx, int) or idx <= 0:
-        col["og_level_index"] = _next_free_level_index(scene, exclude_col=col)
-
-
-def _migrate_all_level_indices(scene):
-    """Walk every level collection and assign og_level_index where missing.
-
-    Ensures multi-level .blend files created before this field existed don't
-    all collide on the same default. Safe to call repeatedly.
-    """
-    for c in _all_level_collections(scene):
-        _ensure_level_index(scene, c)
 
 
 # ---------------------------------------------------------------------------
