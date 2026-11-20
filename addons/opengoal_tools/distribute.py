@@ -181,13 +181,14 @@ _PENDING = set()
 
 def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     """Only platforms whose own settings or path were edited are looked at."""
-    from .race_rings import changed, touched
+    from .race_rings import changed, touched, candidates
     if objs is None:
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
-    todo = [o.name for o in scene.objects
-            if o.type == "EMPTY" and o.name.startswith("ACTOR_") and not o.get("og_preview_mesh") and o.name not in _PENDING
+    obs = (bpy.data.objects.get(n) for n in candidates()[1])
+    todo = [o.name for o in obs
+            if o is not None and o.name not in _PENDING and o.name in scene.objects
             and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
             and allowed(actor_etype(o) or "") and _differs(o)]
     if not todo:
@@ -210,6 +211,8 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
 
 
 def _upd(self, ctx):
+    from .race_rings import invalidate_candidates
+    invalidate_candidates()              # og_place_on_path may have changed
     if actor_etype(self):
         try:
             apply(ctx, self)

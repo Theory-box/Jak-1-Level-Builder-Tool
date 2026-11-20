@@ -198,6 +198,31 @@ def changed(depsgraph):
     return objs, curves
 
 
+_CAND = {"n": -1, "rings": [], "place": []}
+
+
+def candidates():
+    """(race-ring actor names, place-on-path actor names): the only actors the
+    depsgraph handlers look at, found by one scan when the number of objects
+    changes (or after invalidate_candidates())."""
+    n = len(bpy.data.objects)
+    if _CAND["n"] != n:
+        rings, place = [], []
+        for o in bpy.data.objects:
+            if o.type != "EMPTY" or not o.name.startswith("ACTOR_") or o.get(_PREVIEW_PROP):
+                continue
+            if o.name.startswith("ACTOR_race-ring_"):
+                rings.append(o.name)
+            if getattr(o, "og_place_on_path", False):
+                place.append(o.name)
+        _CAND.update(n=n, rings=rings, place=place)
+    return _CAND["rings"], _CAND["place"]
+
+
+def invalidate_candidates():
+    _CAND["n"] = -1
+
+
 def touched(o, objs, curves) -> bool:
     """The actor itself, one of its path empties / curves, or a curve's points."""
     if o.name in objs:
@@ -216,8 +241,9 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
-    todo = [o.name for o in scene.objects
-            if o.name.startswith("ACTOR_race-ring_") and not o.get(_PREVIEW_PROP) and o.name not in _PENDING
+    obs = (bpy.data.objects.get(n) for n in candidates()[0])
+    todo = [o.name for o in obs
+            if o is not None and o.name not in _PENDING and o.name in scene.objects
             and getattr(o, "og_special_preview", True)
             and touched(o, objs, curves) and uses_rings(o) and _differs(o)]
     if todo:
