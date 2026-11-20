@@ -686,7 +686,9 @@ def _selection_signature():
     ctx = bpy.context
     act = getattr(getattr(ctx, "view_layer", None), "objects", None)
     act = act.active.name if act is not None and act.active is not None else ""
-    return act, tuple(o.name for o in ctx.selected_objects), len(bpy.data.objects)
+    sel = ctx.selected_objects
+    # a selected object that is (or just became) a preview counts as a change
+    return act, tuple(o.name for o in sel), any(o.get(_PREVIEW_PROP) for o in sel), len(bpy.data.objects)
 
 
 @bpy.app.handlers.persistent

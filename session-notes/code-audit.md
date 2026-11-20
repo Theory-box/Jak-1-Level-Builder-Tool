@@ -72,6 +72,26 @@ labels: correctness).
 Smaller: path wrappers in build / versions, print() vs log(), level enum items in tasks.py, unused
 import blocks (~200 lines).
 
+## Done (Kuitar: remove everything, keep scale export behaviour)
+Checks after every step: _claude_tmp/audit_regress.sh (level with every spawnable actor, 258: jsonc / gd /
+obs gc + game.gp / level-info / load-boundary / entity.gc byte-identical to main), db_snapshot.py
+(resolved DB data of 292 etypes identical), cmp_tests.sh (old bl_test_* on main vs branch),
+bl_panel_smoke.py (every panel's poll / draw for 260 objects), benchmarks below.
+- e08c2b8, 8f3dc8c old-version code (list in section 1; Scale panel removed, scale export kept).
+- f32156b DB dict indexes + per-etype caches: 2.7 -> 0.01 ms of DB work per actor sidebar redraw.
+- 1019125 collections.actor_etype / is_actor / is_waypoint / active_actor_etype.
+- b65f7cd preview handler selection work only on selection change, race-ring / place-on-path
+  candidates cached: 4.0 -> 0.04 ms per drag update (3000 objects).
+- 415b760 level checks rebuilt only after edits (depsgraph, addon operators via track_operators,
+  undo / redo, load); headers read the cache; nav analysis cached by triangles + once per check;
+  linked-by index: headers 42 -> 0.01 ms per redraw, full check 1956 -> 28 ms (600 actors).
+- ac10172 water handler VOL map cached; keep_items for dynamic enum lists.
+- f6ec7d6 game-info probe by mtime, code-file scan throttled, palette sliders debounced, default timers once.
+- 3bc4101 paths_core.pref() / prefs(), model_preview.previews_on() / try_attach_preview().
+- 3ec5417 export/fileio.py write_if_changed / rewrite / patch.
+- bf36640 coords.py; fix: goal_import_actors still used the removed trait fields.
+All panels with an actor selected (600 actors, 3000 objects): ~200 ms -> ~3 ms per redraw.
+
 ## Proposed order (one commit per step, tests after each)
 1. DB caches (H1): one place, speeds everything, easy to test (resolved panels identical before/after).
 2. Old-version code (part 1).
