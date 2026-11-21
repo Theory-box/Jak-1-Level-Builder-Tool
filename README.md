@@ -5,7 +5,7 @@
 OpenGOAL Level Tools is a Blender add-on for making custom levels for *Jak and Daxter: The Precursor
 Legacy* on the [OpenGOAL](https://github.com/open-goal/jak-project) engine. Model your level, place
 the game's actors from a searchable list, set them up with plain fields instead of raw data, bake the
-lighting, and press **Build & Play**: the add-on writes every game file, compiles the level and
+lighting, and press **Export & Compile**: the add-on writes every game file, compiles the level and
 starts the game at your checkpoint.
 
 <!-- screenshot: a level in Blender with the OpenGOAL sidebar open, and the same level in game -->
@@ -57,7 +57,7 @@ starts the game at your checkpoint.
   that run after every bake.
 
 ### Build, play, check
-- **Build & Play**: export, compile and launch in one click; quick re-export; boot in debug, with the
+- **Build & Play**: export, compile and launch the game in one click (**Export & Compile** with **Auto**); quick re-export; boot in debug, with the
   debugger attached, or in retail mode.
 - **Warnings while you work**: red counts for what would crash or break, yellow for what works but
   does less, a full **Level Audit**, and explanations for each.
