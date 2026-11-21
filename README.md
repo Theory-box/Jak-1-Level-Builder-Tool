@@ -1,85 +1,110 @@
-# Jak 1 Level Builder Tool
+# OpenGOAL Level Tools
 
-A Blender addon for building custom Jak and Daxter levels for the [OpenGOAL](https://github.com/open-goal/jak-project) engine. Place actors, triggers, cameras, enemies, platforms, water volumes, navmesh, sound emitters, music zones, and lighting from inside Blender — then compile and launch the game with one button.
+**Build custom Jak and Daxter levels in Blender, then compile and play them with one button.**
 
-The addon source lives in [`addons/opengoal_tools/`](addons/opengoal_tools/). All written material lives in [`knowledge-base/`](knowledge-base/), split into `manual/` (user-facing) and `research/` (deep notes).
+OpenGOAL Level Tools is a Blender add-on for making custom levels for *Jak and Daxter: The Precursor
+Legacy* on the [OpenGOAL](https://github.com/open-goal/jak-project) engine. Model your level, place
+the game's actors from a searchable list, set them up with plain fields instead of raw data, bake the
+lighting, and press **Build & Play**: the add-on writes every game file, compiles the level and
+starts the game at your checkpoint.
 
-> **Versions:** Addon 2026.5.12 · Blender 4.4+ · OpenGOAL v0.2.29+
+<!-- screenshot: a level in Blender with the OpenGOAL sidebar open, and the same level in game -->
+
+**[⬇ Download the latest release](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/latest)** ·
+[OpenGOAL Discord](https://discord.gg/VZbXMHXzTv)
 
 ---
 
-## Getting Started
+## What it does
 
-| Doc | Description |
+### Place the whole game's cast
+- **258 spawnable actors** from the original game: enemies and bosses, NPCs, pickups, platforms,
+  doors and buttons, obstacles, props, particles. Search them by name or category, keep favourites,
+  pick variants (crate types, bridge looks, sage cages…).
+- **Model previews** of every actor in the viewport (from your own game files), so you see what you
+  place.
+- **Settings as fields**, not raw lumps: each actor shows only what its game code reads, with
+  defaults, limits and explanations. Raw custom lumps stay available for anything else.
+- **Links between actors** (buttons → doors, enemies → nav-meshes, paths shared between actors…)
+  picked from the selection or a search, with warnings when something required is missing.
+- **65 edited actors**: vanilla actors that relied on hard-coded tasks, positions or cameras (Keira,
+  the sages, the oracle, the pipe game, the gondola, Klaww…) work in custom levels, set up from
+  Blender. Bring your own GOAL code too: per level or shared between levels.
+- **Actor Light**: areas that light (or darken) Jak, Daxter and chosen actors, with time of day
+  hours, fades and triggers.
+
+### Paths, platforms and enemies
+- Waypoints or Blender curves as **paths** (linear, smooth, Bézier), extra paths, sync timing for
+  moving platforms, distribute platforms along a curve, race rings.
+- **Nav-meshes** made from your faces, with jump areas, nav-spheres and automatic reduction to the
+  game's limits; enemy activation and aggro trigger volumes.
+
+### Level setup
+- Several levels per .blend; level settings (mood, sky, fog, death plane, sound and music banks,
+  orb count), checkpoints and continue points, **cameras** with trigger volumes, hints, music zones,
+  sound emitters, water volumes, load boundaries between levels.
+- **Custom tasks**: your own power cells and scout flies with their game text.
+- **Project settings**: the checkpoints New Game, retail boot and Quit to menu go to, and the Discord
+  status of your mod.
+
+### Lighting
+- **Vertex lighting bake** with Cycles, fast on large levels (meshes baked together), with light
+  curves, blur and emission.
+- **Time of day**: a bake per time of day with its own lights, world and animation frame.
+- **Color Quantisation preview**: see the game's 8192-colour palette in Blender and fix the colours
+  it would spoil; smaller level files (8-bit colours, Color Depth).
+- **Vertex Colors tools**: copy lighting onto grass and props, effects (curves, colour, alpha, blur)
+  that run after every bake.
+
+### Build, play, check
+- **Build & Play**: export, compile and launch in one click; quick re-export; boot in debug, with the
+  debugger attached, or in retail mode.
+- **Warnings while you work**: red counts for what would crash or break, yellow for what works but
+  does less, a full **Level Audit**, and explanations for each.
+- **Import**: the game's own 3D models and textures, and existing levels' GOAL files (.jsonc and
+  game files) back into Blender.
+- Works with the official OpenGOAL release, a jak-project dev build or the
+  [mod-base](https://github.com/OpenGOAL-Mods/OG-Mod-Base); features that need a newer version tell
+  you so.
+
+---
+
+## Requirements
+
+| | |
 |---|---|
-| [Getting Started](knowledge-base/manual/getting-started.md) | Install the addon, set preferences, create your first level |
-| [Workflow](knowledge-base/manual/workflow.md) | Export & Build vs Play, console management, GOALC nREPL |
-| [Known Issues](knowledge-base/manual/known-issues.md) | Current bugs, limitations, and workarounds |
+| Blender | 4.4 or newer (tested up to 5.3) |
+| OpenGOAL | Jak 1 on OpenGOAL: an official release (v0.3.4+ for the built-in cameras, v0.3.8+ for time of day), a jak-project dev build, or the mod-base (needed for custom tasks) |
+| Game files | your own extracted Jak 1 (OpenGOAL's extractor) for previews and textures |
+
+## Install
+
+1. Download `opengoal-level-tools-<version>.zip` from the [latest release](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/latest).
+2. Blender → **Edit › Preferences › Add-ons › Install…** → pick the zip → enable **OpenGOAL Level Tools**.
+3. In the add-on's preferences, point it at your OpenGOAL install (or its folder for auto-detection).
+4. Open the **OpenGOAL** tab in the 3D viewport's sidebar (N) and create a level in **Level › Level Manager**.
+
+Updating: install the new zip the same way, then restart GOALC once.
 
 ---
 
-## Manual — Polished Guides
+## Documentation
 
-| Doc | Description |
-|---|---|
-| [Entity Spawning](knowledge-base/manual/entity-spawning.md) | Place enemies, NPCs, pickups, platforms — JSONC format, DGO/game.gp, bsphere rules |
-| [Audio System](knowledge-base/manual/audio-system.md) | Sound banks, music, ambient sound emitters, known bugs |
-| [Camera System](knowledge-base/manual/camera-system.md) | Camera markers, trigger volumes, orbit pivots, look-at targets |
-| [Player & Continues](knowledge-base/manual/player-loading.md) | Spawn points, continue points, level registration |
+A new user guide is being written (basics first, then every feature in detail); links will be added
+here when it's published. Until then:
+- the release notes on the [Releases page](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases) describe each feature;
+- every field and button in the add-on has a tooltip, and the **?** buttons and warning counts explain themselves;
+- deeper technical notes (how the game systems work) are in [`knowledge-base/research/`](knowledge-base/research/).
 
-### Enemy Reference
-
-| Doc | Enemy | Notes |
-|---|---|---|
-| [Babak](knowledge-base/manual/enemies/babak.md) | Babak (lurker soldier) | Always in GAME.CGO, no DGO needed |
-| [Junglesnake](knowledge-base/manual/enemies/junglesnake.md) | Junglesnake | No navmesh required, safest enemy to use |
-
-> The database ships with **156 actor types** across 9 categories (Enemies, Bosses, NPCs, Pickups, Platforms, Props, Objects, Debug, Hidden). Babak and Junglesnake have polished writeups — the rest are documented in the database itself ([`jak1_game_database.jsonc`](addons/opengoal_tools/jak1_game_database.jsonc)) and the per-system research notes below.
+Questions and feedback: the [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv).
 
 ---
 
-## Research Notes — Deeper Coverage
+## For contributors
 
-The addon has UI for many systems that don't yet have polished manual entries. The notes below in [`knowledge-base/research/`](knowledge-base/research/) are the authoritative source for these — researched directly from `goal_src/jak1/`.
+- Add-on source: [`addons/opengoal_tools/`](addons/opengoal_tools/). Game data (actors, fields,
+  panels, levels, sounds) lives in one database file,
+  [`jak1_game_database.jsonc`](addons/opengoal_tools/jak1_game_database.jsonc).
+- Planned work: [`community-feedback/ToDo ordered List.md`](community-feedback/ToDo%20ordered%20List.md).
 
-| Topic | Notes |
-|---|---|
-| [Triggers](knowledge-base/research/opengoal/trigger-system.md) | Volume-based events, aggro triggers, custom vol-trigger types |
-| [NavMesh](knowledge-base/research/opengoal/navmesh-system.md) | Nav-mesh requirements, nav-enemy gotchas, sphere workaround |
-| [Lighting & Mood](knowledge-base/research/opengoal/lighting-system.md) | Per-level mood, time-of-day, vertex-color light bake |
-| [Water Volumes](knowledge-base/research/opengoal/water-system.md) | Wade/swim/surface heights, water vol export |
-| [Platforms](knowledge-base/research/opengoal/platform-system.md) | plat / plat-eco / orbit / flip / square / launcher behaviour |
-| [Doors](knowledge-base/research/opengoal/door-system.md) | iris-door, sun-iris, eco-door, side/round/launcher variants |
-| [GOAL Code Injection](knowledge-base/research/opengoal/goal-code-system.md) | Per-actor `obs.gc` code blocks, runtime hooks, examples |
-| [Lump System](knowledge-base/research/opengoal/lump-system.md) | Custom lumps, hardcoded keys, type encoding |
-| [Texture Pages](knowledge-base/research/opengoal/tpage-system.md) | tpage groups, heap budget, 11 MB kheap limit |
-| [Texture Browser](knowledge-base/research/opengoal/texture-browser.md) | Browsing and assigning game textures |
-| [Level Flow & Transitions](knowledge-base/research/opengoal/level-transitions.md) | Multi-level setups, vis files, load boundaries |
-| [Particle Effects](knowledge-base/research/opengoal/particle-effects-system.md) | Effects system, entity-actor effect lookup |
-| [nREPL & Startup](knowledge-base/research/opengoal/nrepl-and-startup.md) | GOALC connection, build pipeline internals |
-
-Other research material in [`knowledge-base/research/opengoal/`](knowledge-base/research/opengoal/) covers known bugs, future research leads, upstream fixes to watch, AI onboarding, and per-enemy activation rules.
-
----
-
-## Data Reference
-
-| File | Description |
-|---|---|
-| [Game Database](addons/opengoal_tools/jak1_game_database.jsonc) | Canonical source: 156 actors, 21 levels, 20 sound banks, lump schemas, PAT enums, fields[] schemas |
-| [Enemy Definitions (snapshot)](knowledge-base/manual/data/jak1-enemy-definitions.json) | Static snapshot of entity types, art groups, code paths |
-| [SBK Sounds](knowledge-base/manual/data/sbk_sounds.json) | 1,038 sound effect names across 20 banks |
-
----
-
-## Archive
-
-[`knowledge-base/archive/`](knowledge-base/archive/) holds older snapshots kept for reference — e.g. previous addon versions.
-
----
-
-## External Resources
-
-- [OpenGOAL Project](https://github.com/open-goal/jak-project)
-- [Rockpool Mod (reference level)](https://github.com/dallmeyer/OG-ModBase-Rockpool)
-- [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv)
+**Made by** [Theory-box](https://github.com/Theory-box) and [Kuitar5](https://github.com/Kuitar5).
