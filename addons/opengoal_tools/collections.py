@@ -88,6 +88,22 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def new_empty(ctx, name, col_path, display="PLAIN_AXES", size=1.0, location=None, color=None, show_name=False):
+    """A new empty in the active level's sub-collection col_path (named `name`;
+    Blender adds .001 if taken: pass a free name)."""
+    o = bpy.data.objects.new(name, None)
+    o.empty_display_type = display
+    o.empty_display_size = size
+    if location is not None:
+        o.location = location
+    if color is not None:
+        o.color = color
+    o.show_name = show_name
+    ctx.scene.collection.objects.link(o)          # in the scene first, then routed
+    _link_object_to_sub_collection(ctx.scene, o, *col_path)
+    return o
+
+
 def select_only(objs, ctx=None):
     """Select only objs (an object or a list); the first becomes active."""
     ctx = ctx or bpy.context

@@ -15,7 +15,7 @@ from .export import (
     collect_custom_triggers, collect_task_triggers, needed_ags, needed_extras_ags, needed_code, write_jsonc,
     write_gd, write_gc, make_fog_actor_dict, patch_level_info, patch_load_boundaries, patch_game_gp,
     prune_orphaned_levels, _collect_navmesh_actors, _goal_src, _level_info, _game_gp, _entity_gc,
-    _load_boundary_data, _clean_orphaned_vol_links, _navmesh_to_goal, log, _data, _data_root,
+    _load_boundary_data, _clean_orphaned_vol_links, _navmesh_to_goal, log, _data,
 )
 
 # PATH HELPERS

@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from ..collections import actor_etype, is_actor, is_waypoint
+from ..collections import actor_etype, free_object_name, is_actor, is_waypoint, new_empty
 from ..collections import frame_selected, select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
@@ -196,20 +196,14 @@ class OG_OT_MoviePosAdd(Operator):
         if actor is None:
             self.report({"ERROR"}, "Actor not found"); return {"CANCELLED"}
         base = "MOVIEPOS_" + (actor.name[len("ACTOR_"):] if actor.name.startswith("ACTOR_") else actor.name)
-        n = 0
-        while bpy.data.objects.get(f"{base}_{n:02d}"):
-            n += 1
         at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
-        e = bpy.data.objects.new(f"{base}_{n:02d}", None)
-        e.empty_display_type = "CONE"      # the cone shows the facing axis
-        e.empty_display_size = 1.0         # 1 m: smaller gets hard to select
-        e.location = actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
+        # the cone shows the facing axis; 1 m: smaller gets hard to select
+        e = new_empty(ctx, free_object_name(base + "_", width=2), _COL_PATH_WAYPOINTS, "CONE", 1.0,
+                      actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy(),
+                      (1.0, 0.85, 0.1, 1.0))
         # the empty's Z rotation is the angle
         e.rotation_euler = (0.0, 0.0, actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0)
-        e.color = (1.0, 0.85, 0.1, 1.0)
         e["og_movie_pos_for"] = actor.name
-        ctx.scene.collection.objects.link(e)
-        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
         actor.og_movie_pos.add().obj = e
         self.report({"INFO"}, f"Added movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
         return {"FINISHED"}
@@ -395,19 +389,8 @@ class OG_OT_AddWaypoint(Operator):
         use_actor_pos = ctx.scene.og_props.waypoint_spawn_at_actor and actor_obj is not None
         spawn_loc = actor_obj.location.copy() if use_actor_pos else ctx.scene.cursor.location.copy()
 
-        empty = bpy.data.objects.new(wp_name, None)
-        empty.empty_display_type = "PLAIN_AXES"
-        empty.empty_display_size = 0.5
-        empty.location = spawn_loc
-
-        # Custom property to link back to enemy
-        empty["og_waypoint_for"] = self.enemy_name
-
-        # Link into scene first (required before collection routing)
-        ctx.scene.collection.objects.link(empty)
-
-        # Route into Waypoints sub-collection under the active level
-        _link_object_to_sub_collection(ctx.scene, empty, *_COL_PATH_WAYPOINTS)
+        empty = new_empty(ctx, wp_name, _COL_PATH_WAYPOINTS, "PLAIN_AXES", 0.5, spawn_loc)
+        empty["og_waypoint_for"] = self.enemy_name           # links back to the actor
 
         # ---- Waypoint ghost preview ----------------------------------------
         # Parse the entity type from the actor name (ACTOR_<etype>_<uid>)

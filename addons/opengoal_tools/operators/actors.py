@@ -208,17 +208,15 @@ class OG_OT_BCCamposAdd(Operator):
         actor = ctx.scene.objects.get(self.actor_name)
         if actor is None:
             return {"CANCELLED"}
-        from ..collections import _link_object_to_sub_collection, _COL_PATH_WAYPOINTS
+        from ..collections import _COL_PATH_WAYPOINTS
         base = "CAMPOS_" + actor.name[len("ACTOR_"):]
         name, n = base, 1
         while bpy.data.objects.get(name):
             name = f"{base}_{n}"; n += 1
-        e = bpy.data.objects.new(name, None)
-        e.empty_display_type = "CONE"; e.empty_display_size = 1.0
-        e.location = actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor \
-            else ctx.scene.cursor.location.copy()
-        ctx.scene.collection.objects.link(e)
-        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        from ..collections import new_empty
+        e = new_empty(ctx, name, _COL_PATH_WAYPOINTS, "CONE", 1.0,
+                      actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor
+                      else ctx.scene.cursor.location.copy())
         actor["og_bc_campos"] = e.name
         return {"FINISHED"}
 

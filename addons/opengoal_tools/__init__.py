@@ -91,7 +91,7 @@ from .export import (
 from .build import (
     _EXE, GOALC_PORT, GOALC_TIMEOUT,
     _BUILD_STATE, _PLAY_STATE,
-    _exe_root, _data_root, _data, _gk, _goalc,
+    _exe_root, _gk, _goalc,
     _user_dir, kill_gk, launch_gk,
     goalc_send, goalc_ok, launch_goalc,
     _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
