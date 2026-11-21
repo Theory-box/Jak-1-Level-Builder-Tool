@@ -26,7 +26,7 @@ The add-on checks every sound against the loaded banks:
 
 - **Sound emitters and particle spawners** whose sound is in a bank the level doesn't load get a red ⚠ count (it
   won't play). It also counts in the ⚠ next to **Export & Compile**. Click the count to see which bank it needs.
-- **Actors** whose own sounds (footsteps, attacks, machinery ...) are in a bank the level doesn't load get a yellow ⚠
+- **Actors** whose own sounds (footsteps, attacks, machinery ...) are in a bank the level doesn't load get a grey ⚠
   (a soft warning): the actor works but is silent, e.g. *sound bank snow not loaded: no ...*. Sounds that are in
   several banks need any one of them.
 - **Level › Level Audit** lists each sound that won't play and the bank it is in.
@@ -36,14 +36,11 @@ See [Troubleshooting](troubleshooting.md) for the other warnings.
 
 ## Music
 
-1. Set **Level › Settings › Sound & Music › Music Bank**.
-2. Add a **music zone**: **Spawn Objects › Effects › Music zone**. Before clicking **Spawn**, set its **Bank**,
+1. Set **Level › Settings › Sound & Music › Music Bank**. That's all you need: the music plays everywhere in the level.
+2. Optional: add a **music zone** to change the music's **flava** (its variation) in one area: **Spawn Objects › Effects › Music zone**. Before clicking **Spawn**, set its **Bank**,
    **Flava**, **Priority** and **Radius (m)**. A gold sphere `AMBIENT_mus001` is added at the 3D cursor, in the
    level's **Sound Emitters** collection.
-3. Make the zone big enough to cover the level: one large zone is the usual setup. The music plays while Jak is
-   inside it.
-
-<!-- check: does the level Music Bank alone start music, or only reset it after a death? (knowledge-base audio-system.md says both) -->
+3. The zone's flava plays while Jak is inside it; outside, the level's music plays normally.
 
 Select a zone and open **Object Settings › Music Zone** to change it:
 

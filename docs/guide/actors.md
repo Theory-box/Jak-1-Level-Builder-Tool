@@ -106,7 +106,7 @@ How the fields work:
 
 ### ⚠ counts
 
-A panel header shows a **red count** (for example `2⚠`, ② in the Actor screenshot) when the actor is missing something it needs: a required field, a link, or a path. A **yellow count** is a soft warning: it works, but does less than you probably want. Hover the count to see the list, or click it to open a popup where you can fill in what's missing. A missing required field also shows a red "Required: ..." line in the panel. See [The interface](interface.md#warnings-the--counts-and-level-audit) for how warnings work everywhere.
+A panel header shows a **red count** (for example `2⚠`, ② in the Actor screenshot) when the actor is missing something it needs: a required field, a link, or a path. A **grey count** is a soft warning: it works, but does less than you probably want. Hover the count to see the list, or click it to open a popup where you can fill in what's missing. A missing required field also shows a red "Required: ..." line in the panel. See [The interface](interface.md#warnings-the--counts-and-level-audit) for how warnings work everywhere.
 
 ### Sub-panels of Actor Settings
 
@@ -228,53 +228,13 @@ Only pickups (orbs, scout flies, ...) and props (actors that only play an idle a
 
 ## Object Controls tools
 
-**OpenGOAL › Object Controls** works on the whole selection, actors or not. Its top row has **Frame**, **Duplicate** and **Delete**. Under it is a collapsed summary of what's selected, by kind, where you can keep or drop a kind or a single object.
+**OpenGOAL › Object Controls** works on the whole selection, actors or not. All its tools are explained on the [Object Controls](object-controls.md) page. The ones you'll use most with actors:
 
-### Duplicating and deleting actors
-
-Duplicate actors with Blender's own **Shift+D** or with **Duplicate** in Object Controls. Copies get proper names (`ACTOR_babak_3` instead of `ACTOR_babak_0.001`) and their own preview model. Deleting an actor (X or **Delete**) also deletes its preview and helper empties, and removes the volume links that pointed at it.
-
-### Convert Entities
-
-Changes the selected actors into another actor type, keeping where they are.
-
-1. Pick **Convert**:
-   - **Actors only**: the selected actors.
-   - **Actors and empties**: plain empties become actors too.
-   - **All objects**: meshes, curves and so on are replaced by actors too. Those objects are **deleted** (the panel warns in red).
-2. **Target actor**: click **Pick…** and search for the type.
-3. Click **Convert N ... to <type>**.
-
-The new actors get fresh names, as if spawned, and updated previews. Paths, links, nav-meshes and every setting that still applies are kept. Links from other actors to the old ones point to the new ones.
-
-### Set to Floor
-
-Drops the selected objects onto the ground below them.
-
-| Option | What it does |
-|---|---|
-| **Distance** | Height above the ground (e.g. floating orbs). |
-| **Search from above** | The ground search starts this far above the object, so an object slightly under the ground still finds it. |
-| **Align to floor** | Tilts the object so it follows the slope. |
-| **Meshes** | For meshes: **Lowest vertex** or **Origin** goes on the ground. |
-| **Set N to Floor** | Does it. Volumes, nav-meshes, previews and the selection itself are never treated as ground. |
-
-### Distribute Along Curve
-
-Places the selected objects along a curve. See [Paths & platforms](paths-and-platforms.md#distribute-along-curve).
-
-### Export Selected Definitions
-
-Writes the selected actors, cameras, checkpoints and load boundaries the way the level files would. This is handy for pasting them into another level or a hand-written file. Actors and cameras give `.jsonc` entries plus the art groups and code they need (`.gd`). Checkpoints go to `level-info.gc`, load boundaries to `load-boundary-data.gc`.
-
-| Option | What it does |
-|---|---|
-| **Write to** | A file (rewritten each time) or a folder (a new dated file each time). Empty: clipboard only. |
-| **Add comments** | The `;;` lines saying what each part is and where it goes. |
-| Format | **Bracket & category** (`"actors": [ ... ]`), **Bracket** (`[ ... ]`), or **No brackets** (only the entries, to paste between other entries). |
-| **End with a comma** | With No brackets: a comma after the last entry. Turn it off when pasting as a list's last entry. |
-| **Indentation offset** | Extra indentation in steps of 2 spaces. At 1, entries line up inside a level file's `"actors"` list. |
-| **Export N Definition(s)** | Exports. The text is always copied to the clipboard as well. |
+- **Duplicating and deleting.** Shift+D / X or **Duplicate** / **Delete** give copies proper names (`ACTOR_babak_3`) and their own preview, and deleting cleans up previews, helpers and volume links. See [Frame, Duplicate and Delete](object-controls.md#frame-duplicate-and-delete).
+- **Convert Entities** turns the selected actors (or empties, or any objects) into another actor type in place, keeping what still applies. See [Convert Entities](object-controls.md#convert-entities).
+- **Set to Floor** drops the selected objects onto the ground below them. See [Set to Floor](object-controls.md#set-to-floor).
+- **Distribute Along Curve** places the selected objects along a curve. See [Distribute Along Curve](object-controls.md#distribute-along-curve).
+- **Export Selected Definitions** writes the selected actors, cameras, checkpoints and load boundaries as the level files would, to paste elsewhere. See [Export Selected Definitions](object-controls.md#export-selected-definitions).
 
 ---
 [← Previous](geometry.md) · [Guide index](README.md) · [Next →](paths-and-platforms.md)

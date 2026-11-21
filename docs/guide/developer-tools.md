@@ -187,9 +187,6 @@ file doesn't exist (yet); greyed out means the path isn't known.
 
 - **Reload Database** (Preferences or Project Folders) turns the add-on off and on again and reads the database anew.
   Use it after editing a database override.
-- **Reload Addon** reloads the add-on's code from disk without restarting Blender, for people editing the add-on
-  itself. It has no button: find it with Blender's operator search (**F3**, "Reload Addon").
-  <!-- check: F3 only lists it with Preferences › Interface › Developer Extras on? -->
 - After updating the add-on, restart GOALC once (close its window; the next build starts a new one).
 
 ---

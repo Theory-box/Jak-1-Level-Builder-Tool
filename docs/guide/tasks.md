@@ -113,7 +113,7 @@ The game's own task and menu code stays untouched. If your task names or IDs cla
 
 Turning **Custom tasks** off (or removing every task) takes your group's entries back out on the next export.
 
-**The first build after adding tasks is a full compile**: the game-task list is part of the engine, so changing it (adding, renaming or renumbering tasks) recompiles most of the game. Later builds are back to normal speed.<!-- check: confirm text / stage-only edits don't trigger a full compile -->
+**The first build after adding tasks is a full compile**: the game-task list is part of the engine, so changing it (adding, renaming or renumbering tasks) recompiles most of the game. Editing a task's texts or stages doesn't: those builds stay quick.
 
 ---
 [← Previous](lighting.md) · [Guide index](README.md) · [Next →](edited-actors-and-goal-code.md)

@@ -32,8 +32,11 @@ If the add-on hasn't found any GLB yet, the panel shows **Setup needed**:
 3. If nothing was found, the panel shows **No GLBs found. Set the path manually:** with a **Decompiler path** field,
    **Re-pick** (open the folder picker again) and **Rescan**.
 
-No GLB files at all usually means the decompiler was run without its level export.
-<!-- check: the decompiler config option that writes the GLBs (rip_levels: true?) -->
+No GLB files at all means the decompiler was run without its level export. Turn it on and run the decompiler again:
+- **OpenGOAL launcher**: **Settings › Decompiler**, turn on **Rip levels**, then run the decompiler.
+- **By hand**: set `rip_levels` to `true` in the decompiler's config file and run it.
+- **Dev build (jak-project clone)**: run `task rip-levels`; no config file to edit. (`Taskfile.yml` in the clone lists
+  every task, some others can be handy too.)
 
 ### Searching and importing
 

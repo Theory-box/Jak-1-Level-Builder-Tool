@@ -6,9 +6,17 @@ This page gets Blender, OpenGOAL and the add-on talking to each other. You only 
 
 | | |
 |---|---|
-| **Blender** | 4.4 or newer. |
+| **Blender** | 4.4 or newer. 4.4 or 4.5 is the safe choice (see below). |
 | **OpenGOAL** | A working Jak 1 install of OpenGOAL: the game must already run. Any of the three kinds below works. |
 | **The add-on** | The release zip `opengoal-level-tools-<version>.zip` from the [Releases page](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases). |
+
+Some newer Blender versions have glTF export bugs. The add-on works around them for the level export:
+
+| Blender | Problem | What the add-on does |
+|---|---|---|
+| **4.4, 4.5** | None known. Recommended. | |
+| **5.0** | Its glTF exporter leaves out custom properties that add-ons register. | Copies the collision settings to plain custom properties for the export, so collision works. Other add-on properties may still be missing. |
+| **5.2.2** | Meshes export white when their render and active colour layers are different. | Exports only the **Active** colour layer. |
 
 OpenGOAL comes in three kinds. The add-on detects which one you have and turns a few features on or off to match:
 
@@ -59,6 +67,8 @@ Picking folders automatically:
 
 If the scan finds nothing, or picks the wrong thing, open **Manual path overrides (advanced)** and type the folders in yourself.
 
+You can also set the folders per `.blend` file instead: **Developer Tools › Paths › Project Folders (this .blend)**, tick **Use this .blend's folders**. **Copy From Preferences** fills them in with the folders in use now. The folders are saved in the `.blend` and win over the preferences. This is handy when you work on several projects with different OpenGOAL installs, or after installing a newer add-on version. More in [Developer Tools](developer-tools.md).
+
 ### All preference settings
 
 | Setting | What it does |
@@ -80,8 +90,6 @@ If the scan finds nothing, or picks the wrong thing, open **Manual path override
 | **Game database: Override** | A `.jsonc` file used instead of the bundled `jak1_game_database.jsonc`. For advanced users; see [Developer Tools](developer-tools.md). |
 | **Reload Database** | Reads the database again (this reloads the add-on). Use it after changing the override. |
 
-A single `.blend` can also keep its own folders, which win over the preferences. That's **Developer Tools › Paths › Project Folders**; see [Developer Tools](developer-tools.md).
-
 ### Check it worked
 
 Open the sidebar's **OpenGOAL** tab. If the **Build & Play** panel says **Missing paths — open Developer Tools**, the add-on can't find `gk`, `goalc` or `game.gp`. **Developer Tools › Paths** shows which one is missing (✓ OK or ✗ NOT FOUND) and has a **Set EXE / Data Paths** button that opens the preferences.
@@ -100,7 +108,13 @@ Previews and the [Import](importing.md) panel use the models and textures that O
 - models: `.glb` files under `levels/<level>/`, for example `levels/beach/babak-lod0.glb`
 - textures: PNG files under `textures/`
 
-A normal install doesn't always write these. You may need to run the decompiler once with `rip_levels: true` (models) and `save_texture_pngs: true` (textures) in its `jak1_config.jsonc`. <!-- check: exact config file location and launcher steps for release users -->
+A normal install doesn't write the models. The decompiler has to export the levels' GLBs once. Pick one:
+
+- **OpenGOAL launcher**: **Settings › Decompiler**, turn on **Rip levels**, then run the decompiler.
+- **By hand**: set `rip_levels` to `true` in the decompiler's config file and run the decompiler.
+- **Dev build (jak-project clone)**: run `task rip-levels`. `Taskfile.yml` in the clone lists all the tasks.
+
+Textures (the PNG files) come from the `save_texture_pngs` option in the same config file.
 
 If the models aren't there, actors still spawn and export; they just show up as empties without a model. If your `decompiler_out` is somewhere else, set **Decompiler output (override)** in the preferences.
 

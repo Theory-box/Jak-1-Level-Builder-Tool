@@ -5,7 +5,7 @@ build errors, and common questions. For words you don't know, see the [Glossary]
 
 ---
 
-## Warning counts: red and yellow ⚠
+## Warning counts: red and grey ⚠
 
 The add-on checks every actor of the active level and shows the result as counts:
 
@@ -18,7 +18,7 @@ There are two kinds:
 | Count | Means | Build |
 |---|---|---|
 | **Red N⚠** (required) | Something the actor needs is missing. In game it may not work, or crash. | Still builds, but fix these first. |
-| **Yellow N⚠** (soft) | It works, but this setup makes it do less than it could (it idles, stays silent ...). | Fine, if that's what you want. |
+| **Grey N⚠** (soft) | It works, but this setup makes it do less than it could (it idles, stays silent ...). | Fine, if that's what you want. |
 
 Hover a count to see the list. Click it to open a popup: for a red count on an actor the popup has the missing
 fields themselves, so you can fill them in right there. The level count lists the actors; click a name to select it.
@@ -44,7 +44,7 @@ The counts update after every edit (moving objects doesn't count as an edit).
 
 Nav-mesh fixes are on the [Enemies & nav-meshes](enemies-and-navmesh.md) page.
 
-### Yellow: soft
+### Grey: soft
 
 | Warning text | Meaning | Fix |
 |---|---|---|
@@ -79,7 +79,7 @@ Run it before you share a level, and when the game crashes and you don't know wh
 |---|---|
 | ERROR **Nav-enemy '…' (…) navmesh link '…' does not exist in the scene.** | The linked nav-mesh was deleted or renamed: link it again. |
 | ERROR **'…' (…) uses the nav-mesh of '…', which has no navmesh link.** | The actor copies the nav-mesh of another actor (`nav-mesh-actor`) that has none: give that one a nav-mesh. |
-| WARNING *every yellow soft warning above*, as **'actor' (etype): text** | See the soft table. |
+| WARNING *every grey soft warning above*, as **'actor' (etype): text** | See the soft table. |
 
 **Paths and links**
 
@@ -167,10 +167,10 @@ nothing there they crash. Fix every red ⚠ and every audit ERROR.
 idles), but a nav-mesh link to a deleted mesh, or an actor copying the nav-mesh of an actor that has none, does.
 Run the Level Audit.
 
-**Too many textures: out of memory while loading.** Every enemy brings the textures (tpages) of the vanilla level it
-comes from, and the game has little memory for them while a level loads. Using enemies from more than about **two**
-vanilla levels in one level can crash with `kmalloc: !alloc mem data-segment` in the game's log while it loads.
-Keep each level to enemies of one or two vanilla areas. The Spawn Objects list shows each actor's texture group in
+**Out of memory while loading (`kmalloc: !alloc mem data-segment` in the game's log).** Every actor brings the
+textures (tpages) of the vanilla level it comes from, and the game has limited memory for a level while it loads. If
+you see this error, too many textures is a likely cause: try removing actors from some of the vanilla areas (and
+check how many textures your own geometry uses). The Spawn Objects list shows each actor's texture group in
 parentheses after its name, so you can see where it comes from (see [Actors](actors.md)).
 
 **Level index or nickname clash.** Each level needs its own **Level Index** and **Vis Nickname**, different from
@@ -240,7 +240,7 @@ Its sound bank isn't loaded: see the sound bank warnings above and [Audio](audio
 They need a matching **Texture source** in **Level › Settings › Visuals** (the audit tells you which).
 
 **Enemies stand around and don't chase me.**
-They need a nav-mesh (yellow ⚠ **no nav-mesh**), or their nav-mesh is in separate parts. See
+They need a nav-mesh (grey ⚠ **no nav-mesh**), or their nav-mesh is in separate parts. See
 [Enemies & nav-meshes](enemies-and-navmesh.md).
 
 **Launch Game hangs at "Waiting for version...".**

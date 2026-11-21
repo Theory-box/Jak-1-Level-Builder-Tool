@@ -31,13 +31,22 @@ More about levels and their settings: [Levels](levels.md).
 
 The level's 3D model is every mesh inside its **Geometry** collection. Meshes collide by default, so Jak can stand on them.
 
+> **Warning: build away from the origin.** The original game's load boundaries stay active in custom levels. When Jak walks through one, it can unload your level or load vanilla levels. Blender's origin (0, 0, 0) is on the beach of Sandover Village, right among those triggers. Move your whole level well away: the add-on's own tests use about 3000 m on X, for example **X = -3000 m**.
+>
+> To see where the vanilla boundaries are, import the game's `load-boundary-data.gc` with **Import › From GOAL Files** (see [Importing](importing.md#from-goal-files)) and place your level clear of them.
+
 1. In the Outliner, click `my-level.Geometry` to make it the active collection.
-2. In the viewport: **Add › Mesh › Plane**. Scale it up to about 40 × 40 m (**S**, type `20`, **Enter**: the plane starts 2 m wide). One Blender metre is one metre in the game.
-3. Optional: add a few cubes as steps or walls, in the same collection.
+2. Put the 3D cursor where the level will be, for example X = -3000 m: in the sidebar's **View** tab, set **3D Cursor › Location X** to `-3000`. New objects appear at the cursor.
+3. In the viewport: **Add › Mesh › Plane**. Scale it up to about 40 × 40 m (**S**, type `20`, **Enter**: the plane starts 2 m wide). One Blender metre is one metre in the game. Press **Numpad .** to zoom the view to it.
+4. Optional: add a few cubes as steps or walls, in the same collection.
 
 If a mesh ends up outside Geometry, the **Build & Play** panel shows **N mesh(es) outside Geometry aren't exported** with a **Move to Geometry** button. Click it.
 
-The floor will look plain in the game: it has no texture and no baked lighting yet. That's fine for now. See [Geometry](geometry.md) for textures and collision settings, and [Lighting](lighting.md) for baking. <!-- check: how an untextured, unbaked mesh looks in game -->
+The floor will look plain in the game, and that's fine for now:
+- **No texture**: an untextured mesh shows a white and grey checkerboard. Only image textures show in the game; a **Base Color** set in the Principled BSDF is ignored.
+- **No baked lighting**: an unbaked mesh looks flat-lit, all the same 0.75 grey.
+
+See [Geometry](geometry.md) for textures and collision settings, and [Lighting](lighting.md) for baking.
 
 ## 3. Add the start checkpoint
 
@@ -48,7 +57,7 @@ A checkpoint is where Jak spawns and respawns. The level's first one is called *
 3. A small dialog asks for the **Name**. It already says `start`; click **OK**.
 4. A cone-shaped empty called `CHECKPOINT_<nickname>_start` appears at the cursor, in the level's **Spawns** collection.
 
-Every new object is placed at the 3D cursor, so you'll repeat "click to place the cursor, then **Spawn**" for each one. More about checkpoints: [Checkpoints & cameras](checkpoints-and-cameras.md).
+Every new object is placed at the 3D cursor, so you'll repeat "click to place the cursor, then **Spawn**" for each one. More about checkpoints: [Level flow](level-flow.md).
 
 ## 4. Add an orb and a crate
 
@@ -65,11 +74,11 @@ If game models are installed (see [Install](install.md#game-models-for-previews)
 
 1. Move the cursor to an open spot, about 2 m above the floor.
 2. In **Spawn Objects**, click the **Platforms** tile, pick **Floating Platform** and click **Spawn**.
-3. Keep the platform selected and open **Object Settings › Actor Settings › Path**. It says the platform needs at least 2 waypoints to move.
-4. Click **Spawn Waypoint** twice. Each click adds a small empty (`ACTOR_plat_0_wp_00`, `…_wp_01`) at the 3D cursor; turn on **At Actor Position** to put them on the platform instead.
-5. Move the two waypoints apart, for example 6 m to the side. The platform will float back and forth between them.
+3. Keep the platform selected and open **Object Settings › Actor Settings › Path**. It says how many waypoints the platform needs to move.
+4. Turn on **At Actor Position**, then click **Add Curve** next to it. A new curve (named `PATH_…`) is added at the platform and becomes its path.
+5. In the **Adjust Last Operation** panel (bottom left of the viewport), set **Curve Shape** to **Circle** and **Diameter** to `10`. The platform will float around this circle.
 
-Paths can also be curves (**Add Curve**), and platforms have timing options. See [Paths & platforms](paths-and-platforms.md).
+Paths can also be made of single waypoints (**Spawn Waypoint**), and platforms have timing options. See [Paths & platforms](paths-and-platforms.md).
 
 ## 6. Add an enemy
 

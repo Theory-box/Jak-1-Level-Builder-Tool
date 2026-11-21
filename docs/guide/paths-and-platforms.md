@@ -149,14 +149,7 @@ Without a path, it exports as that one ring. **Show preview** draws a circle at 
 
 ## Distribute Along Curve
 
-**OpenGOAL › Object Controls › Distribute Along Curve** puts the selected objects (any objects, such as orbs or crates) along a curve, in name order. It is different from Sync's distribute: this one moves real objects.
-
-| Option | What it does |
-|---|---|
-| **Curve** | The curve to use. Making a curve the active object fills it in. The pencil button edits the curve. |
-| **Method** | **Distance**: the same distance between objects, end to end. **Per segment**: each stretch between two curve points gets the same number of objects, so points close together pack them tighter. **Fixed spacing**: one object every **Spacing** metres from the start (stops at the end). |
-| **Align** | **No Align**, or which axis of the objects follows the curve (X, Y, Z, -X, -Y, -Z). Up stays up. |
-| **Distribute N** | Does it. With Fixed spacing, objects that don't fit are reported. |
+**OpenGOAL › Object Controls › Distribute Along Curve** puts the selected objects (any objects, such as orbs or crates) along a curve, in name order. It is different from [Sync's distribute](#distribute-along-the-path): this one moves real objects. See [Distribute Along Curve](object-controls.md#distribute-along-curve) on the Object Controls page for how to use it and its options.
 
 ---
 [← Previous](actors.md) · [Guide index](README.md) · [Next →](enemies-and-navmesh.md)

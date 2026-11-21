@@ -191,7 +191,7 @@ Vertex colours can be a big part of a level's GLB file. The add-on keeps them sm
 
 **Object Controls › Vertex Colors** (② in the [Object Controls screenshot](images/object-controls.png)) has tools
 that work on the baked layers of the selected meshes. Most of them change `BakedLight` and every time of day
-layer at once.
+layer at once. The rest of the Object Controls tab is explained on the [Object Controls](object-controls.md) page.
 
 ### Copy Vertex Lighting from Closest
 
@@ -319,4 +319,4 @@ with an Actor Light adds a small hook to the game's draw code (`engine/draw/draw
 and the Actor Light's code is compiled once in a shared file for every level that uses it.
 
 ---
-[← Previous](audio.md) · [Guide index](README.md) · [Next →](tasks.md)
+[← Previous](audio.md) · [Guide index](README.md) · [Next →](object-controls.md)

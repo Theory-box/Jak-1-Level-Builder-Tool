@@ -59,7 +59,7 @@ starts the game at your checkpoint.
 ### Build, play, check
 - **Build & Play**: export, compile and launch the game in one click (**Export & Compile** with **Auto**); quick re-export; boot in debug, with the
   debugger attached, or in retail mode.
-- **Warnings while you work**: red counts for what would crash or break, yellow for what works but
+- **Warnings while you work**: red counts for what would crash or break, grey for what works but
   does less, a full **Level Audit**, and explanations for each.
 - **Import**: the game's own 3D models and textures, and existing levels' GOAL files (.jsonc and
   game files) back into Blender.

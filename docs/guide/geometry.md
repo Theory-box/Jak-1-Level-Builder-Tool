@@ -48,7 +48,7 @@ Custom Properties**, so you can give a whole material (e.g. all your ice) one su
 | **No-LOS** | Doesn't block line of sight (enemies see through it). |
 | **No-Camera** | The camera goes through it. |
 | **Invisible** | Not drawn, but still collides. |
-| **Use Custom Bone Weights**, **Copy Eye Draws**, **Copy Mod Draws** | glTF options of the level builder, for meshes that use them. <!-- check: what these do for level geometry --> |
+| **Use Custom Bone Weights**, **Copy Eye Draws**, **Copy Mod Draws** | Flags for model replacements; they do nothing for custom levels. |
 
 Some collision is set for the whole level in **Level › Settings › Gameplay**: **Automatic Wall Angle** (faces
 steeper than this are walls, default 45°) and **Double Sided Collision**. See [Levels](levels.md#gameplay).
@@ -88,11 +88,52 @@ becomes one actor of the type you pick, e.g. a row of orbs along a curve. Type i
 level's **Export As** collection and is not exported as geometry. Use Array, Subdivision or Curve modifiers to place
 the points without touching the mesh itself.
 
-## Level GLB size
+## Level GLB export settings
 
-**Build & Play › GLB Export Settings** opens the glTF exporter of the Geometry collection (**Properties ›
-Collection › Exporters**). The add-on sets what the build needs on every export (GLB, Y up, custom properties, apply
-modifiers, all objects); the rest, such as **Draco** mesh compression, is yours to change there.
+The level GLB is written by a Blender **Collection Exporter** (glTF 2.0) on the level's **Geometry** collection. The
+add-on adds it the first time it is needed. To see it, click **Build & Play › GLB Export Settings**: it selects the
+Geometry collection and opens **Properties › Collection › Exporters**, where the glTF exporter's options are.
+
+The add-on handles two kinds of settings:
+
+- **Forced** settings are written again before every export, so changing them there has no effect.
+- **Starting** settings are set once when the exporter is made. You can change them, but the values below are the
+  ones that work for OpenGOAL.
+
+| Setting | Add-on value | What it means for OpenGOAL |
+|---|---|---|
+| **Format** | **glTF Binary (.glb)**, forced | One `.glb` file with the meshes and textures in it, which is what the level builder reads. |
+| **Custom Properties** (Include › Data) | on, forced | Writes the meshes' and materials' custom properties. This is how the **Collision** panel's settings (above) reach the level builder. Off would leave the whole level as plain ground. |
+| **+Y Up** | on, forced | Blender is Z up, the game and glTF are Y up. |
+| **Apply Modifiers** | on, forced | Meshes are exported as you see them, with their modifiers. |
+| **Selected Objects**, **Visible Objects**, **Renderable Objects** | off, forced | Every mesh in Geometry is exported, whether it is selected, hidden or render-hidden. Render-hidden invisible walls are still level geometry. |
+| **Use Vertex Color** | **Active**, starting | The active (render) colour layer is the level's lighting and is exported with its alpha. Meshes that have a bake always export the baked layer. |
+| **Export all vertex colors** | off, starting | Avoids a Blender 5.2.2 bug where meshes whose render and active colour layers differ came out white. |
+| **Export active vertex color when no material** | on, starting | Meshes without a material keep their lighting. |
+| **Attributes** | set on every export | On when **Time of day** is on in Light Baking: the 8 time of day colour layers (`_SUNRISE` ... `_GREENSUN`) go into the GLB as custom attributes. Off otherwise. See [Lighting](lighting.md). |
+| **Normals** | on, starting | The surface direction of each vertex. |
+| **Materials** | **Export**, starting | Writes the materials and their image textures, which become the level's textures. |
+| **UVs** | on, starting | The texture coordinates. Without them textures aren't placed. |
+| **Skinning**, **Animation**, **Cameras**, **Punctual Lights** | off, starting | Level geometry doesn't use them. Cameras and lights are placed with the add-on's own tools (see [Cameras](cameras.md) and [Lighting](lighting.md)). |
+| **Compression** (Draco) | off (Blender's default) | See below. |
+
+### Draco mesh compression
+
+**Compression** packs the mesh data with Google's Draco library. The GLB gets much smaller, but the export takes
+longer. The level builder reads Draco GLBs, so you can turn it on or off as you like.
+
+Draco shrinks the mesh's decimal-number data (positions, normals, UVs) by rounding it to fewer bits (the
+**Quantization** values). It doesn't make vertex colours smaller; the add-on does that itself (below).
+<!-- check: exact Blender labels of the vertex colour options and Custom Properties differ between Blender 4.x and 5.x -->
+
+
+### Other settings
+
+The other options of the glTF exporter are Blender's own. You can leave them as they are. The
+[Blender glTF manual](https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html) explains each
+one.
+
+### Level GLB size
 
 To keep the file small, the export writes vertex colours as 8-bit (the game only keeps 8 bits anyway) and leaves out
 the plain colour layer when all 8 times of day are baked. It looks the same in game. The add-on preference **8-bit
