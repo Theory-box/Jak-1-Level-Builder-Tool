@@ -122,7 +122,7 @@ nav-meshes. Use it to:
 | `load-boundary-data.gc` | `goal_src/jak1/engine/level/` | Load boundaries |
 | Copied text | the clipboard | Any of the above: a whole file or just a part of one (a few entries copied out of a list are fine) |
 
-<!-- check: exact folders of level-info.gc / load-boundary-data.gc / entity.gc in a release install -->
+In a release install these are under the `data` folder (for example `data/goal_src/jak1/engine/level/level-info.gc`; `entity.gc` is in `data/goal_src/jak1/engine/entity/`).
 
 ### How to import
 

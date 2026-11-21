@@ -82,7 +82,7 @@ For a first test, use an enemy that stays in one place:
 
 ## 7. Build and play
 
-1. Save your `.blend` file. Turn the checkpoint (rotate it around Z) if you want Jak to face another way. <!-- check: checkpoint rotation sets Jak's facing -->
+1. Save your `.blend` file. Turn the checkpoint (rotate it around Z) if you want Jak to face another way.
 2. Open **OpenGOAL › Build & Play** and click **Export & Compile**.
    - The add-on writes the level's files and starts **GOALC**, the OpenGOAL compiler, in its own console window. Leave that window open.
    - The status bar at the bottom of Blender shows the progress. The **first** compile builds all the game's code and takes a while. Later compiles only rebuild what changed and are much faster.

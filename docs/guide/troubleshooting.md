@@ -181,8 +181,7 @@ the red warnings in **Level › Settings**.
 and the vanilla load boundaries stay active. A level built around the origin can overlap them, so walking through
 your level fires their commands (loading or unloading vanilla levels), which can unload your level or run out of
 memory. Move your level well away from the origin. To see where the vanilla boundaries are, import the game's
-`load-boundary-data.gc` with **Import › From GOAL Files** (see [Importing](importing.md)).
-<!-- check: exact area of the village1 boundaries / a safe distance to recommend -->
+`load-boundary-data.gc` with **Import › From GOAL Files** (see [Importing](importing.md)). A few kilometres is plenty: the add-on's own tests place levels about 3000 m away on X.
 
 **Actor-specific settings.** A sync period of 0 (divide by zero), a battlecontroller citadel camera without its
 position... The audit catches the known ones.
