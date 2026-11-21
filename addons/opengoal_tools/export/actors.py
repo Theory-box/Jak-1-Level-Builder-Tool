@@ -17,12 +17,7 @@ from ..data import (
 )
 from .. import db as _schema_db
 from .schema_emit import emit_schema_lumps
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
+from ..collections import _get_level_prop, _level_objects
 from ..collections import _level_objects, _get_level_prop
 
 # Cross-module imports (siblings in the export package)

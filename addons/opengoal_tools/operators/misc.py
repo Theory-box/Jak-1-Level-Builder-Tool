@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from ..collections import actor_etype, is_actor
 from ..data import keep_items
+from ..collections import frame_selected, select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -42,11 +43,8 @@ class OG_OT_SelectAndFrame(Operator):
             self.report({"ERROR"}, f"Object '{self.obj_name}' not found")
             return {"CANCELLED"}
         # Deselect all, select and make active
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        ctx.view_layer.objects.active = obj
-        # Frame in viewport
-        bpy.ops.view3d.view_selected()
+        select_only(obj, ctx)
+        frame_selected(ctx)
         return {"FINISHED"}
 
 class OG_OT_DeleteObject(Operator):

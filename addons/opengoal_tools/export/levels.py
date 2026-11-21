@@ -11,12 +11,6 @@ from pathlib import Path
 from .fileio import rewrite
 from .. import db as _db
 from ..data import ETYPE_CODE, ETYPE_AG, ETYPE_EXTRAS_AG, GAME_GD_FILES
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
 
 # Cross-module imports (siblings in the export package)
 from .paths import (

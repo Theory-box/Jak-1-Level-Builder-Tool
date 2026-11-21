@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from ..export.paths import log
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
@@ -332,7 +333,7 @@ def sync_blend_db(force_reload: bool = False) -> bool:
         reload_addon_full(mod)
         from importlib import import_module
         _d = import_module(mod + ".db")
-        print(f"[OpenGOAL] Database reloaded from {_d.DB_PATH} ({_d.DB_SOURCE})")
+        log(f"Database reloaded from {_d.DB_PATH} ({_d.DB_SOURCE})")
         return None
 
     # After the current operator / handler returns — this module gets unloaded.

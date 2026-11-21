@@ -13,6 +13,7 @@ Objects are tracked by pointer, so a renamed object isn't seen as deleted.
 from __future__ import annotations
 
 from .collections import free_object_name
+from .export.paths import log
 import re
 
 import bpy
@@ -117,7 +118,7 @@ def _ensure_preview(o):
     try:
         attach_preview(bpy.context, etype, o)
     except Exception as e:          # a preview failing must not break the duplicate
-        print(f"[og] preview for {o.name}: {e}")
+        log(f"preview for {o.name}: {e}")
 
 
 def _sync():

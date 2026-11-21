@@ -12,6 +12,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .collections import select_only
 import math
 import numpy as np
 import bpy
@@ -296,11 +297,8 @@ class OG_OT_WaypointSourceEdit(bpy.types.Operator):
             self.report({"WARNING"}, f"{o.name} isn't in this view layer"); return {"CANCELLED"}
         if ctx.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
-        for x in ctx.selected_objects:
-            x.select_set(False)
         o.hide_set(False)
-        o.select_set(True)
-        ctx.view_layer.objects.active = o
+        select_only(o, ctx)
         if o.type == "CURVE":
             bpy.ops.object.mode_set(mode="EDIT")
         return {"FINISHED"}

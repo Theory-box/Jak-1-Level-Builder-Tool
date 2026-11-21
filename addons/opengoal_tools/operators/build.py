@@ -498,7 +498,7 @@ class OG_OT_BakeLighting(Operator):
                 more = _bake.step()
             except Exception as e:
                 import traceback
-                print("[OpenGOAL] bake:", traceback.format_exc())
+                log("bake: " + traceback.format_exc())
                 _bake._JOB.clear()
                 _bake._status(f"Bake error: {e}")
                 more = False

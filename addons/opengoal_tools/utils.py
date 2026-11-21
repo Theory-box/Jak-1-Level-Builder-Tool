@@ -4,40 +4,24 @@
 # No imports from operators or panels (breaks circular dependency).
 # ---------------------------------------------------------------------------
 
-from .collections import is_actor, is_waypoint
+from .collections import actor_etype, is_actor
 import bpy
 from bpy.types import Operator
 from . import db as _db
-from .data import ENTITY_DEFS, ENTITY_WIKI, _is_custom_type
+from .data import ENTITY_DEFS, ENTITY_WIKI
 from .collections import _level_objects
 from .export import _actor_supports_aggro_trigger, _actor_uses_navmesh, _vol_has_link_to
+from .export.predicates import _classify_target
 
 def _is_linkable(obj):
-    """True if this object type can accept a trigger volume link.
-    Cameras, checkpoints, player spawns, nav-enemy actors, and custom GOAL
-    type actors are linkable. Process-drawable enemies (Yeti, Bully, etc.)
-    are NOT linkable because they don't respond to 'cue-chase events.
-    """
+    """True if this object type can accept a trigger volume link: cameras,
+    checkpoints, actors with their own volume, nav-enemy actors (they react to
+    'cue-chase) and custom GOAL type actors (export/predicates._classify_target)."""
     if obj is None:
         return False
-    if obj.type == "CAMERA" and obj.name.startswith("CAMERA_"):
-        return True
-    if obj.type == "EMPTY":
-        n = obj.name
-        if n.endswith("_CAM"):
-            return False
-        if n.startswith("CHECKPOINT_"):
-            return True
-        if n.startswith("ACTOR_") and not is_waypoint(n):
-            parts = n.split("_", 2)
-            if len(parts) >= 3:
-                if _actor_supports_aggro_trigger(parts[1]):
-                    return True
-                if _is_custom_type(parts[1]):
-                    return True
-                if _db.needs_vol(parts[1]):   # "volume" panel (water-vol, swamp-bat ...)
-                    return True
-    return False
+    if obj.type == "CAMERA":
+        return obj.name.startswith("CAMERA_")
+    return obj.type == "EMPTY" and _classify_target(obj.name) in ("checkpoint", "volume", "enemy", "custom")
 
 
 def _is_aggro_target(obj):
@@ -46,12 +30,8 @@ def _is_aggro_target(obj):
     pointing at the same enemy with different behaviours). Cameras and
     checkpoints are 1:1 (soft-enforced at link time).
     """
-    if obj is None or obj.type != "EMPTY" or not obj.name.startswith("ACTOR_"):
-        return False
-    if is_waypoint(obj.name) or obj.name.endswith("_CAM"):
-        return False
-    parts = obj.name.split("_", 2)
-    return len(parts) >= 3 and _actor_supports_aggro_trigger(parts[1])
+    et = actor_etype(obj) if obj is not None else None
+    return bool(et) and _actor_supports_aggro_trigger(et)
 
 
 def _vol_for_target(scene, target_name):

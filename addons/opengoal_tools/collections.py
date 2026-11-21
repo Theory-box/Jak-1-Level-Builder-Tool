@@ -88,6 +88,28 @@ def _active_level_col(scene):
     return levels[0]
 
 
+def select_only(objs, ctx=None):
+    """Select only objs (an object or a list); the first becomes active."""
+    ctx = ctx or bpy.context
+    objs = [objs] if isinstance(objs, bpy.types.Object) else [o for o in objs if o is not None]
+    for o in list(ctx.selected_objects):
+        o.select_set(False)
+    for o in objs:
+        o.select_set(True)
+    if objs:
+        ctx.view_layer.objects.active = objs[0]
+
+
+def frame_selected(ctx=None):
+    """Frame the selection in the first 3D viewport."""
+    ctx = ctx or bpy.context
+    for area in (ctx.screen.areas if getattr(ctx, "screen", None) else ()):
+        if area.type == "VIEW_3D":
+            with ctx.temp_override(area=area, region=area.regions[-1]):
+                bpy.ops.view3d.view_selected(use_all_regions=False)
+            break
+
+
 def clean_level_name(s) -> str:
     """A level name as the game files use it: lowercase, spaces -> dashes."""
     return str(s or "").strip().lower().replace(" ", "-")

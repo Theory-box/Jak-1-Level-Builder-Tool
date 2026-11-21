@@ -13,6 +13,7 @@ other groups / mods / old levels already use.
 from __future__ import annotations
 
 from .collections import level_name
+from .collections import _all_level_collections
 import re
 
 import bpy
@@ -58,17 +59,12 @@ def clean_name(s):
     return re.sub(r"[^a-z0-9-]+", "-", str(s).strip().lower()).strip("-")
 
 
-def _levels(scene):
-    from .collections import _all_level_collections
-    return _all_level_collections(scene)
-
-
 _ITEMS = {"levels": [], "filter": []}     # dynamic enum items must stay referenced (else the dropdown flickers)
 
 
 def _level_items(self, ctx):
     scene = ctx.scene if ctx else bpy.context.scene
-    items = [(c.name, level_name(c), "") for c in _levels(scene)] or [("NONE", "(no level)", "")]
+    items = [(c.name, level_name(c), "") for c in _all_level_collections(scene)] or [("NONE", "(no level)", "")]
     if items != _ITEMS["levels"]:
         _ITEMS["levels"] = items
     return _ITEMS["levels"]
@@ -82,12 +78,12 @@ def _filter_items(self, ctx):
 
 
 def _task_level_get(self):
-    names = [c.name for c in _levels(bpy.context.scene)]
+    names = [c.name for c in _all_level_collections(bpy.context.scene)]
     return names.index(self.level) if self.level in names else 0
 
 
 def _task_level_set(self, i):
-    names = [c.name for c in _levels(bpy.context.scene)]
+    names = [c.name for c in _all_level_collections(bpy.context.scene)]
     if 0 <= i < len(names):
         self.level = names[i]
 

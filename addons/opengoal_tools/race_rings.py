@@ -18,6 +18,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .export.paths import log
 import math
 import bpy
 import mathutils
@@ -177,7 +178,7 @@ def _rebuild_later(names):
                     try:
                         update_preview(bpy.context, o)
                     except Exception as e:   # never stop following this actor
-                        print(f"[OpenGOAL] race-ring preview {n}: {e}")
+                        log(f"race-ring preview {n}: {e}")
         finally:
             _PENDING.difference_update(names)
         return None

@@ -3,6 +3,7 @@ entities, Export selected definitions."""
 from __future__ import annotations
 
 from .collections import is_waypoint
+from .export.paths import log
 import bpy
 from bpy.props import FloatProperty, BoolProperty, EnumProperty, PointerProperty, StringProperty, IntProperty
 from mathutils import Vector, Matrix
@@ -349,7 +350,7 @@ def _copy_struct(a, b):
             elif not p.is_readonly:
                 setattr(b, k, getattr(a, k))
         except (AttributeError, TypeError, ValueError) as e:
-            print(f"[og convert] {k} not copied: {e}")
+            log(f"convert: {k} not copied: {e}")
 
 
 def _copy_rna_props(src, new):
@@ -372,7 +373,7 @@ def _copy_rna_props(src, new):
             elif not p.is_readonly:
                 setattr(new, k, getattr(src, k))
         except (AttributeError, TypeError, ValueError) as e:
-            print(f"[og convert] {k} not copied: {e}")
+            log(f"convert: {k} not copied: {e}")
     return done
 
 
@@ -481,7 +482,7 @@ still apply are kept, previews updated. "All objects" deletes the converted mesh
                     try:
                         new[k] = v
                     except (TypeError, ValueError) as e:
-                        print(f"[og convert] {old}.{k} not copied: {e}")
+                        log(f"convert: {old}.{k} not copied: {e}")
                 _repoint(old, new.name)
                 for c in [c for c in src.children if _is_any_preview(c)]:
                     bpy.data.objects.remove(c, do_unlink=True)

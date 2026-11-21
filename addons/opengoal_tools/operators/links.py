@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from ..collections import actor_etype, is_actor, is_waypoint
+from ..collections import frame_selected, select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -588,16 +589,8 @@ class OG_OT_WaypointSourceFrame(Operator):
         # Save the actor as active so it gets re-selected after the frame op
         actor_name = actor.name
         # Select only the source object, frame it, then restore actor selection
-        for o in ctx.selected_objects:
-            o.select_set(False)
-        src_obj.select_set(True)
-        ctx.view_layer.objects.active = src_obj
-        # Frame in viewport via the standard op
-        for area in ctx.screen.areas:
-            if area.type == "VIEW_3D":
-                with ctx.temp_override(area=area, region=area.regions[-1]):
-                    bpy.ops.view3d.view_selected(use_all_regions=False)
-                break
+        select_only(src_obj, ctx)
+        frame_selected(ctx)
         # Restore selection on the actor
         src_obj.select_set(False)
         actor_back = bpy.data.objects.get(actor_name)

@@ -33,6 +33,8 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .collections import select_only
+from .export.paths import log
 import math
 import numpy as np
 import bpy
@@ -1094,16 +1096,6 @@ def _objs(names):
     return [o for o in (bpy.data.objects.get(n) for n in names) if o is not None]
 
 
-def _select_only(objs):
-    vl = bpy.context.view_layer
-    keep = set(o.name for o in objs)
-    for o in vl.objects:
-        if o.select_get() != (o.name in keep):
-            o.select_set(o.name in keep)
-    if objs:
-        vl.objects.active = objs[0]
-
-
 def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
@@ -1131,7 +1123,7 @@ def _run_pass():
             job["emit_attr"] = attr
         _prepare(objs, attr, job["domain"])
         args = dict(type="EMIT")
-    _select_only(objs)
+    select_only(objs)
     import time
     job["evt"] = False                     # set by object_bake_complete for this pass
     job["pass_t"] = time.time()
@@ -1168,13 +1160,13 @@ def step() -> bool:
         waited = time.time() - _JOB.get("pass_t", 0)
         if not running and not _JOB["seen"] and waited > 120:
             _status("Bake error: the bake job never started (see the system console)")
-            print("[OpenGOAL] bake: the bake job never started")
+            log("bake: the bake job never started")
             _restore(_JOB)
             _JOB.clear()
             return False
         if waited > 60 and not _JOB.get("told"):
             _JOB["told"] = True           # one diagnostic line for long waits
-            print(f"[OpenGOAL] bake: still waiting on the {_JOB['passes'][_JOB['i']]} pass after {waited:.0f}s "
+            log(f"bake: still waiting on the {_JOB['passes'][_JOB['i']]} pass after {waited:.0f}s "
                   f"(job running {job_running}, finished event {bool(_JOB.get('evt'))}, writes refused {refused})")
         return True
     _JOB["told"] = False
@@ -1249,7 +1241,7 @@ def _finish():
     _uncombine(job, job.get("baked", []))    # the layers still on the copies (emit: back already)
     _restore(job)
     _status("Baking: post-processing…")
-    _select_only(_objs(job["objs"]))       # the selection the bake started with
+    select_only(_objs(job["objs"]))       # the selection the bake started with
     col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
     settings = col.og_bake if col is not None else None
     if settings is None:
@@ -1285,7 +1277,7 @@ def _finish():
     if times or extra:
         msg += f": {', '.join(times + extra)}"
     _status(msg)
-    print("[OpenGOAL] " + msg)
+    log(msg)
 
 
 def _safe(fn):
@@ -1297,7 +1289,7 @@ def _safe(fn):
         _JOB.clear()
         _status(f"Bake error: {e}")
         import traceback
-        print("[OpenGOAL] bake:", traceback.format_exc())
+        log("bake: " + traceback.format_exc())
         raise
 
 
@@ -1615,12 +1607,7 @@ class OG_OT_TodSelectLights(bpy.types.Operator):
         vl = ctx.view_layer
         objs = [o for o in c.all_objects if o.name in vl.objects and o.visible_get(view_layer=vl)]
         hidden = sum(1 for o in c.all_objects) - len(objs)
-        for o in ctx.selected_objects:
-            o.select_set(False)
-        for o in objs:
-            o.select_set(True)
-        if objs:
-            vl.objects.active = objs[0]
+        select_only(objs, ctx)
         self.report({"WARNING"} if hidden else {"INFO"},
                     f"Selected {len(objs)} object(s) of {c.name}" + (f"; {hidden} hidden" if hidden else ""))
         return {"FINISHED"}

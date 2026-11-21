@@ -14,6 +14,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .export.paths import log
 import copy
 import bpy
 import mathutils
@@ -203,7 +204,7 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
                     try:
                         apply(bpy.context, ob)
                     except Exception as e:   # never stop following this platform
-                        print(f"[OpenGOAL] place on path {n}: {e}")
+                        log(f"place on path {n}: {e}")
         finally:
             _PENDING.difference_update(todo)
         return None
@@ -217,7 +218,7 @@ def _upd(self, ctx):
         try:
             apply(ctx, self)
         except Exception as e:
-            print(f"[OpenGOAL] place on path {self.name}: {e}")
+            log(f"place on path {self.name}: {e}")
 
 
 # ── UI / export ────────────────────────────────────────────────────────────

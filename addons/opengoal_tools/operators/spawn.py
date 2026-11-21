@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from ..collections import is_actor
+from ..collections import select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
@@ -165,10 +166,7 @@ class OG_OT_SpawnLoadBoundary(Operator):
         o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
         o.set_invisible = True
         o.ignore        = True
-        for ob in list(ctx.selected_objects):
-            ob.select_set(False)
-        o.select_set(True)
-        ctx.view_layer.objects.active = o
+        select_only(o, ctx)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
         # Attach the viewport-only visualization modifier (turns the flat
         # polyline/face into a 3D wall / filled area).
@@ -326,17 +324,8 @@ class OG_OT_SpawnEntity(Operator):
 
         for msg in auto_connect(ctx, o, etype, pre_sel):
             self.report({"INFO"}, msg)
-        select_only(ctx, o)
+        select_only(o, ctx)
         return {"FINISHED"}
-
-def select_only(ctx, o):
-    """The spawned object becomes the only selected object and the active one
-    (ready to move / rotate / scale)."""
-    for x in list(ctx.selected_objects):
-        x.select_set(False)
-    o.select_set(True)
-    ctx.view_layer.objects.active = o
-
 
 def auto_connect(ctx, o, etype, pre_sel):
     """Preference "Connect spawned actors to the selection": what was selected
@@ -963,7 +952,7 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
 
         for msg in auto_connect(ctx, actor, etype, pre_sel):
             self.report({"INFO"}, msg)
-        select_only(ctx, actor)
+        select_only(actor, ctx)
         self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")
         return {"FINISHED"}
 
@@ -1001,7 +990,7 @@ class OG_OT_AddActorVolume(Operator):
         bpy.ops.mesh.primitive_cube_add(size=4.0, location=actor.matrix_world.translation)
         vol = make_volume(ctx.scene, ctx.active_object, actor.name)
         vol.color = (0.1, 0.4, 1.0, 0.4)
-        select_only(ctx, actor)   # the new volume isn't left selected (spawn auto-connect)
+        select_only(actor, ctx)   # the new volume isn't left selected (spawn auto-connect)
         self.report({"INFO"}, f"Added {vol.name} linked to {actor.name}")
         return {"FINISHED"}
 
@@ -1143,7 +1132,7 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
         # yellow-green, in Props; the custom-actor parent gives it the path,
         # nav-mesh and volume panels
         o = make_actor(ctx, etype, ctx.scene.cursor.location, preview=False)
-        select_only(ctx, o)
+        select_only(o, ctx)
 
         self.report({"INFO"},
             f"Spawned '{o.name}' — open the GOAL Code panel to assign a code block, "

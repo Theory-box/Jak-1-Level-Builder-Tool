@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from ..collections import level_name
+from ..collections import frame_selected, select_only
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
@@ -539,15 +540,8 @@ class OG_OT_AuditSelectObject(Operator):
         if obj is None:
             self.report({"WARNING"}, f"Object '{self.obj_name}' not found.")
             return {"CANCELLED"}
-        for o in ctx.scene.objects:
-            o.select_set(False)
-        obj.select_set(True)
-        ctx.view_layer.objects.active = obj
-        for area in ctx.screen.areas:
-            if area.type == "VIEW_3D":
-                with ctx.temp_override(area=area, region=area.regions[-1]):
-                    bpy.ops.view3d.view_selected()
-                break
+        select_only(obj, ctx)
+        frame_selected(ctx)
         return {"FINISHED"}
 
 

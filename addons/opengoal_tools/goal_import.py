@@ -8,6 +8,7 @@ manager keeps the list rows (name, category, picked).
 """
 from __future__ import annotations
 
+from .collections import select_only
 import json
 import os
 import re
@@ -393,11 +394,7 @@ class OG_OT_GoalImportRun(bpy.types.Operator):
                 skipped += sk
             made += got
         if made:
-            for o in ctx.selected_objects:
-                o.select_set(False)
-            for o in made:
-                o.select_set(True)
-            ctx.view_layer.objects.active = made[0]
+            select_only(made, ctx)
         msg = f"{len(made)} object(s) imported"
         if skipped:
             msg += f"; skipped {len(skipped)} (nothing to make them from): {', '.join(skipped[:5])}"

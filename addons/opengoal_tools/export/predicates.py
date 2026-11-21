@@ -12,12 +12,6 @@ import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from .. import db as _db
 from ..data import _is_custom_type
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
 
 
 # Cross-module imports (siblings in the export package)

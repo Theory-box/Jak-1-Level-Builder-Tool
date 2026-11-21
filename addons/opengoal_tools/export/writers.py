@@ -11,12 +11,7 @@ from .. import boundary_viz as _bviz
 from .fileio import write_if_changed
 from pathlib import Path
 from ..data import MOOD_FUNC_OVERRIDES, GLOBAL_TPAGE_GOS
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
+from ..collections import _get_level_prop, _level_objects, _active_level_col
 from ..collections import _active_level_col, _level_objects, _get_level_prop
 
 # Cross-module imports (siblings in the export package)
