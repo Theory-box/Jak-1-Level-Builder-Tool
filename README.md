@@ -10,7 +10,7 @@ starts the game at your checkpoint.
 
 <!-- screenshot: a level in Blender with the OpenGOAL sidebar open, and the same level in game -->
 
-**[⬇ Download the latest release](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/latest)** ·
+**[⬇ Download the latest release](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/latest)** · [User guide](docs/guide/README.md) ·
 [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv)
 
 ---
@@ -90,12 +90,12 @@ Updating: install the new zip the same way, then restart GOALC once.
 
 ## Documentation
 
-A new user guide is being written (basics first, then every feature in detail); links will be added
-here when it's published. Until then:
-- the release notes on the [Releases page](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases) describe each feature;
-- every field and button in the add-on has a tooltip, and the **?** buttons and warning counts explain themselves;
-- deeper technical notes (how the game systems work) are in [`knowledge-base/research/`](knowledge-base/research/).
+**[User guide](docs/guide/README.md)** — start with the basics, then every feature in detail:
+- [Install](docs/guide/install.md) · [Your first level](docs/guide/first-level.md) · [The interface](docs/guide/interface.md) · [Build & Play](docs/guide/build-and-play.md)
+- Features: [levels](docs/guide/levels.md), [geometry](docs/guide/geometry.md), [actors](docs/guide/actors.md), [paths & platforms](docs/guide/paths-and-platforms.md), [enemies & nav-meshes](docs/guide/enemies-and-navmesh.md), [checkpoints & cameras](docs/guide/checkpoints-and-cameras.md), [volumes & triggers](docs/guide/volumes-and-triggers.md), [audio](docs/guide/audio.md), [lighting](docs/guide/lighting.md), [tasks](docs/guide/tasks.md), [edited actors & GOAL code](docs/guide/edited-actors-and-goal-code.md), [importing](docs/guide/importing.md)
+- Reference: [troubleshooting](docs/guide/troubleshooting.md), [glossary](docs/guide/glossary.md), [every actor](docs/guide/actor-list.md)
 
+Deeper technical notes on how the game's systems work: [`knowledge-base/research/`](knowledge-base/research/).
 Questions and feedback: the [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv).
 
 ---
