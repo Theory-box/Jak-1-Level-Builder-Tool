@@ -58,7 +58,7 @@ file again adds another copy to the same collection.
 Tips:
 - Actor models (`*-lod0.glb`) are handy to check sizes. Actors you spawn already show their own model as a preview
   (Preferences › **Preview Models**), so you don't need to import those by hand.
-- Whole vanilla levels (`*-background.glb`) are useful to copy a layout or check scale.
+- Whole vanilla levels (`*-background.glb`) are useful to copy a layout, check scale or place your custom level in relation with them.
 
 ---
 

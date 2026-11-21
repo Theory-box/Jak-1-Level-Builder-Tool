@@ -131,8 +131,8 @@ places" (ogre, finalboss).
 | Select button (Lights) | Selects the objects of this time's light collection. |
 | **World** | The world (environment) used while this time bakes. |
 | **+** (World) | New world for this time with an outdoor default colour. |
-| Select button (World) | Makes this world the scene's world, to see it in the viewport. Shows pressed while it is. |
-| **Time frame** | Only with **Set time frame per time of day**: the animation frame this time bakes at. |
+| Select button (World) | Makes this world the scene's world, to see it in the viewport and edit its settings. Shows pressed while it is. |
+| **Time frame** | Only with **Set time frame per time of day**: the animation frame this time bakes at. Useful to dynamically edit lights' position and settings, emit settings or even moving objects to change shadows. |
 
 **For all times:**
 

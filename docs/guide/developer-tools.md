@@ -64,7 +64,7 @@ and an error line if an override couldn't be loaded.
 ## The database override
 
 Everything the add-on knows about actors (their fields, links, art groups, warnings, categories) comes from the game
-database, `jak1_game_database.jsonc` in the add-on folder. You can use your own copy instead, to test changes
+database, `jak1_game_database.jsonc` in the add-on folder. You can use your own copy instead, for custom actors, edits you've made on existing actors or to test changes
 without editing or reinstalling the add-on:
 
 1. Copy `jak1_game_database.jsonc` somewhere outside the add-on folder and edit the copy.

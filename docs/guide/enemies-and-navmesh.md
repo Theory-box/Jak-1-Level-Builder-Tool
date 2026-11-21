@@ -9,11 +9,11 @@ The database sorts every enemy under a parent type, and the parent decides which
 | Kind | Examples | Moves with | Panels |
 |---|---|---|---|
 | **Nav-enemy** (parent `nav-enemy`) | babak, hopper, lurker crab, kermit, snow bunny, swamp rat, ram boss | a **nav-mesh** (where it may walk) + a **path** (its patrol) | NavMesh, Nav Behaviour (with Trigger Behaviour), Drop, Path |
-| **Process-drawable enemy** | bully, puffer, flying lurker, mother spider, swamp bat, junglesnake | its own code: a path, or nothing at all | Path (when it uses one), sometimes activation fields; no nav-mesh, no aggro triggers |
+| **Process-drawable enemy** | bully, puffer, flying lurker, mother spider, swamp bat, junglesnake | its own code: a path, or nothing at all | Path (when it uses one), sometimes activation fields; nav-mesh only for some, no aggro triggers |
 
 The [Actor list](actor-list.md) marks every enemy that needs a nav-mesh (**nav-mesh**) or a path (**path**). When you pick a nav-enemy in Spawn Objects, it says **Nav-enemy, needs navmesh and path** above the Spawn button.
 
-A nav-enemy without a nav-mesh still works: it idles and notices Jak, but it can't chase him. You get a yellow (soft) warning **no nav-mesh: it idles / notices Jak but can't pathfind** (see the ⚠ counts, ② in the [actor screenshot](images/actor.png)). Paths are explained in [Paths & platforms](paths-and-platforms.md).
+A nav-enemy without a nav-mesh still works: it idles and notices Jak, but it can't chase him. You get a grey (soft) warning **no nav-mesh: it idles / notices Jak but can't pathfind** (see the ⚠ counts, ② in the [actor screenshot](images/actor.png)). Paths are explained in [Paths & platforms](paths-and-platforms.md).
 
 ## Nav-meshes
 
@@ -62,7 +62,7 @@ Every nav-mesh gets three materials. In Edit Mode, assign faces to them:
 | Material | Colour | Meaning in game |
 |---|---|---|
 | **NAV Walk** | blue | Normal walkable floor |
-| **NAV Jump** | teal | A gap: nav-enemies jump across these triangles |
+| **NAV Jump** | teal | A gap: nav-enemies jump across these triangles. Be aware that not all nav-enemies can jump and might crash when trying. |
 | **NAV Special** | green | Special area: the lurker shark's water area, the yakow pen |
 
 The colours match the game's own nav-mesh viewer. In **Object Settings › Navmesh Info**, the **Jump faces** box has **Add Nav Materials** (when a slot is missing) and a button that switches the mesh between a plain wire and coloured, see-through faces.

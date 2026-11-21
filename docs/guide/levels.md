@@ -140,9 +140,9 @@ vanilla value if you had set one before).
 
 | Field | What it does | Blank (vanilla) |
 |---|---|---|
-| **Retail Boot Checkpoint** | Where a retail (non-debug) boot starts | the title screen |
-| **New Game Checkpoint** | Where **New Game** starts | the intro, then Geyser Rock |
-| **Quit To Menu Checkpoint** | Where **Quit** in the pause menu goes | the title screen |
+| **Retail Boot Checkpoint** | Where a retail (non-debug) boot starts | `title-start` the title screen |
+| **New Game Checkpoint** | Where **New Game** starts | `intro-start` the intro, then Geyser Rock |
+| **Quit To Menu Checkpoint** | Where **Quit** in the pause menu goes | `title-start` the title screen |
 | **Discord RPC Status** | The text Discord shows while playing your mod | "Playing Jak and Daxter: The Precursor Legacy™" |
 
 The checkpoint fields suggest this .blend's checkpoints (`<level>-<name>`) and the game's. The boot modes of Build &

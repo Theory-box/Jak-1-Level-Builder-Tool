@@ -13,7 +13,7 @@ The panels are listed top to bottom; the numbers match the sidebar screenshot.
 | ① | **Build & Play** | Export the level, compile it with GOALC and launch the game at a checkpoint. Shows the level's warning count. | [Build & Play](build-and-play.md) |
 | ② | **Level** | Pick the active level at the top. Sub-panels: **Level Manager** (**Add Level**, **Assign Existing**), **Settings** (name, sound and music, visuals, gameplay, project settings), **Collections** and **Level Audit**. | [Levels](levels.md) |
 | ③ | **Spawn Objects** | One searchable list of everything you can place: actors, checkpoints, cameras, volumes, sounds and more, sorted into category tiles. New objects go to the 3D cursor. | [Actors](actors.md) |
-| ④ | **Object Controls** | Works on the whole selection: **Frame**, **Duplicate**, **Delete**, a summary of what's selected, **Set to Floor** and the **Vertex Colors** tools. | [Actors](actors.md), [Lighting](lighting.md) |
+| ④ | **Object Controls** | Works on the whole selection: **Frame**, **Duplicate**, **Delete**, a summary of what's selected, tools to affect the selection such as **Set to Floor**, **Convert Entities** and the **Vertex Colors** tools. | [Actors](actors.md), [Lighting](lighting.md) |
 | ⑤ | **Object Settings** | The settings of the active object. For an actor: **Actor Settings** (with sub-panels such as **Path**, **Entity Links**, **Crate**…), **Custom Lumps** and **GOAL Code**. Other objects (checkpoints, cameras, volumes, meshes) show their own settings. | [Actors](actors.md) |
 | ⑥ | **Light Baking** | Bake Cycles lighting into the meshes' vertex colours, with bake options, time of day and colour quantisation. | [Lighting](lighting.md) |
 | ⑦ | **Tasks** | Your own power cells and scout flies, and their texts. Needs mod-base. | [Tasks](tasks.md) |
@@ -76,8 +76,8 @@ Every object type and its options are explained on the feature pages, for exampl
 
 The add-on checks your level as you work. The results are only recomputed after an edit, so they don't slow Blender down.
 
-- **Red ⚠ count**: something is required but missing, for example an actor that must have a path, a link slot that must point to another actor, or a sound whose sound bank the level doesn't load. These can break the build or crash the game. Fix them first.
-- **Yellow ⚠ count**: a soft warning. It works, but does less than you probably want, for example a nav-enemy without a nav-mesh.
+- **Red ⚠ count**: something is required but missing, for example an actor that must have a path or a link slot that must point to another actor. These can break the build or crash the game. Fix them first.
+- **Grey ⚠ count**: a soft warning. It works, but does less than you probably want, for example a sound whose sound bank the level doesn't load so it'll be missing.
 
 The counts show next to **Export & Compile** for the whole level (⑤ in the Build & Play screenshot), and in an actor's **Object Settings** panels for that actor. Hover over a count to see what's missing; click it to see the list.
 

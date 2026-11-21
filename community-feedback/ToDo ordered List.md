@@ -24,6 +24,22 @@ Simply use the cube project with a scale modifier as well as an option to normal
 
 ---
 
+## Custom pov-camera actor
+Custom actor, called "Camera animation" to spawn a pov-camera, either by entering a volume, a distance from it or only activated by another actor.
+Options:
+- to choose existing pov-camera from existing ones, made one in the blend file or just text to write down any.
+- If it can only activate once, can activate on every respawn
+Make actor that use custom camera for some of their action also able to trigger these custom pov-camera instead
+
+---
+
+## Custom mood creation tool
+(this section is under construction)
+- Ways to create moods directly by selecting existing/creating customs from template or blanks
+- Matching mood lights from time of day env/sun
+
+---
+
 ## Custom art group/actor/camera implementation
 It is possible to create your own actor fully from scratch for opengoal even with custom art group and animation. The process can be a bit cumbersome both on the blender side and opengoal side.
 Let's first starth with researching the topic to see what's needed from the blender side as well as the opengoal code side of things.
@@ -52,6 +68,33 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 ---
 
 # Others
+## Supress warning types
+An option to supress some warning depending on their type. New sub menu in devlopper tools `Warning settings` With an option called `Ignore warning` and under, a list of the warning by types with a checkbox (all off by default), if that box is checked is on, then those warnings don't show up in the audit or increase the icon count.
+
+## Import addon settings
+Option at the bottom of `addon settings` which allows you to select a blend file and it'd import all addon settings from that file, with a pop up window listing which settings will be imported and a checkbox to activate/deactivate some then an import/cancel button
+
+## Bin icon option for linked helpers 
+As well as the X button to unlink those type of helpers, add a bin button which would delete the helper as well as unlinking it.
+List of helpers that could get that bin button:
+- paths
+- waypoints
+- position empties (movie-pos, launcher destination, etc)
+- nav-sphere
+- nav-mesh
+Give a warning when pressing the bin that this will also delete the object completely, with a checkbox to not remind again if the user want to.
+
+## Move  more created objects into collections
+Both when creating them or when using collection sort
+- Camera Pivot inside camera collection
+- Launcher Destination into waypoints
+
+## Link guides from addon
+Buttons to open web browser on the guide, linking directly to the page and title. This should, if possible not add extra lines to make menus longer. So we'll see the best way to implement this.
+
+## Model import duplicate meshes
+As some meshes exist in multiple levels (ex: babak-lod0), these appear multiple times when searching in the model import. Any duplicate should be removed and only show one output.
+
 ## Better Linux support
 
 ---

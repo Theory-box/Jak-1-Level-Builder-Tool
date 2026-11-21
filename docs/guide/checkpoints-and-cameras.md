@@ -54,7 +54,7 @@ With a **mod-base** install you can tick **Boot into spawn (mod-base)**: builds 
 
 ## Cameras
 
-A camera is a Blender camera named `CAMERA_0`, `CAMERA_1` ... It does nothing until a trigger volume is linked to it: while Jak is inside the volume, the game uses this camera.
+A camera is a Blender camera named `CAMERA_0`, `CAMERA_1` ... It's activated by other actors or until a trigger volume is linked to it: while Jak is inside the volume, the game uses this camera.
 
 ### Add one
 

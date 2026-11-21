@@ -20,7 +20,7 @@ For small changes to your own level, **Quick Level Export** is faster (see below
 |---|---|
 | **Export & Compile** | Exports the active level's `.glb`, writes all its files and its entries in the shared game files, then compiles with GOALC. Use it after adding a new kind of actor, changing checkpoints, load boundaries, nav-meshes or level settings, and whenever you're not sure. |
 | **All levels** | The same for every level in this `.blend`, with a single compile at the end. |
-| **⚠ count** (⑤) | The level's warnings: red = required fields missing, yellow = soft warnings. Hover to read them, click to see the list. See [The interface](interface.md#warnings-the--counts-and-level-audit). |
+| **⚠ count** (⑤) | The level's warnings: red = required fields missing, grey = soft warnings. Hover to read them, click to see the list. See [The interface](interface.md#warnings-the--counts-and-level-audit). |
 | **Quick Level Export** | Exports only the level's own files (`.glb`, `.jsonc` with actors, cameras and settings, `.gd`, level code) and compiles. It doesn't touch checkpoints, load boundaries, nav-mesh entries or `game.gp`. Use **Export & Compile** after changing those or adding a new actor type. |
 | **Only Export** | Writes all of the level's files like **Export & Compile**, but doesn't compile. |
 | **Launch Game** | Closes a running game and starts it again, so the latest build is loaded. With a checkpoint picked in **Spawn**, it then loads your level and puts Jak there. |

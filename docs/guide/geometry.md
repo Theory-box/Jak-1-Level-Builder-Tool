@@ -96,7 +96,7 @@ modifiers, all objects); the rest, such as **Draco** mesh compression, is yours 
 
 To keep the file small, the export writes vertex colours as 8-bit (the game only keeps 8 bits anyway) and leaves out
 the plain colour layer when all 8 times of day are baked. It looks the same in game. The add-on preference **8-bit
-colours in every glTF export** does the same for glTF files you export by hand. For even smaller files, lower
+colours in every glTF export** does the same for glTF files you export by hand. For even smaller files, use Draco compression and/or lower
 **Color Depth** in Light Baking: see [Lighting](lighting.md).
 
 ---
