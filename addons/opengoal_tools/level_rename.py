@@ -14,7 +14,7 @@ another .blend's), each with a remove button.
 """
 from __future__ import annotations
 
-from .collections import clean_level_name, level_name
+from .collections import level_name
 import os
 import re
 

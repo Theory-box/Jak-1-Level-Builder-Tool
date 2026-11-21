@@ -8,22 +8,9 @@ from .collections import is_actor, is_waypoint
 import bpy
 from bpy.types import Operator
 from . import db as _db
-from .data import (
-    ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
-NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
-    LUMP_TYPE_ITEMS,
-    _actor_has_links, _actor_link_slots, _lump_ref_for_etype, _is_custom_type,
-)
-from .collections import (
-    _get_level_prop, _level_objects, _col_path_for_entity,
-)
-from .export import (
-    _actor_supports_aggro_trigger, _actor_is_platform, _actor_is_launcher,
-    _actor_is_spawner, _actor_is_enemy, _actor_uses_waypoints,
-    _actor_uses_navmesh,
-    _vol_links, _vol_has_link_to, _vols_linking_to, _lname, log,
-)
-from .properties import OGProperties
+from .data import ENTITY_DEFS, ENTITY_WIKI, _is_custom_type
+from .collections import _level_objects
+from .export import _actor_supports_aggro_trigger, _actor_uses_navmesh, _vol_has_link_to
 
 def _is_linkable(obj):
     """True if this object type can accept a trigger volume link.

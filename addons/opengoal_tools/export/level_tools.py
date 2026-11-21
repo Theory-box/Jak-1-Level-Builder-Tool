@@ -7,7 +7,7 @@ content changed, so an unchanged build doesn't recompile them.
 """
 from __future__ import annotations
 
-from .paths import _goal_src, _game_gp, log
+from .paths import _goal_src, _game_gp
 from .fileio import write_if_changed, rewrite, patch
 
 LT_DIR = "levels/level-tools"

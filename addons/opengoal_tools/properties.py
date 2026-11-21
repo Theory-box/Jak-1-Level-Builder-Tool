@@ -11,18 +11,11 @@ from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        FloatVectorProperty, CollectionProperty)
 from bpy.types import Panel, Operator, PropertyGroup, AddonPreferences
 from .data import (
-    ENTITY_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS,
-    ENEMY_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
-    LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
-    LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
-    TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS,
-    TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
+    ENTITY_ENUM_ITEMS, CRATE_ITEMS, LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS, LEVEL_BANKS,
+    MOOD_LEVELS, _music_flava_items_cb, TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS, TPAGE_FILTER_ITEMS,
     _enemy_enum_cb, _interactive_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
-    _spawn_variant_cb,
-    _spawn_variant_sub_cb,
-    _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
-    _search_results_cb,
-    _parse_lump_row,
+    _spawn_variant_cb, _spawn_variant_sub_cb, _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
+    _search_results_cb, _parse_lump_row,
 )
 from .collections import (
     _all_level_collections,

@@ -8,21 +8,14 @@ import bpy
 import os, re, json, socket, subprocess, threading, time
 from pathlib import Path
 from .data import needed_tpages
-from .collections import _get_level_prop, _level_objects, _active_level_col
+from .collections import _get_level_prop, _level_objects
 from .export import (
-    write_nav_gc, nav_system, tfl_nav_present,
-    collect_actors, collect_ambients, collect_spawns, collect_cameras,
-    collect_load_boundaries,
-    collect_nav_mesh_geometry, collect_aggro_triggers, collect_custom_triggers, collect_task_triggers,
-    needed_ags, needed_extras_ags, needed_code, write_jsonc, write_gd, write_gc,
-    make_fog_actor_dict,
-    patch_level_info, patch_load_boundaries, patch_game_gp, export_glb,
-    prune_orphaned_levels,
-    _collect_navmesh_actors, _canonical_actor_objects,
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info,
-    _game_gp, _levels_dir, _entity_gc, _load_boundary_data,
-    _clean_orphaned_vol_links, _vol_links,
-    _navmesh_to_goal, log,
+    write_nav_gc, nav_system, tfl_nav_present, collect_actors, collect_ambients, collect_spawns,
+    collect_cameras, collect_load_boundaries, collect_nav_mesh_geometry, collect_aggro_triggers,
+    collect_custom_triggers, collect_task_triggers, needed_ags, needed_extras_ags, needed_code, write_jsonc,
+    write_gd, write_gc, make_fog_actor_dict, patch_level_info, patch_load_boundaries, patch_game_gp,
+    prune_orphaned_levels, _collect_navmesh_actors, _goal_src, _level_info, _game_gp, _entity_gc,
+    _load_boundary_data, _clean_orphaned_vol_links, _navmesh_to_goal, log,
 )
 
 # PATH HELPERS

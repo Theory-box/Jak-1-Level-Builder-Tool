@@ -21,12 +21,7 @@
 #    Add a function to _REGISTERED_CHECKS at the bottom of this file.
 
 from . import db as _db
-from .data import (
-    ENTITY_DEFS,
-    ACTOR_LINK_DEFS,
-    _actor_link_slots,
-    _actor_get_link,
-)
+from .data import ENTITY_DEFS, _actor_link_slots, _actor_get_link
 from .collections import _level_objects, actor_etype, is_actor
 
 # ---------------------------------------------------------------------------
@@ -383,7 +378,7 @@ def check_sound_banks(scene):
     """A sound (sound emitter, particle spawner) only plays if its bank is
     loaded: common, or one of the level's two sound banks (required.py,
     shared with the warnings next to Export & Compile). Warn only."""
-    from .collections import _level_objects, actor_etype, is_actor
+    from .collections import _level_objects
     from .required import missing_bank, _sound_banks
     banks = _sound_banks(scene)
     loaded = banks[0]
