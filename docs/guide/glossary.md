@@ -29,7 +29,7 @@ tells the game where the level is; without one the add-on computes it from the c
 
 **Checkpoint** — A `CHECKPOINT_` empty: a place the player can start or respawn. Each one exports as a
 continue point. The one named `start` is where **Build & Play** spawns you. See
-[Checkpoints & cameras](checkpoints-and-cameras.md).
+[Level flow](level-flow.md).
 
 **Continue point** — The game's name for a checkpoint, written into `level-info.gc` as `<level>-<name>` (for example
 `my-level-start`). It also says which levels must be loaded when you respawn there.

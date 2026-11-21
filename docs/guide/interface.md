@@ -13,7 +13,7 @@ The panels are listed top to bottom; the numbers match the sidebar screenshot.
 | ① | **Build & Play** | Export the level, compile it with GOALC and launch the game at a checkpoint. Shows the level's warning count. | [Build & Play](build-and-play.md) |
 | ② | **Level** | Pick the active level at the top. Sub-panels: **Level Manager** (**Add Level**, **Assign Existing**), **Settings** (name, sound and music, visuals, gameplay, project settings), **Collections** and **Level Audit**. | [Levels](levels.md) |
 | ③ | **Spawn Objects** | One searchable list of everything you can place: actors, checkpoints, cameras, volumes, sounds and more, sorted into category tiles. New objects go to the 3D cursor. | [Actors](actors.md) |
-| ④ | **Object Controls** | Works on the whole selection: **Frame**, **Duplicate**, **Delete**, a summary of what's selected, tools to affect the selection such as **Set to Floor**, **Convert Entities** and the **Vertex Colors** tools. | [Actors](actors.md), [Lighting](lighting.md) |
+| ④ | **Object Controls** | Works on the whole selection: **Frame**, **Duplicate**, **Delete**, a summary of what's selected, tools to affect the selection such as **Set to Floor**, **Convert Entities** and the **Vertex Colors** tools. | [Object Controls](object-controls.md), [Lighting](lighting.md#vertex-colors-tools) |
 | ⑤ | **Object Settings** | The settings of the active object. For an actor: **Actor Settings** (with sub-panels such as **Path**, **Entity Links**, **Crate**…), **Custom Lumps** and **GOAL Code**. Other objects (checkpoints, cameras, volumes, meshes) show their own settings. | [Actors](actors.md) |
 | ⑥ | **Light Baking** | Bake Cycles lighting into the meshes' vertex colours, with bake options, time of day and colour quantisation. | [Lighting](lighting.md) |
 | ⑦ | **Tasks** | Your own power cells and scout flies, and their texts. Needs mod-base. | [Tasks](tasks.md) |
@@ -70,7 +70,7 @@ The add-on recognises objects by their names, so keep the prefix (and for actors
 | `NAVMESH_…` | A nav-mesh. | |
 | `DEST_<…>` | A launcher's destination. | |
 
-Every object type and its options are explained on the feature pages, for example [Checkpoints & cameras](checkpoints-and-cameras.md) and [Volumes & triggers](volumes-and-triggers.md).
+Every object type and its options are explained on the feature pages, for example [Level flow](level-flow.md), [Cameras](cameras.md) and [Volumes & triggers](volumes-and-triggers.md).
 
 ## Warnings: the ⚠ counts and Level Audit
 

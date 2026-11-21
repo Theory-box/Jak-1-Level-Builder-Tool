@@ -25,7 +25,7 @@ The message bar says what the actor still needs. For example: "needs a path", "l
 
 Each row shows the actor's name, its texture group in brackets, and its category on the right.
 
-The tiles are: Enemies, Platforms, Interactive Objects, Obstacles, Buttons and Doors, Visuals, NPCs, Pickups, Effects, Volumes, Triggers, Level Flow, Cameras, Custom Types, Favorites. Volumes, triggers, checkpoints and cameras are not actors. They have their own pages: [Volumes & triggers](volumes-and-triggers.md) and [Checkpoints & cameras](checkpoints-and-cameras.md).
+The tiles are: Enemies, Platforms, Interactive Objects, Obstacles, Buttons and Doors, Visuals, NPCs, Pickups, Effects, Volumes, Triggers, Level Flow, Cameras, Custom Types, Favorites. Volumes, triggers, checkpoints and cameras are not actors. They have their own pages: [Volumes & triggers](volumes-and-triggers.md) and [Level flow](level-flow.md) and [Cameras](cameras.md).
 
 ### Choices before spawning
 

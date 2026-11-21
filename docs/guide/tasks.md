@@ -49,7 +49,7 @@ Each text field has a search button (use an existing game text) and a **?** butt
 
 Alone in the field, a reference uses that same text; inside a sentence it is replaced by its English words. For example `Free the [level_name] sage`.
 
-The same rules apply to [hints](checkpoints-and-cameras.md#hints).
+The same rules apply to [hints](level-flow.md#hints).
 
 ### Stages
 
@@ -95,7 +95,7 @@ A trigger volume can close or open task stages when Jak walks in, for example to
 2. Select it, and in **Object Settings › Volume Links › Task actions** click **Add Task Action**.
 3. Pick **Close** or **Open**, the stage, and the task (**of**).
 
-It runs each time Jak enters the volume. A volume with only task actions needs no other link. Hints can do the same with their **Close ...** commands ([Checkpoints & cameras](checkpoints-and-cameras.md#hints)). More on volumes: [Volumes & triggers](volumes-and-triggers.md).
+It runs each time Jak enters the volume. A volume with only task actions needs no other link. Hints can do the same with their **Close ...** commands ([Level flow](level-flow.md#hints)). More on volumes: [Volumes & triggers](volumes-and-triggers.md).
 
 ## What gets written
 
@@ -116,4 +116,4 @@ Turning **Custom tasks** off (or removing every task) takes your group's entries
 **The first build after adding tasks is a full compile**: the game-task list is part of the engine, so changing it (adding, renaming or renumbering tasks) recompiles most of the game. Editing a task's texts or stages doesn't: those builds stay quick.
 
 ---
-[← Previous](lighting.md) · [Guide index](README.md) · [Next →](edited-actors-and-goal-code.md)
+[← Previous](object-controls.md) · [Guide index](README.md) · [Next →](edited-actors-and-goal-code.md)

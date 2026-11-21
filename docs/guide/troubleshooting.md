@@ -103,7 +103,7 @@ Run it before you share a level, and when the game crashes and you don't know wh
 
 | Message | Fix |
 |---|---|
-| ERROR **No checkpoint named "start". The level has no player start position (Build & Play spawns at &lt;level&gt;-start).** | Add a checkpoint named `start` (see [Checkpoints & cameras](checkpoints-and-cameras.md)). |
+| ERROR **No checkpoint named "start". The level has no player start position (Build & Play spawns at &lt;level&gt;-start).** | Add a checkpoint named `start` (see [Level flow](level-flow.md)). |
 | WARNING **'…' (launcherdoor) has no continue-name set. …** | Set the checkpoint the door activates. |
 | ERROR **'…' (launcherdoor) continue-name '…' does not exist in the scene.** | Pick an existing checkpoint. |
 | INFO **'…' (…): state-actor target '…' is a '…', not a basebutton. …** | Usually fine; a basebutton is the normal controller for eco doors. |

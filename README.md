@@ -92,7 +92,7 @@ Updating: install the new zip the same way, then restart GOALC once.
 
 **[User guide](docs/guide/README.md)** — start with the basics, then every feature in detail:
 - [Install](docs/guide/install.md) · [Your first level](docs/guide/first-level.md) · [The interface](docs/guide/interface.md) · [Build & Play](docs/guide/build-and-play.md)
-- Features: [levels](docs/guide/levels.md), [geometry](docs/guide/geometry.md), [actors](docs/guide/actors.md), [paths & platforms](docs/guide/paths-and-platforms.md), [enemies & nav-meshes](docs/guide/enemies-and-navmesh.md), [checkpoints & cameras](docs/guide/checkpoints-and-cameras.md), [volumes & triggers](docs/guide/volumes-and-triggers.md), [audio](docs/guide/audio.md), [lighting](docs/guide/lighting.md), [tasks](docs/guide/tasks.md), [edited actors & GOAL code](docs/guide/edited-actors-and-goal-code.md), [importing](docs/guide/importing.md)
+- Features: [levels](docs/guide/levels.md), [geometry](docs/guide/geometry.md), [actors](docs/guide/actors.md), [paths & platforms](docs/guide/paths-and-platforms.md), [enemies & nav-meshes](docs/guide/enemies-and-navmesh.md), [level flow](docs/guide/level-flow.md), [cameras](docs/guide/cameras.md), [volumes & triggers](docs/guide/volumes-and-triggers.md), [audio](docs/guide/audio.md), [lighting](docs/guide/lighting.md), [object controls](docs/guide/object-controls.md), [tasks](docs/guide/tasks.md), [edited actors & GOAL code](docs/guide/edited-actors-and-goal-code.md), [importing](docs/guide/importing.md)
 - Reference: [troubleshooting](docs/guide/troubleshooting.md), [glossary](docs/guide/glossary.md), [every actor](docs/guide/actor-list.md)
 
 Deeper technical notes on how the game's systems work: [`knowledge-base/research/`](knowledge-base/research/).

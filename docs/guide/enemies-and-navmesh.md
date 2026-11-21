@@ -194,4 +194,4 @@ The lurkers' code and art are added to the level for you. Variants other than Ba
 Klaww (**ogreboss**), the **Plant Boss** and the **Precursor Robot Boss** are under Spawn Objects › Enemies (marked **boss** in the [Actor list](actor-list.md)). Klaww and the robot boss are edited actors: they are exported as level subtypes so they work in a custom level. See [Edited actors & GOAL code](edited-actors-and-goal-code.md) and each actor's description in Object Settings.
 
 ---
-[← Previous](paths-and-platforms.md) · [Guide index](README.md) · [Next →](checkpoints-and-cameras.md)
+[← Previous](paths-and-platforms.md) · [Guide index](README.md) · [Next →](level-flow.md)

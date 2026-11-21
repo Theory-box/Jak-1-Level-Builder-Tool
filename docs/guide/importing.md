@@ -110,7 +110,7 @@ actors with their settings filled in, their paths and volumes, ambients, cameras
 nav-meshes. Use it to:
 
 - bring parts of another custom level (its `.jsonc`) into this one,
-- copy objects between .blend files (with **Object Controls › Export Selected Definitions**, which also copies them
+- copy objects between .blend files (with **Object Controls › Export Selected Definitions** ([Object Controls](object-controls.md#export-selected-definitions)), which also copies them
   to the clipboard),
 - rebuild a vanilla level's actors from the game's own files to study or reuse them.
 

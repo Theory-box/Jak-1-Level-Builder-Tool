@@ -31,7 +31,7 @@ The dialog refuses a name that is empty, longer than 10 characters or already us
   shows a red warning in **Settings** if two levels clash.
 - Each level has its own checkpoints (named `CHECKPOINT_<nick>_start` so two levels can both have a "start").
 - Levels next to each other can load each other with load boundaries: see
-  [Volumes & triggers](volumes-and-triggers.md#load-boundaries).
+  [Level flow](level-flow.md#load-boundaries).
 
 ### Renaming a level
 
@@ -102,7 +102,7 @@ letters) and the **Effective Nick**.
 | **Orb Count** | The orbs shown on the level's progress page. Blank: counted from the actors (orbs, crates, orb caches, enemy drops, the pipe game, the plant boss ...). The button next to it counts them now and shows **Auto: N**. Type a whole number to use it instead. |
 | **Automatic Wall Angle** | Faces steeper than this are walls Jak can't stand on. Default 45°, -1 turns it off. |
 | **Double Sided Collision** | Collide with both sides of every face. Doubles the collision mesh. |
-| **Checkpoints (N)** | The level's checkpoints; click one to select it, **+** adds one. A red line warns when there is no "start" checkpoint. See [Checkpoints & cameras](checkpoints-and-cameras.md). |
+| **Checkpoints (N)** | The level's checkpoints; click one to select it, **+** adds one. A red line warns when there is no "start" checkpoint. See [Level flow](level-flow.md). |
 | **Tasks (N)** | The game tasks of this level. Custom tasks set to this level are listed in grey; **+** adds a vanilla or custom task. See [Tasks](tasks.md). |
 
 ### Others

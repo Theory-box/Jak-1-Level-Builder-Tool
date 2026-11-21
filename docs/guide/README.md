@@ -13,14 +13,16 @@ New here? Read **Part 1** in order. The other parts can be read in any order.
 | Page | What's in it |
 |---|---|
 | [Levels](levels.md) | Level Manager, level settings, collections, project settings |
-| [Geometry](geometry.md) | Solid / collision / visual meshes, collision, textures |
-| [Actors](actors.md) | Spawning, actor settings, links, options, custom lumps, object tools |
+| [Geometry](geometry.md) | The Geometry collection, collision, textures, GLB export settings |
+| [Actors](actors.md) | Spawning, actor settings, links, options, custom lumps |
 | [Paths & platforms](paths-and-platforms.md) | Waypoints, curves, path modes, sync, distributing, race rings |
 | [Enemies & nav-meshes](enemies-and-navmesh.md) | Nav-meshes, activation, aggro triggers, drops, battle controller |
-| [Checkpoints & cameras](checkpoints-and-cameras.md) | Checkpoints, spawns, cameras, hints |
-| [Volumes & triggers](volumes-and-triggers.md) | VOL_ meshes, water, triggers, load boundaries |
+| [Level flow](level-flow.md) | Checkpoints and spawns, load boundaries, moving between levels, hints |
+| [Cameras](cameras.md) | Camera objects, modes, camera volumes, cameras used by actors, pov-cameras |
+| [Volumes & triggers](volumes-and-triggers.md) | VOL_ meshes and their links, water, trigger volumes |
 | [Audio](audio.md) | Sound banks, music, sound emitters |
 | [Lighting](lighting.md) | Light baking, time of day, colour palette, Vertex Colors tools, Actor Light |
+| [Object Controls](object-controls.md) | Selection summary, duplicate / delete, Set to Floor, Distribute Along Curve, Convert Entities, Export Selected Definitions |
 | [Tasks](tasks.md) | Custom power cells / scout flies and their text |
 | [Edited actors & GOAL code](edited-actors-and-goal-code.md) | Vanilla actors made to work in custom levels, your own code |
 | [Importing](importing.md) | Game models and textures, existing levels' files |
