@@ -41,16 +41,8 @@ def _same(a, b):
 
 
 def _empty(ctx, name, loc, kind, size, color, col_path):
-    from .collections import _link_object_to_sub_collection
-    o = bpy.data.objects.new(name, None)
-    o.empty_display_type = kind
-    o.empty_display_size = size
-    o.color = color
-    o.show_name = True
-    o.location = loc
-    ctx.scene.collection.objects.link(o)
-    _link_object_to_sub_collection(ctx.scene, o, *col_path)
-    return o
+    from .collections import new_empty
+    return new_empty(ctx, name, col_path, kind, size, loc, color, show_name=True)
 
 
 def camera_matrix(q):

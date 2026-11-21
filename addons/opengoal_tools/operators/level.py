@@ -6,62 +6,19 @@
 
 from __future__ import annotations
 
+from ..collections import is_waypoint
+from ..collections import clean_level_name, level_name
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
-from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
-    NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
-    MUSIC_FLAVA_TABLE,
-    ETYPE_AG, ETYPE_CODE,
-    needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
-    _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    _is_custom_type, TEXTURE_SOURCE_ITEMS, SKY_SOURCE_VALUES,
-)
+from ..data import LEVEL_BANKS, TEXTURE_SOURCE_ITEMS, SKY_SOURCE_VALUES
 from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _ensure_sub_collection, _classify_object,
-    _col_path_for_entity, _link_object_to_sub_collection,
-    _recursive_col_objects, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SPAWNS,
-    _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_ENEMIES,
-    _COL_PATH_SPAWNABLE_PLATFORMS, _COL_PATH_SPAWNABLE_PROPS,
-    _COL_PATH_SPAWNABLE_NPCS, _COL_PATH_SPAWNABLE_PICKUPS,
-    _COL_PATH_GEO_SOLID, _COL_PATH_WATER,
-    _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
-    _next_free_level_index, _level_index_in_use,
-    _vis_nick_in_use, _suggest_unique_vis_nick, _resolve_vis_nick,
-    _ensure_level_index, _migrate_all_level_indices,
+    _active_level_col, _all_level_collections, _set_blender_active_collection, _next_free_level_index,
+    _level_index_in_use, _vis_nick_in_use, _suggest_unique_vis_nick,
 )
-from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc, _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vol_link_targets, _vol_has_link_to, _rename_vol_for_links,
-    _vols_linking_to, _vol_get_link_to, _vol_remove_link_to,
-    _classify_target, _clean_orphaned_vol_links, log, collect_actors,
-    collect_spawns, collect_ambients, needed_ags, needed_code,
-    patch_level_info, patch_game_gp, discover_custom_levels, remove_level,
-    export_glb,
-)
-from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
-    _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-)
-from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview,
-)
+from ..export import log, remove_level
 from .. import model_preview as _mp
 import re as _re
 
@@ -103,6 +60,59 @@ _GOAL_BOILERPLATE = """\
 
 
 
+
+def _validate_level(op, scene, raw_name, index, nick, exclude=None):
+    """Checks a new / edited level's name, index and vis nickname (exclude:
+    the level being edited). Returns (name, nick) or None after reporting."""
+    name = clean_level_name(raw_name)
+    err = None
+    if not name:
+        err = "Level name cannot be empty"
+    elif len(name) > 10:
+        err = f"Level name '{name}' is {len(name)} chars — max 10"
+    elif any(c != exclude and c.get("og_level_name", "") == name for c in _all_level_collections(scene)):
+        err = f"A level named '{name}' already exists"
+    elif _level_index_in_use(scene, index, exclude_col=exclude):
+        err = f"Level index {index} is already in use by another level"
+    if err is None:
+        nick = nick.strip().lower() or _suggest_unique_vis_nick(scene, name, exclude_col=exclude)
+        if len(nick) > 3:
+            err = f"Vis nickname '{nick}' must be 3 characters or fewer"
+        elif _vis_nick_in_use(scene, nick, exclude_col=exclude):
+            err = f"Vis nickname '{nick}' is already used by another level"
+    if err:
+        op.report({"ERROR"}, err)
+        return None
+    return name, nick
+
+
+def _init_level_col(ctx, col, name, base_id, index, nick, texture_source):
+    """Make col a new level: its settings, Geometry collection + GLB exporter,
+    and the active level."""
+    col["og_is_level"]          = True
+    col["og_level_name"]        = name
+    col["og_base_id"]           = base_id
+    col["og_level_index"]       = index
+    col["og_bottom_height"]     = -20.0
+    col["og_vis_nick_override"] = nick
+    col["og_sound_bank_1"]      = "none"
+    col["og_sound_bank_2"]      = "none"
+    col["og_music_bank"]        = "none"
+    col["og_mood"]              = "village1"
+    col["og_texture_source"]    = texture_source
+    col["og_sky_source"]        = texture_source if texture_source in SKY_SOURCE_VALUES else "none"
+    col["og_fog_override_enabled"] = False
+    col["og_fog_color"]         = (0.376, 0.502, 0.627)
+    col["og_fog_start"]         = 25.0
+    col["og_fog_end"]           = 200.0
+    col["og_fog_max"]           = 0.95
+    col["og_fog_min"]           = 0.10
+    from ..export.glb import geometry_collection, glb_exporter
+    glb_exporter(geometry_collection(col))
+    ctx.scene.og_props.active_level = col.name
+    _set_blender_active_collection(ctx, col)
+
+
 class OG_OT_CreateLevel(Operator):
     """Create a new level collection with default settings."""
     bl_idname   = "og.create_level"
@@ -132,67 +142,16 @@ class OG_OT_CreateLevel(Operator):
         return ctx.window_manager.invoke_props_dialog(self)
 
     def execute(self, ctx):
-        name = self.level_name.strip().lower().replace(" ", "-")
-        if not name:
-            self.report({"ERROR"}, "Level name cannot be empty")
+        ok = _validate_level(self, ctx.scene, self.level_name, self.level_index, self.vis_nick)
+        if ok is None:
             return {"CANCELLED"}
-        if len(name) > 10:
-            self.report({"ERROR"}, f"Level name '{name}' is {len(name)} chars — max 10")
-            return {"CANCELLED"}
-
-        # Check for duplicate names
-        for col in _all_level_collections(ctx.scene):
-            if col.get("og_level_name", "") == name:
-                self.report({"ERROR"}, f"A level named '{name}' already exists")
-                return {"CANCELLED"}
-
-        # Check for duplicate level index
-        if _level_index_in_use(ctx.scene, self.level_index):
-            self.report({"ERROR"}, f"Level index {self.level_index} is already in use by another level")
-            return {"CANCELLED"}
-
-        # Validate + check vis nickname uniqueness
-        nick_clean = self.vis_nick.strip().lower()
-        if not nick_clean:
-            nick_clean = _suggest_unique_vis_nick(ctx.scene, name)
-        if len(nick_clean) > 3:
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' must be 3 characters or fewer")
-            return {"CANCELLED"}
-        if _vis_nick_in_use(ctx.scene, nick_clean):
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' is already used by another level")
-            return {"CANCELLED"}
+        name, nick_clean = ok
 
         # Create the level collection
         col = bpy.data.collections.new(name)
         ctx.scene.collection.children.link(col)
 
-        # Set level properties
-        col["og_is_level"]          = True
-        col["og_level_name"]        = name
-        col["og_base_id"]           = self.base_id
-        col["og_level_index"]       = self.level_index
-        col["og_bottom_height"]     = -20.0
-        col["og_vis_nick_override"] = nick_clean
-        col["og_sound_bank_1"]      = "none"
-        col["og_sound_bank_2"]      = "none"
-        col["og_music_bank"]        = "none"
-        col["og_mood"]              = "village1"
-        col["og_texture_source"]    = self.texture_source
-        col["og_sky_source"]        = self.texture_source if self.texture_source in SKY_SOURCE_VALUES else "none"
-        col["og_fog_override_enabled"] = False
-        col["og_fog_color"]         = (0.376, 0.502, 0.627)
-        col["og_fog_start"]         = 25.0
-        col["og_fog_end"]           = 200.0
-        col["og_fog_max"]           = 0.95
-        col["og_fog_min"]           = 0.10
-
-        # Geometry collection + its GLB exporter
-        from ..export.glb import geometry_collection, glb_exporter
-        glb_exporter(geometry_collection(col))
-
-        # Set as active level
-        ctx.scene.og_props.active_level = col.name
-        _set_blender_active_collection(ctx, col)
+        _init_level_col(ctx, col, name, self.base_id, self.level_index, nick_clean, self.texture_source)
 
         self.report({"INFO"}, f"Created level '{name}' (base ID {self.base_id}, index {self.level_index}, nick '{nick_clean}')")
         log(f"[collections] Created level collection '{name}' base_id={self.base_id} index={self.level_index} nick={nick_clean}")
@@ -244,65 +203,17 @@ class OG_OT_AssignCollectionAsLevel(Operator):
         if col.get("og_is_level", False):
             self.report({"ERROR"}, f"'{self.col_name}' is already a level"); return {"CANCELLED"}
 
-        name = self.level_name.strip().lower().replace(" ", "-")
-        if not name:
-            self.report({"ERROR"}, "Level name cannot be empty"); return {"CANCELLED"}
-        if len(name) > 10:
-            self.report({"ERROR"}, f"Name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
-
-        # Check for duplicate level names
-        for c in _all_level_collections(ctx.scene):
-            if c.get("og_level_name", "") == name:
-                self.report({"ERROR"}, f"A level named '{name}' already exists"); return {"CANCELLED"}
-
-        # Check for duplicate level index
-        if _level_index_in_use(ctx.scene, self.level_index):
-            self.report({"ERROR"}, f"Level index {self.level_index} is already in use by another level")
+        ok = _validate_level(self, ctx.scene, self.level_name, self.level_index, self.vis_nick)
+        if ok is None:
             return {"CANCELLED"}
-
-        # Validate + check vis nickname uniqueness
-        nick_clean = self.vis_nick.strip().lower()
-        if not nick_clean:
-            nick_clean = _suggest_unique_vis_nick(ctx.scene, name)
-        if len(nick_clean) > 3:
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' must be 3 characters or fewer")
-            return {"CANCELLED"}
-        if _vis_nick_in_use(ctx.scene, nick_clean):
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' is already used by another level")
-            return {"CANCELLED"}
+        name, nick_clean = ok
 
         # Ensure collection is a direct child of the scene collection
         if col.name not in [c.name for c in ctx.scene.collection.children]:
             # It might be nested — link to scene root
             ctx.scene.collection.children.link(col)
 
-        # Set level properties
-        col["og_is_level"]          = True
-        col["og_level_name"]        = name
-        col["og_base_id"]           = self.base_id
-        col["og_level_index"]       = self.level_index
-        col["og_bottom_height"]     = -20.0
-        col["og_vis_nick_override"] = nick_clean
-        col["og_sound_bank_1"]      = "none"
-        col["og_sound_bank_2"]      = "none"
-        col["og_music_bank"]        = "none"
-        col["og_mood"]              = "village1"
-        col["og_texture_source"]    = self.texture_source
-        col["og_sky_source"]        = self.texture_source if self.texture_source in SKY_SOURCE_VALUES else "none"
-        col["og_fog_override_enabled"] = False
-        col["og_fog_color"]         = (0.376, 0.502, 0.627)
-        col["og_fog_start"]         = 25.0
-        col["og_fog_end"]           = 200.0
-        col["og_fog_max"]           = 0.95
-        col["og_fog_min"]           = 0.10
-
-        # Geometry collection + its GLB exporter
-        from ..export.glb import geometry_collection, glb_exporter
-        glb_exporter(geometry_collection(col))
-
-        # Set as active level
-        ctx.scene.og_props.active_level = col.name
-        _set_blender_active_collection(ctx, col)
+        _init_level_col(ctx, col, name, self.base_id, self.level_index, nick_clean, self.texture_source)
 
         self.report({"INFO"}, f"Assigned '{self.col_name}' as level '{name}' (index {self.level_index}, nick '{nick_clean}')")
         log(f"[collections] Assigned existing collection '{self.col_name}' as level '{name}' index={self.level_index} nick={nick_clean}")
@@ -327,7 +238,7 @@ class OG_OT_SetActiveLevel(Operator):
             return {"CANCELLED"}
         ctx.scene.og_props.active_level = col.name
         _set_blender_active_collection(ctx, col)
-        lname = col.get("og_level_name", col.name)
+        lname = level_name(col)
         self.report({"INFO"}, f"Active level: {lname}")
         return {"FINISHED"}
 
@@ -368,7 +279,7 @@ class OG_OT_DeleteLevel(Operator):
             self.report({"ERROR"}, f"Level '{self.col_name}' not found")
             return {"CANCELLED"}
 
-        lname = target.get("og_level_name", target.name)
+        lname = level_name(target)
 
         # Just remove the level marker — collection stays intact
         if "og_is_level" in target:
@@ -530,9 +441,7 @@ class OG_OT_EditLevel(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
-        # Lazy-migrate every level missing og_level_index so collision checks see real values
-        _migrate_all_level_indices(ctx.scene)
-        self.level_name    = str(col.get("og_level_name", col.name))
+        self.level_name    = level_name(col)
         self.base_id       = int(col.get("og_base_id", 10000))
         self.level_index   = int(col.get("og_level_index", 100))
         self.vis_nick      = str(col.get("og_vis_nick_override", "") or "")
@@ -544,31 +453,10 @@ class OG_OT_EditLevel(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             self.report({"ERROR"}, "No active level"); return {"CANCELLED"}
-        name = self.level_name.strip().lower().replace(" ", "-")
-        if not name:
-            self.report({"ERROR"}, "Level name cannot be empty"); return {"CANCELLED"}
-        if len(name) > 10:
-            self.report({"ERROR"}, f"Name '{name}' is {len(name)} chars — max 10"); return {"CANCELLED"}
-        # Check for duplicate names (excluding self)
-        for c in _all_level_collections(ctx.scene):
-            if c.name != col.name and c.get("og_level_name", "") == name:
-                self.report({"ERROR"}, f"A level named '{name}' already exists"); return {"CANCELLED"}
-
-        # Check for duplicate level index (excluding self)
-        if _level_index_in_use(ctx.scene, self.level_index, exclude_col=col):
-            self.report({"ERROR"}, f"Level index {self.level_index} is already in use by another level")
+        ok = _validate_level(self, ctx.scene, self.level_name, self.level_index, self.vis_nick, exclude=col)
+        if ok is None:
             return {"CANCELLED"}
-
-        # Validate + check vis nickname uniqueness (excluding self)
-        nick_clean = self.vis_nick.strip().lower()
-        if not nick_clean:
-            nick_clean = _suggest_unique_vis_nick(ctx.scene, name, exclude_col=col)
-        if len(nick_clean) > 3:
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' must be 3 characters or fewer")
-            return {"CANCELLED"}
-        if _vis_nick_in_use(ctx.scene, nick_clean, exclude_col=col):
-            self.report({"ERROR"}, f"Vis nickname '{nick_clean}' is already used by another level")
-            return {"CANCELLED"}
+        name, nick_clean = ok
 
         col["og_level_name"]        = name
         col["og_base_id"]           = self.base_id
@@ -671,7 +559,7 @@ class OG_OT_CreateGoalCodeBlock(bpy.types.Operator):
             return False
         parts = sel.name.split("_", 2)
         return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and "_wp_" not in sel.name and "_wpb_" not in sel.name)
+                and not is_waypoint(sel.name))
 
     def execute(self, ctx):
         sel   = ctx.active_object
@@ -751,11 +639,10 @@ class OG_OT_ScanPaths(bpy.types.Operator):
     def execute(self, ctx):
         import re
         from pathlib import Path
-        from ..build import _scan_for_installs
-        prefs = ctx.preferences.addons.get("opengoal_tools")
-        if not prefs:
+        from ..paths_core import prefs as _prefs_of
+        p = _prefs_of()
+        if not p:
             self.report({"ERROR"}, "Addon preferences not found"); return {"CANCELLED"}
-        p = prefs.preferences
         raw = p.og_root_path.strip().rstrip("\\/")
         if not raw:
             self.report({"WARNING"}, "Set the OpenGOAL Root folder first"); return {"CANCELLED"}
@@ -796,7 +683,7 @@ class OG_OT_IncludeCreate(Operator):
         col = _active_level_col(ctx.scene)
         if col is None:
             return {"CANCELLED"}
-        name = str(col.get("og_level_name", col.name))
+        name = level_name(col)
         txt = bpy.data.texts.new(f"{name}-include.jsonc")
         txt.from_string(_inc.TEMPLATE)
         txt.use_fake_user = True

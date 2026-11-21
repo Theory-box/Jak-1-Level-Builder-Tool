@@ -17,6 +17,7 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .collections import is_actor
 import bpy
 
 _MONEY = "(pickup-type money)"
@@ -77,7 +78,7 @@ def auto_orbs(level_col) -> int:
     from .collections import _recursive_col_objects
     n = 0
     for o in _recursive_col_objects(level_col, exclude_no_export=True):
-        if o.type == "EMPTY" and o.name.startswith("ACTOR_") and "_wp_" not in o.name and o.name.count("_") >= 2:
+        if is_actor(o):
             try:
                 n += actor_orbs(o)
             except Exception:

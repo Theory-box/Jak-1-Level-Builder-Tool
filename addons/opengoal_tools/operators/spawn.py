@@ -6,60 +6,21 @@
 
 from __future__ import annotations
 
+from ..collections import is_actor
+from ..collections import select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
 from .. import db as _db
-from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
-    NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
-    MUSIC_FLAVA_TABLE,
-    ETYPE_AG, ETYPE_CODE,
-    needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
-    _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    _is_custom_type,
-)
+from ..data import ENTITY_DEFS, ALL_SFX_ITEMS, _is_custom_type
 from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _ensure_sub_collection, _classify_object,
-    _col_path_for_entity, _link_object_to_sub_collection,
-    _recursive_col_objects, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SPAWNS,
-    _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_ENEMIES,
-    _COL_PATH_SPAWNABLE_PLATFORMS, _COL_PATH_SPAWNABLE_PROPS,
-    _COL_PATH_SPAWNABLE_NPCS, _COL_PATH_SPAWNABLE_PICKUPS,
-    _COL_PATH_GEO_SOLID, _COL_PATH_WATER,
-    _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
+    _level_objects, _col_path_for_entity, _link_object_to_sub_collection, _COL_PATH_TRIGGERS,
+    _COL_PATH_CAMERAS, _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_PLATFORMS,
 )
-from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc, _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vol_link_targets, _vol_has_link_to, _rename_vol_for_links,
-    _vols_linking_to, _vol_get_link_to, _vol_remove_link_to,
-    _classify_target, _clean_orphaned_vol_links, log, collect_actors,
-    collect_spawns, collect_ambients, needed_ags, needed_code,
-    patch_level_info, patch_game_gp, discover_custom_levels, remove_level,
-    export_glb,
-)
-from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
-    _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-)
-from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview,
-)
+from ..export import _actor_uses_navmesh, _vol_links, _vol_has_link_to, _rename_vol_for_links, log
+from ..utils import _is_linkable, _is_aggro_target, _vol_for_target
 from .. import model_preview as _mp
 from .. import boundary_viz as _bviz
 import re as _re
@@ -205,10 +166,7 @@ class OG_OT_SpawnLoadBoundary(Operator):
         o.color = (1.0, 0.4, 0.0, 0.6)   # orange — distinct from green trigger volumes
         o.set_invisible = True
         o.ignore        = True
-        for ob in list(ctx.selected_objects):
-            ob.select_set(False)
-        o.select_set(True)
-        ctx.view_layer.objects.active = o
+        select_only(o, ctx)
         _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_TRIGGERS)
         # Attach the viewport-only visualization modifier (turns the flat
         # polyline/face into a 3D wall / filled area).
@@ -317,15 +275,9 @@ def make_actor(ctx, etype, location, name=None, variant=None, variant_sub=None, 
     # DB field drivers (e.g. launcher spring height -> arrow length)
     from ..utils import apply_db_drivers
     apply_db_drivers(o, etype)
-    if preview:
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                if not _mp.attach_preview(ctx, etype, o):
-                    o["_og_no_preview"] = True
-            except Exception as e:
-                # Never fail the spawn over a preview failure
-                log(f"model_preview: {e}")
+    if preview and _mp.previews_on():
+        if not _mp.try_attach_preview(ctx, etype, o):     # never fails the spawn
+            o["_og_no_preview"] = True
     return o
 
 
@@ -372,25 +324,16 @@ class OG_OT_SpawnEntity(Operator):
 
         for msg in auto_connect(ctx, o, etype, pre_sel):
             self.report({"INFO"}, msg)
-        select_only(ctx, o)
+        select_only(o, ctx)
         return {"FINISHED"}
-
-def select_only(ctx, o):
-    """The spawned object becomes the only selected object and the active one
-    (ready to move / rotate / scale)."""
-    for x in list(ctx.selected_objects):
-        x.select_set(False)
-    o.select_set(True)
-    ctx.view_layer.objects.active = o
-
 
 def auto_connect(ctx, o, etype, pre_sel):
     """Preference "Connect spawned actors to the selection": what was selected
     before spawning gets linked: curves -> path, a nav-mesh (or an actor that
     has one -> its nav-mesh-actor) -> nav-mesh, a VOL_ volume -> volume.
     Returns messages for what was linked."""
-    a = bpy.context.preferences.addons.get("opengoal_tools")
-    if not (a and getattr(a.preferences, "auto_connect_spawn", True)):
+    from ..paths_core import pref
+    if not pref("auto_connect_spawn", True):
         return []
     from .links import _is_navmesh
     from ..data import _actor_set_link
@@ -478,7 +421,7 @@ class OG_OT_DuplicateEntity(Operator):
 
     def execute(self, ctx):
         srcs = [o for o in ctx.selected_objects
-                if o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+                if is_actor(o)]
         if not srcs:
             self.report({"ERROR"}, "Select an ACTOR_ empty first")
             return {"CANCELLED"}
@@ -515,12 +458,7 @@ class OG_OT_DuplicateEntity(Operator):
             for child in list(new_empty.children):
                 if child.get(_mp._PREVIEW_PROP) or child.get(_mp._WAYPOINT_PREVIEW_PROP):
                     bpy.data.objects.remove(child, do_unlink=True)
-            _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-            if _prefs and _prefs.preferences.preview_models:
-                try:
-                    _mp.attach_preview(ctx, etype, new_empty)
-                except Exception as e:
-                    log(f"duplicate_entity model_preview: {e}")
+            _mp.try_attach_preview(ctx, etype, new_empty, "duplicate_entity model_preview")
             new_names.append(new_empty.name)
 
         # Leave the new duplicates selected.
@@ -1009,17 +947,12 @@ mesh you can reshape. Uses the shared volume system, so any convex mesh works
         _sv = getattr(scene.og_props, "spawn_variant", "")
         if _vf and _sv and _sv != "NONE" and any(c.get("value") == _sv for c in _db.variant_choices(etype)):
             actor[_vf["key"]] = _sv
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                _mp.attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
-            except Exception as e:
-                log(f"model_preview: {e}")
+        _mp.try_attach_preview(ctx, etype, actor)   # the look's mesh (none for "No look")
         _link_object_to_sub_collection(scene, actor, *_col_path_for_entity(etype))
 
         for msg in auto_connect(ctx, actor, etype, pre_sel):
             self.report({"INFO"}, msg)
-        select_only(ctx, actor)
+        select_only(actor, ctx)
         self.report({"INFO"}, f"Added {actor_name} — add or link its volume in the Volume panel")
         return {"FINISHED"}
 
@@ -1057,7 +990,7 @@ class OG_OT_AddActorVolume(Operator):
         bpy.ops.mesh.primitive_cube_add(size=4.0, location=actor.matrix_world.translation)
         vol = make_volume(ctx.scene, ctx.active_object, actor.name)
         vol.color = (0.1, 0.4, 1.0, 0.4)
-        select_only(ctx, actor)   # the new volume isn't left selected (spawn auto-connect)
+        select_only(actor, ctx)   # the new volume isn't left selected (spawn auto-connect)
         self.report({"INFO"}, f"Added {vol.name} linked to {actor.name}")
         return {"FINISHED"}
 
@@ -1117,14 +1050,10 @@ class OG_OT_SpawnPlatform(Operator):
         self.report({"INFO"}, f"Added {o.name}")
 
         # ---- Model preview ------------------------------------------------
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
-            try:
-                attached = _mp.attach_preview(ctx, etype, o)
-                if not attached and ENTITY_DEFS.get(etype, {}).get("glb"):
-                    self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
-            except Exception as e:
-                log(f"model_preview: {e}")
+        if _mp.previews_on():
+            attached = _mp.try_attach_preview(ctx, etype, o)
+            if not attached and ENTITY_DEFS.get(etype, {}).get("glb"):
+                self.report({"WARNING"}, f"No GLB for {etype} — delete decompiler_out/jak1/ and re-run extractor")
 
         return {"FINISHED"}
 
@@ -1203,7 +1132,7 @@ class OG_OT_SpawnCustomType(bpy.types.Operator):
         # yellow-green, in Props; the custom-actor parent gives it the path,
         # nav-mesh and volume panels
         o = make_actor(ctx, etype, ctx.scene.cursor.location, preview=False)
-        select_only(ctx, o)
+        select_only(o, ctx)
 
         self.report({"INFO"},
             f"Spawned '{o.name}' — open the GOAL Code panel to assign a code block, "

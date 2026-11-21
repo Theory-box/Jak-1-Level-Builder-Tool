@@ -33,7 +33,7 @@ from .data import (
     NPC_ENUM_ITEMS,
     PICKUP_ENUM_ITEMS,
     PLATFORM_ENUM_ITEMS,
-    PROP_ENUM_ITEMS,
+
     SBK_SOUNDS,
     _LUMP_HARDCODED_KEYS,
     _actor_get_link,
@@ -91,7 +91,7 @@ from .export import (
 from .build import (
     _EXE, GOALC_PORT, GOALC_TIMEOUT,
     _BUILD_STATE, _PLAY_STATE,
-    _exe_root, _data_root, _data, _gk, _goalc,
+    _exe_root, _gk, _goalc,
     _user_dir, kill_gk, launch_gk,
     goalc_send, goalc_ok, launch_goalc,
     _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
@@ -187,33 +187,6 @@ classes = (
     *_nav_ui.CLASSES,
 )
 
-# COMPAT: moves old prop names / scale fields on file load (docs/backward-compat.md)
-@bpy.app.handlers.persistent
-def _migrate_legacy_props(*_args):
-    """Copy props saved under an old key (DB field "legacy_key", e.g.
-    og_sync_wrap -> og_fop_wrap_phase) to the new key, once, on file load."""
-    try:
-        from . import db as _dbm
-        leg = _dbm.legacy_keys()
-        for o in bpy.data.objects:
-            for new, old in leg.items():
-                if old in o.keys() and new not in o.keys():
-                    o[new] = o[old]
-            # old per-axis / uniform scale fields -> the empty's own scale
-            # (game axes x, y(up), z -> Blender x, z, y), once, if unscaled
-            if o.type == "EMPTY" and tuple(round(v, 4) for v in o.scale) == (1.0, 1.0, 1.0):
-                if any(k in o.keys() for k in ("og_scale_x", "og_scale_y", "og_scale_z")):
-                    gx, gy, gz = (float(o.get(k, 1.0)) for k in ("og_scale_x", "og_scale_y", "og_scale_z"))
-                    o.scale = (gx, gz, gy)
-                    for k in ("og_scale_x", "og_scale_y", "og_scale_z", "og_scale_w"):
-                        if k in o.keys(): del o[k]
-                for k in ("og_orbit_scale", "og_shark_scale"):
-                    if k in o.keys():
-                        v = float(o[k]); o.scale = (v, v, v); del o[k]
-    except Exception:
-        pass
-
-
 def register():
     _load_previews()
     _mp.register_handler()
@@ -227,6 +200,8 @@ def register():
     register_texturing()
     _plat_grid.register_props()
     _distribute.register_props()
+    from .required import track_operators
+    track_operators(classes)          # every operator refreshes the level checks when it finishes
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)
@@ -339,8 +314,6 @@ def register():
     # Reorderable waypoint sources — registered after OGWaypointSource is in
     # the classes tuple. Each ACTOR_ empty holds an ordered list of links to
     # empties (single waypoint) or curves (each control point is a waypoint).
-    # When the collection is empty, export falls back to the legacy
-    # `<actor>_wp_NN` name-grep so existing levels keep working unchanged.
     bpy.types.Object.og_waypoint_sources       = bpy.props.CollectionProperty(type=OGWaypointSource)
     bpy.types.Object.og_waypoint_sources_index = bpy.props.IntProperty(
         name="Active Waypoint Source", default=0)
@@ -499,8 +472,6 @@ def register():
     _spawn_register_handlers()
     from .panels.tools import register_db_handlers
     register_db_handlers()
-    if _migrate_legacy_props not in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.append(_migrate_legacy_props)
 
     def _deferred_populate_spawn_lists():
         try:
@@ -518,8 +489,6 @@ def register():
 def unregister():
     from .panels.tools import unregister_db_handlers
     unregister_db_handlers()
-    if _migrate_legacy_props in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.remove(_migrate_legacy_props)
     _spawn_unregister_handlers()
     _unload_previews()
     _mp.unregister_handler()

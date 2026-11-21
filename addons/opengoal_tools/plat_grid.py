@@ -112,10 +112,9 @@ def build_preview(ctx, o) -> bool:
 
 
 def refresh(ctx, o):
-    prefs = ctx.preferences.addons.get("opengoal_tools")
-    if not (prefs and prefs.preferences.preview_models):
-        return
     from . import model_preview as mp
+    if not mp.previews_on():
+        return
     mp.remove_preview(o)
     if mp.special_on(o):        # Show preview off: nothing built while editing
         build_preview(ctx, o)

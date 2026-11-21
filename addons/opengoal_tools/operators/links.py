@@ -6,59 +6,22 @@
 
 from __future__ import annotations
 
+from ..collections import actor_etype, free_object_name, is_actor, is_waypoint, new_empty
+from ..collections import frame_selected, select_only
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
-from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
-    NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
-    MUSIC_FLAVA_TABLE,
-    ETYPE_AG, ETYPE_CODE,
-    needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
-    _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    _is_custom_type,
-)
+from ..data import _actor_remove_link
 from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _ensure_sub_collection, _classify_object,
-    _col_path_for_entity, _link_object_to_sub_collection,
-    _recursive_col_objects, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SPAWNS,
-    _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_ENEMIES,
-    _COL_PATH_SPAWNABLE_PLATFORMS, _COL_PATH_SPAWNABLE_PROPS,
-    _COL_PATH_SPAWNABLE_NPCS, _COL_PATH_SPAWNABLE_PICKUPS,
-    _COL_PATH_GEO_SOLID, _COL_PATH_WATER,
-    _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
+    _level_objects, _link_object_to_sub_collection, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
+    _COL_PATH_GEO_SOLID,
 )
 from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc, _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vol_link_targets, _vol_has_link_to, _rename_vol_for_links,
-    _vols_linking_to, _vol_get_link_to, _vol_remove_link_to,
-    _classify_target, _clean_orphaned_vol_links, log, collect_actors,
-    collect_spawns, collect_ambients, needed_ags, needed_code,
-    patch_level_info, patch_game_gp, discover_custom_levels, remove_level,
-    export_glb,
+    _vol_links, _vol_has_link_to, _rename_vol_for_links, _vol_remove_link_to, _clean_orphaned_vol_links, log,
 )
-from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
-    _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-)
-from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview,
-)
+from ..utils import _is_linkable, _is_aggro_target, _vol_for_target
 from .. import model_preview as _mp
 import re as _re
 
@@ -112,7 +75,7 @@ class OG_OT_LinkNavMesh(Operator):
         # Find the mesh and the enemy empties from the full selection — order irrelevant
         meshes  = [o for o in selected if o.type == "MESH"]
         enemies = [o for o in selected if o.type == "EMPTY"
-                   and o.name.startswith("ACTOR_") and "_wp_" not in o.name
+                   and is_actor(o)
                    and "_wpb_" not in o.name]
 
         if not meshes:
@@ -200,7 +163,7 @@ class OG_OT_LinkNavMeshTo(Operator):
 def _is_movie_pos_candidate(o):
     """Empties that can be a movie position: any non-actor, non-waypoint empty."""
     return (o.type == "EMPTY" and not o.name.startswith("ACTOR_")
-            and "_wp_" not in o.name and "_wpb_" not in o.name)
+            and not is_waypoint(o.name))
 
 
 def _movie_pos_items(self, ctx):
@@ -233,20 +196,14 @@ class OG_OT_MoviePosAdd(Operator):
         if actor is None:
             self.report({"ERROR"}, "Actor not found"); return {"CANCELLED"}
         base = "MOVIEPOS_" + (actor.name[len("ACTOR_"):] if actor.name.startswith("ACTOR_") else actor.name)
-        n = 0
-        while bpy.data.objects.get(f"{base}_{n:02d}"):
-            n += 1
         at_actor = ctx.scene.og_props.waypoint_spawn_at_actor
-        e = bpy.data.objects.new(f"{base}_{n:02d}", None)
-        e.empty_display_type = "CONE"      # the cone shows the facing axis
-        e.empty_display_size = 1.0         # 1 m: smaller gets hard to select
-        e.location = actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy()
+        # the cone shows the facing axis; 1 m: smaller gets hard to select
+        e = new_empty(ctx, free_object_name(base + "_", width=2), _COL_PATH_WAYPOINTS, "CONE", 1.0,
+                      actor.matrix_world.translation.copy() if at_actor else ctx.scene.cursor.location.copy(),
+                      (1.0, 0.85, 0.1, 1.0))
         # the empty's Z rotation is the angle
         e.rotation_euler = (0.0, 0.0, actor.matrix_world.to_euler("XYZ").z if at_actor else 0.0)
-        e.color = (1.0, 0.85, 0.1, 1.0)
         e["og_movie_pos_for"] = actor.name
-        ctx.scene.collection.objects.link(e)
-        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
         actor.og_movie_pos.add().obj = e
         self.report({"INFO"}, f"Added movie position [{len(actor.og_movie_pos) - 1}] {e.name}")
         return {"FINISHED"}
@@ -338,7 +295,7 @@ def path_users(scene, actor):
     if not key:
         return []
     return [o for o in scene.objects
-            if o is not actor and o.type == "EMPTY" and o.name.startswith("ACTOR_") and "_wp_" not in o.name
+            if o is not actor and is_actor(o)
             and path_key(o) == key]
 
 
@@ -432,26 +389,14 @@ class OG_OT_AddWaypoint(Operator):
         use_actor_pos = ctx.scene.og_props.waypoint_spawn_at_actor and actor_obj is not None
         spawn_loc = actor_obj.location.copy() if use_actor_pos else ctx.scene.cursor.location.copy()
 
-        empty = bpy.data.objects.new(wp_name, None)
-        empty.empty_display_type = "PLAIN_AXES"
-        empty.empty_display_size = 0.5
-        empty.location = spawn_loc
-
-        # Custom property to link back to enemy
-        empty["og_waypoint_for"] = self.enemy_name
-
-        # Link into scene first (required before collection routing)
-        ctx.scene.collection.objects.link(empty)
-
-        # Route into Waypoints sub-collection under the active level
-        _link_object_to_sub_collection(ctx.scene, empty, *_COL_PATH_WAYPOINTS)
+        empty = new_empty(ctx, wp_name, _COL_PATH_WAYPOINTS, "PLAIN_AXES", 0.5, spawn_loc)
+        empty["og_waypoint_for"] = self.enemy_name           # links back to the actor
 
         # ---- Waypoint ghost preview ----------------------------------------
         # Parse the entity type from the actor name (ACTOR_<etype>_<uid>)
         # and attach a white, 50%-transparent ghost of its mesh so the user
         # can see where the entity will stand at each waypoint.
-        _prefs = bpy.context.preferences.addons.get("opengoal_tools")
-        if _prefs and _prefs.preferences.preview_models:
+        if _mp.previews_on():
             parts = self.enemy_name.split("_")  # ["ACTOR", "<etype>", "<uid>"]
             etype = parts[1] if len(parts) >= 3 else ""
             if etype:
@@ -472,35 +417,9 @@ class OG_OT_AddWaypoint(Operator):
             src.obj = empty
             xpath.sources_index = len(xpath.sources) - 1
         elif actor_obj is not None:
-            try:
-                # If the actor has legacy _wp_NN empties but the collection
-                # is empty, auto-migrate them first. Without this step the
-                # export (which reads from the collection when non-empty)
-                # would silently drop all the legacy waypoints once the
-                # collection gets its first entry. Excludes the empty we
-                # just created so it can be appended last in name order.
-                if len(actor_obj.og_waypoint_sources) == 0:
-                    prefix = actor_obj.name + "_wp_"
-                    legacy = sorted(
-                        [o for o in _level_objects(ctx.scene)
-                         if o.name.startswith(prefix) and o.type == "EMPTY"
-                         and o.name != empty.name
-                         and o.name[len(prefix):].isdigit()],
-                        key=lambda o: o.name
-                    )
-                    for lwp in legacy:
-                        src = actor_obj.og_waypoint_sources.add()
-                        src.obj = lwp
-                # Append the newly-created waypoint
-                src = actor_obj.og_waypoint_sources.add()
-                src.obj = empty
-                actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
-            except AttributeError:
-                # Actor doesn't have the new properties yet — possible if the
-                # addon was registered without our properties registered, or
-                # during a version mismatch. Fail silently; the legacy export
-                # path will still find this empty by name.
-                pass
+            src = actor_obj.og_waypoint_sources.add()
+            src.obj = empty
+            actor_obj.og_waypoint_sources_index = len(actor_obj.og_waypoint_sources) - 1
 
         return {"FINISHED"}
 
@@ -532,7 +451,7 @@ def _get_actor_for_waypoint_ops(ctx):
         return None
     if not (sel.name.startswith("ACTOR_") or sel.name.startswith("CAMERA_")):
         return None
-    if "_wp_" in sel.name or "_wpb_" in sel.name:
+    if is_waypoint(sel.name):
         return None
     return sel
 
@@ -653,16 +572,8 @@ class OG_OT_WaypointSourceFrame(Operator):
         # Save the actor as active so it gets re-selected after the frame op
         actor_name = actor.name
         # Select only the source object, frame it, then restore actor selection
-        for o in ctx.selected_objects:
-            o.select_set(False)
-        src_obj.select_set(True)
-        ctx.view_layer.objects.active = src_obj
-        # Frame in viewport via the standard op
-        for area in ctx.screen.areas:
-            if area.type == "VIEW_3D":
-                with ctx.temp_override(area=area, region=area.regions[-1]):
-                    bpy.ops.view3d.view_selected(use_all_regions=False)
-                break
+        select_only(src_obj, ctx)
+        frame_selected(ctx)
         # Restore selection on the actor
         src_obj.select_set(False)
         actor_back = bpy.data.objects.get(actor_name)
@@ -758,7 +669,7 @@ def _add_path_name_items(self, ctx):
     from ..export.path_modes import STANDARD_PATH_NAMES
     actor = bpy.data.objects.get(self.actor_name)
     have = {actor.og_path_lump} | {p.name for p in actor.og_extra_paths} if actor else set()
-    etype = actor.name.split("_", 2)[1] if actor and actor.name.startswith("ACTOR_") else ""
+    etype = (actor_etype(actor) or "")
     wanted = [n for n in _db.path_names(etype) if n not in have]
     rest = [n for n in STANDARD_PATH_NAMES if n not in have and n not in wanted]
     items = [(n, n, f"{n} (this actor reads it)", i) for i, n in enumerate(wanted)]
@@ -808,7 +719,7 @@ def path_knot_target(actor, path_index):
     knot editor; built = path_modes.build() output for that path."""
     from ..export import path_modes as _pm
     from .. import db as _db
-    lin = _db.path_linear_only(actor.name.split("_", 2)[1] if actor.name.count("_") >= 2 else "")
+    lin = _db.path_linear_only((actor_etype(actor) or ""))
     if 0 <= path_index < len(getattr(actor, "og_extra_paths", [])):
         xp = actor.og_extra_paths[path_index]
         built = _pm.build(_pm.gather_from(xp.sources), xp.mode, linear_only=lin)
@@ -887,43 +798,6 @@ class OG_OT_RemoveExtraPath(Operator):
             except ReferenceError:
                 pass
         actor.og_extra_paths.remove(self.path_index)
-        return {"FINISHED"}
-
-
-class OG_OT_WaypointSourceMigrate(Operator):
-    """One-time migration for actors with legacy _wp_NN empties but no
-    og_waypoint_sources collection. Walks the empties in name order and
-    adds each to the collection, so the user can then reorder them or
-    interleave curves."""
-    bl_idname      = "og.waypoint_source_migrate"
-    bl_label       = "Migrate Waypoints to List"
-    bl_description = "Populate the reorderable list from this actor's existing _wp_NN empties"
-    bl_options     = {"REGISTER", "UNDO"}
-
-    actor_name: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        actor = bpy.data.objects.get(self.actor_name)
-        if actor is None:
-            self.report({"ERROR"}, f"Actor '{self.actor_name}' not found")
-            return {"CANCELLED"}
-        if len(actor.og_waypoint_sources) > 0:
-            self.report({"WARNING"}, "Waypoint list already has entries — not migrating")
-            return {"CANCELLED"}
-        prefix = actor.name + "_wp_"
-        wps = sorted(
-            [o for o in _level_objects(ctx.scene)
-             if o.name.startswith(prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-        if not wps:
-            self.report({"WARNING"}, "No legacy waypoints found to migrate")
-            return {"CANCELLED"}
-        for wp in wps:
-            src = actor.og_waypoint_sources.add()
-            src.obj = wp
-        actor.og_waypoint_sources_index = 0
-        self.report({"INFO"}, f"Migrated {len(wps)} waypoint{'s' if len(wps) != 1 else ''} for {actor.name}")
         return {"FINISHED"}
 
 
@@ -1180,7 +1054,6 @@ CLASSES = (
     OG_OT_AddExtraPath,
     OG_OT_RemoveExtraPath,
     OG_OT_PathKnotsPreset,
-    OG_OT_WaypointSourceMigrate,
     OG_OT_LinkVolume,
     OG_OT_UnlinkVolume,
     OG_OT_CleanOrphanedLinks,

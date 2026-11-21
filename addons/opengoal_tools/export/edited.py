@@ -26,6 +26,8 @@ import os
 import re
 from pathlib import Path
 
+from ..collections import actor_etype
+
 ADDON_DIR = Path(__file__).resolve().parent.parent / "subtypes"
 SHARED_DIR = "levels/level-tools/edited"
 _TAG = "; og-level-tools"
@@ -41,8 +43,8 @@ def custom_dir():
         if getattr(props, "og_blend_paths_enabled", False) and props.og_blend_code_path.strip():
             p = bpy.path.abspath(props.og_blend_code_path.strip())
         else:
-            a = bpy.context.preferences.addons.get(__package__.split(".")[0])
-            p = bpy.path.abspath(getattr(a.preferences, "custom_code_path", "") or "") if a else ""
+            from ..paths_core import pref
+            p = bpy.path.abspath(pref("custom_code_path", "") or "")
     except Exception:
         return None
     return Path(p) if p and os.path.isdir(p) else None
@@ -62,8 +64,19 @@ def _read(source, path):
 
 def files():
     """{id: file record} of the addon's and the Custom code folder's .gc files
-    (cached until a file / the folder changes)."""
-    dirs = [("addon", ADDON_DIR)] + ([("custom", custom_dir())] if custom_dir() else [])
+    (cached until a file / the folder changes; files are looked at again at
+    most every 2 s while the folders stay the same: panels ask every redraw)."""
+    import time
+    cd = custom_dir()
+    dirs = [("addon", ADDON_DIR)] + ([("custom", cd)] if cd else [])
+    try:
+        dkey = tuple((s, str(d), d.stat().st_mtime_ns) for s, d in dirs)
+    except OSError:
+        dkey = None
+    now = time.monotonic()
+    if dkey is not None and dkey == _CACHE.get("dkey") and now - _CACHE.get("t", 0.0) < 2.0:
+        return _CACHE["files"]
+    _CACHE.update(dkey=dkey, t=now)
     paths = [(s, p) for s, d in dirs for p in sorted(d.glob("*.gc"))]
     key = tuple((s, str(p), p.stat().st_mtime) for s, p in paths)
     if key != _CACHE["key"]:
@@ -144,8 +157,9 @@ def used(scene, objects):
     """{id: record} of the files the level's actors use."""
     out = {}
     for o in objects:
-        if o.type == "EMPTY" and o.name.startswith("ACTOR_") and o.name.count("_") >= 2:
-            r = resolve(o, o.name.split("_", 2)[1])
+        et = actor_etype(o)
+        if et:
+            r = resolve(o, et)
             if r is not None:
                 out[r["id"]] = r
     return out
@@ -171,14 +185,14 @@ def ensure_shared(scene, objects):
     """Write the level's shared edited files (only when changed) and register
     them once in game.gp (goal-src after their actor's code)."""
     from .paths import _goal_src, _game_gp
-    from .level_tools import _write_if_changed, _patch
+    from .fileio import write_if_changed, patch
     from ..data import ETYPE_CODE
     lines = []
     for r in used(scene, objects).values():
         if place(scene, r) != "shared":
             continue
         text = r["path"].read_text(encoding="utf-8").replace("__TYPE__", f"lt-{r['stem']}")
-        _write_if_changed(_goal_src() / SHARED_DIR / f"lt-{r['stem']}.gc", text)
+        write_if_changed(_goal_src() / SHARED_DIR / f"lt-{r['stem']}.gc", text)
         etypes = r["edits"] or [r["stem"]]
         deps = ["process-drawable"] + [Path(o).stem for e in etypes for o in ETYPE_CODE.get(e, [])]
         deps = list(dict.fromkeys(deps))
@@ -197,5 +211,5 @@ def ensure_shared(scene, objects):
             if matches:
                 first = matches[0].start()
                 text = pattern.sub(lambda m: line if m.start() == first else "", text)
-        _write_if_changed(gp, text)
-        _patch(gp, lines, '(group-list "all-code"', "shared edited actors")
+        write_if_changed(gp, text)
+        patch(gp, lines, '(group-list "all-code"', "shared edited actors")

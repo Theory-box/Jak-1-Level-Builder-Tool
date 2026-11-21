@@ -157,11 +157,8 @@ def game_info() -> dict:
 
 def _override():
     """(Preferences "OpenGOAL version" override, its release) or ("AUTO", "")."""
-    try:
-        p = bpy.context.preferences.addons[__package__].preferences
-        return p.version_override, p.version_override_release.strip()
-    except (KeyError, AttributeError):
-        return "AUTO", ""
+    from .paths_core import pref
+    return pref("version_override", "AUTO"), (pref("version_override_release", "") or "").strip()
 
 
 def game_label() -> str:
@@ -188,9 +185,11 @@ def _probe(name):
         from .paths_core import data
         p = data() / "goal_src" / "jak1" / "engine" / "game" / "game-info.gc"
         try:
-            return "(the int (game-task max))" in p.read_text(encoding="utf-8", errors="replace")
+            mt = p.stat().st_mtime_ns          # read again only when the file changed
         except OSError:
             return None
+        return _cached(("probe", name, str(p), mt),
+                       lambda: "(the int (game-task max))" in p.read_text(encoding="utf-8", errors="replace"))
     return None
 
 
@@ -265,9 +264,9 @@ def draw_versions(layout):
             sub = col.row(); sub.scale_y = 0.7
             sub.label(text="      " + why)
     box.operator("og.recheck_versions", icon="FILE_REFRESH")
-    try:
-        p = bpy.context.preferences.addons[__package__].preferences
-    except KeyError:
+    from .paths_core import prefs
+    p = prefs()
+    if p is None:
         return
     row = box.row(align=True)
     row.prop(p, "version_override", text="Overwrite")

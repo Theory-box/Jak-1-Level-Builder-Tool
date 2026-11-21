@@ -75,8 +75,8 @@ def _corner_colours(mesh, attr):
     attr.data.foreach_get("color", a)
     a = a.reshape(-1, 4)
     if attr.domain == "POINT":
-        lv = np.empty(len(mesh.loops), np.int32)
-        mesh.loops.foreach_get("vertex_index", lv)
+        from .bake import loop_verts
+        lv = loop_verts(mesh)
         a = a[lv]
     return a
 
@@ -280,15 +280,37 @@ def _shown_fixes(s):
     return s if _STATS.get("fixes") and fixes_on(s) else None
 
 
+_REFRESH = {"pending": False, "level": ""}
+
+
+def _refresh_later(level_col):
+    """Rewrite the preview once a slider stops moving (0.15 s after the last
+    change) instead of rewriting every level mesh on each drag step."""
+    _REFRESH["level"] = level_col.name
+    if _REFRESH["pending"]:
+        return
+    _REFRESH["pending"] = True
+
+    def run():
+        _REFRESH["pending"] = False
+        col = bpy.data.collections.get(_REFRESH["level"])
+        if col is None or not _CACHE or _STATS.get("level") != col.name:
+            return None
+        s = col.og_bake
+        show_time(_meshes(col), int(s.palette_time) if s.tod_enabled else 0, _shown_fixes(s))
+        return None
+    bpy.app.timers.register(run, first_interval=0.15)
+
+
 def time_update(self, ctx):
     if _CACHE and _STATS.get("level") == self.id_data.name:
-        show_time(_meshes(self.id_data), int(self.palette_time), _shown_fixes(self))
+        _refresh_later(self.id_data)
 
 
 def fixes_update(self, ctx):
     """Fix values changed while the fixes are previewed: show them again."""
     if _CACHE and _STATS.get("fixes") and _STATS.get("level") == self.id_data.name:
-        show_time(_meshes(self.id_data), int(self.palette_time) if self.tod_enabled else 0, _shown_fixes(self))
+        _refresh_later(self.id_data)
 
 
 def draw(layout, level_col):

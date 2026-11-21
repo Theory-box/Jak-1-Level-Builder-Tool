@@ -8,39 +8,11 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from .. import boundary_viz as _bviz
+from .fileio import write_if_changed
 from pathlib import Path
-from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, ACTOR_LINK_DEFS,
-    MOOD_FUNC_OVERRIDES,
-    _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link,
-    _actor_remove_link, _build_actor_link_lumps,
-    _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type, GLOBAL_TPAGE_GOS,
-)
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _ensure_level_index, _migrate_all_level_indices,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
-from ..collections import (
-    _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_SPAWNABLE_PLATFORMS,
-    _COL_PATH_SPAWNABLE_PROPS, _COL_PATH_SPAWNABLE_NPCS,
-    _COL_PATH_SPAWNABLE_PICKUPS, _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS,
-    _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_GEO_SOLID,
-    _COL_PATH_GEO_COLLISION, _COL_PATH_GEO_VISUAL, _COL_PATH_GEO_REFERENCE,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _ENTITY_CAT_TO_COL_PATH, _LEVEL_COL_DEFAULTS,
-    _all_level_collections, _active_level_col, _col_is_no_export,
-    _recursive_col_objects, _level_objects, _ensure_sub_collection,
-    _link_object_to_sub_collection, _col_path_for_entity, _classify_object,
-    _get_level_prop, _set_level_prop, _active_level_items,
-    _set_blender_active_collection, _get_death_plane, _set_death_plane,
-    _on_active_level_changed,
-)
+from ..data import MOOD_FUNC_OVERRIDES, GLOBAL_TPAGE_GOS
+from ..collections import _get_level_prop, _level_objects, _active_level_col
+from ..collections import _active_level_col, _level_objects, _get_level_prop
 
 # Cross-module imports (siblings in the export package)
 from .levels import (
@@ -494,7 +466,7 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
     # init/go references, since those contain the base name as a prefix.
     for _base in (*_TRIGGER_ETYPES, "point-in-planes?"):
         new_text = new_text.replace(_base, f"{_pfx}-{_base}")
-    old_text = p.read_text() if p.exists() else ""
+    old_text = p.read_text(encoding="utf-8") if p.exists() else ""
     if old_text == new_text:
         log(f"Skipped {p} (unchanged)")
     else:
@@ -505,7 +477,7 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
         if old_text and _deftypes(old_text) != _deftypes(new_text):
             TYPES_CHANGED = True
             log("  [write_gc] level type definitions changed — GOALC will be restarted before (mi)")
-        p.write_text(new_text)
+        p.write_text(new_text, encoding="utf-8")
         log(f"Wrote {p}")
 
 
@@ -685,12 +657,9 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
     }
     p = d / f"{name}.jsonc"
     new_text = f"// OpenGOAL custom level: {name}\n" + _dumps_with_raw_lumps(data)
-    if p.exists() and p.read_text() == new_text:
-        log(f"Skipped {p} (unchanged)")
-    else:
-        p.write_text(new_text)
-        log(f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} camera/trigger actors"
-            f" + {len(cameras)} built-in cameras)")
+    write_if_changed(p, new_text, skipped=f"Skipped {p} (unchanged)",
+                     wrote=f"Wrote {p}  ({len(actors)} actors + {len(camera_actors or [])} camera/trigger actors"
+                           f" + {len(cameras)} built-in cameras)")
 
 from .navmesh import nav_gc_path as _nav_gc_path, nav_gc_deps as _nav_gc_deps
 
@@ -780,12 +749,8 @@ def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
                 log(f"Removed stale {stale}")
             except OSError as e:
                 log(f"WARNING: could not remove stale {stale}: {e}")
-    new_text = "\n".join(lines) + "\n"
-    if not p.exists() or p.read_text() != new_text:
-        p.write_text(new_text)
-        log(f"Wrote {p}  (enemy .o files: {[o for o,_,_ in code_deps]})")
-    else:
-        log(f"Skipped {p} (unchanged)")
+    write_if_changed(p, "\n".join(lines) + "\n", skipped=f"Skipped {p} (unchanged)",
+                     wrote=f"Wrote {p}  (enemy .o files: {[o for o,_,_ in code_deps]})")
 
 def _make_continues(name, spawns, vis_nick=None):
     """Build the GOAL :continues list for level-load-info.
@@ -885,8 +850,6 @@ def patch_level_info(name, spawns, scene=None):
     if not p.exists(): log(f"WARNING: {p} not found"); return
     # Audio settings from scene props (if scene provided)
     if scene is not None:
-        # Lazy-migrate: give any old levels missing og_level_index a unique value
-        _migrate_all_level_indices(scene)
         _bank      = str(_get_level_prop(scene, "og_music_bank",    "none") or "none")
         _music_val = f"'{_bank}" if _bank and _bank != "none" else "#f"
         _sb1       = str(_get_level_prop(scene, "og_sound_bank_1",  "none") or "none")
@@ -998,12 +961,7 @@ def patch_level_info(name, spawns, scene=None):
     marker = ";;;;; CUSTOM LEVELS"
     new_txt = (txt.replace(marker, marker+block, 1) if marker in txt
                else txt + "\n;;;;; CUSTOM LEVELS\n" + block)
-    original = p.read_text(encoding="utf-8")
-    if new_txt != original:
-        p.write_text(new_txt, encoding="utf-8")
-        log("Patched level-info.gc")
-    else:
-        log("Skipped level-info.gc (unchanged)")
+    write_if_changed(p, new_txt, wrote="Patched level-info.gc", skipped="Skipped level-info.gc (unchanged)")
 
 
 # ---------------------------------------------------------------------------
@@ -1124,12 +1082,8 @@ def patch_load_boundaries(name, boundaries, scene=None):
                  f"{end}\n")
         txt = txt.rstrip() + "\n" + block
 
-    original = p.read_text(encoding="utf-8")
-    if txt != original:
-        p.write_text(txt, encoding="utf-8")
-        log(f"Patched load-boundary-data.gc ({len(boundaries)} boundaries for {name})")
-    else:
-        log("Skipped load-boundary-data.gc (unchanged)")
+    write_if_changed(p, txt, wrote=f"Patched load-boundary-data.gc ({len(boundaries)} boundaries for {name})",
+                     skipped="Skipped load-boundary-data.gc (unchanged)")
 
 
 def patch_game_gp(name, code_deps=None, scene=None):

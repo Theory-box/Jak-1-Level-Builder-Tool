@@ -3,24 +3,19 @@
 # Blender PropertyGroups, AddonPreferences, and UILists.
 # ---------------------------------------------------------------------------
 
+from .data import keep_items
+from .collections import clean_level_name, level_name
 import bpy
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, PointerProperty, FloatProperty,
                        FloatVectorProperty, CollectionProperty)
 from bpy.types import Panel, Operator, PropertyGroup, AddonPreferences
 from .data import (
-    ENTITY_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS,
-    ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS,
-    LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS,
-    LEVEL_BANKS, MOOD_LEVELS, SBK_SOUNDS, MUSIC_FLAVA_TABLE, _music_flava_items_cb,
-    TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS,
-    TPAGE_FILTER_ITEMS, GLOBAL_TPAGE_GROUPS,
-    _enemy_enum_cb, _prop_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
-    _spawn_variant_cb,
-    _spawn_variant_sub_cb,
-    _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
-    _search_results_cb,
-    _parse_lump_row,
+    ENTITY_ENUM_ITEMS, CRATE_ITEMS, LUMP_TYPE_ITEMS, AGGRO_EVENT_ENUM_ITEMS, ALL_SFX_ITEMS, LEVEL_BANKS,
+    MOOD_LEVELS, _music_flava_items_cb, TEXTURE_SOURCE_ITEMS, SKY_SOURCE_ITEMS, TPAGE_FILTER_ITEMS,
+    _enemy_enum_cb, _interactive_enum_cb, _npc_enum_cb, _pickup_enum_cb, _platform_enum_cb,
+    _spawn_variant_cb, _spawn_variant_sub_cb, _obstacle_enum_cb, _buttondoor_enum_cb, _visuals_enum_cb,
+    _search_results_cb, _parse_lump_row,
 )
 from .collections import (
     _all_level_collections,
@@ -60,17 +55,19 @@ def _cp_level_items_base(context):
     scene = context.scene if context else None
     if scene is not None:
         for col in _all_level_collections(scene):
-            lname = str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
+            lname = level_name(col)
             if lname:
                 items.append((lname, lname, f"Keep level '{lname}' resident"))
     return items
 
+@keep_items
 def _cp_lev0_items(self, context):
     # Slot 0 always names a level; defaults to the checkpoint's own level.
     return [("self", "(This level)", "The level this checkpoint belongs to")] \
         + _cp_level_items_base(context) \
         + [("custom", "Custom\u2026", "Type a level name below")]
 
+@keep_items
 def _cp_lev1_items(self, context):
     # Slot 1 is optional (e.g. an adjacent custom level streamed alongside).
     return [("none", "(None)", "No second resident level")] \
@@ -432,6 +429,7 @@ def _bank_live(key):
 
 
 # --- Launch checkpoint dropdown ---
+@keep_items
 def _launch_checkpoint_items(self, context):
     """Items for the og.play launch dropdown.
 
@@ -448,7 +446,7 @@ def _launch_checkpoint_items(self, context):
     if col is None:
         return items
 
-    level_name = str(col.get("og_level_name", "")).strip().lower().replace(" ", "-")
+    level_name = clean_level_name(col.get("og_level_name", ""))
     if not level_name:
         return items
 
@@ -710,7 +708,7 @@ class OGProperties(PropertyGroup):
     # items= uses a dynamic callback so the Limit Search tpage filter is respected.
     enemy_type:     EnumProperty(name="Enemy Type",   items=_enemy_enum_cb,
                                  description="Select an enemy or boss to place")
-    prop_type:      EnumProperty(name="Interactive",  items=_prop_enum_cb,
+    prop_type:      EnumProperty(name="Interactive",  items=_interactive_enum_cb,
                                  description="Select an interactive object to place")
     npc_type:       EnumProperty(name="NPC Type",     items=_npc_enum_cb,
                                  description="Select an NPC to place")
@@ -1019,8 +1017,7 @@ class OGBattleLurker(bpy.types.PropertyGroup):
 class OGWaypointSource(bpy.types.PropertyGroup):
     """One entry in an actor's reorderable waypoint list.
 
-    Each entry points to either an EMPTY (single waypoint, the legacy
-    _wp_NN style) or a CURVE (each spline point becomes a waypoint at
+    Each entry points to either an EMPTY (single waypoint) or a CURVE (each spline point becomes a waypoint at
     export). The collection's order is the export order — a curve in
     the middle expands its points in place.
 

@@ -10,53 +10,22 @@
 
 from __future__ import annotations
 
+from ..collections import is_actor
+from ..collections import clean_level_name
 import bpy
 from bpy.types import Panel, Operator
 from pathlib import Path
 from ..data import (
-    ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, VERTEX_EXPORT_TYPES,
-    PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
-    CRATE_ITEMS, CRATE_PICKUP_ITEMS, ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS,
-    ACTOR_LINK_DEFS, LUMP_TYPE_ITEMS,
-    ETYPE_AG,
-    _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, AGGRO_TRIGGER_EVENTS,
-    _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    GLOBAL_TPAGE_GROUPS, _is_custom_type,
+    ENTITY_DEFS, CRATE_ITEMS, CRATE_PICKUP_ITEMS, _actor_link_slots, _actor_has_links, _actor_get_link,
 )
-from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _classify_object, _col_path_for_entity,
-    _recursive_col_objects, _ensure_sub_collection, _link_object_to_sub_collection,
-    _COL_PATH_NAVMESHES, _COL_PATH_WAYPOINTS, _COL_PATH_EXPORT_AS,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SOUND_EMITTERS,
-    _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_GEO_SOLID,
-)
+from ..collections import _get_level_prop, _level_objects, actor_etype, active_actor_etype
 from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc,
-    _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vols_linking_to, _classify_target,
-    _vol_get_link_to, _vol_has_link_to,
-    collect_cameras, collect_aggro_triggers, log,
+    _actor_uses_waypoints, _actor_uses_navmesh, _actor_is_launcher, _actor_supports_aggro_trigger,
+    _vols_linking_to, _vol_get_link_to,
 )
-from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, goalc_ok, kill_gk,
-    _exe_root, _data_root, _data, _goalc, _gk, _user_dir,
-)
-from ..properties import OGLumpRow, OG_UL_LumpRows
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview, _prop_row,
-    _preview_collections, _load_previews, _unload_previews,
-)
+from ..utils import _draw_platform_settings, _prop_row
 from .. import model_preview as _mp
 from .. import db as _db
-from ..audit import run_audit
 
 
 from .selected import _draw_actor_links
@@ -74,16 +43,13 @@ class OG_PT_ActorNavBehaviour(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and (_db.has_panel(parts[1], "activation") or _actor_supports_aggro_trigger(parts[1])))
+        et = active_actor_etype(ctx)
+        return bool(et) and (_db.has_panel(et, "activation") or _actor_supports_aggro_trigger(et))
 
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-        etype  = sel.name.split("_", 2)[1]
+        etype  = actor_etype(sel)
         if _db.has_panel(etype, "activation"):
             _draw_panel_fields(layout, sel, "activation")
         if not _actor_supports_aggro_trigger(etype):
@@ -125,14 +91,12 @@ class OG_PT_ActorVolume(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.needs_vol(parts[1])
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.needs_vol(et)
 
     def draw(self, ctx):
         sel = ctx.active_object
-        et = sel.name.split("_", 2)[1]
+        et = actor_etype(sel)
         draw_volume_panel(self.layout, ctx, sel, {
             "multiple": _db.panel_option(et, "volume", "multiple", False),
             "roles": _db.panel_option(et, "volume", "roles", None)})
@@ -185,10 +149,8 @@ class OG_PT_ActorNavMesh(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_uses_navmesh(parts[1])
+        et = active_actor_etype(ctx)
+        return bool(et) and _actor_uses_navmesh(et)
 
     def draw_header(self, ctx):
         from ..required import draw_header_count
@@ -226,10 +188,10 @@ class OG_PT_ActorNavMesh(Panel):
             op = layout.row().operator("og.link_navmesh_to", text=f"Link → {m.name}", icon="LINKED")
             op.actor_name = sel.name; op.target_name = m.name
         _draw_link_search(layout, "Search navmesh…", "og.link_navmesh_to", actor_name=sel.name)
-        if _db.can_jump(sel.name.split("_", 2)[1]):
+        if _db.can_jump(actor_etype(sel)):
             r = layout.row(); r.enabled = False
             r.label(text="Can jump (usable as a battlecontroller lurker)", icon="CHECKMARK")
-        if _db.panel_fields(sel.name.split("_", 2)[1], "nav-mesh", visible_only=True):
+        if _db.panel_fields(actor_etype(sel), "nav-mesh", visible_only=True):
             layout.separator()
             _draw_panel_fields(layout, sel, "nav-mesh")
         if nm_obj is not None:
@@ -260,10 +222,8 @@ class OG_PT_ActorBattlecontroller(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "battlecontroller")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "battlecontroller")
 
     def draw(self, ctx):
         from .actor_fields import _draw_field
@@ -271,12 +231,12 @@ class OG_PT_ActorBattlecontroller(Panel):
         from ..export import battlecontroller as _bc
         layout = self.layout
         sel = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         info = {"etype": etype, **(_db.find_actor(etype) or {})}
         fields = _db.panel_fields(etype, "battlecontroller", visible_only=True)
         by_sec = lambda s: [f for f in fields if f.get("section") == s]
         sel_actors = [o for o in ctx.selected_objects if o != sel and o.type == "EMPTY"
-                      and o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+                      and is_actor(o)]
 
         def links(box, *keys):
             for k in keys:
@@ -383,15 +343,13 @@ class OG_PT_ActorGameTask(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "game-task")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "game-task")
 
     def draw(self, ctx):
         layout = self.layout
         sel = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         note = _db.panel_option(etype, "game-task", "description", "")
         if note:
             hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
@@ -412,16 +370,14 @@ class OG_PT_ActorMoviePos(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "movie-pos")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "movie-pos")
 
     def draw(self, ctx):
         from .selected import _draw_link_search
         layout = self.layout
         sel    = ctx.active_object
-        etype  = sel.name.split("_", 2)[1]
+        etype  = actor_etype(sel)
         note = _db.panel_option(etype, "movie-pos", "description",
                                 "Where the power cell plays its pickup animation (cone = facing).")
         hint = layout.column(); hint.enabled = False; hint.scale_y = 0.8
@@ -443,7 +399,7 @@ class OG_PT_ActorMoviePos(Panel):
         # same pattern as the other links: selected, search, then spawn
         have = {s.obj.name for s in ents if s.obj}
         for e in [o for o in ctx.selected_objects if o.type == "EMPTY" and o is not sel
-                  and not o.name.startswith("ACTOR_") and "_wp_" not in o.name and o.name not in have][:6]:
+                  and not is_actor(o) and o.name not in have][:6]:
             op = layout.row().operator("og.movie_pos_link", text=f"Link → {e.name}", icon="LINKED")
             op.actor_name = sel.name; op.target_name = e.name
         _draw_link_search(layout, "Search empty…", "og.movie_pos_link", actor_name=sel.name)
@@ -475,13 +431,8 @@ class OG_PT_ActorLinks(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name:
-            return False
-        parts = sel.name.split("_", 2)
-        return (len(parts) >= 3
-                and parts[0] == "ACTOR"
-                and _actor_has_links(parts[1]))
+        et = active_actor_etype(ctx)
+        return bool(et) and _actor_has_links(et)
 
     def draw_header(self, ctx):
         from ..required import draw_header_count
@@ -489,7 +440,7 @@ class OG_PT_ActorLinks(Panel):
 
     def draw(self, ctx):
         sel   = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         _draw_actor_links(self.layout, sel, ctx.scene, etype)
         # slots with the "connect" option: link all selected ones at once
         from .. import connect_neighbours as _cn
@@ -512,14 +463,12 @@ class OG_PT_ActorPlatform(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sync")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "sync")
 
     def draw(self, ctx):
         _draw_platform_settings(self.layout, ctx.active_object, ctx.scene)
-        etype = ctx.active_object.name.split("_", 2)[1]
+        etype = actor_etype(ctx.active_object)
         if _db.panel_option(etype, "sync", "distribute", False):
             from .. import distribute
             distribute.draw(self.layout, ctx.active_object)
@@ -537,10 +486,8 @@ class OG_PT_ActorCrate(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "crate")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "crate")
 
     def draw(self, ctx):
         layout = self.layout
@@ -602,15 +549,13 @@ class OG_PT_ActorLauncher(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _actor_is_launcher(parts[1])
+        et = active_actor_etype(ctx)
+        return bool(et) and _actor_is_launcher(et)
 
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-        etype  = sel.name.split("_", 2)[1]
+        etype  = actor_etype(sel)
 
         # ── Spring Height ─────────────────────────────────────────────────────
         box = layout.box()
@@ -696,10 +641,8 @@ class OG_PT_ActorEcoDoor(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "eco-door")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "eco-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -720,7 +663,7 @@ class OG_PT_ActorEcoDoor(Panel):
             col.label(text="Lock it with a state-actor in Entity Links")
 
         # ── Behaviour flags: the eco-door fields this door shows ─────────────
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         shown = {f["key"]: f for f in _db.inherited_fields(etype)
                  if f.get("key", "").startswith("og_door_") and f.get("show-field") is not False}
         box = layout.box()
@@ -746,10 +689,8 @@ class OG_PT_ActorWaterVol(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "water")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "water")
 
     def draw(self, ctx):
         layout = self.layout
@@ -759,7 +700,7 @@ class OG_PT_ActorWaterVol(Panel):
         box.label(text="Its area is the volume linked in the Volume panel.", icon="INFO")
         # The "water" panel's fields (PanelTypes water + actor overrides).
         from .actor_fields import _draw_field
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         info = {"etype": etype, **(_db.find_actor(etype) or {})}
         forced = _db.actor_variant(etype, lambda k, d=None: sel.get(k, d)).get("props") or {}
         manual = bool(sel.get("og_water_surface_manual", False))
@@ -798,10 +739,8 @@ class OG_PT_ActorLauncherDoor(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "launcherdoor")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "launcherdoor")
 
     def draw(self, ctx):
         layout = self.layout
@@ -813,7 +752,7 @@ class OG_PT_ActorLauncherDoor(Panel):
 
         cp_name = sel.get("og_continue_name", "")
 
-        level_name = str(_get_level_prop(scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+        level_name = clean_level_name(_get_level_prop(scene, "og_level_name", ""))
         cps = sorted([
             o for o in _level_objects(scene)
             if o.name.startswith("CHECKPOINT_") and o.type == "EMPTY" and not o.name.endswith("_CAM")
@@ -857,10 +796,8 @@ class OG_PT_ActorSunIrisDoor(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "sun-iris-door")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "sun-iris-door")
 
     def draw(self, ctx):
         layout = self.layout
@@ -907,10 +844,8 @@ class OG_PT_ActorCaveElevator(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "caveelevator")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "caveelevator")
 
     def draw(self, ctx):
         layout = self.layout
@@ -945,15 +880,13 @@ class OG_PT_ActorTaskGated(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "task-gated")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "task-gated")
 
     def draw(self, ctx):
         layout = self.layout
         sel    = ctx.active_object
-        etype  = sel.name.split("_", 2)[1]
+        etype  = actor_etype(sel)
 
         box = layout.box()
         if etype == "oracle":
@@ -984,11 +917,8 @@ class OG_PT_ActorVisibility(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        if len(parts) < 3 or parts[0] != "ACTOR": return False
-        return _db.has_panel(parts[1], "visibility")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "visibility")
 
     def draw(self, ctx):
         _draw_panel_fields(self.layout, ctx.active_object, "visibility")
@@ -1006,10 +936,8 @@ class OG_PT_ActorPlatGrid(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.has_panel(parts[1], "plat-grid")
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.has_panel(et, "plat-grid")
 
     def draw(self, ctx):
         from .. import plat_grid, model_preview
@@ -1020,49 +948,10 @@ class OG_PT_ActorPlatGrid(Panel):
 def _draw_panel_fields(layout, sel, pid):
     """Draw one DB panel's visible fields (labels/defaults/notes from the DB)."""
     from .actor_fields import _draw_field
-    etype = sel.name.split("_", 2)[1]
+    etype = actor_etype(sel)
     info = {"etype": etype, **(_db.find_actor(etype) or {})}
     for f in _db.panel_fields(etype, pid, visible_only=True):
         _draw_field(layout, sel, f, info)
-
-
-class OG_PT_ActorScale(Panel):
-    """DB "scale" panel: shows what the empty's Blender scale exports as."""
-    bl_label       = "Scale"
-    bl_idname      = "OG_PT_actor_scale"
-    bl_space_type  = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category    = "OpenGOAL"
-    bl_parent_id   = "OG_PT_actor_fields"
-    bl_options     = {"DEFAULT_CLOSED"}
-
-    @classmethod
-    def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR" and _db.panel_exports(parts[1], "scale")
-
-    def draw(self, ctx):
-        sel = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
-        layout = self.layout
-        # top-down so several axes can be dragged/edited together
-        col = layout.column(align=True)
-        for i, ax in enumerate("XYZ"):
-            col.prop(sel, "scale", index=i, text=ax)
-        lump = _db.scale_lump(etype, sel.matrix_world.to_scale())
-        col = layout.column(); col.scale_y = 0.85
-        if lump:
-            col.label(text=f"Exports scale [{lump[1]:g}, {lump[2]:g}, {lump[3]:g}, 1]", icon="CHECKMARK")
-        else:
-            col.label(text="Scale 1: not exported", icon="DOT")
-        if _db.panel_option(etype, "scale", "always", False):
-            col.label(text="Always exported for this actor", icon="INFO")
-        s = sel.matrix_world.to_scale()
-        if _db.panel_option(etype, "scale", "uniform", False) and (abs(s.x - s.y) > 1e-4 or abs(s.x - s.z) > 1e-4):
-            w = col.row(); w.alert = True
-            w.label(text="This actor reads one value: only X is used", icon="ERROR")
 
 
 class OG_PT_ActorFactOptions(Panel):
@@ -1078,16 +967,13 @@ class OG_PT_ActorFactOptions(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and _db.panel_exports(parts[1], "fact-options"))
+        et = active_actor_etype(ctx)
+        return bool(et) and _db.panel_exports(et, "fact-options")
 
     def draw(self, ctx):
         from .actor_fields import _draw_field
         sel = ctx.active_object
-        etype = sel.name.split("_", 2)[1]
+        etype = actor_etype(sel)
         info = {"etype": etype, **(_db.find_actor(etype) or {})}
         flds = _db.panel_fields(etype, "fact-options", visible_only=True)
         top = [f for f in flds if f.get("highlight")]
@@ -1176,7 +1062,7 @@ def draw_knot_editor(layout, owner, lump_name, actor_name, path_index, auto_knot
 
 class OG_UL_WaypointSources(bpy.types.UIList):
     """List of waypoint source entries for an actor. Each entry points to
-    either an EMPTY (legacy _wp_NN style, single point) or a CURVE (each
+    either an EMPTY (single point) or a CURVE (each
     control point becomes one waypoint at export). The list's order is the
     export order. Rendered with a vertical sidebar of frame/delete/move
     buttons in OG_PT_ActorWaypoints."""
@@ -1256,11 +1142,8 @@ class OG_PT_ActorWaypoints(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or "_wp_" in sel.name: return False
-        parts = sel.name.split("_", 2)
-        return (len(parts) >= 3 and parts[0] == "ACTOR"
-                and _actor_uses_waypoints(parts[1]))
+        et = active_actor_etype(ctx)
+        return bool(et) and _actor_uses_waypoints(et)
 
     def draw_header(self, ctx):
         from ..required import draw_header_count
@@ -1268,7 +1151,7 @@ class OG_PT_ActorWaypoints(Panel):
 
     def draw(self, ctx):
         sel = ctx.active_object
-        draw_path_panel(self.layout, ctx, sel, sel.name.split("_", 2)[1])
+        draw_path_panel(self.layout, ctx, sel, actor_etype(sel))
 
 
 
@@ -1283,41 +1166,23 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         einfo  = ENTITY_DEFS.get(etype, {}) if etype else {}
 
         sources = sel.og_waypoint_sources
-        legacy_wps = _legacy_wps(sel, scene)
-        n_sources = len(sources)
 
         # Total point count for the header — sum across the list, expanding
         # curves to their spline-point counts.
-        if n_sources > 0:
-            total_pts = sum(
-                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
-                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
-                for s in sources
-            )
-            header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
-        else:
-            n_legacy = len(legacy_wps)
-            header_text = f"Path  ({n_legacy} legacy waypoint{'s' if n_legacy != 1 else ''})"
+        total_pts = sum(
+            (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
+             else (1 if s.obj and s.obj.type == "EMPTY" else 0))
+            for s in sources
+        )
+        header_text = f"Path  ({total_pts} point{'s' if total_pts != 1 else ''})"
 
         layout.label(text=header_text, icon="ANIM")
         if etype and not opts.get("lump"):      # red = a required path is missing
-            from ..required import missing as _missing
-            for m in _missing(sel, scene):
+            from ..required import actor_missing
+            for m in actor_missing(sel, scene):
                 if m["panel"] == "path":
                     w = layout.row(); w.alert = True
                     w.label(text=f"Required — {m['label']}", icon="ERROR")
-
-        # If the new collection is empty and legacy _wp_NN empties exist,
-        # offer a one-click migration. Skips Path B which stays on the
-        # legacy system for now.
-        if n_sources == 0 and legacy_wps:
-            box = layout.box()
-            box.label(text=f"Found {len(legacy_wps)} legacy waypoint empties",
-                      icon="INFO")
-            op = box.operator("og.waypoint_source_migrate",
-                              text="Migrate to reorderable list",
-                              icon="FILE_REFRESH")
-            op.actor_name = sel.name
 
         # List + sidebar (the new UI).
         list_row = layout.row()
@@ -1405,11 +1270,7 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         # path), "min-points" (e.g. plat-button / sync platforms need 2).
         min_pts = int(opts.get("min-points") or (_db.panel_option(etype, "path", "min-points", 1) if etype else 1) or 1)
         if einfo.get("needs_path") or min_pts > 1:
-            pt_count = sum(
-                (_count_curve_points(s.obj) if s.obj and s.obj.type == "CURVE"
-                 else (1 if s.obj and s.obj.type == "EMPTY" else 0))
-                for s in sources
-            ) if n_sources else len(legacy_wps)
+            pt_count = total_pts
             if pt_count < min_pts:
                 if einfo.get("needs_path"):
                     layout.label(text=f"⚠ Needs ≥ {min_pts} waypoint{'s' if min_pts > 1 else ''} or will crash",
@@ -1501,19 +1362,6 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
         if einfo.get("needs_pathb") and not has_b:
             layout.label(text="⚠ swamp-bat crashes without a 'pathb' path", icon="ERROR")
 
-def _legacy_wps(actor_obj, scene):
-    """Return the list of legacy <actor>_wp_NN empty objects in name order.
-    Used to show the migration button and as the fallback path count."""
-    prefix = actor_obj.name + "_wp_"
-    return sorted(
-        [o for o in _level_objects(scene)
-         if o.name.startswith(prefix) and o.type == "EMPTY"
-         and o.name[len(prefix):].isdigit()],     # not extra-path empties
-        key=lambda o: o.name
-    )
-
-
-
 _EDITED_ITEMS: list = []
 
 
@@ -1523,7 +1371,7 @@ def _edited_items(self, ctx):
         _EDITED_ITEMS[:] = [("", "Default", "")]
         return _EDITED_ITEMS
     from ..export.edited import choices
-    _EDITED_ITEMS[:] = [(i or "__default__", l, d, n) for n, (i, l, d) in enumerate(choices(o.name.split("_", 2)[1]))]
+    _EDITED_ITEMS[:] = [(i or "__default__", l, d, n) for n, (i, l, d) in enumerate(choices(actor_etype(o)))]
     return _EDITED_ITEMS
 
 
@@ -1542,7 +1390,7 @@ class OG_OT_EditedCodePick(bpy.types.Operator):
     def execute(self, ctx):
         v = "" if self.pick == "__default__" else self.pick
         for o in [ctx.active_object] + [x for x in ctx.selected_objects if x is not ctx.active_object]:
-            if o is not None and o.name.startswith("ACTOR_") and o.name.split("_", 2)[1] == ctx.active_object.name.split("_", 2)[1]:
+            if o is not None and actor_etype(o) == actor_etype(ctx.active_object):
                 o.og_edited_code = v
         return {"FINISHED"}
 
@@ -1566,7 +1414,7 @@ class OG_OT_EditedPlace(bpy.types.Operator):
 def draw_edited_code(layout, ctx, o):
     """GOAL Code > Code: the actor's edited code file and where it goes."""
     from ..export import edited as ed
-    etype = o.name.split("_", 2)[1]
+    etype = actor_etype(o)
     rec = ed.resolve(o, etype)
     sel = o.og_edited_code
     label = ("Vanilla" if sel == "vanilla" else (f"{rec['stem']}.gc" if rec else "Vanilla")) + \
@@ -1615,11 +1463,7 @@ class OG_PT_ActorGoalCode(Panel):
 
     @classmethod
     def poll(cls, ctx):
-        sel = ctx.active_object
-        if not sel or sel.type != "EMPTY" or "_wp_" in sel.name or "_wpb_" in sel.name:
-            return False
-        parts = sel.name.split("_", 2)
-        return len(parts) >= 3 and parts[0] == "ACTOR"
+        return bool(active_actor_etype(ctx))
 
     def draw_header(self, ctx):
         """Show a small indicator dot when a code block is active + enabled."""
@@ -1718,7 +1562,6 @@ _GENERAL_PANEL_ORDER = (
     "OG_PT_actor_fact_options",    # Options
     "OG_PT_actor_links",           # Entity Links
     "OG_PT_actor_visibility",
-    "OG_PT_actor_scale",
 )
 
 
@@ -1750,7 +1593,6 @@ _ACTOR_SUBPANELS = (
     OG_PT_ActorTaskGated,
     OG_PT_ActorVisibility,
     OG_PT_ActorWaypoints,
-    OG_PT_ActorScale,
     OG_PT_ActorFactOptions,
 )
 for _c in _ACTOR_SUBPANELS:

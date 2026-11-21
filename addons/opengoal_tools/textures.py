@@ -16,7 +16,6 @@ from bpy.types import Panel, Operator
 from bpy.props import StringProperty, IntProperty, EnumProperty, CollectionProperty
 from pathlib import Path
 
-from .build import _data_root
 
 # ---------------------------------------------------------------------------
 # Constants

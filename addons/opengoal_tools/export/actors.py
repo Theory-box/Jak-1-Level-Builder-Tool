@@ -7,40 +7,18 @@
 
 from __future__ import annotations
 
+from ..coords import to_game_vec4
+from ..collections import clean_level_name
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
 from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, ACTOR_LINK_DEFS,
-    _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link,
-    _actor_remove_link, _build_actor_link_lumps,
-    _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type,
+    ENTITY_DEFS, VERTEX_EXPORT_TYPES, _actor_link_slots, _actor_get_link, _build_actor_link_lumps,
+    _parse_lump_row, _LUMP_HARDCODED_KEYS,
 )
 from .. import db as _schema_db
 from .schema_emit import emit_schema_lumps
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
-from ..collections import (
-    _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_SPAWNABLE_PLATFORMS,
-    _COL_PATH_SPAWNABLE_PROPS, _COL_PATH_SPAWNABLE_NPCS,
-    _COL_PATH_SPAWNABLE_PICKUPS, _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS,
-    _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_GEO_SOLID,
-    _COL_PATH_GEO_COLLISION, _COL_PATH_GEO_VISUAL, _COL_PATH_GEO_REFERENCE,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _ENTITY_CAT_TO_COL_PATH, _LEVEL_COL_DEFAULTS,
-    _all_level_collections, _active_level_col, _col_is_no_export,
-    _recursive_col_objects, _level_objects, _ensure_sub_collection,
-    _link_object_to_sub_collection, _col_path_for_entity, _classify_object,
-    _get_level_prop, _set_level_prop, _active_level_items,
-    _set_blender_active_collection, _get_death_plane, _set_death_plane,
-    _on_active_level_changed,
-)
+from ..collections import _get_level_prop, _level_objects
+from ..collections import _level_objects, _get_level_prop
 
 # Cross-module imports (siblings in the export package)
 from .paths import (
@@ -69,17 +47,7 @@ from .volumes import (
 #   - An EMPTY (single waypoint at the empty's world position)
 #   - A CURVE (one waypoint per spline control point, in spline order;
 #     bezier handles are ignored, only the main control points are used)
-#
-# If the collection is empty, fall back to the legacy `<actor>_wp_NN` empty
-# name-grep so pre-existing levels still export correctly.
 # ═══════════════════════════════════════════════════════════════════════════
-
-
-def _to_game_coords(world_vec):
-    """Blender world-space → Jak game coords (Y-up, axes swapped).
-    Returns a 4-element list ready for the path lump's vector4m format."""
-    return [round(world_vec.x, 4), round(world_vec.z, 4),
-            round(-world_vec.y, 4), 1.0]
 
 
 def _make_path_knots(n):
@@ -117,40 +85,6 @@ def _curve_points_world(curve_obj):
             for pt in spline.points:
                 local = mathutils.Vector(pt.co[:3])
                 yield M @ local
-
-
-def _collect_waypoint_points(actor_obj):
-    """Return the actor's path as a list of game-space [x,y,z,w] vectors.
-
-    Reads og_waypoint_sources if populated; otherwise falls back to the
-    legacy name-grep so older levels with manually-placed _wp_NN empties
-    continue to export without migration.
-    """
-    points = []
-    sources = getattr(actor_obj, "og_waypoint_sources", None)
-    if sources and len(sources) > 0:
-        # New collection-driven path
-        for src in sources:
-            src_obj = src.obj
-            if src_obj is None or src_obj.name not in bpy.data.objects:
-                continue
-            if src_obj.type == "EMPTY":
-                points.append(_to_game_coords(src_obj.matrix_world.translation))
-            elif src_obj.type == "CURVE":
-                for world_co in _curve_points_world(src_obj):
-                    points.append(_to_game_coords(world_co))
-    else:
-        # Legacy fallback — name-based discovery of <actor>_wp_NN empties.
-        wp_prefix = actor_obj.name + "_wp_"
-        wp_objects = sorted(
-            [o for o in bpy.data.objects
-             if o.name.startswith(wp_prefix) and o.type == "EMPTY"],
-            key=lambda o: o.name
-        )
-        for wp in wp_objects:
-            points.append(_to_game_coords(wp.matrix_world.translation))
-
-    return points
 
 
 def movie_pos_vector(e):
@@ -289,7 +223,7 @@ def collect_actors(scene, depsgraph=None):
         # produces the correct game-space orientation. The previous negate-xyz
         # was erroneously borrowed from the camera system and inverted facing for
         # all non-0/180 angles (same fix already applied to the spawn path).
-        _R  = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
+        from ..coords import R as _R
         _m3 = o.matrix_world.to_3x3()
         _gq = (_R @ _m3 @ _R.transposed()).to_quaternion()
         aqx = round(_gq.x, 6)
@@ -305,8 +239,7 @@ def collect_actors(scene, depsgraph=None):
         # Collect waypoints. Reads from the actor's og_waypoint_sources
         # collection (Phase 4 of waypoint-link-source) — each source is an
         # empty (single point) or a curve (one point per spline control
-        # point). Falls back to legacy <actor>_wp_NN name-grep for older
-        # levels with no collection populated.
+        # point).
         # Path mode (AUTO / LINEAR / SMOOTH / BEZIER ... — export/path_modes.py)
         # decides the control points and, for curve-control actors, path-k.
         # Actors flagged path_linear_only in the DB (path-control readers that
@@ -316,7 +249,7 @@ def collect_actors(scene, depsgraph=None):
         _ppts, path_knots, _pmode, _pwarn = _pm.build(
             _pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
             linear_only=_schema_db.path_linear_only(etype))
-        path_pts = [_to_game_coords(mathutils.Vector(p)) for p in _ppts]
+        path_pts = [to_game_vec4(p) for p in _ppts]
         if _pwarn and path_pts:
             log(f"  [path] {o.name}: {_pwarn}")
         if path_knots and getattr(o, "og_path_knots_manual", False):
@@ -371,17 +304,6 @@ def collect_actors(scene, depsgraph=None):
             log(f"  [path-k] {o.name}  {_pm.MODE_LABELS.get(_pmode, _pmode)}  "
                 f"{len(path_pts)} cverts  {len(path_knots)} knots")
 
-        # ── Trait fields ──────────────────────────────────────────────────────
-        # Behaviours shared across many actors by predicate: idle-distance +
-        # vis-dist (enemies), num-lurkers (spawners), notice-dist
-        # (needs_notice_dist). Driven by the DB's TraitFields section and applied
-        # to every matching actor.
-        for _tk, _tv in emit_schema_lumps(
-                _schema_db.prop_getter(o),
-                _schema_db.trait_fields(etype),
-                etype=etype).items():
-            lump[_tk] = _tv
-
         # Bsphere radius controls vis-culling distance.  nav-enemy run-logic?
         # only processes AI/collision events when draw-status was-drawn is set,
         # which requires the bsphere to pass the renderer's cull test.
@@ -427,7 +349,7 @@ def collect_actors(scene, depsgraph=None):
         # These are merged before custom lump rows so rows can override them.
         link_lumps = _build_actor_link_lumps(o, etype)
         # Keys that must outrank the schema: computed entity links and (below)
-        # user custom lump rows. The schema overrides only legacy hardcoded values.
+        # user custom lump rows. The schema overrides only the hardcoded values.
         _protected_keys = set(link_lumps.keys())
         for lkey, lval in link_lumps.items():
             lump[lkey] = lval
@@ -456,7 +378,7 @@ def collect_actors(scene, depsgraph=None):
 
         # ── Schema-driven lumps (every actor) ────────────────────────────────
         # The fields of all the actor's panels (its own + its parents') drive
-        # its value lumps directly. Authoritative over the legacy hardcoded
+        # its value lumps directly. Authoritative over the hardcoded
         # branches above, but yields to computed entity links and to explicit
         # user custom lump rows (both in _protected_keys).
         _arec = _schema_db.find_actor(etype)
@@ -539,7 +461,7 @@ def collect_actors(scene, depsgraph=None):
                 _xk, _kn = _pm.manual_knots(_xk, [k.value for k in _xp.knots])
                 log(f"  [{_xn}-k] {o.name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if _xpts:
-                lump[_xn] = ["vector4m" + _xkf] + [_to_game_coords(mathutils.Vector(p)) for p in _xpts]
+                lump[_xn] = ["vector4m" + _xkf] + [to_game_vec4(p) for p in _xpts]
                 lump.pop(_xn + "-k", None)
                 if _xk:
                     lump[_xn + "-k"] = ["float" + _xkf] + _xk
@@ -674,7 +596,7 @@ def collect_actors(scene, depsgraph=None):
     # Volume mode: if a CPVOL_ mesh is linked (og_cp_link = checkpoint name),
     # the actor uses AABB bounds instead of sphere radius. The GOAL code reads
     # a 'has-volume' lump (uint32 1) to choose AABB vs sphere.
-    level_name_for_cp = str(_get_level_prop(scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+    level_name_for_cp = clean_level_name(_get_level_prop(scene, "og_level_name", ""))
 
     # Build cp_name → first linked vol_obj from og_vol_links collections.
     # Checkpoint links are soft-enforced 1:1 at link time (block duplicates),

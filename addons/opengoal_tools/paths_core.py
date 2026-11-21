@@ -29,8 +29,15 @@ def strip(p) -> str:
 
 
 def prefs():
-    a = bpy.context.preferences.addons.get("opengoal_tools")
+    """The addon's preferences (None while it isn't enabled)."""
+    a = bpy.context.preferences.addons.get(__package__.split(".")[0])
     return a.preferences if a else None
+
+
+def pref(name: str, default=None):
+    """One addon preference, or default."""
+    p = prefs()
+    return getattr(p, name, default) if p is not None else default
 
 
 def _blend_override(attr: str) -> str:

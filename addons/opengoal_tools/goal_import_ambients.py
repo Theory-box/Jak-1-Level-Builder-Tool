@@ -62,18 +62,10 @@ def music_flavas():
 
 
 def _new_empty(ctx, name, loc, color, size, col_path):
-    from .collections import _link_object_to_sub_collection, free_object_name
+    from .collections import new_empty, free_object_name
     if name in bpy.data.objects:
         name = free_object_name(name + "-", 1)
-    o = bpy.data.objects.new(name, None)
-    o.empty_display_type = "SPHERE"
-    o.location = loc
-    o.show_name = True
-    o.empty_display_size = size
-    o.color = color
-    ctx.scene.collection.objects.link(o)
-    _link_object_to_sub_collection(ctx.scene, o, *col_path)
-    return o
+    return new_empty(ctx, name, col_path, "SPHERE", size, loc, color, show_name=True)
 
 
 def _obj_name(kind, name):

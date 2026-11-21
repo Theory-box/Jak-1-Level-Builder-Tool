@@ -4,52 +4,24 @@
 # No imports from operators or panels (breaks circular dependency).
 # ---------------------------------------------------------------------------
 
+from .collections import actor_etype, is_actor
 import bpy
 from bpy.types import Operator
 from . import db as _db
-from .data import (
-    ENTITY_DEFS, ENTITY_WIKI, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS,
-    PROP_ENUM_ITEMS, NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS,
-    LUMP_TYPE_ITEMS,
-    _actor_has_links, _actor_link_slots, _lump_ref_for_etype, _is_custom_type,
-)
-from .collections import (
-    _get_level_prop, _level_objects, _col_path_for_entity,
-)
-from .export import (
-    _actor_supports_aggro_trigger, _actor_is_platform, _actor_is_launcher,
-    _actor_is_spawner, _actor_is_enemy, _actor_uses_waypoints,
-    _actor_uses_navmesh,
-    _vol_links, _vol_has_link_to, _vols_linking_to, _lname, log,
-)
-from .properties import OGProperties
+from .data import ENTITY_DEFS, ENTITY_WIKI
+from .collections import _level_objects
+from .export import _actor_supports_aggro_trigger, _actor_uses_navmesh, _vol_has_link_to
+from .export.predicates import _classify_target
 
 def _is_linkable(obj):
-    """True if this object type can accept a trigger volume link.
-    Cameras, checkpoints, player spawns, nav-enemy actors, and custom GOAL
-    type actors are linkable. Process-drawable enemies (Yeti, Bully, etc.)
-    are NOT linkable because they don't respond to 'cue-chase events.
-    """
+    """True if this object type can accept a trigger volume link: cameras,
+    checkpoints, actors with their own volume, nav-enemy actors (they react to
+    'cue-chase) and custom GOAL type actors (export/predicates._classify_target)."""
     if obj is None:
         return False
-    if obj.type == "CAMERA" and obj.name.startswith("CAMERA_"):
-        return True
-    if obj.type == "EMPTY":
-        n = obj.name
-        if n.endswith("_CAM"):
-            return False
-        if n.startswith("CHECKPOINT_"):
-            return True
-        if n.startswith("ACTOR_") and "_wp_" not in n and "_wpb_" not in n:
-            parts = n.split("_", 2)
-            if len(parts) >= 3:
-                if _actor_supports_aggro_trigger(parts[1]):
-                    return True
-                if _is_custom_type(parts[1]):
-                    return True
-                if _db.needs_vol(parts[1]):   # "volume" panel (water-vol, swamp-bat ...)
-                    return True
-    return False
+    if obj.type == "CAMERA":
+        return obj.name.startswith("CAMERA_")
+    return obj.type == "EMPTY" and _classify_target(obj.name) in ("checkpoint", "volume", "enemy", "custom")
 
 
 def _is_aggro_target(obj):
@@ -58,12 +30,8 @@ def _is_aggro_target(obj):
     pointing at the same enemy with different behaviours). Cameras and
     checkpoints are 1:1 (soft-enforced at link time).
     """
-    if obj is None or obj.type != "EMPTY" or not obj.name.startswith("ACTOR_"):
-        return False
-    if "_wp_" in obj.name or "_wpb_" in obj.name or obj.name.endswith("_CAM"):
-        return False
-    parts = obj.name.split("_", 2)
-    return len(parts) >= 3 and _actor_supports_aggro_trigger(parts[1])
+    et = actor_etype(obj) if obj is not None else None
+    return bool(et) and _actor_supports_aggro_trigger(et)
 
 
 def _vol_for_target(scene, target_name):
@@ -205,8 +173,6 @@ _PICKUP_CATS    = {"Pickups"}
 _OBSTACLE_CATS  = {"Obstacles"}
 _BUTTONDOOR_CATS = {"Buttons and Doors"}
 _VISUALS_CATS   = {"Visuals"}
-# Alias kept for backward compatibility with any in-flight imports
-_PROP_CATS      = _INTERACTIVE_CATS
 
 
 
@@ -242,7 +208,7 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
         # not the dropdown (so selecting a babak actor always shows its navmesh
         # status regardless of what the entity picker currently shows).
         sel = ctx.active_object
-        if sel and sel.name.startswith("ACTOR_") and "_wp_" not in sel.name:
+        if sel and is_actor(sel):
             parts = sel.name.split("_", 2)
             if len(parts) >= 3 and _actor_uses_navmesh(parts[1]):
                 nm_name = sel.get("og_navmesh_link", "")
@@ -352,6 +318,17 @@ def _draw_wiki_preview(layout, etype: str, ctx=None):
 # Safe UI helper — never writes to object during draw()
 # ---------------------------------------------------------------------------
 
+def redraw(ctx=None, area_type="VIEW_3D"):
+    """Tag every area of a type (3D viewports) for a redraw."""
+    ctx = ctx or bpy.context
+    for a in (ctx.screen.areas if getattr(ctx, "screen", None) else ()):
+        if a.type == area_type:
+            a.tag_redraw()
+
+
+_PENDING_DEFAULTS: set = set()
+
+
 def _prop_row(layout, obj, key, label, default):
     """Draw a labelled input row for a custom property.
 
@@ -366,13 +343,17 @@ def _prop_row(layout, obj, key, label, default):
     """
     if key not in obj:
         # Schedule write outside draw — timer fires after current redraw
+        # (once per object / key, not once per redraw until it fires)
         obj_name = obj.name
-        def _init(name=obj_name, k=key, v=default):
-            o = bpy.data.objects.get(name)
-            if o is not None and k not in o:
-                o[k] = v
-            return None  # don't repeat
-        bpy.app.timers.register(_init, first_interval=0.0)
+        if (obj_name, key) not in _PENDING_DEFAULTS:
+            _PENDING_DEFAULTS.add((obj_name, key))
+            def _init(name=obj_name, k=key, v=default):
+                _PENDING_DEFAULTS.discard((name, k))
+                o = bpy.data.objects.get(name)
+                if o is not None and k not in o:
+                    o[k] = v
+                return None  # don't repeat
+            bpy.app.timers.register(_init, first_interval=0.0)
         # Show greyed placeholder this frame
         row = layout.row(align=True)
         row.label(text=label)

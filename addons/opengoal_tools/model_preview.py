@@ -276,8 +276,7 @@ def refresh_special(self, ctx):
         bpy.data.objects.remove(c, do_unlink=True)
     if race_rings.uses_rings(self) and special_on(self):
         race_rings.build_preview(ctx, self)
-    prefs = ctx.preferences.addons.get("opengoal_tools")
-    if prefs and prefs.preferences.preview_models:
+    if previews_on():
         remove_preview(self)
         attach_preview(ctx, etype, self)
 
@@ -561,9 +560,28 @@ def attach_waypoint_preview(ctx, etype: str, waypoint_empty: bpy.types.Object) -
     return True
 
 
+def previews_on() -> bool:
+    """Preference "Preview models" (actor meshes in the viewport)."""
+    from .paths_core import pref
+    return bool(pref("preview_models", False))
+
+
+def try_attach_preview(ctx, etype, obj, what="model_preview"):
+    """attach_preview when previews are on; a failure is logged, never raised.
+    Returns attach_preview's result (None when off / failed)."""
+    if not previews_on():
+        return None
+    try:
+        return attach_preview(ctx, etype, obj)
+    except Exception as e:
+        from .export.paths import log
+        log(f"{what}: {e}")
+        return None
+
+
 def _select_via_preview() -> bool:
-    a = bpy.context.preferences.addons.get(__package__)
-    return bool(a and getattr(a.preferences, "select_via_preview", True))
+    from .paths_core import pref
+    return bool(pref("select_via_preview", True))
 
 
 def set_previews_selectable(flag: bool) -> None:
@@ -586,7 +604,7 @@ def _redirect_preview_selection():
     vl = getattr(ctx, "view_layer", None)
     if vl is None:
         return
-    picked = [o for o in vl.objects if o.select_get() and o.get(_PREVIEW_PROP) and o.parent is not None]
+    picked = [o for o in ctx.selected_objects if o.get(_PREVIEW_PROP) and o.parent is not None]
     if not picked:
         return
     _REDIRECTING = True
@@ -610,10 +628,10 @@ def _snap_skip_own_previews(vl):
     actors' previews are made non-selectable and Blender's snapping excludes
     non-selectable objects. Only the actors whose selection changed are touched."""
     global _SNAP_SEL
-    a = bpy.context.preferences.addons.get(__package__)
-    if not (a and getattr(a.preferences, "snap_skip_own_preview", True)) or not _select_via_preview():
+    from .paths_core import pref
+    if not pref("snap_skip_own_preview", True) or not _select_via_preview():
         return
-    sel = {o.name for o in vl.objects if o.select_get() and o.name.startswith("ACTOR_")}
+    sel = {o.name for o in bpy.context.selected_objects if o.name.startswith("ACTOR_")}
     if not sel and not _SNAP_SEL:
         return
     # every selected actor (a preview rebuilt while selected too), the deselected ones back
@@ -659,14 +677,31 @@ def remove_all_previews(scene) -> int:
 # ---------------------------------------------------------------------------
 
 
+_SEL_SIG = [None]
+
+
+def _selection_signature():
+    """Active object, selection and object count: the preview selection
+    handling only runs when one of them changed (not on every drag frame)."""
+    ctx = bpy.context
+    act = getattr(getattr(ctx, "view_layer", None), "objects", None)
+    act = act.active.name if act is not None and act.active is not None else ""
+    sel = ctx.selected_objects
+    # a selected object that is (or just became) a preview counts as a change
+    return act, tuple(o.name for o in sel), any(o.get(_PREVIEW_PROP) for o in sel), len(bpy.data.objects)
+
+
 @bpy.app.handlers.persistent
 def _on_depsgraph_update(scene, depsgraph):
-    """Depsgraph handler — detect orphaned preview meshes and schedule removal.
-    Kept intentionally cheap: only scans if there are any preview meshes at all."""
-    _redirect_preview_selection()
-    vl = getattr(bpy.context, "view_layer", None)
-    if vl is not None:
-        _snap_skip_own_previews(vl)
+    """Depsgraph handler: preview selection (only when the selection changed),
+    race-ring / place-on-path actors whose path was edited."""
+    sig = _selection_signature()
+    if sig != _SEL_SIG[0]:
+        _redirect_preview_selection()
+        vl = getattr(bpy.context, "view_layer", None)
+        if vl is not None:
+            _snap_skip_own_previews(vl)
+        _SEL_SIG[0] = _selection_signature()      # after the redirect changed it
     from . import race_rings, distribute
     objs, curves = race_rings.changed(depsgraph)   # only edited actors / paths are looked at
     if objs or curves:

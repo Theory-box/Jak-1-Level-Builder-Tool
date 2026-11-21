@@ -5,27 +5,7 @@
 # ---------------------------------------------------------------------------
 
 import bpy
-from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES
-
-# Mapping from collection custom-property keys to OGProperties attribute names.
-# Shared by _get_level_prop and _set_level_prop — defined once here.
-_LEVEL_PROP_KEY_MAP = {
-    "og_level_name":        "level_name",
-    "og_base_id":           "base_id",
-    "og_level_index":       "level_index",
-    "og_bottom_height":     "bottom_height",
-    "og_vis_nick_override": "vis_nick_override",
-    "og_sound_bank_1":      "sound_bank_1",
-    "og_sound_bank_2":      "sound_bank_2",
-    "og_music_bank":        "music_bank",
-    "og_mood":              "mood",
-    "og_fog_override_enabled": "fog_override_enabled",
-    "og_fog_color":         "fog_color",
-    "og_fog_start":         "fog_start",
-    "og_fog_end":           "fog_end",
-    "og_fog_max":           "fog_max",
-    "og_fog_min":           "fog_min",
-}
+from .data import ENTITY_DEFS, TEXTURE_SOURCE_VALUES, SKY_SOURCE_VALUES, keep_items
 
 _COL_PATH_SPAWNABLE_ENEMIES   = ("Spawnables", "Enemies")
 _COL_PATH_SPAWNABLE_PLATFORMS = ("Spawnables", "Platforms")
@@ -95,10 +75,7 @@ def _all_level_collections(scene):
 
 
 def _active_level_col(scene):
-    """Return the active level collection, or None if not in collection mode.
-
-    If no collection has og_is_level=True, returns None → fallback to v1.1.0.
-    """
+    """Return the active level collection, or None when the file has no level."""
     levels = _all_level_collections(scene)
     if not levels:
         return None
@@ -111,12 +88,91 @@ def _active_level_col(scene):
     return levels[0]
 
 
-def free_object_name(prefix, n=0):
-    """f"{prefix}{n}" with the first n not used by any object in the file, so
-    an actor spawned in a second level doesn't get Blender's ".001"."""
-    while f"{prefix}{n}" in bpy.data.objects:
+def new_empty(ctx, name, col_path, display="PLAIN_AXES", size=1.0, location=None, color=None, show_name=False):
+    """A new empty in the active level's sub-collection col_path (named `name`;
+    Blender adds .001 if taken: pass a free name)."""
+    o = bpy.data.objects.new(name, None)
+    o.empty_display_type = display
+    o.empty_display_size = size
+    if location is not None:
+        o.location = location
+    if color is not None:
+        o.color = color
+    o.show_name = show_name
+    ctx.scene.collection.objects.link(o)          # in the scene first, then routed
+    _link_object_to_sub_collection(ctx.scene, o, *col_path)
+    return o
+
+
+def select_only(objs, ctx=None):
+    """Select only objs (an object or a list); the first becomes active."""
+    ctx = ctx or bpy.context
+    objs = [objs] if isinstance(objs, bpy.types.Object) else [o for o in objs if o is not None]
+    for o in list(ctx.selected_objects):
+        o.select_set(False)
+    for o in objs:
+        o.select_set(True)
+    if objs:
+        ctx.view_layer.objects.active = objs[0]
+
+
+def frame_selected(ctx=None):
+    """Frame the selection in the first 3D viewport."""
+    ctx = ctx or bpy.context
+    for area in (ctx.screen.areas if getattr(ctx, "screen", None) else ()):
+        if area.type == "VIEW_3D":
+            with ctx.temp_override(area=area, region=area.regions[-1]):
+                bpy.ops.view3d.view_selected(use_all_regions=False)
+            break
+
+
+def clean_level_name(s) -> str:
+    """A level name as the game files use it: lowercase, spaces -> dashes."""
+    return str(s or "").strip().lower().replace(" ", "-")
+
+
+def level_name(col) -> str:
+    """The level name of a level collection (its og_level_name, else its name), cleaned."""
+    return clean_level_name(col.get("og_level_name", col.name)) if col is not None else ""
+
+
+def _name(o_or_name) -> str:
+    return o_or_name if isinstance(o_or_name, str) else (getattr(o_or_name, "name", "") or "")
+
+
+def is_waypoint(o_or_name) -> bool:
+    """A path waypoint empty (<actor>_wp_NN, <actor>_wp_<path>_NN, old _wpb_)."""
+    n = _name(o_or_name)
+    return "_wp_" in n or "_wpb_" in n
+
+
+def actor_etype(o_or_name):
+    """etype of an ACTOR_<etype>_<uid> empty (or name), None for anything else
+    (waypoints, other objects)."""
+    n = _name(o_or_name)
+    if not n.startswith("ACTOR_") or is_waypoint(n):
+        return None
+    if not isinstance(o_or_name, str) and getattr(o_or_name, "type", "EMPTY") != "EMPTY":
+        return None
+    parts = n.split("_", 2)
+    return parts[1] if len(parts) >= 3 and parts[1] else None
+
+
+def is_actor(o_or_name) -> bool:
+    return actor_etype(o_or_name) is not None
+
+
+def active_actor_etype(ctx):
+    """etype of the active object if it's an actor, else None (panel polls)."""
+    return actor_etype(ctx.active_object) if ctx.active_object is not None else None
+
+
+def free_object_name(prefix, n=0, width=0):
+    """f"{prefix}{n}" (n zero-padded to width) with the first n not used by
+    any object in the file, so a new object doesn't get Blender's ".001"."""
+    while f"{prefix}{n:0{width}d}" in bpy.data.objects:
         n += 1
-    return f"{prefix}{n}"
+    return f"{prefix}{n:0{width}d}"
 
 
 def spawn_uid(o):
@@ -195,15 +251,11 @@ def _recursive_col_objects(col, exclude_no_export=True):
 
 
 def _level_objects(scene, level_col=None, exclude_no_export=True):
-    """Return all objects belonging to the active level collection.
-
-    Falls back to scene.objects if not in collection mode (backward compat).
-    """
+    """Return all objects belonging to the active level collection ([] without a level)."""
     if level_col is None:
         level_col = _active_level_col(scene)
     if level_col is None:
-        # Fallback: v1.1.0 behaviour — all scene objects
-        return list(scene.objects)
+        return []
     return _recursive_col_objects(level_col, exclude_no_export=exclude_no_export)
 
 
@@ -287,12 +339,12 @@ def _ensure_sub_collection(level_col, *path):
 def _link_object_to_sub_collection(scene, obj, *col_path):
     """Link an object into the correct sub-collection of the active level.
 
-    If not in collection mode, does nothing (object stays wherever Blender put it).
+    Without a level, does nothing (object stays wherever Blender put it).
     Unlinks from Scene Collection root if linked there.
     """
     level_col = _active_level_col(scene)
     if level_col is None:
-        return  # v1.1.0 fallback — no auto-organization
+        return
     target = _ensure_sub_collection(level_col, *col_path)
     # Link to target if not already there
     if obj.name not in target.objects:
@@ -380,35 +432,25 @@ def _classify_object(obj):
 
 
 def _get_level_prop(scene, key, default=None):
-    """Read a level property — from active collection or scene.og_props fallback."""
+    """Read a property of the active level (default without a level)."""
     col = _active_level_col(scene)
     if col is not None:
         return col.get(key, _LEVEL_COL_DEFAULTS.get(key, default))
-    # Fallback: read from scene.og_props
-    props = scene.og_props
-    attr = _LEVEL_PROP_KEY_MAP.get(key)
-    if attr and hasattr(props, attr):
-        return getattr(props, attr)
     return default
 
 
 def _set_level_prop(scene, key, value):
-    """Write a level property — to active collection or scene.og_props fallback."""
+    """Write a property of the active level (nothing without a level)."""
     col = _active_level_col(scene)
     if col is not None:
         col[key] = value
         # Keep collection name in sync with level name
         if key == "og_level_name":
-            col.name = str(value).strip().lower().replace(" ", "-") or "unnamed-level"
-        return
-    # Fallback: write to scene.og_props
-    props = scene.og_props
-    attr = _LEVEL_PROP_KEY_MAP.get(key)
-    if attr and hasattr(props, attr):
-        setattr(props, attr, value)
+            col.name = clean_level_name(value) or "unnamed-level"
 
 
 # Dynamic enum callback for active_level selector
+@keep_items
 def _active_level_items(self, context):
     """Populate the active_level dropdown from level collections."""
     scene = context.scene if context else None
@@ -419,7 +461,7 @@ def _active_level_items(self, context):
         return [("NONE", "No Levels", "", 0)]
     items = []
     for i, col in enumerate(levels):
-        lname = col.get("og_level_name", col.name)
+        lname = level_name(col)
         items.append((col.name, lname, f"Switch to level '{lname}'", "SCENE_DATA", i))
     return items
 
@@ -497,7 +539,7 @@ def _resolve_vis_nick(col):
     override = str(col.get("og_vis_nick_override", "") or "").strip().lower()
     if override:
         return override
-    name = str(col.get("og_level_name", col.name) or "")
+    name = level_name(col)
     return name.replace("-", "")[:3].lower()
 
 
@@ -534,24 +576,6 @@ def _suggest_unique_vis_nick(scene, base_name, exclude_col=None):
     return plain
 
 
-def _ensure_level_index(scene, col):
-    """Lazy migration: assign og_level_index to col if missing."""
-    if col is None:
-        return
-    idx = col.get("og_level_index", None)
-    if not isinstance(idx, int) or idx <= 0:
-        col["og_level_index"] = _next_free_level_index(scene, exclude_col=col)
-
-
-def _migrate_all_level_indices(scene):
-    """Walk every level collection and assign og_level_index where missing.
-
-    Ensures multi-level .blend files created before this field existed don't
-    all collide on the same default. Safe to call repeatedly.
-    """
-    for c in _all_level_collections(scene):
-        _ensure_level_index(scene, c)
-
 
 # ---------------------------------------------------------------------------
 # Live get/set proxies for the Settings subpanel
@@ -560,14 +584,14 @@ def _migrate_all_level_indices(scene):
 def _get_level_name_live(self):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is not None:
-        return str(col.get("og_level_name", col.name))
+        return level_name(col)
     return ""
 
 def _set_level_name_live(self, value):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is None:
         return
-    clean = str(value).strip().lower().replace(" ", "-")
+    clean = clean_level_name(value)
     if not clean:
         return  # Refuse to blank the name
     clean = clean[:10]  # Silent cap; subpanel shows a warning if over

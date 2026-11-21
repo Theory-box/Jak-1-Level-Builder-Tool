@@ -33,6 +33,8 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .collections import select_only
+from .export.paths import log
 import math
 import numpy as np
 import bpy
@@ -313,6 +315,13 @@ class OGBakeSettings(bpy.types.PropertyGroup):
 
 # ── post-processing (numpy) ─────────────────────────────────────────────────
 
+def loop_verts(mesh):
+    """Vertex index of every face corner of a mesh (numpy int64)."""
+    lv = np.empty(len(mesh.loops), dtype=np.int64)
+    mesh.loops.foreach_get("vertex_index", lv)
+    return lv
+
+
 def _read(attr):
     n = len(attr.data)
     arr = np.empty(n * 4, dtype=np.float32)
@@ -377,7 +386,7 @@ def _corner_groups(mesh, keep_sharp, angle=None, sharp_flat=None):
     edges: not marked sharp, neither face flat-shaded, and (angle given)
     faces less than `angle` apart."""
     nl = len(mesh.loops)
-    lv = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("vertex_index", lv)
+    lv = loop_verts(mesh)
     le = np.empty(nl, dtype=np.int64); mesh.loops.foreach_get("edge_index", le)
     if not keep_sharp:
         return lv, int(lv.max()) + 1 if nl else 0
@@ -476,8 +485,7 @@ def alpha_values(mesh, src, domain):
     a = vals[:, 3]
     if src.domain == domain:
         return a
-    lv = np.empty(len(mesh.loops), dtype=np.int64)
-    mesh.loops.foreach_get("vertex_index", lv)
+    lv = loop_verts(mesh)
     if src.domain == "POINT" and domain == "CORNER":
         return a[lv]
     if src.domain == "CORNER" and domain == "POINT":   # mean of each vertex's corners
@@ -919,7 +927,7 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
         tv = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("vertices", tv)
         tl = np.empty(nt * 3, np.int32); m.loop_triangles.foreach_get("loops", tl)
         tris.append(tv.reshape(nt, 3) + v0)
-        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        lv = loop_verts(m)
         for n in layers:
             ca = m.color_attributes.get(n)
             if ca is None:
@@ -973,7 +981,7 @@ def copy_lighting(targets, sources, search="VERTICAL", dist=5.0):
         wv = (d11 * d20 - d01 * d21) / den; ww = (d00 * d21 - d01 * d20) / den
         w = np.clip(np.stack([1 - wv - ww, wv, ww], 1), 0, 1)
         w /= np.maximum(w.sum(1, keepdims=True), 1e-8)
-        lv = np.empty(len(m.loops), np.int32); m.loops.foreach_get("vertex_index", lv)
+        lv = loop_verts(m)
         cas = m.color_attributes
         for n in layers:
             rgb = np.full((nv, 3), np.nan, np.float32)
@@ -1088,16 +1096,6 @@ def _objs(names):
     return [o for o in (bpy.data.objects.get(n) for n in names) if o is not None]
 
 
-def _select_only(objs):
-    vl = bpy.context.view_layer
-    keep = set(o.name for o in objs)
-    for o in vl.objects:
-        if o.select_get() != (o.name in keep):
-            o.select_set(o.name in keep)
-    if objs:
-        vl.objects.active = objs[0]
-
-
 def _run_pass():
     job = _JOB
     kind = job["passes"][job["i"]]
@@ -1125,7 +1123,7 @@ def _run_pass():
             job["emit_attr"] = attr
         _prepare(objs, attr, job["domain"])
         args = dict(type="EMIT")
-    _select_only(objs)
+    select_only(objs)
     import time
     job["evt"] = False                     # set by object_bake_complete for this pass
     job["pass_t"] = time.time()
@@ -1162,13 +1160,13 @@ def step() -> bool:
         waited = time.time() - _JOB.get("pass_t", 0)
         if not running and not _JOB["seen"] and waited > 120:
             _status("Bake error: the bake job never started (see the system console)")
-            print("[OpenGOAL] bake: the bake job never started")
+            log("bake: the bake job never started")
             _restore(_JOB)
             _JOB.clear()
             return False
         if waited > 60 and not _JOB.get("told"):
             _JOB["told"] = True           # one diagnostic line for long waits
-            print(f"[OpenGOAL] bake: still waiting on the {_JOB['passes'][_JOB['i']]} pass after {waited:.0f}s "
+            log(f"bake: still waiting on the {_JOB['passes'][_JOB['i']]} pass after {waited:.0f}s "
                   f"(job running {job_running}, finished event {bool(_JOB.get('evt'))}, writes refused {refused})")
         return True
     _JOB["told"] = False
@@ -1243,7 +1241,7 @@ def _finish():
     _uncombine(job, job.get("baked", []))    # the layers still on the copies (emit: back already)
     _restore(job)
     _status("Baking: post-processing…")
-    _select_only(_objs(job["objs"]))       # the selection the bake started with
+    select_only(_objs(job["objs"]))       # the selection the bake started with
     col = bpy.data.collections.get(job.get("level", "")) if job.get("level") else None
     settings = col.og_bake if col is not None else None
     if settings is None:
@@ -1279,7 +1277,7 @@ def _finish():
     if times or extra:
         msg += f": {', '.join(times + extra)}"
     _status(msg)
-    print("[OpenGOAL] " + msg)
+    log(msg)
 
 
 def _safe(fn):
@@ -1291,7 +1289,7 @@ def _safe(fn):
         _JOB.clear()
         _status(f"Bake error: {e}")
         import traceback
-        print("[OpenGOAL] bake:", traceback.format_exc())
+        log("bake: " + traceback.format_exc())
         raise
 
 
@@ -1609,12 +1607,7 @@ class OG_OT_TodSelectLights(bpy.types.Operator):
         vl = ctx.view_layer
         objs = [o for o in c.all_objects if o.name in vl.objects and o.visible_get(view_layer=vl)]
         hidden = sum(1 for o in c.all_objects) - len(objs)
-        for o in ctx.selected_objects:
-            o.select_set(False)
-        for o in objs:
-            o.select_set(True)
-        if objs:
-            vl.objects.active = objs[0]
+        select_only(objs, ctx)
         self.report({"WARNING"} if hidden else {"INFO"},
                     f"Selected {len(objs)} object(s) of {c.name}" + (f"; {hidden} hidden" if hidden else ""))
         return {"FINISHED"}

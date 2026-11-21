@@ -65,8 +65,7 @@ class OGProjectSettings(bpy.types.PropertyGroup):
 
 
 # key -> [(file parts, line pattern with the vanilla value, vanilla value)];
-# every match in the file is set (New Game has 5 in progress.gc). key None:
-# a line an older version patched by mistake, always put back to vanilla.
+# every match in the file is set (New Game has 5 in progress.gc).
 _INIT = r"(\(initialize! \*game-info\* 'game \(the-as game-save #f\) "
 _PATCHES = {
     "retail_checkpoint": [(("engine", "game", "game-info.gc"), r'(\(else ")title-start("\)\)\))', "title-start")],
@@ -76,7 +75,6 @@ _PATCHES = {
                         (("pc", "progress-pc.gc"), _INIT + r'")title-start("\))', "title-start")],
     "discord_status": [(("pc", "pckernel.gc"), r'(\(set! \(-> info status\) ")Playing Jak and Daxter: The Precursor Legacy™("\))',
                         "Playing Jak and Daxter: The Precursor Legacy™")],
-    None: [(("pc", "progress-pc.gc"), r'(\(get-continue-by-name \*game-info\* ")game-start("\)\))', "game-start")],
 }
 
 
@@ -98,7 +96,7 @@ def apply(scene):
     root = _goal_src()
     changed = []
     for key, patches in _PATCHES.items():
-        value = getattr(s, key).strip() if key else ""
+        value = getattr(s, key).strip()
         for parts, pattern, vanilla in patches:
             p = root.joinpath(*parts)
             if not p.exists():
@@ -110,10 +108,9 @@ def apply(scene):
             # (the tag goes after the whole line: closing parens may follow).
             # Changed only when it holds the vanilla value or carries our tag;
             # each key has its own tag so two settings on the same kind of line
-            # stay apart. Lines written by the first version carry the tag
-            # without the key ("<tag>: was ...") and are ours too.
-            tag = f"{_TAG} {key}" if key else _TAG
-            tag_rx = re.escape(_TAG) + (rf"(?: {re.escape(key)})?:" if key else ":")
+            # stay apart.
+            tag = f"{_TAG} {key}"
+            tag_rx = re.escape(_TAG) + rf" {re.escape(key)}:"
             head, tail = pattern.split(vanilla, 1)
             rx = re.compile(head + f"({_VALUE_RX})" + tail + r"([^\n]*?)" + rf"([ \t]*{tag_rx}[^\n]*)?$",
                             re.M)
@@ -127,8 +124,7 @@ def apply(scene):
                 return f"{g1}{vanilla}{g2}{rest}"
             new, n = rx.subn(repl, txt)
             if not n:
-                if key:
-                    log(f"WARNING: {p.name}: the {key} line wasn't found (game version?)")
+                log(f"WARNING: {p.name}: the {key} line wasn't found (game version?)")
                 continue
             if new == txt:
                 continue

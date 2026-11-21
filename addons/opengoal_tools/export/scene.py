@@ -8,36 +8,9 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
-from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, ACTOR_LINK_DEFS,
-    _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link,
-    _actor_remove_link, _build_actor_link_lumps,
-    _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type,
-)
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
-from ..collections import (
-    _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_SPAWNABLE_PLATFORMS,
-    _COL_PATH_SPAWNABLE_PROPS, _COL_PATH_SPAWNABLE_NPCS,
-    _COL_PATH_SPAWNABLE_PICKUPS, _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS,
-    _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_GEO_SOLID,
-    _COL_PATH_GEO_COLLISION, _COL_PATH_GEO_VISUAL, _COL_PATH_GEO_REFERENCE,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _ENTITY_CAT_TO_COL_PATH, _LEVEL_COL_DEFAULTS,
-    _all_level_collections, _active_level_col, _col_is_no_export,
-    _recursive_col_objects, _level_objects, _ensure_sub_collection,
-    _link_object_to_sub_collection, _col_path_for_entity, _classify_object,
-    _get_level_prop, _set_level_prop, _active_level_items,
-    _set_blender_active_collection, _get_death_plane, _set_death_plane,
-    _on_active_level_changed,
-)
+from ..data import _aggro_event_id
+from ..collections import _level_objects
+from ..collections import _level_objects
 
 # Cross-module imports (siblings in the export package)
 from .paths import (
@@ -348,7 +321,7 @@ def collect_builtin_cameras(scene):
     """
     from .. import db as _db
     from .schema_emit import emit_schema_lumps
-    from .actors import _to_game_coords
+    from ..coords import to_game_vec4
     from . import path_modes as _pm
     cam_db = _db.cameras()
     fields = cam_db.get("fields", [])
@@ -414,7 +387,7 @@ def collect_builtin_cameras(scene):
                 knots, _kn = _pm.manual_knots(knots, [k.value for k in cam_obj.og_path_knots])
                 log(f"  [camera] {name}: manual knots" + (f" — {_kn}" if _kn else ""))
             if knots and len(raw) <= _pm.MAX_CVERTS:
-                lump["campath"] = ["vector4m"] + [_to_game_coords(mathutils.Vector(p)) for p in raw]
+                lump["campath"] = ["vector4m"] + [to_game_vec4(p) for p in raw]
                 lump["campath-k"] = ["float"] + knots
             else:
                 log(f"  [camera] WARNING: {name} path mode needs 2+ path points "
@@ -651,7 +624,7 @@ def collect_spawns(scene):
     # Used to conjugate Blender rotation matrices into game space:
     #   game_rot = R_remap @ bl_rot @ R_remap^T
     # Verified: identity Blender empty → identity game quat (x:0 y:0 z:0 w:1).
-    R_remap = mathutils.Matrix(((1,0,0),(0,0,1),(0,-1,0)))
+    from ..coords import R as R_remap
 
     out = []
     for o in sorted(_level_objects(scene), key=lambda o: o.name):
@@ -786,7 +759,7 @@ def collect_load_boundaries(scene):
     OG Boundary Viz modifier (which offsets the wall in the object's local
     frame). Emitted in game units (metres * 4096): game_x = bx, game_z = -by.
     """
-    M = 4096.0
+    from ..coords import M
 
     out = []
     for o in _level_objects(scene):

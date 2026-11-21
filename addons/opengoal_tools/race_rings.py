@@ -18,9 +18,12 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .export.paths import log
 import math
 import bpy
 import mathutils
+
+from .coords import to_game
 
 RING_RADIUS = 4.5     # m, the particle ring (the pass-through cylinder is 6 m)
 _PREVIEW_PROP = "og_preview_mesh"
@@ -52,10 +55,6 @@ def points(o) -> list:
     return out
 
 
-def _game(v):          # Blender -> game axes (x, z, -y)
-    return mathutils.Vector((v.x, v.z, -v.y))
-
-
 def _flat_norm(v):
     v = mathutils.Vector((v.x, 0.0, v.z))
     return v.normalized() if v.length > 1e-9 else v
@@ -63,7 +62,7 @@ def _flat_norm(v):
 
 def yaws(pts, extra=0.0) -> list:
     """Game rot-y (radians) per ring, without / with each point's tilt."""
-    g = [_game(p["co"]) for p in pts]
+    g = [to_game(p["co"]) for p in pts]
     n = len(g)
     out = []
     for i in range(n):
@@ -93,7 +92,7 @@ def straight_rings(pts) -> list:
     """Indices of middle rings whose neighbours are in a straight line through
     them: the game's bisector is then zero and it falls back to 90 deg (axis
     along game Z), so the ring is edge-on unless the line runs along Z."""
-    g = [_game(p["co"]) for p in pts]
+    g = [to_game(p["co"]) for p in pts]
     bad = []
     for i in range(1, len(g) - 1):
         a, b = _flat_norm(g[i - 1] - g[i]), _flat_norm(g[i + 1] - g[i])
@@ -179,7 +178,7 @@ def _rebuild_later(names):
                     try:
                         update_preview(bpy.context, o)
                     except Exception as e:   # never stop following this actor
-                        print(f"[OpenGOAL] race-ring preview {n}: {e}")
+                        log(f"race-ring preview {n}: {e}")
         finally:
             _PENDING.difference_update(names)
         return None
@@ -196,6 +195,31 @@ def changed(depsgraph):
         elif n == "Curve":
             curves.add(u.id.original.name)
     return objs, curves
+
+
+_CAND = {"n": -1, "rings": [], "place": []}
+
+
+def candidates():
+    """(race-ring actor names, place-on-path actor names): the only actors the
+    depsgraph handlers look at, found by one scan when the number of objects
+    changes (or after invalidate_candidates())."""
+    n = len(bpy.data.objects)
+    if _CAND["n"] != n:
+        rings, place = [], []
+        for o in bpy.data.objects:
+            if o.type != "EMPTY" or not o.name.startswith("ACTOR_") or o.get(_PREVIEW_PROP):
+                continue
+            if o.name.startswith("ACTOR_race-ring_"):
+                rings.append(o.name)
+            if getattr(o, "og_place_on_path", False):
+                place.append(o.name)
+        _CAND.update(n=n, rings=rings, place=place)
+    return _CAND["rings"], _CAND["place"]
+
+
+def invalidate_candidates():
+    _CAND["n"] = -1
 
 
 def touched(o, objs, curves) -> bool:
@@ -216,8 +240,9 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
-    todo = [o.name for o in scene.objects
-            if o.name.startswith("ACTOR_race-ring_") and not o.get(_PREVIEW_PROP) and o.name not in _PENDING
+    obs = (bpy.data.objects.get(n) for n in candidates()[0])
+    todo = [o.name for o in obs
+            if o is not None and o.name not in _PENDING and o.name in scene.objects
             and getattr(o, "og_special_preview", True)
             and touched(o, objs, curves) and uses_rings(o) and _differs(o)]
     if todo:
@@ -238,7 +263,7 @@ def entities(o, base: dict) -> list:
     out = []
     for i, p in enumerate(pts):
         e = copy.deepcopy(base)
-        g = _game(p["co"])
+        g = to_game(p["co"])
         t = [round(g.x, 4), round(g.y, 4), round(g.z, 4)]
         e["trans"] = t
         e["quat"] = [0.0, 0.0, 0.0, 1.0]

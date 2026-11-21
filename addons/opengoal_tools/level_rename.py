@@ -14,6 +14,7 @@ another .blend's), each with a remove button.
 """
 from __future__ import annotations
 
+from .collections import level_name
 import os
 import re
 
@@ -24,7 +25,7 @@ KEY = "og_exported_name"
 
 
 def _level_name(col):
-    return str(col.get("og_level_name", col.name)).strip().lower().replace(" ", "-")
+    return level_name(col)
 
 
 def pending_old_name(col):

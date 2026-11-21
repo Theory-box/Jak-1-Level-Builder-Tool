@@ -8,36 +8,8 @@ from __future__ import annotations
 
 import bpy, os, re, json, math, mathutils
 from pathlib import Path
-from ..data import (
-    ENTITY_DEFS, ETYPE_CODE, ETYPE_TPAGES, ETYPE_AG, VERTEX_EXPORT_TYPES,
-    needed_tpages, ACTOR_LINK_DEFS,
-    _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link,
-    _actor_remove_link, _build_actor_link_lumps,
-    _parse_lump_row, _aggro_event_id, AGGRO_TRIGGER_EVENTS,
-    _LUMP_HARDCODED_KEYS, _is_custom_type,
-)
-from ..collections import (
-    _get_level_prop, _level_objects,
-    _active_level_col, _classify_object, _col_path_for_entity,
-    _ensure_sub_collection, _recursive_col_objects,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-)
-from ..collections import (
-    _COL_PATH_SPAWNABLE_ENEMIES, _COL_PATH_SPAWNABLE_PLATFORMS,
-    _COL_PATH_SPAWNABLE_PROPS, _COL_PATH_SPAWNABLE_NPCS,
-    _COL_PATH_SPAWNABLE_PICKUPS, _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS,
-    _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_GEO_SOLID,
-    _COL_PATH_GEO_COLLISION, _COL_PATH_GEO_VISUAL, _COL_PATH_GEO_REFERENCE,
-    _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _ENTITY_CAT_TO_COL_PATH, _LEVEL_COL_DEFAULTS,
-    _all_level_collections, _active_level_col, _col_is_no_export,
-    _recursive_col_objects, _level_objects, _ensure_sub_collection,
-    _link_object_to_sub_collection, _col_path_for_entity, _classify_object,
-    _get_level_prop, _set_level_prop, _active_level_items,
-    _set_blender_active_collection, _get_death_plane, _set_death_plane,
-    _on_active_level_changed,
-)
+from ..collections import _get_level_prop, _level_objects
+from ..collections import _level_objects, _get_level_prop
 
 # Cross-module imports (siblings in the export package)
 from .paths import (
@@ -300,12 +272,39 @@ def nav_mesh_static(mesh, indent="  "):
     return "\n".join(L)
 
 
+_NAV_MEMO: dict = {}      # nav-mesh object name -> (triangles hash, nav_compute(full=False))
+_NAV_PASS: list = [None]  # {name: summary} while one level check runs (many actors, one mesh)
+
+
+def nav_pass(on: bool):
+    """Start / end a level check: a nav-mesh's summary is read once for all
+    the actors linking it."""
+    _NAV_PASS[0] = {} if on else None
+
+
+def nav_summary(nav_obj):
+    """nav_compute(full=False) of a nav-mesh object, recomputed only when its
+    triangles (positions / jump materials) changed: the warnings ask for it on
+    every redraw."""
+    p = _NAV_PASS[0]
+    if p is not None and nav_obj.name in p:
+        return p[nav_obj.name]
+    tris = nav_tris(nav_obj)
+    key = hash(tuple(tris))
+    hit = _NAV_MEMO.get(nav_obj.name)
+    if hit is None or hit[0] != key:
+        hit = _NAV_MEMO[nav_obj.name] = (key, nav_compute(tris, full=False))
+    if p is not None:
+        p[nav_obj.name] = hit[1]
+    return hit[1]
+
+
 def nav_issues(nav_obj):
     """Problems of a nav-mesh object for the warnings (no triangles, over 255
     triangles / vertices, zero-area, 3+ triangles on an edge, only jump faces)."""
     if nav_obj is None or nav_obj.type != "MESH":
         return []
-    m = nav_compute(nav_tris(nav_obj), full=False)
+    m = nav_summary(nav_obj)
     return ["no triangles"] if m is None else m["problems"]
 
 
@@ -314,7 +313,7 @@ def nav_soft_issues(nav_obj):
     it): separate parts, jump areas that don't join two walkable areas."""
     if nav_obj is None or nav_obj.type != "MESH":
         return []
-    m = nav_compute(nav_tris(nav_obj), full=False)
+    m = nav_summary(nav_obj)
     return [] if m is None else m["soft"]
 
 
@@ -436,7 +435,7 @@ def nav_gc_path(name):
 def write_nav_gc(name, scene):
     """CUSTOM: write <level>-nav.gc (only when changed); otherwise remove it.
     Returns True when the level has one."""
-    from .level_tools import _write_if_changed
+    from .fileio import write_if_changed
     p = nav_gc_path(name)
     meshes = level_nav_meshes(scene) if nav_system(scene) == "CUSTOM" else []
     if not meshes:
@@ -467,7 +466,7 @@ def write_nav_gc(name, scene):
         L.append("")
         log(f"[navmesh] {nm.name} -> custom-nav '{sym}' ({mesh['poly_count']} polys, {len(mesh['nodes'])} nodes)")
     p.parent.mkdir(parents=True, exist_ok=True)
-    _write_if_changed(p, "\n".join(L) + "\n")
+    write_if_changed(p, "\n".join(L) + "\n")
     return True
 
 

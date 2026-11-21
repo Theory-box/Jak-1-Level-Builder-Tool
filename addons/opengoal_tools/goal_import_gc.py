@@ -6,13 +6,14 @@ Numbers are game units: (meters x) = x * 4096, #x.. hex, plain numbers raw.
 """
 from __future__ import annotations
 
+from .collections import clean_level_name
 import math
 import re
 
 import bpy
 import mathutils
 
-M = 4096.0
+from .coords import M, R as _R, to_blender as _bl
 
 
 def num(f, default=0.0):
@@ -59,12 +60,6 @@ def _to_text(f):
     return str(f)
 
 
-def _bl(p):
-    """Game (x, y, z) in meters -> Blender."""
-    return mathutils.Vector((p[0], -p[2], p[1]))
-
-
-_R = mathutils.Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 
 
 def _cam_rot(rows):
@@ -121,7 +116,7 @@ def _checkpoint_for(ctx, cont_name):
     n = LAST_CHECKPOINTS.get(cont_name)
     if n and n in bpy.data.objects:
         return bpy.data.objects[n]
-    lv = str(_get_level_prop(ctx.scene, "og_level_name", "")).strip().lower().replace(" ", "-")
+    lv = clean_level_name(_get_level_prop(ctx.scene, "og_level_name", ""))
     return next((o for o in _level_objects(ctx.scene) if o.name.startswith("CHECKPOINT_") and not o.name.endswith("_CAM")
                  and f"{lv}-{spawn_uid(o)}" == cont_name), None)
 

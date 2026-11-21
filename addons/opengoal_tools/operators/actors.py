@@ -6,59 +6,13 @@
 
 from __future__ import annotations
 
+from ..collections import actor_etype, is_waypoint
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
-from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
-    NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
-    MUSIC_FLAVA_TABLE,
-    ETYPE_AG, ETYPE_CODE,
-    needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
-    _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    _is_custom_type,
-)
-from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _ensure_sub_collection, _classify_object,
-    _col_path_for_entity, _link_object_to_sub_collection,
-    _recursive_col_objects, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SPAWNS,
-    _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_ENEMIES,
-    _COL_PATH_SPAWNABLE_PLATFORMS, _COL_PATH_SPAWNABLE_PROPS,
-    _COL_PATH_SPAWNABLE_NPCS, _COL_PATH_SPAWNABLE_PICKUPS,
-    _COL_PATH_GEO_SOLID, _COL_PATH_WATER,
-    _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
-)
-from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc, _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vol_link_targets, _vol_has_link_to, _rename_vol_for_links,
-    _vols_linking_to, _vol_get_link_to, _vol_remove_link_to,
-    _classify_target, _clean_orphaned_vol_links, log, collect_actors,
-    collect_spawns, collect_ambients, needed_ags, needed_code,
-    patch_level_info, patch_game_gp, discover_custom_levels, remove_level,
-    export_glb,
-)
-from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
-    _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-)
-from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview,
-)
+from ..data import _actor_set_link
 from .. import model_preview as _mp
 from .. import db as _db
 import re as _re
@@ -100,8 +54,8 @@ class OG_OT_SetActorLink(Operator):
         else:
             _actor_set_link(obj, self.lump_key, self.slot_index, self.target_name)
         # Unexpected types are allowed, with a warning (they may not work in game).
-        src_et = obj.name.split("_", 2)[1] if obj.name.count("_") >= 2 else ""
-        tgt_et = target.name.split("_", 2)[1] if target.name.count("_") >= 2 else ""
+        src_et = (actor_etype(obj) or "")
+        tgt_et = (actor_etype(target) or "")
         slot = _db.link_slot(src_et, self.lump_key, self.slot_index)
         if slot and not _db.link_accepts(slot.get("accepts"), tgt_et):
             self.report({"WARNING"}, f"Linked {self.target_name}, but '{self.lump_key}' expects "
@@ -119,7 +73,7 @@ def _link_target_items(self, ctx):
     types the slot accepts first, others marked "(unexpected type)"."""
     scene = ctx.scene if ctx else bpy.context.scene
     src = scene.objects.get(self.source_name)
-    src_et = self.source_name.split("_", 2)[1] if self.source_name.count("_") >= 2 else ""
+    src_et = (actor_etype(self.source_name) or "")
     acc = _db.link_slot(src_et, self.lump_key, self.slot_index).get("accepts")
     from ..data import _actor_multi_links
     have = ({e.target_name for e in _actor_multi_links(src, self.lump_key, self.slot_index)}
@@ -131,7 +85,7 @@ def _link_target_items(self, ctx):
     rows = []
     for o in scene.objects:
         if o is src or o.type != "EMPTY" or not o.name.startswith("ACTOR_") \
-                or "_wp_" in o.name or "_wpb_" in o.name or o.name.count("_") < 2:
+                or is_waypoint(o.name) or o.name.count("_") < 2:
             continue
         ok = _db.link_accepts(acc, o.name.split("_", 2)[1])
         got = has(o) if has else None
@@ -254,17 +208,15 @@ class OG_OT_BCCamposAdd(Operator):
         actor = ctx.scene.objects.get(self.actor_name)
         if actor is None:
             return {"CANCELLED"}
-        from ..collections import _link_object_to_sub_collection, _COL_PATH_WAYPOINTS
+        from ..collections import _COL_PATH_WAYPOINTS
         base = "CAMPOS_" + actor.name[len("ACTOR_"):]
         name, n = base, 1
         while bpy.data.objects.get(name):
             name = f"{base}_{n}"; n += 1
-        e = bpy.data.objects.new(name, None)
-        e.empty_display_type = "CONE"; e.empty_display_size = 1.0
-        e.location = actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor \
-            else ctx.scene.cursor.location.copy()
-        ctx.scene.collection.objects.link(e)
-        _link_object_to_sub_collection(ctx.scene, e, *_COL_PATH_WAYPOINTS)
+        from ..collections import new_empty
+        e = new_empty(ctx, name, _COL_PATH_WAYPOINTS, "CONE", 1.0,
+                      actor.matrix_world.translation.copy() if ctx.scene.og_props.waypoint_spawn_at_actor
+                      else ctx.scene.cursor.location.copy())
         actor["og_bc_campos"] = e.name
         return {"FINISHED"}
 
@@ -359,7 +311,7 @@ def _natural_key(name):
 def _selected_actor_empties(ctx, exclude=None):
     return sorted((o for o in ctx.selected_objects
                    if o is not exclude and o.type == "EMPTY" and o.name.startswith("ACTOR_")
-                   and "_wp_" not in o.name and "_wpb_" not in o.name),
+                   and not is_waypoint(o.name)),
                   key=lambda o: _natural_key(o.name))
 
 
@@ -461,7 +413,7 @@ class OG_OT_ShowLinkTypes(Operator):
 
     def _types(self):
         src = bpy.data.objects.get(self.source_name)
-        et = src.name.split("_", 2)[1] if src and src.name.count("_") >= 2 else ""
+        et = (actor_etype(src) or "")
         acc = _db.link_slot(et, self.lump_key, self.slot_index).get("accepts")
         out = [(a.get("label") or a["etype"], a["etype"]) for a in _db.actors()
                if a.get("category") != "Hidden" and _db.link_accepts(acc, a["etype"])]
@@ -528,75 +480,6 @@ class OG_OT_SetCratePickup(Operator):
                 self.report({"WARNING"}, "Scout Fly requires Iron box — crate type set to Iron")
         return {"FINISHED"}
 
-class OG_OT_SetCrateAmount(Operator):
-    """Set the pickup amount dropped by this crate."""
-    bl_idname  = "og.set_crate_amount"
-    bl_label   = "Set Crate Amount"
-    bl_options = {"REGISTER", "UNDO"}
-
-    delta: bpy.props.IntProperty(default=1)
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if not o:
-            return {"CANCELLED"}
-        # Scout fly is always 1 — don't allow changes
-        if o.get("og_crate_pickup", "money") == "buzzer":
-            return {"CANCELLED"}
-        current = int(o.get("og_crate_pickup_amount", 1))
-        o["og_crate_pickup_amount"] = max(1, min(5, current + self.delta))
-        return {"FINISHED"}
-
-class OG_OT_ToggleCrystalUnderwater(Operator):
-    """Toggle dark crystal underwater variant (mode=1 lump)."""
-    bl_idname  = "og.toggle_crystal_underwater"
-    bl_label   = "Toggle Crystal Underwater"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_crystal_underwater"] = 0 if bool(o.get("og_crystal_underwater", False)) else 1
-        return {"FINISHED"}
-
-class OG_OT_ToggleCellSkipJump(Operator):
-    """Toggle skip-jump-anim fact-option on fuel-cell (options lump bit 2)."""
-    bl_idname  = "og.toggle_cell_skip_jump"
-    bl_label   = "Toggle Cell Skip Jump"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_cell_skip_jump"] = 0 if bool(o.get("og_cell_skip_jump", False)) else 1
-        return {"FINISHED"}
-
-class OG_OT_SetBridgeVariant(Operator):
-    """Set the art-name (bridge variant) on a ropebridge actor."""
-    bl_idname  = "og.set_bridge_variant"
-    bl_label   = "Set Bridge Variant"
-    bl_options = {"REGISTER", "UNDO"}
-
-    variant: bpy.props.StringProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_bridge_variant"] = self.variant
-        return {"FINISHED"}
-
-class OG_OT_ToggleTurbineParticles(Operator):
-    """Toggle particle-select on windturbine actor."""
-    bl_idname  = "og.toggle_turbine_particles"
-    bl_label   = "Toggle Turbine Particles"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_turbine_particles"] = 0 if bool(o.get("og_turbine_particles", False)) else 1
-        return {"FINISHED"}
-
 class OG_OT_SetElevatorMode(Operator):
     """Set the mode lump on a cave elevator."""
     bl_idname  = "og.set_elevator_mode"
@@ -611,32 +494,6 @@ class OG_OT_SetElevatorMode(Operator):
             o["og_elevator_mode"] = self.mode_val
         return {"FINISHED"}
 
-class OG_OT_SetBoneBridgeAnim(Operator):
-    """Set the animation-select lump on a mis-bone-bridge."""
-    bl_idname  = "og.set_bone_bridge_anim"
-    bl_label   = "Set Bone Bridge Anim"
-    bl_options = {"REGISTER", "UNDO"}
-
-    anim_val: bpy.props.IntProperty()
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if o:
-            o["og_bone_bridge_anim"] = self.anim_val
-        return {"FINISHED"}
-
-class OG_OT_TogglePlatformWrap(Operator):
-    """Toggle wrap-phase (one-way loop vs ping-pong) on the selected platform."""
-    bl_idname = "og.toggle_platform_wrap"
-    bl_label  = "Toggle Wrap Phase"
-
-    def execute(self, ctx):
-        o = ctx.active_object
-        if not o:
-            return {"CANCELLED"}
-        o["og_sync_wrap"] = 0 if bool(o.get("og_sync_wrap", 0)) else 1
-        return {"FINISHED"}
-
 class OG_OT_SetPlatformDefaults(Operator):
     """Reset sync values on the selected platform actor to defaults."""
     bl_idname = "og.set_platform_defaults"
@@ -647,7 +504,7 @@ class OG_OT_SetPlatformDefaults(Operator):
         if not o:
             return {"CANCELLED"}
         from ..utils import sync_defaults
-        etype = o.name.split("_", 2)[1] if o.name.count("_") >= 2 else ""
+        etype = (actor_etype(o) or "")
         for k, v in sync_defaults(etype).items():
             o[k] = int(v) if isinstance(v, bool) else v
         return {"FINISHED"}
@@ -661,9 +518,10 @@ class OG_OT_SetVersionField(bpy.types.Operator):
     value: StringProperty()
 
     def execute(self, ctx):
-        prefs = ctx.preferences.addons.get("opengoal_tools")
-        if prefs and self.field in ("og_active_version", "og_active_data"):
-            setattr(prefs.preferences, self.field, self.value)
+        from ..paths_core import prefs
+        p = prefs()
+        if p and self.field in ("og_active_version", "og_active_data"):
+            setattr(p, self.field, self.value)
         return {"FINISHED"}
 
 
@@ -686,14 +544,7 @@ CLASSES = (
     OG_OT_ShowLinkTypes,
     OG_OT_SetCrateType,
     OG_OT_SetCratePickup,
-    OG_OT_SetCrateAmount,
-    OG_OT_ToggleCrystalUnderwater,
-    OG_OT_ToggleCellSkipJump,
-    OG_OT_SetBridgeVariant,
-    OG_OT_ToggleTurbineParticles,
     OG_OT_SetElevatorMode,
-    OG_OT_SetBoneBridgeAnim,
-    OG_OT_TogglePlatformWrap,
     OG_OT_SetPlatformDefaults,
     OG_OT_SetVersionField,
 )

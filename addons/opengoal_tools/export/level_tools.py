@@ -7,7 +7,8 @@ content changed, so an unchanged build doesn't recompile them.
 """
 from __future__ import annotations
 
-from .paths import _goal_src, _game_gp, log
+from .paths import _goal_src, _game_gp
+from .fileio import write_if_changed, rewrite, patch
 
 LT_DIR = "levels/level-tools"
 _TAG = "; og-level-tools"
@@ -22,35 +23,6 @@ LT_NAV_MESH_GC = ';;-*-Lisp-*-\n(in-package goal)\n;; lt-nav-mesh.gc -- shared c
 FILES = {"lt-checkpoint": LT_CHECKPOINT_GC, "lt-task-trigger": LT_TASK_TRIGGER_GC, "lt-nav-mesh": LT_NAV_MESH_GC}
 DEPS = {"lt-task-trigger": ("process-drawable", "task-control", "lt-checkpoint"),
         "lt-nav-mesh": ("process-drawable",)}
-
-
-def _write_if_changed(p, text):
-    if p.exists() and p.read_text(encoding="utf-8") == text:
-        return False
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(text, encoding="utf-8")
-    log(f"Wrote {p}")
-    return True
-
-
-def _patch(p, add_lines, before, label):
-    """Add our tagged lines to a game file (once), before `before`."""
-    raw = p.read_bytes()
-    crlf = b"\r\n" in raw
-    txt = raw.decode("utf-8").replace("\r\n", "\n")
-    missing = [l for l in add_lines if l not in txt]
-    if not missing:
-        return False
-    i = txt.rfind(before)
-    if i < 0:
-        log(f"WARNING: {p.name}: no '{before.strip()}' to add {label} before")
-        return False
-    txt = txt[:i] + "".join(l + "\n" for l in missing) + txt[i:]
-    if crlf:
-        txt = txt.replace("\n", "\r\n")
-    p.write_bytes(txt.encode("utf-8"))
-    log(f"Patched {p.name}: {label}")
-    return True
 
 
 # ── custom tasks: one-time engine changes (mod-base) ─────────────────────────
@@ -104,22 +76,15 @@ def ensure_task_engine(need_max):
     m = re.search(r"\(max\s*(\d*)\)\)", txt)
     if m and (not m.group(1) or int(m.group(1)) != want):
         txt = txt[:m.start()] + f"(max {want}))" + txt[m.end():]
-        _write_if_changed(p, txt) and changed.append(p.name)
+        write_if_changed(p, txt) and changed.append(p.name)
     p = _src(*_SAVE)
-    raw = p.read_bytes()
-    crlf = b"\r\n" in raw
-    s = raw.decode("utf-8").replace("\r\n", "\n")
-    s0 = s
-    for old, new in _SAVE_FIXES:
-        if old in s and _FIX not in s.split(old)[1].split("\n", 1)[0]:
-            s = s.replace(old, new, 1)
-    if _FCT_OLD in s:
-        s = s.replace(_FCT_OLD, _FCT_NEW, 1)
-    if s != s0:
-        if crlf:
-            s = s.replace("\n", "\r\n")
-        p.write_bytes(s.encode("utf-8"))
-        log(f"Patched {p.name}: save fixes for more than 116 tasks")
+
+    def save_fixes(s):
+        for old, new in _SAVE_FIXES:
+            if old in s and _FIX not in s.split(old)[1].split("\n", 1)[0]:
+                s = s.replace(old, new, 1)
+        return s.replace(_FCT_OLD, _FCT_NEW, 1)
+    if rewrite(p, save_fixes, f"Patched {p.name}: save fixes for more than 116 tasks"):
         changed.append(p.name)
     return changed
 
@@ -142,12 +107,12 @@ def ensure_level_tools():
                 if n != t:
                     p.write_text(n, encoding="utf-8")
     for name, text in files.items():
-        _write_if_changed(d / f"{name}.gc", text)
+        write_if_changed(d / f"{name}.gc", text)
     gp = _game_gp()
     if gp.exists():
-        _patch(gp, [f'(goal-src "{LT_DIR}/{n}.gc" {" ".join(chr(34) + d + chr(34) for d in DEPS.get(n, ("process-drawable",)))}) {_TAG}'
+        patch(gp, [f'(goal-src "{LT_DIR}/{n}.gc" {" ".join(chr(34) + d + chr(34) for d in DEPS.get(n, ("process-drawable",)))}) {_TAG}'
                     for n in files],
                '(group-list "all-code"', "level-tools goal-src")
     gd = _goal_src() / "dgos" / "game.gd"
     if gd.exists():
-        _patch(gd, [f'  "{n}.o" {_TAG.replace(";", ";;", 1)}' for n in files], " ))", "level-tools objects")
+        patch(gd, [f'  "{n}.o" {_TAG.replace(";", ";;", 1)}' for n in files], " ))", "level-tools objects")

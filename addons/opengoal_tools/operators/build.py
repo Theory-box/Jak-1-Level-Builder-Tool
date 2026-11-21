@@ -6,59 +6,17 @@
 
 from __future__ import annotations
 
+from ..utils import redraw
 import bpy, os, re, json, subprocess, threading, time, math, mathutils
 from pathlib import Path
 from bpy.props import (StringProperty, BoolProperty, IntProperty,
                        EnumProperty, FloatProperty, CollectionProperty)
 from bpy.types import Operator
-from ..data import (
-    ENTITY_DEFS, ENTITY_ENUM_ITEMS, ENEMY_ENUM_ITEMS, PROP_ENUM_ITEMS,
-    NPC_ENUM_ITEMS, PICKUP_ENUM_ITEMS, PLATFORM_ENUM_ITEMS, CRATE_ITEMS, CRATE_PICKUP_ITEMS,
-    ALL_SFX_ITEMS, SBK_SOUNDS, LEVEL_BANKS, ACTOR_LINK_DEFS,
-    MUSIC_FLAVA_TABLE,
-    ETYPE_AG, ETYPE_CODE,
-    needed_tpages, _lump_ref_for_etype, _actor_link_slots, _actor_has_links,
-    _actor_links, _actor_get_link, _actor_set_link, _actor_remove_link,
-    _build_actor_link_lumps, _parse_lump_row, _LUMP_HARDCODED_KEYS,
-    _aggro_event_id, AGGRO_EVENT_ENUM_ITEMS, LUMP_TYPE_ITEMS,
-    _is_custom_type,
-)
-from ..collections import (
-    _get_level_prop, _set_level_prop, _level_objects, _active_level_col,
-    _all_level_collections, _ensure_sub_collection, _classify_object,
-    _col_path_for_entity, _link_object_to_sub_collection,
-    _recursive_col_objects, _COL_PATH_WAYPOINTS, _COL_PATH_NAVMESHES,
-    _COL_PATH_TRIGGERS, _COL_PATH_CAMERAS, _COL_PATH_SPAWNS,
-    _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_ENEMIES,
-    _COL_PATH_SPAWNABLE_PLATFORMS, _COL_PATH_SPAWNABLE_PROPS,
-    _COL_PATH_SPAWNABLE_NPCS, _COL_PATH_SPAWNABLE_PICKUPS,
-    _COL_PATH_GEO_SOLID, _COL_PATH_WATER,
-    _set_blender_active_collection, _LEVEL_COL_DEFAULTS,
-)
-from ..export import (
-    _nick, _iso, _lname, _ldir, _goal_src, _level_info, _game_gp,
-    _levels_dir, _entity_gc, _actor_uses_waypoints, _actor_uses_navmesh,
-    _actor_is_platform, _actor_is_launcher, _actor_is_spawner,
-    _actor_is_enemy, _actor_supports_aggro_trigger,
-    _vol_links, _vol_link_targets, _vol_has_link_to, _rename_vol_for_links,
-    _vols_linking_to, _vol_get_link_to, _vol_remove_link_to,
-    _classify_target, _clean_orphaned_vol_links, log, collect_actors,
-    collect_spawns, collect_ambients, needed_ags, needed_code,
-    patch_level_info, patch_game_gp, discover_custom_levels, remove_level,
-    export_glb,
-)
+from ..export import _lname, log, export_glb
 from ..build import (
-    _EXE, _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, _exe_root, _data_root, _data,
-    _gk, _goalc, _user_dir, kill_gk, launch_gk, goalc_send, goalc_ok,
-    launch_goalc, _bg_build, _bg_play, _bg_quick_export, _bg_build_and_play,
-    write_level_files, patch_entity_gc, _bg_compile, _file_times, LAUNCH,
-)
-from ..properties import OGLumpRow, OGActorLink, OGVolLink, OGProperties
-from ..utils import (
-    _is_linkable, _is_aggro_target, _vol_for_target,
-    _ENEMY_CATS, _NPC_CATS, _PICKUP_CATS, _PROP_CATS,
-    _draw_platform_settings, _header_sep, _draw_entity_sub,
-    _draw_wiki_preview,
+    _BUILD_STATE, _PLAY_STATE, _QUICK_EXPORT_STATE, _BUILD_PLAY_STATE, kill_gk, launch_gk, _bg_build,
+    _bg_play, _bg_quick_export, _bg_build_and_play, write_level_files, patch_entity_gc, _bg_compile,
+    _file_times, LAUNCH,
 )
 from .. import model_preview as _mp
 import re as _re
@@ -83,18 +41,12 @@ def compile_running() -> bool:
     return any(st.get("status") and not st.get("done") for st in (_BUILD_STATE, _QUICK_EXPORT_STATE))
 
 
-def _redraw(ctx):
-    for a in ctx.screen.areas if ctx.screen else ():
-        if a.type == "VIEW_3D":
-            a.tag_redraw()
-
-
 def _after_compile(ctx, ok):
     """A compile ended: launch the game when Launch Game was clicked during it
     or Auto is on."""
     want = LAUNCH["pending"] or getattr(ctx.scene.og_props, "og_auto_launch", False)
     LAUNCH["pending"] = False
-    _redraw(ctx)
+    redraw(ctx)
     if ok and want:
         bpy.ops.og.play()
 
@@ -238,7 +190,7 @@ class OG_OT_Play(Operator):
         if compile_running():
             # wait for the compile; clicking again cancels the wait
             LAUNCH["pending"] = not LAUNCH["pending"]
-            _redraw(ctx)
+            redraw(ctx)
             self.report({"INFO"}, "The game will launch once the compile is done" if LAUNCH["pending"]
                         else "Launch after the compile cancelled")
             return {"FINISHED"}
@@ -546,7 +498,7 @@ class OG_OT_BakeLighting(Operator):
                 more = _bake.step()
             except Exception as e:
                 import traceback
-                print("[OpenGOAL] bake:", traceback.format_exc())
+                log("bake: " + traceback.format_exc())
                 _bake._JOB.clear()
                 _bake._status(f"Bake error: {e}")
                 more = False

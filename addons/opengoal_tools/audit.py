@@ -21,30 +21,15 @@
 #    Add a function to _REGISTERED_CHECKS at the bottom of this file.
 
 from . import db as _db
-from .data import (
-    ENTITY_DEFS,
-    ACTOR_LINK_DEFS,
-    _actor_link_slots,
-    _actor_get_link,
-)
-from .collections import _level_objects
+from .data import ENTITY_DEFS, _actor_link_slots, _actor_get_link
+from .collections import _level_objects, actor_etype, is_actor
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _etype(o):
-    if not (o.name.startswith("ACTOR_") and o.type == "EMPTY"):
-        return None
-    if "_wp_" in o.name or "_wpb_" in o.name:
-        return None
-    parts = o.name.split("_", 2)
-    return parts[1] if len(parts) >= 2 else None
-
 def _actor_objs(scene):
-    return [o for o in _level_objects(scene)
-            if o.name.startswith("ACTOR_") and o.type == "EMPTY"
-            and "_wp_" not in o.name and "_wpb_" not in o.name]
+    return [o for o in _level_objects(scene) if is_actor(o)]
 
 def _vol_objs(scene):
     return [o for o in _level_objects(scene)
@@ -77,7 +62,7 @@ def check_navmesh_links(scene):
     issues = []
     objects = scene.objects
     for o in _actor_objs(scene):
-        et = _etype(o)
+        et = actor_etype(o)
         if not et or not _db.nav_unsafe(et):
             continue
         nm_name = o.get("og_navmesh_link", "")
@@ -108,7 +93,7 @@ def check_missing_paths(scene):
         for m in missing(o, scene):
             if m["panel"] == "path":
                 issues.append(_issue("ERROR",
-                    f"'{o.name}' ({_etype(o)}) requires a {m['key']} path but has none.", o.name))
+                    f"'{o.name}' ({actor_etype(o)}) requires a {m['key']} path but has none.", o.name))
     return issues
 
 
@@ -120,7 +105,7 @@ def check_actor_links(scene):
     issues = []
     objects = scene.objects
     for o in _actor_objs(scene):
-        et = _etype(o)
+        et = actor_etype(o)
         if not et:
             continue
         from .required import missing
@@ -144,7 +129,7 @@ def check_actor_links(scene):
             if not cand:
                 continue
             accepts = max(cand, key=lambda s: s[1])[3]
-            t_et = _etype(tgt) or ""
+            t_et = actor_etype(tgt) or ""
             if t_et and not _db.link_accepts(accepts, t_et):
                 issues.append(_issue("WARNING",
                     f"'{o.name}' ({et}): link '{lk.lump_key}' → '{lk.target_name}' ({t_et}) is not an "
@@ -255,7 +240,7 @@ def check_doors(scene):
     # Build set of basebutton names that ARE targeted by a door's state-actor
     used_buttons = set()
     for o in actors:
-        et = _etype(o)
+        et = actor_etype(o)
         if not _is_eco_door(et):
             continue
         link = _actor_get_link(o, "state-actor", 0)
@@ -263,7 +248,7 @@ def check_doors(scene):
             used_buttons.add(link.target_name.strip())
 
     for o in actors:
-        et = _etype(o)
+        et = actor_etype(o)
         if not et:
             continue
 
@@ -277,7 +262,7 @@ def check_doors(scene):
                 except Exception:
                     target_obj = None
                 if target_obj:
-                    target_et = _etype(target_obj)
+                    target_et = actor_etype(target_obj)
                     if target_et and target_et != "basebutton":
                         issues.append(_issue("INFO",
                             f"'{o.name}' ({et}): state-actor target '{target_name}' "
@@ -324,7 +309,7 @@ def check_doors(scene):
 def check_entity_defs_audit_blocks(scene):
     issues = []
     for o in _actor_objs(scene):
-        et = _etype(o)
+        et = actor_etype(o)
         if not et:
             continue
         info  = ENTITY_DEFS.get(et, {})
@@ -348,7 +333,7 @@ def check_axis_not_vertical(scene):
     col = {"x": 0, "y": 2, "z": 1}   # game axis -> Blender local axis (game Y = Blender Z)
     issues = []
     for o in _actor_objs(scene):
-        ax = (_db.find_actor(_etype(o)) or {}).get("axis_not_vertical")
+        ax = (_db.find_actor(actor_etype(o)) or {}).get("axis_not_vertical")
         if ax in col:
             d = o.matrix_world.to_3x3().col[col[ax]].normalized()
             if abs(d.z) > 0.98:
@@ -364,7 +349,7 @@ def check_sync_period(scene):
     issues = []
     for o in _actor_objs(scene):
         v = o.get("og_sync_period")
-        if v is not None and _db.has_panel(_etype(o), "sync") and abs(float(v)) < 1.0 / 300.0:
+        if v is not None and _db.has_panel(actor_etype(o), "sync") and abs(float(v)) < 1.0 / 300.0:
             issues.append(_issue("ERROR", f"{o.name}: sync period {float(v):g} s crashes the game (divide by zero). "
                                           f"Use at least 0.01 s (negative turns the other way).", o.name))
     return issues
@@ -378,7 +363,7 @@ def check_texture_sources(scene):
     src = str(_get_level_prop(scene, "og_texture_source", "village1") or "village1").strip().lower()
     issues = []
     for o in _actor_objs(scene):
-        et = _etype(o)
+        et = actor_etype(o)
         var = _db.actor_variant(et, lambda k, d=None: o.get(k, d))
         need = var.get("texture_sources") or (_db.find_actor(et) or {}).get("texture_sources")
         if need and src not in need:
@@ -413,7 +398,7 @@ def check_particle_files(scene):
     shared particle definitions and can break the other's particles."""
     seen = {}
     for o in _actor_objs(scene):
-        if _etype(o) != "part-spawner":
+        if actor_etype(o) != "part-spawner":
             continue
         var = _db.actor_variant("part-spawner", lambda k, d=None: o.get(k, d))
         if var and var.get("value") != "custom":
@@ -449,7 +434,7 @@ def check_scene_summary(scene):
 
     cats = {}
     for o in actors:
-        et   = _etype(o)
+        et   = actor_etype(o)
         info = ENTITY_DEFS.get(et, {}) if et else {}
         cat  = info.get("cat", "Unknown")
         cats[cat] = cats.get(cat, 0) + 1
@@ -489,7 +474,7 @@ def check_battlecontrollers(scene):
     from .export import battlecontroller as _bc
     issues, citadel = [], []
     for o in _actor_objs(scene):
-        if _etype(o) != "battlecontroller":
+        if actor_etype(o) != "battlecontroller":
             continue
         spawn = [p.name.strip() for p in getattr(o, "og_extra_paths", [])
                  if p.name.strip() in _BC_SPAWN_PATHS and len(p.sources)]
@@ -515,7 +500,7 @@ def check_battlecontrollers(scene):
 def check_soft_warnings(scene):
     """Soft warnings (required.py soft(), the yellow count): works, does less."""
     from .required import soft
-    return [_issue("WARNING", f"'{o.name}' ({_etype(o)}): {m['label']}", o.name)
+    return [_issue("WARNING", f"'{o.name}' ({actor_etype(o)}): {m['label']}", o.name)
             for o in _actor_objs(scene) for m in soft(o, scene)]
 
 

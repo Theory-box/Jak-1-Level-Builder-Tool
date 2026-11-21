@@ -14,11 +14,13 @@
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
+from .export.paths import log
 import copy
 import bpy
 import mathutils
 
 from . import db as _db
+from .collections import actor_etype
 
 _GHOST = "og_dist_ghost"
 
@@ -35,9 +37,6 @@ def phases(a: float, n: int) -> list:
     return [round((a + i / n) % 1.0, 6) for i in range(n)]
 
 
-def _etype(o):
-    p = o.name.split("_", 2)
-    return p[1] if len(p) >= 3 and p[0] == "ACTOR" else None
 
 
 # ── where the game first puts the platform ─────────────────────────────────
@@ -111,7 +110,7 @@ def point_at(pts, knots, pos):
 def start_positions(o) -> list:
     """Where this platform (and its distributed copies) first sit."""
     from .export import path_modes as _pm
-    et = _etype(o)
+    et = actor_etype(o)
     if not et:
         return []
     pts, knots, _m, _w = _pm.build(_pm.gather_sources(o), getattr(o, "og_path_mode", "AUTO"),
@@ -183,15 +182,16 @@ _PENDING = set()
 
 def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     """Only platforms whose own settings or path were edited are looked at."""
-    from .race_rings import changed, touched
+    from .race_rings import changed, touched, candidates
     if objs is None:
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
-    todo = [o.name for o in scene.objects
-            if o.type == "EMPTY" and o.name.startswith("ACTOR_") and not o.get("og_preview_mesh") and o.name not in _PENDING
+    obs = (bpy.data.objects.get(n) for n in candidates()[1])
+    todo = [o.name for o in obs
+            if o is not None and o.name not in _PENDING and o.name in scene.objects
             and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
-            and allowed(_etype(o) or "") and _differs(o)]
+            and allowed(actor_etype(o) or "") and _differs(o)]
     if not todo:
         return
     _PENDING.update(todo)
@@ -204,7 +204,7 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
                     try:
                         apply(bpy.context, ob)
                     except Exception as e:   # never stop following this platform
-                        print(f"[OpenGOAL] place on path {n}: {e}")
+                        log(f"place on path {n}: {e}")
         finally:
             _PENDING.difference_update(todo)
         return None
@@ -212,11 +212,13 @@ def on_depsgraph(scene, depsgraph, objs=None, curves=None):
 
 
 def _upd(self, ctx):
-    if _etype(self):
+    from .race_rings import invalidate_candidates
+    invalidate_candidates()              # og_place_on_path may have changed
+    if actor_etype(self):
         try:
             apply(ctx, self)
         except Exception as e:
-            print(f"[OpenGOAL] place on path {self.name}: {e}")
+            log(f"place on path {self.name}: {e}")
 
 
 # ── UI / export ────────────────────────────────────────────────────────────

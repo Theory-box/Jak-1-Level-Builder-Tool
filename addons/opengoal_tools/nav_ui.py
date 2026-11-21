@@ -11,6 +11,7 @@ size x scale. None by default.
 """
 from __future__ import annotations
 
+from .collections import select_only
 import bpy
 from bpy.props import PointerProperty, CollectionProperty, IntProperty, StringProperty
 
@@ -392,10 +393,7 @@ are left out, the result is merged, raised a little and reduced to the game's li
             decimate_nav_mesh(nm, self.decimate)
         n = reduce_nav_mesh(nm) if s.reduce else nav_tri_count(nm)
         self.result = n
-        for o in ctx.selected_objects:
-            o.select_set(False)
-        nm.select_set(True)
-        ctx.view_layer.objects.active = nm
+        select_only(nm, ctx)
         self.report({"WARNING"} if n > 255 else {"INFO"},
                     f"{nm.name}: {n} triangles from {kept} face(s)" + (" (over the game's 255: Reduce it)" if n > 255 else ""))
         return {"FINISHED"}
