@@ -25,7 +25,8 @@ There are two kinds:
 Hover a count to see the list. Click it to open a popup: for a red count on an actor the popup has the missing
 fields themselves, so you can fill them in right there. The level count lists the actors; click a name to select it.
 
-The counts update after every edit (moving objects doesn't count as an edit).
+The counts update after every edit (moving objects doesn't count as an edit). To stop counting a whole type of
+warning in this .blend, tick it in [Developer Tools › Warning Settings](developer-tools.md#warning-settings).
 
 ![Build & Play](images/build-play.png)
 
