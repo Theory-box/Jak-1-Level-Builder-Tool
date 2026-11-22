@@ -507,6 +507,11 @@ class OG_PT_DevTools(Panel):
         from ..versions import draw_versions
         draw_versions(layout)
 
+        layout.separator()
+        layout.operator("og.import_settings_pick", icon="IMPORT")
+        h = layout.row(); h.enabled = False; h.scale_y = 0.7
+        h.label(text="Settings, Project Folders and Warning Settings of another .blend", icon="INFO")
+
     def _btn(self, layout, label, icon, path, is_file=False):
         p = Path(path) if path else None
         row = layout.row(align=True)
