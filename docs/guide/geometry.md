@@ -80,7 +80,7 @@ Each level has a fixed amount of memory (about 10 MB) for its geometry and its t
 objects bring the texture page of their home level (shown in brackets in the Spawn list, e.g. *(Beach)*); the
 Village and Training ones are always loaded and cost nothing. Each extra page is around 2 MB, so a level that mixes
 actors from more than about two other levels can crash while loading or show missing textures. Keep the actors of a
-level to one or two home levels where you can. <!-- check: no add-on warning for this; numbers from knowledge-base/research/opengoal/tpage-heap-research.md -->
+level to one or two home levels where you can.
 
 ## Export As
 
@@ -126,7 +126,6 @@ longer. The level builder reads Draco GLBs, so you can turn it on or off as you 
 
 Draco shrinks the mesh's decimal-number data (positions, normals, UVs) by rounding it to fewer bits (the
 **Quantization** values). It doesn't make vertex colours smaller; the add-on does that itself (below).
-<!-- check: exact Blender labels of the vertex colour options and Custom Properties differ between Blender 4.x and 5.x -->
 
 
 ### Other settings

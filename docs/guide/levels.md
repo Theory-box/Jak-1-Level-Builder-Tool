@@ -71,7 +71,7 @@ At the top:
 | Field | What it does |
 |---|---|
 | **Name** | The level's name in the game files. Lowercase, dashes for spaces, 10 characters at most (longer names are cut, with a red warning). |
-| **Menu Name** | The level's name in the game's menus, used for its custom tasks. Blank: the level name. The search button picks an existing game text. See [Tasks](tasks.md). <!-- check: menu name only used by tasks export --> |
+| **Menu Name** | The level's name in the game's menus, used for its custom tasks. Blank: the level name. The search button picks an existing game text. See [Tasks](tasks.md). |
 | **Vis Nickname** | The 3-letter nickname used for the level's DGO / vis files. Blank: the first 3 letters of the name (without dashes). Must be different for every level. |
 | **Level Index** | The level's number in the game's level list. Must not clash with vanilla levels or other custom levels: use 100 or more. |
 

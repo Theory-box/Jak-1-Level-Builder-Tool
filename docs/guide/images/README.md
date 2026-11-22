@@ -2,7 +2,7 @@
 
 The guide uses a few overall screenshots; pages point at numbered parts of them
 ("① in [sidebar](images/sidebar.png)"). They are taken by Blender itself (a demo level, the sidebar on the
-OpenGOAL tab) with the numbers listed below drawn in red. `hero.png` is not taken yet: it needs an in-game picture.
+OpenGOAL tab) with the numbers listed below drawn in red. `hero.png` (Blender next to the game) was made by hand.
 
 | File | What to capture | Numbers to mark |
 |---|---|---|
