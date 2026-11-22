@@ -219,6 +219,7 @@ def register():
     _goal_import.register_props()
     _export_filter.register_props()
     from . import required as _required
+    _required.register_props()
     _required.register_handlers()
 
     # Audit results — registered after OGAuditResult is in classes tuple.
@@ -513,6 +514,7 @@ def unregister():
     _export_filter.unregister_props()
     from . import required as _required
     _required.unregister_handlers()
+    _required.unregister_props()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr

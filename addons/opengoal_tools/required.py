@@ -10,7 +10,11 @@ whole level are cached and only recomputed after an edit (depsgraph update).
 
 Soft warnings (soft()): setups that don't break the game or the build but
 make an actor do nothing useful (a nav-enemy with no nav-mesh, nav-mesh
-parts / jump areas enemies can't use). Shown as a second, yellow count.
+parts / jump areas enemies can't use). Shown as a second, grey count.
+
+Warning types (WARNING_TYPES) can be ignored per .blend in Developer Tools ›
+Warning Settings: missing() / soft() leave them out, so counts and the audit
+follow.
 """
 from __future__ import annotations
 
@@ -21,6 +25,71 @@ from .collections import actor_etype
 from .data import _actor_link_slots, _actor_get_link, _actor_multi_links
 
 
+# ── Warning types (Developer Tools › Warning Settings: ignore some, per .blend) ─
+# (key, label, red). Every warning dict gets "type": one of these keys.
+WARNING_TYPES = (
+    ("req_link", "Required link missing", True),
+    ("req_path", "Required path missing", True),
+    ("req_field", "Required field or task not set", True),
+    ("req_sound", "Sound emitter's sound bank not loaded", True),
+    ("req_nav", "Linked nav-mesh problems", True),
+    ("soft_trigger", "Nothing sends it 'trigger", False),
+    ("soft_sound", "Actor's sound bank not loaded (silent sounds)", False),
+    ("soft_link", "Optional link missing", False),
+    ("soft_linked_by", "Not linked by the actor that should link it", False),
+    ("soft_no_nav", "No nav-mesh (idles, can't chase)", False),
+    ("soft_nav", "Nav-mesh soft issues", False),
+)
+
+
+def _warning_changed(self, ctx):
+    mark_dirty()
+    _redraw_sidebars()
+
+
+OGWarningSettings = type("OGWarningSettings", (bpy.types.PropertyGroup,), {"__annotations__": {
+    k: bpy.props.BoolProperty(name=label, default=False, update=_warning_changed,
+                              description=("Required: the level may crash or not build. " if red else "")
+                              + "On: these warnings don't show in the counts or the Level Audit")
+    for k, label, red in WARNING_TYPES}})
+
+
+def _ignored(scene):
+    s = getattr(scene, "og_warnings", None)
+    return {k for k, _l, _r in WARNING_TYPES if s is not None and getattr(s, k)}
+
+
+def _keep(items, scene, kind):
+    """Tag items without a type with `kind`, drop the ignored types."""
+    ign = _ignored(scene)
+    out = []
+    for m in items:
+        m.setdefault("type", kind)
+        if m["type"] not in ign:
+            out.append(m)
+    return out
+
+
+def draw_warning_settings(layout, scene):
+    s = scene.og_warnings
+    col = layout.column(align=True)
+    col.label(text="Ignore warnings:")
+    for k, label, red in WARNING_TYPES:
+        r = col.row(align=True)
+        r.alert = red
+        r.prop(s, k, text=label + ("  (required)" if red else ""), icon="ERROR" if red else "INFO")
+    h = layout.column(); h.enabled = False; h.scale_y = 0.7
+    h.label(text="Red: the level may crash or not build", icon="INFO")
+    h.label(text="Ignored: not counted, not in the Level Audit (this .blend)", icon="BLANK1")
+
+
+def register_props():
+    bpy.types.Scene.og_warnings = bpy.props.PointerProperty(type=OGWarningSettings)
+
+
+def unregister_props():
+    if hasattr(bpy.types.Scene, "og_warnings"):
+        del bpy.types.Scene.og_warnings
 
 
 def _has_path(o, name):
@@ -60,7 +129,8 @@ def missing_bank(o, scene, banks=None):
     found = where.get(snd)
     if found and not (found & loaded):
         b = " / ".join(sorted(found))
-        return [{"panel": "sound", "key": b, "sound": snd, "label": f"sound bank {b} (for {snd})"}]
+        return _keep([{"panel": "sound", "key": b, "sound": snd, "label": f"sound bank {b} (for {snd})"}],
+                     scene, "req_sound")
     return []
 
 
@@ -90,7 +160,7 @@ def missing(o, scene=None, banks=None):
             continue
         if not valid:
             out.append({"panel": "game-task" if key == "og_game_task" else "custom-fields",
-                        "key": key, "label": field.get("label", key)})
+                        "key": key, "label": field.get("label", key), "type": "req_field"})
     for slot in _actor_link_slots(et):
         lkey, sidx = slot[0], slot[1]
         label = slot[2] if len(slot) > 2 else lkey
@@ -103,18 +173,20 @@ def missing(o, scene=None, banks=None):
             e = _actor_get_link(o, lkey, sidx)
             filled = bool(e and e.target_name and scene.objects.get(e.target_name))
         if not filled:
-            out.append({"panel": "links", "key": lkey, "slot": sidx, "label": f"{lkey} ({label})" if label != lkey else lkey})
+            out.append({"panel": "links", "key": lkey, "slot": sidx, "label": f"{lkey} ({label})" if label != lkey else lkey,
+                        "type": "req_link"})
     nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
     if nm is not None:                                # the linked nav-mesh's problems
         from .export.navmesh import nav_issues
         for issue in nav_issues(nm):
-            out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}"})
+            out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}", "type": "req_nav"})
     if not _actor_get_link(o, "path-actor", 0):      # path-actor: every path read from that actor
         for name in _db._path_required(et):
             if not _has_path(o, name):
                 help_text = _db.panel_option(et, "path", "path_help", {}).get(name, "")
-                out.append({"panel": "path", "key": name, "label": f"{name}: {help_text}" if help_text else f"{name} (path)"})
-    return out + missing_bank(o, scene, banks)
+                out.append({"panel": "path", "key": name, "label": f"{name}: {help_text}" if help_text else f"{name} (path)",
+                            "type": "req_path"})
+    return _keep(out, scene, "req_field") + missing_bank(o, scene, banks)
 
 
 def actor_banks_missing(et, scene, banks=None):
@@ -185,31 +257,32 @@ def soft(o, scene=None, banks=None, senders=None, linked=None):
     if _needs_trigger(o, et):
         snd = (senders if senders is not None else trigger_senders(scene)).get(o.name)
         if not snd:
-            out.append({"panel": "links", "key": "trigger",
+            out.append({"panel": "links", "key": "trigger", "type": "soft_trigger",
                         "label": "nothing sends it 'trigger: it stays put (link it from a button's notify list)"})
     for choice, snds in actor_banks_missing(et, scene, banks):   # silent sounds
         b = " / ".join(choice)
         more = f" +{len(snds) - 3}" if len(snds) > 3 else ""
-        out.append({"panel": "sound", "key": b, "sound": snds[0],
+        out.append({"panel": "sound", "key": b, "sound": snds[0], "type": "soft_sound",
                     "label": f"sound bank {b} not loaded: no {', '.join(snds[:3])}{more}"})
     for sl in _db.link_slots(et):                          # links that only make it do less
         if sl.get("soft") and not _actor_get_link(o, sl["lump_key"], int(sl.get("slot", 0))):
-            out.append({"panel": "links", "key": sl["lump_key"], "label": sl["soft"]})
+            out.append({"panel": "links", "key": sl["lump_key"], "label": sl["soft"], "type": "soft_link"})
     lb = (_db.find_actor(et) or {}).get("soft_linked_by")   # an actor that should link this one
     if lb and not (lb.get("unless") and o.get(lb["unless"])):
         if linked is None:
             linked = linked_index(scene.objects)
         if o.name not in linked.get((lb["etype"], lb["lump_key"]), ()):
-            out.append({"panel": "links", "key": lb["etype"], "label": lb["label"]})
+            out.append({"panel": "links", "key": lb["etype"], "label": lb["label"], "type": "soft_linked_by"})
     if _db.panel_exports(et, "nav-mesh") and _db.nav_unsafe(et):
         nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
         if nm is None and not _actor_get_link(o, "nav-mesh-actor", 0):
-            out.append({"panel": "nav", "key": "", "label": "no nav-mesh: it idles / notices Jak but can't pathfind"})
+            out.append({"panel": "nav", "key": "", "label": "no nav-mesh: it idles / notices Jak but can't pathfind",
+                        "type": "soft_no_nav"})
         if nm is not None:
             from .export.navmesh import nav_soft_issues
             for issue in nav_soft_issues(nm):
-                out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}"})
-    return out
+                out.append({"panel": "nav", "key": nm.name, "label": f"nav-mesh: {issue}", "type": "soft_nav"})
+    return _keep(out, scene, "soft_link")
 
 
 def summary(items, header="Missing"):
@@ -393,7 +466,7 @@ class OG_OT_RequiredLevelPopup(bpy.types.Operator):
                 col.label(text=m["label"], icon="DOT")
 
 
-CLASSES = (OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
+CLASSES = (OGWarningSettings, OG_OT_RequiredPopup, OG_OT_RequiredLevelPopup)
 
 
 # ── level-wide, cached ──────────────────────────────────────────────────────

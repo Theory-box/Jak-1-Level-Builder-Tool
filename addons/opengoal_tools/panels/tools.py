@@ -427,6 +427,13 @@ class OG_PT_DevTools(Panel):
         head.label(text="Addon Settings", icon="SETTINGS")
         if body:
             self._settings(body, ctx)
+        # Warning settings (closed sub-menu): warning types to ignore in this .blend
+        head, body = layout.panel("og_dev_warnings", default_closed=True)
+        from ..required import draw_warning_settings, WARNING_TYPES
+        n_ign = sum(1 for k, _l, _r in WARNING_TYPES if getattr(ctx.scene.og_warnings, k))
+        head.label(text=f"Warning Settings ({n_ign} ignored)" if n_ign else "Warning Settings", icon="ERROR")
+        if body:
+            draw_warning_settings(body, ctx.scene)
         # Quick Open (closed sub-menu)
         head, body = layout.panel("og_dev_quick_open", default_closed=True)
         head.label(text="Quick Open", icon="FILE_FOLDER")
