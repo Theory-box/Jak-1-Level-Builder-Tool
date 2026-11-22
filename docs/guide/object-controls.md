@@ -10,15 +10,13 @@ at first):
 - [The selection summary](#the-selection-summary) (① in the screenshot)
 - [Set to Floor](#set-to-floor)
 - [Vertex Colors](#vertex-colors) (② and ③ in the screenshot)
-- [UV Tools](#uv-tools) (④ in the screenshot)
 - [Distribute Along Curve](#distribute-along-curve)
 - [Convert Entities](#convert-entities)
 - [Export Selected Definitions](#export-selected-definitions)
 
 ![Object Controls](images/object-controls.png)
 
-The tools that move or change objects work in Object Mode (the UV Tools also in Edit Mode) and can be undone
-with Ctrl+Z.
+The tools that move or change objects work in Object Mode and can be undone with Ctrl+Z.
 
 ## Frame, Duplicate and Delete
 
@@ -102,56 +100,6 @@ Colors to Byte**, **Apply Effect** and **Effects After Bake** (③, effects that
 change `BakedLight` and every time of day layer at once.
 
 They are explained in full on the Lighting page: [Vertex Colors tools](lighting.md#vertex-colors-tools).
-
-## UV Tools
-
-**Object Controls › UV Tools** places the texture coordinates (UVs) of the selected meshes, in ways that suit
-level geometry. It has three sub-panels: **Fit Faces on UV**, **Cube Project** and **Randomize UV**.
-
-- In **Object Mode** a tool changes every face of the selected meshes; in **Edit Mode**, only the selected faces.
-- It writes the mesh's active UV map (a mesh without one gets a new `UVMap`).
-- Faces are oriented in the world: on walls the texture stands upright, on floors and ceilings it follows the world
-  X and Y axes.
-- Ctrl+Z undoes it. The button shows how many meshes it will change.
-
-### Fit Faces on UV
-
-Puts each face on the whole UV square, so one face shows the whole texture once: bricks, crates, panels ...
-Quads take the 4 corners. Triangles take 3 corners, with their largest angle on the (0, 0) corner. N-gons (5 or
-more corners) are left as they are.
-
-| Option | Default | What it does |
-|---|---|---|
-| **Placement** | Spread | **Spread**: connected faces stay connected, each on its own square, like tiles on a grid. Faces are first grouped by which side they face (as in a cube projection), so a mesh with depth still works. The groups are placed in a row with an empty tile between them, so you can tell them apart in the UV Editor. **Overlap**: every face on the same 0-1 square. |
-| **Triangles as Quads** | off | Two triangles that share their longest edge take the 4 corners together, like the quad they were cut from. |
-| **Scale** | 1.0 | Scales the whole result. 2 repeats the texture twice across each face. |
-| **Rotation** | 0° | Rotates the whole result, e.g. 90° to turn the texture sideways. |
-| **Pivot** | Corner | The point Scale and Rotation turn around: **Corner** (0, 0) or **Center** (0.5, 0.5). |
-| **Fit Faces (N meshes)** | | Does it. |
-
-### Cube Project
-
-Projects each face along its closest world axis (X, Y or Z), at the same scale everywhere: a quick way to texture
-walls, floors and blocks so the texture has the same size on all of them and lines up between separate meshes.
-
-| Option | Default | What it does |
-|---|---|---|
-| **Texture Size** | 4 m | The texture repeats every this many metres. |
-| **Cube Project (N meshes)** | | Does it. |
-
-Each group of connected faces is then moved by whole tiles next to the UV origin, so a mesh far from the world
-centre doesn't end up with huge UV numbers. Because the texture repeats, this doesn't change how it looks.
-
-### Randomize UV
-
-Moves every UV point a little, at random, to break up a texture that repeats too visibly. Faces that are connected
-in the UV stay connected (in Edit Mode, a point shared with an unselected face moves that face's corner too).
-
-| Option | Default | What it does |
-|---|---|---|
-| **Max Distance** | 0.05 | How far a point can move, in UV units (1 = the whole texture). |
-| **Seed** | 0 | Change it for another random result. |
-| **Randomize (N meshes)** | | Does it. Each click with the same seed moves the points again. |
 
 ## Distribute Along Curve
 

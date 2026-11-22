@@ -29,7 +29,6 @@ The list shows every **source** of the path in order: an empty is one point, and
 | Magnifier | Selects and frames the highlighted source. |
 | **Edit** (pencil) | Selects the source. A curve goes straight into Edit Mode. |
 | X | Removes the source from the path (the object stays in the scene). |
-| Bin | Removes the source **and deletes** the curve or empty from the scene (it asks first). |
 | Up / down arrows | Change the order. |
 
 A source that was deleted shows in red ("DELETED"). Remove it with X.
@@ -77,7 +76,7 @@ The **Path Mode** box under the list decides how the points are turned into the 
 
 Under the path, **Lump** is the lump name the main path exports to (normally `path`). **Keyframe** is an optional lump keyframe (blank = default).
 
-Some actors read more than one path. The swamp bat needs `path` and `pathb`, and the battle controller uses `patha` ... `pathh` and `pathspawn`. These actors get **Add Path** (for example "Add Path (pathb)"). Each extra path has its own box with a name, **@** keyframe, its own list, Spawn Waypoint / Add Curve, and its own mode. X removes it, along with its add-on-made waypoints; the bin next to it also deletes its curves. Two paths with the same name are flagged: only the first exports.
+Some actors read more than one path. The swamp bat needs `path` and `pathb`, and the battle controller uses `patha` ... `pathh` and `pathspawn`. These actors get **Add Path** (for example "Add Path (pathb)"). Each extra path has its own box with a name, **@** keyframe, its own list, Spawn Waypoint / Add Curve, and its own mode. X removes it, along with its add-on-made waypoints. Two paths with the same name are flagged: only the first exports.
 
 ## Sharing one path
 
@@ -122,8 +121,7 @@ Platforms are in the **Platforms** tile of [Spawn Objects](actors.md#spawning-an
 - **Eco Platform** (`plat-eco`): a floating platform that wakes up when Jak brings blue eco. **Entity Links** has **next-actor** / **prev-actor** slots, so a chain of them wakes up together. Use **Chain N selected by name (prev / next)** to link a row in one click.
 - **Button Platform** (`plat-button`): a platform with a button that moves along its path. It requires a path with at least 2 points.
 - **Orbit Platform** (`orbit-plat`): needs a partner orbit-plat in **alt-actor** (both linked to each other). Standing on one makes the other circle around it, only where its nav-mesh allows, so give both a nav-mesh. **Orbit timeout (s)** resets them.
-- **Launcher** (`launcher`) and other launchers: **Actor Settings › Launcher Settings** has **Launch Height** (-1 = the art's default), **Camera on Launch**, an optional **Launch Destination** empty (**Add Destination Empty at Cursor**, which goes into the **Waypoints** collection, or **Link →**; X unlinks it, the bin
-also deletes it; not set = Jak goes straight up), and **Fly Time** (only needed with a destination).
+- **Launcher** (`launcher`) and other launchers: **Actor Settings › Launcher Settings** has **Launch Height** (-1 = the art's default), **Camera on Launch**, an optional **Launch Destination** empty (**Add Destination Empty at Cursor** or **Link →**; not set = Jak goes straight up), and **Fly Time** (only needed with a destination).
 
 See the [Actor list](actor-list.md#platforms) for all of them.
 

@@ -22,8 +22,7 @@ paths: **Preferences › Decompiler output (override)**, or this .blend's **Deco
 ## Game 3D Models
 
 **Import › Game 3D Models** lists every `.glb` file under `decompiler_out/jak1/` (all subfolders, e.g.
-`levels/village1/village1-background.glb` or `levels/beach/babak-lod0.glb`). A model the decompiler wrote in
-several levels' folders (like `babak-lod0`) is listed once.
+`levels/village1/village1-background.glb` or `levels/beach/babak-lod0.glb`).
 
 ### First time: Find Models
 

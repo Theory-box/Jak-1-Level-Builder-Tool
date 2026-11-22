@@ -51,8 +51,7 @@ Select the enemy and open **Object Settings › Actor Settings › NavMesh**:
 - Shift-select the nav-mesh too and click **Link → NAVMESH_...**, or
 - click **Search navmesh…** and pick one (meshes that aren't nav-meshes yet are marked so; linking one makes it a nav-mesh).
 
-The panel then shows **✓ NAVMESH_...** with an **X** to unlink, a bin to unlink and delete the mesh (it asks first and
-says how many other actors use it), and its triangle count.
+The panel then shows **✓ NAVMESH_...** with an **X** to unlink, and its triangle count.
 
 ### Share one mesh between several enemies
 
@@ -78,7 +77,7 @@ Nav-spheres are round areas the mesh's enemies steer around (a pillar, a tree). 
 
 - **New** adds a sphere empty `NAVSPHERE_...` at the 3D cursor.
 - **Add Empty** uses an existing empty.
-- The radius is the empty's display size × its scale (shown as **r ... m**). **X** removes it from the list (the empty stays); the bin also deletes the empty.
+- The radius is the empty's display size × its scale (shown as **r ... m**). **X** removes it from the list (the empty stays).
 
 None by default.
 

@@ -72,8 +72,7 @@ A Side-Scroll or Orbit camera without its anchor / pivot, or a Path camera witho
 
 ### Look-At
 
-**Add Look-At Target** adds a `CAMERA_N_LOOKAT` empty at the 3D cursor (like the anchor and pivot, it goes into the
-level's **Cameras** collection). The camera then ignores its own rotation and aims at the target. **Clear Look-At** removes the link. Without a target, a camera that was never rotated shows **⚠ Camera has no rotation!**
+**Add Look-At Target** adds a `CAMERA_N_LOOKAT` empty at the 3D cursor. The camera then ignores its own rotation and aims at the target. **Clear Look-At** removes the link. Without a target, a camera that was never rotated shows **⚠ Camera has no rotation!**
 
 ### Volumes
 

@@ -101,7 +101,7 @@ How the fields work:
 - On/off fields are toggle buttons.
 - **Alt+click** a choice or toggle to set it on every selected actor that has the same field, the way Alt works on normal Blender properties.
 - Game task fields open a search with every game task and your own tasks, plus **Custom…** to type a name ([Tasks](tasks.md)).
-- Object fields (an empty or a camera the actor uses) have **Pick** / **Change**, a clear button (X), and for empties a bin (clear and delete the empty, it asks first) and **Add Empty at Cursor**.
+- Object fields (an empty or a camera the actor uses) have **Pick** / **Change**, a clear button (X), and for empties **Add Empty at Cursor**.
 - Colour fields show **Set colour** until you set one.
 - Height fields can have **Set to this actor's height**.
 - Some fields are grouped in a collapsed sub-menu with a title.
@@ -177,7 +177,6 @@ Power cells, and actors that give a power cell, have **Movie Position**: where t
 | **Link → <empty>** | Uses a shift-selected empty. |
 | **Search empty…** | Picks any empty by name. |
 | X | Removes the position from the list (the empty stays). |
-| Bin | Removes it from the list **and deletes** the empty (it asks first). |
 | **Victory animations not to use (movie-mask)** | 8 toggles. Turn on the animations the cell must not pick (for example one that clips through a wall). |
 
 With no position set, the game uses its default spot. Some actors use several positions by number, so the list order matters.

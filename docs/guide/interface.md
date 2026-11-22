@@ -20,11 +20,9 @@ The panels are listed top to bottom; the numbers match the sidebar screenshot.
 | ⑥ | **Light Baking** | Bake Cycles lighting into the meshes' vertex colours, with bake options, time of day and colour quantisation. | [Lighting](lighting.md) |
 | ⑦ | **Tasks** | Your own power cells and scout flies, and their texts. Needs mod-base. | [Tasks](tasks.md) |
 | ⑧ | **Import** | **Game 3D Models**, **Game Textures** and **From GOAL Files** (read an existing level's `.jsonc`). | [Importing](importing.md) |
-| ⑨ | **Developer Tools** | **Clean Files**, **Paths**, **Addon Settings** (launch timing, build settings, versions, importing settings from another .blend), **Warning Settings** and **Quick Open** for the generated files. | [Developer Tools](developer-tools.md) |
+| ⑨ | **Developer Tools** | **Clean Files**, **Paths**, **Addon Settings** (launch timing, build settings, versions) and **Quick Open** for the generated files. | [Developer Tools](developer-tools.md) |
 
-Most panels start closed. Click a panel's header to open it. The **?** on the right of the main panels' headers (and
-of larger features such as **Path**, **NavMesh**, **Camera Settings** or **GOAL Code**) opens that part of this guide in
-your browser.
+Most panels start closed. Click a panel's header to open it.
 
 ## How a level is laid out
 
@@ -36,10 +34,10 @@ A level is a top-level collection in the Outliner (① in the Outliner screensho
 |---|---|
 | **Geometry** ② | The level's 3D model: every mesh in here and in its sub-collections is exported as the level's `.glb`. The add-on puts loose meshes in **Geometry › Solid**. |
 | **Spawnables** ③ | Actors, sorted by type: **Enemies** (bosses too), **Platforms**, **Props & Objects**, **NPCs**, **Pickups**. |
-| **Waypoints** ④ | The waypoint empties of actors' paths, and launchers' destinations (`DEST_`). |
+| **Waypoints** ④ | The waypoint empties of actors' paths. |
 | **Paths** | Curves used as paths. |
 | **Spawns** ⑤ | Checkpoints and their spawn cameras. |
-| **Cameras** ⑤ | `CAMERA_` cameras and their helper empties (anchor, pivot, look-at target). |
+| **Cameras** ⑤ | `CAMERA_` cameras and their helper empties. |
 | **Triggers** ⑤ | `VOL_` trigger volumes and load boundaries. |
 | **Water Volumes** | Water volumes. |
 | **Sound Emitters** | Sound emitters, music zones and hints. |
@@ -82,9 +80,6 @@ The add-on checks your level as you work. The results are only recomputed after 
 
 - **Red ⚠ count**: something is required but missing, for example an actor that must have a path or a link slot that must point to another actor. These can break the build or crash the game. Fix them first.
 - **Grey ⚠ count**: a soft warning. It works, but does less than you probably want, for example a sound whose sound bank the level doesn't load so it'll be missing.
-
-Warning types you don't care about can be turned off for the .blend in
-[Developer Tools › Warning Settings](developer-tools.md#warning-settings).
 
 The counts show next to **Export & Compile** for the whole level (⑤ in the Build & Play screenshot), and in an actor's **Object Settings** panels for that actor. Hover over a count to see what's missing; click it to see the list.
 
