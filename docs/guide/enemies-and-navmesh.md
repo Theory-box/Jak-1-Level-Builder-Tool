@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Enemies & nav-meshes
 
 Enemies are actors like any other (see [Actors](actors.md)): spawn them from **Spawn Objects › Enemies**. This page covers what is special about them: nav-meshes, waking up and aggro, drops, ambushes and bosses.

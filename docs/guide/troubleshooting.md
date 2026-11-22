@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Troubleshooting
 
 This page explains every warning the add-on shows, what the Level Audit checks, the usual reasons the game crashes,

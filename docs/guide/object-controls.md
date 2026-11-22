@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Object Controls
 
 **OpenGOAL › Object Controls** works on the **whole selection**, whatever it is: actors, checkpoints, meshes,

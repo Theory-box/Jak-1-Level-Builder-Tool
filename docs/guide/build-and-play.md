@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Build & Play
 
 The **Build & Play** panel turns your Blender scene into game files, compiles them and starts the game at one of your checkpoints. It's the first panel on the **OpenGOAL** tab.

@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Level flow
 
 How the player moves through your level and between levels: checkpoints say where Jak starts and respawns, load boundaries load and show levels as he walks, and hints show a line of text when he gets close. All of them are on the **Spawn Objects › Level Flow** tile.

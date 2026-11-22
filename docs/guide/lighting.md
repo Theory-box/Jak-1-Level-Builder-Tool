@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Lighting
 
 Jak 1 doesn't light level geometry while you play. The light is **baked** into the meshes' vertex colours in

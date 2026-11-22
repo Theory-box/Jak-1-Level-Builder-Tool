@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Audio
 
 Jak and Daxter keeps its sounds in **sound banks**. A level only plays the sounds of the banks it loads: the

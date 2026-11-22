@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Actor list
 
 Every actor you can place from **Spawn Objects** (258 in all), grouped like its tiles. The search in Spawn Objects finds them by name or etype. Notes: **nav-mesh** = an enemy that needs a nav-mesh to move ([Enemies & nav-meshes](enemies-and-navmesh.md)), **path** = needs a path ([Paths & platforms](paths-and-platforms.md)), **edited** = a vanilla actor made to work in custom levels ([Edited actors](edited-actors-and-goal-code.md)).

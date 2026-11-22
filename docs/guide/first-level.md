@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Your first level
 
 This tutorial takes you from an empty Blender file to running around your own level in the game. It takes about 15 minutes, plus the first compile. You need a finished [install](install.md): the **Build & Play** panel must not say **Missing paths**.

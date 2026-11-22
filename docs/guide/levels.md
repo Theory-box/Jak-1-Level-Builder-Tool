@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Levels
 
 A level is a Blender collection marked as a level. One .blend can hold several levels, and each one becomes its own

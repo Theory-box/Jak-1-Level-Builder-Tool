@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Geometry
 
 The level's ground, walls and scenery are ordinary Blender meshes in the level's **Geometry** collection. On export

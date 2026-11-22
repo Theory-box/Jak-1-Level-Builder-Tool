@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Install
 
 This page gets Blender, OpenGOAL and the add-on talking to each other. You only do it once.

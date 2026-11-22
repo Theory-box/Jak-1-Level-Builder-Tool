@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # The interface
 
 Everything the add-on adds lives on the **OpenGOAL** tab of the 3D viewport's sidebar (press **N** in the viewport). This page is a map: what each panel is for, how a level is laid out in the Outliner, how objects are named, and what the warning numbers mean.

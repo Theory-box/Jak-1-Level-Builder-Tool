@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Tasks
 
 A *task* is one entry of the game's progress menu: usually a power cell, or a level's scout flies. Jak 1 has 116 vanilla tasks (numbers 0–115). The **Tasks** tab (⑦ in the [sidebar screenshot](images/sidebar.png)) adds your own, with their own menu names, so your power cells and scout flies have something to count towards.

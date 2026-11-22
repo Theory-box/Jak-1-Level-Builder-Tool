@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Volumes & triggers
 
 A **volume** is a mesh whose name starts with `VOL_`. It is never drawn and has no collision: it marks an area. What

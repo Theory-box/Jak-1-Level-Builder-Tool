@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Edited actors & GOAL code
 
 Many of the game's actors were written for one spot in the original game. They have a hard-coded task, position, camera or level name, so in a custom level they do nothing, or crash. The add-on fixes many of them with **edited actors**: small GOAL files that change the vanilla actor so it reads its settings from the level instead. You can also add **your own GOAL code**, either as files in a **Custom code folder** or as text blocks inside the .blend.

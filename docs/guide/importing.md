@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Importing
 
 The **Import** tab (⑧ in the [sidebar screenshot](images/sidebar.png)) brings things from the game, or from

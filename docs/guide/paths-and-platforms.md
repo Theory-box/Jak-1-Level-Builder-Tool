@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Paths & platforms
 
 Many actors follow a **path**: patrolling enemies, floating platforms, flying lurkers, button platforms, race rings. A path is a list of points. You build it from **waypoint empties**, **curves**, or both. When you export, it is written as the actor's `path` lump, plus a `path-k` lump for smooth curves.

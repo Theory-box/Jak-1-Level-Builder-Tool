@@ -39,7 +39,7 @@ def load_db():
 def main():
     dbm = load_db()
     actors = [a for a in dbm.actors() if a.get("category") != "Hidden"]
-    lines = ["# Actor list", "",
+    lines = ["[↑ OpenGOAL Level Tools — User Guide](README.md)", "", "# Actor list", "",
              f"Every actor you can place from **Spawn Objects** ({len(actors)} in all), grouped like its tiles. "
              "The search in Spawn Objects finds them by name or etype. Notes: **nav-mesh** = an enemy that needs "
              "a nav-mesh to move ([Enemies & nav-meshes](enemies-and-navmesh.md)), **path** = needs a path "

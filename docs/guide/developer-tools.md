@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Developer Tools
 
 The **Developer Tools** tab (⑨ in the [sidebar screenshot](images/sidebar.png)) holds the add-on's paths, build

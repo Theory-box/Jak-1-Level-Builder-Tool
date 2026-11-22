@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Glossary
 
 Short definitions of the words OpenGOAL modding and this guide use, in alphabetical order.

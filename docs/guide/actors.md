@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Actors
 
 An **actor** is anything in the game that does something: enemies, platforms, doors, NPCs, power cells, orbs, crates, particle effects. In Blender every actor is an **empty** named `ACTOR_<etype>_<n>` (for example `ACTOR_babak_0`). Its settings live on the empty and are written to the level's `.jsonc` file when you export.

@@ -1,3 +1,5 @@
+[↑ OpenGOAL Level Tools — User Guide](README.md)
+
 # Cameras
 
 Cameras replace the normal follow camera in parts of your level: a fixed view of a room, a side-scrolling stretch, a camera that orbits a tower. Some actors also play short camera shots of their own (*pov-cameras*, below). Cameras are on the **Spawn Objects › Cameras** tile.
