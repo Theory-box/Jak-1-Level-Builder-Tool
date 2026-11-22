@@ -410,6 +410,27 @@ class OG_PT_UVCubeProject(Panel):
         s = ctx.scene.og_uv
         self.layout.prop(s, "size")
         _uv_button(self.layout, ctx, "og.uv_cube_project", "Cube Project", "MOD_UVPROJECT")
+        r = self.layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Each island is moved by whole tiles next to the UV origin")
+
+
+class OG_PT_UVRandomize(Panel):
+    bl_label = "Randomize UV"
+    bl_idname = "OG_PT_uv_randomize"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_uv_tools"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_uv
+        col = self.layout.column(align=True)
+        col.prop(s, "max_distance")
+        col.prop(s, "seed")
+        _uv_button(self.layout, ctx, "og.uv_randomize", "Randomize", "RNDCURVE")
+        r = self.layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Connected faces stay connected")
 
 
 class OG_PT_DistributeAlongCurve(Panel):
@@ -500,4 +521,4 @@ class OG_PT_ExportDefinitions(Panel):
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
            OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha, OG_PT_DeleteColorAttribute, OG_PT_ColorLayersToByte,
            OG_PT_ApplyEffect, *_EFFECT_PANELS, OG_PT_EffectsAfterBake,
-           OG_PT_UVTools, OG_PT_UVFitFaces, OG_PT_UVCubeProject, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
+           OG_PT_UVTools, OG_PT_UVFitFaces, OG_PT_UVCubeProject, OG_PT_UVRandomize, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)

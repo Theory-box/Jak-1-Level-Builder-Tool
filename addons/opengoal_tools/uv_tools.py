@@ -1,4 +1,4 @@
-"""UV Tools (Object Controls > UV Tools): Fit Faces on UV and Cube Project.
+"""UV Tools (Object Controls > UV Tools): Fit Faces on UV, Cube Project and Randomize UV.
 
 Both work on the selected meshes' active UV map: every face in Object Mode, the
 selected faces in Edit Mode. Faces are oriented in world space: walls stand
@@ -253,17 +253,73 @@ def fit_faces(ctx, s):
 
 # ── Cube Project ──────────────────────────────────────────────────────────────
 
+def _islands(faces, key):
+    """Groups of faces connected by edges whose faces have the same key(face)."""
+    fs = set(faces)
+    seen, out = set(), []
+    for f in faces:
+        if f in seen:
+            continue
+        k = key[f]
+        isl, q = [], deque([f]); seen.add(f)
+        while q:
+            g = q.popleft(); isl.append(g)
+            for e in g.edges:
+                for h in e.link_faces:
+                    if h not in seen and h in fs and key[h] == k:
+                        seen.add(h); q.append(h)
+        out.append(isl)
+    return out
+
+
 def cube_project(ctx, s):
     size = max(s.size, 1e-4)
 
     def run(o, bm, faces, uv):
         mw = o.matrix_world
         mw3 = mw.to_3x3().inverted_safe().transposed()
+        side = {}
         for f in faces:
-            u, v = frame(axis_normal((mw3 @ f.normal).normalized()))
+            n = axis_normal((mw3 @ f.normal).normalized())
+            side[f] = tuple(n)
+            u, v = frame(n)
             for l in f.loops:
                 p = mw @ l.vert.co
                 l[uv].uv = (p.dot(u) / size, p.dot(v) / size)
+        # each island moved by whole tiles next to the origin (same look, the texture repeats)
+        for isl in _islands(faces, side):
+            lo_x = min(l[uv].uv.x for f in isl for l in f.loops)
+            lo_y = min(l[uv].uv.y for f in isl for l in f.loops)
+            off = Vector((-math.floor(lo_x + 1e-6), -math.floor(lo_y + 1e-6)))
+            if off.x or off.y:
+                for f in isl:
+                    for l in f.loops:
+                        l[uv].uv += off
+        return len(faces)
+    return _edit(ctx, run)
+
+
+# ── Randomize UV ──────────────────────────────────────────────────────────────
+
+def randomize(ctx, s):
+    import random
+    rng = random.Random(s.seed)
+    dist = s.max_distance
+
+    def run(o, bm, faces, uv):
+        # UV points: loops of the same vertex at the same UV move together (connected stays connected)
+        done = set()
+        for f in sorted(faces, key=lambda f: f.index):
+            for l in f.loops:
+                if l in done:
+                    continue
+                c = l[uv].uv.copy()
+                group = [ll for ll in l.vert.link_loops if ll not in done and (ll[uv].uv - c).length < 1e-5]
+                a = rng.uniform(0.0, 2 * math.pi); r = dist * math.sqrt(rng.random())
+                d = Vector((r * math.cos(a), r * math.sin(a)))
+                for ll in group:
+                    ll[uv].uv = ll[uv].uv + d
+                done.update(group)
         return len(faces)
     return _edit(ctx, run)
 
@@ -271,7 +327,7 @@ def cube_project(ctx, s):
 # ── Settings + operators ──────────────────────────────────────────────────────
 
 class OGUVSettings(bpy.types.PropertyGroup):
-    placement: EnumProperty(name="Placement", default="OVERLAP", items=(
+    placement: EnumProperty(name="Placement", default="SPREAD", items=(
         ("OVERLAP", "Overlap", "Every face on the same 0-1 square"),
         ("SPREAD", "Spread", "Connected faces stay connected, one square each; islands (grouped by cube "
                              "projection side) in a row with one empty tile between them"),
@@ -287,6 +343,9 @@ class OGUVSettings(bpy.types.PropertyGroup):
         ("CORNER", "Corner", "The 0,0 corner of the UV space"),
         ("CENTER", "Center", "The 0.5,0.5 center of the UV space"),
     ))
+    max_distance: FloatProperty(name="Max Distance", default=0.05, min=0.0, soft_max=0.5,
+        description="How far each UV point can move from where it is (1 = the whole UV square)")
+    seed: bpy.props.IntProperty(name="Seed", default=0, min=0, description="Another seed, another random result")
     size: FloatProperty(name="Texture Size", default=4.0, min=0.001, soft_max=64.0, unit="LENGTH",
         description="The texture repeats every this many metres")
 
@@ -325,7 +384,17 @@ class OG_OT_UVCubeProject(_UVOp, bpy.types.Operator):
         return self.done(*cube_project(ctx, ctx.scene.og_uv))
 
 
-CLASSES = (OGUVSettings, OG_OT_UVFitFaces, OG_OT_UVCubeProject)
+class OG_OT_UVRandomize(_UVOp, bpy.types.Operator):
+    """Move every UV point by a random amount up to Max Distance; connected faces stay connected.
+    Whole mesh, or the selected faces in Edit Mode"""
+    bl_idname = "og.uv_randomize"
+    bl_label = "Randomize UV"
+
+    def execute(self, ctx):
+        return self.done(*randomize(ctx, ctx.scene.og_uv))
+
+
+CLASSES = (OGUVSettings, OG_OT_UVFitFaces, OG_OT_UVCubeProject, OG_OT_UVRandomize)
 
 
 def register_props():
