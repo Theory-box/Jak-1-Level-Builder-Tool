@@ -2,3 +2,5 @@
 *.pyc
 *.pyo
 addons/opengoal_tools.zip
+# tools/build_guide_pdf.py output
+OpenGOAL-Level-Tools-Guide*.pdf

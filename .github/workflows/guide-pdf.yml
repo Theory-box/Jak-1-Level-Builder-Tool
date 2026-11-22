@@ -1,0 +1,41 @@
+# Builds the user guide (docs/guide) into a PDF and attaches it to every published release.
+# Also runnable by hand (Actions › Guide PDF › Run workflow): the PDF is then an artifact of the run.
+name: Guide PDF
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Build the PDF
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
+          NAME="OpenGOAL-Level-Tools-Guide${TAG:+-$TAG}.pdf"
+          echo "PDF=$NAME" >> "$GITHUB_ENV"
+          python3 tools/build_guide_pdf.py "$NAME" --version "${TAG:-$(git rev-parse --short HEAD)}" --chrome "$(which google-chrome)"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        run: gh release upload "${{ github.event.release.tag_name }}" "$PDF" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Keep as a run artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: guide-pdf
+          path: ${{ env.PDF }}
