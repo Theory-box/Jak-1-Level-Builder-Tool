@@ -258,6 +258,12 @@ class OGPreferences(AddonPreferences):
                      "(or an actor that has one) its nav-mesh, a VOL_ volume its volume"),
         default=True,
     )
+    confirm_delete_helpers: BoolProperty(
+        name="Ask before deleting linked helpers",
+        description=("The bin button next to a linked path, position empty, nav-sphere or nav-mesh unlinks it and "
+                     "deletes the object. On: it asks first"),
+        default=True,
+    )
 
     def draw(self, ctx):
         import sys
@@ -275,6 +281,7 @@ class OGPreferences(AddonPreferences):
             layout.prop(self, "select_via_preview")
             layout.prop(self, "snap_skip_own_preview")
             layout.prop(self, "auto_connect_spawn")
+            layout.prop(self, "confirm_delete_helpers")
             layout.prop(self, "glb_colors_all_exports")
             # Advanced — always last, and doesn't need any folder set.
             layout.separator()
@@ -389,6 +396,7 @@ class OGPreferences(AddonPreferences):
         layout.prop(self, "select_via_preview")
         layout.prop(self, "snap_skip_own_preview")
         layout.prop(self, "auto_connect_spawn")
+        layout.prop(self, "confirm_delete_helpers")
         layout.prop(self, "glb_colors_all_exports")
 
         # Advanced — always last.

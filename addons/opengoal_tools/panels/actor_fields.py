@@ -581,6 +581,9 @@ def _draw_object_ref(layout, obj, field, label):
         row.operator("og.select_and_frame", text="", icon="VIEWZOOM").obj_name = tgt.name
         op = row.operator("og.objref_set", text="", icon="X")
         op.prop_key, op.value = key, ""
+        if kind == "EMPTY":
+            from ..operators.links import bin_button
+            bin_button(row, [tgt], "og.objref_set", label, prop_key=key, value="")
     elif name:
         row.alert = True
         row.label(text=f"missing: {name}", icon="ERROR")

@@ -219,6 +219,8 @@ def _draw_entity_sub(layout, ctx, cats, nav_inline=False, prop_name="entity_type
                 if nm_obj:
                     row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
                     row.operator("og.unlink_navmesh", text="", icon="X")
+                    from .operators.links import bin_button
+                    bin_button(row, [nm_obj], "og.unlink_navmesh", "nav-mesh", actor_name=sel.name)
                 else:
                     row.label(text="No mesh linked", icon="ERROR")
                     # Only show Link button when a mesh is also in the selection

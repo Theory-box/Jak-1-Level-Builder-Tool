@@ -165,6 +165,8 @@ class OG_PT_ActorNavMesh(Panel):
             row = layout.row(align=True)
             row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
             row.operator("og.unlink_navmesh", text="", icon="X").actor_name = sel.name
+            from ..operators.links import bin_button
+            bin_button(row, [nm_obj], "og.unlink_navmesh", "nav-mesh", actor_name=sel.name)
             others = [o for o in ctx.scene.objects if o is not sel and o.get("og_navmesh_link") == nm_obj.name]
             if others:
                 warn = layout.column(align=True)
@@ -393,6 +395,8 @@ class OG_PT_ActorMoviePos(Panel):
                 op = row.operator("og.select_and_frame", text="", icon="VIEWZOOM"); op.obj_name = s.obj.name
             op = row.operator("og.movie_pos_remove", text="", icon="X")
             op.actor_name = sel.name; op.index = i
+            from ..operators.links import bin_button
+            bin_button(row, [s.obj], "og.movie_pos_remove", "movie position", actor_name=sel.name, index=i)
         if not ents:
             r = layout.row(); r.enabled = False
             r.label(text="Not set — the game uses its default spot", icon="DOT")
@@ -599,6 +603,8 @@ class OG_PT_ActorLauncher(Panel):
                 op.obj_name = dest_obj.name
                 op = row2.operator("og.clear_launcher_dest", text="", icon="X")
                 op.launcher_name = sel.name
+                from ..operators.links import bin_button
+                bin_button(row2, [dest_obj], "og.clear_launcher_dest", "launcher destination", launcher_name=sel.name)
             elif dest_name:
                 row2 = box2.row(); row2.alert = True
                 row2.label(text=f"⚠ missing: {dest_name}", icon="ERROR")
@@ -1196,6 +1202,10 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
         sidebar.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM")
         sidebar.operator("og.waypoint_source_edit", text="", icon="EDITMODE_HLT")
         sidebar.operator("og.waypoint_source_remove", text="", icon="X")
+        from ..operators.links import bin_button
+        _i = sel.og_waypoint_sources_index
+        bin_button(sidebar, [sources[_i].obj] if 0 <= _i < len(sources) else [], "og.waypoint_source_remove",
+                   "path point / curve", path_index=-1)
         sidebar.separator()
         sidebar.operator("og.waypoint_source_move",
                          text="", icon="TRIA_UP").direction = "UP"
@@ -1311,6 +1321,8 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
             row.label(text=f"{n_src} source{'s' if n_src != 1 else ''}")
             op = row.operator("og.remove_extra_path", text="", icon="X")
             op.actor_name = sel.name; op.path_index = i
+            from ..operators.links import bin_button
+            bin_button(row, [s.obj for s in xp.sources], "og.remove_extra_path", "path", actor_name=sel.name, path_index=i)
             if not xp.expanded:
                 continue
             lrow = box.row()
@@ -1319,6 +1331,9 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
             side.operator("og.waypoint_source_frame", text="", icon="VIEWZOOM").path_index = i
             side.operator("og.waypoint_source_edit", text="", icon="EDITMODE_HLT").path_index = i
             side.operator("og.waypoint_source_remove", text="", icon="X").path_index = i
+            _j = xp.sources_index
+            bin_button(side, [xp.sources[_j].obj] if 0 <= _j < len(xp.sources) else [], "og.waypoint_source_remove",
+                       "path point / curve", path_index=i)
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i

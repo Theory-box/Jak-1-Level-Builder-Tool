@@ -194,6 +194,8 @@ def draw_nav_spheres(layout, nm):
         if s.obj is not None:
             r.label(text=f"r {s.obj.empty_display_size * max(s.obj.scale):.2f} m")
         op = r.operator("og.nav_sphere_remove", text="", icon="X"); op.mesh = nm.name; op.index = i
+        from .operators.links import bin_button
+        bin_button(r, [s.obj], "og.nav_sphere_remove", "nav-sphere", mesh=nm.name, index=i)
     r = body.row(align=True)
     r.operator("og.nav_sphere_add", text="New", icon="ADD").mesh = nm.name
     r.operator("og.nav_sphere_pick", text="Add Empty", icon="VIEWZOOM").mesh = nm.name

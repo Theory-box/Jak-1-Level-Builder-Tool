@@ -142,6 +142,8 @@ def _draw_selected_actor(layout, sel, scene):
             row = box.row(align=True)
             row.label(text=f"✓ {nm_obj.name}", icon="CHECKMARK")
             row.operator("og.unlink_navmesh", text="", icon="X").actor_name = sel.name
+            from ..operators.links import bin_button
+            bin_button(row, [nm_obj], "og.unlink_navmesh", "nav-mesh", actor_name=sel.name)
             try:
                 nm_obj.data.calc_loop_triangles()
                 tc = len(nm_obj.data.loop_triangles)

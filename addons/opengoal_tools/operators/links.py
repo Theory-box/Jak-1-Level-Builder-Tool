@@ -279,6 +279,72 @@ class OG_OT_UnlinkNavMesh(Operator):
         return {"FINISHED"}
 
 
+class OG_OT_DeleteLinkedHelper(Operator):
+    """Unlink this and delete the object(s) from the scene"""
+    bl_idname = "og.delete_linked_helper"
+    bl_label = "Delete Helper"
+    bl_options = {"REGISTER", "UNDO"}
+
+    objects: StringProperty(options={"SKIP_SAVE"})       # names, one per line
+    unlink_op: StringProperty(options={"SKIP_SAVE"})     # "og.xxx" run first (the X button's operator)
+    unlink_args: StringProperty(options={"SKIP_SAVE"})   # its properties as JSON
+    what: StringProperty(default="helper", options={"SKIP_SAVE"})
+    dont_ask: BoolProperty(name="Don't ask again", default=False, options={"SKIP_SAVE"})
+
+    def _objs(self):
+        return [o for o in (bpy.data.objects.get(n) for n in self.objects.splitlines() if n) if o is not None]
+
+    def invoke(self, ctx, event):
+        from ..paths_core import pref
+        if not pref("confirm_delete_helpers", True):
+            return self.execute(ctx)
+        return ctx.window_manager.invoke_props_dialog(self, title=f"Delete {self.what}?", confirm_text="Delete")
+
+    def draw(self, ctx):
+        col = self.layout.column(align=True)
+        objs = self._objs()
+        col.label(text="Unlinks it and deletes from the scene:", icon="TRASH")
+        for o in objs[:8]:
+            col.label(text=f"  {o.name}")
+        if len(objs) > 8:
+            col.label(text=f"  … +{len(objs) - 8} more")
+        names = {o.name for o in objs}
+        others = [x for x in ctx.scene.objects if x.get("og_navmesh_link") in names and x is not ctx.active_object]
+        if others:
+            w = col.row(); w.alert = True
+            w.label(text=f"{len(others)} other actor(s) use this nav-mesh too", icon="ERROR")
+        self.layout.prop(self, "dont_ask")
+
+    def execute(self, ctx):
+        objs = [o.name for o in self._objs()]
+        if self.unlink_op:
+            mod, name = self.unlink_op.split(".", 1)
+            getattr(getattr(bpy.ops, mod), name)(**(json.loads(self.unlink_args) if self.unlink_args else {}))
+        for nm in objs:
+            o = bpy.data.objects.get(nm)          # the unlink may have deleted it already (waypoint empties)
+            if o is not None:
+                bpy.data.objects.remove(o, do_unlink=True)
+        if self.dont_ask:
+            from ..paths_core import prefs
+            p = prefs()
+            if p is not None:
+                p.confirm_delete_helpers = False
+        self.report({"INFO"}, f"Deleted {len(objs)} object(s)")
+        return {"FINISHED"}
+
+
+def bin_button(layout, objects, unlink_op="", what="helper", **unlink_args):
+    """A bin next to an X: run unlink_op(**unlink_args), then delete objects (objects or names)."""
+    names = [o if isinstance(o, str) else o.name for o in objects if o is not None]
+    row = layout.row(align=True)
+    row.enabled = bool(names)
+    op = row.operator("og.delete_linked_helper", text="", icon="TRASH")
+    op.objects = "\n".join(names)
+    op.unlink_op = unlink_op
+    op.unlink_args = json.dumps(unlink_args) if unlink_args else ""
+    op.what = what
+
+
 def navmesh_users(scene, nm_name):
     """Actors linked to the navmesh named nm_name."""
     return [o for o in scene.objects if o.get("og_navmesh_link") == nm_name]
@@ -1044,6 +1110,7 @@ CLASSES = (
     OG_OT_MoviePosLink,
     OG_OT_MoviePosRemove,
     OG_OT_UnlinkNavMesh,
+    OG_OT_DeleteLinkedHelper,
     OG_OT_NavMeshShare,
     OG_OT_AddWaypoint,
     OG_OT_DeleteWaypoint,
