@@ -18,6 +18,7 @@ from ..data import ENTITY_DEFS, ALL_SFX_ITEMS, _is_custom_type
 from ..collections import (
     _level_objects, _col_path_for_entity, _link_object_to_sub_collection, _COL_PATH_TRIGGERS,
     _COL_PATH_CAMERAS, _COL_PATH_SPAWNS, _COL_PATH_SOUND_EMITTERS, _COL_PATH_SPAWNABLE_PLATFORMS,
+    _COL_PATH_WAYPOINTS,
 )
 from ..export import _actor_uses_navmesh, _vol_links, _vol_has_link_to, _rename_vol_for_links, log
 from ..utils import _is_linkable, _is_aggro_target, _vol_for_target
@@ -836,6 +837,7 @@ class OG_OT_SpawnCamAlign(Operator):
         o.show_name = True
         o.empty_display_size = 0.5
         o.color = (1.0, 0.6, 0.0, 1.0)
+        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         self.report({"INFO"}, f"Added {align_name}  —  place at player anchor position")
         return {"FINISHED"}
 
@@ -861,6 +863,7 @@ class OG_OT_SpawnCamPivot(Operator):
         o.show_name = True
         o.empty_display_size = 0.5
         o.color = (1.0, 0.2, 0.8, 1.0)
+        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         self.report({"INFO"}, f"Added {pivot_name}  —  place at orbit center point")
         return {"FINISHED"}
 
@@ -884,6 +887,7 @@ class OG_OT_SpawnCamLookAt(Operator):
         o.show_name = True
         o.empty_display_size = 0.4
         o.color = (1.0, 0.8, 0.0, 1.0)
+        _link_object_to_sub_collection(ctx.scene, o, *_COL_PATH_CAMERAS)
         sel["og_cam_look_at"] = look_name
         self.report({"INFO"}, f"Added {look_name}  —  move it to where the camera should look")
         return {"FINISHED"}
@@ -907,6 +911,7 @@ class OG_OT_AddLauncherDest(Operator):
         dest.show_name = True
         dest.empty_display_size = 0.5
         dest.color = (1.0, 0.5, 0.0, 1.0)
+        _link_object_to_sub_collection(ctx.scene, dest, *_COL_PATH_WAYPOINTS)
         launcher["og_launcher_dest"] = dest.name
         self.report({"INFO"}, f"Added {dest.name} and linked to {self.launcher_name}")
         return {"FINISHED"}

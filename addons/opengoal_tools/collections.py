@@ -416,6 +416,14 @@ def _classify_object(obj):
         if name.startswith("AMBIENT_"):
             return _COL_PATH_SOUND_EMITTERS
 
+        # Camera helpers (_ALIGN, _PIVOT, _LOOKAT) with their camera
+        if name.startswith("CAMERA_"):
+            return _COL_PATH_CAMERAS
+
+        # Launcher destinations with the waypoints
+        if name.startswith("DEST_"):
+            return _COL_PATH_WAYPOINTS
+
         return None  # Unknown empty — leave in place
 
     # ── Curves used as paths (tagged by path_curves / Sort & Clean) ─────────
