@@ -76,6 +76,7 @@ def _scan_glbs() -> tuple[int, str]:
     except OSError as e:
         return 0, f"scan failed: {e}"
 
+    seen = set()                     # a model ripped in several levels (babak-lod0) is listed once
     for p in files:
         try:
             rel = p.relative_to(root).with_suffix("")  # strip .glb
@@ -83,6 +84,9 @@ def _scan_glbs() -> tuple[int, str]:
             continue  # shouldn't happen — every match is under root
         key = rel.as_posix()
         _GLB_PATHS[key] = p
+        if rel.name.lower() in seen:
+            continue
+        seen.add(rel.name.lower())
         _GLB_CACHE.append(key)
     return len(_GLB_CACHE), ""
 
