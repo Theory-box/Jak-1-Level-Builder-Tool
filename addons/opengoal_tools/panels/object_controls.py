@@ -353,6 +353,65 @@ class OG_PT_EffectsAfterBake(Panel):
         draw_stack(self.layout, ctx)
 
 
+class OG_PT_UVTools(Panel):
+    bl_label = "UV Tools"
+    bl_idname = "OG_PT_uv_tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_object_controls"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        r = self.layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Whole mesh, or the selected faces in Edit Mode", icon="INFO")
+
+
+def _uv_button(layout, ctx, op, word, icon):
+    from ..uv_tools import targets
+    n = len(targets(ctx))
+    r = layout.row(); r.scale_y = 1.2
+    r.operator(op, text=f"{word} ({n} mesh{'es' if n != 1 else ''})" if n else word, icon=icon)
+
+
+class OG_PT_UVFitFaces(Panel):
+    bl_label = "Fit Faces on UV"
+    bl_idname = "OG_PT_uv_fit_faces"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_uv_tools"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_uv
+        layout = self.layout
+        layout.prop(s, "placement", expand=True)
+        layout.prop(s, "pair_triangles")
+        col = layout.column(align=True)
+        col.prop(s, "scale")
+        col.prop(s, "rotation")
+        layout.prop(s, "pivot", expand=True)
+        _uv_button(layout, ctx, "og.uv_fit_faces", "Fit Faces", "UV_FACESEL")
+        r = layout.row(); r.enabled = False; r.scale_y = 0.7
+        r.label(text="Walls upright, floors along world X / Y; n-gons untouched")
+
+
+class OG_PT_UVCubeProject(Panel):
+    bl_label = "Cube Project"
+    bl_idname = "OG_PT_uv_cube_project"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "OpenGOAL"
+    bl_parent_id = "OG_PT_uv_tools"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, ctx):
+        s = ctx.scene.og_uv
+        self.layout.prop(s, "size")
+        _uv_button(self.layout, ctx, "og.uv_cube_project", "Cube Project", "MOD_UVPROJECT")
+
+
 class OG_PT_DistributeAlongCurve(Panel):
     bl_label = "Distribute Along Curve"
     bl_idname = "OG_PT_distribute_along_curve"
@@ -440,4 +499,5 @@ class OG_PT_ExportDefinitions(Panel):
 
 CLASSES = (OG_OT_SelectionFilter, OG_OT_DuplicateSelection, OG_OT_DeleteSelection, OG_PT_ObjectControls,
            OG_PT_SetToFloor, OG_PT_VertexColors, OG_PT_CopyLighting, OG_PT_CopyAlpha, OG_PT_DeleteColorAttribute, OG_PT_ColorLayersToByte,
-           OG_PT_ApplyEffect, *_EFFECT_PANELS, OG_PT_EffectsAfterBake, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
+           OG_PT_ApplyEffect, *_EFFECT_PANELS, OG_PT_EffectsAfterBake,
+           OG_PT_UVTools, OG_PT_UVFitFaces, OG_PT_UVCubeProject, OG_PT_DistributeAlongCurve, OG_PT_ConvertEntities, OG_PT_ExportDefinitions)
