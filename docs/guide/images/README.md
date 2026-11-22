@@ -1,7 +1,8 @@
 # Screenshots for the guide
 
 The guide uses a few overall screenshots; pages point at numbered parts of them
-("① in [sidebar](images/sidebar.png)"). Annotate each image with the coloured numbers listed.
+("① in [sidebar](images/sidebar.png)"). They are taken by Blender itself (a demo level, the sidebar on the
+OpenGOAL tab) with the numbers listed below drawn in red. `hero.png` is not taken yet: it needs an in-game picture.
 
 | File | What to capture | Numbers to mark |
 |---|---|---|
@@ -10,7 +11,7 @@ The guide uses a few overall screenshots; pages point at numbered parts of them
 | `outliner.png` | The Outliner of a level with its collections expanded | ① level collection ② Geometry › Solid ③ Spawnables ④ Waypoints ⑤ Triggers / Cameras / Spawns |
 | `build-play.png` | Build & Play panel expanded | ① Export & Compile ② Launch Game / Auto ③ checkpoint picker (Spawn) ④ boot mode ⑤ ⚠ count |
 | `level.png` | Level tab: Level Manager + Settings open | ① active level picker / Level Manager ② Add Level / Assign Existing ③ Settings ④ Gameplay ⑤ Project Settings ⑥ Level Audit |
-| `spawn.png` | Spawn Objects with a category open and an actor picked | ① search ② category tiles ③ list ④ variant ⑤ Spawn |
+| `spawn.png` | Spawn Objects with a category open and an actor picked | ① search ② category tiles ③ list ④ the picked actor's settings ⑤ Spawn |
 | `actor.png` | Object Settings with an actor selected (several sub-panels open) | ① Actor Settings ② a ⚠ count ③ Entity Links ④ Path ⑤ Custom Lumps ⑥ GOAL Code |
 | `light-baking.png` | Light Baking with Bake options and Time of day open | ① Bake ② Bake options ③ Time of day list ④ Color Quantisation |
 | `object-controls.png` | Object Controls with Vertex Colors open | ① selection summary ② Vertex Colors tools ③ Effects After Bake |
