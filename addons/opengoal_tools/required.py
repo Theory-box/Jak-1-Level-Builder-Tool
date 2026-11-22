@@ -543,6 +543,11 @@ def track_operators(classes):
                 return f(self, ctx)
             finally:
                 _CACHE["dirty"] = True
+                try:                      # race-ring circles inside this operator's undo step
+                    from . import race_rings
+                    race_rings.sync_now(ctx)
+                except Exception:
+                    pass
         execute._og_dirty = True
         execute.__doc__ = f.__doc__
         return execute

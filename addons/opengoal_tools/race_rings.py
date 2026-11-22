@@ -233,6 +233,19 @@ def touched(o, objs, curves) -> bool:
     return False
 
 
+def sync_now(ctx):
+    """Update every race-ring preview that's out of date, right away. Called at the
+    end of the addon's operators so the circles they create / delete are part of
+    the operator's undo step (circles made later by the timer, outside any undo
+    step, broke undo / Adjust Last Operation and crashed Blender)."""
+    scene = ctx.scene
+    for n in candidates()[0]:
+        o = bpy.data.objects.get(n)
+        if (o is not None and o.name in scene.objects and getattr(o, "og_special_preview", True)
+                and uses_rings(o) and _differs(o)):
+            update_preview(ctx, o)
+
+
 def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     """Called from the preview depsgraph handler: only race-rings whose actor
     or path was edited are looked at (moving circles in place)."""
