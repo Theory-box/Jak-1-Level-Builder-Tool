@@ -124,6 +124,7 @@ from .glb_colors import glTF2ExportUserExtension
 from . import level_settings as _level_settings
 from . import required as _required_mod
 from . import settings_import as _settings_import
+from . import guide_links as _guide_links
 from . import tasks as _tasks
 from . import game_text as _game_text
 from . import hints as _hints
@@ -180,6 +181,7 @@ classes = (
     *_level_settings.CLASSES,
     *_required_mod.CLASSES,
     *_settings_import.CLASSES,
+    *_guide_links.CLASSES,
     *_tasks.CLASSES,
     *_game_text.CLASSES,
     *_hints.CLASSES,
@@ -204,6 +206,7 @@ def register():
     _distribute.register_props()
     from .required import track_operators
     track_operators(classes)          # every operator refreshes the level checks when it finishes
+    _guide_links.attach(classes)      # ? buttons in the panel headers -> the user guide
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)
