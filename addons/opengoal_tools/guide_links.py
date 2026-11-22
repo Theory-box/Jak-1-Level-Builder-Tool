@@ -80,6 +80,7 @@ def _header_button(page, anchor, old=None):
             old(self, ctx)
         op = self.layout.operator("og.open_guide", text="", icon="QUESTION", emboss=False)
         op.page, op.anchor = page, anchor
+        self.layout.label(text="", icon="BLANK1")     # room for Blender's pin icon of a pinned panel
     return draw_header_preset
 
 
