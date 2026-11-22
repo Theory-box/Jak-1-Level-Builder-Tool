@@ -8,7 +8,8 @@ when they work on several projects. The parts marked *advanced* can break a buil
 
 ![Sidebar](images/sidebar.png)
 
-At the top is **Clean Files**. Under it are three closed sub-menus: **Paths**, **Addon Settings** and **Quick Open**.
+At the top is **Clean Files**. Under it are four closed sub-menus: **Paths**, **Addon Settings**, **Warning Settings**
+and **Quick Open**.
 
 ---
 
@@ -150,6 +151,44 @@ How OpenGOAL is detected:
 | **Re-check Versions** | Detects the version again (after updating OpenGOAL or changing paths). |
 | **Overwrite** | Ignores the detection: **Detected** (normal), **Release**, **jak-project dev**, **mod-base dev**. Use it when the detection is wrong for your setup, e.g. a dev build without git. A dev build set by hand without git is taken as up to date. |
 | **v** | With **Overwrite: Release**, the release version (default 0.3.8). |
+
+### Import Settings from .blend
+
+Copies this add-on's settings from another .blend, for example when you start a new project file.
+
+1. Click **Import Settings from .blend** (at the bottom of Addon Settings) and pick the .blend.
+2. A dialog lists five groups, each with a checkbox: **Launch Timing**, **Build Settings**, **Export Filter**,
+   **Project Folders** and **Warning Settings**. Under each, it shows what would change as *current → imported*
+   (*Same as this .blend* when nothing would).
+3. Untick the groups you don't want and click **Import**. Ctrl+Z undoes it.
+
+The other file is only read: nothing else (objects, levels, collections) is brought in.
+
+---
+
+## Warning Settings
+
+Turns off whole types of warnings for this .blend: ignored types aren't counted in the ⚠ counts (next to **Export &
+Compile** and in Object Settings) and don't show in the **Level Audit**. The header shows how many types are ignored.
+Use it for warnings you know about and don't care about, for example sound banks while you're still blocking out a
+level. The settings are saved in the .blend.
+
+| Type | Kind |
+|---|---|
+| **Required link missing** | red |
+| **Required path missing** | red |
+| **Required field or task not set** | red |
+| **Sound emitter's sound bank not loaded** | red |
+| **Linked nav-mesh problems** | red |
+| **Nothing sends it 'trigger** | grey |
+| **Actor's sound bank not loaded (silent sounds)** | grey |
+| **Optional link missing** | grey |
+| **Not linked by the actor that should link it** | grey |
+| **No nav-mesh (idles, can't chase)** | grey |
+| **Nav-mesh soft issues** | grey |
+
+The red (required) types are shown in red, marked *(required)*: ignoring them hides problems that can crash the
+game or break the build. What each warning means: [Troubleshooting](troubleshooting.md#warning-counts-red-and-grey-).
 
 ---
 

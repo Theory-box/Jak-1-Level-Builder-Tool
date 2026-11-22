@@ -22,7 +22,7 @@ New here? Read **Part 1** in order. The other parts can be read in any order.
 | [Volumes & triggers](volumes-and-triggers.md) | VOL_ meshes and their links, water, trigger volumes |
 | [Audio](audio.md) | Sound banks, music, sound emitters |
 | [Lighting](lighting.md) | Light baking, time of day, colour palette, Vertex Colors tools, Actor Light |
-| [Object Controls](object-controls.md) | Selection summary, duplicate / delete, Set to Floor, Distribute Along Curve, Convert Entities, Export Selected Definitions |
+| [Object Controls](object-controls.md) | Selection summary, duplicate / delete, Set to Floor, UV Tools, Distribute Along Curve, Convert Entities, Export Selected Definitions |
 | [Tasks](tasks.md) | Custom power cells / scout flies and their text |
 | [Edited actors & GOAL code](edited-actors-and-goal-code.md) | Vanilla actors made to work in custom levels, your own code |
 | [Importing](importing.md) | Game models and textures, existing levels' files |

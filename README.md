@@ -44,6 +44,8 @@ starts the game at your checkpoint.
   orb count), checkpoints and continue points, **cameras** with trigger volumes, hints, music zones,
   sound emitters, water volumes, load boundaries between levels.
 - **Custom tasks**: your own power cells and scout flies with their game text.
+- **UV Tools**: fit faces on the texture (as a grid or overlapping), cube projection at a set texture size,
+  randomized UVs.
 - **Project settings**: the checkpoints New Game, retail boot and Quit to menu go to, and the Discord
   status of your mod.
 

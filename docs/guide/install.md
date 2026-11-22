@@ -88,6 +88,7 @@ You can also set the folders per `.blend` file instead: **Developer Tools › Pa
 | **Select actors by their preview model** | Clicking or box-selecting a preview model selects its actor. Turn off to select the preview meshes themselves. On by default. |
 | **Snapping skips the moved actor's preview** | While actors are selected you can't snap to their own previews (they move with them). Other actors' previews still work. Turns on Blender's snapping option *Exclude Non-Selectable*. Needs the setting above. On by default. |
 | **Connect spawned actors to the selection** | When you spawn an actor, link what was selected: a curve becomes its path, a nav-mesh (or an actor that has one) becomes its nav-mesh, a `VOL_` volume becomes its volume. On by default. |
+| **Ask before deleting linked helpers** | The bin button next to a linked path, position empty, nav-sphere or nav-mesh asks before it deletes the object. Ticking **Don't ask again** in that dialog turns this off. On by default. |
 | **8-bit colours in every glTF export** | Level exports always write vertex colours as 8-bit. With this on, glTF exports you make by hand (**File › Export › glTF**) do the same. Off by default. |
 | **Game database: Override** | A `.jsonc` file used instead of the bundled `jak1_game_database.jsonc`. For advanced users; see [Developer Tools](developer-tools.md). |
 | **Reload Database** | Reads the database again (this reloads the add-on). Use it after changing the override. |
