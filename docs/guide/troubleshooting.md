@@ -220,42 +220,42 @@ Notes:
 
 ## FAQ
 
-**I don't spawn in my level / I end up in the village.**
-The level needs a checkpoint named `start`; **Build & Play** spawns there. With **Launch Game**, pick a checkpoint in
+**Q: I don't spawn in my level / I end up in the village.**  
+A: The level needs a checkpoint named `start`; **Build & Play** spawns there. With **Launch Game**, pick a checkpoint in
 the **Spawn** drop-down (**(None — bare launch)** only starts the game). In **Retail Mode** there's no spawn: set
 **Level › Project Settings › Retail Boot Checkpoint**. See [Build & Play](build-and-play.md).
 
-**My changes don't show up in game.**
-**Quick Level Export** only writes the level's own files: checkpoints, load boundaries, nav-meshes (`entity.gc`) and
+**Q: My changes don't show up in game.**  
+A: **Quick Level Export** only writes the level's own files: checkpoints, load boundaries, nav-meshes (`entity.gc`) and
 `game.gp` are only updated by **Export & Compile**. If files seem stale, use **Developer Tools › Clean Files** and build
 again.
 
-**A mesh is missing in game.**
-Only meshes in the level's **Geometry** collection are exported. Use **Move to Geometry** in Build & Play.
+**Q: A mesh is missing in game.**  
+A: Only meshes in the level's **Geometry** collection are exported. Use **Move to Geometry** in Build & Play.
 
-**A sound doesn't play.**
-Its sound bank isn't loaded: see the sound bank warnings above and [Audio](audio.md).
+**Q: A sound doesn't play.**  
+A: Its sound bank isn't loaded: see the sound bank warnings above and [Audio](audio.md).
 
-**Some textures are blank (Flut Flut's eyes, water).**
-They need a matching **Texture source** in **Level › Settings › Visuals** (the audit tells you which).
+**Q: Some textures are blank (Flut Flut's eyes, water).**  
+A: They need a matching **Texture source** in **Level › Settings › Visuals** (the audit tells you which).
 
-**Enemies stand around and don't chase me.**
-They need a nav-mesh (grey ⚠ **no nav-mesh**), or their nav-mesh is in separate parts. See
+**Q: Enemies stand around and don't chase me.**  
+A: They need a nav-mesh (grey ⚠ **no nav-mesh**), or their nav-mesh is in separate parts. See
 [Enemies & nav-meshes](enemies-and-navmesh.md).
 
-**Launch Game hangs at "Waiting for version...".**
-Raise **Developer Tools › Addon Settings › GK Boot Wait (s)**.
+**Q: Launch Game hangs at "Waiting for version...".**  
+A: Raise **Developer Tools › Addon Settings › GK Boot Wait (s)**.
 
-**A feature is greyed out and says it needs another OpenGOAL.**
-See **Developer Tools › Addon Settings › Versions**. If the detection is wrong, use **Re-check Versions** or
+**Q: A feature is greyed out and says it needs another OpenGOAL.**  
+A: See **Developer Tools › Addon Settings › Versions**. If the detection is wrong, use **Re-check Versions** or
 **Overwrite** ([Developer Tools](developer-tools.md)).
 
-**I renamed my level and the old one is still in the game.**
-With **Clean renamed levels** on (default) the next export removes the old name's files. Levels left over from other
+**Q: I renamed my level and the old one is still in the game.**  
+A: With **Clean renamed levels** on (default) the next export removes the old name's files. Levels left over from other
 .blend files are under **Developer Tools › Addon Settings › Leftover levels**.
 
-**Where do I ask for help?**
-On the [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv). Include the Level Audit results and the first error from the
+**Q: Where do I ask for help?**  
+A: On the [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv). Include the Level Audit results and the first error from the
 GOALC console or the game log.
 
 ---
