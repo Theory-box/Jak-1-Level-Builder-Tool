@@ -66,6 +66,9 @@ To use the game's own textures, open **Import › Game Textures** with a mesh se
 click a texture, then **Apply to Selected** (in Edit Mode: **Apply to Selected Faces**). It makes an `og_<texture>`
 material. The textures must have been extracted by the decompiler first. See [Importing](importing.md).
 
+To place the textures, [Object Controls › UV Tools](object-controls.md#uv-tools) can fit each face on the whole
+texture, project the texture at the same size on every wall and floor (**Cube Project**), or randomize the UVs.
+
 ### Texture Remap
 
 Some things in the game are drawn with generic textures that each vanilla level remaps to its own: Flut Flut's eyes,
