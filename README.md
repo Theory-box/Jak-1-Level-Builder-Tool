@@ -8,7 +8,7 @@ the game's actors from a searchable list, set them up with plain fields instead 
 lighting, and press **Export & Compile**: the add-on writes every game file, compiles the level and
 starts the game at your checkpoint.
 
-<!-- screenshot: a level in Blender with the OpenGOAL sidebar open, and the same level in game -->
+![Level Example](images/hero.png)
 
 **[⬇ Download the latest release](https://github.com/Theory-box/Jak-1-Level-Builder-Tool/releases/latest)** · [User guide](docs/guide/README.md) ·
 [OpenGOAL Discord](https://discord.gg/VZbXMHXzTv)
