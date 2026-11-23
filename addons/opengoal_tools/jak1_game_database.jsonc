@@ -13417,41 +13417,37 @@
       "parent": "process-drawable",
       "custom_actor": true,
       "edited": "camera-animation",
-      "shape": "ARROWS",
+      "shape": "SPHERE",
       "show_axis": true,
-      "description": "Addon actor (exports as lt-camera-animation, in a shared file): plays one of the game's camera animations (pov-camera shots) from its position, turned by its rotation. It starts when Jak enters its volume, comes within a distance, or when another actor triggers it. Plays once for good (saved with the game) or once each time the actor loads.",
+      "description": "Addon actor (exports as lt-camera-animation, in a shared file): plays one of the game's camera animations (pov-camera shots) from its position, turned by its rotation, or shows a normal camera for a while. It starts when Jak enters its volume, comes within a distance, or when another actor triggers it. Plays once per playthrough (saved) or again; a Next Camera animation link plays several in a row.",
       "panels": [
         {"panel": "fact-options", "export": false},
         {"panel": "scale", "export": false},
         {
           "panel": "custom-fields",
           "fields": [
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera"},
-            {"key": "og_pov_start", "label": "Start", "type": "enum", "default": "dist",
-             "choices": [
-               {"value": "vol", "label": "Volume", "lump_value": 0},
-               {"value": "dist", "label": "Distance", "lump_value": 1},
-               {"value": "trigger", "label": "Triggered", "lump_value": 2}
-             ],
-             "lump": {"key": "start-mode", "type": "uint32"}, "write_if": "always",
-             "note": "Volume: when Jak enters its linked volume. Distance: when Jak comes within Distance. Triggered: only when another actor sends it 'trigger (a button, or an edited actor's Camera: Camera animation actor). Any mode can also be triggered."},
-            {"key": "og_pov_dist", "label": "Distance (m)", "type": "float", "default": 10.0, "min": 0.0,
-             "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always",
-             "visible_if": {"og_pov_start": ["dist"]},
-             "driver": {"var": "self", "expression": "var", "driven": "empty_display_size"}},
-            {"key": "og_pov_once", "label": "Once for good", "type": "bool", "default": true,
-             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true",
-             "note": "On: plays once, saved with the game. Off: plays once each time the actor loads (respawn, coming back to the level)."},
-            {"key": "og_pov_skip", "label": "Skippable (Triangle)", "type": "bool", "default": false,
-             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true"},
-            {"key": "og_pov_rot", "label": "Turn with the actor", "type": "bool", "default": true,
-             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
-             "note": "The shot plays relative to the actor: its position and, with this on, its rotation. Off: lined up with the world, as in the original game."},
-            {"key": "og_pov_ground", "label": "Wait for Jak on the ground", "type": "bool", "default": true,
-             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}
+            {"key": "og_pov_type", "label": "Camera", "type": "enum", "default": "pov", "choices": [{"value": "pov", "label": "Camera animation", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1}], "lump": {"key": "cam-type", "type": "uint32"}, "write_if": "if_not_default", "note": "Camera animation: one of the game's camera animations (pov-camera), from the actor and turned like it. Normal camera: a linked CAMERA_, looking at the Look at actor, for Camera time."},
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_type": ["pov"]}},
+            {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_type": ["camera"]}},
+            {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_type": ["camera"]}, "export_if_visible": true, "note": "How long the camera is shown. It looks at the Look at actor (Entity Links), if one is linked."},
+            {"key": "og_pov_start", "label": "Start", "type": "enum", "default": "dist", "choices": [{"value": "vol", "label": "Volume", "lump_value": 0}, {"value": "dist", "label": "Distance", "lump_value": 1}, {"value": "trigger", "label": "Triggered", "lump_value": 2}], "lump": {"key": "start-mode", "type": "uint32"}, "write_if": "always", "empty_display": {"dist": "SPHERE", "*": "ARROWS", "size_driver": ["dist"]}, "note": "Volume: when Jak enters its linked volume. Distance: when Jak comes within Distance (the sphere). Triggered: only when another actor sends it 'trigger (a button's notify list, the previous Camera animation of a chain, or an edited actor's Camera: Camera animation actor). Any mode can also be triggered."},
+            {"key": "og_pov_dist", "label": "Distance (m)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always", "visible_if": {"og_pov_start": ["dist"]}, "driver": {"var": "self", "expression": "var", "driven": "empty_display_size"}},
+            {"key": "og_pov_delay", "label": "Delay (s)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "delay", "type": "float"}, "write_if": "if_not_default", "note": "Seconds between being started (any way) and the camera."},
+            {"key": "og_pov_once", "label": "Once per playthrough", "type": "bool", "default": true, "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true", "note": "On: plays once, saved with the game. Off: Volume / Distance play again once the actor reloads (death, coming back to the level); a trigger plays it again every time."},
+            {"key": "og_pov_skip", "label": "Skippable (Triangle)", "type": "bool", "default": false, "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true", "visible_if": {"og_pov_type": ["pov"]}},
+            {"key": "og_pov_rot", "label": "Turn with the actor", "type": "bool", "default": true, "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true", "visible_if": {"og_pov_type": ["pov"]}, "note": "The shot plays relative to the actor: its position and, with this on, its rotation. Off: lined up with the world, as in the original game."},
+            {"key": "og_pov_ground", "label": "Wait for Jak on the ground", "type": "bool", "default": true, "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}
           ]
         },
-        {"panel": "volume"}
+        {"panel": "volume"},
+        {
+          "panel": "actor-link",
+          "slots": [
+            {"lump_key": "look-actor", "slot": 0, "label": "Look at (Normal camera)", "accepts": ["any"], "required": false},
+            {"lump_key": "next-actor", "slot": 0, "label": "Next Camera animation (plays after this one)", "accepts": ["camera-animation"], "required": false},
+            {"lump_key": "prev-actor", "slot": 0, "label": "Previous Camera animation", "accepts": ["camera-animation"], "required": false}
+          ]
+        }
       ]
     },
     {
