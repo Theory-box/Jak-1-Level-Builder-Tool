@@ -486,6 +486,16 @@ def _draw_field(layout, obj, field, actor_info=None):
     elif ftype == "pov_camera":
         from .. import pov as _pov
         _pov.draw(layout, obj, field)
+    elif ftype == "link_slot":
+        # an actor-link slot ("slot": lump key; its DB slot has "show-in") drawn here
+        from .selected import _draw_link_slot
+        et = obj.name.split("_", 2)[1]
+        sl = _db.link_slot(et, field["slot"], int(field.get("slot_index", 0)))
+        sel = [o for o in bpy.context.selected_objects
+               if o != obj and o.type == "EMPTY" and o.name.startswith("ACTOR_") and "_wp_" not in o.name]
+        box = layout.box()
+        _draw_link_slot(box, obj, bpy.context.scene, et, field["slot"], int(field.get("slot_index", 0)),
+                        label, sl.get("accepts") or ["any"], bool(sl.get("required")), sel)
     else:
         # float / int / string — _prop_row handles all three
         _prop_row(layout, obj, field["key"], f"{label}:",

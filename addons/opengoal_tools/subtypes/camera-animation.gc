@@ -5,7 +5,7 @@
 ;;   cam-type: 0 camera animation: pov-sg / pov-anim, the skeleton group symbol (defined
 ;;     in the level's -obs.gc) and the animation to play (any of the game's camera art
 ;;     groups); 1 normal camera: pov-camera (a camera name) for pov-time seconds,
-;;     looking at the look-actor link if any.
+;;     looking at the look-actor link (none: Jak), following it if it moves.
 ;;   delay: seconds between being started (any way) and the camera.
 ;;   start-mode: 0 when Jak enters its volume (vol lump), 1 when Jak comes within
 ;;     notice-dist, 2 only when another actor sends it 'trigger.
@@ -13,7 +13,7 @@
 ;;     complete); otherwise volume / distance play again once the actor reloads
 ;;     (respawn / level visit) and every 'trigger plays it again;
 ;;     2 skippable with Triangle; 4 the shot turns with the actor's rotation;
-;;     8 wait until Jak is on the ground.
+;;     8 wait until Jak is on the ground; 16 normal camera: Jak can't move meanwhile.
 ;;   next-actor: the next Camera animation of a chain, sent 'trigger once this one ends.
 ;;   events: 'trigger plays it (any start mode); 'busy? answers #t while playing, so
 ;;     an actor that triggered it can wait for the end.
@@ -80,15 +80,21 @@
         ((= (res-lump-value (-> self entity) 'cam-type uint32) 1)    ;; a normal camera
          (let ((name (res-lump-struct (-> self entity) 'pov-camera string)))
            (when name
+             (when (logtest? (-> self cam-flags) 16)     ;; Freeze Jak
+               (while (and *target* (not (process-grab? *target*)))
+                 (suspend)))
              (camera-change-to name 0 #f)
-             (let ((look (entity-actor-lookup (-> self entity) 'look-actor 0)))
-               (if (and look (-> look extra process)) (send-event *camera* 'change-target (-> look extra process))))
+             (let ((look (entity-actor-lookup (-> self entity) 'look-actor 0)))   ;; none: Jak
+               (send-event *camera* 'change-target (if (and look (-> look extra process)) (-> look extra process) *target*)))
              (let ((start (current-time))
                    (d (the int (* 300.0 (res-lump-float (-> self entity) 'pov-time :default 4.0)))))
                (until (time-elapsed? start d)
                  (suspend)))
              (send-event *camera* 'change-target *target*)
-             (camera-change-to (the-as string 'base) 150 #f))))
+             (camera-change-to (the-as string 'base) 150 #f)
+             (when (logtest? (-> self cam-flags) 16)
+               (while (and *target* (not (process-release? *target*)))
+                 (suspend))))))
         ((and (-> self sg) (-> self anim))
          (let ((h (ppointer->handle
                      (process-spawn pov-camera

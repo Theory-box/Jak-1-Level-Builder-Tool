@@ -5520,7 +5520,7 @@
               "allow-multiple": true,
               "show-in": "battlecontroller"
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -5582,7 +5582,7 @@
                 {
                   "id": "custom",
                   "value": "custom",
-                  "label": "Camera animation",
+                  "label": "Other camera animation",
                   "etype": "battlecontroller",
                   "generated_type": true,
                   "custom_camera": true
@@ -5606,7 +5606,8 @@
               ]
             },
             {"key": "og_bc_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_bc_variant": ["camera"]}},
-            {"key": "og_bc_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_bc_variant": ["camera"]}, "export_if_visible": true}
+            {"key": "og_bc_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_bc_variant": ["camera"]}, "export_if_visible": true},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_bc_variant": ["actor"]}}
           ]
         }
       ],
@@ -7470,7 +7471,7 @@
               ],
               "required": true
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -7484,10 +7485,11 @@
         {
           "panel": "custom-fields",
           "fields": [
-            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its opening cutscene camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
+            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its opening cutscene camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         }
       ],
@@ -7585,7 +7587,7 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -7661,10 +7663,11 @@
               "write_if": "if_non_empty",
               "note": "Optional: a checkpoint name (<level>-<id>). Empty: Jak stays where he is."
             },
-            {"key": "og_pov_mode", "label": "Intro shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (Klaww's intro camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "When Klaww's intro starts. Default: the vanilla intro shot. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot instead."},
+            {"key": "og_pov_mode", "label": "Intro shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (Klaww's intro camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "When Klaww's intro starts. Default: the vanilla intro shot. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot instead."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         }
       ],
@@ -10770,16 +10773,18 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
           "panel": "custom-fields",
           "fields": [
-            {"key": "og_yakow_shot", "label": "Pen shot", "type": "enum", "default": "anim", "write_if": "always", "lump": {"key": "pen-shot", "type": "int32"}, "choices": [{"value": "anim", "label": "Vanilla camera animation", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "none", "label": "None", "lump_value": 2}, {"value": "pov", "label": "Camera animation", "lump_value": 3, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 4, "pov": 3}], "note": "Played once the whole herd is penned."},
-            {"key": "og_yakow_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla camera animation: played from here. None: from the farmer (alt-actor)."},
-            {"key": "og_yakow_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pen-camera", "type": "string"}, "note": "Pen shot = Linked camera."},
-            {"key": "og_yakow_shot_time", "label": "Shot time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Pen shot = Linked camera: how long."},
+            {"key": "og_yakow_shot", "label": "Pen shot", "type": "enum", "default": "anim", "write_if": "always", "lump": {"key": "pen-shot", "type": "int32"}, "choices": [{"value": "anim", "label": "Vanilla camera animation", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "none", "label": "None", "lump_value": 2}, {"value": "pov", "label": "Other camera animation", "lump_value": 3, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 4, "pov": 3}], "note": "Played once the whole herd is penned."},
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_yakow_shot": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_yakow_shot": ["pov_actor"]}},
+            {"key": "og_yakow_shot_origin", "visible_if": {"og_yakow_shot": ["anim", "pov"]}, "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla camera animation: played from here. None: from the farmer (alt-actor)."},
+            {"key": "og_yakow_shot_cam", "visible_if": {"og_yakow_shot": ["camera"]}, "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pen-camera", "type": "string"}, "note": "Pen shot = Linked camera."},
+            {"key": "og_yakow_shot_time", "visible_if": {"og_yakow_shot": ["camera"]}, "label": "Shot time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "shot-time", "type": "float"}, "write_if": "always", "note": "Pen shot = Linked camera: how long."},
             {
               "key": "og_yakow_pen",
               "label": "Pen spot (empty)",
@@ -10791,8 +10796,7 @@
                 "w": "yaw"
               },
               "note": "Where it walks to and grazes once penned, facing the empty's way."
-            },
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_yakow_shot": ["pov"]}}
+            }
           ]
         }
       ],
@@ -11137,10 +11141,11 @@
           "panel": "custom-fields",
           "fields": [
             {"key": "og_pelican_return", "label": "Return time (s)", "type": "float", "default": 20.0, "min": 0.5, "lump": {"key": "return-time", "type": "float"}, "write_if": "always", "note": "After the spit: how long it flies (from-nest path) before diving back for the cell. Vanilla 20."},{"key": "og_pelican_camera", "label": "Dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The first dive when Jak comes near, looking at the pelican (vanilla camera-215). None: the normal camera.", "lump": {"key": "dive-camera", "type": "string"}}, {"key": "og_pelican_spit_camera", "label": "Spit camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The spit, looking at the cell as it's thrown. None: the vanilla cutscene camera (turned with the pelican).", "lump": {"key": "spit-camera", "type": "string"}}, {"key": "og_pelican_diveb_camera", "label": "Second dive camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "The second dive (dive-b) and its way back to the nest, looking at the pelican. None: the normal camera.", "lump": {"key": "dive-b-camera", "type": "string"}}, {"key": "og_pelican_spit_pos", "label": "Spit spot (empty)", "type": "object_ref", "default": "", "note": "Where the spat-out cell lands; the pelican turns to it. None: 10 m ahead of the pelican.", "lump": {"key": "spit-pos", "type": "vector", "fallback": "forward", "fallback_m": 10.0}},
-            {"key": "og_pov_mode", "label": "Spit shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (Spit camera / its cutscene camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "The spit. Default: the Spit camera if linked, else the vanilla cutscene camera. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot instead (it holds Jak)."},
+            {"key": "og_pov_mode", "label": "Spit shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (Spit camera / its cutscene camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "The spit. Default: the Spit camera if linked, else the vanilla cutscene camera. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot instead (it holds Jak)."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
         {
@@ -11182,7 +11187,7 @@
             "run-away": "Escape route after the task is complete."
           }
         },
-        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
+        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
       ],
       "code": [
         "beach-obs.o",
@@ -13430,6 +13435,8 @@
             {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_type": ["pov"]}},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_type": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_type": ["camera"]}, "export_if_visible": true, "note": "How long the camera is shown. It looks at the Look at actor (Entity Links), if one is linked."},
+            {"key": "og_pov_look_slot", "label": "Look at (none: Jak)", "type": "link_slot", "slot": "look-actor", "visible_if": {"og_pov_type": ["camera"]}},
+            {"key": "og_pov_freeze", "label": "Freeze Jak", "type": "bool", "default": false, "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 16}, "write_if": "if_true", "visible_if": {"og_pov_type": ["camera"]}, "note": "Jak can't move while the camera is shown (as with a camera animation)."},
             {"key": "og_pov_start", "label": "Start", "type": "enum", "default": "dist", "choices": [{"value": "vol", "label": "Volume", "lump_value": 0}, {"value": "dist", "label": "Distance", "lump_value": 1}, {"value": "trigger", "label": "Triggered", "lump_value": 2}], "lump": {"key": "start-mode", "type": "uint32"}, "write_if": "always", "empty_display": {"dist": "SPHERE", "*": "ARROWS", "size_driver": ["dist"]}, "note": "Volume: when Jak enters its linked volume. Distance: when Jak comes within Distance (the sphere). Triggered: only when another actor sends it 'trigger (a button's notify list, the previous Camera animation of a chain, or an edited actor's Camera: Camera animation actor). Any mode can also be triggered."},
             {"key": "og_pov_dist", "label": "Distance (m)", "type": "float", "default": 10.0, "min": 0.0, "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always", "visible_if": {"og_pov_start": ["dist"]}, "driver": {"var": "self", "expression": "var", "driven": "empty_display_size"}},
             {"key": "og_pov_delay", "label": "Delay (s)", "type": "float", "default": 0.0, "min": 0.0, "lump": {"key": "delay", "type": "float"}, "write_if": "if_not_default", "note": "Seconds between being started (any way) and the camera."},
@@ -13443,7 +13450,7 @@
         {
           "panel": "actor-link",
           "slots": [
-            {"lump_key": "look-actor", "slot": 0, "label": "Look at (Normal camera)", "accepts": ["any"], "required": false},
+            {"lump_key": "look-actor", "slot": 0, "show-in": "fields", "label": "Look at (Normal camera)", "accepts": ["any"], "required": false},
             {"lump_key": "next-actor", "slot": 0, "label": "Next Camera animation (plays after this one)", "accepts": ["camera-animation"], "required": false},
             {"lump_key": "prev-actor", "slot": 0, "label": "Previous Camera animation", "accepts": ["camera-animation"], "required": false}
           ]
@@ -18264,7 +18271,7 @@
               ],
               "required": true
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -18278,7 +18285,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         }
       ]
@@ -18316,7 +18324,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
         {
@@ -18344,7 +18353,7 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         }
       ]
@@ -18897,10 +18906,11 @@
       "parent": "process-drawable",
       "panels": [
         {"panel": "custom-fields", "fields": [{"key": "og_tether_rock_camera", "label": "Rock camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "Looks at the rock as it breaks (vanilla camera-18x). None: the normal camera.", "lump": {"key": "rock-camera", "type": "string"}}, {"key": "og_tether_arm_camera", "label": "Arm camera", "type": "object_ref", "pick": "CAMERA", "default": "", "note": "After the last rock: looks at the blimp's arm sinking. None: the normal camera.", "lump": {"key": "arm-camera", "type": "string"}}, {"key": "og_tether_blimp_rp", "label": "Blimp rope point", "type": "int", "default": 8, "min": 0, "max": 15, "note": "Which point of the blimp its rope ties to (vanilla rocks: 10, 6, 7, 9).", "lump": {"key": "blimp-rp", "type": "int32"}, "write_if": "always"},
-            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its Rock / Arm cameras)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
+            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its Rock / Arm cameras)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]},
         {
           "panel": "game-task",
@@ -18922,7 +18932,7 @@
               ],
               "required": true
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         }
       ],
@@ -19154,18 +19164,20 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
           "panel": "custom-fields",
           "fields": [
-            {"key": "og_peri_hold", "label": "Hold time (s)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "hold-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long it stays on the next piece after Camera time; the beam cell pops out as it starts."},
-            {"key": "og_peri_cam_time", "label": "Camera time (s)", "type": "float", "default": 2.0, "min": 0.1, "lump": {"key": "camera-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long its look moves from this periscope's top to the next piece (then Hold time on it)."},
+            {"key": "og_peri_hold", "visible_if": {"og_peri_shot": ["camera"]}, "label": "Hold time (s)", "type": "float", "default": 2.0, "min": 0.0, "lump": {"key": "hold-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long it stays on the next piece after Camera time; the beam cell pops out as it starts."},
+            {"key": "og_peri_cam_time", "visible_if": {"og_peri_shot": ["camera"]}, "label": "Camera time (s)", "type": "float", "default": 2.0, "min": 0.1, "lump": {"key": "camera-time", "type": "float"}, "write_if": "always", "note": "Beam shot = Linked camera: how long its look moves from this periscope's top to the next piece (then Hold time on it)."},
             {"key": "og_peri_cell", "label": "Beam cell", "type": "bool", "default": false, "lump": {"key": "beam-cell", "type": "uint32"}, "write_if": "if_true", "note": "Its task's cell pops out at the beam's end near the end of the shot and jumps to movie-pos 0."},
-            {"key": "og_peri_shot", "label": "Beam shot", "type": "enum", "default": "none", "variant": true, "choices": [{"value": "none", "label": "None (Jak is free at once)", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "tower1", "label": "Vanilla shot: tower1", "lump_value": 2, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower2", "label": "Vanilla shot: tower2", "lump_value": 3, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower3", "label": "Vanilla shot: tower3", "lump_value": 4, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower4", "label": "Vanilla shot: tower4", "lump_value": 5, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower5", "label": "Vanilla shot: tower5", "lump_value": 6, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "beamcam", "label": "Vanilla shot: beamcam", "lump_value": 7, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "pov", "label": "Camera animation", "lump_value": 8, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 9, "pov": 3}], "lump": {"key": "beam-shot", "type": "int32"}, "write_if": "always", "note": "Played once it's on target. Vanilla shots are positioned from the Shot origin."},
-            {"key": "og_peri_shot_cam", "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "beam-camera", "type": "string"}, "note": "Beam shot = Linked camera."},
-            {"key": "og_peri_shot_origin", "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla shots: where they're played from. None: the periscope."},
+            {"key": "og_peri_shot", "label": "Beam shot", "type": "enum", "default": "none", "variant": true, "choices": [{"value": "none", "label": "None (Jak is free at once)", "lump_value": 0}, {"value": "camera", "label": "Linked camera", "lump_value": 1}, {"value": "tower1", "label": "Vanilla shot: tower1", "lump_value": 2, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower2", "label": "Vanilla shot: tower2", "lump_value": 3, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower3", "label": "Vanilla shot: tower3", "lump_value": 4, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower4", "label": "Vanilla shot: tower4", "lump_value": 5, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "tower5", "label": "Vanilla shot: tower5", "lump_value": 6, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "beamcam", "label": "Vanilla shot: beamcam", "lump_value": 7, "code": ["jungle-obs.o"], "extra_art_groups": ["junglecam-ag.go"]}, {"value": "pov", "label": "Other camera animation", "lump_value": 8, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 9, "pov": 3}], "lump": {"key": "beam-shot", "type": "int32"}, "write_if": "always", "note": "Played once it's on target. Vanilla shots are positioned from the Shot origin."},
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_peri_shot": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_peri_shot": ["pov_actor"]}},
+            {"key": "og_peri_shot_cam", "visible_if": {"og_peri_shot": ["camera"]}, "label": "Shot camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "beam-camera", "type": "string"}, "note": "Beam shot = Linked camera."},
+            {"key": "og_peri_shot_origin", "visible_if": {"og_peri_shot": ["tower1", "tower2", "tower3", "tower4", "tower5", "beamcam", "pov"]}, "label": "Shot origin (empty)", "type": "object_ref", "default": "", "lump": {"key": "shot-origin", "type": "vector"}, "note": "Vanilla shots: where they're played from. None: the periscope."},
             {
               "key": "og_peri_height",
               "label": "Height (m)",
@@ -19219,8 +19231,7 @@
                 "fallback_m": 100.0
               },
               "note": "Where the beam is aimed when nothing is linked as next actor. None: 100 m ahead of the periscope (vanilla crashed without one)."
-            },
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_peri_shot": ["pov"]}}
+            }
           ]
         }
       ]
@@ -19345,7 +19356,7 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -19417,10 +19428,11 @@
               },
               "write_if": "if_not_none"
             },
-            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (the cell animation's camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
+            {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (the cell animation's camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         }
       ]
@@ -19657,10 +19669,11 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
-        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
+        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
       ]
     },
     {
@@ -19706,7 +19719,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
         {
@@ -19722,7 +19736,7 @@
               "required": false,
               "allow-multiple": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         }
       ]
@@ -19765,7 +19779,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
         {
@@ -19781,7 +19796,7 @@
               "required": false,
               "allow-multiple": true
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         }
       ]
@@ -19959,7 +19974,7 @@
               ],
               "required": false
             },
-            {"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
+            {"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}
           ]
         },
         {
@@ -19968,7 +19983,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         }
       ]
@@ -21065,7 +21081,8 @@
             {"key": "og_pov_mode", "label": "Camera", "type": "enum", "default": "none", "choices": [{"value": "none", "label": "None", "lump_value": 0}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "Normal camera: a linked CAMERA_ for Camera time. Camera animation: one of the game's camera animations from the actor, turned like it. Camera animation actor: a linked Camera animation actor is triggered."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]},
         {
           "panel": "game-task"
@@ -21098,7 +21115,7 @@
             }
           ]
         },
-        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
+        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
       ]
     },
     {
@@ -21266,13 +21283,14 @@
               },
               "note": "Used during either ride mode, then returns to base camera."
             },
-            {"key": "og_pov_mode", "label": "Ride shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its Ride camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "When the ride starts. Default: the Ride camera if linked. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot."},
+            {"key": "og_pov_mode", "label": "Ride shot", "type": "enum", "default": "default", "choices": [{"value": "default", "label": "Default (its Ride camera)", "lump_value": 0}, {"value": "none", "label": "None", "lump_value": 4}, {"value": "camera", "label": "Normal camera", "lump_value": 1, "pov": 1}, {"value": "pov", "label": "Other camera animation", "lump_value": 2, "pov": 2}, {"value": "pov_actor", "label": "Camera animation actor", "lump_value": 3, "pov": 3}], "lump": {"key": "pov-mode", "type": "int32"}, "write_if": "if_not_default", "note": "When the ride starts. Default: the Ride camera if linked. Normal camera: a linked CAMERA_ for Camera time. Camera animation / Camera animation actor: that shot."},
             {"key": "og_pov_camera", "label": "Camera", "type": "object_ref", "pick": "CAMERA", "default": "", "lump": {"key": "pov-camera", "type": "string"}, "visible_if": {"og_pov_mode": ["camera"]}},
             {"key": "og_pov_time", "label": "Camera time (s)", "type": "float", "default": 4.0, "min": 0.5, "lump": {"key": "pov-time", "type": "float"}, "write_if": "always", "visible_if": {"og_pov_mode": ["camera"]}, "export_if_visible": true},
-            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}}
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera", "visible_if": {"og_pov_mode": ["pov"]}},
+            {"key": "og_pov_actor_slot", "label": "Camera animation actor", "type": "link_slot", "slot": "pov-actor", "visible_if": {"og_pov_mode": ["pov_actor"]}}
           ]
         },
-        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
+        {"panel": "actor-link", "slots": [{"lump_key": "pov-actor", "slot": 0, "show-in": "fields", "label": "Camera animation actor (Camera: Camera animation actor)", "accepts": ["camera-animation"], "required": false}]}
       ]
     },
     {
