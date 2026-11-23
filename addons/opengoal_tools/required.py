@@ -134,6 +134,29 @@ def missing_bank(o, scene, banks=None):
     return []
 
 
+def _pov_missing(o, et):
+    """A camera choice that needs something: Camera animation with no animation picked,
+    Camera animation actor with none linked."""
+    from . import pov as _pov
+    out = []
+    get = lambda k, d=None: o.get(k, d)
+    for f in _pov.fields_of(et):
+        if _pov._active(o, f):
+            g, a = _pov.picked(get, f["key"])
+            if not (g and a):
+                out.append({"panel": "custom-fields", "key": f["key"], "label": "camera animation not picked",
+                            "type": "req_field"})
+    if _pov._has_pov_choices(et):
+        for f in _db.inherited_fields(et):
+            ch = f.get("choices") if f.get("type") == "enum" else None
+            if isinstance(ch, list) and any(c.get("pov") == 3 and c.get("value") == o.get(f["key"], f.get("default"))
+                                            for c in ch):
+                if not _actor_get_link(o, "pov-actor", 0):
+                    out.append({"panel": "links", "key": "pov-actor", "slot": 0,
+                                "label": "pov-actor (Camera animation actor to trigger)", "type": "req_link"})
+    return out
+
+
 def missing(o, scene=None, banks=None):
     """Missing required fields of an actor (and the sound bank a sound
     emitter / particle spawner needs): [{"panel": "links" | "path" | "sound",
@@ -175,6 +198,7 @@ def missing(o, scene=None, banks=None):
         if not filled:
             out.append({"panel": "links", "key": lkey, "slot": sidx, "label": f"{lkey} ({label})" if label != lkey else lkey,
                         "type": "req_link"})
+    out += _pov_missing(o, et)
     nm = scene.objects.get(o.get("og_navmesh_link", "") or "")
     if nm is not None:                                # the linked nav-mesh's problems
         from .export.navmesh import nav_issues
