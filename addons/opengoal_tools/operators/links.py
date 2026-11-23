@@ -611,6 +611,77 @@ class OG_OT_WaypointSourceMove(Operator):
         return {"FINISHED"}
 
 
+def reverse_curve(cu):
+    """Reverse a curve's direction: its splines' point order (and the spline order)."""
+    data = []
+    for sp in cu.splines:
+        d = {"type": sp.type, "cyclic": sp.use_cyclic_u, "order": sp.order_u, "endpoint": sp.use_endpoint_u,
+             "bezier": sp.use_bezier_u, "res": sp.resolution_u, "mat": sp.material_index, "smooth": sp.use_smooth}
+        if sp.type == "BEZIER":
+            d["pts"] = [(p.co.copy(), p.handle_right.copy(), p.handle_left.copy(), p.handle_right_type,
+                         p.handle_left_type, p.tilt, p.radius, p.weight_softbody) for p in reversed(sp.bezier_points)]
+        else:
+            d["pts"] = [(tuple(p.co), p.tilt, p.radius, p.weight, p.weight_softbody) for p in reversed(sp.points)]
+        data.append(d)
+    cu.splines.clear()
+    for d in reversed(data):
+        sp = cu.splines.new(d["type"])
+        if d["type"] == "BEZIER":
+            sp.bezier_points.add(len(d["pts"]) - 1)
+            # reversed: the old right handle is the new left one
+            for p, (co, hl, hr, tl, tr, tilt, rad, ws) in zip(sp.bezier_points, d["pts"]):
+                p.handle_left_type, p.handle_right_type = tl, tr
+                p.co, p.handle_left, p.handle_right = co, hl, hr
+                p.tilt, p.radius, p.weight_softbody = tilt, rad, ws
+        else:
+            sp.points.add(len(d["pts"]) - 1)
+            for p, (co, tilt, rad, w, ws) in zip(sp.points, d["pts"]):
+                p.co, p.tilt, p.radius, p.weight, p.weight_softbody = co, tilt, rad, w, ws
+            sp.order_u = d["order"]
+            sp.use_endpoint_u, sp.use_bezier_u = d["endpoint"], d["bezier"]
+        sp.use_cyclic_u, sp.resolution_u = d["cyclic"], d["res"]
+        sp.material_index, sp.use_smooth = d["mat"], d["smooth"]
+
+
+class OG_OT_PathReverse(Operator):
+    """Reverse the path: the list order of its waypoints / curves, and the direction of its curves
+    (a curve shared with another actor's path is reversed there too). Manual knots are mirrored"""
+    bl_idname  = "og.path_reverse"
+    bl_label   = "Reverse Path"
+    bl_options = {"REGISTER", "UNDO"}
+
+    path_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, ctx):
+        return _get_actor_for_waypoint_ops(ctx) is not None
+
+    def execute(self, ctx):
+        actor = _get_actor_for_waypoint_ops(ctx)
+        sources, owner, attr = _path_list(actor, self.path_index)
+        if sources is None or not len(sources):
+            return {"CANCELLED"}
+        n = len(sources)
+        for i in range(n - 1):                 # reverse the list: move each last one to position i
+            sources.move(n - 1, i)
+        setattr(owner, attr, n - 1 - getattr(owner, attr))
+        done = set()
+        for s in sources:
+            o = s.obj
+            if o is not None and o.type == "CURVE" and o.data.name not in done:
+                reverse_curve(o.data)
+                done.add(o.data.name)
+        kname = "knots" if self.path_index >= 0 else "og_path_knots"
+        knots = getattr(owner, kname, None)
+        if knots is not None and len(knots):
+            vals = [k.value for k in knots]
+            lo, hi = min(vals), max(vals)
+            for k, v in zip(knots, reversed(vals)):
+                k.value = lo + hi - v
+        self.report({"INFO"}, f"Reversed the path ({n} source(s), {len(done)} curve(s))")
+        return {"FINISHED"}
+
+
 class OG_OT_WaypointSourceFrame(Operator):
     """Frame the active waypoint source's object in the viewport without
     losing the actor selection. Mirror of the 🔍 button on each existing
@@ -1116,6 +1187,7 @@ CLASSES = (
     OG_OT_DeleteWaypoint,
     OG_OT_WaypointSourceRemove,
     OG_OT_WaypointSourceMove,
+    OG_OT_PathReverse,
     OG_OT_WaypointSourceFrame,
     OG_OT_WaypointSourceLinkCurve,
     OG_OT_AddExtraPath,

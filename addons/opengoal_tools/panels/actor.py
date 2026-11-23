@@ -1211,6 +1211,8 @@ def draw_path_panel(layout, ctx, sel, etype, opts=None):
                          text="", icon="TRIA_UP").direction = "UP"
         sidebar.operator("og.waypoint_source_move",
                          text="", icon="TRIA_DOWN").direction = "DOWN"
+        sidebar.separator()
+        sidebar.operator("og.path_reverse", text="", icon="ARROW_LEFTRIGHT").path_index = -1
 
         # Link a curve (selected / searched), or spawn an empty waypoint.
         _draw_path_add(layout, sel, scene, sources)
@@ -1337,6 +1339,8 @@ def _draw_extra_paths(layout, sel, scene, etype, einfo, linear_only):
             side.separator()
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_UP"); op.direction = "UP"; op.path_index = i
             op = side.operator("og.waypoint_source_move", text="", icon="TRIA_DOWN"); op.direction = "DOWN"; op.path_index = i
+            side.separator()
+            side.operator("og.path_reverse", text="", icon="ARROW_LEFTRIGHT").path_index = i
             _draw_path_add(box, sel, scene, xp.sources, i)
             mrow = box.row(align=True)
             if linear_only:
