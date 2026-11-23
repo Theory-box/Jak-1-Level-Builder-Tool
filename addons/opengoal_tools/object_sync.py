@@ -126,13 +126,34 @@ def _sync():
     now = _tracked()
     gone = [n for p, n in before.items() if p not in now and n not in bpy.data.objects]
     added = [bpy.data.objects.get(n) for p, n in now.items() if p not in before]
+    n0 = len(bpy.data.objects)
+    names0 = {o.name for o in added if o is not None}
     if gone:
         _on_deleted(gone)
     if added:
         _on_added([o for o in added if o is not None])
     _STATE["objs"] = _tracked()
     _STATE["count"] = len(bpy.data.objects)
+    if len(bpy.data.objects) != n0 or names0 != {o.name for o in added if o is not None}:
+        _undo_push("OpenGOAL: copies / clean up")
     return None
+
+
+def _undo_push(message):
+    """Objects made / deleted / renamed in a timer are outside Blender's last undo
+    step; Ctrl+Z on such a state can crash. A step after the change keeps undo
+    consistent (Ctrl+Z then goes back to before the copy / delete)."""
+    try:
+        if bpy.context.mode != "OBJECT":
+            return
+        wm = bpy.context.window_manager
+        win = wm.windows[0] if wm.windows else None
+        if win is None:
+            return
+        with bpy.context.temp_override(window=win, screen=win.screen):
+            bpy.ops.ed.undo_push(message=message)
+    except Exception as e:
+        log(f"undo push: {e}")
 
 
 @bpy.app.handlers.persistent

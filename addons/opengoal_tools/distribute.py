@@ -22,7 +22,6 @@ import mathutils
 from . import db as _db
 from .collections import actor_etype
 
-_GHOST = "og_dist_ghost"
 
 
 def allowed(etype) -> bool:
@@ -128,70 +127,45 @@ def start_positions(o) -> list:
 
 # ── keeping the actor / ghosts on the path ──────────────────────────────────
 
-def _ghosts(o):
-    return sorted((c for c in o.children if c.get(_GHOST)), key=lambda c: c.name)
-
-
-def _differs(o):
-    want = start_positions(o) if o.og_place_on_path else []
-    if not want:
-        return bool(_ghosts(o))
-    if (o.matrix_world.translation - want[0]).length > 1e-4:
-        return True
-    gw = want[1:]
-    have = _ghosts(o)
-    if len(have) != len(gw):
-        return True
-    return any((g.matrix_world.translation - w).length > 1e-4 for g, w in zip(have, gw))
+def _off_spot(o):
+    """The actor isn't on its start spot (place on path)."""
+    if not o.og_place_on_path:
+        return False
+    want = start_positions(o)
+    return bool(want) and (o.matrix_world.translation - want[0]).length > 1e-4
 
 
 def apply(ctx, o):
-    """Move the actor to its start spot and rebuild the ghost copies."""
-    for g in _ghosts(o):
-        bpy.data.objects.remove(g, do_unlink=True)
+    """Move the actor to its start spot; the copies' ghosts are drawn (overlay.py)."""
+    from . import overlay
+    overlay.mark([o.name])
     if not o.og_place_on_path:
         return
     want = start_positions(o)
-    if not want:
-        return
-    o.location = want[0] if o.parent is None else o.parent.matrix_world.inverted() @ want[0]
-    if len(want) < 2:
-        return
-    from . import model_preview as mp
-    col = mp._ensure_preview_collection(ctx.scene)
-    src = next((c for c in o.children if c.type == "MESH" and mp._is_any_preview(c) and not c.get(_GHOST)), None)
-    bpy.context.view_layer.update()
-    for i, w in enumerate(want[1:], start=1):
-        g = bpy.data.objects.new(f"{o.name}_ghost_{i}", src.data if src else None)
-        if src is None:
-            g.empty_display_type = "CUBE"
-            g.empty_display_size = o.empty_display_size
-        g[mp._PREVIEW_PROP] = True
-        g[_GHOST] = True
-        col.objects.link(g)
-        g.parent = o
-        # same as the actor (or its preview), moved to this copy's start spot
-        g.matrix_world = (mathutils.Matrix.Translation(w - o.matrix_world.translation)
-                          @ (src.matrix_world if src is not None else o.matrix_world))
-        g.display_type = "WIRE"
-        g.hide_select = True
+    if want:
+        o.location = want[0] if o.parent is None else o.parent.matrix_world.inverted() @ want[0]
 
 
 _PENDING = set()
 
 
 def on_depsgraph(scene, depsgraph, objs=None, curves=None):
-    """Only platforms whose own settings or path were edited are looked at."""
+    """Only platforms whose own settings or path were edited are looked at: their
+    ghosts are redrawn, and an actor off its start spot is moved back (a timer:
+    data can't change inside the depsgraph handler; moving creates nothing)."""
     from .race_rings import changed, touched, candidates
+    from . import overlay
     if objs is None:
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
-    obs = (bpy.data.objects.get(n) for n in candidates()[1])
-    todo = [o.name for o in obs
-            if o is not None and o.name not in _PENDING and o.name in scene.objects
-            and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
-            and allowed(actor_etype(o) or "") and _differs(o)]
+    obs = [o for o in (bpy.data.objects.get(n) for n in candidates()[1])
+           if o is not None and getattr(o, "og_place_on_path", False) and touched(o, objs, curves)
+           and allowed(actor_etype(o) or "")]
+    if not obs:
+        return
+    overlay.mark([o.name for o in obs])
+    todo = [o.name for o in obs if o.name not in _PENDING and _off_spot(o)]
     if not todo:
         return
     _PENDING.update(todo)

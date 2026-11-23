@@ -270,12 +270,9 @@ def refresh_special(self, ctx):
     """Show preview toggled: rebuild the actor's previews (or drop the special ones)."""
     if not self.name.startswith("ACTOR_"):
         return
-    from . import db as _db, race_rings
+    from . import overlay
     etype = self.name.split("_", 2)[1]
-    for c in [c for c in self.children if c.get("og_ring_preview")]:
-        bpy.data.objects.remove(c, do_unlink=True)
-    if race_rings.uses_rings(self) and special_on(self):
-        race_rings.build_preview(ctx, self)
+    overlay.mark([self.name])                # race-ring circles / platform ghosts (drawn)
     if previews_on():
         remove_preview(self)
         attach_preview(ctx, etype, self)

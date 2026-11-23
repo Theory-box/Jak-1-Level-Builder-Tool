@@ -196,6 +196,8 @@ def register():
     _mp.register_handler()
     from . import object_sync as _osync
     _osync.register()
+    from . import overlay as _overlay
+    _overlay.register()              # race-ring circles / platform ghosts, drawn
     _bviz.register_handler()
     from .operators.misc import register_water_handler
     register_water_handler()
@@ -500,6 +502,8 @@ def unregister():
     _mp.unregister_handler()
     from . import object_sync as _osync
     _osync.unregister()
+    from . import overlay as _overlay
+    _overlay.unregister()
     _bviz.unregister_handler()
     from .operators.misc import unregister_water_handler
     unregister_water_handler()

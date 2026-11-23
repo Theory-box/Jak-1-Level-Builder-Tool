@@ -13,12 +13,11 @@
 #   end rings:   face = next - here (first) or here - prev (last);
 #                rot-y = angle of face from +z + 90 deg
 #   rot-y += rotoffset; the ring's axis is (cos rot-y, 0, -sin rot-y).
-# Each point gets a circle empty preview (circle in its XZ plane: local Y =
-# the ring's axis), 4.5 m like the ring particles.
+# Each point gets a circle (overlay.py, drawn in its XZ plane: local Y = the
+# ring's axis), 4.5 m like the ring particles.
 # ---------------------------------------------------------------------------
 from __future__ import annotations
 
-from .export.paths import log
 import math
 import bpy
 import mathutils
@@ -118,73 +117,6 @@ def wanted(o) -> list:
     return [_ring_matrix(p["co"], y) for p, y in zip(pts, yaws(pts, _extra_yaw(o)))]
 
 
-def _ring_objs(o):
-    return sorted((c for c in o.children if c.get("og_ring_preview")), key=lambda c: c.name)
-
-
-def build_preview(ctx, o):
-    from . import model_preview as mp
-    for c in _ring_objs(o):
-        bpy.data.objects.remove(c, do_unlink=True)
-    mats = wanted(o)
-    if not mats:
-        return
-    col = mp._ensure_preview_collection(ctx.scene)
-    for i, M in enumerate(mats):
-        e = bpy.data.objects.new(f"{o.name}_ring_{i}", None)
-        e.empty_display_type = "CIRCLE"
-        e.empty_display_size = RING_RADIUS
-        e[_PREVIEW_PROP] = True
-        e["og_ring_preview"] = True
-        col.objects.link(e)
-        e.parent = o
-        e.matrix_world = M
-        e.hide_select = True
-        e.show_in_front = True
-
-
-def _differs(o):
-    have = _ring_objs(o)
-    want = wanted(o)
-    if len(have) != len(want):
-        return True
-    for e, M in zip(have, want):
-        a, b = e.matrix_world, M
-        if any(abs(a[r][c] - b[r][c]) > 1e-4 for r in range(3) for c in range(4)):
-            return True
-    return False
-
-
-_PENDING = set()
-
-
-def update_preview(ctx, o):
-    """Move the existing circles; rebuild only when the point count changed."""
-    have = _ring_objs(o)
-    want = wanted(o)
-    if len(have) != len(want):
-        build_preview(ctx, o)
-        return
-    for e, M in zip(have, want):
-        e.matrix_world = M
-
-
-def _rebuild_later(names):
-    def _run():
-        try:
-            for n in names:
-                o = bpy.data.objects.get(n)
-                if o is not None:
-                    try:
-                        update_preview(bpy.context, o)
-                    except Exception as e:   # never stop following this actor
-                        log(f"race-ring preview {n}: {e}")
-        finally:
-            _PENDING.difference_update(names)
-        return None
-    bpy.app.timers.register(_run, first_interval=0.0)
-
-
 def changed(depsgraph):
     """(object names, curve data names) this update touched."""
     objs, curves = set(), set()
@@ -234,33 +166,25 @@ def touched(o, objs, curves) -> bool:
 
 
 def sync_now(ctx):
-    """Update every race-ring preview that's out of date, right away. Called at the
-    end of the addon's operators so the circles they create / delete are part of
-    the operator's undo step (circles made later by the timer, outside any undo
-    step, broke undo / Adjust Last Operation and crashed Blender)."""
-    scene = ctx.scene
-    for n in candidates()[0]:
-        o = bpy.data.objects.get(n)
-        if (o is not None and o.name in scene.objects and getattr(o, "og_special_preview", True)
-                and uses_rings(o) and _differs(o)):
-            update_preview(ctx, o)
+    """After an addon operator: redraw the race-ring / ghost previews (overlay.py,
+    drawn, so nothing is created inside or outside the operator's undo step)."""
+    from . import overlay
+    rings, place = candidates()
+    overlay.mark(set(rings) | set(place))
 
 
 def on_depsgraph(scene, depsgraph, objs=None, curves=None):
     """Called from the preview depsgraph handler: only race-rings whose actor
-    or path was edited are looked at (moving circles in place)."""
+    or path was edited are redrawn."""
     if objs is None:
         objs, curves = changed(depsgraph)
     if not objs and not curves:
         return
     obs = (bpy.data.objects.get(n) for n in candidates()[0])
-    todo = [o.name for o in obs
-            if o is not None and o.name not in _PENDING and o.name in scene.objects
-            and getattr(o, "og_special_preview", True)
-            and touched(o, objs, curves) and uses_rings(o) and _differs(o)]
+    todo = [o.name for o in obs if o is not None and touched(o, objs, curves)]
     if todo:
-        _PENDING.update(todo)
-        _rebuild_later(todo)
+        from . import overlay
+        overlay.mark(todo)
 
 
 def entities(o, base: dict) -> list:
