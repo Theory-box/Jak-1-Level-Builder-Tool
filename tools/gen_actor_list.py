@@ -17,7 +17,8 @@ OUT = ROOT / "docs" / "guide" / "actor-list.md"
 TILES = [("Enemies", ("Enemies", "Bosses")), ("Platforms", ("Platforms",)),
          ("Interactive Objects", ("Interactive Objects", "Debug")), ("Obstacles", ("Obstacles",)),
          ("Buttons and Doors", ("Buttons and Doors",)), ("Visuals", ("Visuals",)), ("NPCs", ("NPCs",)),
-         ("Pickups", ("Pickups",)), ("Effects", ("Particles", "Effects"))]
+         ("Pickups", ("Pickups",)), ("Effects", ("Particles", "Effects")),
+         ("Cameras", ("Cameras",))]
 
 
 def short(text, n=170):

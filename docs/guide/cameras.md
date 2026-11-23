@@ -97,16 +97,63 @@ In Jak 1 a **pov-camera** is a small game process that plays a *camera animation
 
 These animations were made for the vanilla levels, so they move the same way wherever you play them. Place the shot's origin so the view lands on something useful, and test it in game.
 
-In this add-on these actors play pov-camera shots:
+The game's camera animations that can be played are in one list (Sentinel Beach eco vent rocks, the jungle towers,
+the Lost Precursor City doors, Klaww's intro ...), each with a short description. Pieces of the vanilla multi-shot
+sequences are marked, for example *(2/4 of a sequence)*; each piece plays on its own. Streamed shots and static
+placeholders are left out.
 
-| Actor | Setting (**Actor Settings**) | Shot | Played from |
-|---|---|---|---|
-| Battle Controller (Ambush) | **Intro camera** section: **Basic (no intro camera)** (default), **Misty ambush camera**, **Swamp ambush camera**, **Citadel ambush camera**, **Custom camera** | Plays when the ambush starts | The controller; the citadel one from its camera position |
-| Periscope | **Beam shot**: **Vanilla shot: tower1** ... **tower5**, **Vanilla shot: beamcam** (or **None (Jak is free at once)** / **Linked camera**) | Plays once the periscope is on target | **Shot origin (empty)**; none: the periscope |
-| Yakow | **Pen shot**: **Vanilla camera animation** (default), **Linked camera** or **None** | Plays once the whole herd is penned | **Shot origin (empty)**; none: the farmer (its alt-actor) |
-| Klaww (Ogre Boss) | No setting: plays its vanilla intro shot | When the fight's intro starts | The boss |
+Wherever you pick one, the picker is the same: next to **Camera:** click the search button and choose the art group
+(the list shows how many animations each has), then next to **Animation:** pick one. **Custom…** lets you type an
+art group or an animation by hand. The panel shows what the animation is and which file it loads
+(**Loads ...-ag.go**): the export adds that art group to the level for you.
 
-The art group a shot needs is added to the level by the export.
+## Camera animation actor
+
+**Spawn Objects › Cameras › Camera animation** places an actor that plays a camera shot. It sits in the level's
+**Cameras** collection; its empty is a sphere sized by **Distance**, with its axes shown so you can see which way it
+faces.
+
+1. Spawn it where the shot should play from, and turn it: the shot plays relative to the actor.
+2. In **Actor Settings**, pick the **Camera** and how it **Start**s.
+3. Build and walk into it (or trigger it).
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Camera** | Camera animation | **Camera animation**: one of the game's camera animations (picker above). **Normal camera**: a linked `CAMERA_` for **Camera time**. |
+| **Camera** / **Camera time (s)** | — / 4 | Normal camera: the camera and how long it's shown. |
+| **Look at (none: Jak)** | none | Normal camera: the actor it looks at (followed if it moves). None: Jak. |
+| **Freeze Jak** | off | Normal camera: Jak can't move while it's shown (a camera animation always freezes him). |
+| **Start** | Distance | **Volume**: when Jak enters its linked volume (link a `VOL_`, see [Volumes & triggers](volumes-and-triggers.md)). **Distance**: when Jak comes within **Distance**. **Triggered**: only when another actor sends it `'trigger`: a button's notify list, the previous Camera animation of a chain, or an edited actor (below). Any start mode can also be triggered. |
+| **Distance (m)** | 10 | Distance start: how close Jak must come (the sphere). |
+| **Delay (s)** | 0 | Seconds between being started (any way) and the camera. |
+| **Once per playthrough** | on | On: plays once, saved with the game. Off: Volume / Distance play again once the actor reloads (death, coming back to the level), and every trigger plays it again. |
+| **Skippable (Triangle)** | off | Camera animation: Triangle skips it. |
+| **Turn with the actor** | on | Camera animation: the shot turns with the actor. Off: lined up with the world, as in the original game. |
+| **Wait for Jak on the ground** | on | It waits until Jak lands before starting. |
+
+**Chains:** link **Next Camera animation** (Entity Links) to another Camera animation actor: when this one ends, the
+next one plays with its own settings (set the next ones to **Triggered**). **Previous Camera animation** is the link
+back.
+
+## Camera choices on actors
+
+These actors have a camera choice in **Actor Settings** for their big moment:
+
+| Actor | Moment | Choice |
+|---|---|---|
+| Silo step, Citadel stair platform, Snow fort gate, Snow switch, Helix button, Flut Flut egg, Reflector mirror | rising / opening / pressed / first press / falling / breaking | **Camera**: None (default), Normal camera, Camera animation, Camera animation actor |
+| Happy plant, Race ring (the cell), Swamp tether rock, Pelican (**Spit shot**), Exit chamber (**Ride shot**), Klaww (**Intro shot**) | their cutscene | the same, plus **Default** (their own camera, the default) |
+| Yakow (**Pen shot**), Periscope (**Beam shot**) | their shot | their vanilla shots and Linked camera, plus **Other camera animation** and **Camera animation actor** |
+| Battle Controller (**Intro camera**) | the ambush starting | Basic, the Misty / Swamp / Citadel ambush cameras, **Other camera animation**, **Normal camera**, **Camera animation actor** |
+
+- **Normal camera**: a linked `CAMERA_` (**Camera**) for **Camera time**.
+- **Camera animation** / **Other camera animation**: one of the game's camera animations (picker above), played from the
+  actor (yakow / periscope: from their **Shot origin (empty)**).
+- **Camera animation actor**: the linked Camera animation actor (picked right under the choice) is triggered, with all
+  its own settings (delay, normal camera, chain ...). Its own Start can be **Triggered**.
+
+Picking Camera animation with no animation, or Camera animation actor with none linked, shows a red warning.
+The actor's linked-camera fields (**Shot camera**, **Camera time** ...) only show with their linked-camera choice.
 
 ### Set up a battle controller intro camera
 
@@ -114,17 +161,10 @@ The art group a shot needs is added to the level by the export.
 2. Pick a variant:
    - **Misty / Swamp / Citadel ambush camera**: the vanilla ambush shot of that level, played at the controller.
    - **Citadel ambush camera** also needs a camera position: click **Add Camera Position** (at the 3D cursor, or at the actor with **At Actor Position** on), or shift-select an empty and click **Link → <name>**. Until then a red line says **Needs a camera position (citadelcam-1)**; without it the game crashes. It is exported as the entity `citadelcam-1`, so a level can have only one.
-   - **Custom camera**: next to **Camera:** click **Pick…** and choose a camera art group (the list shows how many animations each has), then next to **Animation:** pick one of its animations. **Custom…** lets you type an **Art group** or **Animation** name. Until both are set a red line says **Pick a camera and an animation**. The shot plays at the controller when the ambush starts.
+   - **Other camera animation**: pick a camera animation (picker above). The shot plays at the controller when the ambush starts.
+   - **Normal camera**: pick a `CAMERA_` and its **Camera time**.
+   - **Camera animation actor**: link one; the ambush starts once its shot is over.
 3. Controllers with the same setup share one generated type in the level's code, so several ambushes with the same shot cost nothing extra.
-
-### Set up a periscope or yakow shot
-
-1. Pick the vanilla shot in **Beam shot** (periscope) or set **Pen shot** to **Vanilla camera animation** (yakow).
-2. Optional: add an empty where the shot should play from and pick it in **Shot origin (empty)**.
-
-For your own camera instead of the animation, choose **Linked camera** and pick a `CAMERA_` in **Shot camera** (the yakow also has **Shot time (s)**, default 4).
-
-A custom pov-camera actor, to play any camera animation from a trigger, may come in a later version.
 
 ---
 [← Previous](level-flow.md) · [Guide index](README.md) · [Next →](volumes-and-triggers.md)

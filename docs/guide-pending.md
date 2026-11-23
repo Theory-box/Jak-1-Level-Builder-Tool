@@ -15,3 +15,4 @@ them below. When the release is made: merge `claude/guide-next`, check this list
 | Reverse Path button | paths-and-platforms (path list table) | — | yes |
 | Load boundary Continue: checkpoint list | level-flow (load boundary commands) | — | yes |
 | Race-ring circles / platform ghosts drawn (not objects), camera FOV driver fix, undo safety | — (look the same) | — | — |
+| Camera animation actor + the game's camera animation list + camera choices on 15 edited actors and the battle controller | cameras (Pov-cameras rewritten: list / picker, Camera animation actor, Camera choices on actors), actors (Cameras tile), actor-list | — (a Camera animation screenshot could be added) | yes |
