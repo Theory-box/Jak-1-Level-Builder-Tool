@@ -117,6 +117,22 @@ def used(o) -> list[tuple[str, str]]:
     return out
 
 
+def library_needed(objects) -> bool:
+    """An actor's camera choice (an enum choice marked "pov" in the DB: 1 normal camera,
+    2 camera animation, 3 Camera animation actor) uses the lt-pov-play library."""
+    for o in objects:
+        et = _etype(o)
+        if not et:
+            continue
+        for f in _db.inherited_fields(et):
+            if f.get("type") != "enum" or not isinstance(f.get("choices"), list):
+                continue
+            cur = o.get(f["key"], f.get("default"))
+            if any(c.get("pov") and c.get("value") == cur for c in f["choices"]):
+                return True
+    return False
+
+
 def level_groups(objects) -> list[str]:
     return sorted({g for o in objects for g, _a in used(o)})
 

@@ -574,6 +574,8 @@ def collect_actors(scene, depsgraph=None):
             "_textures": [list(x) for x in _variant.get("textures") or []],   # variant's .jsonc textures
             **_extra,
         })
+        if _pov.library_needed([o]):  # its camera choice uses the shared lt-pov-play code
+            out[-1]["extra_code"] = list(out[-1].get("extra_code") or []) + ["lt-pov-play.o"]
         from .. import distribute as _dist
         if _dist.enabled(o, etype):   # copies spread along the path (sync phase)
             _copies = _dist.entities(o, out[-1])

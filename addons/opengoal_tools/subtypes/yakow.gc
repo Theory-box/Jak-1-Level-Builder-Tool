@@ -3,8 +3,12 @@
 ;; and the farmer (alt-actor) gives the cell. The pen shot: vanilla played its village1cam
 ;; animation at the farmer. Here (pen-shot lump): 0 that animation at the Shot origin
 ;; empty (shot-origin; none: the farmer), 1 a linked camera (pen-camera) for Shot time
-;; (shot-time s), 2 none.
+;; (shot-time s), 2 none, 3 a camera animation (pov-sg / pov-anim) from the same spot,
+;; 4 a linked Camera animation actor (pov-actor) is triggered.
 ;; edits: yakow
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 (deftype __TYPE__ (yakow) ()
   (:states
    __TYPE__-die
@@ -37,6 +41,11 @@
            self
            :to *entity-pool*))))
     ((2))
+    ((3 4)
+     (let ((v1-6 (res-lump-struct (-> self entity) 'shot-origin vector))
+           (gp-0 (entity-actor-lookup (-> self entity) 'alt-actor 0)))
+       (lt-pov-play-start (cond (v1-6 v1-6) (gp-0 (-> gp-0 extra trans)) (else (-> self root trans)))
+                          (+ (res-lump-value (-> self entity) 'pen-shot int) -1))))
     (else
      (let ((v1-6 (res-lump-struct (-> self entity) 'shot-origin vector))
            (gp-0 (entity-actor-lookup (-> self entity) 'alt-actor 0)))
