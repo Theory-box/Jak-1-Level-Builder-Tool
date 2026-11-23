@@ -511,7 +511,8 @@ def collect_actors(scene, depsgraph=None):
             _gen = _bc.type_base(o, level_objs)
             if _gen:
                 _out_etype = _gen                           # write_jsonc adds the level prefix
-                _out_ag = f"{_cag}-ag.go"
+                from .. import pov as _pov
+                _out_ag = _pov.art_file(_cag)
             elif _bc.is_custom(o):
                 log(f"  [WARNING] {o.name}: custom camera needs a camera art group and animation")
             if _variant.get("needs_citadel_camera"):
@@ -542,6 +543,13 @@ def collect_actors(scene, depsgraph=None):
                     _out_etype = f"lt-{_edrec['stem']}"
             elif _edrec["child"]:
                 _edited_obs = _edrec["stem"]
+        # Camera animations it plays (pov_camera fields): their art group in the level
+        from .. import pov as _pov
+        _pov_files = [_pov.art_file(g) for g, _a in _pov.used(o)]
+        if _pov_files:
+            from ..data import ETYPE_AG as _EAG
+            _base = (list(_out_ag) if isinstance(_out_ag, list) else [_out_ag]) if _out_ag else list(_EAG.get(etype, []))
+            _out_ag = _base + [f for f in _pov_files if f not in _base]
         # Custom Lumps > Export as: another etype, everything else unchanged
         _export_as = str(getattr(o, "og_export_as", "") or "").strip()
         if _export_as:

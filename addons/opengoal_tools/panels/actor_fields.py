@@ -456,6 +456,9 @@ def _draw_field(layout, obj, field, actor_info=None):
             op.prop_key = field["key"]
     elif ftype == "object_ref":
         _draw_object_ref(layout, obj, field, label)
+    elif ftype == "pov_camera":
+        from .. import pov as _pov
+        _pov.draw(layout, obj, field)
     else:
         # float / int / string — _prop_row handles all three
         _prop_row(layout, obj, field["key"], f"{label}:",

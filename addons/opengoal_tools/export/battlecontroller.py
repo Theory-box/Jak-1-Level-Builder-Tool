@@ -30,8 +30,9 @@ def is_custom(o) -> bool:
 
 
 def camera_anims() -> dict:
-    """{camera art group: [animations]} (from the game's *cam-ag.go files)."""
-    return dict((_db.find_actor("battlecontroller") or {}).get("camera_anims") or {})
+    """{camera art group: [animations]} (the game's list, DB PovCameras)."""
+    from .. import pov as _pov
+    return {g: list(e.get("anims") or {}) for g, e in _pov.catalogue().items()}
 
 
 def camera(o) -> tuple[str, str]:
@@ -85,6 +86,8 @@ def gc_lines(pfx: str, objects) -> list[str]:
     for (vid, ag, anim), base in generated_types(objects).items():
         t = f"{pfx}-{base}"
         sg = f"*{t}-cam-sg*"
+        from .. import pov as _pov
+        e = _pov.entry(ag)
         cam_at = (f'(-> (entity-by-name "{CITADEL_CAM_NAME}") extra trans)' if vid == "citadel"
                   else "(-> self root trans)")
         pre = {"swamp": ["      (suspend)", "      (process-drawable-delay-player (seconds 1))"],
@@ -96,10 +99,10 @@ def gc_lines(pfx: str, objects) -> list[str]:
             f"(deftype {t} (battlecontroller) ())",
             "",
             f"(defskelgroup {sg}",
-            f"  {ag}",
-            f"  {ag}-lod0-jg",
-            f"  {ag}-{anim}-ja",
-            f"  (({ag}-lod0-mg (meters 999999)))",
+            f"  {e['group']}",
+            f"  {e['jg']}",
+            f"  {anim if anim.startswith(e['group'] + '-') else e['group'] + '-' + anim}-ja",
+            f"  (({e['mg']} (meters 999999)))",
             "  :bounds (static-spherem 0 0 0 20))",
             "",
             f"(defstate battlecontroller-play-intro-camera ({t})",

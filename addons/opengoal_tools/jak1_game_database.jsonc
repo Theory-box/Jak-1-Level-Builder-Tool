@@ -137,7 +137,15 @@
     {"id": "Buttons and Doors", "label": "Buttons and Doors", "color": [0.2, 0.7, 0.8, 1.0]},
     {"id": "Visuals", "label": "Visuals", "color": [1.0, 0.5, 0.0, 1.0]},
     {"id": "Particles", "label": "Particles", "color": [0.4, 1.0, 0.9, 1.0]},
-    {"id": "Effects", "label": "Effects", "color": [1.0, 0.9, 0.5, 1.0]}
+    {"id": "Effects", "label": "Effects", "color": [1.0, 0.9, 0.5, 1.0]},
+    {
+      "id": "Cameras",
+      "label": "Cameras",
+      "color": [0.95, 0.6, 0.2, 1.0],
+      "collection_path": [
+        "Cameras"
+      ]
+    }
   ],
 
   // ── Defaults ────────────────────────────────────────────────────
@@ -5583,111 +5591,6 @@
           ]
         }
       ],
-      "camera_anims": {
-        "beachcam": [
-          "anim",
-          "ecoventrock-3",
-          "ecoventrock-4",
-          "ecoventrock-5",
-          "ecoventrock-6",
-          "ecoventrock-7"
-        ],
-        "citadelcam": [
-          "citadel-bunnies",
-          "idle",
-          "stair-plats"
-        ],
-        "deathcam": [
-          "idle"
-        ],
-        "finalbosscam": [
-          "idle"
-        ],
-        "junglecam": [
-          "beamcam",
-          "precurbridgecam",
-          "tower1",
-          "tower2",
-          "tower3",
-          "tower4",
-          "tower5"
-        ],
-        "logo-cam": [
-          "idle",
-          "logo-intro-2-pre",
-          "logo-loop-pre"
-        ],
-        "maincavecam": [
-          "dummy"
-        ],
-        "mistycam": [
-          "anim",
-          "balloon-fuel-cell",
-          "cannon-fuel-cell",
-          "lurkerattack"
-        ],
-        "ndi-cam": [
-          "idle"
-        ],
-        "rollingcam": [
-          "anim"
-        ],
-        "snowcam": [
-          "ecovent-activating",
-          "eggtop-activating",
-          "gate",
-          "gearend",
-          "gearstart"
-        ],
-        "sunkencam": [
-          "dive-end",
-          "dive-middle",
-          "dive-start",
-          "end-out-of-water",
-          "exit-chamber-door-open",
-          "helix-door-shuts",
-          "helix-hit-switch",
-          "helix-show-rising-water",
-          "middle-in-water",
-          "pipegame-left",
-          "pipegame-middle",
-          "pipegame-right",
-          "qbert-show-door-close",
-          "qbert-show-door-open",
-          "square-platform-setup1-rise1",
-          "square-platform-setup1-rise2",
-          "square-platform-setup2-rise1",
-          "square-platform-setup2-rise2",
-          "start-door-shut",
-          "start-in-room"
-        ],
-        "swampcam": [
-          "anim",
-          "swamp-ambush"
-        ],
-        "trainingcam": [
-          "ecocam",
-          "ecoventcam",
-          "fuelcellcam",
-          "greenecocam",
-          "orbcam",
-          "precursordoorcam"
-        ],
-        "village-cam": [
-          "firecanyon-alt-cam",
-          "firecanyon-cam",
-          "vi2-button-cam",
-          "vi3-button-cam"
-        ],
-        "village1cam": [
-          "anim"
-        ],
-        "village2cam": [
-          "elevator-at-bottom-going-up",
-          "elevator-at-top-going-down",
-          "elevator-at-top-going-up"
-        ]
-      },
       "reacts_to": [
         "trigger"
       ]
@@ -13464,6 +13367,50 @@
       "shape": "CUBE",
       "is_prop": true,
       "description": "Hanging lamp that swings gently (about 10 degrees, 3 s cycle, random start). No settings."
+    },
+    {
+      "etype": "camera-animation",
+      "label": "Camera animation",
+      "category": "Cameras",
+      "parent": "process-drawable",
+      "custom_actor": true,
+      "edited": "camera-animation",
+      "shape": "ARROWS",
+      "show_axis": true,
+      "description": "Addon actor (exports as lt-camera-animation, in a shared file): plays one of the game's camera animations (pov-camera shots) from its position, turned by its rotation. It starts when Jak enters its volume, comes within a distance, or when another actor triggers it. Plays once for good (saved with the game) or once each time the actor loads.",
+      "panels": [
+        {"panel": "fact-options", "export": false},
+        {"panel": "scale", "export": false},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_pov", "label": "Camera animation", "type": "pov_camera"},
+            {"key": "og_pov_start", "label": "Start", "type": "enum", "default": "dist",
+             "choices": [
+               {"value": "vol", "label": "Volume", "lump_value": 0},
+               {"value": "dist", "label": "Distance", "lump_value": 1},
+               {"value": "trigger", "label": "Triggered", "lump_value": 2}
+             ],
+             "lump": {"key": "start-mode", "type": "uint32"}, "write_if": "always",
+             "note": "Volume: when Jak enters its linked volume. Distance: when Jak comes within Distance. Triggered: only when another actor sends it 'trigger (a button, or an edited actor's Camera: Camera animation actor). Any mode can also be triggered."},
+            {"key": "og_pov_dist", "label": "Distance (m)", "type": "float", "default": 10.0, "min": 0.0,
+             "lump": {"key": "notice-dist", "type": "meters"}, "write_if": "always",
+             "visible_if": {"og_pov_start": ["dist"]},
+             "driver": {"var": "self", "expression": "var", "driven": "empty_display_size"}},
+            {"key": "og_pov_once", "label": "Once for good", "type": "bool", "default": true,
+             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true",
+             "note": "On: plays once, saved with the game. Off: plays once each time the actor loads (respawn, coming back to the level)."},
+            {"key": "og_pov_skip", "label": "Skippable (Triangle)", "type": "bool", "default": false,
+             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true"},
+            {"key": "og_pov_rot", "label": "Turn with the actor", "type": "bool", "default": true,
+             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
+             "note": "The shot plays relative to the actor: its position and, with this on, its rotation. Off: lined up with the world, as in the original game."},
+            {"key": "og_pov_ground", "label": "Wait for Jak on the ground", "type": "bool", "default": true,
+             "lump_bit": {"key": "cam-flags", "type": "uint32", "bit_value": 8}, "write_if": "if_true"}
+          ]
+        },
+        {"panel": "volume"}
+      ]
     },
     {
       "etype": "actor-light",
@@ -26707,6 +26654,201 @@
   // export. The engine picks the camera mode from which lumps are present
   // (camera.gc cam-state-from-entity): pivot -> circular, align -> standoff,
   // campath -> spline, stringMaxLength > 0 -> string, else fixed.
+  "PovCameras_notes": "Camera animations (pov-camera) actors can play: art group id -> group (defskelgroup art group), file (.go to load), jg / mg / default anim, label, anims {name passed to pov-camera: description}. Streamed (spool) shots and static placeholders (deathcam, title cameras, maincavecam dummy, finalbosscam idle) are left out.",
+  "PovCameras": {
+    "village1cam": {
+      "group": "village1cam",
+      "file": "village1cam-ag.go",
+      "jg": "village1cam-lod0-jg",
+      "mg": "village1cam-lod0-mg",
+      "default": "village1cam-anim-ja",
+      "label": "Sandover (yakow pen)",
+      "anims": {
+        "anim": "Sandover: the yakow pen"
+      }
+    },
+    "village-cam": {
+      "group": "village-cam",
+      "file": "village-cam-ag.go",
+      "jg": "village-cam-lod0-jg",
+      "mg": "village-cam-lod0-mg",
+      "default": "village-cam-firecanyon-cam-ja",
+      "label": "Village gates / buttons",
+      "anims": {
+        "firecanyon-cam": "Fire Canyon: the gate (first visit)",
+        "firecanyon-alt-cam": "Fire Canyon: the gate (later visits)",
+        "vi2-button-cam": "Rock Village: the button",
+        "vi3-button-cam": "Volcanic Crater: the button"
+      }
+    },
+    "trainingcam": {
+      "group": "trainingcam",
+      "file": "trainingcam-ag.go",
+      "jg": "trainingcam-lod0-jg",
+      "mg": "trainingcam-lod0-mg",
+      "default": "trainingcam-orbcam-ja",
+      "label": "Geyser Rock tutorial",
+      "anims": {
+        "orbcam": "Geyser Rock: precursor orbs",
+        "fuelcellcam": "Geyser Rock: power cell",
+        "ecocam": "Geyser Rock: eco",
+        "greenecocam": "Geyser Rock: green eco",
+        "precursordoorcam": "Geyser Rock: precursor door",
+        "ecoventcam": "Geyser Rock: eco vent"
+      }
+    },
+    "beachcam": {
+      "group": "beachcam",
+      "file": "beachcam-ag.go",
+      "jg": "beachcam-lod0-jg",
+      "mg": "beachcam-lod0-mg",
+      "default": "beachcam-anim-ja",
+      "label": "Sentinel Beach",
+      "anims": {
+        "anim": "Sentinel Beach: default shot",
+        "ecoventrock-3": "Sentinel Beach: eco vent rock 3",
+        "ecoventrock-4": "Sentinel Beach: eco vent rock 4",
+        "ecoventrock-5": "Sentinel Beach: eco vent rock 5",
+        "ecoventrock-6": "Sentinel Beach: eco vent rock 6",
+        "ecoventrock-7": "Sentinel Beach: eco vent rock 7"
+      }
+    },
+    "mistycam": {
+      "group": "mistycam",
+      "file": "mistycam-ag.go",
+      "jg": "mistycam-lod0-jg",
+      "mg": "mistycam-lod0-mg",
+      "default": "mistycam-anim-ja",
+      "label": "Misty Island",
+      "anims": {
+        "anim": "Misty Island: default shot",
+        "lurkerattack": "Misty Island: the ambush",
+        "balloon-fuel-cell": "Misty Island: balloon lurker power cell",
+        "cannon-fuel-cell": "Misty Island: cannon power cell (unused)"
+      }
+    },
+    "junglecam": {
+      "group": "junglecam",
+      "file": "junglecam-ag.go",
+      "jg": "junglecam-lod0-jg",
+      "mg": "junglecam-lod0-mg",
+      "default": "junglecam-beamcam-ja",
+      "label": "Forbidden Jungle",
+      "anims": {
+        "beamcam": "Forbidden Jungle: the beam reaches the tower",
+        "tower1": "Forbidden Jungle: mirror tower 1",
+        "tower2": "Forbidden Jungle: mirror tower 2",
+        "tower3": "Forbidden Jungle: mirror tower 3",
+        "tower4": "Forbidden Jungle: mirror tower 4",
+        "tower5": "Forbidden Jungle: mirror tower 5",
+        "precurbridgecam": "Forbidden Jungle: the precursor bridge rises"
+      }
+    },
+    "swampcam": {
+      "group": "swampcam",
+      "file": "swampcam-ag.go",
+      "jg": "swampcam-lod0-jg",
+      "mg": "swampcam-lod0-mg",
+      "default": "swampcam-anim-ja",
+      "label": "Boggy Swamp",
+      "anims": {
+        "anim": "Boggy Swamp: default shot",
+        "swamp-ambush": "Boggy Swamp: the ambush"
+      }
+    },
+    "sunkencam": {
+      "group": "sunkencam",
+      "file": "sunkencam-ag.go",
+      "jg": "sunkencam-lod0-jg",
+      "mg": "sunkencam-lod0-mg",
+      "default": "sunkencam-qbert-show-door-open-ja",
+      "label": "Lost Precursor City",
+      "anims": {
+        "qbert-show-door-open": "Lost Precursor City: qbert door opens",
+        "qbert-show-door-close": "Lost Precursor City: qbert door closes",
+        "exit-chamber-door-open": "Lost Precursor City: exit chamber door opens",
+        "pipegame-left": "Lost Precursor City: pipe game, left",
+        "pipegame-middle": "Lost Precursor City: pipe game, middle",
+        "pipegame-right": "Lost Precursor City: pipe game, right",
+        "start-door-shut": "Exit chamber: door shuts (1/4 of a sequence)",
+        "start-in-room": "Exit chamber: in the room (2/4 of a sequence)",
+        "middle-in-water": "Exit chamber: in the water (3/4 of a sequence)",
+        "end-out-of-water": "Exit chamber: out of the water (4/4 of a sequence)",
+        "dive-start": "Exit chamber dive: start (1/3 of a sequence)",
+        "dive-middle": "Exit chamber dive: middle (2/3 of a sequence)",
+        "dive-end": "Exit chamber dive: end (3/3 of a sequence)",
+        "helix-hit-switch": "Helix: the switch (1/3 of a sequence)",
+        "helix-door-shuts": "Helix: the door shuts (2/3 of a sequence)",
+        "helix-show-rising-water": "Helix: the eco rises (3/3 of a sequence)",
+        "square-platform-setup1-rise1": "Square platforms: setup 1, rise 1",
+        "square-platform-setup1-rise2": "Square platforms: setup 1, rise 2",
+        "square-platform-setup2-rise1": "Square platforms: setup 2, rise 1",
+        "square-platform-setup2-rise2": "Square platforms: setup 2, rise 2"
+      }
+    },
+    "village2cam": {
+      "group": "village2cam",
+      "file": "village2cam-ag.go",
+      "jg": "village2cam-lod0-jg",
+      "mg": "village2cam-lod0-mg",
+      "default": "village2cam-elevator-at-top-going-down-ja",
+      "label": "Rock Village elevator",
+      "anims": {
+        "elevator-at-top-going-down": "Rock Village elevator: top, going down",
+        "elevator-at-bottom-going-up": "Rock Village elevator: bottom, going up",
+        "elevator-at-top-going-up": "Rock Village elevator: top, going up"
+      }
+    },
+    "snowcam": {
+      "group": "snowcam",
+      "file": "snowcam-ag.go",
+      "jg": "snowcam-lod0-jg",
+      "mg": "snowcam-lod0-mg",
+      "default": "snowcam-gearstart-ja",
+      "label": "Snowy Mountain",
+      "anims": {
+        "gearstart": "Snowy gate: gears start (1/3 of a sequence)",
+        "gate": "Snowy gate: the gate (2/3 of a sequence)",
+        "gearend": "Snowy gate: gears end (3/3 of a sequence)",
+        "eggtop-activating": "Snowy egg: activating (1/2 of a sequence)",
+        "ecovent-activating": "Snowy egg: the eco vent (2/2 of a sequence)"
+      }
+    },
+    "citadelcam": {
+      "group": "citadelcam",
+      "file": "citadelcam-ag.go",
+      "jg": "citadelcam-lod0-jg",
+      "mg": "citadelcam-lod0-mg",
+      "default": "citadelcam-stair-plats-ja",
+      "label": "Gol and Maia's Citadel",
+      "anims": {
+        "stair-plats": "Citadel: stair platforms appear",
+        "citadel-bunnies": "Citadel: the ambush"
+      }
+    },
+    "rollingcam": {
+      "group": "rollingcam",
+      "file": "rollingcam-ag.go",
+      "jg": "rollingcam-lod0-jg",
+      "mg": "rollingcam-lod0-mg",
+      "default": "rollingcam-anim-ja",
+      "label": "Precursor Basin",
+      "anims": {
+        "anim": "Precursor Basin: default shot"
+      }
+    },
+    "ogreboss-cam": {
+      "group": "ogreboss",
+      "file": "ogreboss-ag.go",
+      "jg": "ogreboss-cam-lod0-jg",
+      "mg": "ogreboss-cam-lod0-mg",
+      "default": "ogreboss-cam-idle-ja",
+      "label": "Klaww",
+      "anims": {
+        "ogreboss-cam-intro": "Klaww: intro (loads Klaww's whole art group, large)"
+      }
+    }
+  },
   "Cameras": {
     "min_opengoal": "v0.3.4",
     "panels": {
