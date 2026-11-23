@@ -9,6 +9,10 @@
 ;;     vanilla animations end at a fixed rolling spot (far, below the ring),
 ;;     so with a movie-pos the cell flies there after them too.
 ;;   - the rolling-only hint dialogue is left out (the fail stinger stays).
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (race-ring)
   ((color     vector :inline)
    (cell-anim int32))
@@ -406,9 +410,15 @@
                          (v1-30 (-> self link next)))
                      (t9-12 (if v1-30 (-> v1-30 extra process)) a1-9))))
                 ((and (last-ring? self) (= (-> self cell-anim) 2))
+                 (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera
                  (__TYPE__-fly-cell))
                 ((last-ring? self)
-                 (let ((gp-2 (ppointer->handle (process-spawn othercam self 4 #f #t :to self)))
+                 ;; its Camera (Actor Settings): 0 the animation's own camera, else none / a shot
+                 (if (nonzero? (lt-pov-play-mode (-> self entity)))
+                     (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity))))
+                 (let ((gp-2 (if (zero? (lt-pov-play-mode (-> self entity)))
+                                 (ppointer->handle (process-spawn othercam self 4 #f #t :to self))
+                                 (the-as handle #f)))
                        (s5-2 (ppointer->handle (process-spawn fuel-cell :init fuel-cell-init-as-clone (process->handle self) (-> self entity extra perm task) :to self))))
                    (if *target* (logior! (-> *target* mask) (process-mask sleep)))
                    (close-specific-task! (-> self entity extra perm task) (task-status need-reminder))

@@ -8,6 +8,10 @@
 ;;   continue-name   string  optional continue point to send Jak to after the intro
 ;; and the actor's own game task instead of ogre-boss (the fight states from
 ;; stage1 to dead are vanilla copies so the end closes the actor's task).
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (ogreboss) ()
   (:states
    __TYPE__-idle
@@ -51,7 +55,9 @@
     (behavior ()
       (when (zero? (-> self try-count))
         (process-drawable-delay-player (seconds 1))
-        (let ((gp-0 (get-process *default-dead-pool* pov-camera #x4000)))
+        ;; Intro shot (Actor Settings): 0 its vanilla intro camera, else none / another shot
+        (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))
+        (let ((gp-0 (if (zero? (lt-pov-play-mode (-> self entity))) (get-process *default-dead-pool* pov-camera #x4000))))
           (ppointer->handle (when gp-0
                               (let ((t9-2 (method-of-type pov-camera activate)))
                                 (t9-2 (the-as pov-camera gp-0) self 'pov-camera (the-as pointer #x70004000)))

@@ -130,6 +130,17 @@ def emit_schema_lumps(get, fields, etype=None, choice_tables=None):
     for f in fields:
         if f.get("type") == "object_ref":
             continue
+        # ── Camera animation fields (type "pov_camera"): pov-sg + pov-anim ──
+        if f.get("type") == "pov_camera":
+            vi = f.get("visible_if") or {}
+            def _vis(k, v):
+                d = next((x.get("default") for x in fields if x.get("key") == k), None)
+                cur = get(k, d)
+                return cur in v if isinstance(v, list) else cur == v
+            if all(_vis(k, v) for k, v in vi.items()):
+                from .. import pov as _pov
+                direct.update(_pov.lumps(*_pov.picked(get, f["key"])))
+            continue
         # "export_if_visible": only written while its visible_if holds
         # (e.g. the Sunken on / off water fields for those looks only).
         if f.get("export_if_visible") and f.get("visible_if"):

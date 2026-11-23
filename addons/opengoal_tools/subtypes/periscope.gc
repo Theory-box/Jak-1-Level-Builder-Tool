@@ -4,7 +4,8 @@
 ;; - Beam shot (beam-shot lump): 0 none (Jak is free at once), 1 a linked CAMERA_
 ;;   (beam-camera: Camera time to the next piece, then Hold time on it), 2-7 a vanilla junglecam shot
 ;;   (tower1-5, beamcam) played from the Shot origin empty (shot-origin; none: the
-;;   periscope).
+;;   periscope), 8 a camera animation (pov-sg / pov-anim) from there, 9 a linked
+;;   Camera animation actor (pov-actor) is triggered.
 ;;   A linked camera looks from this periscope's top to the next piece in Camera time,
 ;;   then holds on it (hold-time); the beam cell pops out as the hold starts.
 ;; - Beam cell (beam-cell lump): its task's cell pops out at the beam's end near the end
@@ -12,6 +13,9 @@
 ;; - Its task (Game Task panel): need-reminder closes once every periscope of the
 ;;   chain is on target (vanilla jungle-lurkerm). None: no task.
 ;; edits: periscope
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 (deftype __TYPE__ (periscope)
   ((cell handle))
   (:states
@@ -28,8 +32,10 @@
     (let ((v1-3 (res-lump-struct (-> self entity) 'shot-origin vector)))
       (set! (-> s5-0 quad) (-> (if v1-3 v1-3 (-> self root trans)) quad))
       (set! (-> s5-0 w) 1.0))
-    (if (< v1-1 2)
-      (the-as handle #f)
+    (cond
+      ((>= v1-1 8) (lt-pov-play-start s5-0 (+ v1-1 -6)))   ;; 8 camera animation, 9 Camera animation actor
+      ((< v1-1 2) (the-as handle #f))
+      (else
       (ppointer->handle (process-spawn pov-camera s5-0 *junglecam-sg*
                                        (case v1-1
                                          ((2) "tower1")
@@ -38,7 +44,7 @@
                                          ((5) "tower4")
                                          ((6) "tower5")
                                          (else "beamcam"))
-                                       0 #f '() :to self)))))
+                                       0 #f '() :to self))))))
 
 (defbehavior __TYPE__-spawn-cell __TYPE__ ()
   "Beam cell: its task's cell pops out at the beam's end and jumps to movie-pos 0 (once)."

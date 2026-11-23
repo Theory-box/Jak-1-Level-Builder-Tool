@@ -4,6 +4,9 @@
 ;; With a task (Game Task panel) it also rises once that task is complete, and starts
 ;; risen when it already is (after a death, load or reset too).
 ;; edits: citb-stair-plat
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (citb-stair-plat) ())
 
@@ -39,6 +42,7 @@
         (if (__TYPE__-task-done? self) (set! (-> self rise) #t))
         (suspend))
       (logclear! (-> self draw status) (draw-status hidden))
+      (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera (Actor Settings)
       (set-vector! (-> self draw color-mult) 0.0 0.0 0.0 1.0)
       (set-time! (-> self state-time))
       (while (not (time-elapsed? (-> self state-time) (-> self delay)))

@@ -2,6 +2,9 @@
 ;; sequence or jungle-lurkerm task. Breaking sends stop to linked actors once,
 ;; persists completion and plays the local break animation.
 ;; edits: reflector-mirror
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (reflector-mirror) ()
   (:states __TYPE__-reflector-mirror-idle (__TYPE__-reflector-mirror-broken symbol)))
@@ -43,6 +46,7 @@
             (suspend)
             (send-event (-> a extra process) 'stop))))
       (when (not already-broken)
+        (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera (Actor Settings)
         (let ((p (manipy-spawn (-> self root trans) (-> self entity) *reflector-mirror-break-sg* #f :to self)))
           (send-event (ppointer->process p) 'anim-mode 'play1)))
       (process-entity-status! self (entity-perm-status complete) #t)

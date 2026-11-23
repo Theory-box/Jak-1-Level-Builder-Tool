@@ -2,6 +2,10 @@
 ;; switch, which sends 'notice to its linked actors (actor-link: the fort gate).
 ;; - pressed already when its own task is complete (vanilla: when snow-ball was)
 ;; - no gear camera: vanilla flew a camera to fixed Snowy Mountain coordinates
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (snow-switch) ()
   (:states
    __TYPE__-activate
@@ -50,7 +54,11 @@
                 (f0-1 (+ -1433.6 (-> self orig-trans y))))
             (set! (-> s5-1 quad) (-> self root trans quad))
             (cond
-              ((= (-> s5-1 y) f0-1) (when (not gp-2) (set! gp-2 #t) (send-to-all (-> self link) 'notice)))
+              ((= (-> s5-1 y) f0-1)
+               (when (not gp-2)
+                 (set! gp-2 #t)
+                 (send-to-all (-> self link) 'notice)
+                 (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))))   ;; its Camera (Actor Settings)
               (else
                (set! (-> s5-1 y) (seek-with-smooth (-> self root trans y) f0-1 (* 6144.0 (seconds-per-frame)) 0.2 204.8))
                (move-to-point! (-> self root) s5-1))))

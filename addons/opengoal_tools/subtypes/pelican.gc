@@ -21,6 +21,10 @@
 ;; real cell is thrown during it (no clone cell). Return time (return-time lump, s):
 ;; how long it takes off the nest before diving back for the spat cell (vanilla 20).
 ;; The cell is the actor's task (Game Task panel).
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (pelican)
   ((spit-pos vector :inline)
    (cam-on   symbol))
@@ -317,6 +321,11 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
          (send-event gp-0 'trans s5-0))
        (>= f30-0 1.0)))))
 
+(defbehavior __TYPE__-pov-shot? __TYPE__ ()
+  "Spit shot (Actor Settings) is a camera animation / Camera animation actor: the shot
+holds Jak (the pelican mustn't grab / release him)."
+  (let ((m (lt-pov-play-mode (-> self entity)))) (or (= m 2) (= m 3))))
+
 (defstate __TYPE__-spit (__TYPE__)
   :event
     (-> __TYPE__-circle event)
@@ -338,7 +347,7 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
       (+! (-> self state-vector1 y) 12288.0)
       (let ((gp-1 (the-as handle #f))
             (s3-0 (res-lump-struct (-> self entity) 'spit-camera string)))
-        (when (not s3-0)
+        (when (and (not s3-0) (zero? (lt-pov-play-mode (-> self entity))))
           ;; the vanilla cutscene camera, turned with the pelican
           (set! gp-1 (ppointer->handle (manipy-spawn (-> self root trans) (-> self entity) *beachcam-sg* #f :to self)))
           (send-event (handle->process gp-1) 'rot-quat (-> self root quat))
@@ -349,9 +358,10 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
               (run-now-in-process s5-1 othercam-init-by-other (-> gp-1 process 0) 4 #f #t))))
         (until v1-21
           (suspend)
-          (set! v1-21 (or (not *target*) (process-grab? *target*))))
+          (set! v1-21 (or (not *target*) (__TYPE__-pov-shot?) (process-grab? *target*))))
+        (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; Spit shot (not Default)
         (if (handle->process gp-1) (send-event (-> gp-1 process 0) 'anim-mode 'clone-anim))
-        (if s3-0 (__TYPE__-camera-on 'spit-camera self))   ; the pelican, then the cell once it's thrown
+        (if (and s3-0 (zero? (lt-pov-play-mode (-> self entity)))) (__TYPE__-camera-on 'spit-camera self))   ; the pelican, then the cell once it's thrown
         ;; the real cell is thrown during the cutscene (no clone cell in the beak)
         (set-time! (-> self state-time))
         (ja-play-spooled-anim (new 'static 'spool-anim :name "pelican-spit-ext" :index 11 :parts 2 :command-list '())
@@ -362,7 +372,7 @@ from the beak to the spit spot (0.67 s). #t once it has landed."
           (suspend))
         (until v1-31
           (suspend)
-          (set! v1-31 (or (not *target*) (process-release? *target*))))
+          (set! v1-31 (or (not *target*) (__TYPE__-pov-shot?) (process-release? *target*))))
         (if (handle->process gp-1) (deactivate (-> gp-1 process 0))))
       (process-spawn-function process
         (lambda :behavior pelican ()

@@ -125,6 +125,7 @@ from . import level_settings as _level_settings
 from . import required as _required_mod
 from . import settings_import as _settings_import
 from . import guide_links as _guide_links
+from . import pov as _pov_mod
 from . import tasks as _tasks
 from . import game_text as _game_text
 from . import hints as _hints
@@ -182,6 +183,7 @@ classes = (
     *_required_mod.CLASSES,
     *_settings_import.CLASSES,
     *_guide_links.CLASSES,
+    *_pov_mod.CLASSES,
     *_tasks.CLASSES,
     *_game_text.CLASSES,
     *_hints.CLASSES,

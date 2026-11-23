@@ -2,6 +2,9 @@
 ;; the misty-warehouse task. Linked steps are raised together. The vanilla rise
 ;; state saves completion per entity and restores its raised position on reload.
 ;; edits: silostep
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (silostep) ()
   (:states __TYPE__-silostep-idle __TYPE__-activate))
@@ -22,6 +25,7 @@
   :code
     (behavior ()
       (sound-play "arena-steps")
+      (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera (Actor Settings)
       (send-to-all-after (-> self link) 'trigger-rise)
       (go silostep-rise #f))
   :post ja-post)

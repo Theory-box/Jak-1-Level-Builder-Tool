@@ -62,6 +62,7 @@ DB_CAT_TO_TILE = {
     "Effects":             "Effects",
     "NPCs":                "NPCs",
     "Pickups":             "Pickups",
+    "Cameras":             "Cameras",
 }
 
 # Tile category → BoolProperty attribute name on OGProperties

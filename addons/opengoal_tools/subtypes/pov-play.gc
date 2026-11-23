@@ -1,0 +1,72 @@
+;; edits: __library__
+;; place: shared
+;; Camera shots for edited actors (a library, not an actor: compiled once as
+;; lt-pov-play.gc and loaded by every level with an actor that uses it).
+;; An actor's camera (lumps on its entity):
+;;   pov-mode   0 none (or the actor's own default), 1 a normal camera: the linked
+;;              CAMERA_ (pov-camera, a camera name) for pov-time seconds, 2 a camera
+;;              animation (pov-sg / pov-anim, see the Camera animation actor),
+;;              3 a linked Camera animation actor (pov-actor) is sent 'trigger.
+;; The actor calls (lt-pov-play-start pos (lt-pov-play-mode (-> self entity))) where its
+;; shot happens (actors with their own shot choices pass 2 / 3 for their "Camera
+;; animation" / "Camera animation actor" choices), then waits with
+;; (while (lt-pov-play-busy? h) (suspend)) if it should wait for the end.
+
+(deftype __TYPE__-cam (process)
+  ((cam-name  string)
+   (cam-time  time-frame)
+   (cam-start time-frame))
+  (:states __TYPE__-cam-show))
+
+(defstate __TYPE__-cam-show (__TYPE__-cam)
+  :code
+    (behavior ()
+      (camera-change-to (-> self cam-name) 0 #f)
+      (set-time! (-> self cam-start))
+      (until (time-elapsed? (-> self cam-start) (-> self cam-time))
+        (suspend))
+      (camera-change-to (the-as string 'base) 150 #f)))
+
+(defbehavior __TYPE__-cam-init-by-other __TYPE__-cam ((name string) (secs float))
+  (set! (-> self cam-name) name)
+  (set! (-> self cam-time) (the-as time-frame (the int (* 300.0 secs))))
+  (go __TYPE__-cam-show))
+
+(defbehavior __TYPE__-start process-drawable ((pos vector) (mode int))
+  "Start a camera shot: mode 1 normal camera, 2 camera animation, 3 Camera animation
+actor (an actor's pov-mode, or its own shot choice mapped to these). Returns a handle
+to wait on, or #f."
+  (let ((e (-> self entity)))
+    (case mode
+      ((1)
+       (let ((name (res-lump-struct e 'pov-camera string)))
+         (if name
+             (ppointer->handle (process-spawn __TYPE__-cam name (res-lump-float e 'pov-time :default 4.0) :to self))
+             (the-as handle #f))))
+      ((2)
+       (let ((sg (res-lump-struct e 'pov-sg symbol))
+             (anim (res-lump-struct e 'pov-anim string)))
+         (if (and sg anim)
+             (ppointer->handle (process-spawn pov-camera pos (the-as skeleton-group (-> sg value)) anim
+                                              (pov-camera-flag inherit-orientation) self '() :to self))
+             (the-as handle #f))))
+      ((3)
+       (let ((a (entity-actor-lookup e 'pov-actor 0)))
+         (cond
+           ((and a (-> a extra process))
+            (send-event (-> a extra process) 'trigger)
+            (process->handle (-> a extra process)))
+           (else (the-as handle #f)))))
+      (else (the-as handle #f)))))
+
+(defun __TYPE__-busy? ((h handle))
+  "The shot started by __TYPE__-start is still on."
+  (let ((p (handle->process h)))
+    (cond
+      ((not p) #f)
+      ((or (type-type? (-> p type) pov-camera) (type-type? (-> p type) __TYPE__-cam)) #t)
+      (else (if (send-event p 'busy?) #t #f)))))
+
+(defun __TYPE__-mode ((e entity-actor))
+  "The actor's pov-mode (0: none / its own default)."
+  (res-lump-value e 'pov-mode int))

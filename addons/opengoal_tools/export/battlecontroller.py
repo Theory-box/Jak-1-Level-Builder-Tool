@@ -30,8 +30,9 @@ def is_custom(o) -> bool:
 
 
 def camera_anims() -> dict:
-    """{camera art group: [animations]} (from the game's *cam-ag.go files)."""
-    return dict((_db.find_actor("battlecontroller") or {}).get("camera_anims") or {})
+    """{camera art group: [animations]} (the game's list, DB PovCameras)."""
+    from .. import pov as _pov
+    return {g: list(e.get("anims") or {}) for g, e in _pov.catalogue().items()}
 
 
 def camera(o) -> tuple[str, str]:
@@ -59,6 +60,8 @@ def _spec(o):
     var = variant(o)
     if not var.get("generated_type"):
         return None
+    if var.get("pov_kind"):                      # normal camera / Camera animation actor: no art
+        return (str(var.get("id", "")), "", "")
     ag, anim = camera(o)
     return (str(var.get("id", "")), ag, anim) if ag and anim else None
 
@@ -84,7 +87,12 @@ def gc_lines(pfx: str, objects) -> list[str]:
     lines = []
     for (vid, ag, anim), base in generated_types(objects).items():
         t = f"{pfx}-{base}"
+        if vid in ("camera", "actor"):
+            lines += _pov_variant_lines(t, vid)
+            continue
         sg = f"*{t}-cam-sg*"
+        from .. import pov as _pov
+        e = _pov.entry(ag)
         cam_at = (f'(-> (entity-by-name "{CITADEL_CAM_NAME}") extra trans)' if vid == "citadel"
                   else "(-> self root trans)")
         pre = {"swamp": ["      (suspend)", "      (process-drawable-delay-player (seconds 1))"],
@@ -96,10 +104,10 @@ def gc_lines(pfx: str, objects) -> list[str]:
             f"(deftype {t} (battlecontroller) ())",
             "",
             f"(defskelgroup {sg}",
-            f"  {ag}",
-            f"  {ag}-lod0-jg",
-            f"  {ag}-{anim}-ja",
-            f"  (({ag}-lod0-mg (meters 999999)))",
+            f"  {e['group']}",
+            f"  {e['jg']}",
+            f"  {anim if anim.startswith(e['group'] + '-') else e['group'] + '-' + anim}-ja",
+            f"  (({e['mg']} (meters 999999)))",
             "  :bounds (static-spherem 0 0 0 20))",
             "",
             f"(defstate battlecontroller-play-intro-camera ({t})",
@@ -136,6 +144,31 @@ def gc_lines(pfx: str, objects) -> list[str]:
                       "  0",
                       "  (none))"]
     return lines
+
+
+def _pov_variant_lines(t, vid):
+    """Intro: a linked CAMERA_ for pov-time seconds, or a linked Camera animation actor
+    (pov-actor) triggered and waited for."""
+    if vid == "camera":
+        body = ["      (let ((name (res-lump-struct (-> self entity) 'pov-camera string)))",
+                "        (when name",
+                "          (camera-change-to name 0 #f)",
+                "          (let ((start (current-time))",
+                "                (dur (the int (* 300.0 (res-lump-float (-> self entity) 'pov-time :default 4.0)))))",
+                "            (until (time-elapsed? start dur)",
+                "              (suspend)))",
+                "          (camera-change-to (the-as string 'base) 150 #f)))"]
+    else:
+        body = ["      (let ((a (entity-actor-lookup (-> self entity) 'pov-actor 0)))",
+                "        (when (and a (-> a extra process))",
+                "          (send-event (-> a extra process) 'trigger)",
+                "          (suspend)",
+                "          (while (and (-> a extra process) (send-event (-> a extra process) 'busy?))",
+                "            (suspend))))"]
+    return ["", f";; battlecontroller with a {'normal camera' if vid == 'camera' else 'Camera animation actor'} intro",
+            f"(deftype {t} (battlecontroller) ())", "",
+            f"(defstate battlecontroller-play-intro-camera ({t})", "  :virtual #t", "  :code", "    (behavior ()",
+            *body, "      (go-virtual battlecontroller-active)))"]
 
 
 MAX_LURKER_TYPES = 4            # creature-type-array size

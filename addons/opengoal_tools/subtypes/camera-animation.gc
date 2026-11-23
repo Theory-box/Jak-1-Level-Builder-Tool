@@ -1,0 +1,148 @@
+;; edits: camera-animation
+;; place: shared
+;; Camera animation: a custom actor (no vanilla one) that plays a camera animation
+;; (a pov-camera shot) from its position, or shows a normal camera for a while.
+;;   cam-type: 0 camera animation: pov-sg / pov-anim, the skeleton group symbol (defined
+;;     in the level's -obs.gc) and the animation to play (any of the game's camera art
+;;     groups); 1 normal camera: pov-camera (a camera name) for pov-time seconds,
+;;     looking at the look-actor link (none: Jak), following it if it moves.
+;;   delay: seconds between being started (any way) and the camera.
+;;   start-mode: 0 when Jak enters its volume (vol lump), 1 when Jak comes within
+;;     notice-dist, 2 only when another actor sends it 'trigger.
+;;   cam-flags: 1 once per playthrough (saved with the game: the entity is marked
+;;     complete); otherwise volume / distance play again once the actor reloads
+;;     (respawn / level visit) and every 'trigger plays it again;
+;;     2 skippable with Triangle; 4 the shot turns with the actor's rotation;
+;;     8 wait until Jak is on the ground; 16 normal camera: Jak can't move meanwhile.
+;;   next-actor: the next Camera animation of a chain, sent 'trigger once this one ends.
+;;   events: 'trigger plays it (any start mode); 'busy? answers #t while playing, so
+;;     an actor that triggered it can wait for the end.
+(deftype __TYPE__ (process-drawable)
+  ((mode      uint32)
+   (cam-flags uint32)
+   (dist      float)
+   (delay     float)
+   (sg        symbol)
+   (anim      string)
+   (trig-vol  vol-control))
+  (:states
+    __TYPE__-idle
+    __TYPE__-play
+    __TYPE__-done))
+
+
+(defun __TYPE__-ready? ((this __TYPE__))
+  "Jak is where the start mode wants him."
+  (and *target*
+       (case (-> this mode)
+         ((0) (and (nonzero? (-> this trig-vol)) (< 0 (-> this trig-vol pos-vol-count))
+                   (point-in-vol? (-> this trig-vol) (-> *target* control trans))))
+         ((1) (< (vector-vector-distance (-> this root trans) (-> *target* control trans)) (-> this dist)))
+         (else #f))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger) (go __TYPE__-play) #t)
+        (('busy?) #f)))
+  :code
+    (behavior ()
+      (loop
+        (if (__TYPE__-ready? self) (go __TYPE__-play))
+        (suspend))))
+
+(defstate __TYPE__-play (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('busy?) #t)
+        (('notify)                       ;; the shot asks to be skipped (Triangle)
+         (if (= (-> block param 0) 'abort-request) (send-event proc 'abort)))))
+  :code
+    (behavior ()
+      (let ((start (current-time))                ;; Delay (Actor Settings)
+            (d (the int (* 300.0 (-> self delay)))))
+        (until (time-elapsed? start d)
+          (suspend)))
+      ;; Jak landed, nothing talking / loading
+      (when (logtest? (-> self cam-flags) 8)
+        (while (and *target* (not (logtest? (-> *target* control status) (cshape-moving-flags onsurf))))
+          (suspend)))
+      (while (or (-> *setting-control* current talking)
+                 (-> *setting-control* current spooling)
+                 (-> *setting-control* current hint)
+                 *progress-process*
+                 (not *target*)
+                 (logtest? (-> *target* state-flags) (state-flags being-attacked dying)))
+        (suspend))
+      (cond
+        ((= (res-lump-value (-> self entity) 'cam-type uint32) 1)    ;; a normal camera
+         (let ((name (res-lump-struct (-> self entity) 'pov-camera string)))
+           (when name
+             (when (logtest? (-> self cam-flags) 16)     ;; Freeze Jak
+               (while (and *target* (not (process-grab? *target*)))
+                 (suspend)))
+             (camera-change-to name 0 #f)
+             (let ((look (entity-actor-lookup (-> self entity) 'look-actor 0)))   ;; none: Jak
+               (send-event *camera* 'change-target (if (and look (-> look extra process)) (-> look extra process) *target*)))
+             (let ((start (current-time))
+                   (d (the int (* 300.0 (res-lump-float (-> self entity) 'pov-time :default 4.0)))))
+               (until (time-elapsed? start d)
+                 (suspend)))
+             (send-event *camera* 'change-target *target*)
+             (camera-change-to (the-as string 'base) 150 #f)
+             (when (logtest? (-> self cam-flags) 16)
+               (while (and *target* (not (process-release? *target*)))
+                 (suspend))))))
+        ((and (-> self sg) (-> self anim))
+         (let ((h (ppointer->handle
+                     (process-spawn pov-camera
+                                    (-> self root trans)
+                                    (the-as skeleton-group (-> self sg value))
+                                    (-> self anim)
+                                    (the-as pov-camera-flag (logior (if (logtest? (-> self cam-flags) 2) 1 0)
+                                                                    (if (logtest? (-> self cam-flags) 4) 4 0)))
+                                    self
+                                    '()
+                                    :to self))))
+            (while (handle->process h)
+              (suspend)))))
+      (if (logtest? (-> self cam-flags) 1)
+          (process-entity-status! self (entity-perm-status complete) #t))
+      ;; the next Camera animation of a chain
+      (let ((next (entity-actor-lookup (-> self entity) 'next-actor 0)))
+        (when next
+          (entity-birth-no-kill next)
+          (suspend)
+          (if (-> next extra process) (send-event (-> next extra process) 'trigger))))
+      (go __TYPE__-done)))
+
+(defstate __TYPE__-done (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('trigger)                          ;; not once per playthrough: every trigger plays it
+         (when (not (logtest? (-> self cam-flags) 1)) (go __TYPE__-play) #t))
+        (('busy?) #f)))
+  :code
+    (behavior ()
+      (loop
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (set! (-> this mode) (res-lump-value arg0 'start-mode uint32))
+  (set! (-> this cam-flags) (res-lump-value arg0 'cam-flags uint32))
+  (set! (-> this dist) (res-lump-float arg0 'notice-dist :default 40960.0))
+  (set! (-> this delay) (res-lump-float arg0 'delay))
+  (set! (-> this sg) (res-lump-struct arg0 'pov-sg symbol))
+  (set! (-> this anim) (res-lump-struct arg0 'pov-anim string))
+  (set! (-> this trig-vol) (new 'process 'vol-control this))
+  (if (and (logtest? (-> this cam-flags) 1)
+           (logtest? (-> arg0 extra perm status) (entity-perm-status complete)))
+      (go __TYPE__-done)
+      (go __TYPE__-idle))
+  (none))

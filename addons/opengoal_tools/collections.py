@@ -36,6 +36,7 @@ _ENTITY_CAT_TO_COL_PATH = {
     "Debug":     _COL_PATH_SPAWNABLE_PROPS,
     "NPCs":      _COL_PATH_SPAWNABLE_NPCS,
     "Pickups":   _COL_PATH_SPAWNABLE_PICKUPS,
+    "Cameras":   _COL_PATH_CAMERAS,          # Camera animation actors, with the cameras
 }
 
 # Default custom property values for level collections

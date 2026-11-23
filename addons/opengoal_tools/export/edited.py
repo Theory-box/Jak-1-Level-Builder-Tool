@@ -154,7 +154,8 @@ def type_name(scene, rec, level_prefix):
 
 
 def used(scene, objects):
-    """{id: record} of the files the level's actors use."""
+    """{id: record} of the files the level's actors use (and the camera shot
+    library lt-pov-play when an actor's camera choice needs it)."""
     out = {}
     for o in objects:
         et = actor_etype(o)
@@ -162,6 +163,11 @@ def used(scene, objects):
             r = resolve(o, et)
             if r is not None:
                 out[r["id"]] = r
+    from .. import pov as _pov
+    if out and _pov.library_needed(objects):
+        lib = files().get("addon:pov-play")
+        if lib is not None:
+            out[lib["id"]] = lib
     return out
 
 

@@ -5,6 +5,10 @@
 ;; reachable through the links (any shape, each plant once, up to 32), checks
 ;; "gone" by the hidden flag (vanilla and subtype plants), and gives the cell of
 ;; its own game task (pickup at its movie-pos if set).
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (happy-plant)
   ((seen     process 32)
    (num-seen int32))
@@ -65,10 +69,14 @@
         (suspend))
       (let ((gp-2 (ppointer->handle (manipy-spawn (-> self entity extra trans) (-> self entity) *rollingcam-sg* #f :to self)))
             (task (-> self entity extra perm task)))
-        (let ((s5-1 (get-process *default-dead-pool* othercam #x4000)))
-          (when s5-1
-            ((method-of-type othercam activate) (the-as othercam s5-1) (-> gp-2 process 0) 'othercam (the-as pointer #x70004000))
-            (run-now-in-process s5-1 othercam-init-by-other (-> gp-2 process 0) 4 #f #t)))
+        ;; its Camera (Actor Settings): 0 the vanilla cutscene camera, else none / a shot
+        (let ((pmode (lt-pov-play-mode (-> self entity))))
+          (if (zero? pmode)
+              (let ((s5-1 (get-process *default-dead-pool* othercam #x4000)))
+                (when s5-1
+                  ((method-of-type othercam activate) (the-as othercam s5-1) (-> gp-2 process 0) 'othercam (the-as pointer #x70004000))
+                  (run-now-in-process s5-1 othercam-init-by-other (-> gp-2 process 0) 4 #f #t)))
+              (lt-pov-play-start (-> self root trans) pmode)))
         (let ((s5-3 (if (nonzero? task)
                         (ppointer->handle (process-spawn fuel-cell :init fuel-cell-init-as-clone (process->handle self) (the-as int task) :to self))
                         (the-as handle #f))))
