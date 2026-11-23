@@ -76,36 +76,9 @@ class OG_OT_SetActorEnumField(Operator):
             obj[self.prop_key] = self.value
             obj.update_tag()   # custom props don't notify the depsgraph by themselves
             _refresh_variant_preview(context, obj, self.prop_key)
-            _apply_empty_display(obj, self.prop_key, self.value)
         if len(objs) > 1:
             self.report({"INFO"}, f"Set on {len(objs)} actors")
         return {"FINISHED"}
-
-
-def _apply_empty_display(obj, key, value):
-    """DB enum option "empty_display": {"<value>": display type, "*": default}: the
-    empty's look per value. A type with "size_driver": the field drivers (e.g. the
-    Distance sphere) are applied; otherwise the size drivers go and the size is 1."""
-    if obj.type != "EMPTY" or not obj.name.startswith("ACTOR_"):
-        return
-    etype = obj.name.split("_", 2)[1]
-    f = next((x for x in _db.inherited_fields(etype) if x.get("key") == key), None)
-    ed = (f or {}).get("empty_display")
-    if not ed:
-        return
-    disp = ed.get(value, ed.get("*"))
-    if not disp:
-        return
-    obj.empty_display_type = disp
-    from ..utils import apply_db_drivers
-    if value in (ed.get("size_driver") or []):
-        apply_db_drivers(obj, etype)
-    else:
-        try:
-            obj.driver_remove("empty_display_size")
-        except TypeError:
-            pass
-        obj.empty_display_size = 1.0
 
 
 def _refresh_variant_preview(context, obj, key):
