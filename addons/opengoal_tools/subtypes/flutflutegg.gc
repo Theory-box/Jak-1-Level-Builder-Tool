@@ -7,6 +7,9 @@
 ;;   (at movie-pos 0, else at the egg).
 ;; No task: a standalone breakable egg. Hatch position also places it on reload.
 ;; edits: flutflutegg
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (flutflutegg)
   ((rest-quat quaternion :inline))
@@ -105,6 +108,7 @@
     (behavior ()
       (local-vars (v1-25 symbol))
       (when (!= (-> self entity extra perm task) (game-task none)) (close-specific-task! (-> self entity extra perm task) (task-status need-reminder)))
+      (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera (Actor Settings): the fall
       (loop
         (vector-float*! (-> self root transv) (-> self dir) (-> self vel))
         (set-time! (-> self state-time))

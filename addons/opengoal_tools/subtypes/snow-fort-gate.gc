@@ -3,6 +3,10 @@
 ;; - its task (Game Task panel): the hint closes its need-hint stage (vanilla: snow-fort)
 ;; - open from the start once the "open when complete" task is done (Actor Settings,
 ;;   open-task lump; vanilla: snow-ball). None: closed until the switch.
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
+
 (deftype __TYPE__ (snow-fort-gate) ()
   (:states
    __TYPE__-idle-closed __TYPE__-activate))
@@ -41,6 +45,7 @@
 (defstate __TYPE__-activate (__TYPE__)
   :code (behavior ()
     (process-entity-status! self (entity-perm-status complete) #t)
+    (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; its Camera (Actor Settings)
     (let ((next (entity-actor-lookup (-> self entity) 'next-actor 0)))
       (when next
         (entity-birth-no-kill next)

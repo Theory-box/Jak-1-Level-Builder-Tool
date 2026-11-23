@@ -7,6 +7,9 @@
 ;; Optional task cell; saved ride-end state belongs to this entity (user-int8 1).
 ;; The button is a managed child, not a separately placed actor.
 ;; edits: exit-chamber
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (exit-chamber)
   ((route path-control)
@@ -24,8 +27,10 @@
   (call-parent-method this offset))
 
 (defun __TYPE__-camera ((this __TYPE__) (enabled symbol))
+  "The Ride camera, only with Ride shot on Default (other choices start their shot instead)."
   (let ((cam (res-lump-struct (-> this entity) 'ride-camera string)))
-    (when cam (camera-change-to (if enabled cam (the-as string 'base)) 0 #f)))
+    (when (and cam (zero? (lt-pov-play-mode (-> this entity))))
+      (camera-change-to (if enabled cam (the-as string 'base)) 0 #f)))
   (none))
 
 (defun __TYPE__-path-point ((p path-control) (u float) (pos vector))
@@ -78,6 +83,7 @@
     (set! (-> self move-player?) #t)
     (set! (-> self path-progress) 0.0)
     (__TYPE__-camera self #t)
+    (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; Ride shot (not Default)
     (when (-> self door) (send-event (ppointer->process (-> self door)) 'untrigger)))
   :exit (behavior ()
     (set! (-> self move-player?) #f)
@@ -182,6 +188,7 @@
   :enter
     (behavior ()
       (__TYPE__-camera self #t)
+    (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; Ride shot (not Default)
       (set! (-> self move-player?) #f))
   :exit (behavior () (__TYPE__-camera self #f))
   :trans
@@ -260,6 +267,7 @@
   :enter
     (behavior ()
       (__TYPE__-camera self #t)
+    (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity)))   ;; Ride shot (not Default)
       (set! (-> self move-player?) #t)
       (let ((v1-2 (handle->process (-> self fcell-handle))))
         (if v1-2 (clear-collide-with-as (-> (the-as fuel-cell v1-2) root)))))

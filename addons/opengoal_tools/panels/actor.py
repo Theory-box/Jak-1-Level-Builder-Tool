@@ -295,7 +295,18 @@ class OG_PT_ActorBattlecontroller(Panel):
         if vf:
             _draw_enum_field(box, sel, vf)
         var = _bc.variant(sel)
-        if var.get("custom_camera"):
+        if var.get("pov_kind") == "camera":
+            from .actor_fields import _draw_field
+            for f in _db.inherited_fields(etype):
+                if f.get("key") in ("og_bc_pov_camera", "og_bc_pov_time"):
+                    _draw_field(box, sel, f)
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Shown when the ambush starts, for Camera time", icon="INFO")
+        elif var.get("pov_kind") == "actor":
+            hint = box.column(); hint.enabled = False; hint.scale_y = 0.8
+            hint.label(text="Link it in Entity Links > Camera animation actor;", icon="INFO")
+            hint.label(text="the ambush starts once its shot is over", icon="BLANK1")
+        elif var.get("custom_camera"):
             ag, anim = _bc.camera(sel)
             row = box.row(align=True)
             row.label(text="Camera:")

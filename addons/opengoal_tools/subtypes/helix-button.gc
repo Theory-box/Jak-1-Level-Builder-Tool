@@ -7,6 +7,9 @@
 ;; angles only fit Sunken's room and the eco could rise over Jak meanwhile).
 ;; Uses its own task instead of sunken-slide. The puzzle resets when the level reloads.
 ;; edits: helix-button
+(define-extern lt-pov-play-start (function vector int handle :behavior process-drawable))
+(define-extern lt-pov-play-mode (function entity-actor int))
+(define-extern lt-pov-play-busy? (function handle symbol))
 
 (deftype __TYPE__ (helix-button)
   ((first-press symbol))
@@ -76,6 +79,8 @@
         (let ((t9-6 send-event-function)
               (v1-21 (-> self my-water)))
           (t9-6 (if v1-21 (-> v1-21 extra process)) a1-4)))
+      ;; its Camera (Actor Settings): the door closing / eco rising, on the first press
+      (if (-> self first-press) (lt-pov-play-start (-> self root trans) (lt-pov-play-mode (-> self entity))))
       (set! (-> self root transv quad) (the-as uint128 0))
       (let ((gp-2 5))
         (until (<= gp-2 0)

@@ -60,6 +60,8 @@ def _spec(o):
     var = variant(o)
     if not var.get("generated_type"):
         return None
+    if var.get("pov_kind"):                      # normal camera / Camera animation actor: no art
+        return (str(var.get("id", "")), "", "")
     ag, anim = camera(o)
     return (str(var.get("id", "")), ag, anim) if ag and anim else None
 
@@ -85,6 +87,9 @@ def gc_lines(pfx: str, objects) -> list[str]:
     lines = []
     for (vid, ag, anim), base in generated_types(objects).items():
         t = f"{pfx}-{base}"
+        if vid in ("camera", "actor"):
+            lines += _pov_variant_lines(t, vid)
+            continue
         sg = f"*{t}-cam-sg*"
         from .. import pov as _pov
         e = _pov.entry(ag)
@@ -139,6 +144,31 @@ def gc_lines(pfx: str, objects) -> list[str]:
                       "  0",
                       "  (none))"]
     return lines
+
+
+def _pov_variant_lines(t, vid):
+    """Intro: a linked CAMERA_ for pov-time seconds, or a linked Camera animation actor
+    (pov-actor) triggered and waited for."""
+    if vid == "camera":
+        body = ["      (let ((name (res-lump-struct (-> self entity) 'pov-camera string)))",
+                "        (when name",
+                "          (camera-change-to name 0 #f)",
+                "          (let ((start (current-time))",
+                "                (dur (the int (* 300.0 (res-lump-float (-> self entity) 'pov-time :default 4.0)))))",
+                "            (until (time-elapsed? start dur)",
+                "              (suspend)))",
+                "          (camera-change-to (the-as string 'base) 150 #f)))"]
+    else:
+        body = ["      (let ((a (entity-actor-lookup (-> self entity) 'pov-actor 0)))",
+                "        (when (and a (-> a extra process))",
+                "          (send-event (-> a extra process) 'trigger)",
+                "          (suspend)",
+                "          (while (and (-> a extra process) (send-event (-> a extra process) 'busy?))",
+                "            (suspend))))"]
+    return ["", f";; battlecontroller with a {'normal camera' if vid == 'camera' else 'Camera animation actor'} intro",
+            f"(deftype {t} (battlecontroller) ())", "",
+            f"(defstate battlecontroller-play-intro-camera ({t})", "  :virtual #t", "  :code", "    (behavior ()",
+            *body, "      (go-virtual battlecontroller-active)))"]
 
 
 MAX_LURKER_TYPES = 4            # creature-type-array size

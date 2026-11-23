@@ -118,19 +118,27 @@ def used(o) -> list[tuple[str, str]]:
 
 
 def library_needed(objects) -> bool:
-    """An actor's camera choice (an enum choice marked "pov" in the DB: 1 normal camera,
-    2 camera animation, 3 Camera animation actor) uses the lt-pov-play library."""
-    for o in objects:
-        et = _etype(o)
-        if not et:
-            continue
-        for f in _db.inherited_fields(et):
-            if f.get("type") != "enum" or not isinstance(f.get("choices"), list):
-                continue
-            cur = o.get(f["key"], f.get("default"))
-            if any(c.get("pov") and c.get("value") == cur for c in f["choices"]):
-                return True
-    return False
+    """An actor with camera choices (an enum with a choice marked "pov" in the DB: 1 normal
+    camera, 2 camera animation, 3 Camera animation actor) calls the lt-pov-play library
+    whatever is picked, so the level must load it."""
+    return any(_has_pov_choices(_etype(o)) for o in objects)
+
+
+_POV_ETYPES: dict = {}
+
+
+def _has_pov_choices(et) -> bool:
+    if not et:
+        return False
+    if _POV_ETYPES.get("__db") is not _db.DB:      # the database was reloaded
+        _POV_ETYPES.clear()
+        _POV_ETYPES["__db"] = _db.DB
+    v = _POV_ETYPES.get(et)
+    if v is None:
+        v = _POV_ETYPES[et] = any(
+            f.get("type") == "enum" and isinstance(f.get("choices"), list) and any(c.get("pov") for c in f["choices"])
+            for f in _db.inherited_fields(et))
+    return v
 
 
 def level_groups(objects) -> list[str]:
