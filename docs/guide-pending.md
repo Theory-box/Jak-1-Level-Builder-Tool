@@ -11,3 +11,7 @@ them below. When the release is made: merge `claude/guide-next`, check this list
 
 | Feature | Guide pages | Screenshots | On guide-next |
 |---|---|---|---|
+| Death plane: any height | levels (Settings table) | — | yes |
+| Reverse Path button | paths-and-platforms (path list table) | — | yes |
+| Load boundary Continue: checkpoint list | level-flow (load boundary commands) | — | yes |
+| Race-ring circles / platform ghosts drawn (not objects), camera FOV driver fix, undo safety | — (look the same) | — | — |

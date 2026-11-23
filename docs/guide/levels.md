@@ -100,7 +100,7 @@ letters) and the **Effective Nick**.
 
 | Field | What it does |
 |---|---|
-| **Death Plane (m)** | Below this height Jak dies from an endless fall. Default -20 m. |
+| **Death Plane (m)** | Below this height Jak dies from an endless fall. Default -20 m. Any height works: a level high up in the sky can have its death plane up there too. |
 | **Orb Count** | The orbs shown on the level's progress page. Blank: counted from the actors (orbs, crates, orb caches, enemy drops, the pipe game, the plant boss ...). The button next to it counts them now and shows **Auto: N**. Type a whole number to use it instead. |
 | **Automatic Wall Angle** | Faces steeper than this are walls Jak can't stand on. Default 45°, -1 turns it off. |
 | **Double Sided Collision** | Collide with both sides of every face. Doubles the collision mesh. |

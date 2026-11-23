@@ -86,7 +86,7 @@ Commands:
 | **Display** | **Level 0**, **Mode** | Shows a loaded level: **Display**, **Display (no wait)**, or **Off** to hide it |
 | **Vis** | **Nick** | Switches to a level's visibility data (its vis nickname): that level becomes the current level |
 | **Force Vis** | **Level 0** | Forces a level's visibility data to load |
-| **Checkpoint** | **Continue** | Sets the checkpoint (a continue name like `my-level-start`) without any loading |
+| **Checkpoint** | **Continue** | Sets the checkpoint (a continue name like `my-level-start`) without any loading. The field lists this .blend's checkpoints and the game's as you type; any other name can be typed too. |
 
 The level fields offer **(None)**, **(This level)**, the levels of this .blend and **Custom…** (type a name, e.g. a vanilla level). Load boundaries are written into the game's shared `load-boundary-data.gc`; each level only replaces its own entries.
 
