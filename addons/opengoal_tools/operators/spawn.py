@@ -647,10 +647,16 @@ def camera_fov_driver(o):
     """The Blender camera shows the game FOV: lens unit Field of View
     (horizontal), its angle driven by og_cam_fov (0 = the game's 64). The
     angle itself can't take a driver, so the focal length is driven from the
-    FOV and the sensor width (angle = 2 atan(sensor / 2 lens))."""
+    FOV and the sensor width (angle = 2 atan(sensor / 2 lens)). The sensor
+    width is written into the expression: reading it from the camera made the
+    driver depend on its own camera (a dependency cycle, unstable)."""
     cam = o.data
     cam.lens_unit = "FOV"
     cam.sensor_fit = "HORIZONTAL"
+    try:
+        cam.driver_remove("lens")
+    except TypeError:
+        pass
     fc = cam.driver_add("lens")
     drv = fc.driver
     drv.type = "SCRIPTED"
@@ -660,13 +666,21 @@ def camera_fov_driver(o):
     v.targets[0].id_type = "OBJECT"
     v.targets[0].id = o
     v.targets[0].data_path = '["og_cam_fov"]'
-    s = drv.variables.new()
-    s.name = "sw"
-    s.type = "SINGLE_PROP"
-    s.targets[0].id_type = "CAMERA"
-    s.targets[0].id = cam
-    s.targets[0].data_path = "sensor_width"
-    drv.expression = "sw / (2 * tan(radians(fov if fov > 0 else 64.0) / 2))"
+    drv.expression = f"{cam.sensor_width:g} / (2 * tan(radians(fov if fov > 0 else 64.0) / 2))"
+
+
+def fix_camera_drivers(*_a):
+    """Cameras from older versions: their lens driver read the camera's own sensor
+    width (a dependency cycle). Rebuilt without it; returns how many."""
+    n = 0
+    for o in bpy.data.objects:
+        if o.type != "CAMERA" or not o.name.startswith("CAMERA_") or o.library is not None:
+            continue
+        ad = o.data.animation_data
+        fc = ad and next((f for f in ad.drivers if f.data_path == "lens"), None)
+        if fc is not None and any(v.name == "sw" for v in fc.driver.variables):
+            camera_fov_driver(o); n += 1
+    return n
 
 
 class OG_OT_SpawnVolume(Operator):

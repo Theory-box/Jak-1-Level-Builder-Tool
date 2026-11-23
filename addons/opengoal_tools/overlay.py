@@ -193,8 +193,11 @@ def remove_old_objects():
 
 @bpy.app.handlers.persistent
 def _on_load(*_a):
+    """File opened: drop the old preview objects, fix old cameras' lens driver."""
     try:
         remove_old_objects()
+        from .operators.spawn import fix_camera_drivers
+        fix_camera_drivers()
     except Exception:
         pass
     invalidate()
