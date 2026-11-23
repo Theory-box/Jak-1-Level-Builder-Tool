@@ -503,7 +503,7 @@ def _get_death_plane(self):
 def _set_death_plane(self, value):
     col = _active_level_col(bpy.context.scene) if bpy.context else None
     if col is not None:
-        col["og_bottom_height"] = max(-500.0, min(-1.0, value))
+        col["og_bottom_height"] = float(value)
 
 
 # ---------------------------------------------------------------------------

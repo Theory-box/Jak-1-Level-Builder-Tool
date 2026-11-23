@@ -432,8 +432,8 @@ class OG_OT_EditLevel(Operator):
                               description="Unique level-load-info :index. Must not collide with vanilla or other custom levels. Safe range: 100+")
     vis_nick:     StringProperty(name="Vis Nickname", default="",
                                  description="3-letter nickname used for DGO/vis files. Must be unique across levels")
-    bottom_height: FloatProperty(name="Death Plane (m)", default=-20.0, min=-500.0, max=-1.0,
-                                 description="Y height below which the player gets an endlessfall death")
+    bottom_height: FloatProperty(name="Death Plane (m)", default=-20.0, unit="LENGTH",
+                                 description="Height (Blender Z) below which the player gets an endless-fall death")
     texture_source: EnumProperty(name="Texture Remap", items=TEXTURE_SOURCE_ITEMS, default="village1",
                                  description="Vanilla level whose texture remap the level uses. Use 'None' for levels streamed alongside another custom level (two co-resident levels sharing one crash on load)")
 
@@ -462,7 +462,7 @@ class OG_OT_EditLevel(Operator):
         col["og_base_id"]           = self.base_id
         col["og_level_index"]       = self.level_index
         col["og_vis_nick_override"] = nick_clean
-        col["og_bottom_height"]     = max(-500.0, min(-1.0, self.bottom_height))
+        col["og_bottom_height"]     = float(self.bottom_height)
         col["og_texture_source"]    = self.texture_source
         col.name = name  # Keep collection name in sync
         # Update active_level reference since collection name changed

@@ -827,9 +827,10 @@ class OGProperties(PropertyGroup):
         description="Select the type of level flow object to place",
     )
     # Level flow
-    bottom_height:     FloatProperty(name="Death Plane (m)", default=-20.0, min=-500.0, max=-1.0,
+    bottom_height:     FloatProperty(name="Death Plane (m)", default=-20.0, unit="LENGTH",
                                      get=_get_death_plane, set=_set_death_plane,
-                                     description="Y height below which the player gets an endlessfall death (negative = below level floor)")
+                                     description="Height (Blender Z) below which the player gets an endless-fall death. "
+                                                 "Any value: a level high up in the sky can have it high up too")
     vis_nick_override: StringProperty(name="Vis Nickname", default="",
                                       get=_get_vis_nick_live, set=_set_vis_nick_live,
                                       description="3-letter DGO/vis nickname. Empty = auto-derive from name. Must be unique across levels.")
