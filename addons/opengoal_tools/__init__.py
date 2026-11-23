@@ -191,6 +191,16 @@ classes = (
     *_nav_ui.CLASSES,
 )
 
+def _lb_name_search(prefix):
+    """Load boundary Continue field: this .blend's and the game's checkpoints (any text still works)."""
+    def search(self, ctx, edit_text):
+        if getattr(self, prefix + "_cmd", "") != "checkpt":
+            return []
+        from .project_settings import _checkpoint_names
+        return _checkpoint_names(self, ctx, edit_text)
+    return search
+
+
 def register():
     _load_previews()
     _mp.register_handler()
@@ -457,8 +467,8 @@ def register():
     bpy.types.Object.og_lb_fwd_disp = bpy.props.EnumProperty(
         name="Fwd Display", items=LB_DISP_ITEMS, default="display")
     bpy.types.Object.og_lb_fwd_name = bpy.props.StringProperty(
-        name="Fwd Name", default="",
-        description="continue-name (checkpt) or vis nick (vis)")
+        name="Fwd Name", default="", search=_lb_name_search("og_lb_fwd"), search_options={"SUGGESTION"},
+        description="continue-name (checkpt: this .blend's and the game's checkpoints, or type any) or vis nick (vis)")
     # Backward command (crossing against the plane normal).
     bpy.types.Object.og_lb_bwd_cmd  = bpy.props.EnumProperty(
         name="Backward", items=LB_CMD_ITEMS, default="none")
@@ -469,8 +479,8 @@ def register():
     bpy.types.Object.og_lb_bwd_disp = bpy.props.EnumProperty(
         name="Bwd Display", items=LB_DISP_ITEMS, default="display")
     bpy.types.Object.og_lb_bwd_name = bpy.props.StringProperty(
-        name="Bwd Name", default="",
-        description="continue-name (checkpt) or vis nick (vis)")
+        name="Bwd Name", default="", search=_lb_name_search("og_lb_bwd"), search_options={"SUGGESTION"},
+        description="continue-name (checkpt: this .blend's and the game's checkpoints, or type any) or vis nick (vis)")
 
     # Unified spawn picker — register the load_post handler so freshly-loaded
     # blend files get their spawn list populated. The initial population for
