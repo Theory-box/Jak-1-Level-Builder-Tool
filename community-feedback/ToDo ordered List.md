@@ -6,30 +6,19 @@ Once a feature is part of a release, it'll get removed from here.
 
 # Custom Tools and actors
 
-## UV tools
-New menu in Object controls with a bunch of tools for editing UVs in ways that are useful for openGOAL. Each would be a sub menu in the general UV Tools. Each tool would work on the whole mesh (or the selected faces if in edit mode)
-### Fit Faces on UV
-This mode would take each quad face and place all 4 points in all corner coordinates of the UV (Triangles would go to 3 of the corners. N-gons wouldn't get moved)
-This would have these options:
-- Scale (default to 1.0) Scale the whole UV result by that value
-- Rotation (Default to 0.0) Rotate the whole UV result
-- Pivot: Set where the scale and rotation pivot point is centered on. Whith these options:
-  - Corner (the 0,0 corner of the UV space)
-  - Center (the 0.5,0.5 center of the UV space)
-- Placement: Set how multiple faces are placed
-  - Overlap (every face overlap at the center)
-  - Spread (Faces are spread next to each other, with connected faces still connected. Starting from a cube project so a mesh with depth can be still worked with)
-### Cube Project
-Simply use the cube project with a scale modifier as well as an option to normalise each faces or not.
-
----
-
 ## Custom pov-camera actor
-Custom actor, called "Camera animation" to spawn a pov-camera, either by entering a volume, a distance from it or only activated by another actor.
+Custom actor, called "Camera animation" (camera tab) to spawn a pov-camera, either by entering a volume, a distance from it or only activated by another actor.
 Options:
-- to choose existing pov-camera from existing ones, made one in the blend file or just text to write down any.
-- If it can only activate once, can activate on every respawn
-Make actor that use custom camera for some of their action also able to trigger these custom pov-camera instead
+- To choose between a pov-camera and normal camera
+  - For pov-camera: choose existing pov-camera from existing ones, made one in the blend file or just text to write down any.
+  - For camera: select a normal camera and an actor it's looking at + time length
+- If it can only activate once per playthrough or once every time it's called
+- Activate by:
+  - Distance: Give you a distance in meters from the actor it'll activate when jak's within that distance.
+  - Volume: Give you the volume menu to activate it. (if it's set to being able to be acticated more than once, this shouldn't call it again until the actor reload by death/load/etc, same for the distance option)
+  - Alt-actor: link to send a trigger input to activate it (use same event as basic buttons so it's easily useable with existing actors)
+Make actor that use custom camera for some of their action also able to trigger these custom pov-camera instead (not required as you can activate it with volume instead)
+- prev-actor/next-actor to play multiple Camera Animation in a row, using each of their settings. So if you activate the first one in a chain, the next one play in sequence.
 
 ---
 
@@ -40,7 +29,15 @@ Make actor that use custom camera for some of their action also able to trigger 
 
 ---
 
+## Custom ocean map creation tool
+(this section is under construction)
+- Driven by it's position/size and materials
+- Each sections should have a way to select the level of "details" for how precise you want to be 
+
+---
+
 ## Custom art group/actor/camera implementation
+(this section is under construction)
 It is possible to create your own actor fully from scratch for opengoal even with custom art group and animation. The process can be a bit cumbersome both on the blender side and opengoal side.
 Let's first starth with researching the topic to see what's needed from the blender side as well as the opengoal code side of things.
 ### Ideas for implementation
@@ -61,6 +58,7 @@ When a new actor is created it'd create a new main collection for all custom act
 ---
 
 ## Creating custom Particles tool (extra addon?)
+(this section is under construction)
 It's a lot easier to just have people creating their own particle files and edit them in terms of buidling the addon but ideally. 
 It would be very useful to have a particle editor and preview directly in blender where you can create, edit and see how each particle group work as that would be a lot quicker than editing particle files and then seeing the affect in game.
 This would, however, be a huge undertaking and isn't priority at the moment.
@@ -68,32 +66,11 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 ---
 
 # Others
-## Supress warning types
-An option to supress some warning depending on their type. New sub menu in devlopper tools `Warning settings` With an option called `Ignore warning` and under, a list of the warning by types with a checkbox (all off by default), if that box is checked is on, then those warnings don't show up in the audit or increase the icon count.
+## Modifiers on actors (mirror/array/scatter/etc)
+(this section is under construction)
+  - Ability to either directly use the modifier of blender on the actor empties or have our own menu for it in object controls
+  - When some modifier are present, the addon would export copies of the actors as well depending on the 
 
-## Import addon settings
-Option at the bottom of `addon settings` which allows you to select a blend file and it'd import all addon settings from that file, with a pop up window listing which settings will be imported and a checkbox to activate/deactivate some then an import/cancel button
-
-## Bin icon option for linked helpers 
-As well as the X button to unlink those type of helpers, add a bin button which would delete the helper as well as unlinking it.
-List of helpers that could get that bin button:
-- paths
-- waypoints
-- position empties (movie-pos, launcher destination, etc)
-- nav-sphere
-- nav-mesh
-Give a warning when pressing the bin that this will also delete the object completely, with a checkbox to not remind again if the user want to.
-
-## Move  more created objects into collections
-Both when creating them or when using collection sort
-- Camera Pivot inside camera collection
-- Launcher Destination into waypoints
-
-## Link guides from addon
-Buttons to open web browser on the guide, linking directly to the page and title. This should, if possible not add extra lines to make menus longer. So we'll see the best way to implement this.
-
-## Model import duplicate meshes
-As some meshes exist in multiple levels (ex: babak-lod0), these appear multiple times when searching in the model import. Any duplicate should be removed and only show one output.
 
 ## Better Linux support
 
