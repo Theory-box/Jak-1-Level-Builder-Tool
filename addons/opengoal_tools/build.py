@@ -13,7 +13,7 @@ from .export import (
     write_nav_gc, nav_system, tfl_nav_present, collect_actors, collect_ambients, collect_spawns,
     collect_cameras, collect_load_boundaries, collect_nav_mesh_geometry, collect_aggro_triggers,
     collect_custom_triggers, collect_task_triggers, needed_ags, needed_extras_ags, needed_code, write_jsonc,
-    write_gd, write_gc, make_fog_actor_dict, patch_level_info, patch_load_boundaries, patch_game_gp,
+    write_gd, write_gc, patch_level_info, patch_load_boundaries, patch_game_gp,
     prune_orphaned_levels, _collect_navmesh_actors, _goal_src, _level_info, _game_gp, _entity_gc,
     _load_boundary_data, _clean_orphaned_vol_links, _navmesh_to_goal, log, _data,
 )
@@ -702,11 +702,7 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     base_id = int(_get_level_prop(scene, "og_base_id", 10000))
     aggro_actors  = collect_aggro_triggers(scene)
     custom_actors = collect_custom_triggers(scene)
-    # Fog override: append a synthetic fog-control actor to the JSONC and
-    # tell write_gc to emit the matching deftype.
-    has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
-    actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-    write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
+    write_jsonc(name, actors, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
     write_nav_gc(name, scene)          # custom-nav system: the level's -nav.gc
     write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
     navmesh_actors = _collect_navmesh_actors(scene)
@@ -715,7 +711,7 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     ensure_level_tools()              # shared lt-checkpoint (checkpoint triggers)
     from .export.edited import ensure_shared
     ensure_shared(scene, _lv_objs)    # shared edited actors (lt-<file>.gc)
-    write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
+    write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), scene=scene)
     if navmesh:
         patch_entity_gc(navmesh_actors, scene)
     patch_level_info(name, spawns, scene)
@@ -898,9 +894,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         base_id = int(_get_level_prop(scene, "og_base_id", 10000))
         aggro_actors  = collect_aggro_triggers(scene)
         custom_actors = collect_custom_triggers(scene)
-        has_fog_override = bool(_get_level_prop(scene, "og_fog_override_enabled", False))
-        actors_with_fog = list(actors) + ([make_fog_actor_dict(spawns)] if has_fog_override else [])
-        write_jsonc(name, actors_with_fog, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
+        write_jsonc(name, actors, ambients, cam_actors + trigger_actors + aggro_actors + custom_actors + collect_task_triggers(scene), base_id, scene=scene)
         write_nav_gc(name, scene)
         write_gd(name, ags, code_deps, tpages, scene=scene, extras_ags=extras)
         _lv_objs = _level_objects(scene)
@@ -908,7 +902,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         ensure_level_tools()          # shared code: only written when missing / changed
         from .export.edited import ensure_shared
         ensure_shared(scene, _lv_objs)
-        write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), has_fog_override=has_fog_override, scene=scene)
+        write_gc(name, has_triggers=bool(trigger_actors), has_aggro_triggers=bool(aggro_actors), has_custom_triggers=bool(custom_actors), scene=scene)
 
         # Run (mi) — re-extracts GLB, repacks DGO, skips unchanged .gc files
         _write_boot_cp(state, boot_cp)

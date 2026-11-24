@@ -68,7 +68,6 @@ from .writers import (
     write_jsonc,
     write_gd,
     _make_continues,
-    make_fog_actor_dict,
     patch_level_info,
     patch_load_boundaries,
     patch_game_gp,

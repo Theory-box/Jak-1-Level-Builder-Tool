@@ -844,6 +844,96 @@ class OG_OT_LevelUseMoodFunc(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def _show_mood(scene, m):
+    """Open this mood's block in the Moods panel (the others folded)."""
+    for x in scene.og_moods:
+        x.expanded = x == m
+    m.show_fog = True
+
+
+def make_level_mood(ctx, col):
+    """A custom mood copying the level's current (game) mood, used by the level."""
+    from .level_settings import mood_name
+    vanilla = _db.vanilla_moods().get("moods", {})
+    src = mood_name(col)
+    base = _level_name(ctx)
+    names = {m.name for m in ctx.scene.og_moods}
+    m = ctx.scene.og_moods.add()
+    m.name = (f"{base}-mood" if f"{base}-mood" not in names
+              else next(f"{base}-mood-{k}" for k in range(2, 99) if f"{base}-mood-{k}" not in names))
+    apply_preset(m, "all")
+    load_vanilla(m, src if src in vanilla else "village1")
+    ctx.scene.og_props.mood = "custom"
+    col.og_level.mood_custom = f"*{clean(m.name)}*"
+    _show_mood(ctx.scene, m)
+    return m, (src if src in vanilla else "village1")
+
+
+class OG_OT_LevelEditMood(bpy.types.Operator):
+    """Open the level's custom mood (fog, lights, time of day) in the Moods panel"""
+    bl_idname = "og.level_edit_mood"
+    bl_label = "Edit Mood"
+
+    def execute(self, ctx):
+        from .collections import _active_level_col
+        m = level_mood(ctx.scene, _active_level_col(ctx.scene))
+        if m is None:
+            return {"CANCELLED"}
+        _show_mood(ctx.scene, m)
+        self.report({"INFO"}, f"*{clean(m.name)}*: open in the Moods panel (OpenGOAL tab)")
+        return {"FINISHED"}
+
+
+class OG_OT_LevelMakeMood(bpy.types.Operator):
+    """Make a custom mood from the level's current mood (same look to start from) and use it: its fog,
+    lights and time of day are then yours to change (Moods panel)"""
+    bl_idname = "og.level_make_mood"
+    bl_label = "Make a Custom Mood"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from .collections import _active_level_col
+        col = _active_level_col(ctx.scene)
+        if col is None:
+            return {"CANCELLED"}
+        m, src = make_level_mood(ctx, col)
+        self.report({"INFO"}, f"*{clean(m.name)}* (from {src}): open in the Moods panel")
+        return {"FINISHED"}
+
+
+class OG_OT_MoodFromFogOverride(bpy.types.Operator):
+    """The old Fog override as a custom mood: a copy of the level's mood with the override's fog in every
+    slot, used by the level (the same look); the override is turned off"""
+    bl_idname = "og.mood_from_fog_override"
+    bl_label = "Convert to a Custom Mood"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        from .collections import _active_level_col, _get_level_prop
+        col = _active_level_col(ctx.scene)
+        if col is None:
+            return {"CANCELLED"}
+        sc = ctx.scene
+        c = tuple(_get_level_prop(sc, "og_fog_color", (0.376, 0.502, 0.627)))
+        start, end = float(_get_level_prop(sc, "og_fog_start", 25.0)), float(_get_level_prop(sc, "og_fog_end", 200.0))
+        fmax, fmin = float(_get_level_prop(sc, "og_fog_max", 0.95)), float(_get_level_prop(sc, "og_fog_min", 0.10))
+        m = level_mood(sc, col)
+        if m is None:
+            m, _src = make_level_mood(ctx, col)
+        else:
+            _show_mood(sc, m)
+        m.fog_from = "custom"
+        for e in m.fog:
+            e.enabled = True
+            e.color = c[:3]
+            e.start, e.end = start, end
+            # as the override set them: max scaled to 0-255, min as it was (so the same look)
+            e.clear_start, e.clear_end = fmax * 255.0, fmin
+        sc.og_props.fog_override_enabled = False
+        self.report({"INFO"}, f"Fog override is now *{clean(m.name)}*'s fog (Moods panel)")
+        return {"FINISHED"}
+
+
 # ── drawing ────────────────────────────────────────────────────────────────
 
 def _head(box, item, kind, i, label, issues):
@@ -1094,7 +1184,8 @@ class OG_PT_Moods(bpy.types.Panel):
 CLASSES = (OGMoodTimeSlot, OGMoodFogSlot, OGMoodLightSlot, OGMoodSunSlot, OGMood, OGMoodEffect, OGMoodFunc,
            OG_OT_MoodFxAdd, OG_OT_MoodFxRemove, OG_OT_MoodFuncTemplate,
            OG_OT_MoodAdd, OG_OT_MoodRemove, OG_OT_MoodDuplicate, OG_OT_MoodTemplate, OG_OT_MoodPreset,
-           OG_OT_LevelUseMood, OG_OT_LevelUseMoodFunc, OG_PT_Moods)
+           OG_OT_LevelUseMood, OG_OT_LevelUseMoodFunc, OG_OT_LevelEditMood, OG_OT_LevelMakeMood,
+           OG_OT_MoodFromFogOverride, OG_PT_Moods)
 
 
 def register_props():
