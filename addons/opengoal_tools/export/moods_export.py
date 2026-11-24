@@ -18,7 +18,7 @@ _DGO_GAME = ("dgos", "game.gd")
 
 
 def _f(x):
-    s = f"{float(x):.6f}".rstrip("0")
+    s = f"{float(x):.4f}".rstrip("0")
     return s + "0" if s.endswith(".") else s
 
 
@@ -62,64 +62,76 @@ def _interp_gc(sym, rows):
 
 # ── tables ─────────────────────────────────────────────────────────────────
 
-def _fog_entry(e):
+def _fog_entry(e, got):
     if not e.enabled:
         return "(new 'static 'mood-fog)"
-    c, r = e.color, e.erase
+    c, r = got.get("fog", e.color), e.erase
     return ("(new 'static 'mood-fog"
             f" :fog-color {_vec(c[0] * 255, c[1] * 255, c[2] * 255, 128)}"
             f" :fog-dists {_vec(e.start * 4096, e.end * 4096, e.clear_start, e.clear_end)}"
             f" :erase-color {_vec(r[0] * 255, r[1] * 255, r[2] * 255, 128)})")
 
 
-def _light_entry(e):
+def _light_entry(e, got):
     if not e.enabled:
         return "(new 'static 'mood-lights)"
     from ..moods import blender_to_game_dir
     import math
-    d = blender_to_game_dir(e.direction)
+    d = blender_to_game_dir(got.get("dir", e.direction))
     n = math.sqrt(sum(x * x for x in d)) or 1.0
     d = [x / n for x in d]
     p = (0.0, 0.0, 0.0) if e.prt_auto else e.prt_color
     return ("(new 'static 'mood-lights"
             f" :direction {_vec(d[0], d[1], d[2], 0)}"
-            f" :lgt-color {_vec(*e.color, 1)}"
+            f" :lgt-color {_vec(*got.get('color', e.color), 1)}"
             f" :prt-color {_vec(*p, 1)}"
-            f" :amb-color {_vec(*e.ambient, 1)}"
+            f" :amb-color {_vec(*got.get('ambient', e.ambient), 1)}"
             f" :shadow {_vec(d[0], d[1], d[2], 0)})")
 
 
-def _sun_entry(e):
+def _sun_entry(e, got):
     if not e.enabled:
         return "(new 'static 'mood-sun)"
-    s, v = e.sun, e.env
+    s, v = got.get("sun", e.sun), e.env
     return ("(new 'static 'mood-sun"
             f" :sun-color {_vec(s[0] * 255, s[1] * 255, s[2] * 255, 128)}"
             f" :env-color {_vec(v[0] * 255, v[1] * 255, v[2] * 255, 255)})")
 
 
-def _table_sym(m, kind):
-    """The table the mood uses: its own (custom), a vanilla one, or another mood's."""
-    from ..moods import clean
-    src = getattr(m, f"{kind}_from")
+def _table_sym(m, kind, seen=()):
+    """The table the mood uses: its own (custom), a vanilla one, or another mood's (followed
+    to where that one's comes from)."""
+    import bpy
+    from ..moods import clean, table_source
+    src = table_source(m, kind)
     if src.startswith("vanilla:"):
         return f"*{src[8:]}-mood-{kind}-table*"
     if src.startswith("mood:"):
+        o = next((x for x in bpy.context.scene.og_moods if x.name == src[5:]), None)
+        if o is not None and o.name not in seen:
+            return _table_sym(o, kind, seen + (m.name,))
         return f"*{clean(src[5:])}-{kind}-table*"
     return f"*{clean(m.name)}-{kind}-table*"
 
 
-def mood_gc(m):
-    from ..moods import clean, _fill
+def mood_gc(m, scene=None):
+    """Match level lighting reads the level's Time of day suns / worlds here, at every export."""
+    import bpy
+    from ..moods import clean, _fill, level_lighting, table_source
     _fill(m)
     n = clean(m.name)
+    ov = [g or {} for g in level_lighting(m, scene or bpy.context.scene)]
+    if not m.match_fog:
+        ov = [{k: v for k, v in g.items() if k != "fog"} for g in ov]
     out = ["", f";; ---- mood *{n}* ----"]
+    if m.match_level:
+        out.append(f";; lights / sun{' / fog colour' if m.match_fog else ''} from the level's Time of day suns and worlds")
     for kind, entry in (("fog", _fog_entry), ("lights", _light_entry), ("sun", _sun_entry)):
-        if getattr(m, f"{kind}_from") != "custom":
+        if table_source(m, kind) != "custom":
             continue
         typ = {"fog": "mood-fog", "lights": "mood-lights", "sun": "mood-sun"}[kind]
         out += [f"(define *{n}-{kind}-table*", f"  (new 'static '{typ}-table :data", f"    (new 'static 'inline-array {typ} 8"]
-        out += [f"      {entry(e)}" for e in getattr(m, kind)]
+        out += [f"      {entry(e, got)}" for e, got in zip(getattr(m, kind), ov)]
         out[-1] += ")))"
         if kind == "lights":                     # shadows from the directions (the game's 65 degree clamp)
             out.append(f"(dotimes (i 8) (update-mood-shadow-direction (-> *{n}-lights-table* data i)))")
@@ -202,7 +214,7 @@ def export_moods(scene):
             continue
         lines = _header(name, what)
         for x in items:
-            lines += gen(x)
+            lines += gen(x, scene) if gen is mood_gc else gen(x)
         write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", "\n".join(lines) + "\n")
         _register(name)
         log(f"[moods] {name}: {len(items)} {what}")

@@ -131,6 +131,15 @@ class OGMood(bpy.types.PropertyGroup):
     sun: CollectionProperty(type=OGMoodSunSlot)
     num_stars: FloatProperty(name="Stars", default=85.0, min=0.0, max=255.0,
                              description="Stars at night (0 = none; they need more than 45 and a sky)")
+    match_level: BoolProperty(name="Match level lighting", default=False,
+                              description="Build the lights and sun tables from a level's Light Baking > Time of day "
+                                          "suns and worlds at every export, so actors are lit like the baked level")
+    match_col: PointerProperty(type=bpy.types.Collection, name="Level", poll=lambda self, c: bool(c.get("og_is_level")),
+                               description="The level whose Time of day suns / worlds are used (empty: the active level)")
+    match_strength: FloatProperty(name="Strength", default=1.0, min=0.0, soft_max=4.0,
+                                  description="Multiplies the light and ambient colours taken from the suns / worlds")
+    match_fog: BoolProperty(name="Fog colour from the world", default=False,
+                            description="Each slot's fog colour is its world's colour too")
 
 
 class OGMoodFunc(bpy.types.PropertyGroup):
@@ -207,6 +216,60 @@ def load_vanilla(m, level):
         if it:
             setattr(m, prop, f"vanilla:{it}")
     m.num_stars = float(info.get("num-stars", 85.0))
+
+
+# ── match level lighting ───────────────────────────────────────────────────
+
+def _sun_of(coll):
+    if coll is None:
+        return None
+    suns = [o for o in coll.all_objects if o.type == "LIGHT" and o.data.type == "SUN"]
+    return min(suns, key=lambda o: o.name) if suns else None
+
+
+def _world_colour(w):
+    """(colour, strength) of a world's Background node (or its viewport colour)."""
+    if w.use_nodes and w.node_tree:
+        bg = next((n for n in w.node_tree.nodes if n.type == "BACKGROUND"), None)
+        if bg is not None:
+            return tuple(bg.inputs["Color"].default_value[:3]), float(bg.inputs["Strength"].default_value)
+    return tuple(w.color), 1.0
+
+
+def match_col(m, scene):
+    from .collections import _active_level_col
+    return m.match_col or _active_level_col(scene)
+
+
+def level_lighting(m, scene):
+    """Per slot (8): what the level's Time of day gives it, or None: {dir, color, sun} from
+    the time's first sun (by name) in its light collection, {ambient, fog} from its world."""
+    out = [None] * 8
+    col = match_col(m, scene) if m.match_level else None
+    if col is None:
+        return out
+    from .bake import tod_times
+    s = m.match_strength
+    for k, (_key, _attr, _label, t) in enumerate(tod_times(col.og_bake)):
+        d = {}
+        sun = _sun_of(t.lights)
+        if sun is not None:
+            z = sun.matrix_world.to_3x3() @ __import__("mathutils").Vector((0.0, 0.0, 1.0))
+            z.normalize()                                  # a sun shines along its -Z: +Z points at it
+            c, e = tuple(sun.data.color), sun.data.energy * s
+            d.update(dir=tuple(z), color=tuple(x * e for x in c), sun=tuple(min(1.0, x) for x in c))
+        if t.world is not None:
+            c, e = _world_colour(t.world)
+            d.update(ambient=tuple(x * e * s for x in c), fog=tuple(min(1.0, x) for x in c))
+        out[k] = d or None
+    return out
+
+
+def table_source(m, kind):
+    """Where a table comes from at export: matching makes lights / sun (and fog) custom."""
+    if m.match_level and (kind in ("lights", "sun") or kind == "fog" and m.match_fog):
+        return "custom"
+    return getattr(m, f"{kind}_from")
 
 
 # ── problems ───────────────────────────────────────────────────────────────
@@ -321,7 +384,8 @@ def _copy(src, dst):
             for e in getattr(src, k):
                 _copy(e, d.add())
         elif p.type == "POINTER":
-            continue
+            if issubclass(getattr(bpy.types, p.fixed_type.identifier, type(None)), bpy.types.ID):
+                setattr(dst, k, getattr(src, k))
         else:
             try:
                 setattr(dst, k, getattr(src, k))
@@ -458,6 +522,28 @@ def _draw_mood(layout, m, i, issues):
         return
     box.prop(m, "name")
     box.operator("og.mood_template", text="Template from a game mood…", icon="PRESET").index = i
+    ov = [None] * 8
+    mb = box.box()
+    mb.prop(m, "match_level")
+    if m.match_level:
+        col = match_col(m, bpy.context.scene)
+        mb.prop(m, "match_col", text="Level")
+        if m.match_col is None and col is not None:
+            h = mb.row(); h.enabled = False; h.scale_y = 0.7
+            h.label(text=f"Empty: the active level ({col.name})")
+        r = mb.row(align=True); r.prop(m, "match_strength"); r.prop(m, "match_fog", text="Fog colour")
+        ov = level_lighting(m, bpy.context.scene)
+        if col is None:
+            w = mb.row(); w.alert = True
+            w.label(text="No level to match", icon="ERROR")
+        else:
+            for what, key in (("sun", "dir"), ("world", "ambient")):
+                miss = [SLOT_NAMES[k] for k in range(8) if m.lights[k].enabled and not (ov[k] or {}).get(key)]
+                h = mb.row(); h.enabled = False; h.scale_y = 0.7
+                if miss:
+                    h.label(text=f"No {what}: {', '.join(miss)} (kept as set below)", icon="INFO")
+                else:
+                    h.label(text=f"Every slot has a {what}", icon="CHECKMARK")
     # time of day
     if _fold(box, m, "show_time", "Time of day"):
         tb = box.box()
@@ -484,8 +570,12 @@ def _draw_mood(layout, m, i, issues):
     for kind, prop, show in (("fog", "fog_from", "show_fog"), ("lights", "lights_from", "show_lights"), ("sun", "sun_from", "show_sun")):
         r = box.row(align=True)
         r.prop(m, show, text="", emboss=False, icon="TRIA_DOWN" if getattr(m, show) else "TRIA_RIGHT")
-        r.prop(m, prop)
-        if not getattr(m, show) or getattr(m, prop) != "custom":
+        driven = table_source(m, kind) != getattr(m, prop)
+        if driven:
+            r.label(text=f"{prop[:-5].capitalize()}: driven by level lights")
+        else:
+            r.prop(m, prop)
+        if not getattr(m, show) or table_source(m, kind) != "custom":
             continue
         tb = box.box()
         for k, e in enumerate(getattr(m, kind)):
@@ -493,20 +583,25 @@ def _draw_mood(layout, m, i, issues):
             sb.prop(e, "enabled", text=f"{k} {SLOT_NAMES[k]}")
             if not e.enabled:
                 continue
+            got = ov[k] or {}
+
+            def field(name, key, s=sb):
+                f = s.row(); f.enabled = key not in got
+                f.prop(e, name)
             if kind == "fog":
-                sb.prop(e, "color")
+                field("color", "fog" if m.match_fog else "-")
                 rr = sb.row(align=True); rr.prop(e, "start"); rr.prop(e, "end")
                 rr = sb.row(align=True); rr.prop(e, "clear_start"); rr.prop(e, "clear_end")
                 sb.prop(e, "erase")
             elif kind == "lights":
-                sb.prop(e, "direction")
-                sb.prop(e, "color")
-                sb.prop(e, "ambient")
+                field("direction", "dir")
+                field("color", "color")
+                field("ambient", "ambient")
                 rr = sb.row(align=True); rr.prop(e, "prt_auto")
                 if not e.prt_auto:
                     rr.prop(e, "prt_color", text="")
             else:
-                sb.prop(e, "sun")
+                field("sun", "sun")
                 sb.prop(e, "env")
     box.prop(m, "num_stars")
 
