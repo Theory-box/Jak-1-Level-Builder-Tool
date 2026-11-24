@@ -277,8 +277,10 @@ def effect_slots(e):
 
 
 TIME_MODES = [("normal", "Normal", "The game's clock"),
-              ("lock", "Lock time", "The mood always shows this hour (the game's clock goes on: sun / moon sprites too)"),
-              ("speed", "Time speed", "This level's hours go faster / slower than the game's clock")]
+              ("lock", "Lock time", "While Jak is in the level, the game's clock stays at this hour (sun, moon and "
+                                    "sky too); it goes on from there when he leaves"),
+              ("speed", "Time speed", "While Jak is in the level, the game's clock runs this many times faster / "
+                                      "slower (sun, moon and sky too)")]
 
 
 class OGMoodFunc(bpy.types.PropertyGroup):
@@ -289,7 +291,7 @@ class OGMoodFunc(bpy.types.PropertyGroup):
     time_mode: EnumProperty(name="Time", items=TIME_MODES, default="normal")
     lock_hour: FloatProperty(name="Hour", default=12.0, min=0.0, max=23.99, description="The hour the mood shows")
     time_speed: FloatProperty(name="Speed", default=1.0, min=0.0, soft_max=10.0,
-                              description="2 = twice as fast, 0.5 = half, 0 = stays at the hour the level was entered")
+                              description="2 = twice as fast, 0.5 = half, 0 = stopped at the hour Jak came in")
 
 
 def _fill(m):

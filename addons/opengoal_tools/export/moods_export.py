@@ -247,25 +247,53 @@ def _slot_fx(e, p, state):
     return []
 
 
+# Lock time / Time speed drive the game's own clock (sun, moon, sky follow) while Jak is
+# in the level: its function takes the clock (time-ratio) and gives it back when he is in
+# another level. If the level goes away while holding it (death, warp), a small process
+# (in GAME.CGO's code, not the level's) gives it back half a second later.
+CLOCK_LIB = [
+    "",
+    ";; ---- the game's clock for Lock time / Time speed (shared) ----",
+    "(define *lt-mood-clock-owner* (the-as symbol #f))",
+    "(define *lt-mood-clock-ratio* 0.0)",
+    "(define *lt-mood-clock-stamp* (the-as time-frame 0))",
+    "(defun lt-mood-clock-release ()",
+    "  (when *lt-mood-clock-owner*",
+    "    (set! (-> *time-of-day-proc* 0 time-ratio) *lt-mood-clock-ratio*)",
+    "    (set! *lt-mood-clock-owner* #f))",
+    "  (none))",
+    "(defun lt-mood-clock-take ((who symbol) (speed float))",
+    "  (when (not *lt-mood-clock-owner*)",
+    "    (set! *lt-mood-clock-ratio* (-> *time-of-day-proc* 0 time-ratio))",
+    "    (process-spawn-function process",
+    "      (lambda :behavior process ()",
+    "        (until (or (not *lt-mood-clock-owner*) (< (seconds 0.5) (- (current-time) *lt-mood-clock-stamp*)))",
+    "          (suspend))",
+    "        (lt-mood-clock-release))))",
+    "  (set! *lt-mood-clock-owner* who)",
+    "  (set! *lt-mood-clock-stamp* (current-time))",
+    "  (set! (-> *time-of-day-proc* 0 time-ratio) (* speed *lt-mood-clock-ratio*))",
+    "  (none))",
+    "(defun lt-mood-clock-here? ((lvl-idx int))",
+    "  (and *target* (= (-> *target* current-level) (-> *level* level lvl-idx))))",
+]
+
+
 def _time_fx(f, n):
-    if f.time_mode == "lock":
-        return [f"  (set! arg1 {_f(f.lock_hour)}) ; lock time"]
-    if f.time_mode != "speed":
+    if f.time_mode not in ("lock", "speed"):
         return []
-    c = f"*{n}-clock"
-    return ["  ;; time speed: this level's own clock, following the game's clock's steps x speed",
-            "  (let ((tnow (current-time)))",
-            f"    (if (or (zero? {c}-last*) (< (seconds 0.2) (- tnow {c}-last*)))",
-            f"        (set! {c}* arg1)",
-            f"        (let ((d (- arg1 {c}-game*)))",
-            "          (if (< d -12.0) (+! d 24.0))",
-            "          (if (< 12.0 d) (+! d -24.0))",
-            f"          (+! {c}* (* d {_f(f.time_speed)}))",
-            f"          (while (>= {c}* 24.0) (+! {c}* -24.0))",
-            f"          (while (< {c}* 0.0) (+! {c}* 24.0))))",
-            f"    (set! {c}-game* arg1)",
-            f"    (set! {c}-last* tnow))",
-            f"  (set! arg1 {c}*)"]
+    me = f"'update-mood-{n}"
+    if f.time_mode == "lock":
+        h = _f(f.lock_hour)
+        take = [f"     (lt-mood-clock-take {me} 0.0)", f"     (set-time-of-day {h})", f"     (set! arg1 {h}))"]
+        what = "lock time"
+    else:
+        take = [f"     (lt-mood-clock-take {me} {_f(f.time_speed)}))"]
+        what = "time speed"
+    return [f"  ;; {what}: the game's clock, while Jak is in this level",
+            "  (cond",
+            "    ((lt-mood-clock-here? arg2)"] + take + [
+            f"    ((= *lt-mood-clock-owner* {me}) (lt-mood-clock-release)))"]
 
 
 def func_gc(f):
@@ -273,8 +301,6 @@ def func_gc(f):
     n = clean(f.name)
     fx = [(e, f"{n}-fx{j}") for j, e in enumerate(f.effects) if e.enabled]
     out = ["", f";; ---- mood function update-mood-{n} ----"]
-    if f.time_mode == "speed":
-        out += [f"(define *{n}-clock* 0.0)", f"(define *{n}-clock-game* 0.0)", f"(define *{n}-clock-last* (the-as time-frame 0))"]
     for e, p in fx:
         out += _fx_globals(e, p)
     fog = [x for e, p in fx for x in _fog_fx(e)]
@@ -346,6 +372,8 @@ def export_moods(scene):
                 _unregister(name)
             continue
         lines = _header(name, what)
+        if gen is func_gc and any(x.time_mode in ("lock", "speed") for x in items):
+            lines += CLOCK_LIB
         for x in items:
             lines += gen(x, scene) if gen is mood_gc else gen(x)
         write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", "\n".join(lines) + "\n")
