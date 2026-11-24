@@ -140,10 +140,14 @@ class OG_PT_LevelSettings(Panel):
         head, body = layout.panel("og_lvl_visuals", default_closed=True)
         head.label(text="Visuals", icon="LIGHT_SUN")
         if body is not None:
-            body.prop(props, "mood")
+            r = body.row(align=True)
+            r.prop(props, "mood")
+            r.operator("og.level_use_mood", text="", icon="FILE_BLEND")      # this file's moods (Moods tab)
             if props.mood == "custom":
                 body.prop(s, "mood_custom")
-            body.prop(s, "mood_func")
+            r = body.row(align=True)
+            r.prop(s, "mood_func")
+            r.operator("og.level_use_mood_func", text="", icon="FILE_BLEND")
             if s.mood_func == "CUSTOM":
                 body.prop(s, "mood_func_custom")
             body.prop(s, "ocean")

@@ -727,6 +727,11 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     errs = export_tasks(scene)
     if errs:
         raise RuntimeError("Tasks: " + "; ".join(errs[:3]))
+    # custom moods / mood functions of the .blend (Moods tab; GAME.CGO, only written when changed)
+    from .export.moods_export import export_moods
+    errs = export_moods(scene)
+    if errs:
+        raise RuntimeError("Moods: " + "; ".join(errs[:3]))
     return navmesh_actors
 
 

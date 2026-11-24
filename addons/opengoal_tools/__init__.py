@@ -126,6 +126,7 @@ from . import required as _required_mod
 from . import settings_import as _settings_import
 from . import guide_links as _guide_links
 from . import pov as _pov_mod
+from . import moods as _moods
 from . import tasks as _tasks
 from . import game_text as _game_text
 from . import hints as _hints
@@ -184,6 +185,7 @@ classes = (
     *_settings_import.CLASSES,
     *_guide_links.CLASSES,
     *_pov_mod.CLASSES,
+    *_moods.CLASSES,
     *_tasks.CLASSES,
     *_game_text.CLASSES,
     *_hints.CLASSES,
@@ -239,6 +241,7 @@ def register():
     _export_filter.register_props()
     from . import required as _required
     _required.register_props()
+    _moods.register_props()
     _required.register_handlers()
 
     # Audit results — registered after OGAuditResult is in classes tuple.
@@ -536,6 +539,7 @@ def unregister():
     from . import required as _required
     _required.unregister_handlers()
     _required.unregister_props()
+    _moods.unregister_props()
     bpy.types.MATERIAL_PT_custom_props.remove(_draw_mat)
     try:
         from .panels.level import draw_text_editor_header as _draw_txt_hdr
