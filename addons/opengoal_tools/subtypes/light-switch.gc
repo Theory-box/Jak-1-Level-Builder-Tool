@@ -1,0 +1,91 @@
+;; edits: light-switch
+;; place: shared
+;; Light switch: a custom actor (no vanilla one) that turns a palette slot (a baked
+;; time of day layer) on / off, fading. Every frame it sets the game's palette fade
+;; control for its slot (set-fade!, like the cave crystals: the nearest one to the
+;; camera wins); the level's mood function copies it into the slot's strength when it
+;; has a Triggered slot effect on that slot (Moods tab).
+;;   palette-slot: the slot (0-7); on-strength: its strength when on (1 = full).
+;;   fade-time: seconds from off to on / on to off.
+;;   switch-flags: 1 start on, 2 saved (being on is kept with the game: entity complete),
+;;     4 volume: on while Jak is inside (else: each entry switches it).
+;;   events: 'trigger switches it, 'untrigger / 'off turn it off, 'on turns it on.
+;;   trigger-actor dead / complete: switches it once.
+(deftype __TYPE__ (process-drawable)
+  ((slot        int32)
+   (on-str      float)
+   (fade-on     float)
+   (fade-off    float)
+   (fade        float)
+   (flags       uint32)
+   (switch      symbol)
+   (dead-done   symbol)
+   (was-in      symbol)
+   (has-vol     symbol)
+   (trigger     entity-actor))
+  (:states
+   __TYPE__-idle))
+
+(defconstant __TYPE__-start-on 1)
+(defconstant __TYPE__-saved 2)
+(defconstant __TYPE__-hold 4)
+
+(defun __TYPE__-set ((this __TYPE__) (on symbol))
+  (when (!= on (-> this switch))
+    (set! (-> this switch) on)
+    (if (logtest? (-> this flags) __TYPE__-saved)
+        (process-entity-status! this (entity-perm-status complete) on))))
+
+(defstate __TYPE__-idle (__TYPE__)
+  :event
+    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))
+      (case message
+        (('on) (__TYPE__-set self #t))
+        (('off 'untrigger) (__TYPE__-set self #f))
+        (('trigger) (__TYPE__-set self (not (-> self switch))))))
+  :code
+    (behavior ()
+      (loop
+        (let ((tr (-> self trigger)))
+          (when (and tr (not (-> self dead-done))
+                     (logtest? (-> tr extra perm status) (entity-perm-status dead complete)))
+            (set! (-> self dead-done) #t)
+            (__TYPE__-set self (not (-> self switch)))))
+        (when (and (-> self has-vol) *target*)
+          (let ((in (point-in-vol? (-> self vol) (-> *target* control trans))))
+            (cond
+              ((logtest? (-> self flags) __TYPE__-hold) (if (!= in (-> self was-in)) (__TYPE__-set self in)))
+              ((and in (not (-> self was-in))) (__TYPE__-set self (not (-> self switch)))))
+            (set! (-> self was-in) in)))
+        (let ((dt (seconds-per-frame)))
+          (set! (-> self fade)
+                (if (-> self switch)
+                    (if (< 0.0 (-> self fade-on)) (fmin 1.0 (+ (-> self fade) (/ dt (-> self fade-on)))) 1.0)
+                    (if (< 0.0 (-> self fade-off)) (fmax 0.0 (- (-> self fade) (/ dt (-> self fade-off)))) 0.0))))
+        (set-fade! *palette-fade-controls* (-> self slot) (* (-> self fade) (-> self on-str))
+                   (vector-vector-distance (-> self root trans) (-> *math-camera* trans)) (-> self root trans))
+        (suspend))))
+
+(defmethod init-from-entity! ((this __TYPE__) (arg0 entity-actor))
+  (set! (-> this root) (new 'process 'trsqv))
+  (process-drawable-from-entity! this arg0)
+  (logclear! (-> this mask) (process-mask actor-pause))
+  (set! (-> this slot) (max 0 (min 7 (the int (res-lump-value arg0 'palette-slot uint32)))))
+  (set! (-> this on-str) (res-lump-float arg0 'on-strength :default 1.0))
+  (let ((f (res-lump-data arg0 'fade-time (pointer float))))
+    (set! (-> this fade-on) (if f (-> f 0) 1.0))
+    (set! (-> this fade-off) (if f (-> f 1) 1.0)))
+  (set! (-> this flags) (res-lump-value arg0 'switch-flags uint32))
+  (set! (-> this switch)
+        (the-as symbol (if (and (logtest? (-> this flags) __TYPE__-saved)
+                                (logtest? (-> arg0 extra perm status) (entity-perm-status complete)))
+                           #t
+                           (logtest? (-> this flags) __TYPE__-start-on))))
+  (set! (-> this fade) (if (-> this switch) 1.0 0.0))
+  (set! (-> this dead-done) #f)
+  (set! (-> this was-in) #f)
+  (set! (-> this trigger) (entity-actor-lookup arg0 'trigger-actor 0))
+  (set! (-> this vol) (new 'process 'vol-control this))
+  (set! (-> this has-vol) (< 0 (-> this vol pos-vol-count)))
+  (go __TYPE__-idle)
+  (none))

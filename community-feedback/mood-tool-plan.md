@@ -113,6 +113,16 @@ Same blocks (Export / Duplicate / Delete, collapsible), with **Name** (default `
 5. Slot names in Light Baking › Time of day are only labels: the colour attributes keep their names
    (`_SUNRISE` … `_GREENSUN`), which is what the level builder reads.
 
+## Found while building
+
+- `*time-of-day-effects*` (the game's switch for the mood functions' flames / lava / lightning) is set when a level
+  loads: off when its bsp has no nodes, which is every custom level. So the vanilla functions' effects never run in
+  custom levels (or in vanilla levels loaded next to one). The add-on's functions don't check it.
+- The game doesn't blend sun directions between two slots: actors get both slots' lights (dir0 / dir1) weighted.
+- Effects run on seconds of game time (stop when paused, same at any frame rate); their state is in globals named
+  after the function. Lightning keeps the game's helper (1 byte of the mood's effect state) and runs first, since it
+  clears the effect light that lava glow sets.
+
 ## Triggered slot (how it works)
 
 The game already has the mechanism, used by the cave crystals and Lost Precursor City's dark eco water:

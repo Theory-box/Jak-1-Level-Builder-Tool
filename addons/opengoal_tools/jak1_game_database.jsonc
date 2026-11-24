@@ -13557,6 +13557,50 @@
       ]
     },
     {
+      "etype": "light-switch",
+      "label": "Light switch",
+      "category": "Effects",
+      "parent": "process-drawable",
+      "custom_actor": true,
+      "edited": "light-switch",
+      "shape": "SPHERE",
+      "description": "Addon actor (exports as lt-light-switch, in a shared file): turns a palette slot (a baked time of day layer) on and off, fading. Bake the switchable lights into that slot only (Light Baking > Time of day > its light collection) and give the level's mood function a Triggered slot effect on it (Moods tab). 'trigger (a button's notify list, a Camera animation ...) switches it, 'untrigger / 'off turn it off, 'on on; a linked volume or a trigger actor dying can switch it too. With several switches on one slot, the one nearest the camera wins.",
+      "panels": [
+        {"panel": "fact-options", "export": false},
+        {"panel": "scale", "export": false},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_ls_slot", "label": "Slot", "type": "int", "default": 5, "min": 0, "max": 7,
+             "lump": {"key": "palette-slot", "type": "uint32"}, "write_if": "always",
+             "note": "The palette slot (0 Sunrise ... 7 Green Sun) it turns on: free in the level's mood (not in its timeline) and a Triggered slot effect in its mood function."},
+            {"key": "og_ls_strength", "label": "On strength", "type": "float", "default": 1.0, "min": 0.0, "max": 1.99,
+             "lump": {"key": "on-strength", "type": "float"}, "write_if": "if_not_default",
+             "note": "The slot's strength when on (1 = the baked layer as it is)."},
+            {"key": "og_ls_fade_on", "label": "Fade on (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 0}, "write_if": "always"},
+            {"key": "og_ls_fade_off", "label": "Fade off (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 1}, "write_if": "always"},
+            {"key": "og_ls_start_on", "label": "Starts on", "type": "bool", "default": false,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true"},
+            {"key": "og_ls_saved", "label": "Saved", "type": "bool", "default": false,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true",
+             "note": "Being on is kept with the game (it is still on after reloading the level or the save)."},
+            {"key": "og_ls_hold", "label": "Volume: on while inside", "type": "bool", "default": true,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
+             "note": "With a linked volume: on while Jak is inside, off when he leaves. Off: each time he enters it switches."}
+          ]
+        },
+        {"panel": "volume"},
+        {
+          "panel": "actor-link",
+          "slots": [
+            {"lump_key": "trigger-actor", "slot": 0, "label": "Trigger actor (its death switches the light)", "accepts": ["any"], "required": false}
+          ]
+        }
+      ]
+    },
+    {
       "etype": "sagesail",
       "label": "Sage's Hut Sail",
       "category": "Visuals",

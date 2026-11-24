@@ -151,8 +151,8 @@ EFFECTS = (
                                          "(needs a sky with flash textures, like Rock Village's)"),
     ("lava", "Lava glow", "A flickering glow from below on actors, and 4 slots cross-fading at random"),
     ("caustics", "Caustics", "Underwater shimmer: 4 slots cycling"),
-    ("actor", "Actor-driven slot", "The slot follows the actors that set its palette fade control "
-                                   "(cave crystals, Light switch ...)"),
+    ("actor", "Triggered slot", "The slot follows Light switch actors (and the game's actors that set its "
+                                "palette fade control: cave crystals ...): switchable lights"),
     ("fog_pitch", "Fog by camera pitch", "Looking up, the fog fades toward a colour and clears (like Boggy Swamp)"),
     ("fog_breath", "Fog breathing", "The fog distances slowly go in and out"),
 )
