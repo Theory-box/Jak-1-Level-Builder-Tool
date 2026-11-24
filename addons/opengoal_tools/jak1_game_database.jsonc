@@ -13007,7 +13007,9 @@
     },
     {
       "etype": "cavecrystal",
+      "edited": "cavecrystal",
       "label": "Cave Crystal",
+      "description": "Edited (subtypes/cavecrystal.gc): hit (or 'trigger, if on), it glows for its Light time and lights a palette slot (a baked time of day layer) through the palette fade controls; the level's mood function needs a Triggered slot effect on that slot (Moods tab). Slot: vanilla uses its place in the next-actor chain + 1, or pick one. Glow strength, Fade out time and the Sage's hints can be changed.",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "cavecrystal-ag.go",
@@ -13032,7 +13034,33 @@
                 "type": "float"
               },
               "write_if": "if_not_default"
-            }
+            },
+            {"key": "og_crystal_slot", "label": "Slot", "type": "enum", "default": "chain",
+             "choices": [
+                {"value": "chain", "label": "Chain place + 1 (vanilla)", "lump_value": 0},
+                {"value": "s0", "label": "0 Sunrise", "lump_value": 1},
+                {"value": "s1", "label": "1 Morning", "lump_value": 2},
+                {"value": "s2", "label": "2 Noon", "lump_value": 3},
+                {"value": "s3", "label": "3 Afternoon", "lump_value": 4},
+                {"value": "s4", "label": "4 Sunset", "lump_value": 5},
+                {"value": "s5", "label": "5 Twilight", "lump_value": 6},
+                {"value": "s6", "label": "6 Evening", "lump_value": 7},
+                {"value": "s7", "label": "7 Green Sun", "lump_value": 8}
+             ],
+             "lump": {"key": "palette-slot", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "The palette slot (baked time of day layer) it lights while glowing. The level's mood function needs a Triggered slot effect on it (Moods tab). Vanilla: its place in the next-actor chain (0-6) + 1. A slot set here can be shared by several crystals: the lit one nearest the camera wins."},
+            {"key": "og_crystal_strength", "label": "Glow strength", "type": "float", "default": 1.0, "min": 0.0, "max": 2.0,
+             "lump": {"key": "glow-strength", "type": "float"}, "write_if": "if_not_default",
+             "note": "Times the slot's strength (vanilla: a flash to 2, then 1 while lit)."},
+            {"key": "og_crystal_fade", "label": "Fade out (s)", "type": "float", "default": 0.7, "min": 0.0,
+             "lump": {"key": "fade-out", "type": "float"}, "write_if": "if_not_default",
+             "note": "Seconds from lit to dark once its Light time is up."},
+            {"key": "og_crystal_trigger", "label": "Lit by 'trigger", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true",
+             "note": "Another actor sending 'trigger (a button's notify list ...) lights it too (relights it if lit)."},
+            {"key": "og_crystal_no_hints", "label": "No sage hints", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true",
+             "note": "Vanilla: the Sage's hints about the crystals play near one and when its light ends."}
           ]
         },
         {
