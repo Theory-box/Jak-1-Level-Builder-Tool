@@ -1453,11 +1453,13 @@ def draw_tod(layout, level_col):
     row.operator("og.tod_default_worlds", icon="WORLD")
     row.operator("og.tod_default_suns", icon="LIGHT_SUN")
     box.operator_menu_enum("og.tod_copy_from", "level", text="Copy Worlds / Collections from", icon="COPYDOWN")
-    for k, a, l, t in tod_times(s):
+    from .moods import slot_uses
+    uses = slot_uses(bpy.context.scene, level_col)      # labels only: the attributes keep their names
+    for n, (k, a, l, t) in enumerate(tod_times(s)):
         col = box.column(align=True)
         row = col.row(align=True)
         row.prop(t, "show", text="", emboss=False, icon="TRIA_DOWN" if (t.show and t.enabled) else "TRIA_RIGHT")
-        row.prop(t, "enabled", text=f"{l}  ({a})")
+        row.prop(t, "enabled", text=f"{n} {l}" + (f": {uses[n]}" if uses[n] else "") + f"  ({a})")
         op = row.operator("og.show_bake_attr", text="", icon="HIDE_OFF"); op.attr = a
         if not (t.show and t.enabled):
             continue

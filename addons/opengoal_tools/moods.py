@@ -142,10 +142,96 @@ class OGMood(bpy.types.PropertyGroup):
                             description="Each slot's fog colour is its world's colour too")
 
 
+# ── mood function effects ──────────────────────────────────────────────────
+
+EFFECTS = (
+    ("flicker", "Flicker", "Fires / lamps: the slots' light flares up at random, one slot at a time (1-4 slots)"),
+    ("pulse", "Pulse", "A slow glow going up and down, always or at night only"),
+    ("lightning", "Lightning + thunder", "Storm flashes on sky and palette slots, with the thunder sound "
+                                         "(needs a sky with flash textures, like Rock Village's)"),
+    ("lava", "Lava glow", "A flickering glow from below on actors, and 4 slots cross-fading at random"),
+    ("caustics", "Caustics", "Underwater shimmer: 4 slots cycling"),
+    ("actor", "Actor-driven slot", "The slot follows the actors that set its palette fade control "
+                                   "(cave crystals, Light switch ...)"),
+    ("fog_pitch", "Fog by camera pitch", "Looking up, the fog fades toward a colour and clears (like Boggy Swamp)"),
+    ("fog_breath", "Fog breathing", "The fog distances slowly go in and out"),
+)
+EFFECT_LABEL = {k: l for k, l, _d in EFFECTS}
+SHAPES = [("sine", "Smooth", "A smooth wave"), ("triangle", "Linear", "Goes in and out at a steady speed"),
+          ("wander", "Wander", "Two waves mixed: irregular, like the weather")]
+
+
+class OGMoodEffect(bpy.types.PropertyGroup):
+    kind: EnumProperty(name="Effect", items=[(k, l, d) for k, l, d in EFFECTS])
+    enabled: BoolProperty(name="On", default=True)
+    expanded: BoolProperty(default=True)
+    slot: IntProperty(name="Slot", default=5, min=0, max=7, description="The (first) palette slot this effect uses")
+    count: IntProperty(name="Slots", default=1, min=1, max=4, description="How many slots, from the first one")
+    base: FloatProperty(name="Base", default=0.5, min=0.0, soft_max=2.0, description="The slot's strength when calm (1 = full)")
+    strength: FloatProperty(name="Strength", default=0.5, min=0.0, soft_max=2.0, description="How much it adds at its peak")
+    speed: FloatProperty(name="Speed", default=1.0, min=0.05, soft_max=10.0, description="1 = the game's speed")
+    period: FloatProperty(name="Period (s)", default=4.27, min=0.1, soft_max=60.0, description="Seconds for one wave")
+    phase: FloatProperty(name="Phase", default=0.0, min=0.0, max=1.0, subtype="FACTOR",
+                         description="Where in its wave it starts (offset pulses so they don't move together)")
+    night_only: BoolProperty(name="Night only", default=False,
+                             description="On from 19:00 to 7:00, fading in / out over an hour")
+    sky_slot: IntProperty(name="Sky slot", default=2, min=0, max=7, description="First sky texture slot that flashes")
+    quiet: BoolProperty(name="Distant", default=False,
+                        description="Far away storm: rarer, quieter thunder, only the sky flashes (no palette slots)")
+    color: FloatVectorProperty(name="Colour", subtype="COLOR", size=3, min=0.0, max=1.0, default=(1.0, 0.364, 0.0))
+    drive_slots: BoolProperty(name="Cross-fade 4 slots", default=True, description="Off: only the glow on actors")
+    amount: FloatProperty(name="Colour amount", default=0.5, min=0.0, max=1.0, subtype="FACTOR",
+                          description="How far the fog goes toward the colour when looking straight up")
+    clear: FloatProperty(name="Clearing", default=0.666, min=0.0, max=1.0, subtype="FACTOR",
+                         description="How much the fog clears when looking straight up")
+    dist_min: FloatProperty(name="Nearest", default=0.75, min=0.05, soft_max=4.0,
+                            description="Fog start / end times this at the nearest")
+    dist_max: FloatProperty(name="Farthest", default=1.25, min=0.05, soft_max=4.0,
+                            description="Fog start / end times this at the farthest")
+    shape: EnumProperty(name="Shape", items=SHAPES, default="sine")
+
+
+EFFECT_DEFAULTS = {
+    "flicker": dict(slot=4, count=4, base=0.333, strength=0.5),
+    "pulse": dict(slot=5, base=0.875, strength=0.25, period=4.27),
+    "lightning": dict(slot=2, count=2, sky_slot=2),
+    "lava": dict(slot=4, strength=1.0),
+    "caustics": dict(slot=4),
+    "actor": dict(slot=1),
+    "fog_pitch": dict(color=(0.0, 32 / 255, 48 / 255)),
+    "fog_breath": dict(period=20.0),
+}
+
+
+def effect_slots(e):
+    """Palette slots an effect writes."""
+    if e.kind in ("pulse", "actor"):
+        return [e.slot]
+    if e.kind == "flicker":
+        return list(range(e.slot, e.slot + e.count))
+    if e.kind == "lightning":
+        return [] if e.quiet else list(range(e.slot, e.slot + e.count))
+    if e.kind == "lava":
+        return list(range(e.slot, e.slot + 4)) if e.drive_slots else []
+    if e.kind == "caustics":
+        return list(range(e.slot, e.slot + 4))
+    return []
+
+
+TIME_MODES = [("normal", "Normal", "The game's clock"),
+              ("lock", "Lock time", "The mood always shows this hour (the game's clock goes on: sun / moon sprites too)"),
+              ("speed", "Time speed", "This level's hours go faster / slower than the game's clock")]
+
+
 class OGMoodFunc(bpy.types.PropertyGroup):
     name: StringProperty(name="Name", default="", description="The function is update-mood-<name> in the game")
     export: BoolProperty(name="Export", default=True)
     expanded: BoolProperty(default=True)
+    effects: CollectionProperty(type=OGMoodEffect)
+    time_mode: EnumProperty(name="Time", items=TIME_MODES, default="normal")
+    lock_hour: FloatProperty(name="Hour", default=12.0, min=0.0, max=23.99, description="The hour the mood shows")
+    time_speed: FloatProperty(name="Speed", default=1.0, min=0.0, soft_max=10.0,
+                              description="2 = twice as fast, 0.5 = half, 0 = stays at the hour the level was entered")
 
 
 def _fill(m):
@@ -272,6 +358,65 @@ def table_source(m, kind):
     return getattr(m, f"{kind}_from")
 
 
+# ── which level uses what ──────────────────────────────────────────────────
+
+def level_mood(scene, col):
+    """This file's mood a level uses (or None)."""
+    if col is None or str(col.get("og_mood", "")) != "custom":
+        return None
+    v = col.og_level.mood_custom.strip().lstrip("'")
+    return next((m for m in scene.og_moods if f"*{clean(m.name)}*" == v), None)
+
+
+def level_func(scene, col):
+    """This file's mood function a level uses (or None)."""
+    if col is None or col.og_level.mood_func != "CUSTOM":
+        return None
+    v = col.og_level.mood_func_custom.strip().lstrip("'")
+    return next((f for f in scene.og_mood_funcs if f"update-mood-{clean(f.name)}" == v), None)
+
+
+def timeline_slots(m):
+    """Slots the mood's own timeline lights (palette hours from the timeline)."""
+    if m is None or m.palette_interp != "timeline":
+        return set()
+    if m.time_preset == "fixed":
+        return {m.fixed_slot}
+    return {k for k, t in enumerate(m.times) if t.enabled}
+
+
+def slot_uses(scene, col):
+    """8 labels: what the level's mood function / mood use each slot for ('' = nothing known)."""
+    out = [[] for _ in range(8)]
+    f = level_func(scene, col)
+    for e in (f.effects if f else ()):
+        if e.enabled:
+            for s in effect_slots(e):
+                if s < 8:
+                    out[s].append(EFFECT_LABEL[e.kind])
+    m = level_mood(scene, col)
+    for s in timeline_slots(m):
+        out[s].insert(0, "time" if m.time_preset == "fixed" else f"time {m.times[s].hour}:00")
+    return [", ".join(x) for x in out]
+
+
+def level_conflicts(scene, col):
+    """Slots the level's mood uses for time that its function also uses for an effect."""
+    f = level_func(scene, col)
+    used = {s for e in (f.effects if f else ()) if e.enabled for s in effect_slots(e)}
+    return sorted(used & timeline_slots(level_mood(scene, col)))
+
+
+def effect_overlaps(f):
+    """[(slot, [effect labels])] used by two effects of the function (or past slot 7)."""
+    seen = {}
+    for e in f.effects:
+        if e.enabled:
+            for s in effect_slots(e):
+                seen.setdefault(s, []).append(EFFECT_LABEL[e.kind])
+    return [(s, l) for s, l in sorted(seen.items()) if len(l) > 1 or s > 7]
+
+
 # ── problems ───────────────────────────────────────────────────────────────
 
 def problems(scene):
@@ -391,6 +536,38 @@ def _copy(src, dst):
                 setattr(dst, k, getattr(src, k))
             except (TypeError, AttributeError):
                 pass
+
+
+class OG_OT_MoodFxAdd(bpy.types.Operator):
+    """Add an effect to this mood function"""
+    bl_idname = "og.mood_fx_add"
+    bl_label = "Add Effect"
+    bl_options = {"REGISTER", "UNDO"}
+    index: IntProperty(options={"HIDDEN"})
+    kind: EnumProperty(name="Effect", items=[(k, l, d) for k, l, d in EFFECTS])
+
+    def execute(self, ctx):
+        f = ctx.scene.og_mood_funcs[self.index]
+        e = f.effects.add()
+        e.kind = self.kind
+        for k, v in EFFECT_DEFAULTS.get(self.kind, {}).items():
+            setattr(e, k, v)
+        return {"FINISHED"}
+
+
+class OG_OT_MoodFxRemove(bpy.types.Operator):
+    """Remove this effect"""
+    bl_idname = "og.mood_fx_remove"
+    bl_label = "Remove Effect"
+    bl_options = {"REGISTER", "UNDO"}
+    index: IntProperty(options={"HIDDEN"})
+    fx: IntProperty(options={"HIDDEN"})
+
+    def execute(self, ctx):
+        f = ctx.scene.og_mood_funcs[self.index]
+        if 0 <= self.fx < len(f.effects):
+            f.effects.remove(self.fx)
+        return {"FINISHED"}
 
 
 def _template_items(self, ctx):
@@ -594,7 +771,14 @@ def _draw_mood(layout, m, i, issues):
                 rr = sb.row(align=True); rr.prop(e, "clear_start"); rr.prop(e, "clear_end")
                 sb.prop(e, "erase")
             elif kind == "lights":
-                field("direction", "dir")
+                # X / Y / Z on the left, the sphere on the right: both edit the same value
+                sp = sb.split(factor=0.6)
+                sp.enabled = "dir" not in got
+                xyz = sp.column(align=True)
+                xyz.label(text="Direction (to the light):")
+                for j, ax in enumerate("XYZ"):
+                    xyz.prop(e, "direction", index=j, text=ax)
+                sp.prop(e, "direction", text="")
                 field("color", "color")
                 field("ambient", "ambient")
                 rr = sb.row(align=True); rr.prop(e, "prt_auto")
@@ -606,13 +790,77 @@ def _draw_mood(layout, m, i, issues):
     box.prop(m, "num_stars")
 
 
+def _slots_text(e):
+    s = effect_slots(e)
+    if not s:
+        return ""
+    if len(s) == 1:
+        return f"slot {s[0]} ({SLOT_NAMES[s[0]] if s[0] < 8 else '?'})"
+    return f"slots {s[0]}-{s[-1]}"
+
+
+def _grey(layout, text, icon="NONE"):
+    h = layout.row(); h.enabled = False; h.scale_y = 0.7
+    h.label(text=text, icon=icon)
+
+
+def _draw_effect(layout, i, j, e):
+    box = layout.box()
+    r = box.row(align=True)
+    r.prop(e, "expanded", text="", emboss=False, icon="TRIA_DOWN" if e.expanded else "TRIA_RIGHT")
+    r.prop(e, "enabled", text="")
+    r.label(text=f"{EFFECT_LABEL[e.kind]}  {_slots_text(e)}")
+    op = r.operator("og.mood_fx_remove", text="", icon="X", emboss=False); op.index, op.fx = i, j
+    if not e.expanded:
+        return
+    c = box.column(align=True)
+    c.enabled = e.enabled
+    k = e.kind
+    if k in ("flicker", "pulse", "lava", "caustics", "actor"):
+        c.prop(e, "slot", text="First slot" if k in ("flicker", "lava", "caustics") else "Slot")
+    if k == "flicker":
+        c.prop(e, "count"); c.prop(e, "base"); c.prop(e, "strength"); c.prop(e, "speed")
+    elif k == "pulse":
+        c.prop(e, "base"); c.prop(e, "strength", text="Up / down"); c.prop(e, "period"); c.prop(e, "phase")
+        c.prop(e, "night_only")
+    elif k == "lightning":
+        c.prop(e, "quiet")
+        c.prop(e, "count", text="Flash slots")
+        c.prop(e, "sky_slot")
+        sub = c.column(align=True); sub.enabled = not e.quiet
+        sub.prop(e, "slot", text="First palette slot")
+        _grey(box, "Each palette slot's lights entry is also the flash light on actors", "INFO")
+        _grey(box, "Needs a sky with flash textures and the thunder sound", "INFO")
+    elif k == "lava":
+        c.prop(e, "color"); c.prop(e, "strength"); c.prop(e, "speed"); c.prop(e, "drive_slots")
+    elif k == "caustics":
+        c.prop(e, "speed")
+    elif k == "actor":
+        _grey(box, "Use a Light switch actor (or the game's cave crystals ...) on this slot", "INFO")
+    elif k == "fog_pitch":
+        c.prop(e, "color"); c.prop(e, "amount"); c.prop(e, "clear")
+    elif k == "fog_breath":
+        r = c.row(align=True); r.prop(e, "dist_min"); r.prop(e, "dist_max")
+        c.prop(e, "period"); c.prop(e, "shape")
+
+
 def _draw_func(layout, f, i, issues):
     box = layout.box()
     if not _head(box, f, "func", i, f"update-mood-{clean(f.name) or '?'}", issues):
         return
     box.prop(f, "name")
-    h = box.row(); h.enabled = False; h.scale_y = 0.7
-    h.label(text="Mixes the mood's tables by the hour (effects: coming next)", icon="INFO")
+    r = box.row(align=True)
+    r.prop(f, "time_mode")
+    if f.time_mode == "lock":
+        r.prop(f, "lock_hour")
+    elif f.time_mode == "speed":
+        r.prop(f, "time_speed")
+    _grey(box, f"Effects ({len(f.effects)}): slots off in the mood's timeline are free for them", "INFO")
+    for j, e in enumerate(f.effects):
+        _draw_effect(box, i, j, e)
+    for s, labels in effect_overlaps(f):
+        _grey(box, f"Slot {s}: {' + '.join(labels)}" if s < 8 else f"Slot {s} doesn't exist (0-7)", "ERROR")
+    box.operator_menu_enum("og.mood_fx_add", "kind", text="Add Effect", icon="ADD").index = i
 
 
 def draw(layout, ctx):
@@ -652,7 +900,8 @@ class OG_PT_Moods(bpy.types.Panel):
         draw(self.layout, ctx)
 
 
-CLASSES = (OGMoodTimeSlot, OGMoodFogSlot, OGMoodLightSlot, OGMoodSunSlot, OGMood, OGMoodFunc,
+CLASSES = (OGMoodTimeSlot, OGMoodFogSlot, OGMoodLightSlot, OGMoodSunSlot, OGMood, OGMoodEffect, OGMoodFunc,
+           OG_OT_MoodFxAdd, OG_OT_MoodFxRemove,
            OG_OT_MoodAdd, OG_OT_MoodRemove, OG_OT_MoodDuplicate, OG_OT_MoodTemplate, OG_OT_MoodPreset,
            OG_OT_LevelUseMood, OG_OT_LevelUseMoodFunc, OG_PT_Moods)
 

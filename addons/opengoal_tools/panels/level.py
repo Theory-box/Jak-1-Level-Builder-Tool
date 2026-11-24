@@ -150,6 +150,12 @@ class OG_PT_LevelSettings(Panel):
             r.operator("og.level_use_mood_func", text="", icon="FILE_BLEND")
             if s.mood_func == "CUSTOM":
                 body.prop(s, "mood_func_custom")
+            from ..moods import level_conflicts
+            clash = level_conflicts(ctx.scene, col)
+            if clash:
+                h = body.row(); h.enabled = False; h.scale_y = 0.8
+                h.label(text=f"Slot {', '.join(map(str, clash))}: the mood's time of day and an effect both use it",
+                        icon="ERROR")
             body.prop(s, "ocean")
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")

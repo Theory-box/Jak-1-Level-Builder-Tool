@@ -157,20 +157,153 @@ def mood_gc(m, scene=None):
     return out
 
 
+# ── mood function effects ──────────────────────────────────────────────────
+# Effects run on seconds of game time (`now`, stops when paused), so they are the same speed
+# at any frame rate and two calls in one frame (two levels using the function) change nothing.
+# Their state is in globals named after the function and the effect's place in the list.
+
+def _fx_globals(e, p):
+    k = e.kind
+    if k == "flicker":
+        return [f"(define *{p}-start* 0.0)", f"(define *{p}-len* 0.0)", f"(define *{p}-height* 0.0)",
+                f"(define *{p}-index* 0)"]
+    if k == "lava":
+        return [f"(define *{p}-scale* (new 'static 'vector :x 1.5 :y 1.5 :z 1.5 :w 1.5))", f"(define *{p}-last* 0)"]
+    return []
+
+
+def _wave(e, u):
+    """0..1 wave of `u` (a GOAL expression, in periods)."""
+    if e.shape == "triangle":
+        return f"(let ((fr (- {u} (the float (the int {u}))))) (- 1.0 (fabs (+ -1.0 (* 2.0 fr)))))"
+    if e.shape == "wander":
+        return (f"(fmax 0.0 (fmin 1.0 (+ 0.5 (* 0.3 (sin (* 65536.0 {u}))) "
+                f"(* 0.2 (sin (* 65536.0 (+ 0.25 (* 2.618 {u}))))))))")
+    return f"(+ 0.5 (* 0.5 (sin (* 65536.0 {u}))))"
+
+
+def _fog_fx(e):
+    if e.kind == "fog_pitch":
+        c = e.color
+        return ["  ;; fog by camera pitch: looking up, toward the colour and clearer",
+                "  (let ((up (fmax 0.0 (-> *math-camera* camera-rot vector 1 z)))",
+                "        (col (new 'stack-no-clear 'vector)))",
+                f"    (set-vector! col {_f(c[0] * 255)} {_f(c[1] * 255)} {_f(c[2] * 255)} 128.0)",
+                f"    (vector4-lerp! (the-as vector (-> arg0 current-fog)) (the-as vector (-> arg0 current-fog)) col (* {_f(e.amount)} up))",
+                f"    (+! (-> arg0 current-fog fog-dists w) (* {_f(e.clear)} up (- 255.0 (-> arg0 current-fog fog-dists w)))))"]
+    if e.kind == "fog_breath":
+        w = _wave(e, f"(/ now {_f(e.period)})")
+        return ["  ;; fog breathing",
+                f"  (let ((k (+ {_f(e.dist_min)} (* {_f(e.dist_max - e.dist_min)} {w}))))",
+                "    (set! (-> arg0 current-fog fog-start) (* k (-> arg0 current-fog fog-start)))",
+                "    (set! (-> arg0 current-fog fog-end) (* k (-> arg0 current-fog fog-end))))"]
+    return []
+
+
+def _slot_fx(e, p, state):
+    k, s = e.kind, e.slot
+    if k == "flicker":
+        n = e.count
+        return [f"  ;; flicker slots {s}-{s + n - 1}",
+                f"  (dotimes (i {n}) (set! (-> arg0 times (+ {s} i) w) {_f(e.base)}))",
+                f"  (when (>= now (+ *{p}-start* *{p}-len*))",
+                f"    (set! *{p}-start* now)",
+                f"    (set! *{p}-len* (/ (rand-vu-float-range 0.1167 0.25) {_f(e.speed)}))",
+                f"    (set! *{p}-height* (rand-vu-float-range 0.0 1.0))",
+                f"    (set! *{p}-index* (the int (rand-vu-float-range 0.0 {_f(n - 0.01)}))))",
+                f"  (set! (-> arg0 times (+ {s} *{p}-index*) w)",
+                f"        (+ {_f(e.base)} (* {_f(e.strength)} *{p}-height* (sin (* 32768.0 (fmin 1.0 (/ (- now *{p}-start*) *{p}-len*)))))))"]
+    if k == "pulse":
+        v = f"(+ {_f(e.base)} (* {_f(e.strength)} (cos (* 65536.0 (+ {_f(e.phase)} (/ now {_f(e.period)}))))))"
+        if e.night_only:                     # on 19:00-7:00, an hour's fade each side
+            v = f"(* (fmax 0.0 (fmin 1.0 (+ -5.0 (fabs (+ -13.0 arg1))))) {v})"
+        return [f"  ;; pulse slot {s}", f"  (set! (-> arg0 times {s} w) {v})"]
+    if k == "lightning":
+        return [f"  ;; lightning: sky slots {e.sky_slot}+, palette slots {s}+",
+                f"  (update-mood-lightning arg0 {e.sky_slot} {e.count} {state} {s} 0.5 {'#t' if e.quiet else '#f'})"]
+    if k == "lava":
+        c = e.color
+        out = [f"  ;; lava glow (from below on actors)",
+               "  (let ((l (-> arg0 light-group 0 dir2)))",
+               "    (set-vector! (-> l direction) 0.0 -1.0 0.0 0.0)",
+               f"    (set-vector! (-> l color) {_f(c[0])} {_f(c[1])} {_f(c[2])} 1.0)",
+               f"    (set! (-> l levels x) (* {_f(e.strength)} (+ 0.875 (* 0.075 (sin (* 65536.0 {_f(3.1 * e.speed)} now)))"
+               f" (* 0.05 (sin (* 65536.0 {_f(7.3 * e.speed)} now)))))))"]
+        if e.drive_slots:
+            out += [f"  (let* ((u (* now {_f(3.75 * e.speed)})) (k (logand (the int u) 3)) (p (logand (+ k 3) 3))",
+                    "         (fr (- u (the float (the int u)))))",
+                    f"    (when (!= k *{p}-last*) (set! (-> *{p}-scale* data k) (rand-vu-float-range 1.0 2.0)) (set! *{p}-last* k))",
+                    f"    (set! (-> arg0 times (+ {s} k) w) (* fr (-> *{p}-scale* data k)))",
+                    f"    (set! (-> arg0 times (+ {s} p) w) (* (- 1.0 fr) (-> *{p}-scale* data p))))"]
+        return out
+    if k == "caustics":
+        return [f"  ;; caustics slots {s}-{s + 3}",
+                f"  (let* ((u (* now {_f(7.5 * e.speed)})) (k (logand (the int u) 3)) (fr (- u (the float (the int u)))))",
+                f"    (set! (-> arg0 times (+ {s} (logand (+ k 3) 3)) w) (- 1.0 fr))",
+                f"    (set! (-> arg0 times (+ {s} k) w) fr))"]
+    if k == "actor":
+        return [f"  ;; slot {s} follows its palette fade control (Light switch, crystals ...)",
+                f"  (set! (-> arg0 times {s} w) (-> *palette-fade-controls* control {s} fade))"]
+    return []
+
+
+def _time_fx(f, n):
+    if f.time_mode == "lock":
+        return [f"  (set! arg1 {_f(f.lock_hour)}) ; lock time"]
+    if f.time_mode != "speed":
+        return []
+    c = f"*{n}-clock"
+    return ["  ;; time speed: this level's own clock, following the game's clock's steps x speed",
+            "  (let ((tnow (current-time)))",
+            f"    (if (or (zero? {c}-last*) (< (seconds 0.2) (- tnow {c}-last*)))",
+            f"        (set! {c}* arg1)",
+            f"        (let ((d (- arg1 {c}-game*)))",
+            "          (if (< d -12.0) (+! d 24.0))",
+            "          (if (< 12.0 d) (+! d -24.0))",
+            f"          (+! {c}* (* d {_f(f.time_speed)}))",
+            f"          (while (>= {c}* 24.0) (+! {c}* -24.0))",
+            f"          (while (< {c}* 0.0) (+! {c}* 24.0))))",
+            f"    (set! {c}-game* arg1)",
+            f"    (set! {c}-last* tnow))",
+            f"  (set! arg1 {c}*)"]
+
+
 def func_gc(f):
     from ..moods import clean
     n = clean(f.name)
-    return ["", f";; ---- mood function update-mood-{n} ----",
-            f"(defun update-mood-{n} ((arg0 mood-context) (arg1 float) (arg2 int))",
-            "  (update-mood-fog arg0 arg1)",
-            "  (update-mood-sky-texture arg0 arg1)",
-            "  (clear-mood-times arg0)",
-            "  (update-mood-palette arg0 arg1 arg2)",
-            "  ;; light kits 1-7 follow the time of day ambient",
+    fx = [(e, f"{n}-fx{j}") for j, e in enumerate(f.effects) if e.enabled]
+    out = ["", f";; ---- mood function update-mood-{n} ----"]
+    if f.time_mode == "speed":
+        out += [f"(define *{n}-clock* 0.0)", f"(define *{n}-clock-game* 0.0)", f"(define *{n}-clock-last* (the-as time-frame 0))"]
+    for e, p in fx:
+        out += _fx_globals(e, p)
+    fog = [x for e, p in fx for x in _fog_fx(e)]
+    slots, state = [], 0
+    # lightning first: it clears the actors' effect light (dir2) that lava glow sets
+    for e, p in sorted(fx, key=lambda x: x[0].kind != "lightning"):
+        slots += _slot_fx(e, p, state)
+        state += e.kind == "lightning"           # 1 byte of the mood's effect state each
+    body = [f"(defun update-mood-{n} ((arg0 mood-context) (arg1 float) (arg2 int))"]
+    body += _time_fx(f, n)
+    need_now = any(e.kind in ("flicker", "pulse", "lava", "caustics", "fog_breath") for e, _p in fx)
+    ind = "  "
+    if need_now:
+        body.append("  (let ((now (* 0.0033333334 (the float (current-time))))) ; seconds of game time")
+    blk = ["  (update-mood-fog arg0 arg1)"] + fog + [
+        "  (update-mood-sky-texture arg0 arg1)",
+        "  (clear-mood-times arg0)",
+        "  (update-mood-palette arg0 arg1 arg2)"]
+    # (not inside `when *time-of-day-effects*` like the game's functions: loading a custom level
+    # turns that off, its bsp has no nodes)
+    blk += slots
+    blk += ["  ;; light kits 1-7 follow the time of day ambient",
             "  (dotimes (i 7) (update-light-kit (-> arg0 light-group (+ i 1)) (-> arg0 light-group 0 ambi) 1.0))",
-            "  (update-mood-itimes arg0)",
-            "  0",
-            "  (none))"]
+            "  (update-mood-itimes arg0)"]
+    if need_now:
+        blk = [ind + x for x in blk]
+        blk[-1] += ")"
+    body += blk + ["  0", "  (none))"]
+    return out + body
 
 
 def _header(name, what):
