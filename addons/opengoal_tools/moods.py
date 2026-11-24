@@ -670,6 +670,82 @@ class OG_OT_MoodFxRemove(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# The game's mood functions as effects (mood.gc). Parts tied to vanilla places / tasks
+# (houses' light zones, the warehouse, the eggtop task, the citadel shield ...) are left out.
+_FLICK = dict(kind="flicker", count=4, base=0.333, strength=0.5)
+_PULSE = dict(kind="pulse", base=0.875, strength=0.25, period=4.27, phase=0.125)
+FUNC_TEMPLATES = {
+    "default": ("Time of day only", []),
+    "village1": ("Sandover: lamps flicker on slot 5", [dict(_FLICK, slot=5, count=1, base=0.5)]),
+    "misty": ("Misty Island: fires on 2-5, two glowing lights on 6 / 7 (vanilla: near the warehouse)",
+              [dict(_FLICK, slot=2), dict(_PULSE, slot=6), dict(_PULSE, slot=7)]),
+    "village2": ("Rock Village: fires on 4-7, storm on sky / palette 2-3",
+                 [dict(_FLICK, slot=4), dict(kind="lightning", sky_slot=2, count=2, slot=2)]),
+    "swamp": ("Boggy Swamp: fires on 4-7, storm on 2-3, fog clears looking up",
+              [dict(_FLICK, slot=4), dict(kind="lightning", sky_slot=2, count=2, slot=2), dict(kind="fog_pitch")]),
+    "jungle": ("Jungle: slot 5 glows (vanilla: once the eggtop is done)", [dict(_PULSE, slot=5)]),
+    "sunken": ("Lost Precursor City: slot 2 glows, caustics on 4-7, slot 3 by actors (dark eco water)",
+               [dict(_PULSE, slot=2), dict(kind="caustics", slot=4), dict(kind="actor", slot=3)]),
+    "rolling": ("Precursor Basin: night lights on 4-7, a distant storm on sky 2-3",
+                [dict(_PULSE, slot=4, night_only=True, phase=0.125), dict(_PULSE, slot=5, night_only=True, phase=0.0),
+                 dict(_PULSE, slot=6, night_only=True, phase=0.375), dict(_PULSE, slot=7, night_only=True, phase=0.25),
+                 dict(kind="lightning", sky_slot=2, count=2, slot=2, quiet=True)]),
+    "firecanyon": ("Fire Canyon: lava glow on 4-7", [dict(kind="lava", slot=4)]),
+    "training": ("Geyser Rock: slot 5 glows at night", [dict(_PULSE, slot=5, night_only=True)]),
+    "maincave": ("Spider Cave: fires on 4-7, crystals on 1 / 2 (the mood: Fixed slot 0)",
+                 [dict(_FLICK, slot=4), dict(kind="actor", slot=1), dict(kind="actor", slot=2)]),
+    "darkcave": ("Spider Cave (dark): crystals on 1-7 (the mood: Fixed slot 0)",
+                 [dict(kind="actor", slot=s) for s in range(1, 8)]),
+    "robocave": ("Spider Cave (robot): fires on 4-7 (the mood: Fixed slot 0)", [dict(_FLICK, slot=4)]),
+    "snow": ("Snowy Mountain: fires on 4-6, slot 7 glows (vanilla: after the eggtop)",
+             [dict(_FLICK, slot=4, count=3, base=0.45), dict(_PULSE, slot=7)]),
+    "village3": ("Volcanic Crater: fires on 4-6", [dict(_FLICK, slot=4, count=3, base=0.5)]),
+    "lavatube": ("Lava Tube: slot 2 by actors (energy), slot 1 glows, lava on 4-7 (the mood: Fixed slot 0)",
+                 [dict(kind="actor", slot=2), dict(_PULSE, slot=1), dict(kind="lava", slot=4)]),
+    "citadel": ("Citadel: slots 3 / 7 by actors, fires on 4-6, slot 1 glows (the mood: Fixed slot 0)",
+                [dict(kind="actor", slot=3), dict(_FLICK, slot=4, count=3, base=0.45), dict(_PULSE, slot=1),
+                 dict(kind="actor", slot=7)]),
+    "ogre": ("Mountain Pass: storm on sky 2-3 / palette 4-5", [dict(kind="lightning", sky_slot=2, count=2, slot=4)]),
+}
+
+
+def load_func_template(f, name):
+    f.effects.clear()
+    for d in FUNC_TEMPLATES[name][1]:
+        e = f.effects.add()
+        e.kind = d["kind"]
+        for k, v in {**EFFECT_DEFAULTS.get(d["kind"], {}), **d}.items():
+            if k != "kind":
+                setattr(e, k, v)
+        e.expanded = False
+
+
+def _func_template_items(self, ctx):
+    out = [(k, f"{k} (game)", v[0]) for k, v in FUNC_TEMPLATES.items()]
+    _ITEMS.setdefault("ftpl", [])[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
+    return _ITEMS["ftpl"]
+
+
+class OG_OT_MoodFuncTemplate(bpy.types.Operator):
+    """Replace this function's effects with the ones a game mood function uses"""
+    bl_idname = "og.mood_func_template"
+    bl_label = "Function Template"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    index: IntProperty(options={"HIDDEN"})
+    pick: EnumProperty(name="Function", items=_func_template_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        f = ctx.scene.og_mood_funcs[self.index]
+        load_func_template(f, self.pick)
+        self.report({"INFO"}, f"update-mood-{clean(f.name)}: {FUNC_TEMPLATES[self.pick][0]}")
+        return {"FINISHED"}
+
+
 def _template_items(self, ctx):
     out = [(k, f"{k} (game)", "") for k in sorted(_db.vanilla_moods().get("moods", {}))]
     _ITEMS.setdefault("tpl", [])[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
@@ -963,6 +1039,7 @@ def _draw_func(layout, f, i, issues):
     if not _head(box, f, "func", i, f"update-mood-{clean(f.name) or '?'}", issues):
         return
     box.prop(f, "name")
+    box.operator("og.mood_func_template", text="Template from a game function…", icon="PRESET").index = i
     r = box.row(align=True)
     r.prop(f, "time_mode")
     if f.time_mode == "lock":
@@ -1015,7 +1092,7 @@ class OG_PT_Moods(bpy.types.Panel):
 
 
 CLASSES = (OGMoodTimeSlot, OGMoodFogSlot, OGMoodLightSlot, OGMoodSunSlot, OGMood, OGMoodEffect, OGMoodFunc,
-           OG_OT_MoodFxAdd, OG_OT_MoodFxRemove,
+           OG_OT_MoodFxAdd, OG_OT_MoodFxRemove, OG_OT_MoodFuncTemplate,
            OG_OT_MoodAdd, OG_OT_MoodRemove, OG_OT_MoodDuplicate, OG_OT_MoodTemplate, OG_OT_MoodPreset,
            OG_OT_LevelUseMood, OG_OT_LevelUseMoodFunc, OG_PT_Moods)
 
