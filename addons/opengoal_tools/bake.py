@@ -188,6 +188,10 @@ class OGTodTime(bpy.types.PropertyGroup):
                                  description="Animation frame this time bakes at (Set time frame per time of day): "
                                              "keyframe lights, meshes, emission ... to change them per time")
     show: bpy.props.BoolProperty(name="Show", default=True)
+    apply_effects: bpy.props.BoolProperty(
+        name="Apply effects after bake", default=True,
+        description="Run the meshes' Effects After Bake on this time's layer (off: e.g. a slot a mood effect lights "
+                    "on its own). An effect's Overwrite time of day decides for itself")
 
 
 def tod_times(settings):
@@ -1255,7 +1259,7 @@ def _finish():
             post_process(o, settings, mapping, o.name in job["emit_objs"], attrs, luts)
             if settings.apply_effects:
                 from .vc_effects import apply_stack
-                fx_ran += apply_stack(o)
+                fx_ran += apply_stack(o, settings)
     copied = None
     if settings.auto_copy and settings.auto_copy_col is not None:
         copied = auto_copy_lighting(col, settings.auto_copy_col)
@@ -1476,6 +1480,8 @@ def draw_tod(layout, level_col):
                           depress=t.world is not None and bpy.context.scene.world == t.world); op.time = k
         if s.tod_frames:
             col.prop(t, "frame")
+        sub = col.row(); sub.enabled = s.apply_effects
+        sub.prop(t, "apply_effects")
     box.prop(s, "tod_show_all")
     box.prop(s, "tod_frames")
     box.prop(s, "emit_per_tod")
