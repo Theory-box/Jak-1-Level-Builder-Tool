@@ -157,6 +157,33 @@ EFFECTS = (
     ("fog_breath", "Fog breathing", "The fog distances slowly go in and out"),
 )
 EFFECT_LABEL = {k: l for k, l, _d in EFFECTS}
+# shown in each effect's box: how it works, then what it is good for
+EFFECT_HELP = {
+    "flicker": ("The slots stay at Base; now and then one of them flares up",
+                "(a short random bump, up to Base + Strength), like the game's fires.",
+                "For: torches, campfires, lamps, candles, glowing embers."),
+    "pulse": ("The slot's strength goes up and down around Base by Up / down,",
+              "one wave every Period. Night only: on 19:00-7:00, an hour's fade each side.",
+              "For: glowing plants or crystals, beacons, slow neon, street lamps at night."),
+    "lightning": ("Now and then a flash: the sky slots switch to their flash textures and the",
+                  "palette slots light up (their lights entry also lights actors), then thunder.",
+                  "For: storms. Distant: rarer, quieter, only the sky flashes."),
+    "lava": ("Actors get a flickering coloured light from below, and the 4 slots",
+             "cross-fade at random (each slot a different bake of the glow).",
+             "For: lava, hot pits, furnaces, magic pools under the player."),
+    "caustics": ("The 4 slots take turns, fading one into the next, over and over.",
+                 "Bake the same water light pattern 4 times, a little moved each time.",
+                 "For: light rippling under water, reflections on walls near water."),
+    "actor": ("The slot follows its palette fade control: a Light switch (or the game's",
+              "cave crystals) turns it on and off, fading. Off: the slot is dark.",
+              "For: light switches, lights a button turns on, lit when a door opens."),
+    "fog_pitch": ("Looking up, the fog moves toward the colour and gets clearer;",
+                  "looking ahead or down it is the mood's fog.",
+                  "For: a thick swamp or cave fog that opens up toward the sky."),
+    "fog_breath": ("The fog start / end distances go between Nearest and Farthest",
+                   "(times the mood's), one wave every Period.",
+                   "For: slowly moving mist, a sandstorm, breathing dark-eco fog."),
+}
 SHAPES = [("sine", "Smooth", "A smooth wave"), ("triangle", "Linear", "Goes in and out at a steady speed"),
           ("wander", "Wander", "Two waves mixed: irregular, like the weather")]
 
@@ -778,7 +805,9 @@ def _draw_mood(layout, m, i, issues):
                 xyz.label(text="Direction (to the light):")
                 for j, ax in enumerate("XYZ"):
                     xyz.prop(e, "direction", index=j, text=ax)
-                sp.prop(e, "direction", text="")
+                ball = sp.column()
+                ball.scale_y = 4.0 / 3.0           # the sphere is 3 rows tall: grow it to the 4 rows on the left
+                ball.prop(e, "direction", text="")
                 field("color", "color")
                 field("ambient", "ambient")
                 rr = sb.row(align=True); rr.prop(e, "prt_auto")
@@ -813,6 +842,8 @@ def _draw_effect(layout, i, j, e):
     op = r.operator("og.mood_fx_remove", text="", icon="X", emboss=False); op.index, op.fx = i, j
     if not e.expanded:
         return
+    for line in EFFECT_HELP.get(e.kind, ()):
+        _grey(box, line)
     c = box.column(align=True)
     c.enabled = e.enabled
     k = e.kind
