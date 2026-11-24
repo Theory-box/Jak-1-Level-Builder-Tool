@@ -750,6 +750,12 @@ def cameras() -> dict:
     return DB.get("Cameras", {})
 
 
+def vanilla_moods() -> dict:
+    """The game's mood tables: {"fog" / "lights" / "sun": {level: [8 entries or None]},
+    "interp": {name: 24 rows}, "moods": {level: its tables / hour tables / stars / light kit}}."""
+    return DB.get("VanillaMoods", {})
+
+
 def level_collection_schema() -> dict:
     return DB["LevelCollectionSchema"]
 
