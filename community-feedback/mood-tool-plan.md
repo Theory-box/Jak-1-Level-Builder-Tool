@@ -12,7 +12,7 @@ Branch `claude/mood-tool`. Based on Kuitar's notes (ToDo ordered List.md) and th
    files (one per mood, one per mood function), so only those recompile — but a change means GAME.CGO is rebuilt
    (a "full" build, a bit slower than a level-only one). There is no way around this that keeps the mood correct
    while the level loads.
-2. **The time of day setup belongs to the mood in the game.** Which vertex colour palettes are used at which hour is an
+2. **The time of day setup belongs to the mood in the game** (Kuitar: keep it on the mood). Which vertex colour palettes are used at which hour is an
    *interp table* stored on the mood (three of them: fog, palettes + lights, sky + sun). Kuitar's notes put it in the
    mood function, which is the right place for the user (the function decides which slots are times and which are
    effects), so: **the mood function owns the timeline**, and its generated code points the mood at the function's
@@ -101,7 +101,36 @@ Same blocks (Export / Duplicate / Delete, collapsible), with **Name** (default `
 4. Effects one by one; Light Baking slot names.
 5. Templates from vanilla, guide (on guide-next).
 
-## Questions
+## Kuitar's answers (2026-11-24)
+
+1. Full build for mood changes: OK.
+2. **Timeline on the mood** (like the game): the Moods block gets the Time of day timeline (8 slots, on / off + hour,
+   presets) and builds the mood's hour tables from it. The function's effects pick their slots; the Level settings
+   warn when the level's mood uses a slot for time that its function uses for an effect.
+3. Effects: Lock time, **Time speed**, **Fog breathing** (with full settings: min / max distances, speed, shape) and
+   **Triggered slot** (below). Light zones are left out: Actor Light already lights actors per area.
+4. Fog override: removed once custom moods are tested, replaced by a button that opens the level's custom mood.
+5. Slot names in Light Baking › Time of day are only labels: the colour attributes keep their names
+   (`_SUNRISE` … `_GREENSUN`), which is what the level builder reads.
+
+## Triggered slot (how it works)
+
+The game already has the mechanism, used by the cave crystals and Lost Precursor City's dark eco water:
+`*palette-fade-controls*` — every frame, actors can set "slot N at strength X" (the nearest one wins), and the mood
+function copies that strength into slot N's weight. So:
+- **Mood function effect "Triggered slot"**: slot N (a free slot, its bake layer holding the switchable light) follows
+  the palette fade control N. Up to the 7 free slots.
+- **New actor "Light switch"** (Effects tile): slot N, **On strength** (1.0), **Fade time** on / off, start **On / Off**,
+  and what switches it: **'trigger / 'untrigger** (a button's notify list, a Camera animation, any actor sending
+  trigger), a linked **volume** (on while Jak is inside, or toggled when he enters), or a **trigger actor** dying /
+  completing (like Actor Light). **Saved**: optionally remembers being on (entity complete).
+  Every frame it sets its slot's fade control with its current (fading) strength; with several switches on one slot,
+  the nearest one to the camera wins (game behaviour) — so one switch per slot per area.
+- Bake: put the switchable lights in that slot's light collection (Light Baking › Time of day › that slot) so only they
+  end up in its layer; the panel names the slot "N — Triggered (Light switch)".
+
+## Original questions (answered above)
+
 
 1. GAME.CGO is the only safe place (see 1). OK that mood changes need the full build?
 2. Timeline in the mood function (generated code points the mood at it) — OK, or would you rather it lived on the mood?
