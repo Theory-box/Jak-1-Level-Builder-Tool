@@ -102,6 +102,31 @@ def _table_items(kind):
 _ITEMS = {"fog": [], "lights": [], "sun": [], "interp": []}
 
 
+_CURVE_FIXED = {"NONE": 0, "LEVEL": 1}           # 0: what a new mood has
+
+
+def _match_curve_items(self, ctx):
+    """No curve, Light Baking's curve, then the bake curve presets (the saved ones too)."""
+    from .bake import _preset_items
+    out = [("NONE", "No curve", "The suns / worlds as they are", 0),
+           ("LEVEL", "Light Baking's curve", "The curve Light Baking uses for this level (Bake options), if on", 1)]
+    out += [(a, b, c, n + 2) for a, b, c, n in _preset_items(self, ctx)]
+    _ITEMS.setdefault("mcurve", [])[:] = out
+    return _ITEMS["mcurve"]
+
+
+def _match_curve_update(self, ctx):
+    """A preset: into this mood's own curve (made when needed)."""
+    if self.match_curve in _CURVE_FIXED:
+        return
+    from .bake import _apply_preset
+    if self.match_curve_ng is None:
+        from .vc_effects import new_curve
+        self.match_curve_ng = new_curve(f"OG Mood Curve {self.name}", "LINEAR")
+    if self.match_curve != "CUSTOM":
+        _apply_preset(self.match_curve_ng, self.match_curve)
+
+
 def _interp_items(self, ctx):
     out = [("timeline", "Timeline", "Built from the timeline above")]
     out += [(f"vanilla:{k}", k, "The game's hour table") for k in sorted(_db.vanilla_moods().get("interp", {}))]
@@ -140,6 +165,12 @@ class OGMood(bpy.types.PropertyGroup):
                                   description="Multiplies the light and ambient colours taken from the suns / worlds")
     match_fog: BoolProperty(name="Fog colour from the world", default=False,
                             description="Each slot's fog colour is its world's colour too")
+    match_curve: EnumProperty(name="Curve", items=_match_curve_items, update=_match_curve_update,
+                              description="The curve your baked vertex colours went through (Light Baking's, or an "
+                                          "Effects After Bake curve): the actor light goes through it too, so it "
+                                          "matches the geometry at every time of day")
+    match_curve_factor: FloatProperty(name="Factor", default=1.0, min=0.0, max=1.0, subtype="FACTOR")
+    match_curve_ng: PointerProperty(type=bpy.types.NodeTree, name="Curve")
 
 
 # ── mood function effects ──────────────────────────────────────────────────
@@ -354,15 +385,46 @@ def match_col(m, scene):
     return m.match_col or _active_level_col(scene)
 
 
-def level_lighting(m, scene):
+def match_curve_fn(m, col):
+    """The Match level lighting curve as f(channel, value) or None. Baked layers store sRGB
+    and the game gets them back linear: game = linear(curve(sRGB(light))); the actor light
+    goes the same way (values above 1 keep going up past the curve's end)."""
+    from .bake import curve_luts, curve_mapping as level_mapping
+    from .vc_effects import curve_mapping
+    if m.match_curve == "NONE":
+        return None
+    if m.match_curve == "LEVEL":
+        if col is None or not col.og_bake.use_curve:
+            return None
+        mapping, factor = level_mapping(col), col.og_bake.curve_factor
+    else:
+        mapping, factor = curve_mapping(m.match_curve_ng), m.match_curve_factor
+    if mapping is None or factor <= 0:
+        return None
+    import numpy as np
+    from .palette import _to_linear, _to_srgb
+    xs, luts = curve_luts(mapping)
+
+    def f(ci, x):
+        xc = min(1.0, max(0.0, x))
+        s = float(_to_srgb(np.array([xc]))[0])
+        mapped = float(_to_linear(np.array([np.interp(s, xs, luts[ci])]))[0]) + (x - xc)
+        return x + (mapped - x) * factor
+    return f
+
+
+def level_lighting(m, scene, values=True):
     """Per slot (8): what the level's Time of day gives it, or None: {dir, color, sun} from
-    the time's first sun (by name) in its light collection, {ambient, fog} from its world."""
+    the time's first sun (by name) in its light collection, {ambient, fog} from its world.
+    With a curve: ambient = f(world), light = f(world + sun) - f(world) (the lit side of an
+    actor gets what a lit wall got). values=False: only which keys (no curve, for the panel)."""
     out = [None] * 8
     col = match_col(m, scene) if m.match_level else None
     if col is None:
         return out
     from .bake import tod_times
     s = m.match_strength
+    fn = match_curve_fn(m, col) if values else None
     for k, (_key, _attr, _label, t) in enumerate(tod_times(col.og_bake)):
         d = {}
         sun = _sun_of(t.lights)
@@ -374,6 +436,13 @@ def level_lighting(m, scene):
         if t.world is not None:
             c, e = _world_colour(t.world)
             d.update(ambient=tuple(x * e * s for x in c), fog=tuple(min(1.0, x) for x in c))
+        if fn is not None:
+            a = d.get("ambient", (0.0, 0.0, 0.0))
+            fa = tuple(fn(ci, a[ci]) for ci in range(3))
+            if "color" in d:
+                d["color"] = tuple(max(0.0, fn(ci, a[ci] + d["color"][ci]) - fa[ci]) for ci in range(3))
+            if "ambient" in d:
+                d["ambient"] = fa
         out[k] = d or None
     return out
 
@@ -538,6 +607,8 @@ class OG_OT_MoodDuplicate(bpy.types.Operator):
         src = coll[self.index]
         dst = coll.add()
         _copy(src, dst)
+        if getattr(dst, "match_curve_ng", None) is not None:
+            dst.match_curve_ng = src.match_curve_ng.copy()
         names = {x.name for x in coll}
         dst.name = next(f"{src.name}-copy{'' if k == 1 else k}" for k in range(1, 99)
                         if f"{src.name}-copy{'' if k == 1 else k}" not in names)
@@ -736,7 +807,17 @@ def _draw_mood(layout, m, i, issues):
             h = mb.row(); h.enabled = False; h.scale_y = 0.7
             h.label(text=f"Empty: the active level ({col.name})")
         r = mb.row(align=True); r.prop(m, "match_strength"); r.prop(m, "match_fog", text="Fog colour")
-        ov = level_lighting(m, bpy.context.scene)
+        r = mb.row(align=True)
+        r.prop(m, "match_curve")
+        if m.match_curve not in _CURVE_FIXED:
+            r.prop(m, "match_curve_factor", text="")
+            from .vc_effects import curve_mapping
+            if curve_mapping(m.match_curve_ng) is not None:
+                node = next(n for n in m.match_curve_ng.nodes if n.bl_idname == "ShaderNodeRGBCurve")
+                mb.template_curve_mapping(node, "mapping", type="COLOR")
+        elif m.match_curve == "LEVEL" and col is not None and not col.og_bake.use_curve:
+            _grey(mb, "Light Baking doesn't use a curve for this level", "INFO")
+        ov = level_lighting(m, bpy.context.scene, values=False)
         if col is None:
             w = mb.row(); w.alert = True
             w.label(text="No level to match", icon="ERROR")
