@@ -6,7 +6,7 @@ Once a feature is part of a release, it'll get removed from here.
 
 # Custom Tools and actors
 
-## Custom pov-camera actor
+## Custom pov-camera actor (in main)
 Custom actor, called "Camera animation" (camera tab) to spawn a pov-camera, either by entering a volume, a distance from it or only activated by another actor.
 Options:
 - To choose between a pov-camera and normal camera
@@ -24,8 +24,66 @@ Make actor that use custom camera for some of their action also able to trigger 
 
 ## Custom mood creation tool
 (this section is under construction)
-- Ways to create moods directly by selecting existing/creating customs from template or blanks
-- Matching mood lights from time of day env/sun
+### Research
+You can research the topic yourself but here's what I know:
+- The mood function determine how the mood is used. (in mood.gc)
+  - For some level it's just setting each time of day lighting 
+  - For others, it's using a single time of day (interior levels)
+  - Some have special effects such as thunder in village2, lamp glowing in village1, Blue eco glow in jungleb, and more
+  - For levels with special effect, sometimes one of the palette is used for it instead of for time of day.
+- The mood table set all of the values for: (in mood-tables.gc)
+  - Creating light-groups
+  - sky and sun
+  - fog
+  - actor lighting
+  - Shadows
+  - stars
+- When defining the mood, you also can set each of those separately so you don't need to create something extra if you just want to reuse part of another
+### Addon implementation
+This will be its own tab like tasks. Inside of it, a small description at the top for moods and 2 sub menu inside, one for mood functions one for moods. This implementation is based on my understanding of the mood. If anything does not work the way I'm expecting it and it'd have to change the implementation a bit, put it in the plan.
+#### Mood function menu
+Inside of the Mood function menu, you can have another small description at the top, then a + button to add a new mood function. Adding a new mood function would add a new block similar to when adding tasks, to control the mood function. Here you'd have options for:
+- Name of the mood function (default to the level that's selected when creating it as update-mood-levelname)
+- A template button at the top which fill the options to fit that function (taken from base game levels + the already existing mood functions in this file)
+- Which time of days vertex colors should be active and at which time of the day they are. (make this a collapsable menu as it will be list of 8 options)
+  - For each of them, you could activate/deactivate them
+  - Set the time
+- Special effects
+  - Checkbox per effects, then options under it, if the checkbox is activated, to set their parameter. (like which vertex color table it uses, and other settings)
+  - It'd have all the already existing effects + some extra such as:
+    - Lock time (lock the time of day, set a time in hours)
+    - (Might think of some other, maybe some weather effects, if you have some idea of things to be implemented here, you can put them in your plan)
+Each mood function would have a checkbox to export it or not, a delete button and a duplicate button. Make each function collapsable too
+#### Moods menu
+Similar to the mood function. For each of them, as well as the name and template have:
+- A checkbox that's "Match level lighting". When active it would:
+  - This would use the world settings for ambient light as well as the main sun found in the collections of time of day to determine sun positions, main key light, shadow directions, etc.
+  - Show a selection of a level to use. With a message to say if it found the world/suns in there
+  - Value to adjust how bright or light the values are taken from blender sun/worlds. Default would be 1.0 but then it could be changed to make it brighter (>1.0), or darker (<1.0). Useful as it might be hard to match it perfectly for everyone, especially if people have different curve settings and such.
+  - When this is selected, the values would be built on export instead of just be set once. So changing the world/sun values would reflect in the exported mood. Any setting that'll be driven by this will be greyed out in the menu with a small text next to it "Driven by level lights"
+- All of the tables with related settings, with an option to set an existing table of base level+blend file ones or custom, which would then give you all the settings to build your own (each of them collapsable):
+  - mood-fog-table
+    - Per time of day (with checkbox to deactivate some if you just want to set some up, the addon would still export a full table, just with "empty" tables as a lot of levels do in the base game)
+    - fog-color
+    - fog-dists
+    - erase-color
+  - mood-lights-table
+    - Same thing per time of day
+    - direction (may be controlled by "Match level lighting")
+    - lgt-color (may be controlled by "Match level lighting")
+    - prt-color
+    - amb-color (may be controlled by "Match level lighting")
+    - shadow (may be controlled by "Match level lighting")
+  - mood-sun-table
+    - Same thing per time of day
+    - sun-color
+    - env-color
+  - interp-table
+    - Per hours settings, not sure what each of these do. I'll see how useful it might be from your plan
+  - num-stars
+    - Just a number, default to 85.0
+#### Export
+Export all the function in a custom file and all the mood in a custom mood-table file. So these take less time to build when making changes inside instead of using the base game mood.gc and mood-tables.gc
 
 ---
 
@@ -73,6 +131,9 @@ This would, however, be a huge undertaking and isn't priority at the moment.
 
 
 ## Better Linux support
+(this section is under construction)
+I need to re-test latest versions of the addon on linux to make sure these points are correct.
+Some features don't work directly within linux (opening terminal on its own, doing the (mi), starting the game)
 
 ---
 

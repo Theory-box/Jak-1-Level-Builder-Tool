@@ -19,6 +19,8 @@
 ;;     off); events 'on 'off 'trigger 'untrigger (toggle); trigger-actor dead /
 ;;     complete flips it once (time of day: 2 stays off, 3 may turn on).
 ;;   vis-dist: farther than this from the camera the light does nothing.
+;;   follow-slot: 1 + a palette slot: the light x that slot's strength in its level's mood
+;;     (what the mood function's effect on it does: flicker, pulse, fades, active hours ...).
 (deftype __TYPE__ (process-drawable)
   ((key-color   vector :inline)
    (amb-color   vector :inline)
@@ -33,6 +35,8 @@
    (hour-on     float)
    (hour-off    float)
    (fade        float)
+   (follow      int32)
+   (follow-w    float)
    (dir-mode    uint32)
    (light-mode  uint32)
    (flags       uint32)
@@ -145,7 +149,7 @@
     (dotimes (i *__TYPE__-count*)
       (let ((l (the-as __TYPE__ (handle->process (-> *__TYPE__-list* i)))))
         (when (and l (-> l active) (__TYPE__-affects? l proc jak))
-          (let ((s (* (-> l fade) (__TYPE__-strength l pos pt))))
+          (let ((s (* (-> l fade) (-> l follow-w) (__TYPE__-strength l pos pt))))
             (when (< 0.0 s)
               (set! hit #t)
               (if (logtest? (-> l flags) __TYPE__-switch) (+! sw s))
@@ -269,8 +273,13 @@
                 (if on
                     (if (< 0.0 (-> self fade-on)) (fmin 1.0 (+ (-> self fade) (/ dt (-> self fade-on)))) 1.0)
                     (if (< 0.0 (-> self fade-off)) (fmax 0.0 (- (-> self fade) (/ dt (-> self fade-off)))) 0.0))))
+        ;; following a slot: as strong as the slot is in the level's mood this frame
+        (set! (-> self follow-w)
+              (if (and (< 0 (-> self follow)) (-> self entity extra level))
+                  (fmax 0.0 (-> self entity extra level mood times (+ (-> self follow) -1) w))
+                  1.0))
         (set! (-> self active)
-              (and (< 0.0 (-> self fade))
+              (and (< 0.0 (-> self fade)) (< 0.0 (-> self follow-w))
                    (let ((pt (new 'stack-no-clear 'vector)))
                      (__TYPE__-point self (-> *math-camera* trans) pt)
                      (< (vector-vector-distance pt (-> *math-camera* trans)) (-> self vis-dist)))))
@@ -313,6 +322,8 @@
     (set! (-> this hour-on) (if f (-> f 0) 18.0))
     (set! (-> this hour-off) (if f (-> f 1) 8.0)))
   (set! (-> this dir-mode) (res-lump-value arg0 'light-dir uint32))
+  (set! (-> this follow) (min 8 (the int (res-lump-value arg0 'follow-slot uint32))))
+  (set! (-> this follow-w) 1.0)
   (set! (-> this light-mode) (res-lump-value arg0 'light-mode uint32))
   ;; light-flags: 1 = not Jak, 2 = cylinder
   (let ((lf (res-lump-value arg0 'light-flags uint32)))
