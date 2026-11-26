@@ -22,8 +22,7 @@ Make actor that use custom camera for some of their action also able to trigger 
 
 ---
 
-## Custom mood creation tool
-(this section is under construction)
+## Custom mood creation tool (in progress)
 ### Research
 You can research the topic yourself but here's what I know:
 - The mood function determine how the mood is used. (in mood.gc)
@@ -89,8 +88,43 @@ Export all the function in a custom file and all the mood in a custom mood-table
 
 ## Custom ocean map creation tool
 (this section is under construction)
-- Driven by it's position/size and materials
-- Each sections should have a way to select the level of "details" for how precise you want to be 
+### Research
+You can research the topic yourself but here's what I know:
+- Ocean setting in `level-info.gc` pointing to an ocean-map
+- These ocean maps are defined in `ocean-tables.gc`, each maps is built from multiple parts:
+  - `ocean-map`
+    - start-coner (Position of the starting corner, using then origin as the center to set its size. Also look if there's ways to easily make the center editable so people can create ocean maps very far away from the origin)
+    - far-color (the color of the far ocean, aka outside of the grid)
+  - `ocean-spheres` (not sure what those spheres are exactly for, they have X/Z positions to place them onthe grid as well as a third value, probably for their size.)
+  - `ocean-colors` (To set the color for each of the ocean squares,;)
+  - `ocean-mid-masks` (Allows you to mask specific squares or not on one of the main squares, they're hexadecimal values that when switched to binary, read as 1 to render ocean and 0 to not)
+  - `ocean-mid-indices` (to match one of the main squares to one of the mask can also uses xffff and x0 values to set them to fully rendered or not rendered at all so that you don't need to create specific mid masks for every single square)
+  - `ocean-trans-indices` (Not sure what this one is for)
+  - `ocean-near-indices` (I think this one is masks for when you're even closer to be even more precise but I'm not exactly sure how they relate to the rest)
+- All of these are then set within a single `ocean-map`, eachg can also reuse definition of another map instead of creating your own.
+### Implementation in the addon
+Similar to mood and task, this will need its own menu, under the mood one. Have a buttont to add a new ocean map. When clicking it, it'll be like the task/mood as it's own sub menu that can be collapsed/deleted/etc.
+Same as mood, use the name of the selected level to create the default name.
+Inside of the level settings, add the same button as for mood/mood-functions to select an ocean from this blend file.
+#### Ocean options
+Inside of each of the ocean you'll have some options
+- General options (at the top, not in a sub menu)
+  - Name of the ocean map
+  - Far color (color picker, find the most used color in the ocean tables and use that as default)
+- `Grid settings` (sub menu, collapsed by default)
+  - Not 100% sure what control we have over the grid, if we can change the number of big squares different than 36. (6x6) If so have a setting for the number of squares per sides.
+  - How each square is cut. If they're as precise as mid masks or down to near. It might be a lot easier to just make all squares at mid mask level.
+- `Ocean color` (sub menu, collapsed by default)
+  - Drop down to use existing ones from base game or to use its own color.
+  - It's "own color" would be set as a color attribute, once again, using the same default color as 
+- `ocean-mid-masks` (sub menu, collapsed by default)
+  - Drop down to use existing ones from base game or to use its own materials.
+  - These would be set through materials, similar to how nav meshes are done. One blue material for displaying water and one black/transparent for masked squares.
+- `ocen-mid-indices`(sub menu, collapsed by default)
+  - Drop down to use existing ones from base game or to be automatically made from the material.
+- The other two settings, we'll see in the research and plans if they're useful or not to add.
+#### Export
+Same as mood, put all of them in a separated file so it's onw its own. 
 
 ---
 

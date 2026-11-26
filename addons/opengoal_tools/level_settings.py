@@ -23,11 +23,13 @@ MOOD_FUNC_ITEMS = ([("AUTO", "Same as mood", "The mood's own update-mood-* funct
                    + [(f, f"update-mood-{f}", f"'update-mood-{f}") for f in MOOD_FUNCS]
                    + [("CUSTOM", "Custom", "Type a function name")])
 OCEAN_ITEMS = [
-    ("NONE", "None", "No ocean (#f)"),
+    ("NONE", "None", "No ocean of its own (#f): a neighbour level's ocean still shows"),
     ("village1", "Village 1", "'*ocean-map-village1* (Sandover, beach, misty ...)"),
     ("village2", "Village 2", "'*ocean-map-village2* (Rock Village, rolling)"),
     ("sunken", "Sunken", "'*ocean-map-sunken*"),
     ("CUSTOM", "Custom", "Type an ocean-map symbol"),
+    # last: files store the choice's position
+    ("HIDDEN", "Hidden", "No ocean while the camera is in this level, even a neighbour level's ('none)"),
 ]
 
 
@@ -120,6 +122,8 @@ def mood_func_value(s, mood_default):
 def ocean_value(s):
     if s is None or s.ocean == "NONE":
         return "#f"
+    if s.ocean == "HIDDEN":
+        return "'none"
     if s.ocean == "CUSTOM":
         v = s.ocean_custom.strip().lstrip("'")
         return f"'{v}" if v else "#f"

@@ -756,6 +756,11 @@ def vanilla_moods() -> dict:
     return DB.get("VanillaMoods", {})
 
 
+def vanilla_oceans() -> dict:
+    """The game's ocean maps: {map: {corner [x, z] m, far [r, g, b], water [48 rows], colors [49 rows]}}."""
+    return DB.get("VanillaOceans", {})
+
+
 def level_collection_schema() -> dict:
     return DB["LevelCollectionSchema"]
 

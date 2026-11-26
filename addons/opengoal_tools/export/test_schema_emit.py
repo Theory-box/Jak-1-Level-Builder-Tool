@@ -56,6 +56,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(out['water-height'][-1], '(water-flags wt03 wt19 wt20)')
         self.assertEqual(emit('helix-water', {'og_water_ripple': False})['water-height'][-1], '(water-flags wt03 wt19)')
         self.assertEqual(emit('water-vol')['water-height'][-1], '(water-flags wt02 wt03)')
+        self.assertEqual(emit('water-vol', {'og_water_ocean': True})['water-height'][-1], '(water-flags wt02 wt03 wt08)')
 
     def test_relay_gate_custom_task(self):
         self.assertNotIn('gate-task', emit('citadelcam'))
