@@ -188,12 +188,18 @@
   (set! (-> this last-updated-user-lighting) 0)
   (set-vector! (-> this off-color-mult) 0.0 0.0 0.0 1.0)
   (set-vector! (-> this off-color-emissive) 0.0 0.0 0.0 0.0)
-  (let ((c (res-lump-data arg0 'glow-color (pointer float)))
-        (k (res-lump-float arg0 'glow-self :default 1.0)))
+  ;; self glow up to 1: the colour multiplier; above 1 the rest is added as emissive
+  ;; colour (the multiplier can't make the texture brighter)
+  (let* ((c (res-lump-data arg0 'glow-color (pointer float)))
+         (k (res-lump-float arg0 'glow-self :default 1.0))
+         (km (fmin 1.0 k))
+         (ke (fmax 0.0 (+ -1.0 k))))
     (if c
-        (set-vector! (-> this on-color-mult) (* k (-> c 0)) (* k (-> c 1)) (* k (-> c 2)) 1.0)
-        (set-vector! (-> this on-color-mult) k k k 1.0)))
-  (set-vector! (-> this on-color-emissive) 0.0 0.0 0.0 0.0)
+        (set-vector! (-> this on-color-mult) (* km (-> c 0)) (* km (-> c 1)) (* km (-> c 2)) 1.0)
+        (set-vector! (-> this on-color-mult) km km km 1.0))
+    (if c
+        (set-vector! (-> this on-color-emissive) (* ke (-> c 0)) (* ke (-> c 1)) (* ke (-> c 2)) 0.0)
+        (set-vector! (-> this on-color-emissive) ke ke ke 0.0)))
   (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
     (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
       (set! (-> s3-0 prim-core collide-as) (collide-kind wall-object))
