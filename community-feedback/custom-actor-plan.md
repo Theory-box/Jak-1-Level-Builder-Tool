@@ -68,6 +68,15 @@ game's own screenshot (`pc-screen-shot`, saved in `%APPDATA%/OpenGOAL/jak1/scree
   (step 3).
 - Custom camera bone: left for step 4 (camera template).
 
+## Step 2 results
+
+- Development install: **OpenGOAL v0.3.5** (official release, before PR #4371), `test-v0.3.5`; newer versions
+  are checked once upstream fixes the bone shift (Kuitar). Meshes are never joined (several meshes are needed for
+  collision on different bones).
+- In game on v0.3.5, through the add-on (OpenGOAL Actors tab, Place in Level, level build): one actor with a
+  single skinned mesh and one with three separate skinned meshes both show every cube on its bone; the bone fix
+  stays off (Auto, release < 0.3.6).
+
 ## Proposal
 
 ### Its own sidebar tab
