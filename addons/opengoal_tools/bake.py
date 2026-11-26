@@ -172,6 +172,7 @@ TIMES = (
 _SUN_SIDE = {"sunrise": 1, "morning": 1, "noon": 1, "afternoon": -1, "sunset": -1,
              "twilight": -1, "evening": -1, "greensun": 1}
 TOD_ATTRS = tuple(t[1] for t in TIMES)
+_ATTR_KEY = {t[1]: t[0] for t in TIMES}
 # moods whose function picks a fixed time (update-mood-quick): time of day doesn't change in game
 FIXED_TIME_MOODS = {"jungleb", "maincave", "darkcave", "robocave", "lavatube", "citadel"}
 PARTLY_FIXED_MOODS = {"ogre", "finalboss"}
@@ -192,6 +193,10 @@ class OGTodTime(bpy.types.PropertyGroup):
         name="Apply effects after bake", default=True,
         description="Run the meshes' Effects After Bake on this time's layer (off: e.g. a slot a mood effect lights "
                     "on its own). An effect's Overwrite time of day decides for itself")
+    ignore_curve: bpy.props.BoolProperty(
+        name="Ignore curve", default=False,
+        description="Bake options' curve is not applied to this time's layer (e.g. a slot holding only a lamp's "
+                    "light for a mood effect). Match level lighting skips it there too")
 
 
 def tod_times(settings):
@@ -499,6 +504,12 @@ def alpha_values(mesh, src, domain):
     return None
 
 
+def _curve_ignored(settings, attr):
+    """A time of day layer with Ignore curve on."""
+    k = _ATTR_KEY.get(attr)
+    return k is not None and getattr(settings, "tod_" + k).ignore_curve
+
+
 def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None):
     """Emit combine, curve, blur on each baked layer (BakedLight, or the time
     of day layers)."""
@@ -517,7 +528,7 @@ def post_process(obj, settings, mapping, emitted, attrs=(BAKE_ATTR,), luts=None)
         e = _read(own)[0] if own is not None else em
         if e is not None:
             cols = screen(cols, e, settings.emit_strength)
-        if settings.use_curve and mapping is not None and settings.curve_factor > 0:
+        if settings.use_curve and mapping is not None and settings.curve_factor > 0 and not _curve_ignored(settings, name):
             xs, lu = luts if luts is not None else curve_luts(mapping)
             cols = apply_curve(cols, xs, lu, settings.curve_factor)
         if settings.use_blur and settings.blur_strength > 0:
@@ -1480,8 +1491,11 @@ def draw_tod(layout, level_col):
                           depress=t.world is not None and bpy.context.scene.world == t.world); op.time = k
         if s.tod_frames:
             col.prop(t, "frame")
-        sub = col.row(); sub.enabled = s.apply_effects
+        r = col.row(align=True)
+        sub = r.row(); sub.enabled = s.apply_effects
         sub.prop(t, "apply_effects")
+        sub = r.row(); sub.enabled = s.use_curve
+        sub.prop(t, "ignore_curve")
     box.prop(s, "tod_show_all")
     box.prop(s, "tod_frames")
     box.prop(s, "emit_per_tod")

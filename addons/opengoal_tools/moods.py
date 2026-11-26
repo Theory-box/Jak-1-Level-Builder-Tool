@@ -427,6 +427,7 @@ def level_lighting(m, scene, values=True):
     from .bake import tod_times
     s = m.match_strength
     fn = match_curve_fn(m, col) if values else None
+    level_curve = m.match_curve == "LEVEL"
     for k, (_key, _attr, _label, t) in enumerate(tod_times(col.og_bake)):
         d = {}
         sun = _sun_of(t.lights)
@@ -438,7 +439,7 @@ def level_lighting(m, scene, values=True):
         if t.world is not None:
             c, e = _world_colour(t.world)
             d.update(ambient=tuple(x * e * s for x in c), fog=tuple(min(1.0, x) for x in c))
-        if fn is not None:
+        if fn is not None and not (level_curve and t.ignore_curve):
             a = d.get("ambient", (0.0, 0.0, 0.0))
             fa = tuple(fn(ci, a[ci]) for ci in range(3))
             if "color" in d:
