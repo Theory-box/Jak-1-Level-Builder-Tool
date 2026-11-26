@@ -18,6 +18,10 @@ Since advanced actors will need some coding on the user's part. I'm thinking of 
 - Platform (would be a child of plat with the custom model, maybe a few extra could be added too for more controllable platforms)
 - Camera animation (This would just create the art-group for a camera animation to be used by pov-camera)
 - Nav enemy (a child of nav-enemy with all its settings available in blender directly)
+- Collectable (Basic collectable item, can be collected but doesn't directly have something that's setup to do when it's collected. But the template is there for those events)
+- Crate (child of crate, settings for what can destroy it)
+- Button (child of base-button)
+- Door (with all the different doors feature available)
 #### Collection and menu setup
 These actors wouldn't be directly part of levels so a fully new side panel could be added for this under the "OpenGOAL" one called "Custom Actors". So all the tools related to this would be separated.
 
