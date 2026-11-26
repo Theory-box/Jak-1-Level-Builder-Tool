@@ -4123,6 +4123,7 @@
             ],
             "liquid_key": "og_water_liquid",
             "ripple_key": "og_water_ripple",
+            "ocean_key": "og_water_ocean",
             "liquids": {
               "water": {
                 "flags": [
@@ -4251,6 +4252,13 @@
           "type": "bool",
           "default": false,
           "show-field": false
+        },
+        {
+          "key": "og_water_ocean",
+          "label": "Follow ocean waves",
+          "type": "bool",
+          "default": false,
+          "note": "The surface is the level's ocean: y = 0 moving with its waves (the game's wt08 flag), so Jak bobs with the sea. Water surface Y is then ignored (keep it at 0). Without an ocean the surface stays at y = 0."
         }
       ]
     },
