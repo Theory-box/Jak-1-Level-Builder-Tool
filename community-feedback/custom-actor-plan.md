@@ -45,6 +45,29 @@ A camera animation is an art group with a bone named `camera`: the view looks do
 sets the FOV (scale 1 = about 72.7°). Animations named `<group>-<anim>`. Our Camera animation actor and the pov
 picker already accept a custom group, so a custom camera only needs the art group.
 
+## Step 1 results (in game, mod-base v4.1.4 = OpenGOAL v0.3.8, Blender 4.4)
+
+Test models built by script (`_claude_tmp/ca/`), added to a test level by hand, checked with queries and the
+game's own screenshot (`pc-screen-shot`, saved in `%APPDATA%/OpenGOAL/jak1/screenshots`):
+- **Pipeline works:** glb in `custom_levels`, `(build-actor ...)`, `custom_models`, `<name>-ag.go` in the `.gd`;
+  without code the actor shows (viewer-process) playing its first animation. A model with no armature works too.
+- **The bone shift is real** (each vertex follows the bone before its own). **Fix that works**, done on the
+  exported glb only (`_claude_tmp/ca/glb_fix.py`): add one joint at the end of the skin, a child of its last
+  joint, with still animation channels in every animation, then +1 on every vertex's bone indices. Without that
+  end joint (or without its channels) the last bone's vertices end up in the sky. On by default for v0.3.6+,
+  with a setting to turn it off (Kuitar).
+- **Several skinned meshes break** (only the last one is placed right), with or without the fix — another
+  upstream problem. Workaround: the export joins the actor's meshes into one (a temporary copy). Checked: one
+  joined mesh + the fix = every part on its bone.
+- **Animations:** bone rotation and translation keys both work; actions are resampled to 60 fps (a 60-frame
+  action at 24 fps = 150 game frames); bones without keys in an action stay still.
+- **Colours:** without a texture, the material colour is ignored (default texture); vertex colours (COLOR_0)
+  are used. The add-on should export the active colour attribute and say so.
+- **Collision:** `set_invisible` hides a collision-only mesh, `set_collision` + `ignore` keeps a visible mesh out
+  of the collision (the add-on's level collision properties). Whether the collide mesh works needs actor code
+  (step 3).
+- Custom camera bone: left for step 4 (camera template).
+
 ## Proposal
 
 ### Its own sidebar tab
