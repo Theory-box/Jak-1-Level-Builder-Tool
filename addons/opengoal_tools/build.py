@@ -728,6 +728,11 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     errs = export_moods(scene)
     if errs:
         raise RuntimeError("Moods: " + "; ".join(errs[:3]))
+    # custom ocean maps of the .blend (Oceans panel; the always-loaded ones, GAME.CGO)
+    from .export.oceans_export import export_oceans
+    errs = export_oceans(scene)
+    if errs:
+        raise RuntimeError("Oceans: " + "; ".join(errs[:3]))
     return navmesh_actors
 
 

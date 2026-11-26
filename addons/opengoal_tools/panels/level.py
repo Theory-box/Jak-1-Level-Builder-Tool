@@ -163,7 +163,9 @@ class OG_PT_LevelSettings(Panel):
                              + ("add a Triggered slot effect on it to the mood function" if level_func(ctx.scene, col)
                                 else "use one of this file's mood functions with a Triggered slot on it"),
                         icon="ERROR")
-            body.prop(s, "ocean")
+            r = body.row(align=True)
+            r.prop(s, "ocean")
+            r.operator("og.level_use_ocean", text="", icon="FILE_BLEND")    # this file's ocean maps
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")
             body.prop(s, "sun_fade", slider=True)

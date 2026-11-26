@@ -387,8 +387,8 @@ def _header(name, what):
             ";; Compiled into GAME.CGO: the game looks a level's mood up when the level starts loading."]
 
 
-def _register(name):
-    patch(_game_gp(), [f'(goal-src "{LT_DIR}/{name}.gc" "mood") {_TAG}'], '(group-list "all-code"', f"{name} goal-src")
+def _register(name, dep="mood"):
+    patch(_game_gp(), [f'(goal-src "{LT_DIR}/{name}.gc" "{dep}") {_TAG}'], '(group-list "all-code"', f"{name} goal-src")
     patch(_goal_src().joinpath(*_DGO_GAME), [f'  "{name}.o" {_TAG.replace(";", ";;", 1)}'], " ))", f"{name} object")
 
 
