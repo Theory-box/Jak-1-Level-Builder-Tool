@@ -380,6 +380,12 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
         if _sl:
             lines += ["", ";; --- edited actors (export/edited.py) ---"] + _sl
             log(f"  [write_gc] {sum(1 for l in _sl if l.startswith('(deftype'))} edited actor type(s)")
+        # the level's ocean map when it is loaded with its levels (Oceans panel)
+        from .oceans_export import level_lines as _ocean_lines
+        from ..collections import _active_level_col
+        _ol = _ocean_lines(scene, _active_level_col(scene))
+        if _ol:
+            lines += ["", ";; --- ocean map (Oceans panel) ---"] + _ol
 
     new_text = "\n".join(lines)
     # Level-scope the addon's trigger type names (and the shared plane-test

@@ -151,21 +151,32 @@ class OG_PT_LevelSettings(Panel):
             if s.mood_func == "CUSTOM":
                 body.prop(s, "mood_func_custom")
             from ..moods import level_conflicts
-            clash = level_conflicts(ctx.scene, col)
+            from ..required import ignored as _ignored_w
+            clash = [] if _ignored_w(ctx.scene, "mood_clash") else level_conflicts(ctx.scene, col)
             if clash:
                 h = body.row(); h.enabled = False; h.scale_y = 0.8
                 h.label(text=f"Slot {', '.join(map(str, clash))}: the mood's time of day and an effect both use it",
                         icon="ERROR")
             from ..moods import undriven_slots, level_func
-            for slot, labels in undriven_slots(ctx.scene, col):
+            for slot, labels in ([] if _ignored_w(ctx.scene, "mood_undriven") else undriven_slots(ctx.scene, col)):
                 h = body.row(); h.alert = True; h.scale_y = 0.8
                 h.label(text=f"Slot {slot} ({', '.join(labels)}) won't light: "
                              + ("add a Triggered slot effect on it to the mood function" if level_func(ctx.scene, col)
                                 else "use one of this file's mood functions with a Triggered slot on it"),
                         icon="ERROR")
-            body.prop(s, "ocean")
+            r = body.row(align=True)
+            r.prop(s, "ocean")
+            r.operator("og.level_use_ocean", text="", icon="FILE_BLEND")    # this file's ocean maps
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")
+            from ..oceans import level_warnings
+            for text, red in level_warnings(ctx.scene, col):
+                h = body.row(); h.scale_y = 0.8
+                if red:
+                    h.alert = True
+                else:
+                    h.enabled = False
+                h.label(text=text, icon="ERROR" if red else "INFO")
             body.prop(s, "sun_fade", slider=True)
             body.prop(props, "sky_source")
             if props.sky_source == "custom":
