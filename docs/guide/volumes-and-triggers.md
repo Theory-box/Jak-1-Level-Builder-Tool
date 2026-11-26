@@ -96,6 +96,7 @@ settings are in **Object Settings › Water Volume Settings**:
 | **Water surface Y (m)** | Height of the surface. Locked by default: it is kept at the **top of the linked volume**, so you just move the volume. Click the lock to type it yourself; **Sync Surface from Volume Top** then sets it once. |
 | **Wade depth (m)** | How deep below the surface Jak starts wading. Default 0.5. |
 | **Swim depth (m)** | How deep below the surface Jak starts swimming. Default 1.0. |
+| **Follow ocean waves** | The surface is the level's ocean: height 0, moving with its waves (Jak bobs with the sea). **Water surface Y** is then ignored (keep it at 0). See [Oceans](oceans.md). |
 | **Liquid** | **Water (wade, swim, drown)**, **Shallow water (wade only)**, **Deep water (swim only)**, **Mud (slows)**, **Tar (sinks + hurts; only near world Y 0)**, **Lava (instant death)**, **Dark eco (instant death)**, **Electric water (hurts)**. |
 
 Mud, tar and shallow water only let Jak wade: put ground under the surface within the wade depth or he sinks through

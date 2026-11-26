@@ -31,6 +31,7 @@ The list shows every **source** of the path in order: an empty is one point, and
 | X | Removes the source from the path (the object stays in the scene). |
 | Bin | Removes the source **and deletes** the curve or empty from the scene (it asks first). |
 | Up / down arrows | Change the order. |
+| Reverse (two arrows) | Reverses the whole path: the order of its waypoints and curves, and each curve's direction. Manual knots are mirrored. A curve shared with another actor's path is reversed there too. |
 
 A source that was deleted shows in red ("DELETED"). Remove it with X.
 

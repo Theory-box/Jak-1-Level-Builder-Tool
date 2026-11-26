@@ -11,3 +11,10 @@ them below. When the release is made: merge `claude/guide-next`, check this list
 
 | Feature | Guide pages | Screenshots | On guide-next |
 |---|---|---|---|
+| Death plane: any height | levels (Settings table) | — | yes |
+| Reverse Path button | paths-and-platforms (path list table) | — | yes |
+| Load boundary Continue: checkpoint list | level-flow (load boundary commands) | — | yes |
+| Race-ring circles / platform ghosts drawn (not objects), camera FOV driver fix, undo safety | — (look the same) | — | — |
+| Camera animation actor + the game's camera animation list + camera choices on 15 edited actors and the battle controller | cameras (Pov-cameras rewritten: list / picker, Camera animation actor, Camera choices on actors), actors (Cameras tile), actor-list | — (a Camera animation screenshot could be added) | yes |
+| Custom moods and mood functions (Moods panel): timeline, fog / lights / sun tables, Match level lighting + curve, effects (flicker, pulse, lightning, lava, caustics, Triggered slot, fog by pitch, fog breathing), Active hours, Lock time / Time speed on the game clock, function templates; Light switch actor; Cave Crystal edited (slot, glow, darken far actors, Actor Lights); Actor Light Follow effect; Fog override replaced (Edit / Make a Custom Mood, Convert) | moods (new), README, levels (Visuals), lighting (mood, Time of day: slot labels, Apply effects after bake, Ignore curve; Effects After Bake: Overwrite time of day; Actor Light: Follow effect), interface (Moods panel), glossary, troubleshooting (new warnings), actor-list | the sidebar screenshot (new Moods panel), level settings and Light Baking screenshots, a Moods screenshot could be added | yes |
+| Custom ocean maps (Oceans panel: grid mesh, water / no water materials, OceanColor, templates, always loaded / with its levels), Ocean › Hidden, water volumes Follow ocean waves, ocean warnings + Warning Settings types (ocean and mood) | oceans (new), README, levels (Ocean row), volumes-and-triggers (Follow ocean waves), developer-tools (Warning Settings table), interface, troubleshooting | an Oceans screenshot could be added | yes |

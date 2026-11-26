@@ -30,7 +30,8 @@ day / night cycle, check how the colours will look in game, fine-tune them by ha
   mesh is missing a time, the level builder uses the closest time it has.
 - **Mood.** Actors (Jak, enemies, crates ...), the fog and the sun are lit by the level's **mood**, picked in
   **Level › Settings › Visuals** (see [Levels](levels.md)). Some moods (caves, the citadel ...) use a fixed time,
-  so time of day never changes in them.
+  so time of day never changes in them. You can make your own, matched to your baked light, with effects on
+  free slots (flicker, pulse, switchable lights ...): see [Moods](moods.md).
 - **The palette.** When the level is built, all its vertex colours (every mesh, every time of day) are squeezed
   into one palette of at most **8192 colours**. Rare colours, like dark tinted shadows, can come out different
   from your bake. [Color Quantisation](#color-quantisation) shows you the result in Blender before you build.
@@ -126,7 +127,7 @@ places" (ogre, finalboss).
 
 | Control | What it does |
 |---|---|
-| Checkbox **Sunrise (_SUNRISE)** ... | Bake this time. Unticked times are skipped (the game then uses the closest baked time). |
+| Checkbox **0 Sunrise (_SUNRISE)** ... | Bake this time. Unticked times are skipped (the game then uses the closest baked time). After the name: what the level's mood and mood function use the slot for (its hour, an effect, a Light switch ...; see [Moods](moods.md#slots)). |
 | Eye button | Shows this time's layer on the selected meshes (makes it their active and render colour layer). |
 | **Lights** | The light collection used only for this time. While a time bakes, the other times' collections are off. Lights outside all these collections light every time. |
 | **+** (Lights) | New light collection for this time, inside the level's "Time of Day" collection (not exported). |
@@ -134,6 +135,8 @@ places" (ogre, finalboss).
 | **World** | The world (environment) used while this time bakes. |
 | **+** (World) | New world for this time with an outdoor default colour. |
 | Select button (World) | Makes this world the scene's world, to see it in the viewport and edit its settings. Shows pressed while it is. |
+| **Apply effects after bake** | On (default): the meshes' Effects After Bake run on this time's layer. Off: skipped (e.g. a slot holding only a lamp's light for a mood effect), unless an effect's **Overwrite time of day** says otherwise. |
+| **Ignore curve** | The bake curve isn't applied to this time's layer (off by default). Match level lighting with Light Baking's curve skips it too. |
 | **Time frame** | Only with **Set time frame per time of day**: the animation frame this time bakes at. Useful to dynamically edit lights' position and settings, emit settings or even moving objects to change shadows. |
 
 **For all times:**
@@ -253,6 +256,9 @@ screenshot).
    run top to bottom) and **X** to remove it.
 3. Turn on **Apply effects** in the [Bake options](#bake-options). If it's off, the panel warns you and has a
    **Turn on Apply effects** checkbox.
+4. **Overwrite time of day** (at the bottom of each effect): pick the time of day layers it runs on with the 8
+   buttons (0-7). They start from each time's **Apply effects after bake**; the plain `BakedLight` layer always
+   gets the effect.
 
 | Button | What it does |
 |---|---|
@@ -298,6 +304,7 @@ linked, it does nothing outside that volume. Several actor lights blend together
 | **Off timer (s)** | 1.0 | Seconds from full strength to off. |
 | **Time on (h)** | 18 | Time of day modes only: the hour it turns on (0-24). |
 | **Time off (h)** | 8 | Time of day modes only: the hour it turns off. Earlier than Time on = on over midnight. |
+| **Follow effect** | None | The light is as strong as a palette slot of the level's mood every frame: pick an effect of its mood function (flicker, pulse, a Triggered slot ...) and the light flickers / pulses / switches with the baked light, Active hours included. See [Moods](moods.md). |
 | **Camera distance (m)** | 100 | In **Visibility**. Farther than this from the camera the light does nothing at all, even for actors close to it. |
 
 **Path and volume.** Link a path (straight segments only) to turn the light into a strip, like a row of lamps:

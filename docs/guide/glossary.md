@@ -112,7 +112,7 @@ fields write lumps for you. The value types are:
 straight into your spawn, custom tasks) need it. See [Developer Tools](developer-tools.md).
 
 **Mood** — A level's lighting, fog, sun and sky settings over the day (**Level › Settings › Visuals**). Each vanilla
-level has one; a custom level picks one. See [Lighting](lighting.md).
+level has one; a custom level picks one, or uses one of its own. See [Moods](moods.md).
 
 **Nav-mesh / nav-enemy** — A nav-mesh is a low-poly mesh of where enemies can walk (and jump). A nav-enemy is an enemy
 that uses one to chase and patrol (babak, lurker crab ...). Without a nav-mesh a nav-enemy only idles. See
