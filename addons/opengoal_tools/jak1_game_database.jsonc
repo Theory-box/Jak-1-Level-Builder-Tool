@@ -13060,7 +13060,23 @@
              "note": "Another actor sending 'trigger (a button's notify list ...) lights it too (relights it if lit)."},
             {"key": "og_crystal_no_hints", "label": "No sage hints", "type": "bool", "default": false,
              "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true",
-             "note": "Vanilla: the Sage's hints about the crystals play near one and when its light ends."}
+             "note": "Vanilla: the Sage's hints about the crystals play near one and when its light ends."},
+            {"key": "og_crystal_color", "label": "Glow colour", "type": "color", "default": [1.0, 1.0, 1.0],
+             "lump": {"key": "glow-color", "type": "float"}, "write_if": "if_not_default",
+             "note": "The crystal's own colour when lit (it is black when dark; vanilla white)."},
+            {"key": "og_crystal_darken", "label": "Darken far actors", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
+             "note": "Every actor of the level is dark unless near a lit crystal (like the dark Spider Cave). Turn it on for one crystal: it works for all of them."},
+            {"key": "og_crystal_dark", "label": "Dark level", "type": "float", "default": 0.05, "min": 0.0, "max": 1.0,
+             "lump": {"key": "dark-level", "type": "float"}, "write_if": "if_not_default",
+             "visible_if": {"og_crystal_darken": [true]}, "export_if_visible": true,
+             "note": "How bright the actors are far from any lit crystal (0 black, 1 normal)."},
+            {"key": "og_crystal_reach_min", "label": "Reach full (m)", "type": "float", "default": 5.0, "min": 0.0,
+             "lump": {"key": "reach", "type": "meters", "slot": 0}, "write_if": "always",
+             "note": "Actors this close to it while lit are fully lit (Darken far actors, vanilla darkcave actors)."},
+            {"key": "og_crystal_reach_max", "label": "Reach end (m)", "type": "float", "default": 70.0, "min": 0.0,
+             "lump": {"key": "reach", "type": "meters", "slot": 1}, "write_if": "always",
+             "note": "Beyond this it doesn't light them."}
           ]
         },
         {
@@ -13083,7 +13099,9 @@
                 "cavecrystal"
               ],
               "required": false
-            }
+            },
+            {"lump_key": "alt-actor", "slot": 0, "label": "Actor Lights (on while lit, 8 max)", "accepts": ["actor-light"],
+             "required": false, "allow-multiple": true}
           ]
         }
       ]

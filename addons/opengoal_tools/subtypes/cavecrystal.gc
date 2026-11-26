@@ -6,17 +6,56 @@
 ;;     slot set, several crystals can share one (the lit one nearest the camera wins)
 ;;   glow-strength: x the slot's strength (vanilla 1: a flash to 2, then 1)
 ;;   fade-out: seconds from lit to dark once its time is up (vanilla 0.7)
-;;   crystal-flags: 1 no sage hints, 2 'trigger lights it too (a button's notify list ...)
-;; The crystal light control (dark actors lit near lit crystals) is kept as vanilla.
+;;   crystal-flags: 1 no sage hints, 2 'trigger lights it too (a button's notify list ...),
+;;     4 darken the level's actors far from lit crystals (vanilla darkcave: by the crystal light
+;;     control, 1 within reach min, dark-level beyond reach max)
+;;   glow-color: the crystal's own colour when lit (vanilla white); dark-level (0.05),
+;;   reach: min / max metres (5 / 70) of its light on darkened actors
+;;   alt-actor (up to 8): Actor Lights sent 'on while it's lit, 'off when it goes dark.
+;; The crystal light control (vanilla darkcave actors lit near lit crystals) is kept.
 ;; edits: cavecrystal
 (deftype __TYPE__ (cavecrystal)
   ((slot      int32)
    (strength  float)
    (fade-out  float)
-   (cflags    uint32))
+   (cflags    uint32)
+   (dark      float)
+   (reach-min float)
+   (reach-max float))
   (:states
    __TYPE__-active
    __TYPE__-idle))
+
+(define *__TYPE__-dark-time* (the-as time-frame 0))
+
+(defun __TYPE__-darken ((this __TYPE__))
+  "Once a frame (any crystal with the flag): every actor of the level gets its colour from
+  the lit crystals near it (vanilla darkcave's callback), dark-level when none."
+  (let ((now (current-time)))
+    (when (!= *__TYPE__-dark-time* now)
+      (set! *__TYPE__-dark-time* now)
+      (let ((arr (-> this entity extra level entity))
+            (dark (new 'stack-no-clear 'vector))
+            (pos (new 'stack-no-clear 'vector)))
+        (set-vector! dark (-> this dark) (-> this dark) (-> this dark) 1.0)
+        (when (and arr (nonzero? arr))
+          (dotimes (i (-> arr length))
+            (let ((p (-> arr data i process)))
+              (when (and p (type-type? (-> p type) process-drawable) (not (type-type? (-> p type) cavecrystal)))
+                (let ((pd (the-as process-drawable p)))
+                  (when (and (nonzero? (-> pd draw)) (nonzero? (-> pd root)))
+                    (set! (-> pos quad) (-> pd root trans quad))
+                    (set! (-> pos w) 0.0)
+                    (vector-lerp! (-> pd draw color-mult) dark (new 'static 'vector :x 1.0 :y 1.0 :z 1.0 :w 1.0)
+                                  (cavecrystal-light-control-method-10 *cavecrystal-light-control* pos)))))))))))
+  (none))
+
+(defun __TYPE__-lights ((this __TYPE__) (msg symbol))
+  "'on / 'off to the linked Actor Lights."
+  (dotimes (i (min 8 (entity-actor-count (-> this entity) 'alt-actor)))
+    (let ((e (entity-actor-lookup (-> this entity) 'alt-actor i)))
+      (if (and e (-> e extra process)) (send-event (-> e extra process) msg))))
+  (none))
 
 (defun __TYPE__-glow ((this __TYPE__))
   "Vanilla compute-glow with its own fade out time."
@@ -53,7 +92,9 @@
            (+! (-> ctl active-count) -1)
            (set! (-> c intensity) 0.0)
            (inc-intensities! ctl))
-          ((< 0.0 u) (set! (-> c intensity) u))))))
+          ((< 0.0 u) (set! (-> c intensity) u)))
+        (set! (-> c fade-start) (-> this reach-min))
+        (set! (-> c fade-end) (fmax (+ (-> this reach-min) 4.0) (-> this reach-max))))))
   (if (>= (-> this slot) 0)
       (set-fade! *palette-fade-controls* (-> this slot) (fmin 1.993 (* u (-> this strength)))
                  (vector-vector-distance (-> this root trans) (-> *math-camera* trans)) (-> this root trans))
@@ -71,6 +112,7 @@
       (if (and (not (logtest? (-> self cflags) 1)) *target*
                (>= 40960.0 (vector-vector-distance (-> self root trans) (-> *target* control trans))))
         (level-hint-spawn (text-id darkcave-light-hint) "sksp0333" (the-as entity #f) *entity-pool* (game-task none)))
+      (if (logtest? (-> self cflags) 4) (__TYPE__-darken self))
       (update-connected-crystals! self))
   :code
     (behavior ()
@@ -98,9 +140,11 @@
     (behavior ()
       (logclear! (-> self mask) (process-mask actor-pause))
       (set! (-> self activated-time) (-> *display* game-frame-counter))
-      (set! (-> self prev-compute-glow-time) (-> *display* game-frame-counter)))
+      (set! (-> self prev-compute-glow-time) (-> *display* game-frame-counter))
+      (__TYPE__-lights self 'on))
   :exit
     (behavior ()
+      (__TYPE__-lights self 'off)
       (stop! (-> self sound))
       (if (not (-> self is-master?)) (logior! (-> self mask) (process-mask actor-pause))))
   :trans
@@ -124,6 +168,7 @@
             (set! (-> s5-1 z) (fmax 0.0 (fmin (-> s5-1 z) f28-0)))
             (set! (-> s5-1 w) 0.0)))
         (__TYPE__-light self (-> self glow-u))
+        (if (logtest? (-> self cflags) 4) (__TYPE__-darken self))
         (update-connected-crystals! self)
         (when (>= 0.0 f30-0)
           (if (not (logtest? (-> self cflags) 1))
@@ -142,7 +187,10 @@
   (set! (-> this last-updated-user-lighting) 0)
   (set-vector! (-> this off-color-mult) 0.0 0.0 0.0 1.0)
   (set-vector! (-> this off-color-emissive) 0.0 0.0 0.0 0.0)
-  (set-vector! (-> this on-color-mult) 1.0 1.0 1.0 1.0)
+  (let ((c (res-lump-data arg0 'glow-color (pointer float))))
+    (if c
+        (set-vector! (-> this on-color-mult) (-> c 0) (-> c 1) (-> c 2) 1.0)
+        (set-vector! (-> this on-color-mult) 1.0 1.0 1.0 1.0)))
   (set-vector! (-> this on-color-emissive) 0.0 0.0 0.0 0.0)
   (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
     (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
@@ -168,6 +216,10 @@
   (set! (-> this strength) (res-lump-float arg0 'glow-strength :default 1.0))
   (set! (-> this fade-out) (res-lump-float arg0 'fade-out :default 0.7))
   (set! (-> this cflags) (res-lump-value arg0 'crystal-flags uint32))
+  (set! (-> this dark) (res-lump-float arg0 'dark-level :default 0.05))
+  (let ((r (res-lump-data arg0 'reach (pointer float))))
+    (set! (-> this reach-min) (if r (-> r 0) 20480.0))
+    (set! (-> this reach-max) (if r (-> r 1) 286720.0)))
   (process-drawable-from-entity! this arg0)
   (initialize-skeleton this *cavecrystal-sg* '())
   (nav-mesh-connect this (-> this root) (the-as nav-control #f))

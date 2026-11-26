@@ -156,6 +156,13 @@ class OG_PT_LevelSettings(Panel):
                 h = body.row(); h.enabled = False; h.scale_y = 0.8
                 h.label(text=f"Slot {', '.join(map(str, clash))}: the mood's time of day and an effect both use it",
                         icon="ERROR")
+            from ..moods import undriven_slots, level_func
+            for slot, labels in undriven_slots(ctx.scene, col):
+                h = body.row(); h.alert = True; h.scale_y = 0.8
+                h.label(text=f"Slot {slot} ({', '.join(labels)}) won't light: "
+                             + ("add a Triggered slot effect on it to the mood function" if level_func(ctx.scene, col)
+                                else "use one of this file's mood functions with a Triggered slot on it"),
+                        icon="ERROR")
             body.prop(s, "ocean")
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")

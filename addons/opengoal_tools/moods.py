@@ -489,6 +489,33 @@ def timeline_slots(m):
     return {k for k, t in enumerate(m.times) if t.enabled}
 
 
+def actor_slots(scene, col):
+    """{slot: {labels}} of the level's actors that set a palette slot (Light switch, Cave
+    Crystal with a slot picked; chained crystals use their chain place + 1)."""
+    from .collections import _level_objects, actor_etype
+    out = {}
+    for o in _level_objects(scene, col):
+        et = actor_etype(o)
+        if et == "light-switch":
+            out.setdefault(int(o.get("og_ls_slot", 5)), set()).add("Light switch")
+        elif et == "cavecrystal":
+            v = str(o.get("og_crystal_slot", "chain"))
+            if v[:1] == "s" and v[1:].isdigit():
+                out.setdefault(int(v[1:]), set()).add("Cave Crystal")
+    return out
+
+
+def undriven_slots(scene, col):
+    """[(slot, labels)] set by the level's actors but not copied by its mood function (no
+    Triggered slot effect on it, or not one of this file's functions): they won't light."""
+    acts = actor_slots(scene, col)
+    if not acts:
+        return []
+    f = level_func(scene, col)
+    driven = {e.slot for e in (f.effects if f else ()) if e.enabled and e.kind == "actor"}
+    return [(s, sorted(acts[s])) for s in sorted(acts) if s not in driven]
+
+
 def slot_uses(scene, col):
     """8 labels: what the level's mood function / mood use each slot for ('' = nothing known)."""
     out = [[] for _ in range(8)]
@@ -498,6 +525,9 @@ def slot_uses(scene, col):
             for s in effect_slots(e):
                 if s < 8:
                     out[s].append(EFFECT_LABEL[e.kind])
+    for s, labels in actor_slots(scene, col).items():
+        if s < 8:
+            out[s] += sorted(labels)
     m = level_mood(scene, col)
     for s in timeline_slots(m):
         out[s].insert(0, "time" if m.time_preset == "fixed" else f"time {m.times[s].hour}:00")
