@@ -551,6 +551,59 @@ def effect_overlaps(f):
     return [(s, l) for s, l in sorted(seen.items()) if len(l) > 1 or s > 7]
 
 
+# ── following a slot (Actor Light's Follow effect) ────────────────────────
+
+def _level_effects(scene):
+    from .collections import _active_level_col
+    f = level_func(scene, _active_level_col(scene))
+    return [e for e in (f.effects if f else ()) if e.enabled and effect_slots(e)]
+
+
+def mood_slot_label(scene, v):
+    """1 + slot (0: none) as text."""
+    if v <= 0:
+        return "None"
+    s = v - 1
+    names = [EFFECT_LABEL[e.kind] for e in _level_effects(scene) if s in effect_slots(e)]
+    return f"Slot {s}: {', '.join(names)}" if names else f"Slot {s} ({SLOT_NAMES[s] if s < 8 else '?'})"
+
+
+def _mood_slot_items(self, ctx):
+    out = [("0", "None", "Not following: always full strength")]
+    seen = set()
+    for e in _level_effects(ctx.scene):
+        for s in effect_slots(e):
+            if s < 8:
+                out.append((f"{s + 1}.{len(out)}", f"{EFFECT_LABEL[e.kind]}: slot {s}",
+                            "Follows this slot of the level's mood function"))
+                seen.add(s)
+    out += [(f"{s + 1}.{len(out) + s}", f"Slot {s} ({SLOT_NAMES[s]})", "Any slot (the level's mood function sets it)")
+            for s in range(8) if s not in seen]
+    _ITEMS.setdefault("mslot", [])[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
+    return _ITEMS["mslot"]
+
+
+class OG_OT_PickMoodSlot(bpy.types.Operator):
+    """Pick the effect (palette slot of the level's mood) this light follows"""
+    bl_idname = "og.pick_mood_slot"
+    bl_label = "Follow Effect"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    prop_key: StringProperty(options={"HIDDEN"})
+    pick: EnumProperty(name="Effect", items=_mood_slot_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.active_object
+        if o is None or not self.prop_key:
+            return {"CANCELLED"}
+        o[self.prop_key] = int(self.pick.split(".")[0])
+        return {"FINISHED"}
+
+
 # ── problems ───────────────────────────────────────────────────────────────
 
 def problems(scene):
@@ -1223,7 +1276,7 @@ class OG_PT_Moods(bpy.types.Panel):
 
 
 CLASSES = (OGMoodTimeSlot, OGMoodFogSlot, OGMoodLightSlot, OGMoodSunSlot, OGMood, OGMoodEffect, OGMoodFunc,
-           OG_OT_MoodFxAdd, OG_OT_MoodFxRemove, OG_OT_MoodFuncTemplate,
+           OG_OT_MoodFxAdd, OG_OT_MoodFxRemove, OG_OT_MoodFuncTemplate, OG_OT_PickMoodSlot,
            OG_OT_MoodAdd, OG_OT_MoodRemove, OG_OT_MoodDuplicate, OG_OT_MoodTemplate, OG_OT_MoodPreset,
            OG_OT_LevelUseMood, OG_OT_LevelUseMoodFunc, OG_OT_LevelEditMood, OG_OT_LevelMakeMood,
            OG_OT_MoodFromFogOverride, OG_PT_Moods)

@@ -13581,7 +13581,10 @@
             {"key": "og_al_hour_off", "label": "Time off (h)", "type": "float", "default": 8.0, "min": 0.0, "max": 24.0,
              "lump": {"key": "hours", "type": "float", "slot": 1}, "write_if": "always",
              "visible_if": {"og_al_mode": ["tod", "tod_off"]}, "export_if_visible": true,
-             "note": "Time of day it turns off (0-24); earlier than Time on: on over midnight."}
+             "note": "Time of day it turns off (0-24); earlier than Time on: on over midnight."},
+            {"key": "og_al_follow", "label": "Follow effect", "type": "mood_slot", "default": 0,
+             "lump": {"key": "follow-slot", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "The light is as strong as a palette slot of the level's mood: pick an effect of its mood function (flicker, pulse, lava ...) and it flickers / pulses with the baked light, Active hours included. Its own colours and distances stay."}
           ]
         },
         {

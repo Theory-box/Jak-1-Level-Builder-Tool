@@ -459,6 +459,13 @@ def _draw_field(layout, obj, field, actor_info=None):
     elif ftype == "pov_camera":
         from .. import pov as _pov
         _pov.draw(layout, obj, field)
+    elif ftype == "mood_slot":
+        from ..moods import mood_slot_label
+        row = layout.row(align=True)
+        row.label(text=f"{label}:")
+        op = row.operator("og.pick_mood_slot", text=mood_slot_label(bpy.context.scene, int(obj.get(field["key"], 0))),
+                          icon="LIGHT_SUN")
+        op.prop_key = field["key"]
     elif ftype == "link_slot":
         # an actor-link slot ("slot": lump key; its DB slot has "show-in") drawn here
         from .selected import _draw_link_slot
