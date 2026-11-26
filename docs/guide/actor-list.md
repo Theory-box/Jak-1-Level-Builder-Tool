@@ -2,7 +2,7 @@
 
 # Actor list
 
-Every actor you can place from **Spawn Objects** (259 in all), grouped like its tiles. The search in Spawn Objects finds them by name or etype. Notes: **nav-mesh** = an enemy that needs a nav-mesh to move ([Enemies & nav-meshes](enemies-and-navmesh.md)), **path** = needs a path ([Paths & platforms](paths-and-platforms.md)), **edited** = a vanilla actor made to work in custom levels ([Edited actors](edited-actors-and-goal-code.md)).
+Every actor you can place from **Spawn Objects** (260 in all), grouped like its tiles. The search in Spawn Objects finds them by name or etype. Notes: **nav-mesh** = an enemy that needs a nav-mesh to move ([Enemies & nav-meshes](enemies-and-navmesh.md)), **path** = needs a path ([Paths & platforms](paths-and-platforms.md)), **edited** = a vanilla actor made to work in custom levels ([Edited actors](edited-actors-and-goal-code.md)).
 
 *Generated from the add-on's database by `tools/gen_actor_list.py`.*
 
@@ -131,7 +131,7 @@ Jump to: [Enemies](#enemies) · [Platforms](#platforms) · [Interactive Objects]
 | Balloon | `balloon` |  | Floating balloon mine: pops when attacked and knocks Jak back. |
 | Blue Eco Charger | `blue-eco-charger` |  | Opens (orb spins) when Jak comes within 4 m charged with blue eco; closes 20 s later. |
 | Breakable Beam Mirror | `reflector-mirror` | edited | Edited: punch or spin to break the mirror and send stop to its linked receivers (e.g. |
-| Cave Crystal | `cavecrystal` |  |  |
+| Cave Crystal | `cavecrystal` | edited | Edited (subtypes/cavecrystal.gc): hit (or 'trigger, if on), it glows for its Light time and lights a palette slot (a baked time of day layer) through the palette fade co… |
 | Citadel Generator | `citb-generator` |  | Hit it to break it: opens its open actors, gives its task's cell, then triggers its linked actors. |
 | Dark Crystal | `dark-crystal` |  | Explodes when hit. |
 | Dark Plant | `dark-plant` | edited | Exported as a level subtype (subtypes/dark-plant.gc). |
@@ -309,6 +309,7 @@ Jump to: [Enemies](#enemies) · [Platforms](#platforms) · [Interactive Objects]
 | Actor | etype | Notes | What it is |
 |---|---|---|---|
 | Actor Light | `actor-light` | add-on actor | Addon actor (exports as lt-actor-light, in a shared file): adds light to Jak and its Lit actors near it, or takes it away with negative intensities. |
+| Light switch | `light-switch` | add-on actor | Addon actor (exports as lt-light-switch, in a shared file): turns a palette slot (a baked time of day layer) on and off, fading. |
 | Particle Spawner | `part-spawner` |  | Spawns a vanilla particle group (waterfalls, steam, torches, bubbles, moths ...) at its position, optionally with a sound. |
 
 ## Cameras

@@ -86,13 +86,13 @@ letters) and the **Effective Nick**.
 
 | Field | What it does |
 |---|---|
-| **Mood** | The vanilla mood the level uses: its fog, light and sun tables. **Custom** lets you type one. Some moods use a fixed time of day; the Light Baking tab warns about them (see [Lighting](lighting.md)). |
-| **Mood Function** | The update-mood function run every frame. **Same as mood** (default), a vanilla one, or **Custom**. |
+| **Mood** | The vanilla mood the level uses: its fog, light and sun tables. **Custom** lets you type one; the button next to it picks one of this .blend's moods (see [Moods](moods.md)). Some moods use a fixed time of day; the Light Baking tab warns about them (see [Lighting](lighting.md)). |
+| **Mood Function** | The update-mood function run every frame. **Same as mood** (default), a vanilla one, or **Custom**; the button next to it picks one of this .blend's mood functions. Warnings under it: a slot used both by the mood's time of day and an effect, or a Light switch / Cave Crystal slot the function doesn't drive. |
 | **Ocean** | The ocean drawn with the level: **None** (default), **Village 1**, **Village 2**, **Sunken** or **Custom**. |
 | **Sun Fade** | How much of the sun is drawn (0 to 1). |
 | **Sky** | The vanilla level whose sky is drawn. **None (no sky)** for caves and interiors. **Custom**: type a level name. |
 | **Texture Remap** | The vanilla level whose texture remap table and texture pages the level uses. Things drawn with the game's generic textures need it: Flut Flut eyes, water, dark eco pools, dying enemies. Use **None** for a level loaded at the same time as another custom level (two loaded levels sharing one crash). See [Geometry](geometry.md#textures). |
-| **Override Mood Fog** | Your own fog instead of the mood's: **Fog Color**, **Fog Start (m)**, **Fog End (m)**, **Fog Max**, **Fog Min**. Adds a small fog-control actor to the level. Turn it off to go back to the mood's fog. |
+| **Edit Mood** / **Make a Custom Mood** | Your own fog and actor light: **Edit Mood** opens the level's custom mood in the Moods panel; **Make a Custom Mood** copies the level's current mood (same look) and uses it. See [Moods](moods.md). A file that used the old **Override Mood Fog** shows **Convert to a Custom Mood** (same look). |
 
 ### Gameplay
 

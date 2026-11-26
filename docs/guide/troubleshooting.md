@@ -155,6 +155,10 @@ Run it before you share a level, and when the game crashes and you don't know wh
 | Level › Settings | **'…' already has level files (another .blend?): exporting overwrites them** | Another level with this name was exported before. Rename yours unless you mean to replace it. |
 | Level › Settings › Sound & Music | **Bank 1 and Bank 2 are the same** | Pick two different banks (or none). |
 | Build & Play | **N mesh(es) outside Geometry aren't exported** | Click **Move to Geometry**. |
+| Level › Settings › Visuals | **Slot N: the mood's time of day and an effect both use it** | The level's mood uses that slot in its timeline and its mood function has an effect on it: they fight. Turn the slot off in the timeline, or move the effect (see [Moods](moods.md)). |
+| Level › Settings › Visuals | **Slot N (Light switch / Cave Crystal) won't light** | Those actors set the slot, but the level's mood function doesn't copy it: add a **Triggered slot** effect on it (a vanilla function never does). |
+| Moods | **name '…' is already used**, **needs a name**, **the timeline has no slot on** | The build stops: fix the mood / function shown (vanilla names can't be used). |
+| Moods › a mood function | **Slot N: Effect + Effect** | Two effects of the function write the same slot; the last one wins. |
 | Build & Play | **Missing paths — open Developer Tools** | `gk`, `goalc` or `game.gp` wasn't found: check the paths ([Developer Tools](developer-tools.md)). |
 
 ---
