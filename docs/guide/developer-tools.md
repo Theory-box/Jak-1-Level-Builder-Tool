@@ -186,6 +186,11 @@ level. The settings are saved in the .blend.
 | **Not linked by the actor that should link it** | grey |
 | **No nav-mesh (idles, can't chase)** | grey |
 | **Nav-mesh soft issues** | grey |
+| **Mood: slot used by time of day and an effect** | grey |
+| **Mood: Light switch / crystal slot won't light** | grey |
+| **Ocean map not found / not exported** | red |
+| **Ocean: no water volume** | grey |
+| **Ocean: level past the ocean grid** | grey |
 
 The red (required) types are shown in red, marked *(required)*: ignoring them hides problems that can crash the
 game or break the build. What each warning means: [Troubleshooting](troubleshooting.md#warning-counts-red-and-grey-).

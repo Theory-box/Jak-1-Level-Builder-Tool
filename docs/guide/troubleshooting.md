@@ -157,6 +157,10 @@ Run it before you share a level, and when the game crashes and you don't know wh
 | Build & Play | **N mesh(es) outside Geometry aren't exported** | Click **Move to Geometry**. |
 | Level › Settings › Visuals | **Slot N: the mood's time of day and an effect both use it** | The level's mood uses that slot in its timeline and its mood function has an effect on it: they fight. Turn the slot off in the timeline, or move the effect (see [Moods](moods.md)). |
 | Level › Settings › Visuals | **Slot N (Light switch / Cave Crystal) won't light** | Those actors set the slot, but the level's mood function doesn't copy it: add a **Triggered slot** effect on it (a vanilla function never does). |
+| Level › Settings › Visuals | **The ocean is only a picture: add a Water Volume for swimming** | The level has an ocean but no water volume, so Jak can't swim in it. Add water volumes ([Oceans](oceans.md)). |
+| Level › Settings › Visuals | **'…' reaches past the ocean grid** | Part of the level is outside the ocean map's 4608 m square: only far ocean is drawn there. Move the grid mesh. |
+| Level › Settings › Visuals | **No ocean map of this file has that name** / **… isn't exported** | The level's Custom ocean names a missing map, or its Export box is off. |
+| Oceans | **the grid mesh is scaled or rotated**, **needs 2304 faces**, **no grid mesh** | The build stops: remake the grid (Make Grid Mesh) or undo the change. |
 | Moods | **name '…' is already used**, **needs a name**, **the timeline has no slot on** | The build stops: fix the mood / function shown (vanilla names can't be used). |
 | Moods › a mood function | **Slot N: Effect + Effect** | Two effects of the function write the same slot; the last one wins. |
 | Build & Play | **Missing paths — open Developer Tools** | `gk`, `goalc` or `game.gp` wasn't found: check the paths ([Developer Tools](developer-tools.md)). |

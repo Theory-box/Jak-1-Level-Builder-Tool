@@ -88,7 +88,7 @@ letters) and the **Effective Nick**.
 |---|---|
 | **Mood** | The vanilla mood the level uses: its fog, light and sun tables. **Custom** lets you type one; the button next to it picks one of this .blend's moods (see [Moods](moods.md)). Some moods use a fixed time of day; the Light Baking tab warns about them (see [Lighting](lighting.md)). |
 | **Mood Function** | The update-mood function run every frame. **Same as mood** (default), a vanilla one, or **Custom**; the button next to it picks one of this .blend's mood functions. Warnings under it: a slot used both by the mood's time of day and an effect, or a Light switch / Cave Crystal slot the function doesn't drive. |
-| **Ocean** | The ocean drawn with the level: **None** (default), **Village 1**, **Village 2**, **Sunken** or **Custom**. |
+| **Ocean** | The ocean drawn with the level: **None** (default; a neighbour level's ocean still shows), **Village 1**, **Village 2**, **Sunken**, **Custom** (the button next to it picks one of this file's ocean maps) or **Hidden** (no ocean in this level, not even a neighbour's). Warnings under it: no water volume, level past the ocean grid, map missing. See [Oceans](oceans.md). |
 | **Sun Fade** | How much of the sun is drawn (0 to 1). |
 | **Sky** | The vanilla level whose sky is drawn. **None (no sky)** for caves and interiors. **Custom**: type a level name. |
 | **Texture Remap** | The vanilla level whose texture remap table and texture pages the level uses. Things drawn with the game's generic textures need it: Flut Flut eyes, water, dark eco pools, dying enemies. Use **None** for a level loaded at the same time as another custom level (two loaded levels sharing one crash). See [Geometry](geometry.md#textures). |

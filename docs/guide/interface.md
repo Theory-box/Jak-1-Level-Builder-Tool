@@ -18,6 +18,7 @@ The panels are listed top to bottom; the numbers match the sidebar screenshot.
 | ④ | **Object Controls** | Works on the whole selection: **Frame**, **Duplicate**, **Delete**, a summary of what's selected, tools to affect the selection such as **Set to Floor**, **Convert Entities** and the **Vertex Colors** tools. | [Object Controls](object-controls.md), [Lighting](lighting.md#vertex-colors-tools) |
 | ⑤ | **Object Settings** | The settings of the active object. For an actor: **Actor Settings** (with sub-panels such as **Path**, **Entity Links**, **Crate**…), **Custom Lumps** and **GOAL Code**. Other objects (checkpoints, cameras, volumes, meshes) show their own settings. | [Actors](actors.md) |
 | ⑥ | **Light Baking** | Bake Cycles lighting into the meshes' vertex colours, with bake options, time of day and colour quantisation. | [Lighting](lighting.md) |
+| — | **Oceans** | Your own ocean maps: a grid mesh of water / no water cells and colours. | [Oceans](oceans.md) |
 | — | **Moods** | Your own moods and mood functions: fog, actor light, time of day, effects. | [Moods](moods.md) |
 | ⑦ | **Tasks** | Your own power cells and scout flies, and their texts. Needs mod-base. | [Tasks](tasks.md) |
 | ⑧ | **Import** | **Game 3D Models**, **Game Textures** and **From GOAL Files** (read an existing level's `.jsonc`). | [Importing](importing.md) |
