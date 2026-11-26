@@ -42,6 +42,8 @@ def water_cells(o):
     g = o.grid
     if g is None:
         return w
+    if g.mode == "EDIT":
+        g.update_from_editmode()                         # the faces as they are now
     mw = g.matrix_world
     ox, oy = mw.translation.x, mw.translation.y
     mats = g.data.materials

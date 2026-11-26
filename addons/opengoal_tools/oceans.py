@@ -98,6 +98,65 @@ def make_grid(ctx, o):
     return ob
 
 
+def set_faces(g, mi, selected=False):
+    """Material mi (0 water, 1 no water) on the grid's faces (only the selected ones if asked).
+    In Edit Mode through bmesh, so leaving Edit Mode keeps it. Returns how many changed."""
+    import bmesh
+    n = 0
+    if g.mode == "EDIT":
+        bm = bmesh.from_edit_mesh(g.data)
+        for f in bm.faces:
+            if (f.select or not selected) and f.material_index != mi:
+                f.material_index = mi
+                n += 1
+        bmesh.update_edit_mesh(g.data)
+    else:
+        for f in g.data.polygons:
+            if (f.select or not selected) and f.material_index != mi:
+                f.material_index = mi
+                n += 1
+        g.data.update()
+    return n
+
+
+def cell_of(g, p):
+    """(col, row) of a world point on the grid (game axes: row along game z = -Blender y)."""
+    t = g.matrix_world.translation
+    return int((p.x - t.x + HALF) // CELL), int((-(p.y - t.y) + HALF) // CELL)
+
+
+def point_of(g, p):
+    t = g.matrix_world.translation
+    return int(round((p.x - t.x + HALF) / CELL)), int(round((-(p.y - t.y) + HALF) / CELL))
+
+
+def load_template(ctx, o, name):
+    """Water cells, colours and far colour of a game map onto the grid (made if missing)."""
+    from . import db as _db
+    v = _db.vanilla_oceans().get(name)
+    if v is None:
+        return False
+    g = o.grid if o.grid is not None and o.grid.type == "MESH" else make_grid(ctx, o)
+    if g.mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    me = g.data
+    mw = g.matrix_world
+    for f in me.polygons:
+        c, r = cell_of(g, mw @ f.center)
+        if 0 <= c < CELLS and 0 <= r < CELLS:
+            f.material_index = 0 if v["water"][r][c] == "1" else 1
+    ca = me.color_attributes.get(COLOR_ATTR) or me.color_attributes.new(COLOR_ATTR, "BYTE_COLOR", "POINT")
+    for vert, d in zip(me.vertices, ca.data):
+        c, r = point_of(g, mw @ vert.co)
+        if 0 <= c <= CELLS and 0 <= r <= CELLS:
+            h = v["colors"][r][c * 6:c * 6 + 6]
+            d.color_srgb = (int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255, 128 / 255)
+    o.far_color = [min(1.0, x / 255) for x in v["far"]]
+    o.water_from = o.color_from = "own"
+    me.update()
+    return True
+
+
 def grid_problems(o):
     g = o.grid
     if o.water_from != "own" and o.color_from != "own":
@@ -198,6 +257,7 @@ class OG_OT_OceanFill(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     index: IntProperty(options={"HIDDEN"})
     what: StringProperty(options={"HIDDEN"})          # water / none / color
+    selected: BoolProperty(options={"HIDDEN"})         # only the selected faces (Edit Mode)
 
     def execute(self, ctx):
         o = ctx.scene.og_oceans[self.index]
@@ -206,8 +266,9 @@ class OG_OT_OceanFill(bpy.types.Operator):
             return {"CANCELLED"}
         me = g.data
         if self.what in ("water", "none"):
-            mi = 0 if self.what == "water" else 1
-            me.polygons.foreach_set("material_index", [mi] * len(me.polygons))
+            n = set_faces(g, 0 if self.what == "water" else 1, self.selected)
+            self.report({"INFO"}, f"{n} cell(s) changed")
+            return {"FINISHED"}
         else:
             ca = me.color_attributes.get(COLOR_ATTR) or me.color_attributes.new(COLOR_ATTR, "BYTE_COLOR", "POINT")
             c = (*o.far_color, 128 / 255)
@@ -218,9 +279,10 @@ class OG_OT_OceanFill(bpy.types.Operator):
 
 
 class OG_OT_OceanCutOut(bpy.types.Operator):
-    """Cells under the selected objects (seen from above, their bounding boxes) get No water"""
+    """Cells under the selected objects (seen from above, their bounding boxes) get No water: islands, the
+    level's ground (Object Mode: select the objects, not the grid)"""
     bl_idname = "og.ocean_cut_out"
-    bl_label = "Cut Out Selected"
+    bl_label = "Cut Out Under Selected Objects"
     bl_options = {"REGISTER", "UNDO"}
     index: IntProperty(options={"HIDDEN"})
 
@@ -236,15 +298,50 @@ class OG_OT_OceanCutOut(bpy.types.Operator):
                 continue
             pts = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
             boxes.append((min(p.x for p in pts), max(p.x for p in pts), min(p.y for p in pts), max(p.y for p in pts)))
+        if not boxes:
+            self.report({"WARNING"}, "Select the objects to cut out (in Object Mode), not the grid")
+            return {"CANCELLED"}
+        if g.mode == "EDIT":
+            bpy.ops.object.mode_set(mode="OBJECT")
         n = 0
         mw = g.matrix_world
         for f in g.data.polygons:
             c = mw @ f.center
-            if any(x0 <= c.x <= x1 and y0 <= c.y <= y1 for x0, x1, y0, y1 in boxes):
+            if f.material_index != 1 and any(x0 <= c.x <= x1 and y0 <= c.y <= y1 for x0, x1, y0, y1 in boxes):
                 f.material_index = 1
                 n += 1
         g.data.update()
         self.report({"INFO"}, f"{n} cell(s) cut out")
+        return {"FINISHED"}
+
+
+def _template_items(self, ctx):
+    from . import db as _db
+    out = [(k, f"{k} (game)", "") for k in _db.vanilla_oceans()]
+    from .moods import _ITEMS
+    _ITEMS.setdefault("otpl", [])[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
+    return _ITEMS["otpl"]
+
+
+class OG_OT_OceanTemplate(bpy.types.Operator):
+    """Fill the grid mesh from one of the game's oceans: its water / no water cells, colours and far colour
+    (the grid stays where it is)"""
+    bl_idname = "og.ocean_template"
+    bl_label = "Template"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "pick"
+    index: IntProperty(options={"HIDDEN"})
+    pick: EnumProperty(name="Ocean", items=_template_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        o = ctx.scene.og_oceans[self.index]
+        if not load_template(ctx, o, self.pick):
+            return {"CANCELLED"}
+        self.report({"INFO"}, f"{map_symbol(o)}: from {self.pick}")
         return {"FINISHED"}
 
 
@@ -337,6 +434,7 @@ def _draw_ocean(layout, o, i, issues):
             w = box.row(); w.alert = True
             w.label(text=t, icon="ERROR")
     box.prop(o, "name")
+    box.operator("og.ocean_template", text="Template from a game ocean…", icon="PRESET").index = i
     box.prop(o, "far_color")
     box.prop(o, "place")
     if _fold(box, o, "show_grid", "Grid"):
@@ -350,9 +448,16 @@ def _draw_ocean(layout, o, i, issues):
         b.prop(o, "water_from")
         if o.water_from == "own":
             _grey(b, f"Faces with '{MAT_WATER}' have ocean, '{MAT_NONE}' don't", "INFO")
+            editing = o.grid is not None and o.grid.mode == "EDIT"
             r = b.row(align=True)
+            if editing:                                   # the selected faces
+                op = r.operator("og.ocean_fill", text="Selected: Water", icon="FACESEL"); op.index, op.what, op.selected = i, "water", True
+                op = r.operator("og.ocean_fill", text="Selected: No Water"); op.index, op.what, op.selected = i, "none", True
+                r = b.row(align=True)
             op = r.operator("og.ocean_fill", text="All Water"); op.index, op.what = i, "water"
             op = r.operator("og.ocean_fill", text="Clear"); op.index, op.what = i, "none"
+            if not editing:
+                _grey(b, "Edit Mode on the grid: buttons for the selected faces", "INFO")
             b.operator("og.ocean_cut_out", icon="MOD_BOOLEAN").index = i
     if _fold(box, o, "show_color", "Colour"):
         b = box.box()
@@ -388,13 +493,58 @@ class OG_PT_Oceans(bpy.types.Panel):
 
 
 CLASSES = (OGOcean, OG_OT_OceanAdd, OG_OT_OceanRemove, OG_OT_OceanDuplicate, OG_OT_OceanMakeGrid, OG_OT_OceanFill,
-           OG_OT_OceanCutOut, OG_OT_LevelUseOcean, OG_PT_Oceans)
+           OG_OT_OceanCutOut, OG_OT_OceanTemplate, OG_OT_LevelUseOcean, OG_PT_Oceans)
+
+
+# ── the 768 m squares outlined in the viewport (one batch, drawn at each grid) ──
+
+_DRAW = {"handle": None, "batch": None}
+
+
+def _squares_batch(sh):
+    if _DRAW["batch"] is None:
+        from gpu_extras.batch import batch_for_shader
+        z = 0.2                                          # just above the faces
+        pts = []
+        for k in range(7):
+            a = -HALF + k * 768.0
+            pts += [(a, -HALF, z), (a, HALF, z), (-HALF, a, z), (HALF, a, z)]
+        _DRAW["batch"] = batch_for_shader(sh, "LINES", {"pos": pts})
+    return _DRAW["batch"]
+
+
+def _draw_squares():
+    sc = bpy.context.scene
+    grids = [o.grid for o in getattr(sc, "og_oceans", ()) if o.grid is not None]
+    if not grids:
+        return
+    import gpu
+    vl = bpy.context.view_layer
+    sh = gpu.shader.from_builtin("UNIFORM_COLOR")
+    b = _squares_batch(sh)
+    gpu.state.depth_test_set("LESS_EQUAL")
+    gpu.state.line_width_set(2.0)
+    sh.bind()
+    sh.uniform_float("color", (0.2, 0.9, 1.0, 1.0))
+    for g in grids:
+        if g.name in vl.objects and g.visible_get():
+            with gpu.matrix.push_pop():
+                gpu.matrix.multiply_matrix(g.matrix_world)
+                b.draw(sh)
+    gpu.state.line_width_set(1.0)
+    gpu.state.depth_test_set("NONE")
 
 
 def register_props():
     bpy.types.Scene.og_oceans = CollectionProperty(type=OGOcean)
+    if _DRAW["handle"] is None and not bpy.app.background:
+        _DRAW["handle"] = bpy.types.SpaceView3D.draw_handler_add(_draw_squares, (), "WINDOW", "POST_VIEW")
 
 
 def unregister_props():
+    if _DRAW["handle"] is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_DRAW["handle"], "WINDOW")
+        _DRAW["handle"] = None
+    _DRAW["batch"] = None
     if hasattr(bpy.types.Scene, "og_oceans"):
         del bpy.types.Scene.og_oceans
