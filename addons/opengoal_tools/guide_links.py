@@ -19,6 +19,8 @@ GUIDE = {
     "OG_PT_object_controls": ("object-controls", ""),
     "OG_PT_selected_object": ("actors", "actor-settings"),
     "OG_PT_lighting": ("lighting", "light-baking"),
+    "OG_PT_moods": ("moods", ""),
+    "OG_PT_oceans": ("oceans", ""),
     "OG_PT_tasks": ("tasks", ""),
     "OG_PT_import": ("importing", ""),
     "OG_PT_dev_tools": ("developer-tools", ""),
