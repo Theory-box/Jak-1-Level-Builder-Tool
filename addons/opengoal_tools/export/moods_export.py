@@ -367,6 +367,10 @@ def func_gc(f):
     # (not inside `when *time-of-day-effects*` like the game's functions: loading a custom level
     # turns that off, its bsp has no nodes)
     blk += slots
+    if slots:
+        # the game packs each strength into 16 bits: below 0 it wraps round to full light
+        # (e.g. a Pulse going lower than 0), so the slots stay within 0 - 2
+        blk += ["  (dotimes (i 8) (set! (-> arg0 times i w) (fmax 0.0 (fmin 2.0 (-> arg0 times i w)))))"]
     blk += ["  ;; light kits 1-7 follow the time of day ambient",
             "  (dotimes (i 7) (update-light-kit (-> arg0 light-group (+ i 1)) (-> arg0 light-group 0 ambi) 1.0))",
             "  (update-mood-itimes arg0)"]

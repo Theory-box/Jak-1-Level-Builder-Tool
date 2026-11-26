@@ -116,6 +116,22 @@ class OG_OT_InitColorField(Operator):
         return {"FINISHED"}
 
 
+class OG_OT_ClearColorField(Operator):
+    """Back to the default (the field isn't written: the actor's own behaviour)"""
+    bl_idname = "og.clear_color_field"
+    bl_label = "Default Colour"
+    bl_options = {"INTERNAL", "UNDO"}
+
+    prop_key: StringProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj is None or self.prop_key not in obj:
+            return {"CANCELLED"}
+        del obj[self.prop_key]
+        return {"FINISHED"}
+
+
 class OG_OT_SetFieldFromZ(Operator):
     """Set this field to the active object's height (Blender Z = game height)"""
     bl_idname = "og.set_field_from_z"
@@ -451,6 +467,7 @@ def _draw_field(layout, obj, field, actor_info=None):
         row.label(text=f"{label}:")
         if field["key"] in obj:
             row.prop(obj, f'["{field["key"]}"]', text="")
+            row.operator("og.clear_color_field", text="", icon="X").prop_key = field["key"]
         else:
             op = row.operator("og.init_color_field", text="Set colour", icon="COLOR")
             op.prop_key = field["key"]
@@ -700,6 +717,7 @@ CLASSES = (
     OG_OT_SetActorEnumField,
     OG_OT_SetFieldFromZ,
     OG_OT_InitColorField,
+    OG_OT_ClearColorField,
     OG_OT_ToggleActorBoolField,
     OG_PT_ActorFields,
 )

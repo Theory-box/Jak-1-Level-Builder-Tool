@@ -9,7 +9,8 @@
 ;;   crystal-flags: 1 no sage hints, 2 'trigger lights it too (a button's notify list ...),
 ;;     4 darken the level's actors far from lit crystals (vanilla darkcave: by the crystal light
 ;;     control, 1 within reach min, dark-level beyond reach max)
-;;   glow-color: the crystal's own colour when lit (vanilla white); dark-level (0.05),
+;;   glow-color: the crystal's own colour when lit (vanilla white), x glow-self (1.0);
+;;   dark-level (0.05),
 ;;   reach: min / max metres (5 / 70) of its light on darkened actors
 ;;   alt-actor (up to 8): Actor Lights sent 'on while it's lit, 'off when it goes dark.
 ;; The crystal light control (vanilla darkcave actors lit near lit crystals) is kept.
@@ -187,10 +188,11 @@
   (set! (-> this last-updated-user-lighting) 0)
   (set-vector! (-> this off-color-mult) 0.0 0.0 0.0 1.0)
   (set-vector! (-> this off-color-emissive) 0.0 0.0 0.0 0.0)
-  (let ((c (res-lump-data arg0 'glow-color (pointer float))))
+  (let ((c (res-lump-data arg0 'glow-color (pointer float)))
+        (k (res-lump-float arg0 'glow-self :default 1.0)))
     (if c
-        (set-vector! (-> this on-color-mult) (-> c 0) (-> c 1) (-> c 2) 1.0)
-        (set-vector! (-> this on-color-mult) 1.0 1.0 1.0 1.0)))
+        (set-vector! (-> this on-color-mult) (* k (-> c 0)) (* k (-> c 1)) (* k (-> c 2)) 1.0)
+        (set-vector! (-> this on-color-mult) k k k 1.0)))
   (set-vector! (-> this on-color-emissive) 0.0 0.0 0.0 0.0)
   (let ((s4-0 (new 'process 'collide-shape this (collide-list-enum hit-by-others))))
     (let ((s3-0 (new 'process 'collide-shape-prim-mesh s4-0 (the-as uint 0) (the-as uint 0))))
