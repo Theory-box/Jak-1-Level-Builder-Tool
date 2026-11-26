@@ -57,11 +57,36 @@ def map_symbol(o):
 # ── the grid mesh ──────────────────────────────────────────────────────────
 
 def _material(name, color):
-    m = bpy.data.materials.get(name)
-    if m is None:
-        m = bpy.data.materials.new(name)
-        m.diffuse_color = color                      # viewport colour (Solid view)
+    m = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    m.diffuse_color = color                          # Solid view
     return m
+
+
+def setup_materials():
+    """The two grid materials (made / set up again, also for older files): Ocean water shows the
+    OceanColor attribute (Material Preview), No water is black and fully see-through."""
+    water = _material(MAT_WATER, (0.1, 0.35, 0.8, 1.0))
+    none = _material(MAT_NONE, (0.0, 0.0, 0.0, 0.25))
+    for m, attr in ((water, True), (none, False)):
+        m.use_nodes = True
+        nt = m.node_tree
+        bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+        if bsdf is None:
+            continue
+        if attr:
+            ca = next((n for n in nt.nodes if n.type == "VERTEX_COLOR"), None) or nt.nodes.new("ShaderNodeVertexColor")
+            ca.layer_name = COLOR_ATTR
+            ca.location = (bsdf.location.x - 300, bsdf.location.y)
+            if not bsdf.inputs["Base Color"].is_linked:
+                nt.links.new(ca.outputs["Color"], bsdf.inputs["Base Color"])
+        else:
+            bsdf.inputs["Base Color"].default_value = (0.0, 0.0, 0.0, 1.0)
+            bsdf.inputs["Alpha"].default_value = 0.0
+            if hasattr(m, "surface_render_method"):
+                m.surface_render_method = "BLENDED"
+            if hasattr(m, "blend_method"):
+                m.blend_method = "BLEND"
+    return water, none
 
 
 def make_grid(ctx, o):
@@ -72,8 +97,9 @@ def make_grid(ctx, o):
     faces = [(j * n + i, j * n + i + 1, (j + 1) * n + i + 1, (j + 1) * n + i) for j in range(CELLS) for i in range(CELLS)]
     me = bpy.data.meshes.new(f"OCEAN_{clean(o.name)}")
     me.from_pydata(verts, [], faces)
-    me.materials.append(_material(MAT_WATER, (0.1, 0.35, 0.8, 1.0)))
-    me.materials.append(_material(MAT_NONE, (0.0, 0.0, 0.0, 0.25)))
+    water, none = setup_materials()
+    me.materials.append(water)
+    me.materials.append(none)
     ca = me.color_attributes.new(COLOR_ATTR, "BYTE_COLOR", "POINT")
     c = (*o.far_color, 128 / 255)
     for d in ca.data:
@@ -137,6 +163,7 @@ def load_template(ctx, o, name):
     if v is None:
         return False
     g = o.grid if o.grid is not None and o.grid.type == "MESH" else make_grid(ctx, o)
+    setup_materials()
     if g.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
     me = g.data
@@ -265,6 +292,7 @@ class OG_OT_OceanFill(bpy.types.Operator):
         if g is None or g.type != "MESH":
             return {"CANCELLED"}
         me = g.data
+        setup_materials()
         if self.what in ("water", "none"):
             n = set_faces(g, 0 if self.what == "water" else 1, self.selected)
             self.report({"INFO"}, f"{n} cell(s) changed")
@@ -382,6 +410,37 @@ def level_ocean(scene, col):
         return None
     v = col.og_level.ocean_custom.strip().lstrip("'")
     return next((o for o in scene.og_oceans if map_symbol(o) == v), None)
+
+
+def level_warnings(scene, col):
+    """[(text, red)] for Level > Settings > Visuals > Ocean."""
+    from .collections import _level_objects, actor_etype
+    from .level_settings import ocean_value
+    out = []
+    if col is None or ocean_value(col.og_level) in ("#f", "'none"):
+        return out
+    objs = _level_objects(scene, col)
+    if not any(actor_etype(x) == "water-vol" for x in objs):
+        out.append(("The ocean is only a picture: add a Water Volume for swimming (Follow ocean waves)", False))
+    o = level_ocean(scene, col)
+    if col.og_level.ocean == "CUSTOM" and o is None and "-ocean-map*" in col.og_level.ocean_custom and \
+            not col.og_level.ocean_custom.strip().lstrip("'").startswith("*ocean-map-"):
+        out.append(("No ocean map of this file has that name (Oceans panel)", True))
+    if o is None:
+        return out
+    if not o.export:
+        out.append((f"{map_symbol(o)} isn't exported (its Export box is off)", True))
+    if o.grid is not None:
+        from mathutils import Vector
+        t = o.grid.matrix_world.translation
+        x0, x1, y0, y1 = t.x - HALF, t.x + HALF, t.y - HALF, t.y + HALF
+        for ob in objs:
+            if ob.type == "MESH" and ob != o.grid and not ob.name.startswith("VOL_"):
+                pts = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
+                if any(p.x < x0 or p.x > x1 or p.y < y0 or p.y > y1 for p in pts):
+                    out.append((f"'{ob.name}' reaches past the ocean grid (only far ocean there)", False))
+                    break
+    return out
 
 
 def problems(scene):

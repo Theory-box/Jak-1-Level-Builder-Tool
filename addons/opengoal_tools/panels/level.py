@@ -168,6 +168,14 @@ class OG_PT_LevelSettings(Panel):
             r.operator("og.level_use_ocean", text="", icon="FILE_BLEND")    # this file's ocean maps
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")
+            from ..oceans import level_warnings
+            for text, red in level_warnings(ctx.scene, col):
+                h = body.row(); h.scale_y = 0.8
+                if red:
+                    h.alert = True
+                else:
+                    h.enabled = False
+                h.label(text=text, icon="ERROR" if red else "INFO")
             body.prop(s, "sun_fade", slider=True)
             body.prop(props, "sky_source")
             if props.sky_source == "custom":
