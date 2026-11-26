@@ -13007,7 +13007,9 @@
     },
     {
       "etype": "cavecrystal",
+      "edited": "cavecrystal",
       "label": "Cave Crystal",
+      "description": "Edited (subtypes/cavecrystal.gc): hit (or 'trigger, if on), it glows for its Light time and lights a palette slot (a baked time of day layer) through the palette fade controls; the level's mood function needs a Triggered slot effect on that slot (Moods tab). Slot: vanilla uses its place in the next-actor chain + 1, or pick one. Glow strength, Fade out time and the Sage's hints can be changed.",
       "category": "Interactive Objects",
       "parent": "process-drawable",
       "art_group": "cavecrystal-ag.go",
@@ -13032,7 +13034,52 @@
                 "type": "float"
               },
               "write_if": "if_not_default"
-            }
+            },
+            {"key": "og_crystal_slot", "label": "Slot", "type": "enum", "default": "chain",
+             "choices": [
+                {"value": "chain", "label": "Chain place + 1 (vanilla)", "lump_value": 0},
+                {"value": "s0", "label": "0 Sunrise", "lump_value": 1},
+                {"value": "s1", "label": "1 Morning", "lump_value": 2},
+                {"value": "s2", "label": "2 Noon", "lump_value": 3},
+                {"value": "s3", "label": "3 Afternoon", "lump_value": 4},
+                {"value": "s4", "label": "4 Sunset", "lump_value": 5},
+                {"value": "s5", "label": "5 Twilight", "lump_value": 6},
+                {"value": "s6", "label": "6 Evening", "lump_value": 7},
+                {"value": "s7", "label": "7 Green Sun", "lump_value": 8}
+             ],
+             "lump": {"key": "palette-slot", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "The palette slot (baked time of day layer) it lights while glowing. The level's mood function needs a Triggered slot effect on it (Moods tab). Vanilla: its place in the next-actor chain (0-6) + 1. A slot set here can be shared by several crystals: the lit one nearest the camera wins."},
+            {"key": "og_crystal_strength", "label": "Glow strength", "type": "float", "default": 1.0, "min": 0.0, "max": 2.0,
+             "lump": {"key": "glow-strength", "type": "float"}, "write_if": "if_not_default",
+             "note": "Times the slot's strength (vanilla: a flash to 2, then 1 while lit)."},
+            {"key": "og_crystal_fade", "label": "Fade out (s)", "type": "float", "default": 0.7, "min": 0.0,
+             "lump": {"key": "fade-out", "type": "float"}, "write_if": "if_not_default",
+             "note": "Seconds from lit to dark once its Light time is up."},
+            {"key": "og_crystal_trigger", "label": "Lit by 'trigger", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true",
+             "note": "Another actor sending 'trigger (a button's notify list ...) lights it too (relights it if lit)."},
+            {"key": "og_crystal_no_hints", "label": "No sage hints", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true",
+             "note": "Vanilla: the Sage's hints about the crystals play near one and when its light ends."},
+            {"key": "og_crystal_color", "label": "Glow colour", "type": "color", "default": [1.0, 1.0, 1.0],
+             "lump": {"key": "glow-color", "type": "float"}, "write_if": "if_not_default",
+             "note": "The crystal's own colour when lit (it is black when dark; vanilla white). X: back to vanilla."},
+            {"key": "og_crystal_self", "label": "Self glow strength", "type": "float", "default": 1.0, "min": 0.0, "max": 3.0,
+             "lump": {"key": "glow-self", "type": "float"}, "write_if": "if_not_default",
+             "note": "How strongly the glow colour (or vanilla white) shows on the crystal itself when lit. Above 1 it is added as a glow on top: extra bright, toward the colour."},
+            {"key": "og_crystal_darken", "label": "Darken far actors", "type": "bool", "default": false,
+             "lump_bit": {"key": "crystal-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
+             "note": "Every actor of the level is dark unless near a lit crystal (like the dark Spider Cave). Turn it on for one crystal: it works for all of them."},
+            {"key": "og_crystal_dark", "label": "Dark level", "type": "float", "default": 0.05, "min": 0.0, "max": 1.0,
+             "lump": {"key": "dark-level", "type": "float"}, "write_if": "if_not_default",
+             "visible_if": {"og_crystal_darken": [true]}, "export_if_visible": true,
+             "note": "How bright the actors are far from any lit crystal (0 black, 1 normal)."},
+            {"key": "og_crystal_reach_min", "label": "Reach full (m)", "type": "float", "default": 5.0, "min": 0.0,
+             "lump": {"key": "reach", "type": "meters", "slot": 0}, "write_if": "always",
+             "note": "Actors this close to it while lit are fully lit (Darken far actors, vanilla darkcave actors)."},
+            {"key": "og_crystal_reach_max", "label": "Reach end (m)", "type": "float", "default": 70.0, "min": 0.0,
+             "lump": {"key": "reach", "type": "meters", "slot": 1}, "write_if": "always",
+             "note": "Beyond this it doesn't light them."}
           ]
         },
         {
@@ -13055,7 +13102,9 @@
                 "cavecrystal"
               ],
               "required": false
-            }
+            },
+            {"lump_key": "alt-actor", "slot": 0, "label": "Actor Lights (on while lit, 8 max)", "accepts": ["actor-light"],
+             "required": false, "allow-multiple": true}
           ]
         }
       ]
@@ -13535,7 +13584,10 @@
             {"key": "og_al_hour_off", "label": "Time off (h)", "type": "float", "default": 8.0, "min": 0.0, "max": 24.0,
              "lump": {"key": "hours", "type": "float", "slot": 1}, "write_if": "always",
              "visible_if": {"og_al_mode": ["tod", "tod_off"]}, "export_if_visible": true,
-             "note": "Time of day it turns off (0-24); earlier than Time on: on over midnight."}
+             "note": "Time of day it turns off (0-24); earlier than Time on: on over midnight."},
+            {"key": "og_al_follow", "label": "Follow effect", "type": "mood_slot", "default": 0,
+             "lump": {"key": "follow-slot", "type": "uint32"}, "write_if": "if_not_default",
+             "note": "The light is as strong as a palette slot of the level's mood: pick an effect of its mood function (flicker, pulse, lava ...) and it flickers / pulses with the baked light, Active hours included. Its own colours and distances stay."}
           ]
         },
         {
@@ -13551,6 +13603,50 @@
           "panel": "actor-link",
           "slots": [
             {"lump_key": "alt-actor", "slot": 0, "label": "Lit actors (16 max)", "accepts": ["any"], "required": false, "allow-multiple": true},
+            {"lump_key": "trigger-actor", "slot": 0, "label": "Trigger actor (its death switches the light)", "accepts": ["any"], "required": false}
+          ]
+        }
+      ]
+    },
+    {
+      "etype": "light-switch",
+      "label": "Light switch",
+      "category": "Effects",
+      "parent": "process-drawable",
+      "custom_actor": true,
+      "edited": "light-switch",
+      "shape": "SPHERE",
+      "description": "Addon actor (exports as lt-light-switch, in a shared file): turns a palette slot (a baked time of day layer) on and off, fading. Bake the switchable lights into that slot only (Light Baking > Time of day > its light collection) and give the level's mood function a Triggered slot effect on it (Moods tab). 'trigger (a button's notify list, a Camera animation ...) switches it, 'untrigger / 'off turn it off, 'on on; a linked volume or a trigger actor dying can switch it too. With several switches on one slot, the one nearest the camera wins.",
+      "panels": [
+        {"panel": "fact-options", "export": false},
+        {"panel": "scale", "export": false},
+        {
+          "panel": "custom-fields",
+          "fields": [
+            {"key": "og_ls_slot", "label": "Slot", "type": "int", "default": 5, "min": 0, "max": 7,
+             "lump": {"key": "palette-slot", "type": "uint32"}, "write_if": "always",
+             "note": "The palette slot (0 Sunrise ... 7 Green Sun) it turns on: free in the level's mood (not in its timeline) and a Triggered slot effect in its mood function."},
+            {"key": "og_ls_strength", "label": "On strength", "type": "float", "default": 1.0, "min": 0.0, "max": 1.99,
+             "lump": {"key": "on-strength", "type": "float"}, "write_if": "if_not_default",
+             "note": "The slot's strength when on (1 = the baked layer as it is)."},
+            {"key": "og_ls_fade_on", "label": "Fade on (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 0}, "write_if": "always"},
+            {"key": "og_ls_fade_off", "label": "Fade off (s)", "type": "float", "default": 1.0, "min": 0.0,
+             "lump": {"key": "fade-time", "type": "float", "slot": 1}, "write_if": "always"},
+            {"key": "og_ls_start_on", "label": "Starts on", "type": "bool", "default": false,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 1}, "write_if": "if_true"},
+            {"key": "og_ls_saved", "label": "Saved", "type": "bool", "default": false,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 2}, "write_if": "if_true",
+             "note": "Being on is kept with the game (it is still on after reloading the level or the save)."},
+            {"key": "og_ls_hold", "label": "Volume: on while inside", "type": "bool", "default": true,
+             "lump_bit": {"key": "switch-flags", "type": "uint32", "bit_value": 4}, "write_if": "if_true",
+             "note": "With a linked volume: on while Jak is inside, off when he leaves. Off: each time he enters it switches."}
+          ]
+        },
+        {"panel": "volume"},
+        {
+          "panel": "actor-link",
+          "slots": [
             {"lump_key": "trigger-actor", "slot": 0, "label": "Trigger actor (its death switches the light)", "accepts": ["any"], "required": false}
           ]
         }
@@ -26967,6 +27063,551 @@
       "anims": {
         "ogreboss-cam-intro": "Klaww: intro (loads Klaww's whole art group, large)"
       }
+    }
+  },
+  "VanillaMoods_notes": "The game's mood tables (engine/gfx/mood/mood-tables.gc, extracted by _claude_tmp/mood_extract.py): fog / lights / sun tables (8 entries, null = empty), the hour (interp) tables (24 rows: slot 1, slot 2, morph start, morph end) and each vanilla mood (its tables, hour tables, stars, light kit). Units as in the game: fog / erase / sun / env colours 0-255, light colours ~0-2, fog distances in game units (4096 = 1 m), fog max / min 0-255 (255 = clear), directions unit vectors (game axes).",
+  "VanillaMoods": {
+    "fog": {
+      "citadel": [
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 2252800.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "darkcave": [
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 1024000.0, 255.0, 0.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "finalboss": [
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [150.0, 165.0, 220.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [128.0, 180.0, 243.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [45.0, 0.0, 96.0, 128.0], "fog_dists": [909312.0, 1912832.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [16.0, 32.0, 100.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 80.0, 64.0, 128.0], "fog_dists": [262144.0, 22528000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "firecanyon": [
+        {"fog_color": [180.0, 113.0, 80.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [180.0, 113.0, 80.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [180.0, 113.0, 80.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [180.0, 113.0, 80.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [180.0, 113.0, 80.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [140.0, 64.5, 60.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [128.0, 44.0, 40.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [140.0, 50.0, 60.0, 128.0], "fog_dists": [131072.0, 2048000.0, 255.0, 119.0], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "jungleb": [
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [98304.0, 3072000.0, 255.0, 150.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lavatube": [
+        {"fog_color": [255.0, 96.0, 0.0, 128.0], "fog_dists": [262144.0, 1851392.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "maincave": [
+        {"fog_color": [0.0, 96.0, 96.0, 128.0], "fog_dists": [434176.0, 1048576.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "misty": [
+        {"fog_color": [186.0, 148.0, 164.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [132.0, 140.0, 227.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [132.0, 140.0, 243.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [132.0, 140.0, 241.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [186.0, 148.0, 164.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 64.0, 152.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 32.0, 96.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [17.0, 119.0, 143.0, 128.0], "fog_dists": [0.0, 737280.0, 255.0, 50.0], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "ogre": [
+        {"fog_color": [64.0, 68.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [64.0, 68.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 18.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "ogre3": [
+        {"fog_color": [255.0, 96.0, 0.0, 128.0], "fog_dists": [393216.0, 7458816.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "robocave": [
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 2048000.0, 255.0, 0.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "rolling": [
+        {"fog_color": [42.0, 50.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [94.0, 106.0, 126.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [104.0, 116.0, 136.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [94.0, 106.0, 126.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [42.0, 50.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [17.0, 26.0, 43.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "snow": [
+        {"fog_color": [210.0, 183.0, 160.0, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [190.25, 198.0, 195.25, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [180.5, 203.0, 220.0, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [192.75, 190.5, 197.75, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [205.0, 178.0, 175.5, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [48.0, 44.0, 64.0, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [8.0, 16.0, 32.0, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [16.0, 64.0, 60.0, 128.0], "fog_dists": [819200.0, 2662400.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "sunken": [
+        {"fog_color": [16.512, 26.112, 54.912, 128.0], "fog_dists": [262144.0, 1351680.0, 255.0, 0.0], "erase_color": [16.512, 26.112, 54.912, 128.0]},
+        {"fog_color": [4.096, 15.744, 54.912, 128.0], "fog_dists": [262144.0, 1351680.0, 255.0, 0.0], "erase_color": [4.096, 15.744, 54.912, 128.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "swamp": [
+        {"fog_color": [22.0, 89.0, 101.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [32.0, 105.0, 116.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [36.0, 118.0, 130.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [32.0, 105.0, 116.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [22.0, 89.0, 101.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [20.0, 60.0, 70.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [12.0, 42.0, 60.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [17.0, 76.0, 86.0, 128.0], "fog_dists": [20480.0, 783360.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "training": [
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [150.0, 165.0, 220.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [128.0, 180.0, 243.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [150.0, 165.0, 220.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [16.0, 32.0, 100.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 80.0, 64.0, 128.0], "fog_dists": [262144.0, 10240000.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "village1": [
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [150.0, 165.0, 220.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [128.0, 180.0, 243.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [150.0, 165.0, 220.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [160.0, 150.0, 200.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [16.0, 32.0, 100.0, 128.0], "fog_dists": [262144.0, 6717440.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 0.0, 0.0, 128.0], "fog_dists": [262144.0, 4984832.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 80.0, 64.0, 128.0], "fog_dists": [262144.0, 3690496.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "village2": [
+        {"fog_color": [75.0, 82.0, 96.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [100.0, 102.0, 116.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 102.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [112.0, 114.0, 132.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [100.0, 102.0, 116.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [75.0, 82.0, 96.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [27.5, 40.0, 52.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [10.0, 23.0, 28.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [5.0, 35.0, 35.0, 128.0], "fog_dists": [262144.0, 1843200.0, 255.0, 51.0], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ],
+      "village3": [
+        {"fog_color": [64.0, 68.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [74.0, 86.0, 106.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [64.0, 68.0, 68.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 12.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]},
+        {"fog_color": [0.0, 18.0, 18.0, 128.0], "fog_dists": [262144.0, 2236416.0, 255.0, 25.5], "erase_color": [0.0, 0.0, 0.0, 128.0]}
+      ]
+    },
+    "lights": {
+      "citadel": [
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.75, 0.725, 0.5, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.3, 0.3, 0.3, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "darkcave": [
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [0.3, 0.4, 0.5, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.3, 0.4, 0.5, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "firecanyon": [
+        {"direction": [-0.0278, 0.6578, 0.7526, 0.0], "lgt_color": [1.0979, 1.0567, 0.4653, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.574, 0.32, 0.487, 1.0], "shadow": [-0.0278, 0.6578, 0.7526, 0.0]},
+        {"direction": [-0.25881904, 0.9659258, 0.0, 0.0], "lgt_color": [1.644, 1.598, 1.438, 128.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.368, 0.368, 0.4, 1.0], "shadow": [-0.25881904, 0.9659258, 0.0, 0.0]},
+        {"direction": [-0.0353, 0.8338, -0.5508, 1.0], "lgt_color": [1.1419, 0.8887, 0.3513, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.347, 0.362, 0.487, 1.0], "shadow": [-0.0353, 0.8338, -0.5508, 1.0]},
+        {"direction": [0.8365, 0.4829, 0.2588, 0.0], "lgt_color": [0.1824, 0.2574, 0.6964, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.434, 0.423, 0.625, 1.0], "shadow": [0.8365, 0.4829, 0.2588, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null
+      ],
+      "jungleb": [
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.287, 0.283, 0.4, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.14125, 0.1875, 0.375, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lavatube": [
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.19, 0.128, 0.128, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.31, 0.372, 0.372, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, -1.0, 0.0, 0.0], "lgt_color": [1.0, 0.364, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 0.0], "shadow": [0.0, -1.0, 0.0, 0.0]}
+      ],
+      "maincave": [
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.25, 0.6, 0.75, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.15, 0.2, 0.25, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "misty": [
+        {"direction": [-0.25, 0.9330127, 0.25881904, 0.0], "lgt_color": [0.877, 0.877, 0.877, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.375, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.334, 0.348, 0.64, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.428, 0.44, 0.55, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "ogre": [
+        {"direction": [-0.1830127, 0.6830127, 0.70710677, 0.0], "lgt_color": [1.154, 1.132, 1.093, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.346, 0.359, 0.384, 1.0], "shadow": [-0.1830127, 0.6830127, 0.70710677, 0.0]},
+        {"direction": [-0.24321035, 0.90767336, -0.34202015, 0.0], "lgt_color": [1.144, 1.124, 0.939, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.346, 0.359, 0.384, 1.0], "shadow": [-0.24321035, 0.90767336, -0.34202015, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.113, 0.169, 0.282, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.398, 0.398, 0.574, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.6262, 0.7098, 0.3222, 0.0], "lgt_color": [0.058, 0.168, 0.157, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.398, 0.398, 0.574, 1.0], "shadow": [0.6262, 0.7098, 0.3222, 0.0]},
+        {"direction": [0.40957603, 0.57357645, 0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [0.40957603, 0.57357645, 0.7094065, 0.0]},
+        {"direction": [-0.40957603, 0.57357645, -0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [-0.40957603, 0.57357645, -0.7094065, 0.0]},
+        null,
+        null
+      ],
+      "ogre2": [
+        {"direction": [-0.25, 0.9330127, 0.25881904, 0.0], "lgt_color": [0.793, 0.793, 0.793, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.374, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        {"direction": [-0.25, 0.9330127, 0.25881904, 0.0], "lgt_color": [0.793, 0.793, 0.793, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.374, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.173, 0.259, 0.432, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.463, 0.412, 0.55, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.173, 0.259, 0.432, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.463, 0.412, 0.55, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.40957603, 0.57357645, 0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [0.40957603, 0.57357645, 0.7094065, 0.0]},
+        {"direction": [-0.40957603, 0.57357645, -0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [-0.40957603, 0.57357645, -0.7094065, 0.0]},
+        null,
+        null
+      ],
+      "ogre3": [
+        {"direction": [0.0, 0.666, 0.745, 0.0], "lgt_color": [0.6, 0.51, 0.51, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.313, 0.375, 0.375, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "rolling": [
+        {"direction": [-0.1830127, 0.6830127, 0.70710677, 0.0], "lgt_color": [0.922, 0.905, 0.873, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.346, 0.359, 0.384, 1.0], "shadow": [-0.1830127, 0.6830127, 0.70710677, 0.0]},
+        {"direction": [-0.24321035, 0.90767336, -0.34202015, 0.0], "lgt_color": [0.914, 0.898, 0.866, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.346, 0.359, 0.384, 1.0], "shadow": [-0.24321035, 0.90767336, -0.34202015, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.09, 0.135, 0.225, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.398, 0.398, 0.574, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.6262, 0.7098, 0.3222, 0.0], "lgt_color": [0.0464, 0.1344, 0.1254, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.398, 0.398, 0.574, 1.0], "shadow": [0.6262, 0.7098, 0.3222, 0.0]},
+        null,
+        null,
+        null,
+        null
+      ],
+      "snow": [
+        {"direction": [-0.067, 0.25, 0.966, 0.0], "lgt_color": [0.943, 0.88, 0.137, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.449, 0.35, 0.599, 1.0], "shadow": [-0.066987306, 0.25000003, 0.9659258, 0.0]},
+        {"direction": [-0.259, 0.966, 0.0, 0.0], "lgt_color": [0.66, 0.436, 0.291, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.358, 0.575, 0.716, 1.0], "shadow": [-0.25881904, 0.9659258, 0.0, 0.0]},
+        {"direction": [-0.067, 0.25, -0.966, 0.0], "lgt_color": [1.056, 0.747, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.383, 0.366, 0.599, 1.0], "shadow": [-0.066987306, 0.25000003, -0.9659258, 0.0]},
+        {"direction": [0.866, 0.5, 0.0, 0.0], "lgt_color": [0.067, 0.089, 0.333, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.304, 0.409, 0.76, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881907, 0.0]},
+        null,
+        null,
+        null,
+        null
+      ],
+      "sunken": [
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.265, 0.387, 0.509, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.374, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.172, 0.185, 0.298, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.463, 0.412, 0.55, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "swamp": [
+        {"direction": [-0.25, 0.9330127, 0.25881904, 0.0], "lgt_color": [0.825, 0.825, 0.825, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.374, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.173, 0.259, 0.519, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.412, 0.463, 0.55, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.7094065, 0.57357645, -0.40957603, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [0.7094065, 0.57357645, -0.40957603, 0.0]},
+        {"direction": [-0.7094065, 0.57357645, 0.40957603, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [-0.7094065, 0.57357645, 0.40957603, 0.0]},
+        null,
+        null,
+        null,
+        null
+      ],
+      "village1": [
+        {"direction": [-0.066987306, 0.25000003, 0.9659258, 0.0], "lgt_color": [1.558, 1.454, 0.228, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.4, 0.266, 0.6, 1.0], "shadow": [-0.066987306, 0.25000003, 0.9659258, 0.0]},
+        {"direction": [-0.1830127, 0.6830127, 0.70710677, 0.0], "lgt_color": [1.632, 1.586, 1.428, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.387, 0.387, 0.475, 1.0], "shadow": [-0.1830127, 0.6830127, 0.70710677, 0.0]},
+        {"direction": [-0.25881904, 0.9659258, 0.0, 0.0], "lgt_color": [1.644, 1.598, 1.438, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.362, 0.362, 0.425, 1.0], "shadow": [-0.25881904, 0.9659258, 0.0, 0.0]},
+        {"direction": [-0.1830127, 0.6830127, -0.70710677, 0.0], "lgt_color": [1.632, 1.586, 1.428, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.387, 0.387, 0.475, 1.0], "shadow": [-0.1830127, 0.6830127, -0.70710677, 0.0]},
+        {"direction": [-0.066987306, 0.25000003, -0.9659258, 0.0], "lgt_color": [1.646, 1.118, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.32, 0.35, 0.6, 1.0], "shadow": [-0.066987306, 0.25000003, -0.9659258, 0.0]},
+        {"direction": [0.0, 1.0, 0.0, 0.0], "lgt_color": [0.25, 0.5, 1.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.31, 0.29, 0.35, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881907, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881907, 0.0], "lgt_color": [0.192, 0.256, 0.961, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.383, 0.439, 0.7, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881907, 0.0]},
+        {"direction": [0.354, 0.866, 0.354, 0.0], "lgt_color": [0.0495, 0.62075, 0.326, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.25, 0.439, 0.7, 1.0], "shadow": [0.5393, 0.7652, -0.3514, 0.0]}
+      ],
+      "village2": [
+        {"direction": [-0.25, 0.9330127, 0.25881904, 0.0], "lgt_color": [0.793, 0.793, 0.793, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.374, 0.374, 0.374, 1.0], "shadow": [-0.25, 0.9330127, 0.25881904, 0.0]},
+        {"direction": [0.8365163, 0.4829629, 0.25881904, 0.0], "lgt_color": [0.173, 0.259, 0.432, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.463, 0.412, 0.55, 1.0], "shadow": [0.8365163, 0.4829629, 0.25881904, 0.0]},
+        {"direction": [0.40957603, 0.57357645, 0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [0.40957603, 0.57357645, 0.7094065, 0.0]},
+        {"direction": [-0.40957603, 0.57357645, -0.7094065, 0.0], "lgt_color": [2.0, 2.0, 2.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.0, 0.0, 0.0, 1.0], "shadow": [-0.40957603, 0.57357645, -0.7094065, 0.0]},
+        null,
+        null,
+        null,
+        null
+      ],
+      "village3": [
+        {"direction": [-0.067, 0.25, 0.966, 0.0], "lgt_color": [0.0, 0.0, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.449, 0.35, 0.599, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [-0.259, 0.966, 0.0, 0.0], "lgt_color": [0.66, 0.436, 0.291, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.358, 0.575, 0.716, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [-0.067, 0.25, -0.966, 0.0], "lgt_color": [1.056, 0.747, 0.0, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.383, 0.366, 0.599, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        {"direction": [0.866, 0.5, 0.0, 0.0], "lgt_color": [0.067, 0.089, 0.333, 1.0], "prt_color": [0.0, 0.0, 0.0, 1.0], "amb_color": [0.304, 0.409, 0.76, 1.0], "shadow": [0.0, -1.0, 0.0, 0.0]},
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "sun": {
+      "citadel": [
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [96.0, 96.0, 96.0, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "darkcave": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [127.5, 255.0, 127.5, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "finalboss": [
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [255.0, 225.0, 96.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [109.0, 64.0, 160.0, 255.0]},
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [255.0, 196.0, 64.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [96.0, 96.0, 196.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [64.0, 64.0, 150.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [64.0, 150.0, 196.0, 255.0]}
+      ],
+      "firecanyon": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [200.0, 200.0, 128.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [200.0, 200.0, 200.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [200.0, 200.0, 200.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 196.0, 64.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [96.0, 96.0, 150.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [64.0, 64.0, 150.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [96.0, 200.0, 150.0, 255.0]}
+      ],
+      "jungleb": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [48.0, 60.0, 96.0, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "lavatube": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 175.0, 128.0, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "maincave": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [128.0, 255.0, 255.0, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "misty": [
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [186.0, 148.0, 164.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 140.0, 227.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 140.0, 243.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 140.0, 241.0, 255.0]},
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [186.0, 148.0, 164.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [32.0, 48.0, 160.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [32.0, 48.0, 150.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [32.0, 100.0, 160.0, 255.0]}
+      ],
+      "rolling": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [128.0, 133.0, 194.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 32.0, 76.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [17.0, 76.0, 96.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 131.0, 160.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [128.0, 126.0, 192.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [153.0, 141.0, 192.0, 255.0]}
+      ],
+      "snow": [
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [192.0, 176.5, 96.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [128.0, 176.0, 192.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [128.0, 180.0, 194.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [128.0, 176.0, 192.0, 255.0]},
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [192.0, 176.5, 96.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [80.0, 80.0, 173.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [64.0, 64.0, 150.0, 255.0]},
+        {"sun_color": [0.0, 0.0, 0.0, 128.0], "env_color": [64.0, 107.0, 173.0, 255.0]}
+      ],
+      "sunken": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [127.5, 191.25, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [76.5, 102.0, 255.0, 255.0]},
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "swamp": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [24.0, 133.0, 243.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 32.0, 96.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [17.0, 119.0, 143.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 131.0, 200.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [87.0, 126.0, 227.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [153.0, 141.0, 240.0, 255.0]}
+      ],
+      "village1": [
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [255.0, 225.0, 96.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [255.0, 255.0, 255.0, 255.0]},
+        {"sun_color": [255.0, 128.0, 0.0, 128.0], "env_color": [255.0, 196.0, 64.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [96.0, 96.0, 196.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [64.0, 64.0, 150.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [64.0, 150.0, 196.0, 255.0]}
+      ],
+      "village2": [
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [128.0, 133.0, 194.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 32.0, 76.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [0.0, 0.0, 0.0, 0.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [17.0, 76.0, 96.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [132.0, 131.0, 160.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [128.0, 126.0, 192.0, 255.0]},
+        {"sun_color": [255.0, 225.0, 96.0, 128.0], "env_color": [153.0, 141.0, 192.0, 255.0]}
+      ]
+    },
+    "interp": {
+      "default-interp-table": [[6, 7, 0.2, 0.4], [6, 7, 0.4, 0.6], [6, 7, 0.6, 0.8], [6, 7, 0.8, 0.99], [0, 7, 0.99, 0.8], [0, 7, 0.8, 0.6], [0, 7, 0.6, 0.0], [0, 1, 0.0, 0.5], [0, 1, 0.5, 0.99], [2, 1, 0.99, 0.66], [2, 1, 0.66, 0.33], [2, 1, 0.33, 0.0], [2, 3, 0.0, 0.33], [2, 3, 0.33, 0.66], [2, 3, 0.66, 0.99], [4, 3, 0.99, 0.75], [4, 3, 0.75, 0.5], [4, 3, 0.5, 0.0], [4, 5, 0.0, 0.99], [6, 5, 0.99, 0.75], [6, 5, 0.75, 0.5], [6, 5, 0.5, 0.25], [6, 5, 0.25, 0.0], [6, 7, 0.0, 0.2]],
+      "village1-palette-interp-table": [[6, 7, 0.2, 0.4], [6, 7, 0.4, 0.6], [6, 7, 0.6, 0.8], [6, 7, 0.8, 0.99], [0, 7, 0.99, 0.8], [0, 7, 0.8, 0.6], [0, 7, 0.6, 0.0], [0, 1, 0.0, 0.5], [0, 1, 0.5, 0.99], [2, 1, 0.99, 0.66], [2, 1, 0.66, 0.33], [2, 1, 0.33, 0.0], [2, 3, 0.0, 0.33], [2, 3, 0.33, 0.66], [2, 3, 0.66, 0.99], [4, 3, 0.99, 0.75], [4, 3, 0.75, 0.5], [4, 3, 0.5, 0.0], [4, 6, 0.0, 0.75], [4, 6, 0.75, 0.82], [4, 6, 0.82, 0.88], [4, 6, 0.88, 0.94], [4, 6, 0.94, 0.99], [6, 7, 0.0, 0.2]],
+      "misty-palette-interp-table": [[1, 0, 0.04, 0.08], [1, 0, 0.08, 0.12], [1, 0, 0.12, 0.16], [1, 0, 0.16, 0.2], [1, 0, 0.2, 0.23], [1, 0, 0.23, 0.25], [1, 0, 0.25, 0.75], [1, 0, 0.75, 0.8], [1, 0, 0.8, 0.85], [1, 0, 0.85, 0.9], [1, 0, 0.9, 0.95], [1, 0, 0.95, 0.99], [1, 0, 0.99, 0.96], [1, 0, 0.96, 0.92], [1, 0, 0.92, 0.88], [1, 0, 0.88, 0.84], [1, 0, 0.84, 0.8], [1, 0, 0.8, 0.75], [1, 0, 0.75, 0.25], [1, 0, 0.25, 0.18], [1, 0, 0.18, 0.12], [1, 0, 0.12, 0.06], [1, 0, 0.06, 0.0], [1, 0, 0.0, 0.04]],
+      "firecanyon-palette-interp-table": [[3, 0, 0.0, 0.08], [3, 0, 0.08, 0.12], [3, 0, 0.12, 0.16], [3, 0, 0.16, 0.2], [3, 0, 0.2, 0.23], [3, 0, 0.23, 0.25], [3, 0, 0.25, 0.99], [1, 0, 0.99, 0.5], [1, 0, 0.5, 0.38], [1, 0, 0.38, 0.26], [1, 0, 0.26, 0.22], [1, 0, 0.22, 0.0], [1, 2, 0.0, 0.1], [1, 2, 0.1, 0.2], [1, 2, 0.2, 0.3], [1, 2, 0.3, 0.4], [1, 2, 0.4, 0.5], [1, 2, 0.5, 0.99], [3, 2, 0.99, 0.25], [3, 2, 0.25, 0.18], [3, 2, 0.18, 0.12], [3, 2, 0.12, 0.06], [3, 2, 0.06, 0.0], [3, 0, 0.0, 0.04]],
+      "rolling-palette-interp-table": [[2, 3, 0.2, 0.4], [2, 3, 0.4, 0.6], [2, 3, 0.6, 0.8], [2, 3, 0.8, 0.99], [0, 3, 0.99, 0.88], [0, 3, 0.88, 0.75], [0, 3, 0.75, 0.25], [0, 3, 0.25, 0.12], [0, 3, 0.12, 0.0], [0, 1, 0.0, 0.16], [0, 1, 0.16, 0.34], [0, 1, 0.34, 0.5], [0, 1, 0.5, 0.66], [0, 1, 0.66, 0.84], [0, 1, 0.84, 0.99], [2, 1, 0.99, 0.84], [2, 1, 0.84, 0.8], [2, 1, 0.8, 0.75], [2, 1, 0.75, 0.25], [2, 1, 0.25, 0.17], [2, 1, 0.17, 0.12], [2, 1, 0.12, 0.06], [2, 1, 0.06, 0.0], [2, 3, 0.0, 0.2]],
+      "village2-sky-texture-table": [[1, 4, 0.2, 0.4], [1, 4, 0.4, 0.6], [1, 4, 0.6, 0.8], [1, 4, 0.8, 0.99], [5, 4, 0.99, 0.8], [5, 4, 0.8, 0.6], [5, 4, 0.6, 0.0], [5, 6, 0.0, 0.5], [5, 6, 0.5, 0.99], [0, 6, 0.99, 0.66], [0, 6, 0.66, 0.33], [0, 6, 0.33, 0.0], [0, 6, 0.0, 0.33], [0, 6, 0.33, 0.66], [0, 6, 0.66, 0.99], [7, 6, 0.99, 0.75], [7, 6, 0.75, 0.5], [7, 6, 0.5, 0.0], [7, 1, 0.0, 0.75], [7, 1, 0.75, 0.82], [7, 1, 0.82, 0.88], [7, 1, 0.88, 0.94], [7, 1, 0.94, 0.99], [1, 4, 0.0, 0.2]],
+      "finalboss-interp-table": [[6, 7, 0.2, 0.4], [6, 7, 0.4, 0.6], [6, 7, 0.6, 0.8], [6, 7, 0.8, 0.99], [0, 7, 0.99, 0.8], [0, 7, 0.8, 0.6], [0, 7, 0.6, 0.0], [0, 1, 0.0, 0.5], [0, 1, 0.5, 0.99], [2, 1, 0.99, 0.66], [2, 1, 0.66, 0.33], [2, 1, 0.33, 0.0], [2, 1, 0.0, 0.33], [2, 1, 0.33, 0.66], [2, 1, 0.66, 0.99], [4, 1, 0.99, 0.75], [4, 1, 0.75, 0.5], [4, 1, 0.5, 0.0], [4, 5, 0.0, 0.99], [6, 5, 0.99, 0.75], [6, 5, 0.75, 0.5], [6, 5, 0.5, 0.25], [6, 5, 0.25, 0.0], [6, 7, 0.0, 0.2]]
+    },
+    "moods": {
+      "beach": {"mood-fog-table": "village1", "mood-lights-table": "village1", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0, "light-kit": "make-village1-light-kit"},
+      "citadel": {"mood-fog-table": "citadel", "mood-lights-table": "citadel", "mood-sun-table": "citadel", "fog-interp": "default-interp-table", "palette-interp": "default-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "darkcave": {"mood-fog-table": "darkcave", "mood-lights-table": "darkcave", "mood-sun-table": "darkcave", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "default": {"mood-fog-table": "village1", "mood-lights-table": "village1", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0},
+      "finalboss": {"mood-fog-table": "finalboss", "mood-lights-table": "village1", "mood-sun-table": "finalboss", "fog-interp": "finalboss-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "finalboss-interp-table", "num-stars": 85.0},
+      "finalboss2": {"mood-fog-table": "finalboss", "mood-lights-table": "village1", "mood-sun-table": "finalboss", "fog-interp": "finalboss-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "finalboss-interp-table", "num-stars": 0.0},
+      "firecanyon": {"mood-fog-table": "firecanyon", "mood-lights-table": "firecanyon", "mood-sun-table": "firecanyon", "fog-interp": "default-interp-table", "palette-interp": "firecanyon-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0},
+      "jungle": {"mood-fog-table": "village1", "mood-lights-table": "village1", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0},
+      "jungleb": {"mood-fog-table": "jungleb", "mood-lights-table": "jungleb", "mood-sun-table": "jungleb", "fog-interp": "default-interp-table", "palette-interp": "default-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "lavatube": {"mood-fog-table": "lavatube", "mood-lights-table": "lavatube", "mood-sun-table": "lavatube", "fog-interp": "default-interp-table", "palette-interp": "default-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "maincave": {"mood-fog-table": "maincave", "mood-lights-table": "maincave", "mood-sun-table": "maincave", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "misty": {"mood-fog-table": "misty", "mood-lights-table": "misty", "mood-sun-table": "misty", "fog-interp": "default-interp-table", "palette-interp": "misty-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0, "light-kit": "make-misty-light-kit"},
+      "ogre": {"mood-fog-table": "ogre", "mood-lights-table": "ogre", "mood-sun-table": "rolling", "fog-interp": "default-interp-table", "palette-interp": "rolling-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0},
+      "ogre2": {"mood-fog-table": "ogre", "mood-lights-table": "ogre2", "mood-sun-table": "rolling", "fog-interp": "default-interp-table", "palette-interp": "rolling-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0},
+      "ogre3": {"mood-fog-table": "ogre3", "mood-lights-table": "ogre3", "mood-sun-table": "rolling", "fog-interp": "default-interp-table", "palette-interp": "rolling-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0},
+      "robocave": {"mood-fog-table": "robocave", "mood-lights-table": "maincave", "mood-sun-table": "maincave", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "rolling": {"mood-fog-table": "rolling", "mood-lights-table": "rolling", "mood-sun-table": "rolling", "fog-interp": "default-interp-table", "palette-interp": "rolling-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0, "light-kit": "make-rolling-light-kit"},
+      "snow": {"mood-fog-table": "snow", "mood-lights-table": "snow", "mood-sun-table": "snow", "fog-interp": "default-interp-table", "palette-interp": "firecanyon-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0},
+      "sunken": {"mood-fog-table": "sunken", "mood-lights-table": "sunken", "mood-sun-table": "sunken", "fog-interp": "misty-palette-interp-table", "palette-interp": "misty-palette-interp-table", "sky-texture-interp": "misty-palette-interp-table", "num-stars": 0.0},
+      "sunkenb": {"mood-fog-table": "sunken", "mood-lights-table": "sunken", "mood-sun-table": "sunken", "fog-interp": "misty-palette-interp-table", "palette-interp": "misty-palette-interp-table", "sky-texture-interp": "misty-palette-interp-table", "num-stars": 0.0},
+      "swamp": {"mood-fog-table": "swamp", "mood-lights-table": "swamp", "mood-sun-table": "swamp", "fog-interp": "default-interp-table", "palette-interp": "misty-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0},
+      "training": {"mood-fog-table": "training", "mood-lights-table": "village1", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0},
+      "village1": {"mood-fog-table": "village1", "mood-lights-table": "village1", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "village1-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 85.0, "light-kit": "make-village1-light-kit"},
+      "village2": {"mood-fog-table": "village2", "mood-lights-table": "village2", "mood-sun-table": "village2", "fog-interp": "default-interp-table", "palette-interp": "misty-palette-interp-table", "sky-texture-interp": "village2-sky-texture-table", "num-stars": 0.0, "light-kit": "make-village2-light-kit"},
+      "village3": {"mood-fog-table": "village3", "mood-lights-table": "village3", "mood-sun-table": "village1", "fog-interp": "default-interp-table", "palette-interp": "firecanyon-palette-interp-table", "sky-texture-interp": "default-interp-table", "num-stars": 0.0, "light-kit": "make-village3-light-kit"}
     }
   },
   "Cameras": {

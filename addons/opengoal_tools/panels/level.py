@@ -140,12 +140,29 @@ class OG_PT_LevelSettings(Panel):
         head, body = layout.panel("og_lvl_visuals", default_closed=True)
         head.label(text="Visuals", icon="LIGHT_SUN")
         if body is not None:
-            body.prop(props, "mood")
+            r = body.row(align=True)
+            r.prop(props, "mood")
+            r.operator("og.level_use_mood", text="", icon="FILE_BLEND")      # this file's moods (Moods tab)
             if props.mood == "custom":
                 body.prop(s, "mood_custom")
-            body.prop(s, "mood_func")
+            r = body.row(align=True)
+            r.prop(s, "mood_func")
+            r.operator("og.level_use_mood_func", text="", icon="FILE_BLEND")
             if s.mood_func == "CUSTOM":
                 body.prop(s, "mood_func_custom")
+            from ..moods import level_conflicts
+            clash = level_conflicts(ctx.scene, col)
+            if clash:
+                h = body.row(); h.enabled = False; h.scale_y = 0.8
+                h.label(text=f"Slot {', '.join(map(str, clash))}: the mood's time of day and an effect both use it",
+                        icon="ERROR")
+            from ..moods import undriven_slots, level_func
+            for slot, labels in undriven_slots(ctx.scene, col):
+                h = body.row(); h.alert = True; h.scale_y = 0.8
+                h.label(text=f"Slot {slot} ({', '.join(labels)}) won't light: "
+                             + ("add a Triggered slot effect on it to the mood function" if level_func(ctx.scene, col)
+                                else "use one of this file's mood functions with a Triggered slot on it"),
+                        icon="ERROR")
             body.prop(s, "ocean")
             if s.ocean == "CUSTOM":
                 body.prop(s, "ocean_custom")
@@ -157,17 +174,19 @@ class OG_PT_LevelSettings(Panel):
             hint = body.column(); hint.enabled = False; hint.scale_y = 0.7
             hint.label(text="Texture remap: Flut Flut eyes, water, dark eco pools,", icon="INFO")
             hint.label(text="dying enemies (things drawn with generic textures)", icon="BLANK1")
-            # Fog override: the exporter adds a fog-control actor that sets the
-            # camera fog every frame; off = the mood drives the fog
-            fog = body.box()
-            fog.prop(props, "fog_override_enabled")
+            # the fog and lights: the level's mood (Moods tab); the old Fog override's
+            # values stay in the file until converted
+            from ..moods import level_mood
+            r = body.row(align=True)
+            if level_mood(ctx.scene, col) is not None:
+                r.operator("og.level_edit_mood", text="Edit Mood (fog, lights)", icon="LIGHT_SUN")
+            else:
+                r.operator("og.level_make_mood", text="Make a Custom Mood (fog, lights)", icon="ADD")
             if props.fog_override_enabled:
-                sub = fog.column(align=True)
-                sub.prop(props, "fog_color")
-                sub.prop(props, "fog_start")
-                sub.prop(props, "fog_end")
-                sub.prop(props, "fog_max")
-                sub.prop(props, "fog_min")
+                box = body.box()
+                h = box.row(); h.enabled = False
+                h.label(text="Fog override was replaced by custom moods:", icon="INFO")
+                box.operator("og.mood_from_fog_override", icon="FILE_REFRESH")
 
         # ── Gameplay ───────────────────────────────────────────────────
         head, body = layout.panel("og_lvl_gameplay", default_closed=True)

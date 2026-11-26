@@ -780,9 +780,8 @@ class OGProperties(PropertyGroup):
     sky_source:             EnumProperty(name="Sky", items=SKY_SOURCE_ITEMS,
                                          get=_get_sky_source_live, set=_set_sky_source_live,
                                          description="Vanilla level whose sky is drawn. 'None' = no sky (caves, interiors)")
-    # Fog Override — when enabled, exporter injects a fog-control actor that
-    # overrides *math-camera* fog values every frame.  When disabled, the
-    # active mood drives fog as normal.
+    # Fog Override (removed: custom moods replace it). Kept so older files' values can
+    # be turned into a custom mood (Level > Visuals > Convert to a Custom Mood).
     fog_override_enabled:   BoolProperty(name="Override Mood Fog", default=False,
                                          update=_on_fog_override_changed,
                                          description="When on, custom fog values below take precedence over the mood's fog table. Adds a fog-control actor to the level. Turn off to revert to mood-driven fog with no leftovers")

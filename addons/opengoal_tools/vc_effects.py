@@ -68,6 +68,11 @@ def _curve_preset_update(self, ctx):
     _remember(self, ctx)
 
 
+def _tod_overwrite_update(self, ctx):
+    if self.tod_overwrite:                       # start from what the times of day say
+        self.tod_on = tod_defaults(self.id_data)
+
+
 class OGVcEffect(bpy.types.PropertyGroup):
     kind: EnumProperty(name="Effect", items=[(k, l, d) for k, l, d, _i in KINDS], default="CURVE")
     enabled: BoolProperty(name="On", default=True, description="Apply this effect after a bake")
@@ -94,6 +99,11 @@ class OGVcEffect(bpy.types.PropertyGroup):
     blur_auto_sharp: BoolProperty(name="Auto sharp", default=False, update=_remember,
                                   description="Also treat edges sharper than the angle as sharp")
     blur_angle: FloatProperty(name="Angle", default=0.5236, min=0.0, max=3.1416, subtype="ANGLE", update=_remember)
+    tod_overwrite: BoolProperty(name="Overwrite time of day", default=False, update=_tod_overwrite_update,
+                                description="Pick the time of day layers this effect runs on (otherwise: the ones with "
+                                            "Light Baking > Time of day > Apply effects after bake on)")
+    tod_on: bpy.props.BoolVectorProperty(name="Times of day", size=8, default=(True,) * 8,
+                                         description="Run on this time of day's layer")
     vertex_group: StringProperty(name="Vertex Group",
                                  description="Only this vertex group changes, by each vertex's weight (0.0 - 1.0). "
                                              "Empty: the whole mesh. A mesh without this group isn't changed")
@@ -215,11 +225,42 @@ def apply_effect(obj, fx, layers=None, kind=None):
     return n
 
 
-def apply_stack(obj):
-    """The object's effects (on ones, in order). Returns how many ran."""
+def obj_level(obj):
+    """The level collection holding obj (or None)."""
+    from .collections import _all_level_collections
+    for c in _all_level_collections(bpy.context.scene):
+        if c.all_objects.get(obj.name) is obj:
+            return c
+    return None
+
+
+def tod_defaults(obj):
+    """Per time of day (8): Light Baking's Apply effects after bake of the object's level."""
+    lv = obj_level(obj) if isinstance(obj, bpy.types.Object) else None
+    if lv is None:
+        return [True] * 8
+    from .bake import tod_times
+    return [t.apply_effects for _k, _a, _l, t in tod_times(lv.og_bake)]
+
+
+def effect_layers(fx, defaults):
+    """Layers an effect runs on: the plain bake layer, and the times of day it is on for."""
+    from .bake import BAKE_ATTR, TOD_ATTRS
+    on = list(fx.tod_on) if fx.tod_overwrite else defaults
+    return (BAKE_ATTR,) + tuple(a for a, k in zip(TOD_ATTRS, on) if k)
+
+
+def apply_stack(obj, settings=None):
+    """The object's effects (on ones, in order). Returns how many ran. settings: the
+    level's bake settings (else the level holding obj)."""
     ran = 0
+    if settings is not None:
+        from .bake import tod_times
+        defaults = [t.apply_effects for _k, _a, _l, t in tod_times(settings)]
+    else:
+        defaults = tod_defaults(obj)
     for fx in getattr(obj, "og_vc_effects", ()):
-        if fx.enabled and apply_effect(obj, fx):
+        if fx.enabled and apply_effect(obj, fx, effect_layers(fx, defaults)):
             ran += 1
     return ran
 
@@ -347,7 +388,8 @@ class OG_OT_VcEffectEdit(bpy.types.Operator):
 
 _COPY_PROPS = ("kind", "enabled", "show", "factor", "curve_preset", "color", "hue_factor", "sat_factor",
                "val_factor", "alpha", "blur_strength", "vertex_group",
-               "blur_passes", "blur_keep_sharp", "blur_auto_sharp", "blur_angle")
+               "blur_passes", "blur_keep_sharp", "blur_auto_sharp", "blur_angle",
+               "tod_overwrite", "tod_on")       # tod_on after: turning the overwrite on resets it
 
 
 class OG_OT_VcCopyEffects(bpy.types.Operator):
@@ -456,6 +498,12 @@ def draw_options(layout, fx, init_index, kind=None, obj=None):
             sub.prop(fx, "blur_angle")
     else:
         layout.prop(fx, "factor")
+    if init_index >= 0:                          # an Effects After Bake one
+        layout.prop(fx, "tod_overwrite")
+        if fx.tod_overwrite:
+            r = layout.row(align=True)
+            for i in range(8):
+                r.prop(fx, "tod_on", index=i, text=str(i), toggle=True)
 
 
 def draw_apply(layout, ctx, kind):
