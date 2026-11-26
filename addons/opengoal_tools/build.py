@@ -688,6 +688,12 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     spawns    = collect_spawns(scene)
     ags       = needed_ags(actors)
     extras    = needed_extras_ags(actors)
+    # custom actors the level places (OpenGOAL Actors tab): their model files + art groups
+    from .export.actors_export import level_ags as _ca_ags, export_for_level as _ca_export
+    _ca_errs = _ca_export(scene, _level_objects(scene))
+    if _ca_errs:
+        raise RuntimeError("Custom actors: " + "; ".join(_ca_errs[:3]))
+    extras    = extras + [g for g in _ca_ags(scene, _level_objects(scene)) if g not in extras]
     tpages    = needed_tpages(actors)
     code_deps = needed_code(actors)
     if any(a.get("_db_etype") == "actor-light" for a in actors):
@@ -891,6 +897,11 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         spawns   = collect_spawns(scene)
         ags      = needed_ags(actors)
         extras   = needed_extras_ags(actors)
+        from .export.actors_export import level_ags as _ca_ags, export_for_level as _ca_export
+        _ca_errs = _ca_export(scene, _level_objects(scene))
+        if _ca_errs:
+            raise RuntimeError("Custom actors: " + "; ".join(_ca_errs[:3]))
+        extras   = extras + [g for g in _ca_ags(scene, _level_objects(scene)) if g not in extras]
         tpages   = needed_tpages(actors)
         code_deps = needed_code(actors)  # still needed for DGO .o injection
         cam_actors, trigger_actors = collect_cameras(scene)

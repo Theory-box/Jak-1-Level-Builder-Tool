@@ -577,7 +577,7 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
         "gltf_file": f"custom_assets/jak1/levels/{name}/{name}.glb",
         **_collision_json(scene), "base_id": base_id,
         "art_groups": _ag_names,
-        "custom_models": [], "textures": _textures,
+        "custom_models": _custom_models(scene), "textures": _textures,
         "tex_remap": _tex_remap, "sky": _sky_src, "tpages": _tpages,
         "ambients": ambients,
         "actors": [{k: v for k, v in a.items() if k not in _INTERNAL_ACTOR_KEYS}
@@ -591,6 +591,14 @@ def write_jsonc(name, actors, ambients, camera_actors=None, base_id=10000, scene
                            f" + {len(cameras)} built-in cameras)")
 
 from .navmesh import nav_gc_path as _nav_gc_path, nav_gc_deps as _nav_gc_deps
+
+
+def _custom_models(scene):
+    """The custom actors (OpenGOAL Actors tab) the level places: their models go in its FR3."""
+    if scene is None:
+        return []
+    from .actors_export import level_models
+    return level_models(scene, _level_objects(scene))
 
 
 def write_gd(name, ags, code_deps, tpages=None, scene=None, extras_ags=None):
