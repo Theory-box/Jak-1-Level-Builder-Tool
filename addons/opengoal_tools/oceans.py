@@ -413,7 +413,12 @@ def level_ocean(scene, col):
 
 
 def level_warnings(scene, col):
-    """[(text, red)] for Level > Settings > Visuals > Ocean."""
+    """[(text, red)] for Level > Settings > Visuals > Ocean (without the ignored types, Warning Settings)."""
+    from .required import ignored
+    return [(t, r) for t, r, k in _level_warnings(scene, col) if not ignored(scene, k)]
+
+
+def _level_warnings(scene, col):
     from .collections import _level_objects, actor_etype
     from .level_settings import ocean_value
     out = []
@@ -421,15 +426,16 @@ def level_warnings(scene, col):
         return out
     objs = _level_objects(scene, col)
     if not any(actor_etype(x) == "water-vol" for x in objs):
-        out.append(("The ocean is only a picture: add a Water Volume for swimming (Follow ocean waves)", False))
+        out.append(("The ocean is only a picture: add a Water Volume for swimming (Follow ocean waves)", False,
+                    "ocean_no_water"))
     o = level_ocean(scene, col)
     if col.og_level.ocean == "CUSTOM" and o is None and "-ocean-map*" in col.og_level.ocean_custom and \
             not col.og_level.ocean_custom.strip().lstrip("'").startswith("*ocean-map-"):
-        out.append(("No ocean map of this file has that name (Oceans panel)", True))
+        out.append(("No ocean map of this file has that name (Oceans panel)", True, "ocean_map"))
     if o is None:
         return out
     if not o.export:
-        out.append((f"{map_symbol(o)} isn't exported (its Export box is off)", True))
+        out.append((f"{map_symbol(o)} isn't exported (its Export box is off)", True, "ocean_map"))
     if o.grid is not None:
         from mathutils import Vector
         t = o.grid.matrix_world.translation
@@ -438,7 +444,8 @@ def level_warnings(scene, col):
             if ob.type == "MESH" and ob != o.grid and not ob.name.startswith("VOL_"):
                 pts = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
                 if any(p.x < x0 or p.x > x1 or p.y < y0 or p.y > y1 for p in pts):
-                    out.append((f"'{ob.name}' reaches past the ocean grid (only far ocean there)", False))
+                    out.append((f"'{ob.name}' reaches past the ocean grid (only far ocean there)", False,
+                                "ocean_past_grid"))
                     break
     return out
 

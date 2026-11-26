@@ -39,7 +39,18 @@ WARNING_TYPES = (
     ("soft_linked_by", "Not linked by the actor that should link it", False),
     ("soft_no_nav", "No nav-mesh (idles, can't chase)", False),
     ("soft_nav", "Nav-mesh soft issues", False),
+    # Level > Settings > Visuals (moods, oceans)
+    ("mood_clash", "Mood: slot used by time of day and an effect", False),
+    ("mood_undriven", "Mood: Light switch / crystal slot won't light", False),
+    ("ocean_map", "Ocean map not found / not exported", True),
+    ("ocean_no_water", "Ocean: no water volume", False),
+    ("ocean_past_grid", "Ocean: level past the ocean grid", False),
 )
+
+
+def ignored(scene, kind):
+    """Is this warning type ignored (Warning Settings)?"""
+    return kind in _ignored(scene)
 
 
 def _warning_changed(self, ctx):
