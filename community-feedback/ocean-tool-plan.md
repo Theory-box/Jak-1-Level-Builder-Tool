@@ -1,91 +1,102 @@
 # Custom ocean map tool — plan
 
-Branch `claude/ocean`. Based on the to-do list's section ("driven by its position / size and materials; each
-section has a way to select the level of detail for how precise you want to be") and the research in
-`_claude_tmp/ocean_research.md` (game source: engine/gfx/ocean/*, ocean-tables.gc, level-info.gc, water.gc).
+Branch `claude/ocean`. Kuitar's notes (ToDo ordered List.md, "Custom ocean map creation tool") combined with the
+research in `_claude_tmp/ocean_research.md` (game source: engine/gfx/ocean/*, ocean-tables.gc, level-info.gc).
 
-## What the research found
+## What the research found (answers to the notes' questions)
 
-1. **The ocean is only a picture.** It is a flat, endless water surface drawn every frame. It has no collision, and
-   swimming, wading, drowning and the underwater camera all come from **water volumes** (`water-vol`), as now.
-2. **One fixed grid per map.** A map covers a square of 48 × 48 cells of 96 m (4608 m a side). Its only placement
-   setting is the square's corner (x, z). Beyond the square, a 1440 m ring of "far" ocean in one colour.
-3. **Detail comes from the camera, not the map.** The game picks how finely to draw by camera distance: 768 m tiles
-   far away, 24 m pieces within ~136 m, 3 m quads with real wave heights within ~34 m (only when the camera is
-   near the sea). The map can't ask for more or less detail in an area.
-4. **What the map does say: where there is ocean**, at three precisions: per 96 m cell, per 24 m piece, and per 3 m
-   square (that's how vanilla cuts the ocean around Sandover's beach and docks). Plus **colours**: one per 96 m
-   grid point (2548 of them), blended between points, and the far colour.
-5. **Sea level is always y = 0.** The engine overwrites the map's height every frame (vanilla: 0, or a few fixed
-   exceptions). Another sea level needs an engine change.
-6. **Textures and waves are shared by every map** (one global wave animation, textures already in GAME.CGO), so a
-   custom level can use them as they are. No per-map texture or wave shape without engine changes.
-7. **How a level picks it:** `level-info :ocean`. The game checks it every frame (not once at load like moods), so a
-   custom map can live in the level's own code (no full build). `'none` hides the ocean while the camera is in
-   the level; `#f` (what the add-on's **None** writes today) leaves a neighbour level's ocean showing.
-8. **Cost is bounded:** masks only remove work, so a custom map can't cost more than the full vanilla sunken map.
-   About 25 KB per map.
+- **The grid is fixed.** Every map is 48 × 48 cells of 96 m (4608 m a side), drawn as 6 × 6 big squares of 768 m
+  (8 × 8 cells each). The count and sizes are hard-coded, so no "squares per side" setting. Beyond the grid, a
+  1440 m ring of **far** ocean in one colour.
+- **start-corner** is the grid's corner (x, z). It can be anywhere, so a map far from the origin is just a corner
+  far away. We can make the **centre** editable and work out the corner. Its y (height) is ignored: the engine
+  puts the sea at **y = 0** every frame (another sea level needs an engine change).
+- **ocean-mid-masks**: 8 bytes = 8 × 8 bits, one bit per 96 m cell of a big square. **A set bit = no ocean** there
+  (inverted from what the note guessed).
+- **ocean-mid-indices**: one per big square (36): which mask it uses. **-1 = no ocean at all** in it. A square
+  whose cells are all ocean points at an all-zero mask (vanilla keeps one as entry 0).
+- **ocean-trans-indices** and **ocean-near-indices**: finer edges. Close to the camera each 96 m cell is drawn as
+  4 × 4 pieces of 24 m, and very close as 3 m quads. These tables say which 24 m pieces / 3 m quads of an edge
+  cell are water (how vanilla follows Sandover's shore closely). With edges at 96 m only, they are computed
+  automatically ("all water" for every ocean cell). Finer edges are an option for later (see Steps).
+- **ocean-spheres**: one per big square (36): x, z = its centre, last value = its radius (768 m × √2 / 2). They
+  let the game skip squares the camera can't see. Computed automatically.
+- **ocean-colors**: one colour per grid **point** (49 × 49, at the cells' corners), blended across each cell.
+  0x80 = full brightness.
+- **The level picks a map every frame** (not once at load like moods). `:ocean 'none` hides the ocean while in the
+  level; the add-on's current **None** (`#f`) leaves a neighbour level's ocean showing.
+- **The waves and textures are shared** by every map (already in GAME.CGO): no per-map texture or wave shape.
+- **The ocean is only a picture.** Swimming and drowning come from water volumes, as now.
 
-## Proposal
+## The Oceans panel
 
-### Ocean objects
+Like Moods and Tasks: an **Oceans** panel under Moods. **Add Ocean Map** makes a block (collapse, Export,
+Duplicate, Delete), named from the selected level (`<level>-ocean`). **Level › Settings › Visuals › Ocean** gets the
+same button as Mood / Mood Function to pick one of this .blend's oceans (and a new **Hidden** choice, see below).
 
-A new **Ocean** object type (Spawn Objects › Level Flow, or its own entry): a flat mesh (a plane, or any outline
-seen from above) in the level's **Ocean** collection, not exported as geometry. Each one:
+### Each ocean map
 
-| Setting | What it does |
-|---|---|
-| **Mode** | **Ocean** (adds water) or **Cut out** (removes it: islands, a lake that should be dry, under a building). Cut-outs win over oceans. |
-| **Precision** | Your "level of detail" note: how exactly its outline is followed. **Coarse (96 m cells)**, **Medium (24 m)**, **Fine (3 m)**. Coarse is cheapest to store; Fine follows a shoreline closely (like vanilla's beaches). Edges are rounded to that size. |
-| **Colour** | From its **material** (base colour) by default, or its own colour, with a **Brightness**. Colours blend between neighbouring areas like vanilla's. |
+**General** (top, not in a sub menu):
+- **Name** (the map is `*<name>-ocean-map*`).
+- **Far colour**: the ocean beyond the grid. Default: the most used vanilla ocean colour, #1F3242 (also
+  Rock Village's and Lost Precursor City's far colour).
+- **Template from a game ocean…**: fills the grid mesh below from village1, village2 or sunken (its water / no
+  water squares and its colours), to edit from there.
 
-The meshes' outlines are seen from above (their height doesn't matter: the sea is at y = 0, see the limit below).
+**Grid** (sub menu, collapsed):
+- **Grid mesh**: a mesh object the add-on makes, 48 × 48 faces of 96 m (one face per cell), in the level's Ocean
+  collection (not exported as geometry), drawn at y = 0. **Make Grid Mesh** creates it; moving the object moves
+  the ocean (its centre is the map's centre, so maps can be far from the origin). It can't be scaled or rotated
+  (warning if it is).
+- The 6 × 6 big squares are outlined in the viewport so you see what the game groups.
 
-### Level settings (Level › Settings › Visuals › Ocean)
+**Water** (sub menu, collapsed), Kuitar's mid-masks + mid-indices:
+- **From**: a vanilla map, or **Own (materials)**.
+- Own: like nav meshes, two materials on the grid mesh: **Ocean water** (blue) and **No water** (black,
+  see-through). Assign them to faces in Edit Mode; the masks, indices (including the -1 / all-water squares),
+  trans / near tables and spheres are all made from them at export. Buttons: **Fill all with water**, **Clear**,
+  **Cut out selected meshes** (faces under the selected objects, seen from above, become No water: islands,
+  the level's ground).
 
-- **Ocean**: None, **Hidden** (new: `'none`, also hides a neighbour level's ocean), Village 1, Village 2, Sunken,
-  **This level's ocean** (generated from the Ocean objects), Custom.
-- With **This level's ocean**: **Far colour**, and the grid's **Position**: automatic (centred on the Ocean objects)
-  or set by hand. A warning if the objects don't fit in the 4608 m square.
+**Colour** (sub menu, collapsed):
+- **From**: a vanilla map, or **Own (colour attribute)**.
+- Own: an `OceanColor` colour attribute on the grid mesh's points (49 × 49), starting at the far colour. Paint it in
+  Vertex Paint, or **Fill** with a colour. The game blends between points the same way.
 
-### Preview in Blender
-
-The ocean as the game will draw it, shown in the viewport (drawn like the race-ring circles, not objects): the
-covered cells at each precision and the square's outline. Recomputed only when an Ocean object changes
-(performance first).
+Each part (water / colour) can come from a vanilla map while the other is your own, since the game keeps them in
+separate tables.
 
 ### Export
 
-`(define *<level>-ocean-map* (new 'static 'ocean-map ...))` in the level's own code: the masks and indices
-computed from the objects' outlines (rasterised at 3 m, then grouped into 24 m and 96 m like vanilla's data, shared
-entries de-duplicated), the colours sampled at each 96 m point, the cull spheres. `:ocean` points at it.
+Like moods: one file of its own, `goal_src/jak1/levels/level-tools/lt-oceans-<blend>.gc`, with every exported
+ocean map (`(define *<name>-ocean-map* (new 'static 'ocean-map ...))` and its tables), registered once.
+Vanilla parts point at the game's tables (no copy). The level's `:ocean` points at its map.
 
-### Swimming
+### Other changes
 
-The ocean doesn't make Jak swim. Two helpers:
-- **Water volumes: Follow ocean waves** (the game's `wt08` flag, not offered today): the water surface moves with
-  the waves.
-- **Make Water Volume from Ocean** (button on an Ocean object): a water volume covering it at sea level.
+- **Ocean › Hidden** (`'none`): no ocean while in this level, even if a neighbour level has one. **None** stays
+  "no ocean of its own".
+- **Water volumes: Follow ocean waves** (the game's `wt08` flag): the water surface moves with the ocean's waves.
 
 ## Limits (without changing the engine)
 
-- Sea level is y = 0. (An engine patch could add a per-level height later.)
-- One map per level, 4608 m square plus the far ring.
-- Same waves and textures as vanilla; colours and far colour only.
+- Sea level y = 0; grid 48 × 48 cells of 96 m; one map per level; vanilla waves and textures.
+- Edges follow 96 m cells (step 5 adds finer edges if wanted).
 
 ## Steps (each tested in game before the next)
 
-1. **Hidden** option (`'none`) and **Follow ocean waves** on water volumes (small, useful at once).
-2. Ocean objects (mode, precision, colour) + the map export with full cells only (Coarse), level setting
-   **This level's ocean**. In game: a custom ocean shape.
-3. Medium and Fine precision (24 m / 3 m outlines), cut-outs.
-4. Colours from materials, far colour, automatic / manual position, the viewport preview, warnings.
-5. Make Water Volume from Ocean, guide (on guide-next).
+1. **Hidden** choice and **Follow ocean waves** on water volumes.
+2. Oceans panel, Make Grid Mesh, water from materials (masks, indices, spheres; trans / near "all water"), Far
+   colour, export file, level setting button. In game: a custom ocean shape.
+3. Colours (colour attribute), vanilla parts (From a vanilla map), Template from a game ocean, Cut out selected
+   meshes, the big squares' outline.
+4. Warnings (scaled / rotated grid, level outside the grid, ocean with no water volume), guide (on guide-next).
+5. (Optional, if wanted) finer edges: a **Fine edges** option that follows an outline at 24 m / 3 m inside edge
+   cells (the trans / near tables), like vanilla's shores.
 
 ## Questions
 
-1. Your updated to-do notes for the ocean aren't on GitHub yet (the file still has the two lines above). Could you
-   push them? I'll fold them into this plan.
-2. **Level of detail** — is it what I took it to be (how exactly the outline is followed), or something else?
-3. Sea level fixed at y = 0: fine for now, or should a per-level sea height (an engine change) be part of this?
-4. **Cut out** mode and **Make Water Volume from Ocean**: wanted?
+1. Grid mesh with one face per 96 m cell (materials = water / no water, colour attribute on its points): OK?
+2. Export in its own GAME.CGO file like moods (a full build when an ocean changes): OK? (The game reads the map
+   every frame, so it could also go in the level's own file: level-only builds, but one copy per level using it.)
+3. Finer edges (step 5): wanted, or are 96 m cells enough?
