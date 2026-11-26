@@ -194,7 +194,7 @@ EFFECT_HELP = {
                 "(a short random bump, up to Base + Strength), like the game's fires.",
                 "For: torches, campfires, lamps, candles, glowing embers."),
     "pulse": ("The slot's strength goes up and down around Base by Up / down,",
-              "one wave every Period. Night only: on 19:00-7:00, an hour's fade each side.",
+              "one wave every Period.",
               "For: glowing plants or crystals, beacons, slow neon, street lamps at night."),
     "lightning": ("Now and then a flash: the sky slots switch to their flash textures and the",
                   "palette slots light up (their lights entry also lights actors), then thunder.",
@@ -231,8 +231,13 @@ class OGMoodEffect(bpy.types.PropertyGroup):
     period: FloatProperty(name="Period (s)", default=4.27, min=0.1, soft_max=60.0, description="Seconds for one wave")
     phase: FloatProperty(name="Phase", default=0.0, min=0.0, max=1.0, subtype="FACTOR",
                          description="Where in its wave it starts (offset pulses so they don't move together)")
-    night_only: BoolProperty(name="Night only", default=False,
-                             description="On from 19:00 to 7:00, fading in / out over an hour")
+    active_hours: BoolProperty(name="Active hours", default=False,
+                               description="The effect only runs between Start and End (game hours), fading in / out")
+    hour_start: FloatProperty(name="Start", default=19.0, min=0.0, max=24.0, description="Hour it starts (fading in)")
+    hour_end: FloatProperty(name="End", default=7.0, min=0.0, max=24.0,
+                            description="Hour it ends (faded out); earlier than Start: over midnight")
+    hour_fade: FloatProperty(name="Fade (h)", default=1.0, min=0.0, soft_max=6.0,
+                             description="Game hours it takes to fade in at Start and out before End (0: at once)")
     sky_slot: IntProperty(name="Sky slot", default=2, min=0, max=7, description="First sky texture slot that flashes")
     quiet: BoolProperty(name="Distant", default=False,
                         description="Far away storm: rarer, quieter thunder, only the sky flashes (no palette slots)")
@@ -688,11 +693,11 @@ FUNC_TEMPLATES = {
     "sunken": ("Lost Precursor City: slot 2 glows, caustics on 4-7, slot 3 by actors (dark eco water)",
                [dict(_PULSE, slot=2), dict(kind="caustics", slot=4), dict(kind="actor", slot=3)]),
     "rolling": ("Precursor Basin: night lights on 4-7, a distant storm on sky 2-3",
-                [dict(_PULSE, slot=4, night_only=True, phase=0.125), dict(_PULSE, slot=5, night_only=True, phase=0.0),
-                 dict(_PULSE, slot=6, night_only=True, phase=0.375), dict(_PULSE, slot=7, night_only=True, phase=0.25),
+                [dict(_PULSE, slot=4, active_hours=True, phase=0.125), dict(_PULSE, slot=5, active_hours=True, phase=0.0),
+                 dict(_PULSE, slot=6, active_hours=True, phase=0.375), dict(_PULSE, slot=7, active_hours=True, phase=0.25),
                  dict(kind="lightning", sky_slot=2, count=2, slot=2, quiet=True)]),
     "firecanyon": ("Fire Canyon: lava glow on 4-7", [dict(kind="lava", slot=4)]),
-    "training": ("Geyser Rock: slot 5 glows at night", [dict(_PULSE, slot=5, night_only=True)]),
+    "training": ("Geyser Rock: slot 5 glows at night", [dict(_PULSE, slot=5, active_hours=True)]),
     "maincave": ("Spider Cave: fires on 4-7, crystals on 1 / 2 (the mood: Fixed slot 0)",
                  [dict(_FLICK, slot=4), dict(kind="actor", slot=1), dict(kind="actor", slot=2)]),
     "darkcave": ("Spider Cave (dark): crystals on 1-7 (the mood: Fixed slot 0)",
@@ -1103,7 +1108,6 @@ def _draw_effect(layout, i, j, e):
         c.prop(e, "count"); c.prop(e, "base"); c.prop(e, "strength"); c.prop(e, "speed")
     elif k == "pulse":
         c.prop(e, "base"); c.prop(e, "strength", text="Up / down"); c.prop(e, "period"); c.prop(e, "phase")
-        c.prop(e, "night_only")
     elif k == "lightning":
         c.prop(e, "quiet")
         c.prop(e, "count", text="Flash slots")
@@ -1123,6 +1127,12 @@ def _draw_effect(layout, i, j, e):
     elif k == "fog_breath":
         r = c.row(align=True); r.prop(e, "dist_min"); r.prop(e, "dist_max")
         c.prop(e, "period"); c.prop(e, "shape")
+    g = box.column(align=True)
+    g.enabled = e.enabled
+    g.prop(e, "active_hours")
+    if e.active_hours:
+        r = g.row(align=True)
+        r.prop(e, "hour_start"); r.prop(e, "hour_end"); r.prop(e, "hour_fade")
 
 
 def _draw_func(layout, f, i, issues):

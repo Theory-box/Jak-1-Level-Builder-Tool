@@ -172,6 +172,33 @@ def _fx_globals(e, p):
     return []
 
 
+GATE_LIB = [
+    "",
+    ";; ---- Active hours (shared) ----",
+    "(defun lt-mood-gate ((h float) (start float) (len float) (fade float))",
+    "  \"0 - 1: inside the len hours from start, fading in / out over fade hours.\"",
+    "  (let ((d (- h start)))",
+    "    (if (< d 0.0) (+! d 24.0))",
+    "    (cond",
+    "      ((>= d len) 0.0)",
+    "      ((>= 0.0 fade) 1.0)",
+    "      (else (fmax 0.0 (fmin 1.0 (/ (fmin d (- len d)) fade)))))))",
+]
+
+
+def _gate_expr(e):
+    span = (e.hour_end - e.hour_start) % 24.0 or 24.0
+    return f"(lt-mood-gate arg1 {_f(e.hour_start % 24.0)} {_f(span)} {_f(e.hour_fade)})"
+
+
+def _gated(e, lines, after):
+    """The effect's lines inside (let ((gate ...))), then `after` (what the gate scales)."""
+    if not e.active_hours:
+        return lines
+    body = ["  " + x for x in lines + after]
+    return [f"  (let ((gate {_gate_expr(e)})) ; active hours {_f(e.hour_start)}-{_f(e.hour_end)}"] + body[:-1] + [body[-1] + ")"]
+
+
 def _wave(e, u):
     """0..1 wave of `u` (a GOAL expression, in periods)."""
     if e.shape == "triangle":
@@ -183,24 +210,44 @@ def _wave(e, u):
 
 
 def _fog_fx(e):
+    up = "(fmax 0.0 (-> *math-camera* camera-rot vector 1 z))"
+    if e.active_hours:
+        up = f"(* {_gate_expr(e)} {up})"
     if e.kind == "fog_pitch":
         c = e.color
         return ["  ;; fog by camera pitch: looking up, toward the colour and clearer",
-                "  (let ((up (fmax 0.0 (-> *math-camera* camera-rot vector 1 z)))",
+                f"  (let ((up {up})",
                 "        (col (new 'stack-no-clear 'vector)))",
                 f"    (set-vector! col {_f(c[0] * 255)} {_f(c[1] * 255)} {_f(c[2] * 255)} 128.0)",
                 f"    (vector4-lerp! (the-as vector (-> arg0 current-fog)) (the-as vector (-> arg0 current-fog)) col (* {_f(e.amount)} up))",
                 f"    (+! (-> arg0 current-fog fog-dists w) (* {_f(e.clear)} up (- 255.0 (-> arg0 current-fog fog-dists w)))))"]
     if e.kind == "fog_breath":
         w = _wave(e, f"(/ now {_f(e.period)})")
+        k = f"(+ {_f(e.dist_min)} (* {_f(e.dist_max - e.dist_min)} {w}))"
+        if e.active_hours:                    # 1 (no change) outside its hours
+            k = f"(+ 1.0 (* {_gate_expr(e)} (+ -1.0 {k})))"
         return ["  ;; fog breathing",
-                f"  (let ((k (+ {_f(e.dist_min)} (* {_f(e.dist_max - e.dist_min)} {w}))))",
+                f"  (let ((k {k}))",
                 "    (set! (-> arg0 current-fog fog-start) (* k (-> arg0 current-fog fog-start)))",
                 "    (set! (-> arg0 current-fog fog-end) (* k (-> arg0 current-fog fog-end))))"]
     return []
 
 
 def _slot_fx(e, p, state):
+    from ..moods import effect_slots
+    lines = _slot_fx_lines(e, p, state)
+    if not (e.active_hours and lines):
+        return lines
+    after = [f"  (*! (-> arg0 times {s} w) gate)" for s in effect_slots(e)]
+    if e.kind == "lava":
+        after.append("  (*! (-> arg0 light-group 0 dir2 levels x) gate)")
+    if e.kind == "lightning":
+        after += [f"  (*! (-> arg0 sky-times {e.sky_slot + i}) gate)" for i in range(e.count)]
+        after.append("  (*! (-> arg0 light-group 0 dir2 levels x) gate)")
+    return _gated(e, lines, after)
+
+
+def _slot_fx_lines(e, p, state):
     k, s = e.kind, e.slot
     if k == "flicker":
         n = e.count
@@ -215,8 +262,6 @@ def _slot_fx(e, p, state):
                 f"        (+ {_f(e.base)} (* {_f(e.strength)} *{p}-height* (sin (* 32768.0 (fmin 1.0 (/ (- now *{p}-start*) *{p}-len*)))))))"]
     if k == "pulse":
         v = f"(+ {_f(e.base)} (* {_f(e.strength)} (cos (* 65536.0 (+ {_f(e.phase)} (/ now {_f(e.period)}))))))"
-        if e.night_only:                     # on 19:00-7:00, an hour's fade each side
-            v = f"(* (fmax 0.0 (fmin 1.0 (+ -5.0 (fabs (+ -13.0 arg1))))) {v})"
         return [f"  ;; pulse slot {s}", f"  (set! (-> arg0 times {s} w) {v})"]
     if k == "lightning":
         return [f"  ;; lightning: sky slots {e.sky_slot}+, palette slots {s}+",
@@ -374,6 +419,8 @@ def export_moods(scene):
         lines = _header(name, what)
         if gen is func_gc and any(x.time_mode in ("lock", "speed") for x in items):
             lines += CLOCK_LIB
+        if gen is func_gc and any(e.enabled and e.active_hours for x in items for e in x.effects):
+            lines += GATE_LIB
         for x in items:
             lines += gen(x, scene) if gen is mood_gc else gen(x)
         write_if_changed(_goal_src() / LT_DIR / f"{name}.gc", "\n".join(lines) + "\n")
