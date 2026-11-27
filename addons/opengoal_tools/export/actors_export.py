@@ -118,13 +118,84 @@ def bone_fix(js, binb):
                     struct.pack_into("<" + fmt, binb, o, struct.unpack_from("<" + fmt, binb, o)[0] + 1)
 
 
-def post_process(data, anim_names, fix):
+def _mat(node):
+    from mathutils import Matrix, Quaternion
+    if "matrix" in node:
+        m = node["matrix"]
+        return Matrix([[m[c * 4 + r] for c in range(4)] for r in range(4)])    # glTF: column-major
+    t = node.get("translation", (0, 0, 0))
+    q = node.get("rotation", (0, 0, 0, 1))
+    s = node.get("scale", (1, 1, 1))
+    return (Matrix.Translation(t) @ Quaternion((q[3], q[0], q[1], q[2])).to_matrix().to_4x4()
+            @ Matrix.Diagonal((s[0], s[1], s[2], 1.0)))
+
+
+def _dfs(js):
+    """Node indices in build-actor's order (depth first from the scene's roots)."""
+    out = []
+
+    def walk(i):
+        out.append(i)
+        for c in js["nodes"][i].get("children", []):
+            walk(c)
+    for sc_ in js.get("scenes", []):
+        for i in sc_.get("nodes", []):
+            walk(i)
+    return out
+
+
+def bone_collision(js, binb, coll_bones):
+    """Collision meshes that follow a bone: moved into that bone's rest space (its inverse bind
+    matrix), so the game can carry them on the joint. Returns the joint index (node-list: 0 = the
+    actor, a skin's bone s = s + 2) of each collision mesh, in build-actor's order."""
+    from mathutils import Matrix
+    nodes = js["nodes"]
+    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+
+    def world(i):
+        m = _mat(nodes[i])
+        while i in parent:
+            i = parent[i]
+            m = _mat(nodes[i]) @ m
+        return m
+    skin = (js.get("skins") or [None])[0]
+    ibm = []
+    if skin and "inverseBindMatrices" in skin:
+        acc = js["accessors"][skin["inverseBindMatrices"]]
+        bv = js["bufferViews"][acc["bufferView"]]
+        st = bv.get("byteOffset", 0) + acc.get("byteOffset", 0)
+        for k in range(acc["count"]):
+            f = struct.unpack_from("<16f", binb, st + 64 * k)
+            ibm.append(Matrix([[f[c * 4 + r] for c in range(4)] for r in range(4)]))
+    joint_of = {nodes[j].get("name"): s for s, j in enumerate(skin["joints"])} if skin else {}
+    out = []
+    for i in _dfs(js):
+        n = nodes[i]
+        if "mesh" not in n or n.get("name") not in coll_bones:
+            continue
+        b = coll_bones[n["name"]]
+        s = joint_of.get(b) if b else None
+        if s is None or s >= len(ibm):
+            out.append(0)
+            continue
+        new_world = ibm[s] @ world(i)
+        local = (world(parent[i]).inverted() @ new_world) if i in parent else new_world
+        for k in ("translation", "rotation", "scale"):
+            n.pop(k, None)
+        n["matrix"] = [local[r][c] for c in range(4) for r in range(4)]
+        out.append(s + 2)
+    return out
+
+
+def post_process(data, anim_names, fix, coll_bones=None):
+    """Returns (glb bytes, collision joints in build-actor's order)."""
     js, binb = _chunks(data)
     order_animations(js, anim_names)
+    joints = bone_collision(js, binb, coll_bones) if coll_bones else []
     if fix:
         bone_fix(js, binb)
     js["buffers"][0]["byteLength"] = len(binb) + (-len(binb) % 4)
-    return _pack(js, binb)
+    return _pack(js, binb), joints
 
 
 # ── export ─────────────────────────────────────────────────────────────────
@@ -195,13 +266,14 @@ def export_actor(scene, a):
         for o in tops:
             o.matrix_world.translation += p0
         bpy.context.view_layer.update()
-        for ob, k, v in reversed(marks):                 # the user's own settings back
-            setattr(ob, k, v)
+        _unmark(marks)                                    # the user's own settings back
         try:
             os.remove(tmp)
         except OSError:
             pass
-    data = post_process(data, anims, CA.bone_fix_on(scene))
+    coll_bones = {o.name: CA.collision_bone(o) for o in CA.collision_objects(a)} if gen_mesh else None
+    data, joints = post_process(data, anims, CA.bone_fix_on(scene), coll_bones)
+    a.coll_joints = ",".join(str(j) for j in joints)
     p = glb_path(name)
     if not (p.exists() and p.read_bytes() == data):
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -223,9 +295,10 @@ def _collision_marks(a):
     marks = []
 
     def put(ob, k, v):
-        if hasattr(ob, k):
-            marks.append((ob, k, getattr(ob, k)))
-            setattr(ob, k, v)
+        # a plain custom property (also the storage of the add-on's registered one): Blender 5's
+        # glTF exporter leaves registered properties out, this one goes in
+        marks.append((ob, k, k in ob.keys(), ob.get(k)))
+        ob[k] = int(v)
     for ob in CA.model_objects(a):
         if ob.type == "MESH":
             put(ob, "set_collision", True)
@@ -235,6 +308,14 @@ def _collision_marks(a):
         put(ob, "set_collision", True)
         put(ob, "ignore", False)
     return marks
+
+
+def _unmark(marks):
+    for ob, k, had, old in reversed(marks):
+        if had:
+            ob[k] = old
+        elif k in ob.keys():
+            del ob[k]
 
 
 def register(name, gen_mesh=False):
@@ -338,13 +419,15 @@ def actor_gc(scene, a):
                     "      (set! (-> group transform-index) 0)",
                     f"      (set-vector! (-> group local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
                     "      (set-root-prim! cshape group)"]
+            joints = [int(x) for x in a.coll_joints.split(",") if x.strip().isdigit()]
             for i in range(meshes):
+                j = joints[i] if i < len(joints) else 0
                 out += [f"      (let ((mesh (new 'process 'collide-shape-prim-mesh cshape (the uint {i}) (the uint 0))))",
                         "        (set! (-> mesh prim-core collide-as) (collide-kind ground-object))",
                         "        (set! (-> mesh collide-with) (collide-kind target))",
                         f"        (set! (-> mesh prim-core action) {act})",
                         "        (set! (-> mesh prim-core offense) (collide-offense indestructible))",
-                        "        (set! (-> mesh transform-index) 0)",
+                        f"        (set! (-> mesh transform-index) {j})",
                         f"        (set-vector! (-> mesh local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
                         "        (append-prim group mesh))"]
             out[-1] += ")"

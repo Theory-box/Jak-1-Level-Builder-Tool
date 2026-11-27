@@ -79,6 +79,8 @@ class OGCustomActor(bpy.types.PropertyGroup):
     sphere_height: FloatProperty(name="Height (m)", default=1.0, unit="LENGTH", description="Height of the sphere's centre")
     rideable: BoolProperty(name="Jak can ride it", default=True,
                            description="Jak moves with it when standing on it (when it moves)")
+    coll_joints: StringProperty(default="", options={"HIDDEN"},
+                                description="Written by the export: each collision mesh's joint, in build-actor's order")
     trigger_anim: EnumProperty(name="On 'trigger", items=_anim_items,
                                description="Animation played once when another actor sends it 'trigger "
                                            "(a button's notify list ...), then back to the idle")
@@ -121,6 +123,16 @@ def model_objects(a):
 def collision_objects(a):
     c = sub(a, "Collision")
     return [o for o in c.all_objects if o.type == "MESH"] if c is not None else []
+
+
+def collision_bone(o):
+    """The armature bone a collision mesh follows ('' = the whole actor)."""
+    b = getattr(o, "og_ca_bone", "")
+    if b:
+        return b
+    if o.parent_type == "BONE" and o.parent_bone:
+        return o.parent_bone
+    return ""
 
 
 def compatible_actions(arm):
@@ -248,6 +260,9 @@ def checks(scene, a):
     if a.template == "basic" and a.collision == "mesh" and not collision_objects(a):
         out.append(("Collision meshes: its Collision collection has no mesh", True))
     for o in collision_objects(a):
+        b = collision_bone(o)
+        if b and (arm is None or b not in arm.data.bones):
+            out.append((f"collision '{o.name}' follows bone '{b}', which the armature doesn't have", True))
         if _inward(o):
             out.append((f"collision '{o.name}': most faces point inward (Jak goes through): "
                         "Mesh > Normals > Recalculate Outside", False))
@@ -501,6 +516,18 @@ class OG_PT_CaBasic(_Tab, bpy.types.Panel):
             r = l.row(align=True); r.prop(a, "sphere_radius"); r.prop(a, "sphere_height")
         if a.collision != "none":
             l.prop(a, "rideable")
+        if a.collision == "mesh":
+            box = l.box()
+            box.label(text="Collision meshes follow:")
+            for o in collision_objects(a):
+                r = box.row(align=True)
+                r.label(text=o.name, icon="MESH_CUBE")
+                if a.armature is not None:
+                    r.prop_search(o, "og_ca_bone", a.armature.data, "bones", text="")
+                else:
+                    r.label(text="the actor")
+            g = box.row(); g.enabled = False; g.scale_y = 0.7
+            g.label(text="Empty: the whole actor; or parent the mesh to a bone", icon="INFO")
         if a.armature is not None:
             l.prop(a, "trigger_anim")
         g = l.column(); g.enabled = False; g.scale_y = 0.7
@@ -555,12 +582,17 @@ CLASSES = (OGCustomActorAnim, OGCustomActor, OGCustomActorSettings, OG_OT_CaAdd,
 
 
 def register_props():
+    bpy.types.Object.og_ca_bone = StringProperty(
+        name="Bone", default="",
+        description="Custom actor collision mesh: the bone it moves with (empty: the whole actor)")
     bpy.types.Scene.og_custom_actors = CollectionProperty(type=OGCustomActor)
     bpy.types.Scene.og_custom_actor_index = IntProperty()
     bpy.types.Scene.og_ca_settings = PointerProperty(type=OGCustomActorSettings)
 
 
 def unregister_props():
+    if hasattr(bpy.types.Object, "og_ca_bone"):
+        del bpy.types.Object.og_ca_bone
     for p in ("og_custom_actors", "og_custom_actor_index", "og_ca_settings"):
         if hasattr(bpy.types.Scene, p):
             delattr(bpy.types.Scene, p)
