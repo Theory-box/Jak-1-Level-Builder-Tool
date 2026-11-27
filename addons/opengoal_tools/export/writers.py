@@ -372,7 +372,7 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
             lines += ["", ";; --- battlecontrollers with an intro camera ---"] + _bcl
             log(f"  [write_gc] {sum(1 for l in _bcl if l.startswith('(deftype'))} battlecontroller type(s)")
         from .. import pov as _pov
-        _pl = _pov.skel_lines(_pov.level_groups(_level_objects(scene)))
+        _pl = _pov.skel_lines(_pov.level_groups(_level_objects(scene)), scene)
         if _pl:
             lines += ["", ";; --- camera animations (pov-camera) the level's actors play ---"] + _pl
         from . import edited as _ed

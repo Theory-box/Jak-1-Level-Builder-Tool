@@ -512,7 +512,7 @@ def collect_actors(scene, depsgraph=None):
             if _gen:
                 _out_etype = _gen                           # write_jsonc adds the level prefix
                 from .. import pov as _pov
-                _out_ag = _pov.art_file(_cag)
+                _out_ag = _pov.art_file(_cag, scene)
             elif _bc.is_custom(o):
                 log(f"  [WARNING] {o.name}: custom camera needs a camera art group and animation")
             if _variant.get("needs_citadel_camera"):
@@ -545,7 +545,7 @@ def collect_actors(scene, depsgraph=None):
                 _edited_obs = _edrec["stem"]
         # Camera animations it plays (pov_camera fields): their art group in the level
         from .. import pov as _pov
-        _pov_files = [_pov.art_file(g) for g, _a in _pov.used(o)]
+        _pov_files = [f for f in (_pov.art_file(g, scene) for g, _a in _pov.used(o)) if f]
         if _pov_files:
             from ..data import ETYPE_AG as _EAG
             _base = (list(_out_ag) if isinstance(_out_ag, list) else [_out_ag]) if _out_ag else list(_EAG.get(etype, []))

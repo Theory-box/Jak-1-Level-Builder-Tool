@@ -5,7 +5,9 @@ collection (meshes + their armature) and a Collision collection (simple meshes, 
 export (export/actors_export.py) writes custom_assets/jak1/models/custom_levels/<name>.glb and a
 (build-actor "<name>") line in game.gp; a level that places it (an ACTOR_<name>_ empty) gets it in
 its custom_models and its <name>-ag.go in the .gd. Templates: Art group (no code: the game's
-viewer process shows it playing its first animation); more come later (Basic actor ...).
+viewer process shows it playing its first animation), Basic actor (generated code), Camera
+animation (a 'camera' bone: pickable in the pov-camera choices, pov.py; a level that plays it
+loads it like a placed one).
 
 OpenGOAL v0.3.6+ binds each vertex to the bone before its own (PR #4371): the export counters it
 on the exported file (Bone index fix, Build Settings).
@@ -23,7 +25,11 @@ MAX_BONES = 100
 TEMPLATES = [("art_group", "Art group", "Only the art group (model, skeleton, animations): no code. In a level "
                                         "it plays its first animation"),
              ("basic", "Basic actor", "An actor with code: plays its idle animation, an animation when triggered, "
-                                      "collision from the Collision meshes or a sphere")]
+                                      "collision from the Collision meshes or a sphere"),
+             ("camera", "Camera animation", "A camera art group: a bone named 'camera' (its animations are the "
+                                            "shots). Played by a Camera animation actor or an actor's camera choice")]
+CAM_BONE = "camera"
+FOV_K = 14.941477 / 20.3          # the game's FOV from the camera joint's x scale: 2 atan(FOV_K / sx)
 ORIGINS = [("MODEL", "Model's position", "The model mesh's origin (the first mesh of the Model collection)"),
            ("ARMATURE", "Armature's position", "The armature's origin"),
            ("CENTER", "Collection's center of mass", "The middle of all the model's vertices"),
@@ -160,6 +166,22 @@ def sync_anims(a):
             a.anims.add().action = act
 
 
+def fov_to_scale(deg):
+    import math
+    return FOV_K / math.tan(math.radians(max(1.0, min(170.0, deg))) / 2)
+
+
+def scale_to_fov(sx):
+    import math
+    return math.degrees(2 * math.atan(FOV_K / max(1e-4, sx)))
+
+
+def camera_bone(a):
+    """The armature's pose bone named 'camera' (Camera animation template), or None."""
+    arm = a.armature
+    return arm.pose.bones.get(CAM_BONE) if arm is not None and arm.pose else None
+
+
 def _meshes(a):
     return sorted((o for o in model_objects(a) if o.type == "MESH"), key=lambda o: o.name)
 
@@ -179,6 +201,8 @@ def origin_point(a):
         return s / max(1, n)
     if a.origin in ("MODEL", "ARMATURE") and meshes:
         return meshes[0].matrix_world.translation.copy()
+    if a.origin != "WORLD" and a.armature is not None:          # no mesh (a camera): the armature
+        return a.armature.matrix_world.translation.copy()
     return Vector()
 
 
@@ -221,9 +245,17 @@ def checks(scene, a):
     if not clean(a.name):
         out.append(("needs a name", True))
     meshes = [o for o in model_objects(a) if o.type == "MESH"]
-    if not meshes:
-        out.append(("no mesh in its Model collection", True))
     arm = a.armature
+    if a.template == "camera":
+        if arm is None or CAM_BONE not in arm.data.bones:
+            out.append(("needs an armature with a bone named 'camera' (Make Camera Rig)", True))
+        elif arm.data.bones[CAM_BONE].parent is None:
+            out.append(("the 'camera' bone needs a parent bone: the game reads no FOV on the first one "
+                        "(Repair Camera Rig)", True))
+        elif not [x for x in a.anims if x.include]:
+            out.append(("no animation: each exported action is a camera shot", True))
+    elif not meshes:
+        out.append(("no mesh in its Model collection", True))
     if arm is not None:
         n = len(arm.data.bones)
         if n > MAX_BONES:
@@ -253,7 +285,7 @@ def checks(scene, a):
             if ad and ad.action and any(not fc.data_path.startswith("pose.") for fc in ad.action.fcurves):
                 out.append((f"'{o.name}' itself is animated: only bones may be (the build crashes)", True))
                 break
-        if not [x for x in a.anims if x.include]:
+        if not [x for x in a.anims if x.include] and a.template != "camera":
             out.append(("no animation: it gets a still idle", False))
     if meshes and not any(o.data.color_attributes for o in meshes) and not _has_textures(meshes):
         out.append(("no colour attribute or texture: material colours are ignored (white)", False))
@@ -412,6 +444,128 @@ class OG_OT_CaPlace(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OG_OT_CaCameraRig(bpy.types.Operator):
+    """Make the camera rig: an armature with a 'camera' bone (animate it) and a Blender camera that
+    follows the bone, its FOV from the bone's X scale, to look through it"""
+    bl_idname = "og.ca_camera_rig"
+    bl_label = "Make Camera Rig"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        if a is None or a.collection is None:
+            return {"CANCELLED"}
+        n = clean(a.name) or "camera"
+        model = sub(a, "Model", create=True)
+        arm = a.armature
+        if arm is None:
+            arm = bpy.data.objects.new(f"{n}-rig", bpy.data.armatures.new(f"{n}-rig"))
+            model.objects.link(arm)
+            arm.location = ctx.scene.cursor.location
+            a.armature = arm
+        cb = arm.data.bones.get(CAM_BONE)
+        if cb is None or cb.parent is None:
+            vl = ctx.view_layer
+            prev = vl.objects.active
+            if prev is not None and prev.mode != "OBJECT":
+                bpy.ops.object.mode_set(mode="OBJECT")
+            vl.objects.active = arm
+            bpy.ops.object.mode_set(mode="EDIT")
+            eb = arm.data.edit_bones
+            b = eb.get(CAM_BONE)
+            if b is None:
+                b = eb.new(CAM_BONE)
+                b.head = (0, 0, 0)
+                b.tail = (0, 0, 0.5)     # pointing up: the view (the bone's -Z) looks along +Y, up +Z
+            if b.parent is None:
+                # the game's first bone is a matrix joint, whose scale (the FOV) it never reads:
+                # the camera goes under a still root bone (rest = no turn, so the shots don't move)
+                r = eb.get("root") or eb.new("root")
+                r.head, r.tail, r.roll = (0, 0, 0), (0, 0.25, 0), 0.0
+                b.parent = r
+            bpy.ops.object.mode_set(mode="OBJECT")
+            vl.objects.active = prev if prev is not None else arm
+        cam = view_camera(a)
+        if cam is None:
+            cc = sub(a, "Camera", create=True)
+            cam = bpy.data.objects.new(f"{n}-view", bpy.data.cameras.new(f"{n}-view"))
+            cc.objects.link(cam)
+        for kind in ("COPY_LOCATION", "COPY_ROTATION"):
+            c = next((c for c in cam.constraints if c.type == kind), None) or cam.constraints.new(kind)
+            c.target, c.subtarget = arm, CAM_BONE
+        cam.data.sensor_fit = "HORIZONTAL"
+        cam.data.lens_unit = "FOV"
+        cam.data.driver_remove("lens")
+        d = cam.data.driver_add("lens").driver           # FOV 2 atan(FOV_K / sx) as a focal length
+        d.type = "SCRIPTED"
+        v = d.variables.new()
+        v.name, v.type = "sx", "TRANSFORMS"
+        v.targets[0].id = arm
+        v.targets[0].bone_target = CAM_BONE
+        v.targets[0].transform_type = "SCALE_X"
+        v.targets[0].transform_space = "LOCAL_SPACE"
+        d.expression = f"sensor / 2 * max(sx, 0.0001) / {FOV_K:.6f}"
+        v = d.variables.new()
+        v.name, v.type = "sensor", "SINGLE_PROP"
+        v.targets[0].id_type = "CAMERA"
+        v.targets[0].id = cam.data
+        v.targets[0].data_path = "sensor_width"
+        sync_anims(a)
+        return {"FINISHED"}
+
+
+def view_camera(a):
+    c = sub(a, "Camera")
+    return next((o for o in c.all_objects if o.type == "CAMERA"), None) if c is not None else None
+
+
+class OG_OT_CaCameraView(bpy.types.Operator):
+    """Look through the rig's camera (the scene camera becomes it)"""
+    bl_idname = "og.ca_camera_view"
+    bl_label = "Look Through"
+    bl_options = {"REGISTER"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        cam = view_camera(a) if a is not None else None
+        if cam is None:
+            self.report({"ERROR"}, "No rig camera: Make Camera Rig first")
+            return {"CANCELLED"}
+        ctx.scene.camera = cam
+        for area in (ctx.screen.areas if ctx.screen else ()):
+            if area.type == "VIEW_3D":
+                area.spaces.active.region_3d.view_perspective = "CAMERA"
+                break
+        return {"FINISHED"}
+
+
+class OG_OT_CaCameraFov(bpy.types.Operator):
+    """Set the shot's field of view at this frame (the camera bone's X scale, which the game reads as the FOV)"""
+    bl_idname = "og.ca_camera_fov"
+    bl_label = "Set FOV"
+    bl_options = {"REGISTER", "UNDO"}
+    fov: FloatProperty(name="FOV (degrees)", default=72.7, min=10.6, max=170.0,
+                       description="Horizontal field of view")
+    key: BoolProperty(name="Insert keyframe", default=True)
+
+    def invoke(self, ctx, event):
+        a = active(ctx.scene)
+        pb = camera_bone(a) if a is not None else None
+        if pb is not None:
+            self.fov = round(scale_to_fov(pb.scale.x), 1)
+        return ctx.window_manager.invoke_props_dialog(self)
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        pb = camera_bone(a) if a is not None else None
+        if pb is None:
+            return {"CANCELLED"}
+        pb.scale.x = fov_to_scale(self.fov)
+        if self.key:
+            pb.keyframe_insert("scale", index=0)
+        return {"FINISHED"}
+
+
 def active(scene):
     i = scene.og_custom_actor_index
     return scene.og_custom_actors[i] if 0 <= i < len(scene.og_custom_actors) else None
@@ -536,6 +690,35 @@ class OG_PT_CaBasic(_Tab, bpy.types.Panel):
             g.label(text="Collision meshes are invisible in game, the model's meshes have no collision", icon="BLANK1")
 
 
+class OG_PT_CaCamera(_Tab, bpy.types.Panel):
+    bl_label = "Camera Animation"
+    bl_idname = "OG_PT_ca_camera"
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, ctx):
+        a = active(ctx.scene)
+        return a is not None and a.template == "camera"
+
+    def draw(self, ctx):
+        a = active(ctx.scene)
+        l = self.layout
+        pb = camera_bone(a)
+        l.operator("og.ca_camera_rig", icon="OUTLINER_OB_CAMERA",
+                   text="Make Camera Rig" if pb is None else "Repair Camera Rig")
+        if pb is not None:
+            r = l.row(align=True)
+            r.operator("og.ca_camera_view", icon="HIDE_OFF")
+            r.operator("og.ca_camera_fov", icon="KEYFRAME")
+            g = l.row(); g.enabled = False; g.scale_y = 0.7
+            g.label(text=f"FOV here: {scale_to_fov(pb.scale.x):.1f} degrees (bone X scale {pb.scale.x:.3f})", icon="INFO")
+        g = l.column(); g.enabled = False; g.scale_y = 0.7
+        g.label(text="Animate the 'camera' bone: each action is a shot", icon="INFO")
+        g.label(text="The view looks down the bone's -Z (the rig camera shows it)", icon="BLANK1")
+        g.label(text="Plays from the Camera animation actor's position: the armature's origin", icon="BLANK1")
+        g.label(text=f"Pick '{clean(a.name)}' in a Camera animation's Camera list", icon="BLANK1")
+
+
 class OG_PT_CaAnims(_Tab, bpy.types.Panel):
     bl_label = "Animations"
     bl_idname = "OG_PT_ca_anims"
@@ -577,8 +760,9 @@ class OG_PT_CaBuild(_Tab, bpy.types.Panel):
 
 
 CLASSES = (OGCustomActorAnim, OGCustomActor, OGCustomActorSettings, OG_OT_CaAdd, OG_OT_CaRemove, OG_OT_CaSyncAnims,
-           OG_OT_CaMoveAnim, OG_OT_CaExport, OG_OT_CaPlace, OG_UL_CustomActors, OG_UL_CaAnims, OG_PT_CaList,
-           OG_PT_CaSettings, OG_PT_CaBasic, OG_PT_CaAnims, OG_PT_CaBuild)
+           OG_OT_CaMoveAnim, OG_OT_CaExport, OG_OT_CaPlace, OG_OT_CaCameraRig, OG_OT_CaCameraView,
+           OG_OT_CaCameraFov, OG_UL_CustomActors, OG_UL_CaAnims, OG_PT_CaList, OG_PT_CaSettings, OG_PT_CaBasic,
+           OG_PT_CaCamera, OG_PT_CaAnims, OG_PT_CaBuild)
 
 
 def register_props():

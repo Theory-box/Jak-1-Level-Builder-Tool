@@ -251,6 +251,9 @@ def export_actor(scene, a):
     anims = [x.action.name for x in a.anims if x.include and x.action]
     gen_mesh = uses_mesh_collision(a)
     marks = _collision_marks(a) if gen_mesh else []
+    stub = _camera_stub(scene, a, objs)
+    if stub is not None:
+        objs.append(stub)
     # Export origin: the chosen point moved to the scene's origin for the export (then put back)
     p0 = CA.origin_point(a)
     tops = [o for o in objs if o.parent is None or o.parent not in objs]
@@ -267,6 +270,10 @@ def export_actor(scene, a):
             o.matrix_world.translation += p0
         bpy.context.view_layer.update()
         _unmark(marks)                                    # the user's own settings back
+        if stub is not None:
+            me = stub.data
+            bpy.data.objects.remove(stub)
+            bpy.data.meshes.remove(me)
         try:
             os.remove(tmp)
         except OSError:
@@ -281,6 +288,27 @@ def export_actor(scene, a):
         log(f"[custom actor] wrote {p.name} ({len(data)} bytes, {len(anims)} animation(s))")
     register(name, gen_mesh=gen_mesh)
     return ""
+
+
+def _camera_stub(scene, a, objs):
+    """A camera with no skinned mesh: a 1 mm triangle on the camera bone, so the exporter writes the
+    skin (the joints build-actor reads). It sits in the lens, inside the near clip: never seen."""
+    from mathutils import Vector
+    from .. import custom_actors as CA
+    arm = a.armature
+    if a.template != "camera" or arm is None or CA.CAM_BONE not in arm.data.bones:
+        return None
+    if any(o.type == "MESH" and any(m.type == "ARMATURE" and m.object == arm for m in o.modifiers) for o in objs):
+        return None
+    h = arm.data.bones[CA.CAM_BONE].head_local
+    me = bpy.data.meshes.new("og-camera-stub")
+    me.from_pydata([h, h + Vector((0.001, 0, 0)), h + Vector((0, 0.001, 0))], [], [(0, 1, 2)])
+    ob = bpy.data.objects.new("og-camera-stub", me)
+    scene.collection.objects.link(ob)
+    ob.parent = arm
+    ob.vertex_groups.new(name=CA.CAM_BONE).add([0, 1, 2], 1.0, "REPLACE")
+    ob.modifiers.new("Armature", "ARMATURE").object = arm
+    return ob
 
 
 def uses_mesh_collision(a):
@@ -450,7 +478,7 @@ def level_code(scene, objs):
         a = CA.actor_by_name(scene, n)
         if a is not None and a.template == "basic":
             out += actor_gc(scene, a)
-    return out
+    return out                       # (Camera animations: pov.skel_lines defines their skeleton group)
 
 
 # ── levels ────────────────────────────────────────────────────────────────
@@ -465,6 +493,10 @@ def level_models(scene, objs):
         et = actor_etype(o)
         if et in names and et not in out:
             out.append(et)
+    from .. import pov
+    for g in pov.level_groups(objs):                 # Camera animations the level's actors play
+        if g in names and g not in out:
+            out.append(g)
     return out
 
 

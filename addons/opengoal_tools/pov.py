@@ -20,18 +20,44 @@ import bpy
 from . import db as _db
 
 
-def catalogue() -> dict:
-    """{group id: {group, file, jg, mg, default, label, anims {name: description}}}."""
-    return _db.DB.get("PovCameras", {}) or {}
+def catalogue(scene=None) -> dict:
+    """{group id: {group, file, jg, mg, default, label, anims {name: description}}}: the game's,
+    then the OpenGOAL Actors tab's Camera animations (custom: True)."""
+    cat = _db.DB.get("PovCameras", {}) or {}
+    custom = custom_cameras(scene)
+    if not custom:
+        return cat
+    out = dict(cat)
+    out.update(custom)
+    return out
 
 
-def anims(group_id: str) -> dict:
-    return dict((catalogue().get(group_id) or {}).get("anims") or {})
+def custom_cameras(scene=None) -> dict:
+    if scene is None:
+        scene = getattr(bpy.context, "scene", None)
+    if scene is None or not hasattr(scene, "og_custom_actors"):
+        return {}
+    from .custom_actors import clean
+    from .export.actors_export import anim_name
+    out = {}
+    for a in scene.og_custom_actors:
+        n = clean(a.name)
+        if a.template != "camera" or not n:
+            continue
+        an = [anim_name(x.action.name) for x in a.anims if x.include and x.action]
+        out[n] = {"group": n, "file": f"{n}-ag.go", "jg": f"{n}-lod0-jg", "mg": f"{n}-lod0-mg",
+                  "default": f"{n}-{an[0]}-ja" if an else None, "label": f"{n} (custom actor)",
+                  "anims": {x: "custom actor shot" for x in an}, "custom": True}
+    return out
 
 
-def entry(group_id: str) -> dict:
+def anims(group_id: str, scene=None) -> dict:
+    return dict((catalogue(scene).get(group_id) or {}).get("anims") or {})
+
+
+def entry(group_id: str, scene=None) -> dict:
     """The catalogue entry, or one built from the usual naming for a typed group."""
-    e = catalogue().get(group_id)
+    e = catalogue(scene).get(group_id)
     if e:
         return e
     g = group_id[:-len("-ag.go")] if group_id.endswith("-ag.go") else group_id
@@ -61,20 +87,30 @@ def lumps(group_id: str, anim: str) -> dict:
     return {"pov-sg": ["symbol", skel_name(group_id)], "pov-anim": ["string", anim]}
 
 
-def skel_lines(group_ids) -> list[str]:
-    """defskelgroup for each camera art group used in the level."""
+def skel_lines(group_ids, scene=None) -> list[str]:
+    """defskelgroup for each camera art group used in the level (a custom actor's: its def-actor
+    first, which names its art group's elements)."""
     out = []
     for gid in sorted(set(g for g in group_ids if g)):
-        e = entry(gid)
+        e = entry(gid, scene)
         g = e["group"]
-        default = e.get("default") or f"{g}-{next(iter(anims(gid)), 'anim')}-ja"
+        if e.get("custom"):
+            if not e.get("anims"):
+                continue
+            out += ["", f"(def-actor {g} :bounds (0 0 0 20) :art ({' '.join(f'{x}-ja' for x in e['anims'])}))"]
+        default = e.get("default") or f"{g}-{next(iter(anims(gid, scene)), 'anim')}-ja"
         out += ["", f"(defskelgroup {skel_name(gid)}", f"  {g}", f"  {e['jg']}", f"  {default}",
                 f"  (({e['mg']} (meters 999999)))", "  :bounds (static-spherem 0 0 0 20))"]
     return out
 
 
-def art_file(group_id: str) -> str:
-    return entry(group_id)["file"] if group_id else ""
+def art_file(group_id: str, scene=None) -> str:
+    """The art group file an actor playing it lists ('' for a custom actor's: the level bundles
+    those itself, and the level's art groups must be the game's)."""
+    if not group_id:
+        return ""
+    e = entry(group_id, scene)
+    return "" if e.get("custom") else e["file"]
 
 
 # ── which objects use which camera ─────────────────────────────────────────

@@ -85,6 +85,21 @@ game's own screenshot (`pc-screen-shot`, saved in `%APPDATA%/OpenGOAL/jak1/scree
 - Checked in game: both actors run their idle state; 'trigger switches to the play state; Jak stands on the
   collision box (mesh) and on the sphere. Collision is one-sided: a box with inward faces lets Jak through (the
   panel now notes it: Recalculate Outside).
+- Guide note (Kuitar's setup): on an OpenGOAL release, custom level actors only show with the game's
+  "all actors" option on.
+
+## Step 4 results (Camera animation, in game on v0.3.5 and mod-base v0.3.8)
+
+- **Make Camera Rig**: an armature with a still `root` bone and a `camera` bone under it, and a Blender camera
+  (in `<name>.Camera`, not exported) that copies the bone's location / rotation, its focal length driven by the
+  bone's X scale. **Set FOV** sets and keys that scale (`sx = 0.73603 / tan(fov / 2)`).
+- The `camera` bone must not be the first bone: the game's first skin joint is a matrix joint, whose scale it
+  never fills (FOV read as 180°, a black screen). Hence the root bone and a red check.
+- No mesh needed: the export adds a 1 mm triangle on the camera bone (a skin is needed for the joints).
+- The pov picker lists the custom cameras; the level defines `def-actor` + `*og-pov-<name>-sg*`, bundles
+  `<name>-ag.go` and lists it in custom_models (not in an actor's art groups: those must be the game's).
+- Checked in game: the camera sat exactly where the bone was (8 m out, 3 m up), looked where the rig camera
+  looked, FOV 50° read back as 50°.
 
 ## Proposal
 
