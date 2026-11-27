@@ -24,6 +24,10 @@ TEMPLATES = [("art_group", "Art group", "Only the art group (model, skeleton, an
                                         "it plays its first animation"),
              ("basic", "Basic actor", "An actor with code: plays its idle animation, an animation when triggered, "
                                       "collision from the Collision meshes or a sphere")]
+ORIGINS = [("MODEL", "Model's position", "The model mesh's origin (the first mesh of the Model collection)"),
+           ("ARMATURE", "Armature's position", "The armature's origin"),
+           ("CENTER", "Collection's center of mass", "The middle of all the model's vertices"),
+           ("WORLD", "Blender origin", "The scene's origin (0, 0, 0)")]
 COLLISIONS = [("none", "None", "Jak goes through it"),
               ("mesh", "Collision meshes", "The meshes of its Collision collection (255 vertices each at most)"),
               ("sphere", "Sphere", "A sphere around the actor")]
@@ -64,6 +68,8 @@ class OGCustomActor(bpy.types.PropertyGroup):
                               description="The skeleton (none: one fixed joint)")
     anims: CollectionProperty(type=OGCustomActorAnim)
     anim_index: IntProperty()
+    origin: EnumProperty(name="Export origin", items=ORIGINS, default="MODEL",
+                         description="The point of the model that is the actor's position in game")
     bounds_auto: BoolProperty(name="Auto", default=True, description="From the model's size")
     bounds: FloatProperty(name="Bounds (m)", default=5.0, min=0.1, unit="LENGTH",
                           description="Radius of the sphere around the actor: too small and it disappears early")
@@ -142,14 +148,37 @@ def sync_anims(a):
             a.anims.add().action = act
 
 
+def _meshes(a):
+    return sorted((o for o in model_objects(a) if o.type == "MESH"), key=lambda o: o.name)
+
+
+def origin_point(a):
+    """World point that becomes the actor's position (Export origin)."""
+    from mathutils import Vector
+    meshes = _meshes(a)
+    if a.origin == "ARMATURE" and a.armature is not None:
+        return a.armature.matrix_world.translation.copy()
+    if a.origin == "CENTER" and meshes:
+        s, n = Vector(), 0
+        for o in meshes:
+            for v in o.data.vertices:
+                s += o.matrix_world @ v.co
+                n += 1
+        return s / max(1, n)
+    if a.origin in ("MODEL", "ARMATURE") and meshes:
+        return meshes[0].matrix_world.translation.copy()
+    return Vector()
+
+
 def auto_bounds(a):
     """Radius (m) of a sphere at the actor's origin holding every model vertex."""
     from mathutils import Vector
+    p = origin_point(a)
     r = 0.0
     for o in model_objects(a):
         if o.type == "MESH":
             for c in o.bound_box:
-                r = max(r, (o.matrix_world @ Vector(c)).length)
+                r = max(r, (o.matrix_world @ Vector(c) - p).length)
     return round(r * 1.1 + 0.5, 1)
 
 
@@ -436,6 +465,7 @@ class OG_PT_CaSettings(_Tab, bpy.types.Panel):
         l.prop(a, "template")
         l.prop(a, "collection")
         l.prop(a, "armature")
+        l.prop(a, "origin")
         r = l.row(align=True)
         r.prop(a, "bounds_auto", text="Auto bounds")
         sub_ = r.row(align=True); sub_.enabled = not a.bounds_auto

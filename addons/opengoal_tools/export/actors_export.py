@@ -180,12 +180,21 @@ def export_actor(scene, a):
     anims = [x.action.name for x in a.anims if x.include and x.action]
     gen_mesh = uses_mesh_collision(a)
     marks = _collision_marks(a) if gen_mesh else []
+    # Export origin: the chosen point moved to the scene's origin for the export (then put back)
+    p0 = CA.origin_point(a)
+    tops = [o for o in objs if o.parent is None or o.parent not in objs]
+    for o in tops:
+        o.matrix_world.translation -= p0
+    bpy.context.view_layer.update()
     fd, tmp = tempfile.mkstemp(suffix=".glb")
     os.close(fd)
     try:
         _export_glb(scene, objs, tmp)
         data = open(tmp, "rb").read()
     finally:
+        for o in tops:
+            o.matrix_world.translation += p0
+        bpy.context.view_layer.update()
         for ob, k, v in reversed(marks):                 # the user's own settings back
             setattr(ob, k, v)
         try:
@@ -380,13 +389,7 @@ def level_ags(scene, objs):
     return [f"{n}-ag.go" for n in level_models(scene, objs)]
 
 
-def export_for_level(scene, objs):
-    """Export the custom actors the level places. Returns error texts."""
-    from .. import custom_actors as CA
-    errs = []
-    for n in level_models(scene, objs):
-        a = CA.actor_by_name(scene, n)
-        e = export_actor(scene, a) if a is not None else "not found"
-        if e:
-            errs.append(f"{n}: {e}")
-    return errs
+def missing_for_level(scene, objs):
+    """Custom actors the level places that were never exported (their model file is missing):
+    they are only exported from the OpenGOAL Actors tab."""
+    return [n for n in level_models(scene, objs) if not glb_path(n).exists()]
