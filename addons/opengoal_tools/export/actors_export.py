@@ -144,20 +144,9 @@ def _dfs(js):
     return out
 
 
-def bone_collision(js, binb, coll_bones):
-    """Collision meshes that follow a bone: moved into that bone's rest space (its inverse bind
-    matrix), so the game can carry them on the joint. Returns the joint index (node-list: 0 = the
-    actor, a skin's bone s = s + 2) of each collision mesh, in build-actor's order."""
+def _skin_ibms(js, binb):
+    """({bone name: skin index}, [inverse bind matrices]) of the first skin."""
     from mathutils import Matrix
-    nodes = js["nodes"]
-    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
-
-    def world(i):
-        m = _mat(nodes[i])
-        while i in parent:
-            i = parent[i]
-            m = _mat(nodes[i]) @ m
-        return m
     skin = (js.get("skins") or [None])[0]
     ibm = []
     if skin and "inverseBindMatrices" in skin:
@@ -167,7 +156,24 @@ def bone_collision(js, binb, coll_bones):
         for k in range(acc["count"]):
             f = struct.unpack_from("<16f", binb, st + 64 * k)
             ibm.append(Matrix([[f[c * 4 + r] for c in range(4)] for r in range(4)]))
-    joint_of = {nodes[j].get("name"): s for s, j in enumerate(skin["joints"])} if skin else {}
+    joint_of = {js["nodes"][j].get("name"): s for s, j in enumerate(skin["joints"])} if skin else {}
+    return joint_of, ibm
+
+
+def bone_collision(js, binb, coll_bones):
+    """Collision meshes that follow a bone: moved into that bone's rest space (its inverse bind
+    matrix), so the game can carry them on the joint. Returns [(mesh name, joint index)] (node-list:
+    0 = the actor, a skin's bone s = s + 2), in build-actor's order (its mesh ids)."""
+    nodes = js["nodes"]
+    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+
+    def world(i):
+        m = _mat(nodes[i])
+        while i in parent:
+            i = parent[i]
+            m = _mat(nodes[i]) @ m
+        return m
+    joint_of, ibm = _skin_ibms(js, binb)
     out = []
     for i in _dfs(js):
         n = nodes[i]
@@ -176,26 +182,41 @@ def bone_collision(js, binb, coll_bones):
         b = coll_bones[n["name"]]
         s = joint_of.get(b) if b else None
         if s is None or s >= len(ibm):
-            out.append(0)
+            out.append((n["name"], 0))
             continue
         new_world = ibm[s] @ world(i)
         local = (world(parent[i]).inverted() @ new_world) if i in parent else new_world
         for k in ("translation", "rotation", "scale"):
             n.pop(k, None)
         n["matrix"] = [local[r][c] for c in range(4) for r in range(4)]
-        out.append(s + 2)
+        out.append((n["name"], s + 2))
     return out
 
 
-def post_process(data, anim_names, fix, coll_bones=None):
-    """Returns (glb bytes, collision joints in build-actor's order)."""
+def sphere_joints(js, binb, spheres):
+    """[(bone, centre in glTF space)] -> [(joint index, centre in that joint's rest space)]."""
+    from mathutils import Vector
+    joint_of, ibm = _skin_ibms(js, binb)
+    out = []
+    for b, c in spheres:
+        s = joint_of.get(b) if b else None
+        if s is None or s >= len(ibm):
+            out.append((0, tuple(c)))
+        else:
+            out.append((s + 2, tuple(ibm[s] @ Vector(c))))
+    return out
+
+
+def post_process(data, anim_names, fix, coll_bones=None, spheres=None):
+    """Returns (glb bytes, [(collision mesh, joint)] in build-actor's order, [(sphere joint, centre)])."""
     js, binb = _chunks(data)
     order_animations(js, anim_names)
     joints = bone_collision(js, binb, coll_bones) if coll_bones else []
+    sj = sphere_joints(js, binb, spheres) if spheres else []
     if fix:
         bone_fix(js, binb)
     js["buffers"][0]["byteLength"] = len(binb) + (-len(binb) % 4)
-    return _pack(js, binb), joints
+    return _pack(js, binb), joints, sj
 
 
 # ── export ─────────────────────────────────────────────────────────────────
@@ -221,7 +242,7 @@ def _export_glb(scene, objs, path):
         vl.objects.active = objs[0]
         bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_yup=True,
                                   export_apply=False, export_skins=True, export_animations=True,
-                                  export_animation_mode="ACTIONS", export_extras=True,
+                                  export_animation_mode="NLA_TRACKS", export_extras=True,
                                   export_vertex_color="ACTIVE", export_cameras=False, export_lights=False)
     finally:
         for o in objs:
@@ -241,14 +262,17 @@ def export_actor(scene, a):
     red = [t for t, r in CA.checks(scene, a) if r]
     if red:
         return red[0]
-    objs = CA.model_objects(a) + CA.collision_objects(a)
+    objs = CA.model_objects(a) + CA.used_meshes(a)
     if a.armature is not None and a.armature not in objs:
         objs.append(a.armature)
     objs = [o for o in objs if o.type in ("MESH", "ARMATURE")]
     if not objs:
         return "nothing to export"
     CA.sync_anims(a)
-    anims = [x.action.name for x in a.anims if x.include and x.action]
+    anims = [x.track for x in a.anims if x.include and x.track]
+    ad = a.armature.animation_data if a.armature is not None else None
+    if ad is not None and ad.use_tweak_mode:              # (the exporter wants the tracks as they are)
+        ad.use_tweak_mode = False
     gen_mesh = uses_mesh_collision(a)
     marks = _collision_marks(a) if gen_mesh else []
     stub = _camera_stub(scene, a, objs)
@@ -256,6 +280,12 @@ def export_actor(scene, a):
         objs.append(stub)
     # Export origin: the chosen point moved to the scene's origin for the export (then put back)
     p0 = CA.origin_point(a)
+    sig = CA.collision_signature(a)
+    # spheres: centre relative to the origin, in glTF axes (x, z, -y)
+    sph = []
+    for o in CA.used_spheres(a):
+        c = o.matrix_world.translation - p0
+        sph.append((o, CA.collision_bone(o), (c.x, c.z, -c.y), CA.sphere_radius(o)))
     tops = [o for o in objs if o.parent is None or o.parent not in objs]
     for o in tops:
         o.matrix_world.translation -= p0
@@ -278,9 +308,16 @@ def export_actor(scene, a):
             os.remove(tmp)
         except OSError:
             pass
-    coll_bones = {o.name: CA.collision_bone(o) for o in CA.collision_objects(a)} if gen_mesh else None
-    data, joints = post_process(data, anims, CA.bone_fix_on(scene), coll_bones)
-    a.coll_joints = ",".join(str(j) for j in joints)
+    coll_bones = {o.name: CA.collision_bone(o) for o in CA.used_meshes(a)} if gen_mesh else None
+    data, joints, sj = post_process(data, anims, CA.bone_fix_on(scene), coll_bones,
+                                    [(b, c) for _o, b, c, _r in sph])
+    prims = []
+    for i, (mname, j) in enumerate(joints):
+        o = bpy.data.objects.get(mname)
+        prims.append(_prim("mesh", o, j, mesh=i))
+    for (o, _b, _c, r), (j, c) in zip(sph, sj):
+        prims.append(_prim("sphere", o, j, sphere=[round(v, 4) for v in c] + [round(r, 4)]))
+    a.coll_data = json.dumps({"sig": sig, "prims": prims})
     p = glb_path(name)
     if not (p.exists() and p.read_bytes() == data):
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -288,6 +325,14 @@ def export_actor(scene, a):
         log(f"[custom actor] wrote {p.name} ({len(data)} bytes, {len(anims)} animation(s))")
     register(name, gen_mesh=gen_mesh)
     return ""
+
+
+def _prim(kind, o, joint, **kw):
+    d = {"kind": kind, "name": o.name if o else "", "joint": joint,
+         "solid": getattr(o, "og_ca_solid", "SOLID"), "touch": getattr(o, "og_ca_touch", "NONE"),
+         "attack": getattr(o, "og_ca_attack", "NONE")}
+    d.update(kw)
+    return d
 
 
 def _camera_stub(scene, a, objs):
@@ -313,7 +358,7 @@ def _camera_stub(scene, a, objs):
 
 def uses_mesh_collision(a):
     from .. import custom_actors as CA
-    return a.template == "basic" and a.collision == "mesh" and bool(CA.collision_objects(a))
+    return bool(CA.used_meshes(a))
 
 
 def _collision_marks(a):
@@ -379,11 +424,36 @@ def _f(x):
     return s + "0" if s.endswith(".") else s
 
 
+def coll_prims(a):
+    """The exported collision prims (custom_actors.coll_data, written by the export)."""
+    if a.template != "basic":
+        return []
+    try:
+        return list(json.loads(a.coll_data).get("prims") or [])
+    except (ValueError, AttributeError):
+        return []
+
+
+_SOLID_ACT = {"SOLID": ("solid",), "RIDE": ("solid", "rider-plat-sticky"), "NONE": ()}
+
+
+def _bits(p):
+    from ..custom_actors import PRIM_BITS
+    return PRIM_BITS.get(("touch", p["touch"]), 0) | PRIM_BITS.get(("attack", p["attack"]), 0)
+
+
+def _prim_core(p):
+    """(collide-as, action, offense) of a prim: attackable ones are enemies Jak's attacks reach."""
+    hit = p["attack"] != "NONE"
+    return ("enemy" if hit else "ground-object", _SOLID_ACT.get(p["solid"], ("solid",)),
+            "touch" if hit else "indestructible")
+
+
 def actor_gc(scene, a):
     """The Basic actor's GOAL (deftype <name>, def-actor, states, init) for a level's -obs.gc."""
     from .. import custom_actors as CA
     n = CA.clean(a.name)
-    anims = [anim_name(x.action.name) for x in a.anims if x.include and x.action] if a.armature else []
+    anims = [anim_name(x.track) for x in a.anims if x.include and x.track] if a.armature else []
     art = [f"{x}-ja" for x in anims] or ["idle-ja"]
     idle = f"{n}-{art[0]}"
     trig = None
@@ -391,23 +461,65 @@ def actor_gc(scene, a):
         tn = anim_name(a.trigger_anim)
         if tn in anims:
             trig = f"{n}-{tn}-ja"
-    coll = a.collision if a.template == "basic" else "none"
-    meshes = len(CA.collision_objects(a)) if coll == "mesh" else 0
-    if coll == "mesh" and not meshes:
-        coll = "none"
+    prims = coll_prims(a)
+    bits = 0
+    for p in prims:
+        bits |= _bits(p)
+    touch_hurt = bits & 3
+    touch_trig = bool(bits & 4) and trig
+    att_trig = bool(bits & 8) and trig
+    breaks = bool(bits & 16)
+    overlap = bool(bits & 7)                   # touch reactions: the actor looks for Jak itself
     b = CA.bounds(a)
-    post = "transform-post" if coll != "none" else "ja-post"
-    act = "(collide-action solid rider-plat-sticky)" if a.rideable else "(collide-action solid)"
+    post = (f"{n}-post" if overlap else "transform-post") if prims else "ja-post"
+    states = [f"{n}-idle"] + ([f"{n}-play"] if trig else []) + ([f"{n}-die"] if breaks else [])
     out = ["", f";; ---- custom actor {n} (OpenGOAL Actors tab: Basic actor) ----",
            f"(deftype {n} (process-drawable)",
-           f"  ({'(root collide-shape-moving :override)' if coll != 'none' else ''})",
-           f"  (:states {n}-idle{f' {n}-play' if trig else ''}))",
-           f"(def-actor {n} :bounds (0 0 0 {_f(b)}) :art ({' '.join(art)}))",
-           f"(defstate {n}-idle ({n})"]
-    if trig:
-        out += ["  :event",
-                "    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))",
-                f"      (case message (('trigger) (go {n}-play))))"]
+           f"  ({'(root collide-shape-moving :override)' if prims else ''})",
+           f"  (:states {' '.join(states)}))",
+           f"(def-actor {n} :bounds (0 0 0 {_f(b)}) :art ({' '.join(art)}))"]
+    if overlap:
+        out += [f"(defbehavior {n}-post {n} ()",
+                "  (transform-post)",
+                "  (let ((o (new 'stack-no-clear 'overlaps-others-params)))",
+                "    (set! (-> o options) (the uint 1))",
+                "    (set! (-> o tlist) *touching-list*)",
+                "    (find-overlapping-shapes (-> self root) o))",
+                "  (none))"]
+    event = bool(trig or touch_hurt or touch_trig or att_trig or breaks)
+    if event:
+        play = f"(if (not (= (-> self state) {n}-play)) (go {n}-play))"
+        me = "(the-as collide-shape-moving (-> self root))"
+        out += [f"(defbehavior {n}-event {n} ((proc process) (argc int) (message symbol) (block event-message-block))",
+                "  (case message"]
+        if trig:
+            out += [f"    (('trigger) (go {n}-play))"]
+        if touch_hurt or touch_trig:
+            out += ["    (('touch)",
+                    "     (let ((e (the-as touching-shapes-entry (-> block param 0))))",
+                    "       (when (and e (= proc *target*))"]
+            if touch_hurt:
+                out += ["         (cond",
+                        f"           ((prims-touching? e {me} (the uint 2))",
+                        "            (send-event proc 'attack-invinc e (static-attack-info ((mode 'death)))))",   # (as lava pools)
+                        f"           ((prims-touching? e {me} (the uint 1))",
+                        "            (send-event proc 'attack e (new 'static 'attack-info))))"]
+            if touch_trig:
+                out += [f"         (if (prims-touching? e {me} (the uint 4)) {play})"]
+            out[-1] += ")))"
+        if att_trig or breaks:
+            out += ["    (('attack)",
+                    "     (let ((e (the-as touching-shapes-entry (-> block param 0))))",
+                    "       (when e"]
+            if breaks:
+                out += [f"         (if (prims-touching? e {me} (the uint 16)) (go {n}-die))"]
+            if att_trig:
+                out += [f"         (if (prims-touching? e {me} (the uint 8)) {play})"]
+            out[-1] += ")))"
+        out[-1] += "))"
+    out += [f"(defstate {n}-idle ({n})"]
+    if event:
+        out += [f"  :event {n}-event"]
     out += ["  :code",
             "    (behavior ()",
             "      (loop",
@@ -415,56 +527,66 @@ def actor_gc(scene, a):
             "        (until (ja-done? 0) (suspend) (ja :num! (seek!)))))",
             f"  :post {post})"]
     if trig:
-        out += [f"(defstate {n}-play ({n})",
-                "  :code",
+        out += [f"(defstate {n}-play ({n})"]
+        if event:
+            out += [f"  :event {n}-event"]
+        out += ["  :code",
                 "    (behavior ()",
                 f"      (ja-no-eval :group! {trig} :num! (seek!) :frame-num 0.0)",
                 "      (until (ja-done? 0) (suspend) (ja :num! (seek!)))",
                 f"      (go {n}-idle))",
                 f"  :post {post})"]
+    if breaks:
+        out += [f"(defstate {n}-die ({n})",
+                "  :code",
+                "    (behavior ()",
+                "      (clear-collide-with-as (-> self root))",
+                "      (process-entity-status! self (entity-perm-status dead) #t)",
+                "      (deactivate self)))"]
     out += [f"(defmethod init-from-entity! ((this {n}) (arg0 entity-actor))"]
-    if coll == "none":
+    if not prims:
         out += ["  (set! (-> this root) (new 'process 'trsqv))"]
     else:
+        kinds, acts = set(), set()
+        for p in prims:
+            k, ac, _o = _prim_core(p)
+            kinds.add(k)
+            acts.update(ac)
         out += ["  (let ((cshape (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))",
                 "    (set! (-> cshape dynam) (copy *standard-dynamics* 'process))",
                 "    (set! (-> cshape reaction) default-collision-reaction)",
-                "    (set! (-> cshape no-reaction) (the (function collide-shape-moving collide-shape-intersect vector vector none) nothing))"]
-        if coll == "sphere":
-            out += ["    (let ((s (new 'process 'collide-shape-prim-sphere cshape (the uint 0))))",
-                    "      (set! (-> s prim-core collide-as) (collide-kind ground-object))",
-                    "      (set! (-> s collide-with) (collide-kind target))",
-                    f"      (set! (-> s prim-core action) {act})",
-                    "      (set! (-> s prim-core offense) (collide-offense indestructible))",
-                    "      (set! (-> s transform-index) 0)",
-                    f"      (set-vector! (-> s local-sphere) 0.0 (meters {_f(a.sphere_height)}) 0.0 (meters {_f(a.sphere_radius)}))",
-                    "      (set-root-prim! cshape s))"]
-        else:
-            out += [f"    (let ((group (new 'process 'collide-shape-prim-group cshape (the uint {meshes}) 0)))",
-                    "      (set! (-> group prim-core collide-as) (collide-kind ground-object))",
-                    "      (set! (-> group collide-with) (collide-kind target))",
-                    f"      (set! (-> group prim-core action) {act})",
-                    "      (set! (-> group transform-index) 0)",
-                    f"      (set-vector! (-> group local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
-                    "      (set-root-prim! cshape group)"]
-            joints = [int(x) for x in a.coll_joints.split(",") if x.strip().isdigit()]
-            for i in range(meshes):
-                j = joints[i] if i < len(joints) else 0
-                out += [f"      (let ((mesh (new 'process 'collide-shape-prim-mesh cshape (the uint {i}) (the uint 0))))",
-                        "        (set! (-> mesh prim-core collide-as) (collide-kind ground-object))",
-                        "        (set! (-> mesh collide-with) (collide-kind target))",
-                        f"        (set! (-> mesh prim-core action) {act})",
-                        "        (set! (-> mesh prim-core offense) (collide-offense indestructible))",
-                        f"        (set! (-> mesh transform-index) {j})",
-                        f"        (set-vector! (-> mesh local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
-                        "        (append-prim group mesh))"]
-            out[-1] += ")"
+                "    (set! (-> cshape no-reaction) (the (function collide-shape-moving collide-shape-intersect vector vector none) nothing))",
+                f"    (let ((group (new 'process 'collide-shape-prim-group cshape (the uint {len(prims)}) 0)))",
+                f"      (set! (-> group prim-core collide-as) (collide-kind {' '.join(sorted(kinds))}))",
+                "      (set! (-> group collide-with) (collide-kind target))",
+                f"      (set! (-> group prim-core action) (collide-action {' '.join(sorted(acts))}))",
+                "      (set! (-> group transform-index) 0)",
+                f"      (set-vector! (-> group local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
+                "      (set-root-prim! cshape group)"]
+        for p in prims:
+            k, ac, off = _prim_core(p)
+            pid = _bits(p)
+            if p["kind"] == "mesh":
+                out += [f"      (let ((prim (new 'process 'collide-shape-prim-mesh cshape (the uint {p['mesh']}) (the uint {pid}))))"]
+                sphere = f"0.0 0.0 0.0 (meters {_f(b)})"
+            else:
+                x, y, z, r = p["sphere"]
+                out += [f"      (let ((prim (new 'process 'collide-shape-prim-sphere cshape (the uint {pid}))))"]
+                sphere = f"(meters {_f(x)}) (meters {_f(y)}) (meters {_f(z)}) (meters {_f(r)})"
+            out += [f"        (set! (-> prim prim-core collide-as) (collide-kind {k}))",
+                    "        (set! (-> prim collide-with) (collide-kind target))",
+                    f"        (set! (-> prim prim-core action) (collide-action {' '.join(ac)}))",
+                    f"        (set! (-> prim prim-core offense) (collide-offense {off}))",
+                    f"        (set! (-> prim transform-index) {p['joint']})",
+                    f"        (set-vector! (-> prim local-sphere) {sphere})",
+                    "        (append-prim group prim))"]
+        out[-1] += ")"
         out += ["    (set! (-> cshape nav-radius) (* 0.75 (-> cshape root-prim local-sphere w)))",
                 "    (backup-collide-with-as cshape)",
                 "    (set! (-> this root) cshape))"]
     out += ["  (process-drawable-from-entity! this arg0)",
             f"  (initialize-skeleton this *{n}-sg* '())"]
-    if coll != "none":
+    if prims:
         out += ["  (transform-post)"]
     out += [f"  (go {n}-idle)", "  (none))"]
     return out

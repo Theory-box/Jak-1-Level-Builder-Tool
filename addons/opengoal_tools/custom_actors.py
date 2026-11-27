@@ -25,7 +25,7 @@ MAX_BONES = 100
 TEMPLATES = [("art_group", "Art group", "Only the art group (model, skeleton, animations): no code. In a level "
                                         "it plays its first animation"),
              ("basic", "Basic actor", "An actor with code: plays its idle animation, an animation when triggered, "
-                                      "collision from the Collision meshes or a sphere"),
+                                      "collision from the Collision meshes and spheres"),
              ("camera", "Camera animation", "A camera art group: a bone named 'camera' (its animations are the "
                                             "shots). Played by a Camera animation actor or an actor's camera choice")]
 CAM_BONE = "camera"
@@ -34,9 +34,19 @@ ORIGINS = [("MODEL", "Model's position", "The model mesh's origin (the first mes
            ("ARMATURE", "Armature's position", "The armature's origin"),
            ("CENTER", "Collection's center of mass", "The middle of all the model's vertices"),
            ("WORLD", "Blender origin", "The scene's origin (0, 0, 0)")]
-COLLISIONS = [("none", "None", "Jak goes through it"),
-              ("mesh", "Collision meshes", "The meshes of its Collision collection (255 vertices each at most)"),
-              ("sphere", "Sphere", "A sphere around the actor")]
+SOLIDS = [("SOLID", "Solid", "Jak stands on it, it blocks him"),
+          ("RIDE", "Solid, carries Jak", "Solid, and Jak moves with it when standing on it"),
+          ("NONE", "Not solid", "Jak goes through (for touch reactions)")]
+TOUCHES = [("NONE", "Nothing", "Touching it does nothing"),
+           ("HURT", "Hurts Jak", "Jak takes a hit when touching it"),
+           ("DEADLY", "Deadly", "Jak dies when touching it"),
+           ("TRIGGER", "Plays 'trigger anim", "Touching it plays the actor's 'trigger animation")]
+ATTACKS = [("NONE", "Nothing", "Jak's attacks do nothing to it"),
+           ("TRIGGER", "Plays 'trigger anim", "Punching / spinning / flopping it plays the actor's 'trigger animation"),
+           ("BREAK", "Breaks the actor", "Attacking it removes the actor (for good: saved with the game)")]
+# prim-id bits the generated code tests (touching-shapes-entry prims-touching?)
+PRIM_BITS = {("touch", "HURT"): 1, ("touch", "DEADLY"): 2, ("touch", "TRIGGER"): 4,
+             ("attack", "TRIGGER"): 8, ("attack", "BREAK"): 16}
 BONE_FIX = [("AUTO", "Auto", "On, except on OpenGOAL releases older than 0.3.6 (which don't have the problem)"),
             ("ON", "Always", "Always counter the bone shift"),
             ("OFF", "Never", "Never (an OpenGOAL with the upstream fix)")]
@@ -50,15 +60,28 @@ def _armature_poll(self, ob):
     return ob.type == "ARMATURE"
 
 
+def _rename_track(self, ctx):
+    """The list's name field renames the armature's NLA track."""
+    a = next((x for x in ctx.scene.og_custom_actors if any(e == self for e in x.anims)), None) if ctx else None
+    t = track_of(a, self) if a is not None else None
+    if t is not None and self.name and t.name != self.name:
+        t.name = self.name
+        self.track = t.name
+        if self.name != t.name:
+            self.name = t.name                          # Blender made it unique
+
+
 class OGCustomActorAnim(bpy.types.PropertyGroup):
-    action: PointerProperty(type=bpy.types.Action, name="Action")
+    """One NLA track of the actor's armature (an animation)."""
+    name: StringProperty(name="Name", update=_rename_track, description="The NLA track's name (the animation's)")
+    track: StringProperty(options={"HIDDEN"})
     include: BoolProperty(name="Export", default=True)
 
 
 def _anim_items(self, ctx):
     out = [("NONE", "None", "Nothing happens on 'trigger")]
-    out += [(x.action.name, x.action.name, "Played once on 'trigger, then back to the idle")
-            for x in self.anims if x.include and x.action]
+    out += [(x.track, x.track, "Played once on 'trigger, then back to the idle")
+            for x in self.anims if x.include and x.track]
     _ANIM_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
     return _ANIM_ITEMS
 
@@ -80,13 +103,11 @@ class OGCustomActor(bpy.types.PropertyGroup):
     bounds: FloatProperty(name="Bounds (m)", default=5.0, min=0.1, unit="LENGTH",
                           description="Radius of the sphere around the actor: too small and it disappears early")
     # Basic actor
-    collision: EnumProperty(name="Collision", items=COLLISIONS, default="none")
-    sphere_radius: FloatProperty(name="Radius (m)", default=1.0, min=0.05, unit="LENGTH")
-    sphere_height: FloatProperty(name="Height (m)", default=1.0, unit="LENGTH", description="Height of the sphere's centre")
-    rideable: BoolProperty(name="Jak can ride it", default=True,
-                           description="Jak moves with it when standing on it (when it moves)")
-    coll_joints: StringProperty(default="", options={"HIDDEN"},
-                                description="Written by the export: each collision mesh's joint, in build-actor's order")
+    coll_meshes: BoolProperty(name="Collision meshes", default=False,
+                              description="The meshes of its Collision collection are collision (255 vertices each "
+                                          "at most; invisible in game)")
+    coll_data: StringProperty(default="", options={"HIDDEN"},
+                              description="Written by the export: the collision prims (joint, sphere positions ...)")
     trigger_anim: EnumProperty(name="On 'trigger", items=_anim_items,
                                description="Animation played once when another actor sends it 'trigger "
                                            "(a button's notify list ...), then back to the idle")
@@ -127,8 +148,42 @@ def model_objects(a):
 
 
 def collision_objects(a):
+    """The Collision collection's meshes (in name order)."""
     c = sub(a, "Collision")
-    return [o for o in c.all_objects if o.type == "MESH"] if c is not None else []
+    return sorted((o for o in c.all_objects if o.type == "MESH"), key=lambda o: o.name) if c is not None else []
+
+
+def collision_spheres(a):
+    """The Collision collection's sphere empties (in name order)."""
+    c = sub(a, "Collision")
+    return (sorted((o for o in c.all_objects if o.type == "EMPTY" and o.empty_display_type == "SPHERE"),
+                   key=lambda o: o.name) if c is not None else [])
+
+
+def sphere_radius(o):
+    return o.empty_display_size * max(abs(s) for s in o.matrix_world.to_scale())
+
+
+def used_meshes(a):
+    """Collision meshes that become collision (Basic actor, Collision meshes on)."""
+    return collision_objects(a) if a.template == "basic" and a.coll_meshes else []
+
+
+def used_spheres(a):
+    return collision_spheres(a) if a.template == "basic" else []
+
+
+def collision_signature(a):
+    """What the exported collision depends on (to tell when it needs exporting again)."""
+    p = origin_point(a)
+    out = []
+    for o in used_meshes(a) + used_spheres(a):
+        t = o.matrix_world.translation - p
+        out.append([o.name, o.type, collision_bone(o), [round(v, 3) for v in t],
+                    round(sphere_radius(o), 3) if o.type == "EMPTY" else len(o.data.vertices),
+                    o.og_ca_solid, o.og_ca_touch, o.og_ca_attack])
+    import json
+    return json.dumps(out)
 
 
 def collision_bone(o):
@@ -141,6 +196,16 @@ def collision_bone(o):
     return ""
 
 
+def fcurves(act):
+    """An action's F-curves (Blender 4.4+ layered actions too: Blender 5 has no Action.fcurves)."""
+    out = list(getattr(act, "fcurves", None) or ())
+    for layer in getattr(act, "layers", ()):
+        for strip in layer.strips:
+            for cb in getattr(strip, "channelbags", ()):
+                out += [fc for fc in cb.fcurves if fc not in out]
+    return out
+
+
 def compatible_actions(arm):
     """Actions animating this armature's bones (by their bone names)."""
     if arm is None:
@@ -148,22 +213,42 @@ def compatible_actions(arm):
     bones = {b.name for b in arm.data.bones}
     out = []
     for act in bpy.data.actions:
-        paths = [fc.data_path for fc in getattr(act, "fcurves", ())]
-        if any(p.startswith('pose.bones["') and p.split('"')[1] in bones for p in paths):
+        if any(fc.data_path.startswith('pose.bones["') and fc.data_path.split('"')[1] in bones for fc in fcurves(act)):
             out.append(act)
     return out
 
 
+def tracks(a):
+    """The armature's NLA tracks, top first (as the NLA editor shows them)."""
+    ad = a.armature.animation_data if a is not None and a.armature is not None else None
+    return list(reversed(ad.nla_tracks)) if ad else []
+
+
+def track_of(a, entry):
+    ad = a.armature.animation_data if a is not None and a.armature is not None else None
+    return ad.nla_tracks.get(entry.track) if ad and entry.track else None
+
+
+def track_range(t):
+    """(first frame, last frame) of a track's strips."""
+    if not t.strips:
+        return 0.0, 0.0
+    return min(s.frame_start for s in t.strips), max(s.frame_end for s in t.strips)
+
+
 def sync_anims(a):
-    """Add the armature's new actions to the list (kept in their order), drop missing ones."""
-    acts = compatible_actions(a.armature)
+    """The list follows the armature's NLA tracks: new tracks added at the end, deleted ones dropped
+    (the list keeps its own order: the export order)."""
+    names = [t.name for t in tracks(a)]
     for i in range(len(a.anims) - 1, -1, -1):
-        if a.anims[i].action not in acts:
+        if a.anims[i].track not in names:
             a.anims.remove(i)
-    have = {x.action for x in a.anims}
-    for act in acts:
-        if act not in have:
-            a.anims.add().action = act
+    have = {x.track for x in a.anims}
+    for n in names:
+        if n not in have:
+            e = a.anims.add()
+            e.track = n
+            e["name"] = n                       # (no rename callback)
 
 
 def fov_to_scale(deg):
@@ -253,7 +338,7 @@ def checks(scene, a):
             out.append(("the 'camera' bone needs a parent bone: the game reads no FOV on the first one "
                         "(Repair Camera Rig)", True))
         elif not [x for x in a.anims if x.include]:
-            out.append(("no animation: each exported action is a camera shot", True))
+            out.append(("no animation: each exported NLA track is a camera shot", True))
     elif not meshes:
         out.append(("no mesh in its Model collection", True))
     if arm is not None:
@@ -282,25 +367,42 @@ def checks(scene, a):
             out.append((f"{many} vertex(es) with more than 3 bone weights (the game keeps 3)", False))
         for o in [arm] + meshes:
             ad = o.animation_data
-            if ad and ad.action and any(not fc.data_path.startswith("pose.") for fc in ad.action.fcurves):
+            acts = ([ad.action] if ad and ad.action else []) + [s.action for t in (ad.nla_tracks if ad else ())
+                                                               for s in t.strips if s.action]
+            if any(not fc.data_path.startswith("pose.") for act in acts for fc in fcurves(act)):
                 out.append((f"'{o.name}' itself is animated: only bones may be (the build crashes)", True))
                 break
         if not [x for x in a.anims if x.include] and a.template != "camera":
-            out.append(("no animation: it gets a still idle", False))
+            out.append(("no animation (NLA track): it gets a still idle", False))
     if meshes and not any(o.data.color_attributes for o in meshes) and not _has_textures(meshes):
         out.append(("no colour attribute or texture: material colours are ignored (white)", False))
-    if a.template == "basic" and a.collision == "mesh" and not collision_objects(a):
+    if a.template == "basic" and a.coll_meshes and not collision_objects(a):
         out.append(("Collision meshes: its Collision collection has no mesh", True))
-    for o in collision_objects(a):
+    for o in used_meshes(a) + used_spheres(a):
         b = collision_bone(o)
         if b and (arm is None or b not in arm.data.bones):
             out.append((f"collision '{o.name}' follows bone '{b}', which the armature doesn't have", True))
+    if a.template == "basic":
+        prims = used_meshes(a) + used_spheres(a)
+        if any("TRIGGER" in (o.og_ca_touch, o.og_ca_attack) for o in prims) and a.trigger_anim in ("", "NONE"):
+            out.append(("a collision plays the 'trigger animation, but none is picked (Basic Actor)", False))
+        if prims and _stored_sig(a) != collision_signature(a):
+            out.append(("collision changed since the last export: Export it again", False))
+    for o in used_meshes(a):
         if _inward(o):
             out.append((f"collision '{o.name}': most faces point inward (Jak goes through): "
                         "Mesh > Normals > Recalculate Outside", False))
         if len(o.data.loops) > 255:
             out.append((f"collision '{o.name}' may have more than 255 vertices once exported", True))
     return out
+
+
+def _stored_sig(a):
+    import json
+    try:
+        return json.loads(a.coll_data).get("sig")
+    except (ValueError, AttributeError):
+        return None
 
 
 def _inward(o):
@@ -366,7 +468,7 @@ class OG_OT_CaRemove(bpy.types.Operator):
 
 
 class OG_OT_CaSyncAnims(bpy.types.Operator):
-    """List the armature's actions (new ones added at the end, deleted ones removed)"""
+    """List the armature's NLA tracks (new ones added at the end, deleted ones removed)"""
     bl_idname = "og.ca_sync_anims"
     bl_label = "Refresh Animations"
     bl_options = {"REGISTER", "UNDO"}
@@ -395,6 +497,219 @@ class OG_OT_CaMoveAnim(bpy.types.Operator):
         if 0 <= j < len(a.anims):
             a.anims.move(i, j)
             a.anim_index = j
+        return {"FINISHED"}
+
+
+def _action_items(self, ctx):
+    a = active(ctx.scene) if ctx else None
+    acts = compatible_actions(a.armature) if a is not None else []
+    cur = a.armature.animation_data.action if a is not None and a.armature and a.armature.animation_data else None
+    acts.sort(key=lambda x: (x != cur, x.name))
+    _ACT_ITEMS[:] = [(x.name, x.name, "", i) for i, x in enumerate(acts)] or [("", "(no action for this armature)", "", 0)]
+    return _ACT_ITEMS
+
+
+_ACT_ITEMS: list = []
+
+
+def _strip_copy(src, dst_track):
+    s = dst_track.strips.new(src.name, int(src.frame_start), src.action)
+    for k in ("action_frame_start", "action_frame_end", "scale", "repeat", "blend_type", "extrapolation",
+              "use_reverse", "influence", "use_animated_influence"):
+        try:
+            setattr(s, k, getattr(src, k))
+        except (AttributeError, TypeError, RuntimeError):
+            pass
+    return s
+
+
+class OG_OT_CaTrackAdd(bpy.types.Operator):
+    """Add an animation: a new NLA track (at the top) holding an action of this armature"""
+    bl_idname = "og.ca_track_add"
+    bl_label = "Add Animation"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_property = "action"
+    action: EnumProperty(name="Action", items=_action_items)
+
+    def invoke(self, ctx, event):
+        ctx.window_manager.invoke_search_popup(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        act = bpy.data.actions.get(self.action)
+        if a is None or a.armature is None or act is None:
+            return {"CANCELLED"}
+        ad = a.armature.animation_data or a.armature.animation_data_create()
+        if ad.use_tweak_mode:
+            ad.use_tweak_mode = False
+        t = ad.nla_tracks.new()
+        t.name = clean(act.name) or "anim"
+        t.strips.new(act.name, int(act.frame_range[0]), act)
+        if ad.action == act:                              # like Push Down: it now plays from the track
+            ad.action = None
+        sync_anims(a)
+        a.anim_index = len(a.anims) - 1
+        return {"FINISHED"}
+
+
+class OG_OT_CaTrackRemove(bpy.types.Operator):
+    """Delete the selected animation's NLA track (its action stays)"""
+    bl_idname = "og.ca_track_remove"
+    bl_label = "Delete Animation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        if a is None or not (0 <= a.anim_index < len(a.anims)):
+            return {"CANCELLED"}
+        t = track_of(a, a.anims[a.anim_index])
+        ad = a.armature.animation_data
+        if t is not None:
+            if ad.use_tweak_mode:
+                ad.use_tweak_mode = False
+            ad.nla_tracks.remove(t)
+        sync_anims(a)
+        a.anim_index = min(a.anim_index, len(a.anims) - 1)
+        return {"FINISHED"}
+
+
+class OG_OT_CaTrackDuplicate(bpy.types.Operator):
+    """Duplicate the selected animation's NLA track (same strips, same actions)"""
+    bl_idname = "og.ca_track_duplicate"
+    bl_label = "Duplicate Animation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        if a is None or not (0 <= a.anim_index < len(a.anims)):
+            return {"CANCELLED"}
+        t = track_of(a, a.anims[a.anim_index])
+        if t is None:
+            return {"CANCELLED"}
+        ad = a.armature.animation_data
+        if ad.use_tweak_mode:
+            ad.use_tweak_mode = False
+        n = ad.nla_tracks.new(prev=t)
+        n.name = t.name + "-copy"
+        for s in t.strips:
+            _strip_copy(s, n)
+        sync_anims(a)
+        a.anim_index = len(a.anims) - 1
+        return {"FINISHED"}
+
+
+class OG_OT_CaTrackEdit(bpy.types.Operator):
+    """Edit the animation: tweak mode on its strip (its keys editable in the timeline), the scene's frame
+    range set to it. Again to stop editing"""
+    bl_idname = "og.ca_track_edit"
+    bl_label = "Edit Animation"
+    bl_options = {"REGISTER", "UNDO"}
+    index: IntProperty(default=-1, options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        if a is None or a.armature is None or a.armature.animation_data is None:
+            return {"CANCELLED"}
+        ad = a.armature.animation_data
+        if ad.use_tweak_mode:
+            ad.use_tweak_mode = False
+            return {"FINISHED"}
+        i = self.index if self.index >= 0 else a.anim_index
+        t = track_of(a, a.anims[i]) if 0 <= i < len(a.anims) else None
+        if t is None or not t.strips:
+            self.report({"ERROR"}, "This track has no strip")
+            return {"CANCELLED"}
+        a.anim_index = i
+        for tt in ad.nla_tracks:
+            tt.select = tt == t
+            for s in tt.strips:
+                s.select = False
+        t.strips[0].select = True
+        ad.nla_tracks.active = t
+        ad.use_tweak_mode = True
+        f0, f1 = track_range(t)
+        ctx.scene.frame_start, ctx.scene.frame_end = int(f0), int(f1)
+        return {"FINISHED"}
+
+
+class OG_OT_CaTrackPlay(bpy.types.Operator):
+    """Play this animation alone (its track solo, the scene's frame range set to it). Again to stop"""
+    bl_idname = "og.ca_track_play"
+    bl_label = "Play Animation"
+    bl_options = {"REGISTER"}
+    index: IntProperty(default=-1, options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        i = self.index if self.index >= 0 else (a.anim_index if a is not None else -1)
+        t = track_of(a, a.anims[i]) if a is not None and 0 <= i < len(a.anims) else None
+        if t is None:
+            return {"CANCELLED"}
+        playing = ctx.screen is not None and ctx.screen.is_animation_playing
+        if t.is_solo and playing:
+            bpy.ops.screen.animation_cancel(restore_frame=False)
+            t.is_solo = False
+            return {"FINISHED"}
+        t.is_solo = True
+        f0, f1 = track_range(t)
+        ctx.scene.frame_start, ctx.scene.frame_end = int(f0), int(f1)
+        ctx.scene.frame_set(int(f0))
+        if not playing and ctx.screen is not None:
+            bpy.ops.screen.animation_play()
+        return {"FINISHED"}
+
+
+class OG_OT_CaSphereAdd(bpy.types.Operator):
+    """Add a collision sphere (a sphere empty in the Collision collection, at the actor's origin): move /
+    scale it in the viewport, parent it to a bone or pick one"""
+    bl_idname = "og.ca_sphere_add"
+    bl_label = "Add Collision Sphere"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, ctx):
+        a = active(ctx.scene)
+        if a is None or a.collection is None:
+            return {"CANCELLED"}
+        c = sub(a, "Collision", create=True)
+        o = bpy.data.objects.new(f"{clean(a.name) or 'actor'}-sphere", None)
+        o.empty_display_type = "SPHERE"
+        o.empty_display_size = 1.0
+        o.location = origin_point(a)
+        c.objects.link(o)
+        from .collections import select_only
+        select_only(o, ctx)
+        return {"FINISHED"}
+
+
+class OG_OT_CaSphereRemove(bpy.types.Operator):
+    """Delete this collision sphere"""
+    bl_idname = "og.ca_sphere_remove"
+    bl_label = "Delete Collision Sphere"
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        o = bpy.data.objects.get(self.name)
+        if o is None or o.type != "EMPTY":
+            return {"CANCELLED"}
+        bpy.data.objects.remove(o)
+        return {"FINISHED"}
+
+
+class OG_OT_CaSelect(bpy.types.Operator):
+    """Select this object"""
+    bl_idname = "og.ca_select"
+    bl_label = "Select"
+    bl_options = {"REGISTER", "UNDO"}
+    name: StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, ctx):
+        o = bpy.data.objects.get(self.name)
+        if o is None:
+            return {"CANCELLED"}
+        from .collections import select_only
+        select_only(o, ctx)
         return {"FINISHED"}
 
 
@@ -586,8 +901,18 @@ class OG_UL_CaAnims(bpy.types.UIList):
     def draw_item(self, ctx, layout, data, item, icon, active_data, active_propname, index):
         r = layout.row(align=True)
         r.prop(item, "include", text="")
-        r.label(text=(item.action.name if item.action else "?") + ("  (idle)" if index == _first_included(data) else ""),
-                icon="ACTION")
+        r.prop(item, "name", text="", emboss=False, icon="NLA")
+        t = track_of(data, item)
+        if t is None:
+            r.label(text="(no track)")
+            return
+        f0, f1 = track_range(t)
+        r.label(text=("idle  " if index == _first_included(data) else "") + f"{(f1 - f0) / 60:.1f} s")
+        ad = data.armature.animation_data
+        editing = ad.use_tweak_mode and ad.nla_tracks.active == t
+        r.operator("og.ca_track_play", text="", icon="PAUSE" if t.is_solo else "PLAY", emboss=False).index = index
+        r.operator("og.ca_track_edit", text="", icon="CHECKMARK" if editing else "GREASEPENCIL",
+                   emboss=False).index = index
 
 
 def _first_included(a):
@@ -665,29 +990,64 @@ class OG_PT_CaBasic(_Tab, bpy.types.Panel):
     def draw(self, ctx):
         a = active(ctx.scene)
         l = self.layout
-        l.prop(a, "collision")
-        if a.collision == "sphere":
-            r = l.row(align=True); r.prop(a, "sphere_radius"); r.prop(a, "sphere_height")
-        if a.collision != "none":
-            l.prop(a, "rideable")
-        if a.collision == "mesh":
-            box = l.box()
-            box.label(text="Collision meshes follow:")
-            for o in collision_objects(a):
-                r = box.row(align=True)
-                r.label(text=o.name, icon="MESH_CUBE")
-                if a.armature is not None:
-                    r.prop_search(o, "og_ca_bone", a.armature.data, "bones", text="")
-                else:
-                    r.label(text="the actor")
-            g = box.row(); g.enabled = False; g.scale_y = 0.7
-            g.label(text="Empty: the whole actor; or parent the mesh to a bone", icon="INFO")
         if a.armature is not None:
             l.prop(a, "trigger_anim")
         g = l.column(); g.enabled = False; g.scale_y = 0.7
         g.label(text="Loops its idle (the first exported animation)", icon="INFO")
-        if a.collision == "mesh":
-            g.label(text="Collision meshes are invisible in game, the model's meshes have no collision", icon="BLANK1")
+        g.label(text="'trigger (a button's notify list ...) plays the 'trigger animation", icon="BLANK1")
+
+
+def _prim_box(l, a, o, sphere):
+    box = l.box()
+    r = box.row(align=True)
+    r.operator("og.ca_select", text="", icon="RESTRICT_SELECT_OFF", emboss=False).name = o.name
+    r.label(text=o.name + (f"  ({sphere_radius(o):.2f} m)" if sphere else ""),
+            icon="SPHERE" if sphere else "MESH_CUBE")
+    if sphere:
+        r.operator("og.ca_sphere_remove", text="", icon="X", emboss=False).name = o.name
+    r = box.row(align=True)
+    r.label(text="Follows")
+    if a.armature is not None:
+        r.prop_search(o, "og_ca_bone", a.armature.data, "bones", text="")
+    else:
+        r.label(text="the actor")
+    c = box.column(align=True)
+    c.prop(o, "og_ca_solid", text="Acts as")
+    c.prop(o, "og_ca_touch", text="Touched")
+    c.prop(o, "og_ca_attack", text="Attacked")
+
+
+class OG_PT_CaCollision(_Tab, bpy.types.Panel):
+    bl_label = "Collision"
+    bl_idname = "OG_PT_ca_collision"
+    bl_order = 3
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, ctx):
+        a = active(ctx.scene)
+        return a is not None and a.template == "basic"
+
+    def draw(self, ctx):
+        a = active(ctx.scene)
+        l = self.layout
+        l.prop(a, "coll_meshes")
+        if a.coll_meshes:
+            ms = collision_objects(a)
+            for o in ms:
+                _prim_box(l, a, o, False)
+            if not ms:
+                r = l.row(); r.alert = True
+                r.label(text="No mesh in the Collision collection", icon="ERROR")
+        r = l.row()
+        r.label(text=f"Spheres ({len(collision_spheres(a))})", icon="SPHERE")
+        r.operator("og.ca_sphere_add", text="", icon="ADD")
+        for o in collision_spheres(a):
+            _prim_box(l, a, o, True)
+        g = l.column(); g.enabled = False; g.scale_y = 0.7
+        g.label(text="Follows: empty = the whole actor; or parent it to a bone", icon="INFO")
+        g.label(text="Collision meshes are invisible in game; the model's meshes have none", icon="BLANK1")
+        g.label(text="Spheres: move / scale the empties (radius = display size x scale)", icon="BLANK1")
 
 
 class OG_PT_CaCamera(_Tab, bpy.types.Panel):
@@ -713,7 +1073,7 @@ class OG_PT_CaCamera(_Tab, bpy.types.Panel):
             g = l.row(); g.enabled = False; g.scale_y = 0.7
             g.label(text=f"FOV here: {scale_to_fov(pb.scale.x):.1f} degrees (bone X scale {pb.scale.x:.3f})", icon="INFO")
         g = l.column(); g.enabled = False; g.scale_y = 0.7
-        g.label(text="Animate the 'camera' bone: each action is a shot", icon="INFO")
+        g.label(text="Animate the 'camera' bone: each NLA track is a shot", icon="INFO")
         g.label(text="The view looks down the bone's -Z (the rig camera shows it)", icon="BLANK1")
         g.label(text="Plays from the Camera animation actor's position: the armature's origin", icon="BLANK1")
         g.label(text=f"Pick '{clean(a.name)}' in a Camera animation's Camera list", icon="BLANK1")
@@ -722,7 +1082,7 @@ class OG_PT_CaCamera(_Tab, bpy.types.Panel):
 class OG_PT_CaAnims(_Tab, bpy.types.Panel):
     bl_label = "Animations"
     bl_idname = "OG_PT_ca_anims"
-    bl_order = 3
+    bl_order = 4
 
     @classmethod
     def poll(cls, ctx):
@@ -732,21 +1092,39 @@ class OG_PT_CaAnims(_Tab, bpy.types.Panel):
     def draw(self, ctx):
         a = active(ctx.scene)
         l = self.layout
+        if _anims_stale(a):
+            r = l.row(); r.alert = True
+            r.operator("og.ca_sync_anims", text="NLA tracks changed: Refresh", icon="FILE_REFRESH")
         r = l.row()
-        r.template_list("OG_UL_CaAnims", "", a, "anims", a, "anim_index", rows=3)
+        r.template_list("OG_UL_CaAnims", "", a, "anims", a, "anim_index", rows=4)
         c = r.column(align=True)
-        c.operator("og.ca_sync_anims", text="", icon="FILE_REFRESH")
+        c.operator("og.ca_track_add", text="", icon="ADD")
+        c.operator("og.ca_track_remove", text="", icon="REMOVE")
+        c.separator()
         c.operator("og.ca_move_anim", text="", icon="TRIA_UP").up = True
         c.operator("og.ca_move_anim", text="", icon="TRIA_DOWN").up = False
+        c.separator()
+        c.operator("og.ca_track_duplicate", text="", icon="DUPLICATE")
+        c.operator("og.ca_sync_anims", text="", icon="FILE_REFRESH")
+        ad = a.armature.animation_data
+        if ad is not None and ad.use_tweak_mode:
+            r = l.row(); r.alert = True
+            r.operator("og.ca_track_edit", text="Stop Editing", icon="CHECKMARK")
         g = l.column(); g.enabled = False; g.scale_y = 0.7
-        g.label(text="Each action is an animation (60 frames a second in game)", icon="INFO")
+        g.label(text="Each NLA track is an animation (60 frames a second in game)", icon="INFO")
         g.label(text="The first exported one is the idle (played when placed)", icon="BLANK1")
+        g.label(text="+ makes a track from an action; the list order is the export order", icon="BLANK1")
+
+
+def _anims_stale(a):
+    """The list doesn't match the armature's tracks (cheap: names only)."""
+    return sorted(x.track for x in a.anims) != sorted(t.name for t in tracks(a))
 
 
 class OG_PT_CaBuild(_Tab, bpy.types.Panel):
     bl_label = "Build Settings"
     bl_idname = "OG_PT_ca_build"
-    bl_order = 4
+    bl_order = 5
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
@@ -760,23 +1138,29 @@ class OG_PT_CaBuild(_Tab, bpy.types.Panel):
 
 
 CLASSES = (OGCustomActorAnim, OGCustomActor, OGCustomActorSettings, OG_OT_CaAdd, OG_OT_CaRemove, OG_OT_CaSyncAnims,
-           OG_OT_CaMoveAnim, OG_OT_CaExport, OG_OT_CaPlace, OG_OT_CaCameraRig, OG_OT_CaCameraView,
-           OG_OT_CaCameraFov, OG_UL_CustomActors, OG_UL_CaAnims, OG_PT_CaList, OG_PT_CaSettings, OG_PT_CaBasic,
-           OG_PT_CaCamera, OG_PT_CaAnims, OG_PT_CaBuild)
+           OG_OT_CaMoveAnim, OG_OT_CaTrackAdd, OG_OT_CaTrackRemove, OG_OT_CaTrackDuplicate, OG_OT_CaTrackEdit,
+           OG_OT_CaTrackPlay, OG_OT_CaSphereAdd, OG_OT_CaSphereRemove, OG_OT_CaSelect, OG_OT_CaExport,
+           OG_OT_CaPlace, OG_OT_CaCameraRig, OG_OT_CaCameraView, OG_OT_CaCameraFov, OG_UL_CustomActors, OG_UL_CaAnims,
+           OG_PT_CaList, OG_PT_CaSettings, OG_PT_CaBasic, OG_PT_CaCollision, OG_PT_CaCamera, OG_PT_CaAnims,
+           OG_PT_CaBuild)
 
 
 def register_props():
     bpy.types.Object.og_ca_bone = StringProperty(
         name="Bone", default="",
-        description="Custom actor collision mesh: the bone it moves with (empty: the whole actor)")
+        description="Custom actor collision mesh / sphere: the bone it moves with (empty: the whole actor)")
+    bpy.types.Object.og_ca_solid = EnumProperty(name="Acts as", items=SOLIDS, default="SOLID")
+    bpy.types.Object.og_ca_touch = EnumProperty(name="When touched", items=TOUCHES, default="NONE")
+    bpy.types.Object.og_ca_attack = EnumProperty(name="When attacked", items=ATTACKS, default="NONE")
     bpy.types.Scene.og_custom_actors = CollectionProperty(type=OGCustomActor)
     bpy.types.Scene.og_custom_actor_index = IntProperty()
     bpy.types.Scene.og_ca_settings = PointerProperty(type=OGCustomActorSettings)
 
 
 def unregister_props():
-    if hasattr(bpy.types.Object, "og_ca_bone"):
-        del bpy.types.Object.og_ca_bone
+    for p in ("og_ca_bone", "og_ca_solid", "og_ca_touch", "og_ca_attack"):
+        if hasattr(bpy.types.Object, p):
+            delattr(bpy.types.Object, p)
     for p in ("og_custom_actors", "og_custom_actor_index", "og_ca_settings"):
         if hasattr(bpy.types.Scene, p):
             delattr(bpy.types.Scene, p)

@@ -44,7 +44,7 @@ def custom_cameras(scene=None) -> dict:
         n = clean(a.name)
         if a.template != "camera" or not n:
             continue
-        an = [anim_name(x.action.name) for x in a.anims if x.include and x.action]
+        an = [anim_name(x.track) for x in a.anims if x.include and x.track]
         out[n] = {"group": n, "file": f"{n}-ag.go", "jg": f"{n}-lod0-jg", "mg": f"{n}-lod0-mg",
                   "default": f"{n}-{an[0]}-ja" if an else None, "label": f"{n} (custom actor)",
                   "anims": {x: "custom actor shot" for x in an}, "custom": True}

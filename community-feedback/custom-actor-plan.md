@@ -101,6 +101,20 @@ game's own screenshot (`pc-screen-shot`, saved in `%APPDATA%/OpenGOAL/jak1/scree
 - Checked in game: the camera sat exactly where the bone was (8 m out, 3 m up), looked where the rig camera
   looked, FOV 50° read back as 50°.
 
+## Animations from NLA tracks, collision rework (Kuitar's requests, in game on v0.3.5, Blender 5.3)
+
+- Each NLA track of the armature is an animation (glTF export mode NLA_TRACKS): the Animations panel lists
+  them (export tick, rename = the track's name, length, play solo, edit in tweak mode, add from an action,
+  delete, duplicate, export order). Actions are read through their layers too (Blender 5 has no
+  `Action.fcurves`).
+- Collision panel: a Collision meshes checkbox + sphere empties (+), each following a bone or the actor, with
+  Acts as (solid / carries Jak / not solid), Touched (hurts / deadly / plays the 'trigger anim), Attacked
+  (plays the 'trigger anim / breaks the actor). Prim-id bits tell the generated event handler which prim
+  was touched (`prims-touching?`); touch reactions add an overlap check to the post. Deadly is
+  `'attack-invinc` mode `'death` (lava pools; `'deadly` only takes one hit).
+- Checked in game: a sphere on a turned bone at the posed spot; hurt -1 health; deadly kills; a punch plays
+  the 'trigger anim; Breaks removes the actor.
+
 ## Proposal
 
 ### Its own sidebar tab
