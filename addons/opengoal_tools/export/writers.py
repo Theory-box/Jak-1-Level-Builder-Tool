@@ -1126,6 +1126,12 @@ def export_glb(ctx, name):
         _export_glb_impl(ctx, name)
     finally:
         _bviz.restore_viz_modifiers(_stripped)
+    # the custom actors the level places (OpenGOAL Actors tab): their models, here on the main
+    # thread (Blender's glTF exporter can't run in the build's background thread)
+    from .actors_export import export_for_level
+    errs = export_for_level(ctx.scene, _level_objects(ctx.scene))
+    if errs:
+        raise RuntimeError("Custom actors: " + "; ".join(errs[:3]))
 
 
 def _export_glb_impl(ctx, name):

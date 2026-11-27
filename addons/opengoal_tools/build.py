@@ -688,11 +688,9 @@ def write_level_files(name, scene, depsgraph=None, state=None, navmesh=True):
     spawns    = collect_spawns(scene)
     ags       = needed_ags(actors)
     extras    = needed_extras_ags(actors)
-    # custom actors the level places (OpenGOAL Actors tab): their model files + art groups
-    from .export.actors_export import level_ags as _ca_ags, export_for_level as _ca_export
-    _ca_errs = _ca_export(scene, _level_objects(scene))
-    if _ca_errs:
-        raise RuntimeError("Custom actors: " + "; ".join(_ca_errs[:3]))
+    # custom actors the level places (OpenGOAL Actors tab; their models are exported with the
+    # level's glb, on the main thread): their art groups
+    from .export.actors_export import level_ags as _ca_ags
     extras    = extras + [g for g in _ca_ags(scene, _level_objects(scene)) if g not in extras]
     tpages    = needed_tpages(actors)
     code_deps = needed_code(actors)
@@ -897,10 +895,7 @@ def _bg_quick_export(name, scene, depsgraph=None, boot_cp=None):
         spawns   = collect_spawns(scene)
         ags      = needed_ags(actors)
         extras   = needed_extras_ags(actors)
-        from .export.actors_export import level_ags as _ca_ags, export_for_level as _ca_export
-        _ca_errs = _ca_export(scene, _level_objects(scene))
-        if _ca_errs:
-            raise RuntimeError("Custom actors: " + "; ".join(_ca_errs[:3]))
+        from .export.actors_export import level_ags as _ca_ags
         extras   = extras + [g for g in _ca_ags(scene, _level_objects(scene)) if g not in extras]
         tpages   = needed_tpages(actors)
         code_deps = needed_code(actors)  # still needed for DGO .o injection
