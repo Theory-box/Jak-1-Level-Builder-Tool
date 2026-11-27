@@ -380,6 +380,11 @@ def write_gc(name, has_triggers=False, has_aggro_triggers=False, has_custom_trig
         if _sl:
             lines += ["", ";; --- edited actors (export/edited.py) ---"] + _sl
             log(f"  [write_gc] {sum(1 for l in _sl if l.startswith('(deftype'))} edited actor type(s)")
+        # the custom actors' code (OpenGOAL Actors tab: Basic actor)
+        from .actors_export import level_code as _ca_code
+        _cl = _ca_code(scene, _level_objects(scene))
+        if _cl:
+            lines += ["", ";; --- custom actors (OpenGOAL Actors tab) ---"] + _cl
         # the level's ocean map when it is loaded with its levels (Oceans panel)
         from .oceans_export import level_lines as _ocean_lines
         from ..collections import _active_level_col

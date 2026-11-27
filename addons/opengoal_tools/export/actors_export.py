@@ -45,11 +45,19 @@ def _pack(js, binb):
             + struct.pack("<II", len(binb), 0x004E4942) + binb)
 
 
+def anim_name(action_name):
+    """An action's animation name in the art group (<actor>-<this>-ja)."""
+    from ..custom_actors import clean
+    return clean(action_name) or "anim"
+
+
 def order_animations(js, names):
-    """Keep only the named animations, in that order."""
+    """Keep only the named animations, in that order, named like the art group's elements."""
     anims = js.get("animations") or []
     by = {a.get("name"): a for a in anims}
     js["animations"] = [by[n] for n in names if n in by]
+    for a in js["animations"]:
+        a["name"] = anim_name(a["name"])
     if not js["animations"]:
         js.pop("animations", None)
 
@@ -170,12 +178,16 @@ def export_actor(scene, a):
         return "nothing to export"
     CA.sync_anims(a)
     anims = [x.action.name for x in a.anims if x.include and x.action]
+    gen_mesh = uses_mesh_collision(a)
+    marks = _collision_marks(a) if gen_mesh else []
     fd, tmp = tempfile.mkstemp(suffix=".glb")
     os.close(fd)
     try:
         _export_glb(scene, objs, tmp)
         data = open(tmp, "rb").read()
     finally:
+        for ob, k, v in reversed(marks):                 # the user's own settings back
+            setattr(ob, k, v)
         try:
             os.remove(tmp)
         except OSError:
@@ -186,8 +198,34 @@ def export_actor(scene, a):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
         log(f"[custom actor] wrote {p.name} ({len(data)} bytes, {len(anims)} animation(s))")
-    register(name, gen_mesh=bool(CA.collision_objects(a)))
+    register(name, gen_mesh=gen_mesh)
     return ""
+
+
+def uses_mesh_collision(a):
+    from .. import custom_actors as CA
+    return a.template == "basic" and a.collision == "mesh" and bool(CA.collision_objects(a))
+
+
+def _collision_marks(a):
+    """For :gen-mesh (every mesh becomes collision unless told): the model's meshes no collision,
+    the Collision meshes invisible + collision. Returns [(object, prop, old value)] to put back."""
+    from .. import custom_actors as CA
+    marks = []
+
+    def put(ob, k, v):
+        if hasattr(ob, k):
+            marks.append((ob, k, getattr(ob, k)))
+            setattr(ob, k, v)
+    for ob in CA.model_objects(a):
+        if ob.type == "MESH":
+            put(ob, "set_collision", True)
+            put(ob, "ignore", True)
+    for ob in CA.collision_objects(a):
+        put(ob, "set_invisible", True)
+        put(ob, "set_collision", True)
+        put(ob, "ignore", False)
+    return marks
 
 
 def register(name, gen_mesh=False):
@@ -214,6 +252,113 @@ def unregister_missing(scene):
             out.append(l)
         return "".join(out)
     rewrite(_game_gp(), fn)
+
+
+# ── GOAL code (Basic actor) ────────────────────────────────────────────────
+
+def _f(x):
+    s = f"{float(x):.4f}".rstrip("0")
+    return s + "0" if s.endswith(".") else s
+
+
+def actor_gc(scene, a):
+    """The Basic actor's GOAL (deftype <name>, def-actor, states, init) for a level's -obs.gc."""
+    from .. import custom_actors as CA
+    n = CA.clean(a.name)
+    anims = [anim_name(x.action.name) for x in a.anims if x.include and x.action] if a.armature else []
+    art = [f"{x}-ja" for x in anims] or ["idle-ja"]
+    idle = f"{n}-{art[0]}"
+    trig = None
+    if a.armature and a.trigger_anim not in ("", "NONE"):
+        tn = anim_name(a.trigger_anim)
+        if tn in anims:
+            trig = f"{n}-{tn}-ja"
+    coll = a.collision if a.template == "basic" else "none"
+    meshes = len(CA.collision_objects(a)) if coll == "mesh" else 0
+    if coll == "mesh" and not meshes:
+        coll = "none"
+    b = CA.bounds(a)
+    post = "transform-post" if coll != "none" else "ja-post"
+    act = "(collide-action solid rider-plat-sticky)" if a.rideable else "(collide-action solid)"
+    out = ["", f";; ---- custom actor {n} (OpenGOAL Actors tab: Basic actor) ----",
+           f"(deftype {n} (process-drawable)",
+           f"  ({'(root collide-shape-moving :override)' if coll != 'none' else ''})",
+           f"  (:states {n}-idle{f' {n}-play' if trig else ''}))",
+           f"(def-actor {n} :bounds (0 0 0 {_f(b)}) :art ({' '.join(art)}))",
+           f"(defstate {n}-idle ({n})"]
+    if trig:
+        out += ["  :event",
+                "    (behavior ((proc process) (argc int) (message symbol) (block event-message-block))",
+                f"      (case message (('trigger) (go {n}-play))))"]
+    out += ["  :code",
+            "    (behavior ()",
+            "      (loop",
+            f"        (ja-no-eval :group! {idle} :num! (seek!) :frame-num 0.0)",
+            "        (until (ja-done? 0) (suspend) (ja :num! (seek!)))))",
+            f"  :post {post})"]
+    if trig:
+        out += [f"(defstate {n}-play ({n})",
+                "  :code",
+                "    (behavior ()",
+                f"      (ja-no-eval :group! {trig} :num! (seek!) :frame-num 0.0)",
+                "      (until (ja-done? 0) (suspend) (ja :num! (seek!)))",
+                f"      (go {n}-idle))",
+                f"  :post {post})"]
+    out += [f"(defmethod init-from-entity! ((this {n}) (arg0 entity-actor))"]
+    if coll == "none":
+        out += ["  (set! (-> this root) (new 'process 'trsqv))"]
+    else:
+        out += ["  (let ((cshape (new 'process 'collide-shape-moving this (collide-list-enum hit-by-player))))",
+                "    (set! (-> cshape dynam) (copy *standard-dynamics* 'process))",
+                "    (set! (-> cshape reaction) default-collision-reaction)",
+                "    (set! (-> cshape no-reaction) (the (function collide-shape-moving collide-shape-intersect vector vector none) nothing))"]
+        if coll == "sphere":
+            out += ["    (let ((s (new 'process 'collide-shape-prim-sphere cshape (the uint 0))))",
+                    "      (set! (-> s prim-core collide-as) (collide-kind ground-object))",
+                    "      (set! (-> s collide-with) (collide-kind target))",
+                    f"      (set! (-> s prim-core action) {act})",
+                    "      (set! (-> s prim-core offense) (collide-offense indestructible))",
+                    "      (set! (-> s transform-index) 0)",
+                    f"      (set-vector! (-> s local-sphere) 0.0 (meters {_f(a.sphere_height)}) 0.0 (meters {_f(a.sphere_radius)}))",
+                    "      (set-root-prim! cshape s))"]
+        else:
+            out += [f"    (let ((group (new 'process 'collide-shape-prim-group cshape (the uint {meshes}) 0)))",
+                    "      (set! (-> group prim-core collide-as) (collide-kind ground-object))",
+                    "      (set! (-> group collide-with) (collide-kind target))",
+                    f"      (set! (-> group prim-core action) {act})",
+                    "      (set! (-> group transform-index) 0)",
+                    f"      (set-vector! (-> group local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
+                    "      (set-root-prim! cshape group)"]
+            for i in range(meshes):
+                out += [f"      (let ((mesh (new 'process 'collide-shape-prim-mesh cshape (the uint {i}) (the uint 0))))",
+                        "        (set! (-> mesh prim-core collide-as) (collide-kind ground-object))",
+                        "        (set! (-> mesh collide-with) (collide-kind target))",
+                        f"        (set! (-> mesh prim-core action) {act})",
+                        "        (set! (-> mesh prim-core offense) (collide-offense indestructible))",
+                        "        (set! (-> mesh transform-index) 0)",
+                        f"        (set-vector! (-> mesh local-sphere) 0.0 0.0 0.0 (meters {_f(b)}))",
+                        "        (append-prim group mesh))"]
+            out[-1] += ")"
+        out += ["    (set! (-> cshape nav-radius) (* 0.75 (-> cshape root-prim local-sphere w)))",
+                "    (backup-collide-with-as cshape)",
+                "    (set! (-> this root) cshape))"]
+    out += ["  (process-drawable-from-entity! this arg0)",
+            f"  (initialize-skeleton this *{n}-sg* '())"]
+    if coll != "none":
+        out += ["  (transform-post)"]
+    out += [f"  (go {n}-idle)", "  (none))"]
+    return out
+
+
+def level_code(scene, objs):
+    """GOAL of the Basic actors the level places (for its -obs.gc)."""
+    from .. import custom_actors as CA
+    out = []
+    for n in level_models(scene, objs):
+        a = CA.actor_by_name(scene, n)
+        if a is not None and a.template == "basic":
+            out += actor_gc(scene, a)
+    return out
 
 
 # ── levels ────────────────────────────────────────────────────────────────

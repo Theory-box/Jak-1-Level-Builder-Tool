@@ -21,7 +21,12 @@ from bpy.props import (BoolProperty, CollectionProperty, EnumProperty, FloatProp
 ROOT_COL = "Custom Actors"
 MAX_BONES = 100
 TEMPLATES = [("art_group", "Art group", "Only the art group (model, skeleton, animations): no code. In a level "
-                                        "it plays its first animation")]
+                                        "it plays its first animation"),
+             ("basic", "Basic actor", "An actor with code: plays its idle animation, an animation when triggered, "
+                                      "collision from the Collision meshes or a sphere")]
+COLLISIONS = [("none", "None", "Jak goes through it"),
+              ("mesh", "Collision meshes", "The meshes of its Collision collection (255 vertices each at most)"),
+              ("sphere", "Sphere", "A sphere around the actor")]
 BONE_FIX = [("AUTO", "Auto", "On, except on OpenGOAL releases older than 0.3.6 (which don't have the problem)"),
             ("ON", "Always", "Always counter the bone shift"),
             ("OFF", "Never", "Never (an OpenGOAL with the upstream fix)")]
@@ -40,6 +45,17 @@ class OGCustomActorAnim(bpy.types.PropertyGroup):
     include: BoolProperty(name="Export", default=True)
 
 
+def _anim_items(self, ctx):
+    out = [("NONE", "None", "Nothing happens on 'trigger")]
+    out += [(x.action.name, x.action.name, "Played once on 'trigger, then back to the idle")
+            for x in self.anims if x.include and x.action]
+    _ANIM_ITEMS[:] = [(a, b, c, i) for i, (a, b, c) in enumerate(out)]
+    return _ANIM_ITEMS
+
+
+_ANIM_ITEMS: list = []
+
+
 class OGCustomActor(bpy.types.PropertyGroup):
     name: StringProperty(name="Name", default="", description="The art group is <name>-ag; placed actors are etype <name>")
     template: EnumProperty(name="Template", items=TEMPLATES, default="art_group")
@@ -51,6 +67,15 @@ class OGCustomActor(bpy.types.PropertyGroup):
     bounds_auto: BoolProperty(name="Auto", default=True, description="From the model's size")
     bounds: FloatProperty(name="Bounds (m)", default=5.0, min=0.1, unit="LENGTH",
                           description="Radius of the sphere around the actor: too small and it disappears early")
+    # Basic actor
+    collision: EnumProperty(name="Collision", items=COLLISIONS, default="none")
+    sphere_radius: FloatProperty(name="Radius (m)", default=1.0, min=0.05, unit="LENGTH")
+    sphere_height: FloatProperty(name="Height (m)", default=1.0, unit="LENGTH", description="Height of the sphere's centre")
+    rideable: BoolProperty(name="Jak can ride it", default=True,
+                           description="Jak moves with it when standing on it (when it moves)")
+    trigger_anim: EnumProperty(name="On 'trigger", items=_anim_items,
+                               description="Animation played once when another actor sends it 'trigger "
+                                           "(a button's notify list ...), then back to the idle")
 
 
 class OGCustomActorSettings(bpy.types.PropertyGroup):
@@ -191,10 +216,26 @@ def checks(scene, a):
             out.append(("no animation: it gets a still idle", False))
     if meshes and not any(o.data.color_attributes for o in meshes) and not _has_textures(meshes):
         out.append(("no colour attribute or texture: material colours are ignored (white)", False))
+    if a.template == "basic" and a.collision == "mesh" and not collision_objects(a):
+        out.append(("Collision meshes: its Collision collection has no mesh", True))
     for o in collision_objects(a):
+        if _inward(o):
+            out.append((f"collision '{o.name}': most faces point inward (Jak goes through): "
+                        "Mesh > Normals > Recalculate Outside", False))
         if len(o.data.loops) > 255:
             out.append((f"collision '{o.name}' may have more than 255 vertices once exported", True))
     return out
+
+
+def _inward(o):
+    """Most faces point toward the mesh's centre (collision is one-sided)."""
+    me = o.data
+    if not me.polygons:
+        return False
+    from mathutils import Vector
+    c = sum((v.co for v in me.vertices), Vector()) / len(me.vertices)
+    inward = sum(1 for f in me.polygons if f.normal.dot(f.center - c) < 0)
+    return inward > len(me.polygons) / 2
 
 
 def _has_textures(meshes):
@@ -412,10 +453,36 @@ class OG_PT_CaSettings(_Tab, bpy.types.Panel):
             r.label(text=text, icon="ERROR" if red else "INFO")
 
 
+class OG_PT_CaBasic(_Tab, bpy.types.Panel):
+    bl_label = "Basic Actor"
+    bl_idname = "OG_PT_ca_basic"
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, ctx):
+        a = active(ctx.scene)
+        return a is not None and a.template == "basic"
+
+    def draw(self, ctx):
+        a = active(ctx.scene)
+        l = self.layout
+        l.prop(a, "collision")
+        if a.collision == "sphere":
+            r = l.row(align=True); r.prop(a, "sphere_radius"); r.prop(a, "sphere_height")
+        if a.collision != "none":
+            l.prop(a, "rideable")
+        if a.armature is not None:
+            l.prop(a, "trigger_anim")
+        g = l.column(); g.enabled = False; g.scale_y = 0.7
+        g.label(text="Loops its idle (the first exported animation)", icon="INFO")
+        if a.collision == "mesh":
+            g.label(text="Collision meshes are invisible in game, the model's meshes have no collision", icon="BLANK1")
+
+
 class OG_PT_CaAnims(_Tab, bpy.types.Panel):
     bl_label = "Animations"
     bl_idname = "OG_PT_ca_anims"
-    bl_order = 2
+    bl_order = 3
 
     @classmethod
     def poll(cls, ctx):
@@ -439,7 +506,7 @@ class OG_PT_CaAnims(_Tab, bpy.types.Panel):
 class OG_PT_CaBuild(_Tab, bpy.types.Panel):
     bl_label = "Build Settings"
     bl_idname = "OG_PT_ca_build"
-    bl_order = 3
+    bl_order = 4
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, ctx):
@@ -454,7 +521,7 @@ class OG_PT_CaBuild(_Tab, bpy.types.Panel):
 
 CLASSES = (OGCustomActorAnim, OGCustomActor, OGCustomActorSettings, OG_OT_CaAdd, OG_OT_CaRemove, OG_OT_CaSyncAnims,
            OG_OT_CaMoveAnim, OG_OT_CaExport, OG_OT_CaPlace, OG_UL_CustomActors, OG_UL_CaAnims, OG_PT_CaList,
-           OG_PT_CaSettings, OG_PT_CaAnims, OG_PT_CaBuild)
+           OG_PT_CaSettings, OG_PT_CaBasic, OG_PT_CaAnims, OG_PT_CaBuild)
 
 
 def register_props():

@@ -77,6 +77,15 @@ game's own screenshot (`pc-screen-shot`, saved in `%APPDATA%/OpenGOAL/jak1/scree
   single skinned mesh and one with three separate skinned meshes both show every cube on its bone; the bone fix
   stays off (Auto, release < 0.3.6).
 
+## Step 3 results (Basic actor, in game on v0.3.5)
+
+- Generated code in the level's `-obs.gc`: `deftype <name>` (process-drawable), `def-actor` (bounds, the exported
+  animations), an idle state looping the first animation, an optional play state on 'trigger (one animation,
+  then back to idle), collision: none / the Collision meshes (`:gen-mesh`, one prim per mesh) / a sphere.
+- Checked in game: both actors run their idle state; 'trigger switches to the play state; Jak stands on the
+  collision box (mesh) and on the sphere. Collision is one-sided: a box with inward faces lets Jak through (the
+  panel now notes it: Recalculate Outside).
+
 ## Proposal
 
 ### Its own sidebar tab
